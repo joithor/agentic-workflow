@@ -14,12 +14,10 @@ namespace Aw.Judge.Infrastructure.PromptSort;
 /// replaces the file whole (a temp file renamed over it). A file that can't be read as a state is the empty state, so a
 /// file a TS sorter left behind reads as is and a damaged one costs only the cooldown.
 /// </summary>
-/// <param name="settings">The judge's settings; the files live in its state directory's 'sessions' folder.</param>
-internal sealed class FileSortSessionStore(JudgeSettings settings) : ISortSessionStore
+/// <param name="directory">The judge's 'sessions' directory ($AW_JUDGE_STATE_DIR/sessions, created on the first write).</param>
+internal sealed class FileSortSessionStore(string directory) : ISortSessionStore
 {
     private const int MaxIdLength = 80;
-
-    private readonly string _directory = Path.Combine(settings.StateDirectory, "sessions");
 
     /// <inheritdoc />
     public async ValueTask<Result<SortSession>> Read(SessionId session, CancellationToken cancellationToken)
@@ -53,7 +51,7 @@ internal sealed class FileSortSessionStore(JudgeSettings settings) : ISortSessio
         var temporary = $"{file}.{Guid.NewGuid():N}.tmp";
         try
         {
-            _ = Directory.CreateDirectory(_directory);
+            _ = Directory.CreateDirectory(directory);
             var existing = await Existing(file, cancellationToken).ConfigureAwait(false);
             await File.WriteAllTextAsync(temporary, SortSessionFile.Merge(existing, state).ToJsonString(), cancellationToken).ConfigureAwait(false);
             File.Move(temporary, file, overwrite: true);
@@ -73,7 +71,7 @@ internal sealed class FileSortSessionStore(JudgeSettings settings) : ISortSessio
     private static bool IsFileName(string id) =>
         id.Length is >= 1 and <= MaxIdLength && id.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-') && !id.Contains("..", StringComparison.Ordinal);
 
-    private string PathOf(SessionId session) => Path.Combine(_directory, session.Value + ".sort.json");
+    private string PathOf(SessionId session) => Path.Combine(directory, session.Value + ".sort.json");
 
     private static async ValueTask<JsonObject?> Existing(string file, CancellationToken cancellationToken)
     {

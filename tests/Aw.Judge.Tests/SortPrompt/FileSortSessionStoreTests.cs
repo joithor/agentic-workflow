@@ -1,6 +1,5 @@
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.PromptSort;
-using Aw.Judge.Infrastructure;
 using Aw.Judge.Infrastructure.PromptSort;
 
 namespace Aw.Judge.Tests.SortPrompt;
@@ -18,7 +17,7 @@ public sealed class FileSortSessionStoreTests : IDisposable
 
     private string StateFile => Path.Combine(Sessions, "sess-1.sort.json");
 
-    private FileSortSessionStore Store() => new(new JudgeSettings(Path.Combine(_state.Path, "judge")));
+    private FileSortSessionStore Store() => new(Sessions);
 
     [Fact, Trait("Lane", "integration")]
     public async Task A_write_keeps_the_keys_it_does_not_know_and_the_requirements_it_does_not_set()
