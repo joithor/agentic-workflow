@@ -17,13 +17,13 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// 'effect.line.start-phase' (line spec LN-WF1, §8.2): starts <c language="text">workflow.phase</c> for one phase of the line as a linked instance at
 /// '{line}/phase.{slug of id}.{attempt}'. The effect's <c language="text">phase</c> argument is the line's <c language="text">fact:nextPhase</c>, <c language="text">{ phase, attempt, packet, base, stackParent }</c>:
 /// the phase's frozen packet entry, the branch it builds on ('base': the default branch, or the head branch of the one phase it is stacked on)
-/// and that phase's id. The linked instance gets <c language="text">fact:phasePacket</c> (the packet entry with its <c language="text">base</c> and <c language="text">stackParent</c>) and the line's
-/// <c language="text">fact:lineContext</c>. It is idempotent per (line, phase, attempt): the address is the identity, so a retry or a re-emission finds the instance and
+/// and that phase's id. The linked instance gets <c language="text">fact:phasePacket</c> (the packet entry with its <c language="text">base</c> and <c language="text">stackParent</c>) and a copy of the line's
+/// <c language="text">fact:lineContext</c> whose <c language="text">phase</c> is this phase's id (the seed keys its branch and worktree on it, so two phases never share one). It is idempotent per (line, phase, attempt): the address is the identity, so a retry or a re-emission finds the instance and
 /// reports <see cref="EffectDone.Existed"/>. It replies <c language="text">line.phaseChanged</c> with <c language="text">started</c> and <c language="text">fact:phaseEvent</c> <c language="text">{ line, phase, attempt, status, instance, at }</c>.
 /// </summary>
 /// <param name="starts">Starts the linked instance.</param>
-/// <param name="contents">Reads the <c language="text">phase</c> argument's fact.</param>
-/// <param name="store">Stores the phase's packet fact and the reply's event fact.</param>
+/// <param name="contents">Reads the <c language="text">phase</c> argument's fact and the line's context.</param>
+/// <param name="store">Stores the phase's packet fact, its line context copy and the reply's event fact.</param>
 /// <param name="clock">When the phase started.</param>
 internal sealed class StartPhaseEffect(IPhaseStarts starts, IFactContents contents, IFactStore store, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
@@ -134,7 +134,7 @@ internal sealed class StartPhaseEffect(IPhaseStarts starts, IFactContents conten
         }
     }
 
-    /// <summary>The linked instance's inputs: the phase's packet fact, and the line's own <c language="text">fact:lineContext</c> when it has one.</summary>
+    /// <summary>The linked instance's inputs: the phase's packet fact, and the line's <c language="text">fact:lineContext</c> with this phase's id when it has one.</summary>
     private async ValueTask<Result<Dictionary<FactKey, FactValue>>> Inputs(EffectContext context, Next next, CancellationToken cancellationToken)
     {
         var packet = (JsonObject)next.Packet.DeepClone();
@@ -149,10 +149,34 @@ internal sealed class StartPhaseEffect(IPhaseStarts starts, IFactContents conten
         var inputs = new Dictionary<FactKey, FactValue> { [_phasePacket] = stored.Value };
         if (context.Facts.TryGetValue(_lineContext, out var line) && Stored(line) is { } lineContext)
         {
-            inputs[_lineContext] = lineContext;
+            var own = await OwnContext(lineContext, next.Phase, cancellationToken).ConfigureAwait(false);
+            if (own.IsError)
+            {
+                return own.Error;
+            }
+
+            inputs[_lineContext] = own.Value;
         }
 
         return inputs;
+    }
+
+    /// <summary>The line's context with <c language="text">phase</c> set to this phase's id, so the phase's seed names its own branch and worktree. Every other field is kept; a context that is not a JSON object is handed on unchanged.</summary>
+    private async ValueTask<Result<FactValue>> OwnContext(FactValue lineContext, string phase, CancellationToken cancellationToken)
+    {
+        var content = await contents.Read(lineContext, cancellationToken).ConfigureAwait(false);
+        if (content.IsError)
+        {
+            return content.Error;
+        }
+
+        if (Read(content.Value) is not JsonObject own)
+        {
+            return lineContext;
+        }
+
+        own["phase"] = phase;
+        return await Put(own, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<FactValue>> Put(JsonNode node, CancellationToken cancellationToken) =>
