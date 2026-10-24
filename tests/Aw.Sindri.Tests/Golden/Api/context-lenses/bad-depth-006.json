@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CONTEXT-006",
+  "status": 400,
+  "detail": "depth must be a whole number from 0 to 4; 9 is out of range",
+  "traceId": "<trace>"
+}

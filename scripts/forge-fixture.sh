@@ -12,7 +12,7 @@
 #                                  that points aw-forge-fake and the file adapter at the world. A repeat up replaces the variant.
 #                                  Variants: comments ciRed ciFlaky conflict stacked noDocs sourceFix foreignPush secret
 #   forge-fixture.sh up --github <owner/repo> <variant> [--dry-run]
-#                                  OWNER ONLY, on a scratch repository you do not mind writing to: pushes the variant's branches as
+#                                  On a scratch repository you do not mind writing to: pushes the variant's branches as
 #                                  fixture/<variant>/* and opens its pull request(s) through the github adapter. Threads, checks and
 #                                  flags cannot be seeded on GitHub: the thread list is printed to paste by hand from a second
 #                                  account. Needs AW_FORGE_TOKEN (contents and pull-request write) and
@@ -277,7 +277,7 @@ print_env() {
   echo "forge-env: AW_STATE_DIR=$HOME_DIR/state AW_FORGE_ADAPTER=file AW_FORGE_HOSTS=$HOST"
 }
 
-# --- up --github (owner only) --------------------------------------------------------------------------------------------
+# --- up --github (scratch repo only) --------------------------------------------------------------------------------------------
 up_github() { # <owner/repo> <variant> [--dry-run]
   local slug="$1" v="$2" dry="${3:-}" repo dir w url token_header
   [[ "$slug" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "--github needs <owner/repo>, got '$slug'"
