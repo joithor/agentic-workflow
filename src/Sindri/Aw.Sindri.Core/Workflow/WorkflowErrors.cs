@@ -85,6 +85,9 @@ public static class WorkflowErrors
 
     /// <summary>SND-WF-019: a filled plan is invalid: a bad section name, or (in a run that began before the caps were removed) a plan over 1 MiB.</summary>
     public static readonly ErrorDefinition InjectionInvalid = new("SND-WF-019", ErrorKind.Invalid, "A Step input filled an invalid plan");
+    /// <summary>SND-WF-020: a Step input's fill timed out: it ran past its time limit, or stopped reporting progress; the Step fails and names which.</summary>
+    public static readonly ErrorDefinition StepInputTimedOut = new("SND-WF-020", ErrorKind.Unavailable, "A Step input timed out");
+
     /// <summary>SND-BLOCK-001: a fact a block Step reads can't be read; the run ends as step.failed with the message as its reason.</summary>
     public static readonly ErrorDefinition BlockFactUnreadable = new("SND-BLOCK-001", ErrorKind.Unavailable, "A fact a block Step reads can't be read");
 
@@ -113,7 +116,7 @@ public static class WorkflowErrors
         RecipeChallengeStale, RecipeUnreadable, RecipeNotShipped,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
-        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,
+        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, StepInputTimedOut, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,
         HoldoutSetMissing, HoldoutStoreUnavailable,
     ];
 
