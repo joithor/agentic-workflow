@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using Aw.Context.Core.Lenses;
 using Aw.Kernel.Json;
+using Aw.Sindri.Features.ContextCalls;
+using ModelContextProtocol.Protocol;
 
 namespace Aw.Sindri.Host.Mcp;
 
@@ -14,6 +16,24 @@ internal static class LensPayload
 {
     /// <summary>The most characters of JSON context_lenses returns over MCP.</summary>
     internal const int Budget = 48_000;
+
+    /// <summary>The MCP success result: the fitted view, and the usual summary plus a note when that view was cut down.</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="answer">The lenses answer (one anchor, or several).</param>
+    /// <returns>The tool result.</returns>
+    internal static CallToolResult Deliver(IServiceProvider services, LensesAnswer answer)
+    {
+        var options = services.GetRequiredService<JsonSerializerOptions>();
+        if (answer.Many is { } many)
+        {
+            var (view, truncated) = Fit(many, options);
+            return McpResults.Success(services, view, Text(McpSummaries.LensesSet(many), truncated));
+        }
+
+        var single = answer.One!;   // why: exactly one of One and Many is set
+        var (one, cut) = Fit(single, options);
+        return McpResults.Success(services, one, Text(McpSummaries.Lenses(single), cut));
+    }
 
     /// <summary>The lenses, cut down when their JSON exceeds <see cref="Budget"/>.</summary>
     /// <param name="view">The lenses.</param>
@@ -116,13 +136,13 @@ internal static class LensPayload
         };
     }
 
-    /// <summary>The first <c>count / 2</c> items. Zero or one item has a half of 0, so the list drops to empty; two or more keep at least one.</summary>
+    /// <summary>The first half of the list (its count divided by 2). A half of 0 drops the list to empty, so one item is removed; two or more keep at least one.</summary>
     private static IReadOnlyList<T> Half<T>(IReadOnlyList<T> items)
     {
         var keep = items.Count / 2;
         if (keep == 0)
         {
-            return items.Count == 0 ? items : Array.Empty<T>();
+            return items.Count == 0 ? items : [];
         }
 
         var kept = new T[keep];
@@ -133,6 +153,9 @@ internal static class LensPayload
 
         return kept;
     }
+
+    private static string Text(string summary, bool truncated) =>
+        truncated ? summary + "\ntruncated to fit" : summary;
 
     private static int Length<T>(T value, JsonSerializerOptions options) =>
         Encoding.UTF8.GetCharCount(AwJson.Serialize(value, options));
