@@ -20,5 +20,5 @@ internal static class LensSteps
     /// Human-only. 'answered' carries an answer per question as 'fact:answers' for the fixer; 'stop' ends the loop.
     /// </summary>
     public static BlockDescriptor Ask { get; } = HumanDeskStep("step.lens.ask", Capability.None)
-        .Reads("fact:escalation").Reports("answered", "stop").Writes(On("fact:answers", "answered"));
+        .Reads("fact:escalation").Reviewing(ReviewOf("fact:escalation", DeskReviewKind.Questions)).Reports("answered", "stop").Writes(On("fact:answers", "answered"));
 }

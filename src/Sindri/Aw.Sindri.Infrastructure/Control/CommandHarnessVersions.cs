@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Control;
 
@@ -22,13 +23,10 @@ internal sealed partial class CommandHarnessVersions : IHarnessVersions
     /// <summary>'&lt;command&gt; --version' started with its streams redirected, or null when it isn't installed.</summary>
     private static Process? Start(string command)
     {
-        var start = new ProcessStartInfo(command, ["--version"])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-        };
+        var start = ChildEnvironment.Start(command, ["--version"]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+        start.RedirectStandardInput = true;
         try
         {
             return Process.Start(start);
