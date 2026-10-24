@@ -195,7 +195,7 @@ internal sealed class NodePanelViewModel : ObservableObject
             _link = LinkOf(source.Url);
         }
 
-        var rows = view.Out.Select(e => Row(e.To, e.Type, outgoing: true)).Concat(view.In.Select(e => Row(e.From, e.Type, outgoing: false)));
+        var rows = view.Out.Select(e => Row(e.To, e, outgoing: true)).Concat(view.In.Select(e => Row(e.From, e, outgoing: false)));
         Groups =
         [
             .. rows.GroupBy(r => r.Band)
@@ -204,12 +204,12 @@ internal sealed class NodePanelViewModel : ObservableObject
         ];
     }
 
-    private (NodePanelBand Band, NodeEdgeRowViewModel Row) Row(string other, string type, bool outgoing)
+    private (NodePanelBand Band, NodeEdgeRowViewModel Row) Row(string other, NodeEdge edge, bool outgoing)
     {
         var known = _lookup(other);
-        var kind = known?.Kind ?? KindOf(other);
-        var label = known?.Label ?? other;
-        return (BandOf(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, type, outgoing), _jump));
+        var kind = edge.OtherKind ?? known?.Kind ?? KindOf(other);
+        var label = edge.OtherLabel ?? known?.Label ?? other;
+        return (BandOf(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, edge.Type, outgoing), _jump));
     }
 
     // Only a web link is opened; any other scheme is shown as the plain reference.

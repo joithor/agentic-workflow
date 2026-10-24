@@ -28,7 +28,8 @@ public sealed class WholeNodePanelTests
           "in": [
             { "from": "code:src/tabs/TabManager.ts", "type": "implements", "to": "{{Node}}", "provenance": "deterministic", "confirmed": false },
             { "from": "{{Record}}", "type": "mentions", "to": "{{Node}}", "provenance": "human", "confirmed": true },
-            { "from": "mystery:x", "type": "relates", "to": "{{Node}}", "provenance": "human", "confirmed": true }
+            { "from": "mystery:x", "type": "relates", "to": "{{Node}}", "provenance": "human", "confirmed": true },
+            { "from": "unknown:y", "type": "cites", "to": "{{Node}}", "provenance": "human", "confirmed": true, "otherKind": "decision", "otherLabel": "Use tabs" }
           ]
         }
         """;
@@ -69,7 +70,7 @@ public sealed class WholeNodePanelTests
         Assert.Equal(
             [Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextNodePanelOther],
             panel.Groups.Select(g => g.Title));
-        Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions"], panel.Groups[0].Rows.Select(r => r.Text));
+        Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions", "← Use tabs · cites"], panel.Groups[0].Rows.Select(r => r.Text));
         Assert.Contains(panel.Groups[1].Rows, r => r.Key == Surface && r.Text.EndsWith(" · touches", StringComparison.Ordinal) && r.Text.StartsWith("→ ", StringComparison.Ordinal));
         Assert.Equal(["← code:src/tabs/TabManager.ts · implements"], panel.Groups[2].Rows.Select(r => r.Text));
         Assert.Equal(["← mystery:x · relates"], panel.Groups[3].Rows.Select(r => r.Text));
