@@ -46,21 +46,6 @@ public sealed class CliTextTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Approving_without_a_terminal_is_refused_before_any_call()
-    {
-        var stdout = new StringWriter();
-        var stderr = new StringWriter();
-        var probe = new FakeControlPlaneProbe();
-        using var client = new ControlPlaneClient(probe, SliceHarness.Json);
-        var verbs = new Verbs(client, probe, new Output(stdout, stderr, SliceHarness.Json), new ServiceCollection().BuildServiceProvider());
-
-        var code = await verbs.Approve(_hash.Value, interactive: false, new StringReader(_hash.Abbreviated + "\n"), TestContext.Current.CancellationToken);
-
-        Assert.Equal(2, code);
-        Assert.StartsWith("SND-PROFILE-004 approving needs an interactive terminal", stderr.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Status_when_nothing_runs_is_attention_with_the_fix()
     {
         var stderr = new StringWriter();

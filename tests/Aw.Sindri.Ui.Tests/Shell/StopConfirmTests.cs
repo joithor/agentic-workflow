@@ -47,7 +47,7 @@ public sealed class StopConfirmTests
     public async Task A_refused_stop_shows_the_servers_code()
     {
         var system = new SystemTestHarness();
-        system.Server.StopAnswer = RouteAnswer.Problem("stop", "refused-session");
+        system.Server.StopAnswer = RouteAnswer.Refused();
         await system.Show();
         await system.Vm.Catalog.Stop!.Press(Token);
 

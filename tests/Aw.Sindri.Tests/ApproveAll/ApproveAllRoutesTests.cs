@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
@@ -14,8 +13,6 @@ namespace Aw.Sindri.Tests.ApproveAll;
 public sealed class ApproveAllRoutesTests
 {
     private static string Terminal(GoldenHost host) => host.Token.Value;
-
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     private static string Code(Answer answer) => answer.Code ?? string.Empty;
 
@@ -78,37 +75,6 @@ public sealed class ApproveAllRoutesTests
         Assert.Equal((HttpStatusCode.Conflict, "SND-JOB-409"), (refused.Status, Code(refused)));
         Assert.Equal(running, JsonDocument.Parse(refused.Body).RootElement.GetProperty("runningJob").GetString(), StringComparer.Ordinal);
         Assert.Equal(1, shipped.Applied);
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_wrong_answer_is_refused_before_any_job_or_approval()
-    {
-        var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
-        await using var host = await Started(shipped, TestContext.Current.CancellationToken);
-        var answer = (await Answer(host, await Digest(host))).Replace("approve-all ", "approve-all 0", StringComparison.Ordinal);
-
-        var refused = await host.Http.Ask(Post(PlanRoute, answer, Human(Terminal(host))));
-        var jobs = await JobHost.Read(host, "/sindri/jobs");
-
-        Assert.Equal((HttpStatusCode.Conflict, "SND-RECIPE-009"), (refused.Status, Code(refused)));
-        Assert.Equal(0, shipped.Applied);
-        Assert.Empty(JsonDocument.Parse(jobs.Body).RootElement.GetProperty("jobs").EnumerateArray());
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_session_is_refused_on_every_path_and_nothing_starts()
-    {
-        var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
-        await using var host = await Started(shipped, TestContext.Current.CancellationToken);
-        var answer = await Answer(host, await Digest(host));
-        var empty = await Started(new FakeShippedRecipes([]), TestContext.Current.CancellationToken);
-
-        var bySession = await host.Http.Ask(Post(PlanRoute, answer, Session));
-        var emptyBySession = await empty.Http.Ask(Post(PlanRoute, json: null, Session));
-        await empty.DisposeAsync();
-
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { bySession, emptyBySession }.Select(static a => (a.Status, Code(a))).Distinct().ToArray());
-        Assert.Equal(0, shipped.Applied);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]

@@ -83,10 +83,10 @@ public sealed class RulesLinkerTests
     {
         var links = RulesLinker.Link(_r103, "Add the toggle-orientation command, keep paneResizeStep stable and use layout.orientation.", Map(), _known, _teams);
 
+        var identified = links.Where(l => l.Rule == LinkRule.Identifier).ToList();   // "layout.orientation" also names a feature by alias, which the name rule suggests apart
         Assert.Equal(
             ["feature:layout.split-pane.orientation", "surface:command/toggle-orientation", "surface:setting/paneResizeStep"],
-            links.Select(l => l.Target.Value).ToList());
-        Assert.All(links, l => Assert.Equal(LinkRule.Identifier, l.Rule));
+            identified.Select(l => l.Target.Value).ToList());
 
         var inside = RulesLinker.Link(_r103, "Fix pretoggle-orientations and xpaneResizeStepy later.", Map(), _known, _teams);
         Assert.Empty(inside);
@@ -129,5 +129,48 @@ public sealed class RulesLinkerTests
 
         Assert.NotEmpty(first);
         Assert.Equal(first, second);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_features_label_as_whole_words_links_it_as_a_suggestion()
+    {
+        var links = RulesLinker.Link(_r103, "Users want the Split Pane to remember its size.", Map(), _known, _teams);
+
+        var link = Assert.Single(links);
+        Assert.Equal(("feature:layout.split-pane", LinkRule.Name, 0.5), (link.Target.Value, link.Rule, link.Confidence));
+        Assert.Equal(Sha("split pane"), link.SpanHash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_alias_of_a_feature_with_two_words_links_it()
+    {
+        var links = RulesLinker.Link(_r103, "The layout orientation is wrong after a resize.", Map(), _known, _teams);
+
+        var link = Assert.Single(links);
+        Assert.Equal(("feature:layout.split-pane.orientation", LinkRule.Name), (link.Target.Value, link.Rule));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_name_inside_a_longer_word_or_a_one_word_or_common_label_does_not_link()
+    {
+        var graph = new GraphBuilder().Node("feature:tabs", "Tabs").Node("feature:general", "General settings").Node("feature:split-pane", "Split pane").Build();
+
+        Assert.Empty(RulesLinker.Link(_r103, "Tabs are fine; the general settings page; a resplit pane and splitpane.", graph, _known, _teams));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_phrase_that_names_two_features_links_neither()
+    {
+        var graph = new GraphBuilder().Node("feature:a.split-pane", "Split pane").Node("feature:b.split-pane", "Split pane").Build();
+
+        Assert.Empty(RulesLinker.Link(_r103, "The split pane is slow.", graph, _known, _teams));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_longest_name_wins_where_names_overlap()
+    {
+        var links = RulesLinker.Link(_r103, "Fix the split orientation toggle.", Map(), _known, _teams);
+
+        Assert.Equal(["feature:layout.split-pane.orientation"], links.Select(l => l.Target.Value), StringComparer.Ordinal);
     }
 }

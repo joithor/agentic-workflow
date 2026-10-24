@@ -30,21 +30,6 @@ public sealed class McpCliTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("CLAUDECODE is set", true)]
-    [InlineData(null, false)]
-    public async Task Apply_from_a_session_or_without_a_terminal_is_SND_AUTH_002_before_anything_runs(string? signal, bool terminal)
-    {
-        using var error = new StringWriter();
-        await using var services = new ServiceCollection().BuildServiceProvider();   // why: empty, so resolving the service would throw
-        var output = new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default));
-
-        var exit = await new McpVerbs(services, output, new AgentSession(signal, terminal, Prover: false)).Run(["register", "--apply"], TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, exit);   // why: a refused input is attention (context spec §8.6), as the context map verbs answer it
-        Assert.StartsWith("SND-AUTH-002", error.ToString(), StringComparison.Ordinal);
-    }
-
-    [Theory, Trait("Lane", "unit")]
     [InlineData(new[] { "register", "--repo", "demo", "--providers", "all" }, "claude: would register", "codex: would register")]
     [InlineData(new[] { "register", "--repo", "demo", "--providers", "codex,cursor" }, "cursor: would register", "codex: would register")]
     public async Task Providers_selects_which_lines_are_printed(string[] args, string first, string second)
@@ -56,7 +41,7 @@ public sealed class McpCliTests
         await using var services = new ServiceCollection().AddSingleton<IService<RegisterMcpRequest, RegisterMcpResponse>>(service).BuildServiceProvider();
         using var output = new StringWriter();
 
-        var code = await new McpVerbs(services, new Output(output, TextWriter.Null, AwJson.CreateOptions(SindriJsonContext.Default)), new AgentSession(Signal: null, Terminal: true, Prover: false))
+        var code = await new McpVerbs(services, new Output(output, TextWriter.Null, AwJson.CreateOptions(SindriJsonContext.Default)))
             .Run(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
@@ -76,7 +61,7 @@ public sealed class McpCliTests
         await using var services = new ServiceCollection().BuildServiceProvider();
         var output = new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default));
 
-        var exit = await new McpVerbs(services, output, new AgentSession(Signal: null, Terminal: true, Prover: false)).Run(args, TestContext.Current.CancellationToken);
+        var exit = await new McpVerbs(services, output).Run(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, exit);
         Assert.Contains("mcp register [--repo NAME] [--providers claude,codex,cursor|all] [--apply] [--json]", error.ToString(), StringComparison.Ordinal);
@@ -97,7 +82,7 @@ public sealed class McpCliTests
         using var output = new StringWriter();
         using var error = new StringWriter();
 
-        var code = await new McpVerbs(services, new Output(output, error, AwJson.CreateOptions(SindriJsonContext.Default)), new AgentSession(Signal: null, Terminal: true, Prover: false))
+        var code = await new McpVerbs(services, new Output(output, error, AwJson.CreateOptions(SindriJsonContext.Default)))
             .Run(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(exit, code);

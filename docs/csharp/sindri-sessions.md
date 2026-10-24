@@ -188,7 +188,7 @@ on demand (never in the collector pass), writes no ledger event and logs no pane
   (`AddQuery`) and needs only the route to be mapped. The response is a `SessionPreview{Lines, Truncated, CapturedAt, StartedAt, Host{Kind, Label}}` or, still HTTP 200, a
   `SessionPreviewUnavailable{Reason, CapturedAt}` (`Reason` one of the `PreviewReason` constants `not-in-tmux`, `not-live`, `timed-out`). Both derive from `GetSessionPreviewResponse`; the endpoint serializes
   the concrete type with the package's JSON context. The text in `Lines` is not scrubbed (spec §12 names this the one exception) and the endpoint must not scrub it.
-- **Check order, per request, before any shared wait:** (1) no caller or a `session` caller is `SND-AUTH-002` (`SessionRows.RefuseSession`), whatever the ref; (2) the collector-unavailable errors of the pass
+- **Check order, per request, before any shared wait:** (1) no caller is `SND-AUTH-002` (a `session` caller is let through since owner decision q93, and sees only its own repo's sessions via `SessionRows.Find`); (2) the collector-unavailable errors of the pass
   (`SND-SESSION-002`), as `GetSession`; (3) the ref (`SessionRows.Find`): `SND-SESSION-404`; (4) `ExpectStartedAt`: when it is not null and differs from the row's `startedAt` (a row with none counts as different), `SND-SESSION-409` (`SindriErrors.SessionConflict`).
   A caller whose row has no `startedAt` sends null, which skips the comparison, so the match is on the ref (provider and session id); null with a row that has a `startedAt` also skips it (the query is optional);
   (5) the 200 answers: a row whose host is not tmux, or with no socket or pane, is `not-in-tmux`; the shared read; `timed-out`; `not-live`; the lines.

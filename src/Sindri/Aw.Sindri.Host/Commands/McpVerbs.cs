@@ -9,13 +9,11 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri mcp register [--repo NAME] [--providers claude,codex,cursor|all] [--apply] [--json]' (context spec §3, API spec
 /// §8): prints each provider's per-repo registration of /sindri/mcp (Claude Code's local scope, the checkout's
-/// .cursor/mcp.json and .codex/config.toml; Claude Code alone without --providers); --apply writes them, for a human at a
-/// terminal only (it writes the human's own provider config). Local: it needs no running process.
+/// .cursor/mcp.json and .codex/config.toml; Claude Code alone without --providers); --apply writes them. Local: it needs no running process.
 /// </summary>
 /// <param name="services">The CLI's scoped services.</param>
 /// <param name="output">Where answers go.</param>
-/// <param name="session">Who runs the CLI.</param>
-internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSession session)
+internal sealed class McpVerbs(IServiceProvider services, Output output)
 {
     private const string Usage = "mcp register [--repo NAME] [--providers claude,codex,cursor|all] [--apply] [--json]";
 
@@ -24,12 +22,6 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
         if (args is not ["register", .. var rest] || Options(rest) is not { } options)
         {
             return await output.Error(SindriErrors.UnknownVerb.With($"'mcp {string.Join(' ', args)}' is not an mcp command: {Usage}")).ConfigureAwait(false);
-        }
-
-        if (options.Apply && !session.Human)
-        {
-            return await Refused(SindriErrors.AuthRefused.With(
-                $"'mcp register --apply' writes your providers' config, so only a human at a terminal runs it (this CLI ran as a session: {session.SessionReason}; fix: run 'sindri mcp register' and give the human the printed command)")).ConfigureAwait(false);
         }
 
         var answer = await services.GetRequiredService<IService<RegisterMcpRequest, RegisterMcpResponse>>()

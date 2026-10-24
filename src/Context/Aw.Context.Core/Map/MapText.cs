@@ -39,6 +39,13 @@ public sealed partial class MapText(Scrubbers scrubbers, FencePolicy policy)
     /// <returns>The text to write.</returns>
     public string Body(string text, Results.Trust trust) => Fenced(Clean(text, singleLine: false), trust);
 
+    /// <summary>A short plain-text summary of a longer text: one line, cut on a word to at most <paramref name="max"/> characters with '…', fenced when untrusted. It is scrubbed before the cut, so a cut never splits a secret the scrubber would have caught.</summary>
+    /// <param name="text">The text as stored.</param>
+    /// <param name="trust">Its trust.</param>
+    /// <param name="max">The most characters kept, the ellipsis included.</param>
+    /// <returns>The text to write.</returns>
+    public string Excerpt(string text, Results.Trust trust, int max) => Fenced(UntrustedFence.CapOnWord(Clean(text, singleLine: true), max), trust);
+
     /// <summary>The words a node-shape query searches the sources with: the cleaned label's words, minus the placeholders that cleaning left (egress only, so a planted secret never reaches a source).</summary>
     /// <param name="label">The label as stored.</param>
     /// <returns>The search terms (<see cref="QueryRules.Terms"/>).</returns>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
@@ -28,7 +29,7 @@ internal static class RequestScenarios
         ("decisions", "pending"), ("decisions", "decided"), ("decisions", "empty"), ("decisions", "empty-decided"), ("decisions", "voided"),
         ("decisions", "by-item"), ("decisions", "stalled"), ("decisions", "session-other-repo"),
         ("decisions-id", "accepted"), ("decisions-id", "declined"), ("decisions-id", "decided-elsewhere"), ("decisions-id", "voided"),
-        ("decisions-id", "not-found"), ("decisions-id", "bad-choice"), ("decisions-id", "bad-id"), ("decisions-id", "refused-session"), ("decisions-id", "while-stalled"),
+        ("decisions-id", "not-found"), ("decisions-id", "bad-choice"), ("decisions-id", "bad-id"), ("decisions-id", "while-stalled"),
         ("requests", "list-fixture"), ("requests", "list-empty"), ("requests", "list-state-accepted"), ("requests", "list-by-item"),
         ("requests", "list-session-other-repo"), ("requests", "list-bad-state"),
         ("requests", "filed"), ("requests", "filed-item"), ("requests", "invalid"), ("requests", "invalid-kind"), ("requests", "too-long"),
@@ -58,6 +59,20 @@ internal static class RequestScenarios
 
     private static Task<(string Request, string Decision)> Filed(GoldenHost host, CancellationToken ct, string text = Split, string kind = "rescope", string? item = null, string repo = "demo") =>
         RequestCalls.Filed(host, text, ItemScenarios.Session(repo), ct, kind, item);
+
+    /// <summary>Appends <paramref name="count"/> open 'request.filed' events in the repo 'demo' straight to the ledger, then catches the views up.</summary>
+    private static async Task SeedOpen(GoldenHost host, int count, CancellationToken ct)
+    {
+        var ids = host.App.Services.GetRequiredService<IIdGenerator>();
+        for (var n = 0; n < count; n++)
+        {
+            var filed = new RequestFiled(ids.New<CommandId>(), RequestId.New(ids), DecisionId.New(ids), RequestKind.Note, Item: null, RepoName.From("demo"),
+                string.Create(CultureInfo.InvariantCulture, $"Request {n + 1}."));
+            await ViewScenarios.Append(host, EventTypes.RequestFiled, filed, "request.filed:" + filed.Request.Value, ct);
+        }
+
+        await ViewScenarios.CatchUp(host, ct);
+    }
 
     private static async Task<string> NeedsYou(GoldenHost host, string scenario, CancellationToken ct)
     {
@@ -199,7 +214,6 @@ internal static class RequestScenarios
             "declined" => new Pick("decline", "Not now.", human),
             "decided-elsewhere" => await Elsewhere(host, decision, human, ct),
             "bad-choice" => new Pick("maybe", Note: null, human),
-            "refused-session" => new Pick("accept", Note: null, Demo),
             _ => new Pick("accept", "Good plan.", human),   // 'accepted', 'voided', 'while-stalled'
         };
         if (scenario == "voided")
@@ -266,10 +280,7 @@ internal static class RequestScenarios
 
         if (scenario == "too-many")
         {
-            for (var n = 0; n < RequestRules.MaxOpenPerRepo; n++)
-            {
-                _ = await Filed(host, ct, string.Create(CultureInfo.InvariantCulture, $"Request {n + 1}."), "note");
-            }
+            await SeedOpen(host, RequestRules.MaxOpenPerRepo, ct);   // why: filing 200 through the API outran the 30 s test budget; the cap reads the requests view
         }
 
         var (kind, text) = scenario switch
