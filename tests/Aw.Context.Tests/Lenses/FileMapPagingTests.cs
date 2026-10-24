@@ -112,7 +112,8 @@ public sealed class FileMapPagingTests
         var files = Files(2, 2);
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, Page(files, cursor: "dir00/f0000.ts").Error.Code);
-        Assert.Equal(ContextErrors.QueryInvalid.Code, Page(files, cursor: "elsewhere/").Error.Code);
+        // At the root any one-segment name is a child (one that has gone resumes after where it sorted); under a path, a cursor outside it is refused.
+        Assert.Equal(ContextErrors.QueryInvalid.Code, Page(files, cursor: "elsewhere/", path: "dir00").Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
