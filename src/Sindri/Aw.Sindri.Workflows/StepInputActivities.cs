@@ -18,7 +18,8 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
     /// <param name="request">Which input, for which run.</param>
     /// <returns>The metadata of what it filled.</returns>
     [Activity("FillInput")]
-    public Task<FilledInput> FillInputAsync(FillInputRequest request) => Fill(request, ActivityExecutionContext.Current.CancellationToken);
+    public Task<FilledInput> FillInputAsync(FillInputRequest request) =>
+        FillHeartbeating(request, static () => ActivityExecutionContext.Current.Heartbeat(), InputFillPolicy.BeatEvery, ActivityExecutionContext.Current.CancellationToken);
 
     /// <summary>Runs the input and keeps its text.</summary>
     /// <param name="request">Which input, for which run.</param>
@@ -52,6 +53,51 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
 
         texts.Put(new InjectionKey(request.Address, request.State, request.Run, request.Index), filled.Value.Texts);
         return filled.Value.Metadata;
+    }
+
+    /// <summary>Runs the input while calling <paramref name="heartbeat"/> every <paramref name="every"/>.</summary>
+    /// <param name="request">Which input, for which run.</param>
+    /// <param name="heartbeat">What reports that the fill is alive.</param>
+    /// <param name="every">The beat interval.</param>
+    /// <param name="cancel">The activity's cancellation.</param>
+    /// <returns>The metadata of what it filled.</returns>
+    internal Task<FilledInput> FillHeartbeating(FillInputRequest request, Action heartbeat, TimeSpan every, CancellationToken cancel)
+    {
+        ArgumentNullException.ThrowIfNull(heartbeat);
+        return Beating(request, heartbeat, every, cancel);
+    }
+
+    private async Task<FilledInput> Beating(FillInputRequest request, Action heartbeat, TimeSpan every, CancellationToken cancel)
+    {
+        using var done = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        var beating = Beat(heartbeat, every, done.Token);
+        try
+        {
+            return await Fill(request, cancel).ConfigureAwait(false);
+        }
+        finally
+        {
+            await done.CancelAsync().ConfigureAwait(false);
+            await beating.ConfigureAwait(false);
+        }
+    }
+
+    // The beat is the fill's liveness: it stops with the fill, so a worker that dies or hangs the activity goes silent and the heartbeat timeout fails it.
+    private static async Task Beat(Action heartbeat, TimeSpan every, CancellationToken stop)
+    {
+        using var timer = new PeriodicTimer(every);
+        try
+        {
+            heartbeat();
+            while (await timer.WaitForNextTickAsync(stop).ConfigureAwait(false))
+            {
+                heartbeat();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // the fill ended
+        }
     }
 
     /// <summary>Drops the instance's kept texts: its Step ended (done, failed, parked or cancelled).</summary>
