@@ -2,6 +2,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
+using Aw.Context.Features.SyncSources;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -10,9 +11,9 @@ namespace Aw.Context.Features.ImportMap;
 /// <summary>
 /// Imports a map file as the current version (spec Phase 3, §8.7). It is bound to the content hash the owner confirmed:
 /// a file that changed since is SND-CONTEXT-034, and nothing is written on any refusal. Sindri's protected-command
-/// gate (a human at a terminal) runs before this.
+/// gate (a human at a terminal) runs before this. Once the version is current, the stored intent records are linked again against it (<see cref="IntentRelinker"/>).
 /// </summary>
-internal sealed class ImportMapService(IMapFileReader reader, IGraphStore store, TimeProvider clock) : IService<ImportMapRequest, MapImported>
+internal sealed class ImportMapService(IMapFileReader reader, IGraphStore store, IntentRelinker relinker, TimeProvider clock) : IService<ImportMapRequest, MapImported>
 {
     public async ValueTask<Result<MapImported>> Handle(ImportMapRequest request, CancellationToken cancellationToken)
     {
@@ -45,6 +46,12 @@ internal sealed class ImportMapService(IMapFileReader reader, IGraphStore store,
         }
 
         var saved = await store.SaveCurrent(map.Value, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : new MapImported(saved.Value, map.Value.Counts, file.Value.Hash);
+        if (saved.IsError)
+        {
+            return saved.Error;
+        }
+
+        _ = await relinker.Run(request.Scope, cancellationToken).ConfigureAwait(false);   // the stored records follow the map that is current; a failure leaves their links as they were (a sync links what it fetches)
+        return new MapImported(saved.Value, map.Value.Counts, file.Value.Hash);
     }
 }

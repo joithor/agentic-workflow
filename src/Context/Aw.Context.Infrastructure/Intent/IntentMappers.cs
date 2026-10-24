@@ -25,6 +25,8 @@ internal static class IntentMappers
     internal static IRowMapper<GraphEdge> Edge { get; } = new Mapper<GraphEdge>(r =>
         new(NodeKey.From(r.GetString(0)), NodeKey.From(r.GetString(1)), GraphText.EdgeType(r.GetString(2)), GraphText.Provenance(r.GetString(3)), r.GetDouble(4), At: SqliteRead.GetTimestamp(r, 5)));
 
+    internal static IRowMapper<KeyValuePair<string, string>> Text { get; } = new Mapper<KeyValuePair<string, string>>(r => KeyValuePair.Create(r.GetString(0), r.GetString(1)));
+
     internal static IRowMapper<RecordKey> Key { get; } = new Mapper<RecordKey>(r => RecordKey.From(r.GetString(0)));
 
     internal static IRowMapper<DecisionConflict> Conflict { get; } = new Mapper<DecisionConflict>(r =>

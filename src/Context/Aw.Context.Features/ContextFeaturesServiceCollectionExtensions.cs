@@ -95,6 +95,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<SyncSourcesRequest, SyncReport>, SyncSourcesService>()
         .AddScoped<ContextSources>()
         .AddSingleton<SyncLocks>()
+        .AddScoped<IntentRelinker>()
         .AddScoped<IService<PreviewMapRequest, MapFilePreview>, PreviewMapService>()
         .AddScoped<IService<ImportMapRequest, MapImported>, ImportMapService>()
         .AddScoped<IService<ExportMapRequest, MapExported>, ExportMapService>()

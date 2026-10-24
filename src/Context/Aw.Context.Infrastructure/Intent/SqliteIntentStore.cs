@@ -184,9 +184,45 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         }
     }
 
-    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken)
+    {
+        var readable = await database.Readable(cancellationToken).ConfigureAwait(false);
+        if (readable.IsError || readable.Value is not { } sessions)
+        {
+            return readable.IsError ? readable.Error : Results.Success<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>(StringComparer.Ordinal));
+        }
 
-    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken) => throw new NotSupportedException();
+        var read = await sessions.BeginRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return ContextDatabase.Translate(read.Error);
+        }
+
+        await using (read.Value.ConfigureAwait(false))
+        {
+            var rows = await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Texts), IntentMappers.Text, cancellationToken).ConfigureAwait(false);
+            return rows.IsError ? ContextDatabase.Translate(rows.Error) : Results.Success<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>(rows.Value, StringComparer.Ordinal));
+        }
+    }
+
+    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+        ArgumentNullException.ThrowIfNull(links);
+        return Write(async (session, token) =>
+        {
+            foreach (var statement in Relinking(records, links, mapVersion, at))
+            {
+                var done = await SqliteQueries.Execute(session, statement, token).ConfigureAwait(false);
+                if (done.IsError)
+                {
+                    return done.Error;
+                }
+            }
+
+            return Unit.Value;
+        }, cancellationToken);
+    }
 
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
@@ -280,6 +316,24 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         }
     }
 
+    private static IEnumerable<SqlStatement> Relinking(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at)
+    {
+        foreach (var record in records)
+        {
+            yield return new SqlStatement(IntentSql.DeleteLinks, c => c.Bind("@record", record.Value));
+            yield return new SqlStatement(IntentSql.Relinked, c => c.Bind("@record", record.Value).Bind("@map", mapVersion));
+        }
+
+        foreach (var link in links)
+        {
+            yield return InsertLink(link, at);
+        }
+    }
+
+    private static SqlStatement InsertLink(IntentLink link, DateTimeOffset at) =>
+        new(IntentSql.InsertLink, c => c.Bind("@record", link.Record.Value).Bind("@target", link.Target.Value).Bind("@rule", IntentMappers.Of(link.Rule))
+            .Bind("@confidence", link.Confidence).Bind("@span", link.SpanHash).Bind("@at", at));
+
     private static IEnumerable<SqlStatement> Statements(IntentPage page)
     {
         foreach (var record in page.Records)
@@ -291,12 +345,16 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
             {
                 yield return new SqlStatement(IntentSql.MarkLinked, c => c.Bind("@record", record.Key.Value).Bind("@map", page.MapVersion));
             }
+
+            if (page.Texts.TryGetValue(record.Key.Value, out var text))
+            {
+                yield return new SqlStatement(IntentSql.SetText, c => c.Bind("@record", record.Key.Value).Bind("@text", text));
+            }
         }
 
         foreach (var link in page.Links)
         {
-            yield return new SqlStatement(IntentSql.InsertLink, c => c.Bind("@record", link.Record.Value).Bind("@target", link.Target.Value).Bind("@rule", IntentMappers.Of(link.Rule))
-                .Bind("@confidence", link.Confidence).Bind("@span", link.SpanHash).Bind("@at", page.At));
+            yield return InsertLink(link, page.At);
         }
 
         yield return new SqlStatement(IntentSql.Synced, c => c.Bind("@source", page.Source.Value).Bind("@cursor", page.Cursor).Bind("@at", page.At));
