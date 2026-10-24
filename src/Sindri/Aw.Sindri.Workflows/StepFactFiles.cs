@@ -21,8 +21,9 @@ internal static class StepFactFiles
     /// <param name="contents">Reads the stored content.</param>
     /// <param name="scrubber">Removes secrets from the text.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <param name="subject">The Step's 'subject' parameter ('design' or 'change'); null when it has none.</param>
     /// <returns>The files; an error when a set fact's content can't be read.</returns>
-    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken)
+    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken, string? subject = null)
     {
         Dictionary<string, string> files = new(StringComparer.Ordinal);
         foreach (var key in descriptor?.Inputs ?? [])
