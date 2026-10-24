@@ -27,7 +27,7 @@ public sealed class GhPublishScratchRepoTests
             .With(Shot, [1, 2, 3]);
 
         var result = await new GhPublishService(files, new ProcessGhRunner(), TestJson.Options)
-            .Handle(new GhPublishRequest(Run, repo!, 999999, DbProvenance.Seeded, [Shot]), CancellationToken.None);
+            .Handle(new GhPublishRequest(Run, repo, 999999, DbProvenance.Seeded, [Shot]), CancellationToken.None);
 
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
         Assert.Equal("ui-evidence/pr-999999", result.Value.Branch);
