@@ -69,16 +69,7 @@ internal static class McpPages
 
             if (path.Length == 0 && _buckets.Contains(name))
             {
-                for (var index = 0; index < array.Count; index++)
-                {
-                    if (array[index] is JsonObject child)
-                    {
-                        // why: the bucket's name keys the list, so 'sections.graph.items' means the same list on every page and in every answer
-                        var label = child["name"] is JsonValue named && named.TryGetValue<string>(out var bucket) && bucket.Length > 0 ? bucket : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        Slice(child, window, $"{name}.{label}.", lists, ref more);
-                    }
-                }
-
+                SliceBucket(name, array, window, lists, ref more);
                 continue;
             }
 
@@ -132,6 +123,20 @@ internal static class McpPages
         }
     }
 
+    // A bucket array (the answer's sections or groups): each bucket object is sliced one level down, keyed by its own name.
+    private static void SliceBucket(string name, JsonArray buckets, McpWindow window, JsonObject lists, ref bool more)
+    {
+        for (var index = 0; index < buckets.Count; index++)
+        {
+            if (buckets[index] is JsonObject child)
+            {
+                // why: the bucket's name keys the list, so 'sections.graph.items' means the same list on every page and in every answer
+                var label = child["name"] is JsonValue named && named.TryGetValue<string>(out var bucket) && bucket.Length > 0 ? bucket : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                Slice(child, window, $"{name}.{label}.", lists, ref more);
+            }
+        }
+    }
+
     // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
     private static void SliceBands(JsonObject bands, McpWindow window, JsonObject lists, ref bool more)
     {
@@ -146,7 +151,7 @@ internal static class McpPages
 
     private static JsonArray Cut(JsonArray array, McpWindow window, string path, JsonObject lists, ref bool more)
     {
-        var listMore = (long)array.Count > (long)window.Offset + window.Limit;
+        var listMore = array.Count > (long)window.Offset + window.Limit;
         more |= listMore;
         lists[path] = new JsonObject { ["total"] = array.Count, ["more"] = listMore };
         var cut = new JsonArray();

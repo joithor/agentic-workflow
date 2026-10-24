@@ -251,7 +251,7 @@ internal static partial class SindriTools
         }
         while (after is not null);
 
-        var whole = new TimelineResponse(entries, null, entries.Count == 0 ? answer.Value.Empty : null, answer.Value.AsOf);
+        var whole = new TimelineResponse(entries, Next: null, entries.Count == 0 ? answer.Value.Empty : null, answer.Value.AsOf);
         return McpResults.Success(services, whole, McpSummaries.Timeline(whole), FencePlan.Timeline, page.Value);
     }
 

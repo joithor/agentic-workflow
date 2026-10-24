@@ -50,8 +50,12 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
     }
 
     /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>
-    private static GetContextLensesAnswerRequest Body((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json) o) =>
-        new(o.Anchors, o.Draft, int.TryParse(o.Depth, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var depth) ? depth : null, o.MapVersion, o.Hops);
+    private static GetContextLensesAnswerRequest Body((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, string? Limit, string? Offset, bool Json) o) =>
+        new(o.Anchors, o.Draft, Number(o.Depth), o.MapVersion, o.Hops, Number(o.Limit), Number(o.Offset));
+
+    // A value that is no number is left null here, as the GET's own binding refuses it.
+    private static int? Number(string? text) =>
+        int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : null;
 
     private async Task<int> History((string[] Anchors, string? Since, string? Before, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
     {
