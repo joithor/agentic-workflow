@@ -19,7 +19,7 @@ internal static class LensSets
     internal static Result<LensesSetView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> given, int depth, IReadOnlyList<DecisionConflict> pairs)
     {
         var distinct = given.Distinct(StringComparer.Ordinal).ToList();
-        if (QueryRules.CheckAnchors(distinct) is { } tooMany)
+        if (QueryRules.CheckAnchors(distinct, "lenses") is { } tooMany)
         {
             return tooMany;
         }

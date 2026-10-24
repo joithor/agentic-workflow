@@ -131,6 +131,20 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         return Send<T>(HttpMethod.Query, route, content, after: null, ct);
     }
 
+    /// <summary>The longest query string a GET carries; a longer one (Kestrel's request line is 8 KB) goes as a QUERY with the same fields as the JSON body.</summary>
+    internal const int MaxGetQuery = 4000;
+
+    /// <summary>GET <paramref name="route"/> with <paramref name="query"/>, or QUERY it with <paramref name="body"/> when the query is too long for a request line; one question, two transports.</summary>
+    /// <param name="route">The route.</param>
+    /// <param name="query">The query string, with its leading '?'.</param>
+    /// <param name="body">The same question as the request record.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <typeparam name="TBody">The request type.</typeparam>
+    /// <typeparam name="T">The response type.</typeparam>
+    /// <returns>The answer, or the API's error.</returns>
+    public Task<Result<ApiAnswer<T>>> GetOrQuery<TBody, T>(string route, string query, TBody body, CancellationToken ct) =>
+        query.Length > MaxGetQuery ? Query<TBody, T>(route, body, ct) : Get<T>(route + query, ct);
+
     /// <summary>POST <paramref name="body"/> to a route a launch's own proof authorizes (API spec §8.1): sent as the X-Sindri-Launch-Secret header, with the caller headers.</summary>
     /// <param name="route">The route.</param>
     /// <param name="body">The request record.</param>
