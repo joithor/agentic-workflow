@@ -87,9 +87,9 @@ internal sealed class CodeIndexScopes(IApprovedProfile approvals, IProfileSource
         }
     }
 
-    /// <summary>A live-only repo's entry as the scope may trust it: its deny globs only add to the approved ones, and it never names an embeddings address.</summary>
+    /// <summary>A live-only repo's entry as the scope may trust it: its deny globs only add to the approved ones, and it never names an embeddings address or model (it may only turn the layer off).</summary>
     private static RepoEntry LiveOnly(RepoEntry entry) => entry.Index is { Embeddings: { } embeddings } own
-        ? entry with { Index = own with { Embeddings = embeddings with { Url = null } } }
+        ? entry with { Index = own with { Embeddings = embeddings with { Url = null, Model = null } } }
         : entry;
 
     private static RepoName? SessionRepo(CallerKind kind, CallerContext? caller)

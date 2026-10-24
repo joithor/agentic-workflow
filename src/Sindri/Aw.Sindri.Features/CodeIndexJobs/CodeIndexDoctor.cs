@@ -42,8 +42,8 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
             return [new DoctorCheck("code-index", CheckState.Ok, "not configured: no approved profile", Fix: null)];
         }
 
-        _ = live;
-        var scope = CodeIndexJobScopes.For(approved.Profile, caller: null);
+        var file = await live.Load(cancellationToken).ConfigureAwait(false);
+        var scope = CodeIndexJobScopes.For(approved.Profile, file.IsError ? null : file.Value.Profile, caller: null);
         if (scope.IsError)
         {
             return [new DoctorCheck("code-index", CheckState.Fail, $"{scope.Error.Code}: {scope.Error.Message}", "edit the profile, then sindri profile validate")];
