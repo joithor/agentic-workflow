@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -6,9 +7,9 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Prove;
 
 /// <summary>
-/// 'step.prove.intake' on the block runtime (line spec §7.3): loads the phase's items and their signals from the phase packet (acceptance.json and signals.json) and seeds the
+/// 'step.prove.intake' on the block runtime (line spec §7.3): loads the phase's items and their signals from the phase packet (acceptance.json and signals.json, the flat list the line writes: <see cref="PhaseSignals"/>) and seeds the
 /// facts the prove station's later states read. 'proof' is <c language="text">{head, items[{id, text, signals[], artifacts[]}]}</c> for every item that is not superseded, 'holdoutResult' and
-/// 'beforeAfter' start as <c language="text">{commit, results[]}</c>, 'findings' as an empty list. A packet whose files cannot be read fails the Step with the reason.
+/// 'beforeAfter' start as <c language="text">{commit, results[]}</c>, 'findings' as an empty list. A packet whose files cannot be read, or that has another shape, fails the Step with the reason.
 /// </summary>
 /// <param name="files">Reads the phase packet's files.</param>
 /// <param name="checkouts">Where the repo is checked out (a relative packet directory is read from it).</param>
@@ -43,6 +44,12 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
             return BlockStepResult.Failed($"step.prove.intake can't load the phase packet {dir}: {acceptanceFailure ?? signalsFailure}");
         }
 
+        var wrongShape = Acceptance(acceptance) ?? PhaseSignals.Check(signals);
+        if (wrongShape is not null)
+        {
+            return BlockStepResult.Failed($"step.prove.intake can't use the phase packet {dir}: {wrongShape}");
+        }
+
         var items = Items(acceptance, signals);
         return StepFacts.Done(
             "ready",
@@ -71,6 +78,9 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
 
     private static JsonObject Empty(string head) => new() { ["commit"] = head, ["results"] = new JsonArray() };
 
+    private static string? Acceptance(JsonNode? acceptance) =>
+        acceptance is JsonObject { } root && root["items"] is JsonArray ? null : "acceptance.json must be an object with an 'items' list, like {\"items\": [{\"id\": \"AC-1\", \"text\": \"...\", \"status\": \"failing\"}]}";
+
     private static JsonArray Items(JsonNode? acceptance, JsonNode? signals)
     {
         var items = new JsonArray();
@@ -78,9 +88,9 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
         {
             var id = (string?)item["id"] ?? string.Empty;
             var own = new JsonArray();
-            foreach (var signal in (signals?["signals"]?[id] as JsonArray ?? []).Where(static s => s is not null))
+            foreach (var signal in PhaseSignals.Of(signals, id))
             {
-                own.Add(signal!.DeepClone()); // why: Where drops the nulls
+                own.Add((JsonNode)signal);
             }
 
             items.Add((JsonNode)new JsonObject { ["id"] = id, ["text"] = (string?)item["text"] ?? string.Empty, ["signals"] = own, ["artifacts"] = new JsonArray() });
