@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.scoping
-version: 9
+version: 10
 description: "Station 1 of the line: scope a change from a brief, a tracker item, a rough idea or a PR, close the behaviour gaps by interview, and park at the owner's after-scoping stop with a cited, covered and challenged scope packet."
 displayName: "Decide what will change"
 why: "Pins down exactly what will change and what done means, then waits for your approval before anything is designed."
@@ -39,7 +39,7 @@ states:
         - { use: input.context.lenses,  with: { anchors: { fact: fact:anchors }, depth: 2, hops: [state, flow, dependency, component] } }
         - { use: input.context.code,    with: { anchors: { fact: fact:anchors } } }
         - { use: input.context.history, with: { anchors: { fact: fact:anchors }, window: { profile: workflow.scoping.historyWindow } } }
-    timeout: { after: 30m, then: park }
+    timeout: { after: 3h, then: park }
     next: "Run the four lenses for {item}: product surfaces and related features, code, then history (pass {loop.rescope}/{loop.rescope.cap})."
   draft:        { displayName: "Draft what changes and what done means", why: "Gives you something concrete to approve.", kind: active, step: step.scope.draft, loop: rounds, budget: { tokens: 5M }, timeout: { after: 4h, then: park },
                   next: "Draft {item}'s scope map and acceptance list from the lenses (round {loop.rounds}/{loop.rounds.cap})." }
