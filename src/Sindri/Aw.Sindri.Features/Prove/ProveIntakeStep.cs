@@ -37,17 +37,10 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
         }
 
         dir = resolved;
-        var (acceptance, acceptanceFailure) = await ReadJson(dir, "acceptance.json", cancellationToken).ConfigureAwait(false);
-        var (signals, signalsFailure) = await ReadJson(dir, "signals.json", cancellationToken).ConfigureAwait(false);
-        if (acceptanceFailure is not null || signalsFailure is not null)
+        var (acceptance, signals, failure) = await LoadPacket(dir, cancellationToken).ConfigureAwait(false);
+        if (failure is not null)
         {
-            return BlockStepResult.Failed($"step.prove.intake can't load the phase packet {dir}: {acceptanceFailure ?? signalsFailure}");
-        }
-
-        var wrongShape = Acceptance(acceptance) ?? PhaseSignals.Check(signals);
-        if (wrongShape is not null)
-        {
-            return BlockStepResult.Failed($"step.prove.intake can't use the phase packet {dir}: {wrongShape}");
+            return BlockStepResult.Failed(failure);
         }
 
         var items = Items(acceptance, signals);
@@ -77,6 +70,20 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
     }
 
     private static JsonObject Empty(string head) => new() { ["commit"] = head, ["results"] = new JsonArray() };
+
+    // The two files, read and checked for the shape the line writes; the failure names the packet, the file and what was expected.
+    private async ValueTask<(JsonNode? Acceptance, JsonNode? Signals, string? Failure)> LoadPacket(string dir, CancellationToken cancellationToken)
+    {
+        var (acceptance, acceptanceFailure) = await ReadJson(dir, "acceptance.json", cancellationToken).ConfigureAwait(false);
+        var (signals, signalsFailure) = await ReadJson(dir, "signals.json", cancellationToken).ConfigureAwait(false);
+        if (acceptanceFailure is not null || signalsFailure is not null)
+        {
+            return (null, null, $"step.prove.intake can't load the phase packet {dir}: {acceptanceFailure ?? signalsFailure}");
+        }
+
+        var wrongShape = Acceptance(acceptance) ?? PhaseSignals.Check(signals);
+        return wrongShape is null ? (acceptance, signals, null) : (null, null, $"step.prove.intake can't use the phase packet {dir}: {wrongShape}");
+    }
 
     private static string? Acceptance(JsonNode? acceptance) =>
         acceptance is JsonObject { } root && root["items"] is JsonArray ? null : "acceptance.json must be an object with an 'items' list, like {\"items\": [{\"id\": \"AC-1\", \"text\": \"...\", \"status\": \"failing\"}]}";
