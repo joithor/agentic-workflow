@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Evidence.Core.Geometry;
 using Aw.Evidence.Core.Images;
 using Aw.Kernel;
@@ -16,7 +17,24 @@ public sealed record ScreenComparison(RgbaImage App, RgbaImage Design, PixelComp
     /// <param name="design">The design's frame.</param>
     /// <param name="masks">The regions to paint over in both before comparing.</param>
     /// <returns>The comparison, or the pixel compare's error.</returns>
-    public static Result<ScreenComparison> Compare(RgbaImage app, RgbaImage design, IReadOnlyList<Region> masks) => throw new NotSupportedException();
+    public static Result<ScreenComparison> Compare(RgbaImage app, RgbaImage design, IReadOnlyList<Region> masks)
+    {
+        var width = Math.Min(app.Width, design.Width);
+        var height = Math.Min(app.Height, design.Height);
+        var common = new Region(0, 0, width, height);
+        var maskedApp = ImageOps.Crop(ImageMasks.Apply(app, masks), common);
+        var maskedDesign = ImageOps.Crop(ImageMasks.Apply(design, masks), common);
+        var compared = maskedApp.Bind(a => maskedDesign.Bind(d => PixelMatch.Compare(d, a, PixelMatchOptions.Default).Map(p => new ScreenComparison(a, d, p, Problem: null))));
+        if (compared.IsError || (app.Width == design.Width && app.Height == design.Height))
+        {
+            return compared;
+        }
+
+        return compared.Value with
+        {
+            Problem = string.Create(CultureInfo.InvariantCulture, $"the frames differ in size: app {app.Width}x{app.Height}, design {design.Width}x{design.Height}"),
+        };
+    }
 
     /// <summary>True when the frames are the same size and the difference is within <paramref name="thresholdPercent"/>.</summary>
     /// <param name="thresholdPercent">The limit, in percent.</param>
