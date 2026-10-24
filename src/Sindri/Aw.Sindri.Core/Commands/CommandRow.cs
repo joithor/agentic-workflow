@@ -22,6 +22,7 @@ namespace Aw.Sindri.Core.Commands;
 /// <param name="Ui">The UI status: 'ready', 'pending:&lt;phase&gt;' or 'cli-only:&lt;reason&gt;'.</param>
 /// <param name="AppConfirm">True on exactly the three rows the app may confirm (setup-once spec §4 item 7): the app passes the table, and the handler redeems the challenge before its first write.</param>
 /// <param name="Confirm">How the app confirms it: 'typed' or 'held'; null on every other row.</param>
+/// <param name="SessionMayRun">True on a job row an agent session may also start (AddRepo only, owner q102, CIX-L59: an agent proposes a repo and it is indexed at once); false on every other row.</param>
 public sealed record CommandRow(ActionId Action, Type? CommandType, string? Variant, ActionClass Class,
     IReadOnlyList<string> ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews,
-    string? Shortcut, string? Method, string? Route, CliForm Cli, string Ui, bool AppConfirm = false, string? Confirm = null);
+    string? Shortcut, string? Method, string? Route, CliForm Cli, string Ui, bool AppConfirm = false, string? Confirm = null, bool SessionMayRun = false);

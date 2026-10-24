@@ -6,6 +6,7 @@
       "allowedCallers": [
         "human+terminal",
         "human",
+        "session",
         "service"
       ],
       "terminal": false,

@@ -47,7 +47,7 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 017 to 029 are re
 
 ## Read surfaces (CI-10a)
 
-Sindri's reads of the facade live in `Aw.Sindri.Features/CodeIndexReads` (the slices) and `Aw.Sindri.Host` (routes, CLI, text); the facade is `ICodeIndex`, scoped by `CodeIndexScopes` from the approved profile and the caller (a session's scope holds only its own repo, so another repo and a repo that does not exist answer the same SND-CODEIDX-013).
+Sindri's reads of the facade live in `Aw.Sindri.Features/CodeIndexReads` (the slices) and `Aw.Sindri.Host` (routes, CLI, text); the facade is `ICodeIndex`, scoped by `CodeIndexScopes` from the approved profile's repos plus every live-profile repo it doesn't name (owner q102, CIX-L59: a repo added with `sindri repo add`, by the owner or an agent session, is indexed on the next `code-index-main-move` tick with no re-approval; `index.denyPaths` and the embeddings address come from the approved profile only, a live-only repo's own `denyPaths` add to them and its entry never changes the embeddings address; no approved profile is still SND-PROFILE-005 and nothing indexed; `CodeIndexJobScopes` is the jobs slice's own copy, AW1003) and the caller (a session's scope holds only its own repo, so another repo and a repo that does not exist answer the same SND-CODEIDX-013).
 
 | Surface | What |
 |---|---|
