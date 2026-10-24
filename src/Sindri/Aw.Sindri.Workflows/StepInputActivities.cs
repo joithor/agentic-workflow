@@ -54,6 +54,14 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
         return filled.Value.Metadata;
     }
 
+    /// <summary>Runs the input while calling <paramref name="heartbeat"/> every <paramref name="every"/>.</summary>
+    /// <param name="request">Which input, for which run.</param>
+    /// <param name="heartbeat">What reports that the fill is alive.</param>
+    /// <param name="every">The beat interval.</param>
+    /// <param name="cancel">The activity's cancellation.</param>
+    /// <returns>The metadata of what it filled.</returns>
+    internal Task<FilledInput> FillHeartbeating(FillInputRequest request, Action heartbeat, TimeSpan every, CancellationToken cancel) => throw new NotSupportedException();
+
     /// <summary>Drops the instance's kept texts: its Step ended (done, failed, parked or cancelled).</summary>
     /// <param name="address">The instance address.</param>
     [Activity("DropInjection")]
