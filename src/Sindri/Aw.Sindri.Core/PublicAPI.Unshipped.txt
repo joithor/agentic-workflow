@@ -2242,13 +2242,15 @@ Aw.Sindri.Core.Views.LastRun.Slot.get -> System.DateTimeOffset
 Aw.Sindri.Core.Views.LastRun.Slot.init -> void
 Aw.Sindri.Core.Views.PageApplied
 Aw.Sindri.Core.Views.PageApplied.<Clone>$() -> Aw.Sindri.Core.Views.PageApplied!
-Aw.Sindri.Core.Views.PageApplied.Deconstruct(out Aw.Sindri.Core.Views.ProjectorState! State, out Aw.Sindri.Core.Views.ViewStall? Stall) -> void
+Aw.Sindri.Core.Views.PageApplied.Deconstruct(out Aw.Sindri.Core.Views.ProjectorState! State, out Aw.Sindri.Core.Views.ViewStall? Stall, out int Unreadable) -> void
 Aw.Sindri.Core.Views.PageApplied.Equals(Aw.Sindri.Core.Views.PageApplied? other) -> bool
-Aw.Sindri.Core.Views.PageApplied.PageApplied(Aw.Sindri.Core.Views.ProjectorState! State, Aw.Sindri.Core.Views.ViewStall? Stall) -> void
+Aw.Sindri.Core.Views.PageApplied.PageApplied(Aw.Sindri.Core.Views.ProjectorState! State, Aw.Sindri.Core.Views.ViewStall? Stall, int Unreadable = 0) -> void
 Aw.Sindri.Core.Views.PageApplied.Stall.get -> Aw.Sindri.Core.Views.ViewStall?
 Aw.Sindri.Core.Views.PageApplied.Stall.init -> void
 Aw.Sindri.Core.Views.PageApplied.State.get -> Aw.Sindri.Core.Views.ProjectorState!
 Aw.Sindri.Core.Views.PageApplied.State.init -> void
+Aw.Sindri.Core.Views.PageApplied.Unreadable.get -> int
+Aw.Sindri.Core.Views.PageApplied.Unreadable.init -> void
 Aw.Sindri.Core.Views.ProfileRow
 Aw.Sindri.Core.Views.ProfileRow.<Clone>$() -> Aw.Sindri.Core.Views.ProfileRow!
 Aw.Sindri.Core.Views.ProfileRow.Approved.get -> Aw.Sindri.Core.Ids.ProfileHash?
@@ -2352,6 +2354,10 @@ Aw.Sindri.Core.Views.ViewColumn.State = 1 -> Aw.Sindri.Core.Views.ViewColumn
 Aw.Sindri.Core.Views.ViewColumns
 Aw.Sindri.Core.Views.ViewNames
 Aw.Sindri.Core.Views.ViewSchema
+Aw.Sindri.Core.Views.UnreadableRows
+Aw.Sindri.Core.Views.UnreadableRows.Count.get -> int
+Aw.Sindri.Core.Views.UnreadableRows.Note() -> void
+Aw.Sindri.Core.Views.UnreadableRows.UnreadableRows() -> void
 Aw.Sindri.Core.Views.ViewStall
 Aw.Sindri.Core.Views.ViewStall.<Clone>$() -> Aw.Sindri.Core.Views.ViewStall!
 Aw.Sindri.Core.Views.ViewStall.Code.get -> string!
