@@ -57,7 +57,7 @@ public sealed class ContextBodyQueryApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.RequestUriTooLong, get.Status);
         Assert.Equal(HttpStatusCode.OK, query.Status);
-        Assert.Equal(248, Json(query.Body).GetProperty(route == "lenses" ? "missingAnchors" : "missing").GetArrayLength());
+        Assert.Equal(248, Json(query.Body).GetProperty("missingAnchors").GetArrayLength());
     }
 
     [Theory(Timeout = 120_000), Trait("Lane", "integration"), MemberData(nameof(Routes))]
