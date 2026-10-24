@@ -241,11 +241,15 @@ Aw.Sindri.Features.ContextCalls.FindContextPathRequest.To.get -> string!
 Aw.Sindri.Features.ContextCalls.FindContextPathRequest.To.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest!
-Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Deconstruct(out string! Repo, out string? Path, out bool Unmapped, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Deconstruct(out string! Repo, out string? Path, out bool Unmapped, out bool Draft, out string? Cursor, out int? Limit) -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Cursor.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Cursor.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Limit.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Limit.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.GetContextFileMapRequest(string! Repo, string? Path = null, bool Unmapped = false, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.GetContextFileMapRequest(string! Repo, string? Path = null, bool Unmapped = false, bool Draft = false, string? Cursor = null, int? Limit = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Path.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Path.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Repo.get -> string!

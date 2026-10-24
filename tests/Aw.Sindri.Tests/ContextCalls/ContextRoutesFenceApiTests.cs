@@ -78,6 +78,26 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
         Assert.Contains("\"trust\":\"untrusted\"", human.Body, StringComparison.Ordinal);
     }
 
+    // why: the review queue reads from the latest draft, not the current map, so it is not a row of Routes: a scoping run opens the draft first. The review route is session-OK (owner q93, 2026-10-23), so a session reads the queue like any other context route.
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task The_review_queue_is_open_to_a_session_with_a_models_label_fenced_and_to_a_human_clean()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await ImportedHost();
+        const string Url = "/sindri/context/map/review";
+        var proposals = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Drafted C","kind":"feature","evidence":[]}]}""";
+        var drafted = await host.Http.Ask(Post("/sindri/context/map/proposals", proposals, [.. Human(host.Token.Value, client: "ui").Where(h => h.Name != SindriHeaders.Terminal)]));
+        Assert.Equal(System.Net.HttpStatusCode.OK, drafted.Status);
+
+        var session = await host.Http.Ask(Get(Url, [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)]));
+        var human = await host.Http.Ask(Get(Url, Human(host.Token.Value)));
+
+        Assert.True(session.Status == System.Net.HttpStatusCode.OK && human.Status == System.Net.HttpStatusCode.OK, $"{session.Status} {session.Body} / {human.Status} {human.Body}");
+        Assert.Contains("<untrusted source=\\\"map\\\">Drafted C</untrusted>", session.Body, StringComparison.Ordinal);
+        Assert.True(human.Body.Contains("Drafted C", StringComparison.Ordinal) && !human.Body.Contains("<untrusted", StringComparison.Ordinal), $"review (human) is not clean: {human.Body}");
+        Assert.Contains("\"trust\":\"untrusted\"", human.Body, StringComparison.Ordinal);
+    }
+
     private async Task<GoldenHost> ImportedHost()
     {
         var ct = TestContext.Current.CancellationToken;
