@@ -1,4 +1,3 @@
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
@@ -7,7 +6,6 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.RevokeRecipe;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.ApproveRecipe;
 
@@ -49,38 +47,6 @@ public sealed class RevokeRecipeTests
         Assert.Equal([(step.Hash, RecipeWakeKind.Revoked), (fast.Hash, RecipeWakeKind.Revoked)], r.Wake.Sent.Select(n => (n.Hash, n.Kind)));
         Assert.NotNull((await r.Approvals.Revocation(fast.Hash, Token)).Value);
         Assert.Equal(r.Events(EventTypes.RecipeRevoked)[0].Sequence, revoked.Value.Accepted.Sequence);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Revoke_with_a_mistyped_action_is_009_and_records_nothing()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var (step, _, _) = await Seed(r);
-        var issued = (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Value;
-
-        var refused = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
-            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, "revoke workflow.step")), RegistryHarness.Human);
-
-        Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
-        Assert.Empty(r.Events(EventTypes.RecipeRevoked));
-        Assert.Null((await r.Approvals.Revocation(step.Hash, Token)).Value);
-        Assert.Empty(r.Wake.Sent);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Session_cannot_revoke()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var (step, _, _) = await Seed(r);
-        var issued = (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Value;
-
-        var refused = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
-            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), A.Caller().Session().Build());
-
-        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Empty(r.Events(EventTypes.RecipeRevoked));
     }
 
     [Fact, Trait("Lane", "unit")]

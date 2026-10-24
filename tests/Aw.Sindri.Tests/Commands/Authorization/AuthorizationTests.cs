@@ -14,12 +14,12 @@ public sealed class AuthorizationTests
         [ActionClass.Request] = "hasv",
         [ActionClass.StepReport] = "s",      // only a session; the service checks its launch secret (SND-AUTH-003)
         [ActionClass.Pause] = "hasv",
-        [ActionClass.Job] = "hav",
-        [ActionClass.Decision] = "ha",
-        [ActionClass.Desk] = "ha",           // plus a service the row grants
-        [ActionClass.Protected] = "h",
+        [ActionClass.Job] = "hasv",
+        [ActionClass.Decision] = "has",
+        [ActionClass.Desk] = "has",          // plus a service the row grants
+        [ActionClass.Protected] = "has",
         [ActionClass.Local] = "",            // never through the API
-        [ActionClass.Issue] = "has",         // per row; a row that needs a terminal narrows it
+        [ActionClass.Issue] = "has",
     };
 
     public static TheoryData<ActionClass, string, bool> Cases()
@@ -103,35 +103,35 @@ public sealed class AuthorizationTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_row_that_needs_a_terminal_refuses_everyone_but_a_human_at_one()
+    public void A_row_that_needs_a_terminal_still_refuses_everyone_but_a_human_at_one_and_AppConfirm_narrows_nobody()
     {
-        var row = Rows.Of(ActionClass.Issue, "IssueChallenge") with { NeedsTerminal = true };
+        var row = Rows.Of(ActionClass.Protected, "ShowLineHoldout") with { NeedsTerminal = true };
+        var flagged = Rows.Of(ActionClass.Protected, "ApproveProfile") with { AppConfirm = true };
 
-        Assert.True(Table.Decide(ActionClass.Issue, A.Caller().AtTerminal().Build(), row).Allowed);
-        Assert.False(Table.Decide(ActionClass.Issue, A.Caller().Human().Build(), row).Allowed);
-        Assert.False(Table.Decide(ActionClass.Issue, A.Caller().Session().Build(), row).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().AtTerminal().Build(), row).Allowed);
+        Assert.False(Table.Decide(ActionClass.Protected, A.Caller().Human().Build(), row).Allowed);
+        Assert.False(Table.Decide(ActionClass.Protected, A.Caller().Session().Build(), row).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().Session().Build(), flagged).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().Human().Build(), flagged).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Refusal_names_the_command_and_its_cli()
     {
-        var session = A.Caller().Session().Build();
+        var service = A.Caller().Service("heartbeat").Build();
 
-        var stop = Table.Decide(ActionClass.Desk, session, Rows.Of(ActionClass.Desk, "StopProcess", cli: "sindri stop")).Refusal;
-        var approve = Table.Decide(ActionClass.Protected, A.Caller().Human().Build(),
-            Rows.Of(ActionClass.Protected, "ApproveProfile", cli: "sindri profile approve <hash>")).Refusal;
+        var stop = Table.Decide(ActionClass.Desk, service, Rows.Of(ActionClass.Desk, "StopProcess", cli: "sindri stop")).Refusal;
 
-        Assert.Equal("StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop", stop?.Message);
-        Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve <hash>", approve?.Message);
+        Assert.Equal("StopProcess is not available to this caller: sindri stop", stop?.Message);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Callers_for_each_class_follow_the_table()
     {
         Assert.Equal(["human+terminal", "human", "session", "service"], Table.CallersFor(ActionClass.Request, []));
-        Assert.Equal(["human+terminal", "human", "service:host"], Table.CallersFor(ActionClass.Desk, ["host"]));
-        Assert.Equal(["human+terminal", "human"], Table.CallersFor(ActionClass.Decision, ["host"]));
-        Assert.Equal(["human+terminal"], Table.CallersFor(ActionClass.Protected, []));
+        Assert.Equal(["human+terminal", "human", "session", "service:host"], Table.CallersFor(ActionClass.Desk, ["host"]));
+        Assert.Equal(["human+terminal", "human", "session"], Table.CallersFor(ActionClass.Decision, ["host"]));
+        Assert.Equal(["human+terminal", "human", "session"], Table.CallersFor(ActionClass.Protected, []));
         Assert.Equal(["session"], Table.CallersFor(ActionClass.StepReport, []));
         Assert.Empty(Table.CallersFor(ActionClass.Local, []));
     }

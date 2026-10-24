@@ -11,8 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Aw.Sindri.Tests.Workflow.Cli;
 
 /// <summary>
-/// 'sindri recipe approve-all' against the real host (setup-once spec §5.3, §7.2): the plan is printed in order, the typed
-/// 'approve-all &lt;digest&gt;' starts the job, a wrong phrase and a session are refused, and an empty plan says so and exits 2.
+/// 'sindri recipe approve-all' against the real host (setup-once spec §5.3, §7.2): the plan is printed in order, the job starts
+/// with no typed phrase, a session may start it too (owner decision q93), and an empty plan says so and exits 2.
 /// </summary>
 public sealed class RecipeApproveAllCliTests : IDisposable
 {
@@ -26,7 +26,7 @@ public sealed class RecipeApproveAllCliTests : IDisposable
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task Human_sees_the_plan_in_order_types_the_phrase_and_gets_the_started_job()
+    public async Task Human_sees_the_plan_in_order_and_gets_the_started_job_with_no_phrase()
     {
         var ct = TestContext.Current.CancellationToken;
         var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
@@ -40,38 +40,22 @@ public sealed class RecipeApproveAllCliTests : IDisposable
         Assert.True(code == 0, _error.ToString());
         Assert.Contains($"approving 2 recipes, children first (digest {digest}):\n", text, StringComparison.Ordinal);
         Assert.True(text.IndexOf("workflow.step version 2", StringComparison.Ordinal) < text.IndexOf("workflow.item version 3", StringComparison.Ordinal));
-        Assert.Contains($"Type 'approve-all {digest}' to confirm", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Type '", text, StringComparison.Ordinal);
         Assert.Contains("approve-all started as job JOB-", text, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_wrong_phrase_is_refused_and_approves_nothing()
+    public async Task A_session_starts_the_job_too()
     {
         var ct = TestContext.Current.CancellationToken;
         var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
         await using var host = await ApproveAllScenarios.Start(shipped, ct);
         await ViewScenarios.Approve(host, ct);
 
-        var code = await (await Command(host, human: true, "approve-all 000000", ct)).Run(json: false, ct);
+        var code = await (await Command(host, human: false, string.Empty, ct)).Run(json: false, ct);
 
-        Assert.Equal(2, code);
-        Assert.StartsWith("SND-RECIPE-009 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Equal(0, shipped.Applied);
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_session_is_refused_and_approves_nothing()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
-        await using var host = await ApproveAllScenarios.Start(shipped, ct);
-        await ViewScenarios.Approve(host, ct);
-
-        var code = await (await Command(host, human: false, "approve-all 000000", ct)).Run(json: false, ct);
-
-        Assert.Equal(2, code);
-        Assert.StartsWith("SND-AUTH-002 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Equal(0, shipped.Applied);
+        Assert.True(code == 0, _error.ToString());
+        Assert.Contains("approve-all started as job JOB-", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]

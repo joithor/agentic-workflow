@@ -16,6 +16,7 @@ public sealed class LaunchRequestBuilder
     private InstanceAddress? _instance;
     private RunToken? _run;
     private EvaluatorLaunch? _evaluator;
+    private string _directory = "/work/repo";
 
     /// <summary>Sets the launch id.</summary>
     /// <param name="value">The id.</param>
@@ -75,8 +76,17 @@ public sealed class LaunchRequestBuilder
         return this;
     }
 
+    /// <summary>Sets the repo directory the launch works in. A launch of an unattended Step makes its output folder there, so a test that launches one passes a real directory.</summary>
+    /// <param name="value">The directory.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder InDirectory(string value)
+    {
+        _directory = value;
+        return this;
+    }
+
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
     public LaunchRequest Build() =>
-        new(_launch, A.FirstItemId, _agent, _mode, _attended, "/work/repo", _instance, Worktree: null, _step, _run, _resume, _evaluator);
+        new(_launch, A.FirstItemId, _agent, _mode, _attended, _directory, _instance, Worktree: null, _step, _run, _resume, _evaluator);
 }

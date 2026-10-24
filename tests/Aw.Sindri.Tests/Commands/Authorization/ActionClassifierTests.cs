@@ -41,7 +41,7 @@ public sealed class ActionClassifierTests
         var row = ActionClassifier.Classify(_catalog, new FixtureApply("answer-text", Protected: true));
 
         Assert.Equal(ActionClass.Protected, row.Class);
-        Assert.True(row.NeedsTerminal);
+        Assert.False(row.NeedsTerminal);   // owner decision q93: a protected field no longer holds the caller to a terminal
     }
 
     [Fact, Trait("Lane", "unit")]
