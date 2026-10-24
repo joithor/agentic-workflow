@@ -471,8 +471,7 @@ in the profile (0–8, default 2; a deeper ask is read as 8), and `--depth` over
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
 `query --symbol <file>` resolves its files), so its cascade, neighbors and paths stay inside that set. It also sees the
 records that mention those nodes and the decisions that decide them (and the records those decisions quote) in the lenses'
-intent band and the query's `decisions` section, and by `show`, `neighbors` and `path` (owner decision 2026-10-15: B; no
-wait for `context.repoTeams`). Record titles and decision quotes arrive inside the `<untrusted>` fence; a person's decision
+intent band and the query's `decisions` section, and by `show`, `neighbors` and `path` (owner decision 2026-10-15: B). Record titles and decision quotes arrive inside the `<untrusted>` fence; a person's decision
 wording is trusted and unfenced, as before; everything is scrubbed. A record whose only links lead outside that set stays
 invisible, and so does a `supersedes` conflict whose superseded decision is linked only outside that set; anything else is
 `SND-CONTEXT-003`.
@@ -857,17 +856,14 @@ answer `SND-CONTEXT-011`. A query doesn't check Onyx's version: version drift is
 (`055`, naming both versions), and a query keeps using an Onyx that reports another version as long as its replies
 read; a reply that doesn't degrades onyx (`010`, cause `051`).
 
-Agent sessions don't search the onyx source yet: until the profile maps Linear teams to a repo (`context.repoTeams`, a
-later stage), a session searches repo-docs sources only, so onyx answers humans and services only. A session still sees
-the map's records and decisions linked to its repo's nodes (owner decision 2026-10-15: B). A caller whose scope maps no
-repo gets no source at all, onyx included.
+Agent sessions search the onyx source like a human (owner decision 2026-10-24; no per-repo team mapping): the hits'
+untrusted text arrives inside the fence for a session. A session also sees the map's records and decisions linked to its
+repo's nodes (owner decision 2026-10-15: B). A caller whose scope maps no repo gets no source at all, onyx included.
 
 `sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the token is an admin token of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
-unresolved, `002`), with the version and the key's role and account type in its detail. A session sees the row too, health
-only (its state and probe, which doctor shows to any caller; no sync counts): its detail ends `; sessions don't search
-it until context.repoTeams maps its teams to a repo`. The records and decisions linked to the session's repo nodes
-still reach it through the map, as above.
+unresolved, `002`), with the version and the key's role and account type in its detail. A session sees the row too, the same
+row a human sees, sync counts included.
 
 ### Doctor `context:onyx`
 
