@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
@@ -204,18 +205,9 @@ internal sealed partial class TmuxSessionHost(TmuxHostOptions options) : ISessio
 
     private async Task<TmuxRun> Exec(IReadOnlyList<string> args, bool socket, TimeSpan? budget, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo(options.Executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-        if (socket)
-        {
-            start.ArgumentList.Add("-L");
-            start.ArgumentList.Add(options.Socket);
-        }
-
-        foreach (var arg in args)
-        {
-            start.ArgumentList.Add(arg);
-        }
-
+        var start = ChildEnvironment.Start(options.Executable, socket ? ["-L", options.Socket, .. args] : args);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         _ = start.Environment.Remove("TMUX");   // a pane's own server is never ours
         if (options.TmuxTmpDir is { } tmpDir)
         {
