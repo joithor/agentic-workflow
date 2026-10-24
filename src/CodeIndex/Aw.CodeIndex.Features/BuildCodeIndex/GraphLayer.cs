@@ -50,7 +50,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
         var ran = await RunGraph(graph, request, code, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
-            return await Failed(build, request, code, ran.Error, now, cancellationToken).ConfigureAwait(false);
+            return await Failed(build, request, code, ran.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var merged = await PlanAndStore(build, request, ran.Value, code, cancellationToken).ConfigureAwait(false);
@@ -66,7 +66,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
 
     // A failed run empties the graph, so a layer that is not ok never serves an edge of an earlier build, except a run that ran out of time:
     // that keeps the last good graph and the layer says it is unavailable (owner q93, 2026-10-23).
-    private async ValueTask<Result<LayerRecord>> Failed(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, Error error, DateTimeOffset now, CancellationToken cancellationToken)
+    private async ValueTask<Result<LayerRecord>> Failed(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, Error error, CancellationToken cancellationToken)
     {
         if (!IsTimeout(error))
         {
@@ -77,7 +77,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
             }
         }
 
-        return Unavailable(error, now);
+        return Unavailable(error, clock.GetUtcNow());
     }
 
     private async ValueTask<Result<(GraphMerged Merged, int Unread)>> PlanAndStore(IIndexBuild build, BuildCodeIndexRequest request, GraphSnapshot graphJson, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)
