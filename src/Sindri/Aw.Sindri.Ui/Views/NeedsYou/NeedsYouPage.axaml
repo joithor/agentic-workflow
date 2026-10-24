@@ -201,7 +201,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <!-- A paused run's answer form (F3 needs-you spec §3, slice 4): three options and one button. More tries is protected, so its button copies the command. -->
+              <!-- A paused run's answer form (F3 needs-you spec §3, slice 4): three options and one button; each option is one click. -->
               <Border x:Name="NeedsYouAnswer" Classes="card-section" IsVisible="{Binding ShowsAnswer}">
                 <StackPanel Spacing="8" DataContext="{Binding Answer}" x:DataType="ny:PausedAnswerViewModel">
                   <TextBlock Classes="eyebrow" Text="{Binding Caption}" />

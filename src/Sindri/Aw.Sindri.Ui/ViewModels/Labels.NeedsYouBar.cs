@@ -84,11 +84,6 @@ internal static partial class Labels
     /// <summary>Why send back is off for a settings or workflow approval.</summary>
     internal const string NeedsYouSendBackLocked = "These can only be approved. Change the settings or workflow file to undo.";
 
-    /// <summary>The terminal button's words: the action and where it goes.</summary>
-    /// <param name="action">The action's words.</param>
-    /// <returns>The words.</returns>
-    internal static string NeedsYouTerminalButton(string action) => action + " · terminal";
-
     /// <summary>The words of the terminal button for more tries.</summary>
     internal const string NeedsYouMoreTries = "Allow more tries";
 
