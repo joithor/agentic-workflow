@@ -8,7 +8,7 @@ namespace Aw.Evidence.Tests.Cutover;
 /// Cutover gap G-d (spec §3.3), doctor half: the worktree-slot checks scripts/doctor.sh made (SKILL 'Worktree stacks'): the slot file
 /// in the worktree names slot N, slot N serves the web app on 3000 + step * N and the API on the API port + step * N, its database is
 /// {slot}-templated, both ports must be served from that worktree, and a healthy doctor prints the --host and the database to use.
-/// Red until unit 1.4 gives DoctorService the run files and reads the slot settings from the environment.
+/// The doctor reads the slot file through IRunFiles and the slot settings from IEvidenceSettings.
 /// </summary>
 public sealed class DoctorSlotTests
 {
@@ -35,9 +35,8 @@ public sealed class DoctorSlotTests
     private void SlotFile(string content) =>
         _ = _files.With($"{Worktree}/.stack-slot.env", System.Text.Encoding.UTF8.GetBytes(content));
 
-    // 1.4 gives the service the run files that read the slot file: new DoctorService(_probe, _settings, _files).
     private async Task<DoctorResponse> Check(string? worktree = Worktree) =>
-        (await new DoctorService(_probe, _settings).Handle(new DoctorRequest(worktree), CancellationToken.None)).Value;
+        (await new DoctorService(_probe, _settings, _files).Handle(new DoctorRequest(worktree), CancellationToken.None)).Value;
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_healthy_slot_prints_the_host_and_the_database_to_use()

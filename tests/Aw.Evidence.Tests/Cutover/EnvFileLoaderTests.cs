@@ -6,7 +6,7 @@ namespace Aw.Evidence.Tests.Cutover;
 /// Cutover gap G-d (spec §3.3), loader half: run and parity read the deployment's env files as doctor.sh and the
 /// TypeScript runner did (SKILL 'Configuration'): plain NAME=value lines parsed, never sourced; an allowlist of keys; a variable already
 /// set in the environment is never overridden. Precedence: the environment, then the local file (.ui-evidence.local.env or what
-/// UI_EVIDENCE_CONFIG names), then deployment.env. Red until unit 1.4; where the binary finds the two files is 1.4's decision.
+/// UI_EVIDENCE_CONFIG names), then deployment.env. The files sit in UI_EVIDENCE_ENV_DIR, else .agentic-workflow/ui-evidence under the working directory.
 /// </summary>
 public sealed class EnvFileLoaderTests
 {
