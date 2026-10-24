@@ -15,12 +15,18 @@ internal sealed record BoardRow(LinePhaseId Phase, string State, int Attempt, st
     /// <summary>The rows the fact holds; none when it is not a board. A row with no phase id is left out.</summary>
     /// <param name="board">The fact.</param>
     /// <returns>The rows, in plan order.</returns>
-    internal static IReadOnlyList<BoardRow> Read(JsonNode? board) =>
-    [
-        .. LineJson.Items(board, "phases").Where(static p => !string.IsNullOrEmpty(LineJson.Str(p, "phase"))).Select(static p => new BoardRow(
-            LinePhaseId.From(LineJson.Str(p, "phase")!),
-            _states.Contains(LineJson.Str(p, "state"), StringComparer.Ordinal) ? LineJson.Str(p, "state")! : "waiting",
-            LineJson.Number(p, "attempt") ?? 0,
-            LineJson.Str(p, "parkReason"))),
-    ];
+    internal static IReadOnlyList<BoardRow> Read(JsonNode? board)
+    {
+        var rows = new List<BoardRow>();
+        foreach (var p in LineJson.Items(board, "phases"))
+        {
+            if (LineJson.Str(p, "phase") is { Length: > 0 } phase)
+            {
+                var state = LineJson.Str(p, "state") is { } named && _states.Contains(named, StringComparer.Ordinal) ? named : "waiting";
+                rows.Add(new BoardRow(LinePhaseId.From(phase), state, LineJson.Number(p, "attempt") ?? 0, LineJson.Str(p, "parkReason")));
+            }
+        }
+
+        return rows;
+    }
 }
