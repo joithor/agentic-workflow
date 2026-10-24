@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.CodeIndexJobs;
 using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
+using RepoStatus = Aw.CodeIndex.Core.Facade.RepoStatus;
 
 namespace Aw.Sindri.Tests.CodeIndexJobs;
 
