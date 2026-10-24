@@ -29,7 +29,7 @@ internal sealed class ContextCodeVerbs(ControlPlaneClient client, Output output)
 
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Draft ? "&draft=true" : string.Empty)
             + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
-        var answer = await client.Get<CodeView>("/sindri/context/code" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetOrQuery<GetContextCodeRequest, CodeView>("/sindri/context/code", query, new GetContextCodeRequest(o.Anchors, o.Draft, o.MapVersion), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextCodeText.Code(answer.Value.Value, fence: client.SessionReason is null), 0).ConfigureAwait(false);

@@ -16,10 +16,10 @@ internal static class ContextGraphText
     internal static string Node(NodeView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"node {view.Node.Key.Value} · map {view.MapVersion}\n"));
-        _ = text.AppendLine(Invariant($"  {Fenced(view.Node.Label, view.Node.Trust, fence)} · {Kind(view.Node.Key)} · {Facts(view.Node)}"));
+        _ = text.AppendLine(Invariant($"  {Fenced(view.Node.Label, view.Node.Trust, fence)} · {Kind(view.Node.Key)} · {Facts(view.Node.ToFact())}"));
         _ = text.AppendLine(view.Aliases.Count == 0 ? "aliases: none" : "aliases: " + string.Join(", ", view.Aliases.Select(a => a.Value)));
-        Edges(text, "out", view.Out, e => Invariant($"{EdgeRules.Name(e.Type)} {e.To.Value}"));
-        Edges(text, "in", view.In, e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} this"));
+        Edges(text, "out", [.. view.Out.Select(e => e.ToFact())], e => Invariant($"{EdgeRules.Name(e.Type)} {e.To.Value}"));
+        Edges(text, "in", [.. view.In.Select(e => e.ToFact())], e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} this"));
         return text.ToString();
     }
 
@@ -45,7 +45,7 @@ internal static class ContextGraphText
         var text = new StringBuilder(Invariant($"path {view.From.Value} → {view.To.Value} · map {view.MapVersion}\n"));
         if (!view.Found || view.Steps.Count == 0)
         {
-            return text.AppendLine(view.Found ? "the same node: no steps" : Invariant($"no path within {GraphWalk.MaxPathLength} edges")).ToString();
+            return text.AppendLine(view.Found ? "the same node: no steps" : "no path between them").ToString();
         }
 
         var i = 0;
