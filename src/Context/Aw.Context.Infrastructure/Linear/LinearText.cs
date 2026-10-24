@@ -10,7 +10,7 @@ internal static partial class LinearText
     private const int MaxBytes = 64 * 1024;
 
     /// <summary>
-    /// An issue: its description, its comments, every attachment, and the images found in all three. The ingest
+    /// An issue: its description, its comments, its project, its relations, every attachment, and the images found in all three. The ingest
     /// sanitizer removes markdown and HTML images from the stored text, so their alt text and link are listed again as
     /// plain lines (owner q105, 2026-10-24).
     /// </summary>
@@ -22,7 +22,11 @@ internal static partial class LinearText
             .Concat(attachments.Where(IsImage).Select(a => (Alt: a.Title ?? "image", a.Url)))
             .DistinctBy(i => i.Url, StringComparer.Ordinal);
         var head = issue.Description + Section("Comments", comments.Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"));
-        var tail = Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
+        var relations = (issue.Relations?.Nodes ?? []).Select(r => $"- {r.Type} {Ref(r.RelatedIssue)}")
+            .Concat((issue.InverseRelations?.Nodes ?? []).Select(r => $"- (from) {r.Type} {Ref(r.Issue)}"));
+        var tail = (issue.Project?.Name is { Length: > 0 } project ? $"\n\nProject: {project}" : "")
+            + Section("Relations", relations, more: null)
+            + Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
             + Section("Images", images.Select(i => $"- {i.Alt} {i.Url}"), more: null);
 
         // The attachments and images are what the owner wants to survive: the 64 KB goes to the description, then the
@@ -62,6 +66,8 @@ internal static partial class LinearText
     // The mark a list leaves when Linear has more than the first page of it.
     private static string? More<T>(LinearConnection<T>? connection, string what) =>
         connection?.PageInfo is { HasNextPage: true } ? $"(more {what} not shown)" : null;
+
+    private static string Ref(LinearIssueRef? issue) => issue is null ? "unknown" : $"{issue.Identifier} {issue.Title}".TrimEnd();
 
     private static string Host(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Host.Length > 0 ? uri.Host : url;
 
