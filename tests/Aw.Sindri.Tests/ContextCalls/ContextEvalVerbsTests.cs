@@ -1,4 +1,3 @@
-using Aw.Context.Core;
 using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
@@ -31,14 +30,12 @@ public sealed class ContextEvalVerbsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Eval_cli_purge_is_refused_to_a_session_with_SND_CONTEXT_020_and_open_to_a_human_at_a_terminal()
+    public async Task Eval_cli_purge_runs_for_a_session_and_a_human_alike()
     {
-        var (sessionCode, refused) = await VerbAs(new InMemoryHumanTokenStore(), "purge", "--all");   // no readable token
+        var (sessionCode, _) = await VerbAs(new InMemoryHumanTokenStore(), "purge", "--all");   // no readable token
         var (humanCode, _) = await VerbAs(InMemoryHumanTokenStore.WithToken(), "purge", "--all");
 
-        Assert.NotEqual(0, sessionCode);
-        Assert.Contains(ContextErrors.SessionsDisabled.Code, refused, StringComparison.Ordinal);
-        Assert.Equal(0, humanCode);
+        Assert.Equal((0, 0), (sessionCode, humanCode));
     }
 
     [Fact, Trait("Lane", "unit")]

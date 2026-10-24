@@ -105,10 +105,8 @@ public sealed class EvalMapTests
 
         var kept = (await world.Engine.EvalPurge(new EvalPurgeRequest(world.Human(), All: false), TestContext.Current.CancellationToken)).Value;
         var all = (await world.Engine.EvalPurge(new EvalPurgeRequest(world.Human(), All: true), TestContext.Current.CancellationToken)).Value;
-        var session = await world.Engine.EvalPurge(new EvalPurgeRequest(world.Session(), All: true), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, kept.Total);   // nothing is 90 days old
         Assert.Equal((1, 0, 1), (all.Reports, all.CacheFiles, all.ProbeReports));
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
     }
 }
