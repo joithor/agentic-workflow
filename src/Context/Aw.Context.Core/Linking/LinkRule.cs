@@ -25,4 +25,8 @@ public enum LinkRule
     /// <summary>A quoted string equals a node's label.</summary>
     [JsonStringEnumMemberName("quoted-title")]
     QuotedTitle,
+
+    /// <summary>A feature's name (its label, or an alias of it) appears in the text as whole words and names that one feature. A suggestion: the edge it makes has model provenance until a person confirms it.</summary>
+    [JsonStringEnumMemberName("name")]
+    Name,
 }
