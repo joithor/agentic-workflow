@@ -6,7 +6,7 @@
   "title": "Expiry for shared links",
   "recipe": {
     "id": "workflow.scoping",
-    "hash": "sha256:8ce8892e922b78d872158f1c1afc02b04a1805558c0902fa9df28acc475bb3a1",
+    "hash": "sha256:301fdb52bb6a6b051d7a761e48ee1d54be25dacfea1913f7d943b73ebdcf907a",
     "version": 9,
     "urgency": "work",
     "displayName": "Scoping"
@@ -61,7 +61,7 @@
         {
           "with": "check",
           "n": 1,
-          "max": 3
+          "max": 6
         }
       ],
       "desk": true,
@@ -81,7 +81,7 @@
         {
           "with": "check",
           "n": 1,
-          "max": 6
+          "max": 10
         }
       ],
       "desk": true,
@@ -101,12 +101,12 @@
         {
           "with": "gather",
           "n": 1,
-          "max": 3
+          "max": 6
         },
         {
           "with": "draft",
           "n": 1,
-          "max": 6
+          "max": 10
         }
       ],
       "desk": true,
@@ -126,7 +126,7 @@
         {
           "with": "challenge-log",
           "n": 1,
-          "max": 4
+          "max": 6
         }
       ],
       "desk": true,
@@ -219,7 +219,7 @@
         {
           "with": "questions",
           "n": 1,
-          "max": 4
+          "max": 6
         }
       ],
       "desk": true,
@@ -423,7 +423,7 @@
       "header": {
         "address": "ITM-01JN3/scoping/1",
         "recipe": "workflow.scoping",
-        "hash12": "8ce8892e922b",
+        "hash12": "301fdb52bb6a",
         "version": 9,
         "state": "interview",
         "detail": "desk task",
@@ -471,7 +471,7 @@
           "confirm": "Cancel ITM-01JN3/scoping/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JN3/scoping/1  workflow.scoping@8ce8892e922b  v9  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JN3/scoping/1  workflow.scoping@301fdb52bb6a  v9  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },
