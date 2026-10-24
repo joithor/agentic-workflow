@@ -144,7 +144,7 @@ internal sealed class ContextSearchVerb(ControlPlaneClient client, Output output
         }
 
         return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed)
-            ? (int?)parsed
+            ? parsed
             : Invalid($"'--limit' is a whole number from 1 to {MapSearchRules.MaxLimit}");
     }
 
