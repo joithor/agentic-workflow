@@ -57,6 +57,7 @@ internal sealed partial class ContextPageViewModel
             return true;   // the refusal is the banner; nothing else says "no match"
         }
 
+        // why: the Where above drops every located entry with no area, so no group key is null
         var touched = (located.Value.Located ?? []).Where(l => l.Area is not null).GroupBy(l => l.Area, StringComparer.Ordinal)
             .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key!).ToList();
         if (touched.Count == 0)
