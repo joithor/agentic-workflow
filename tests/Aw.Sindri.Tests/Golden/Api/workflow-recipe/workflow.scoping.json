@@ -332,9 +332,9 @@
       "from": [
         "size"
       ],
-      "to": "size-desk",
+      "to": "propose",
       "on": "step.completed",
-      "label": "AI wasn't sure: you pick the size"
+      "label": "AI wasn't sure: carry on with the size undecided"
     },
     {
       "from": [
@@ -636,20 +636,18 @@
     },
     {
       "from": [
-        "size",
+        "size"
+      ],
+      "on": "step.completed",
+      "to": "propose",
+      "label": "AI wasn't sure: carry on with the size undecided"
+    },
+    {
+      "from": [
         "size-desk"
       ],
       "on": "step.completed",
       "to": "propose"
-    },
-    {
-      "from": [
-        "size"
-      ],
-      "on": "step.completed",
-      "to": "size-desk",
-      "outcome": "uncertain",
-      "label": "AI wasn't sure: you pick the size"
     },
     {
       "from": [

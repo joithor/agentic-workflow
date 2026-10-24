@@ -154,7 +154,7 @@
       "branchOf": "snapshot",
       "why": "Something stopped the watch, so you choose to retry or stop.",
       "displayName": "The pull request needs you",
-      "kind": "onlyYou",
+      "kind": "you",
       "outputs": [
         {
           "key": "fact:notes"
@@ -306,7 +306,7 @@
       "branchOf": "snapshot",
       "why": "The reviewer's comment needs a type from you.",
       "displayName": "Pick the type of a comment",
-      "kind": "onlyYou",
+      "kind": "you",
       "inputs": [
         {
           "key": "fact:comment"
@@ -334,7 +334,7 @@
       "branchOf": "snapshot",
       "why": "The pull request no longer matches its proof, so you choose to retry or stop.",
       "displayName": "Decide about the new proof",
-      "kind": "onlyYou",
+      "kind": "you",
       "outputs": [
         {
           "key": "fact:notes"

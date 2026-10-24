@@ -36,18 +36,18 @@
       "badge": null,
       "round": {
         "n": 2,
-        "max": 3
+        "max": 5
       },
       "loops": [
         {
           "with": "checks",
           "n": 1,
-          "max": 3
+          "max": 5
         },
         {
           "with": "verify",
           "n": 1,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": true,
@@ -67,7 +67,7 @@
         {
           "with": "produce",
           "n": 1,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": true,
@@ -87,7 +87,7 @@
         {
           "with": "produce",
           "n": 1,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": true,
@@ -137,14 +137,14 @@
       "header": {
         "address": "ITM-01JE7/item/1/step.4",
         "recipe": "workflow.step",
-        "hash12": "f039848fd714",
+        "hash12": "f511ce1fc529",
         "version": 4,
         "state": "produce",
         "detail": "desk task",
         "since": "2026-10-12T12:20:00.0000000Z",
         "ageSeconds": 360
       },
-      "next": "Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>",
+      "next": "Produce the Step output for ITM-01JE7 (round 2/5), then run: sindri workflow complete ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>",
       "answer": null,
       "child": null,
       "drift": null,
@@ -163,7 +163,7 @@
       "budget": {
         "scope": "state",
         "used": 0,
-        "limit": 1000000,
+        "limit": 5000000,
         "instance": {
           "used": 0,
           "limit": null
@@ -193,7 +193,7 @@
           "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.4  workflow.step@f039848fd714  v4  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 1M (state), 0 used (instance)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@f511ce1fc529  v4  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/5), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 5M (state), 0 used (instance)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },

@@ -39,7 +39,7 @@ exit 0
         },
         "loop": "revisions",
         "budget": {
-          "tokens": 1000000
+          "tokens": 5000000
         },
         "next": "Produce the Step output for {item} (round {loop.revisions}/{loop.revisions.cap}).",
         "outcome": null
@@ -70,7 +70,7 @@ exit 0
         },
         "waitFor": null,
         "timeout": {
-          "after": "1h",
+          "after": "4h",
           "then": "park"
         },
         "loop": null,
@@ -204,7 +204,7 @@ exit 0
     ],
     "loops": {
       "revisions": {
-        "cap": 3,
+        "cap": 5,
         "noProgress": [
           "findings",
           "emptyDiff",
