@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Microsoft.Extensions.Time.Testing;
@@ -80,7 +79,7 @@ public sealed class ContextRepoPickerTests
 
         await page.PickRepo("beta", Token);
 
-        Assert.Equal([null, "beta"], api.WholeMapAsked.Select(q => q.Repo));
+        Assert.Equal([null, "beta"], api.WholeMapAsked.Select(q => q.Repo), StringComparer.Ordinal);
         Assert.Equal("beta", page.SelectedRepo);
     }
 
@@ -93,7 +92,7 @@ public sealed class ContextRepoPickerTests
 
         await page.PickRepo("alpha", Token);
 
-        Assert.Single(api.WholeMapAsked);
+        _ = Assert.Single(api.WholeMapAsked);
     }
 
     [Fact]

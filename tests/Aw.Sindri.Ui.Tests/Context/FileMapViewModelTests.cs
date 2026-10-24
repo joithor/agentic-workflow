@@ -85,7 +85,7 @@ public sealed class FileMapViewModelTests
         await files.Open(files.Rows.First(r => r.IsDirectory && string.Equals(r.Name, "tabs", StringComparison.Ordinal)), Token);
 
         Assert.Equal([(Labels.ContextFilesTop, true), ("src", true), ("tabs", false)], Trail(files));
-        Assert.Equal([null, "src/", "src/tabs/"], files.Crumbs.Select(c => c.Path));
+        Assert.Equal([null, "src/", "src/tabs/"], files.Crumbs.Select(c => c.Path), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class FileMapViewModelTests
         await files.Go(files.Crumbs[0], Token);
 
         Assert.Equal([(Labels.ContextFilesTop, false)], Trail(files));
-        Assert.Equal(["src/tabs/", "src/", null], api.FileMapAsked.Select(q => q.Path));
+        Assert.Equal(["src/tabs/", "src/", null], api.FileMapAsked.Select(q => q.Path), StringComparer.Ordinal);
     }
 
     [Fact]
