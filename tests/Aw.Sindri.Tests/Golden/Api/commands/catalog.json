@@ -522,7 +522,7 @@
       "method": "POST",
       "route": "/sindri/context/map/import",
       "cli": "sindri context map import <file>",
-      "ui": "cli-only:typed-confirmation",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,

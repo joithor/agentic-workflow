@@ -135,10 +135,10 @@ public sealed class CommandPaletteTests : IDisposable
         window.KeyTextInput("show line holdout");
         Settle(window);
 
-        Assert.Equal(["Show line holdout, Copy: sindri line holdout show <line> <phase>"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal(["Show hidden scenarios, Copy: sindri line holdout show <line> <phase>"], EntryNames(window), StringComparer.Ordinal);
         Press(window, Key.Enter, PhysicalKey.Enter);
         Assert.Equal("sindri line holdout show <line> <phase>", _clipboard.Text);
-        Assert.Equal(["Show line holdout, Copied"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal(["Show hidden scenarios, Copied"], EntryNames(window), StringComparer.Ordinal);
         Frame(window, "palette-filtered");
 
         Press(window, Key.Escape, PhysicalKey.Escape);
