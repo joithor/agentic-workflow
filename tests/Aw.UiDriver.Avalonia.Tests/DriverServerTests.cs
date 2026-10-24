@@ -46,7 +46,7 @@ public sealed class DriverServerTests : IAsyncLifetime
         return await _http!.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_call_without_the_secret_or_with_a_wrong_one_is_refused()
     {
         using var none = await Post("/v1/tree", "{}", secret: null);
@@ -57,7 +57,7 @@ public sealed class DriverServerTests : IAsyncLifetime
         Assert.Contains("AW-UIDRIVER-005", await none.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task The_routes_answer_with_the_status_of_their_error()
     {
         using var unknown = await Post("/v1/dance", "{}", _files!.Secret);
@@ -78,7 +78,7 @@ public sealed class DriverServerTests : IAsyncLifetime
         return await _http!.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_screenshot_answers_a_png()
     {
         using var response = await Post("/v1/screenshot", "{}", _files!.Secret);
@@ -86,7 +86,7 @@ public sealed class DriverServerTests : IAsyncLifetime
         Assert.Equal(("image/png", (byte)0x89), (response.Content.Headers.ContentType?.MediaType, (await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken))[0]));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task The_command_line_drives_the_window_through_the_files_the_driver_wrote()
     {
         var output = new StringWriter();

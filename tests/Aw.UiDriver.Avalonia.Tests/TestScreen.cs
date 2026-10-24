@@ -2,7 +2,7 @@ using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Headless;
+using Avalonia.Threading;
 
 namespace Aw.UiDriver.Avalonia.Tests;
 
@@ -57,15 +57,15 @@ internal sealed class TestScreen
 
     internal ScrollViewer List { get; }
 
-    /// <summary>Builds the screen on the headless UI thread.</summary>
+    /// <summary>Builds the screen on the UI thread (kept running by <see cref="UiPump"/>).</summary>
     /// <returns>The screen.</returns>
     internal static Task<TestScreen> OpenAsync() =>
-        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(TestScreen).Assembly).Dispatch(static () => new TestScreen(), TestContext.Current.CancellationToken);
+        Dispatcher.UIThread.InvokeAsync(static () => new TestScreen(), DispatcherPriority.Normal, TestContext.Current.CancellationToken).GetTask();
 
-    /// <summary>Runs work on the headless UI thread.</summary>
+    /// <summary>Runs work on the UI thread.</summary>
     /// <typeparam name="T">The result.</typeparam>
     /// <param name="work">The work.</param>
     /// <returns>Its result.</returns>
     internal static Task<T> OnUi<T>(Func<T> work) =>
-        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(TestScreen).Assembly).Dispatch(work, TestContext.Current.CancellationToken);
+        Dispatcher.UIThread.InvokeAsync(work, DispatcherPriority.Normal, TestContext.Current.CancellationToken).GetTask();
 }

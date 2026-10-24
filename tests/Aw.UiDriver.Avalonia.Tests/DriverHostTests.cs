@@ -9,7 +9,7 @@ public sealed class DriverHostTests
 {
     private static DriverHost Host(TestScreen screen) => new(() => screen.Window, TimeProvider.System);
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task The_tree_has_ids_types_automation_ids_and_the_text_each_element_shows()
     {
         var screen = await TestScreen.OpenAsync();
@@ -26,7 +26,7 @@ public sealed class DriverHostTests
         Assert.True(save.Width > 0 && save.Height > 0);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_tree_stops_at_the_depth_asked_for_and_can_start_below_the_window()
     {
         var screen = await TestScreen.OpenAsync();
@@ -41,7 +41,7 @@ public sealed class DriverHostTests
         Assert.True(form.Children.Count >= 7);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_search_finds_elements_by_every_selector_field_and_counts_them_all()
     {
         var screen = await TestScreen.OpenAsync();
@@ -57,7 +57,7 @@ public sealed class DriverHostTests
         Assert.All(buttons.Matches, static m => Assert.Empty(m.Children));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Props_lists_the_registered_properties_as_text()
     {
         var screen = await TestScreen.OpenAsync();
@@ -68,7 +68,7 @@ public sealed class DriverHostTests
         Assert.Equal("TextBlock", props.Node.Type);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_selector_that_names_nothing_or_matches_nothing_is_refused_with_its_code()
     {
         var screen = await TestScreen.OpenAsync();
@@ -81,7 +81,7 @@ public sealed class DriverHostTests
         Assert.Equal((UiDriverErrors.NoMatch.Code, "no element matches automationId 'nope'"), (missing.Error.Code, missing.Error.Message));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_click_runs_the_buttons_command_and_flips_a_toggle()
     {
         var screen = await TestScreen.OpenAsync();
@@ -95,7 +95,7 @@ public sealed class DriverHostTests
         Assert.True(await TestScreen.OnUi(() => screen.Dark.IsChecked) ?? false);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_disabled_element_cannot_be_clicked()
     {
         var screen = await TestScreen.OpenAsync();
@@ -105,7 +105,7 @@ public sealed class DriverHostTests
         Assert.Equal(UiDriverErrors.NotActionable.Code, result.Error.Code);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Typing_appends_to_a_text_box_or_replaces_what_it_holds()
     {
         var screen = await TestScreen.OpenAsync();
@@ -120,7 +120,7 @@ public sealed class DriverHostTests
         Assert.Equal(("Ada Lovelace", "Grace", UiDriverErrors.NotActionable.Code), (appended, replaced, notABox.Error.Code));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_key_chord_is_raised_on_the_element_and_a_bad_chord_or_key_is_refused()
     {
         var screen = await TestScreen.OpenAsync();
@@ -135,7 +135,7 @@ public sealed class DriverHostTests
         Assert.Equal((UiDriverErrors.Invalid.Code, UiDriverErrors.Invalid.Code), (badChord.Error.Code, badKey.Error.Code));
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Scrolling_moves_the_scroll_viewer_and_stops_at_its_end()
     {
         var screen = await TestScreen.OpenAsync();
@@ -150,7 +150,7 @@ public sealed class DriverHostTests
         Assert.Equal(max, offset);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_wait_holds_when_the_state_arrives_and_times_out_when_it_does_not()
     {
         var screen = await TestScreen.OpenAsync();
@@ -168,7 +168,7 @@ public sealed class DriverHostTests
         Assert.Equal(UiDriverErrors.Invalid.Code, badState.Error.Code);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task The_window_size_is_read_and_set()
     {
         var screen = await TestScreen.OpenAsync();
@@ -183,7 +183,7 @@ public sealed class DriverHostTests
         Assert.Equal(UiDriverErrors.Invalid.Code, refused.Error.Code);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_screenshot_is_a_png_of_the_window_or_of_one_element()
     {
         var screen = await TestScreen.OpenAsync();
@@ -198,7 +198,7 @@ public sealed class DriverHostTests
         Assert.True(window.Length > element.Length);
     }
 
-    [Fact, Trait("Lane", "integration")]
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Without_a_window_every_verb_says_so()
     {
         var host = new DriverHost(() => null, TimeProvider.System);
