@@ -72,20 +72,20 @@ public sealed class ShipPackStepTests
 
         public Rig(string goal = "Expired links answer 410", string testChange = """[{"path":"tests/LinkTests.cs","reason":"the status changed from 404"}]""", string phaseBase = """{"rule":"default-branch","ref":"main"}""", string head = "h1")
         {
-            Files.Put(PacketDir, new Dictionary<string, string>(StringComparer.Ordinal)
+            _ = Files.Put(PacketDir, new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["packet.json"] = $$"""{"id":"demo-p1","repo":"owner/name","baseSha":"{{BaseSha}}"}""",
                 ["phase.json"] = new JsonObject { ["goal"] = goal, ["kind"] = "feature", ["base"] = JsonNode.Parse(phaseBase), ["testChange"] = JsonNode.Parse(testChange) }.ToJsonString(),
                 ["acceptance.json"] = """{"schemaVersion":1,"parent":"sha256:root","items":[]}""",
             });
-            Files.Put(ProofDir, new Dictionary<string, string>(StringComparer.Ordinal)
+            _ = Files.Put(ProofDir, new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["acceptance.json"] = """{"schemaVersion":1,"parent":"sha256:aa","items":[{"id":"AC-1","text":"An expired link answers 410","status":"passing","evidence":[{"kind":"api","path":"evidence/api.json","sha256":"sha256:0123456789abcdef0123456789abcdef","commit":"abcdef1234567","at":"2026-10-24T10:00:00Z"}]},{"id":"AC-2","text":"Saving twice | keeps one record","status":"failing","evidence":[]}]}""",
                 ["holdout.json"] = """{"schemaVersion":1,"commit":"h1","results":[{"scenario":"H1","item":"AC-1","verdict":"pass","spent":false}]}""",
                 ["not-proven.md"] = "# Not proven\n\n- AC-2 / S1 (ui): save twice\n",
                 ["proof.json"] = """{"schemaVersion":1,"head":"h1","items":[],"notRun":[]}""",
             });
-            Files.Put(ReviewDir, new Dictionary<string, string>(StringComparer.Ordinal)
+            _ = Files.Put(ReviewDir, new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["review.json"] = """{"schemaVersion":1,"head":"h1","verdict":"clean","round":2,"counts":{"blocking":0,"issue":0,"suggestions":3,"nits":1},"rounds":[],"findings":[]}""",
             });
@@ -108,7 +108,7 @@ public sealed class ShipPackStepTests
         Assert.Equal("packed", result.Result!.Outcome.Value);
         var draft = Out(result, "handoffDraft");
         Assert.Equal((InMemoryPacketDirectory.DirectoryOf(Address, "handoff"), "h1", Tree), ((string?)draft["dir"], (string?)draft["head"], (string?)draft["workspace"]));
-        Assert.Equal(["body.md", "green.json", "index.json", "packet.json", "pr.json"], rig.Draft().Keys.Order(StringComparer.Ordinal));
+        Assert.Equal(["body.md", "green.json", "index.json", "packet.json", "pr.json"], rig.Draft().Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public sealed class ShipPackStepTests
     public async Task A_proof_with_nothing_skipped_says_so()
     {
         var rig = new Rig();
-        rig.Files.Put(ProofDir, new Dictionary<string, string>(StringComparer.Ordinal)
+        _ = rig.Files.Put(ProofDir, new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["acceptance.json"] = """{"schemaVersion":1,"parent":"sha256:aa","items":[]}""",
             ["holdout.json"] = """{"schemaVersion":1,"commit":"h1","results":[]}""",
@@ -298,7 +298,7 @@ public sealed class ShipPackStepTests
     public async Task A_phase_with_no_hidden_set_fails_the_Step_since_the_canary_cannot_be_scanned()
     {
         var rig = new Rig();
-        rig.Store.Put("T-1", "demo-p1", null);
+        rig.Store.Put("T-1", "demo-p1", setText: null);
 
         var result = await rig.Step().Run(Context(), Token);
 
@@ -355,7 +355,7 @@ public sealed class ShipPackStepTests
     public async Task A_file_the_packet_lacks_fails_the_Step_and_names_the_file()
     {
         var rig = new Rig();
-        rig.Files.Put(ReviewDir, new Dictionary<string, string>(StringComparer.Ordinal));
+        _ = rig.Files.Put(ReviewDir, new Dictionary<string, string>(StringComparer.Ordinal));
 
         var result = await rig.Step().Run(Context(), Token);
 
