@@ -17,8 +17,7 @@
     </StackPanel>
 
     <Grid Grid.Row="1">
-      <!-- The canvas stops above the mini-map (WholeMapStage), so no card sits under it. -->
-      <ctl:ZoomBorder x:Name="WholeCanvas" Margin="{x:Static wv:WholeMapStage.CanvasMargin}" AutomationProperties.Name="{Binding CanvasName}">
+      <ctl:ZoomBorder x:Name="WholeCanvas" AutomationProperties.Name="{Binding CanvasName}">
         <wv:WholeMapCanvas x:Name="WholeWorld" />
       </ctl:ZoomBorder>
 
@@ -32,7 +31,7 @@
         </StackPanel>
       </Border>
 
-      <Border x:Name="WholeMiniMapHost" Focusable="True" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{x:Static wv:WholeMapStage.MiniMapMarginThickness}" Width="{x:Static wv:WholeMapStage.MiniMapWidth}" Height="{x:Static wv:WholeMapStage.MiniMapHeight}"
+      <Border x:Name="WholeMiniMapHost" Focusable="True" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14" Width="180" Height="112"
               Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.SM}"
               KeyDown="OnMiniMapKey" AutomationProperties.Name="Mini-map: arrow keys move the view">
         <ctl:MiniMapControl x:Name="WholeMiniMap" />
