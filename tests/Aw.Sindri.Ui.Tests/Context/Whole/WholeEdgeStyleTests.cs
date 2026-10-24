@@ -9,7 +9,7 @@ public sealed class WholeEdgeStyleTests
 {
     private static PlacedEdge Edge(string from, string to, bool confirmed = true, double confidence = 1, string type = "part-of") => new(from, to, type, confirmed, 0, 0, 10, 10, confidence);
 
-    private static PlacedNode Node(string key, int area) => new(key, key, "feature", area, new WholeRect(0, 0, 10, 10), true);
+    private static PlacedNode Node(string key, int area) => new(key, key, "feature", area, new WholeRect(0, 0, 10, 10), confirmed: true);
 
     [Fact]
     public void A_confirmed_edge_is_solid_and_its_pill_is_the_words()
@@ -53,7 +53,7 @@ public sealed class WholeEdgeStyleTests
         PlacedNode[] nodes = [Node("a", 0), Node("b", 0), Node("c", 1)];
         PlacedEdge[] edges = [Edge("a", "b"), Edge("b", "c")];
 
-        Assert.Equal([edges[0]], WholeEdgeSelection.Visible(edges, nodes, null));
+        Assert.Equal([edges[0]], WholeEdgeSelection.Visible(edges, nodes, focus: null));
         Assert.Equal(edges, WholeEdgeSelection.Visible(edges, nodes, "c"));
     }
 
@@ -62,8 +62,8 @@ public sealed class WholeEdgeStyleTests
     {
         var edge = Edge("a", "b");
 
-        Assert.True(WholeEdgeSelection.ShowsPill(edge, WholeEdgeSelection.PillLimit, null));
-        Assert.False(WholeEdgeSelection.ShowsPill(edge, WholeEdgeSelection.PillLimit + 1, null));
+        Assert.True(WholeEdgeSelection.ShowsPill(edge, WholeEdgeSelection.PillLimit, focus: null));
+        Assert.False(WholeEdgeSelection.ShowsPill(edge, WholeEdgeSelection.PillLimit + 1, focus: null));
         Assert.True(WholeEdgeSelection.ShowsPill(edge, WholeEdgeSelection.PillLimit + 1, "b"));
     }
 }
