@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api.Context;
+
 namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 /// <summary>The whole map's layout (<see cref="WholeMapLayout"/>, continued): the bands across the columns, and the overview's columns.</summary>
