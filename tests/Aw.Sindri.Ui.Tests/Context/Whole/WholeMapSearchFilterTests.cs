@@ -132,4 +132,26 @@ public sealed class WholeMapSearchFilterTests
         Assert.Equal(kept.Key, map.Pinned);
         Assert.Null(map.KeyAt(gone.Rect.CenterX, gone.Rect.CenterY));
     }
+
+    [Fact]
+    public void A_query_zoom_draws_only_the_hits_and_their_direct_links()
+    {
+        var map = Show("nodes-small");
+        var geometry = map.Geometry!;
+        var hit = geometry.Edges[0].From;
+        var keep = WithLinks(geometry, hit);
+
+        var zoomed = map.Zoom([hit]);
+
+        var shown = map.Shown!;
+        Assert.True(zoomed);
+        Assert.Equal(keep.Order(StringComparer.Ordinal), shown.Nodes.Select(n => n.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.All(shown.Edges, e => Assert.True(keep.Contains(e.From) && keep.Contains(e.To)));
+        Assert.Equal(WholeZoomBox.Around([.. shown.Nodes.Select(n => n.Rect)]), map.FitBox);
+
+        map.Unzoom();
+
+        Assert.Same(map.Geometry, map.Shown);
+        Assert.Equal(map.Geometry!.World, map.FitBox);
+    }
 }
