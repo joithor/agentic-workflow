@@ -14,10 +14,25 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     private int _generation;
     private int _filterRun;
     private LazyFileRows _all = new([], null);
+    private FileMapEntry[] _entries = [];
+    private List<FileSymbolsEntry> _symbolFiles = [];
+    private SymbolsView? _symbolsServed;
+    private string? _next;
+    private int? _total;
+    private bool _fetching;
     private CancellationTokenSource? _debounce;
 
     /// <summary>How long typing must pause before the filter runs.</summary>
     internal static readonly TimeSpan FilterDelay = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>The page size asked for.</summary>
+    internal const int PageSize = 200;
+
+    /// <summary>The next page is read when the list reaches this near its read end.</summary>
+    internal const int PrefetchAhead = 50;
+
+    /// <summary>How many entries are read so far.</summary>
+    internal int Loaded => _entries.Length;
 
     /// <summary>How many times the filter has run (a burst of keystrokes runs it once).</summary>
     internal int FilterRuns => _filterRun;
@@ -142,7 +157,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         }
 
         _repo = repo;
-        var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false, Cursor: null, Limit: PageSize), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
             return;
@@ -202,19 +217,103 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     private void Show(FileMapView view)
     {
         _current = view.Path;
+        _fetching = false;
+        _entries = [.. view.Entries];
+        _symbolFiles = [.. view.Symbols.Files ?? []];
+        _symbolsServed = view.Symbols;
+        _next = view.NextCursor;
+        _total = view.Total;
         Problem = string.Empty;
         Symbols = new SymbolsColumnViewModel(view.Symbols);
-        _all = new LazyFileRows(view.Entries, Symbols);
-        Rows = FilterText.Length == 0 ? _all : _all.Narrow(FilterText);
+        Rebuild();
         PathText = view.Path.Length == 0 ? Labels.ContextFilesRoot : view.Path;
         CanGoUp = view.Path.Length > 0;
         TotalsText = Labels.ContextFilesTotals(view.Totals.Files, view.Totals.Mapped, view.Totals.Suggested, view.Totals.Unmapped);
-        Note = string.Equals(view.Symbols.State, "available", StringComparison.Ordinal) ? string.Empty : Labels.ContextMapNamesDetail;
+        Note = NoteText();
+        if (_next is not null && FilterText.Length > 0)
+        {
+            _ = FetchNext();
+        }
+    }
+
+    // The rows over what is read; filtered when a filter is set. A page arriving replaces the list in one assignment.
+    private void Rebuild()
+    {
+        _all = new LazyFileRows(_entries, Symbols, positions: null, _next is null ? null : _total, Touched);
+        Rows = FilterText.Length == 0 ? _all : _all.Narrow(FilterText);
+    }
+
+    private string NoteText() =>
+        _next is not null && FilterText.Length > 0
+            ? Labels.ContextFilesFilterPartial(_entries.Length, _total ?? _entries.Length)
+            : string.Equals(_symbolsServed?.State, "available", StringComparison.Ordinal) ? string.Empty : Labels.ContextMapNamesDetail;
+
+    // The list asked for a row: near the end of what is read, the next page is read ahead of the scroll.
+    private void Touched(int index)
+    {
+        if (_next is not null && !_fetching && index >= _entries.Length - PrefetchAhead)
+        {
+            _ = FetchNext();
+        }
+    }
+
+    // One page at a time, in order; a page that arrives after the folder changed is dropped.
+    private async Task FetchNext()
+    {
+        if (_next is not { } cursor || _fetching || Ports.ApiUrl() is not { } api || _repo is not { } repo)
+        {
+            return;
+        }
+
+        _fetching = true;
+        var generation = _generation;
+        var path = _current.Length == 0 ? null : _current;
+        var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false, cursor, PageSize), CancellationToken.None).ConfigureAwait(true);
+        if (generation != _generation)
+        {
+            return;
+        }
+
+        _fetching = false;
+        if (read.IsError)
+        {
+            _next = null;
+            Problem = read.Error.Message;
+            Rebuild();
+            Changed();
+            return;
+        }
+
+        var page = read.Value;
+        _entries = [.. _entries, .. page.Entries];
+        _symbolFiles.AddRange(page.Symbols.Files ?? []);
+        _next = page.NextCursor;
+        _total = page.Total ?? _total;
+        Symbols = new SymbolsColumnViewModel(page.Symbols with { Files = [.. _symbolFiles] });
+        Note = NoteText();
+        if (FilterText.Length == 0)
+        {
+            Rebuild();
+        }
+        else
+        {
+            _all = new LazyFileRows(_entries, Symbols, positions: null, _next is null ? null : _total, Touched);
+            await ApplyFilter(CancellationToken.None).ConfigureAwait(true);
+        }
+
+        Changed();
+        if (_next is not null && FilterText.Length > 0)
+        {
+            _ = FetchNext();
+        }
     }
 
     private void Fail(Error error)
     {
         _all = new LazyFileRows([], null);
+        _entries = [];
+        _next = null;
+        _total = null;
         Rows = _all;
         TotalsText = string.Empty;
         Note = string.Empty;
@@ -230,19 +329,30 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         try
         {
             await Task.Delay(FilterDelay, Ports.Clock, pause.Token).ConfigureAwait(true);
-            var text = FilterText;
-            var all = _all;
-            var narrowed = await Task.Run(() => all.Narrow(text), pause.Token).ConfigureAwait(true);
-            if (!pause.IsCancellationRequested && ReferenceEquals(all, _all))
+            await ApplyFilter(pause.Token).ConfigureAwait(true);
+            Note = NoteText();
+            Changed();
+            if (_next is not null && FilterText.Length > 0)
             {
-                _filterRun++;
-                Rows = narrowed;
-                Changed();
+                _ = FetchNext();   // a filter reads the rest of the folder, so its answer covers all of it
             }
         }
         catch (OperationCanceledException)
         {
             // a newer keystroke took over
+        }
+    }
+
+    private async Task ApplyFilter(CancellationToken cancellationToken)
+    {
+        var text = FilterText;
+        var all = _all;
+        var total = _next is null ? null : _total;
+        var narrowed = await Task.Run(() => text.Length == 0 ? all.Narrow(text, total, Touched) : all.Narrow(text), cancellationToken).ConfigureAwait(true);
+        if (!cancellationToken.IsCancellationRequested && ReferenceEquals(all, _all))
+        {
+            _filterRun++;
+            Rows = narrowed;
         }
     }
 
