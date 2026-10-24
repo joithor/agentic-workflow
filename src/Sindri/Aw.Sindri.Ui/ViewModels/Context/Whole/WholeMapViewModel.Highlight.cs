@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.ViewModels.Run;
+
 namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 /// <summary>The whole map's hover and pin (<see cref="WholeMapViewModel"/>, continued): what the pointer is over and what a click keeps, as the mockup does it.</summary>
@@ -13,13 +15,16 @@ internal sealed partial class WholeMapViewModel
     internal string? Pinned { get; private set; }
 
     /// <summary>The key the highlight is about: the one under the pointer, else the pinned one.</summary>
-    internal string? Focus => Hovered ?? Pinned;
+    internal string? Focus => SearchActive ? null : Hovered ?? Pinned;
 
     /// <summary>The focus and what it is directly linked to, drawn at full strength while the rest dims; null when nothing is highlighted.</summary>
     internal IReadOnlySet<string>? Emphasis { get; private set; }
 
     /// <summary>Raised when <see cref="Focus"/> or <see cref="Emphasis"/> changed.</summary>
     internal event EventHandler? EmphasisChanged;
+
+    /// <summary>Raised when the camera should centre on a node (a jump from the panel).</summary>
+    internal event EventHandler<ValueEventArgs<WholeRect>>? CentreRequested;
 
     /// <summary>What is under a point of the world: a tile first, else the top-most node.</summary>
     /// <param name="x">World x.</param>
@@ -47,7 +52,7 @@ internal sealed partial class WholeMapViewModel
     /// <param name="key">The key; null over nothing.</param>
     internal void Hover(string? key)
     {
-        if (!string.Equals(Hovered, key, StringComparison.Ordinal))
+        if (!SearchActive && !string.Equals(Hovered, key, StringComparison.Ordinal))
         {
             Hovered = key;
             Refocus();
@@ -68,9 +73,14 @@ internal sealed partial class WholeMapViewModel
         }
 
         var isTile = Geometry?.Tiles.Any(t => string.Equals(t.Key, key, StringComparison.Ordinal)) == true;
-        var again = string.Equals(Pinned, key, StringComparison.Ordinal);
-        Pinned = key;
+        var again = SearchActive || string.Equals(Pinned, key, StringComparison.Ordinal);
+        Pinned = again ? null : key;   // a search owns the highlight; a second click goes further and lets the pin go, so it cannot stick
         Refocus();
+        if (!isTile && !again)
+        {
+            _ = Panel.Open(key);
+        }
+
         if (again)
         {
             if (isTile)
@@ -94,13 +104,30 @@ internal sealed partial class WholeMapViewModel
         }
 
         Pinned = null;
+        _ = Panel.Close();
         Refocus();
         return true;
     }
 
+    // A link in the panel was clicked: that node is pinned and centred when it is drawn, and the panel is about it.
+    private void Jump(string key)
+    {
+        if (Geometry?.Nodes.FirstOrDefault(n => string.Equals(n.Key, key, StringComparison.Ordinal)) is { } node)
+        {
+            Pinned = key;
+            Refocus();
+            CentreRequested?.Invoke(this, new ValueEventArgs<WholeRect>(node.Rect));
+        }
+
+        _ = Panel.Open(key);
+    }
+
+    private (string Label, string Kind)? LookUp(string key) =>
+        Geometry?.Nodes.FirstOrDefault(n => string.Equals(n.Key, key, StringComparison.Ordinal)) is { } node ? (node.Label, node.Kind) : null;
+
     private void Refocus()
     {
-        Emphasis = Focus is { } focus ? Around(focus) : null;
+        Emphasis = SearchActive ? _searchSet : Focus is { } focus ? Around(focus) : null;
         EmphasisChanged?.Invoke(this, EventArgs.Empty);
     }
 
