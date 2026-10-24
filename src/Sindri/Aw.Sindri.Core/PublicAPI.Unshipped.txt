@@ -10378,8 +10378,6 @@ Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Agent = 3 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Block = 2 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Desk = 1 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
-Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps
-static Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps.Applies(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! step, Aw.Sindri.Core.Workflow.Engine.StepRuntime runOn) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand
 static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! address, Aw.Sindri.Core.Workflow.Engine.RunToken run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! outcomes, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs) -> string!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
@@ -12863,7 +12861,7 @@ Aw.Sindri.Core.Setup.SetupRecipes
 static Aw.Sindri.Core.Setup.MapBuildProgress.Parse(string! line) -> Aw.Sindri.Core.Setup.SetupProgress?
 static Aw.Sindri.Core.Setup.McpLocalRegistration.IsRegistered(string? claudeJson, string! checkout, string! repo) -> bool
 static Aw.Sindri.Core.Setup.OnyxFact.From(Aw.Sindri.Core.Onyx.OnyxStatusReport! report) -> Aw.Sindri.Core.Setup.OnyxFact!
-static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines) -> Aw.Sindri.Core.Setup.RecipesFact!
+static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! waiting) -> Aw.Sindri.Core.Setup.RecipesFact!
 Aw.Sindri.Core.Setup.SetupItem.<Clone>$() -> Aw.Sindri.Core.Setup.SetupItem!
 Aw.Sindri.Core.Setup.SetupItem.Deconstruct(out string! Repo, out Aw.Sindri.Core.Setup.SetupState State, out string? Detail) -> void
 Aw.Sindri.Core.Setup.SetupItem.Equals(Aw.Sindri.Core.Setup.SetupItem? other) -> bool
@@ -13808,26 +13806,23 @@ static Aw.Sindri.Core.Profile.EmbeddingSettings.operator ==(Aw.Sindri.Core.Profi
 const Aw.Sindri.Core.Profile.EmbeddingSettings.DefaultUrl = "http://127.0.0.1:11434" -> string!
 Aw.Sindri.Core.Profile.GraphSettings
 Aw.Sindri.Core.Profile.GraphSettings.<Clone>$() -> Aw.Sindri.Core.Profile.GraphSettings!
-Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null, int? MaxNodes = null) -> void
-Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB, out int? MaxNodes) -> void
+Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null) -> void
+Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB) -> void
 Aw.Sindri.Core.Profile.GraphSettings.Equals(Aw.Sindri.Core.Profile.GraphSettings? other) -> bool
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.get -> bool?
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.init -> void
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.get -> int?
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.init -> void
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.get -> int?
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.init -> void
 override Aw.Sindri.Core.Profile.GraphSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.GraphSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.GraphSettings.ToString() -> string!
 static Aw.Sindri.Core.Profile.GraphSettings.operator !=(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
 static Aw.Sindri.Core.Profile.GraphSettings.operator ==(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 256 -> int
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxNodes = 500000 -> int
+const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 1024 -> int
 Aw.Sindri.Core.Profile.IndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings, out Aw.Sindri.Core.Profile.GraphSettings? Graph) -> void
 Aw.Sindri.Core.Profile.IndexSettings.IndexSettings(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings = null, Aw.Sindri.Core.Profile.GraphSettings? Graph = null) -> void
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 512 -> int
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 200 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 4096 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 4096 -> int
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.init -> void
 Aw.Sindri.Core.Profile.IndexSettings.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -15230,10 +15225,12 @@ Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.get -> Aw.Sindri.Core.Challenges.
 Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.init -> void
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.get -> bool
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null) -> void
+Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null, bool SessionOk = false) -> void
 Aw.Sindri.Core.Commands.CommandRow.Confirm.get -> string?
 Aw.Sindri.Core.Commands.CommandRow.Confirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm) -> void
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.get -> bool
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.init -> void
+Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm, out bool SessionOk) -> void
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.ToString() -> string!
@@ -17129,6 +17126,10 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.get -> Aw.Sindri.Core.Workflow.Stats.RecipeListStats?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.get -> int?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
@@ -18316,3 +18317,7 @@ static Aw.Sindri.Core.Prove.RedTest.operator ==(Aw.Sindri.Core.Prove.RedTest? le
 static Aw.Sindri.Core.Prove.RedTestsFact.operator !=(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.operator ==(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
+Aw.Sindri.Core.Prove.PhaseSignals
+static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
+static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
+static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!

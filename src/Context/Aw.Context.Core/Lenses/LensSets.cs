@@ -63,7 +63,7 @@ internal static class LensSets
     private static IntentBand Intent(List<LensScope> scopes)
     {
         var (recordList, decisionList) = IntentUnion(scopes);
-        return new IntentBand([.. recordList], [.. decisionList], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null), Truncated: false);
+        return new IntentBand([.. recordList], [.. decisionList], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null));
     }
 
     /// <summary>The records and decisions of every scope, each once with the anchors that reached it, in key order and uncapped (the history lens cuts them by time).</summary>
