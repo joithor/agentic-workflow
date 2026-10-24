@@ -12,6 +12,9 @@ internal sealed class FileLinks
     private readonly Dictionary<string, HashSet<string>> _records = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HashSet<string>> _decisions = new(StringComparer.Ordinal);
 
+    // One index per applied graph: a graph is immutable and the process keeps the same instance per map version, so a directory listing never re-walks every edge.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GraphSnapshot, FileLinks> _all = new();
+
     /// <param name="graph">The graph.</param>
     /// <param name="repo">The repo whose links are read, or null for every link: an edge whose file evidence ('repo:&lt;repo&gt;/&lt;path&gt;') names only other repos is left out; one with no repo evidence counts for any repo.</param>
     internal FileLinks(GraphSnapshot graph, Engine.ContextRepoName? repo = null)
@@ -30,6 +33,10 @@ internal sealed class FileLinks
         }
     }
 
+    /// <summary>The index of every link in a graph, built once per graph instance.</summary>
+    /// <param name="graph">The graph.</param>
+    internal static FileLinks For(GraphSnapshot graph) => _all.GetValue(graph, static g => new FileLinks(g));
+
     private static bool BelongsTo(GraphEdge edge, Engine.ContextRepoName? repo)
     {
         if (repo is not { } wanted)
@@ -44,8 +51,28 @@ internal sealed class FileLinks
     /// <summary>Mapped (a confirmed 'implements' edge), suggested (only unconfirmed ones) or unmapped.</summary>
     internal FileMapStatus StatusOf(string file)
     {
-        var own = (_byFile.GetValueOrDefault(file) ?? []).Where(e => e.Type == EdgeType.Implements).ToList();
-        return own.Exists(e => Confirmation.Of(e.Provenance)) ? FileMapStatus.Mapped : own.Count > 0 ? FileMapStatus.Suggested : FileMapStatus.Unmapped;
+        if (!_byFile.TryGetValue(file, out var edges))
+        {
+            return FileMapStatus.Unmapped;
+        }
+
+        var status = FileMapStatus.Unmapped;
+        foreach (var edge in edges)
+        {
+            if (edge.Type != EdgeType.Implements)
+            {
+                continue;
+            }
+
+            if (Confirmation.Of(edge.Provenance))
+            {
+                return FileMapStatus.Mapped;
+            }
+
+            status = FileMapStatus.Suggested;
+        }
+
+        return status;
     }
 
     /// <summary>A file's links as features: a suggestion keeps its link id.</summary>
