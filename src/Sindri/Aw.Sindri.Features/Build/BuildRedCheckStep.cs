@@ -9,16 +9,13 @@ namespace Aw.Sindri.Features.Build;
 /// <summary>
 /// 'step.build.red-check' on the block runtime (line spec §7.2, BLD-RED-001): the red tests must FAIL on the red commit, before any code. The profile's
 /// <c language="text">workflow.build.commands</c> all run once in the phase worktree on that commit (decision A); at least one must fail ('red'). When every command passes the tests can't fail: 'vacuous' (a finding names the
-/// items and their tests) and the build goes back to 'red'. When every item is app-only there is no test to run and it passes ('red') without running a command; their proof is at prove. A command that runs out of time, a worktree off the red commit or with uncommitted files (the red Step's own <c>redTests</c> output file aside), no red commit in the facts, no command in the profile or no test to run
+/// items and their tests) and the build goes back to 'red'. When every item is app-only there is no test to run and it passes ('red') without running a command; their proof is at prove. A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no command in the profile or no test to run
 /// fails the Step instead, so the instance parks. The commands run under one heavy slot.
 /// </summary>
 /// <param name="diff">Reads the worktree's head.</param>
 /// <param name="commands">Reads the profile's commands and runs them under a heavy slot.</param>
 internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner commands) : IBlockStep, IBlockStepId
 {
-    // The files the red Step reports its facts from, at the worktree root, named after the fact (AgentStepBrief).
-    private static readonly HashSet<string> OwnOutputs = new(["redTests"], StringComparer.Ordinal);
-
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.build.red-check");
 
@@ -55,8 +52,7 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             : await Check(red, listed.Value, worktree, cancellationToken).ConfigureAwait(false);
     }
 
-    // The tests must run on the red commit, in a clean tree: a worktree that already moved on, or carries uncommitted files, proves nothing. The red Step's own
-    // output file (the agent writes it into the worktree for 'workflow complete --output fact:redTests=') is not work and doesn't count.
+    // The tests must run on the red commit, in a clean tree: a worktree that already moved on, or carries uncommitted files, proves nothing.
     private async ValueTask<BlockStepResult?> CheckHead(string commit, string worktree, CancellationToken cancellationToken)
     {
         var head = await diff.Head(worktree, cancellationToken).ConfigureAwait(false);
@@ -70,10 +66,10 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             return BlockStepResult.Failed($"step.build.red-check: {worktree} is at {head.Value}, not the red commit {commit} (BLD-RED-001 needs the tests run before any code)");
         }
 
-        var changed = await diff.ChangedPaths(worktree, commit, cancellationToken).ConfigureAwait(false);
-        return changed.IsError
-            ? BlockStepResult.Failed($"step.build.red-check can't read {worktree}: {changed.Error.Message}")
-            : changed.Value.All(static path => OwnOutputs.Contains(path)) ? null : BlockStepResult.Failed($"step.build.red-check: the worktree {worktree} has uncommitted or untracked files (fix: commit or discard them, then resume)");
+        var clean = await diff.IsEmpty(worktree, head.Value, cancellationToken).ConfigureAwait(false);
+        return clean.IsError
+            ? BlockStepResult.Failed($"step.build.red-check can't read {worktree}: {clean.Error.Message}")
+            : clean.Value ? null : BlockStepResult.Failed($"step.build.red-check: the worktree {worktree} has uncommitted or untracked files (fix: commit or discard them, then resume)");
     }
 
     private async ValueTask<BlockStepResult> Check(RedTestsFact red, CommandSet set, string worktree, CancellationToken cancellationToken)
