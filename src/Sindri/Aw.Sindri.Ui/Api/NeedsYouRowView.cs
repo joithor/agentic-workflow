@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api.Workflow;
+
 namespace Aw.Sindri.Ui.Api;
 
 /// <summary>One row of GET /sindri/needs-you (API P4): what waits on the human, in the API's order.</summary>
@@ -40,9 +42,9 @@ internal sealed record NeedsYouRowView(
     string? PrimaryAction,
     IReadOnlyList<string> Actions,
     string Cli,
-    Workflow.StateChip? Chip = null,
+    StateChip? Chip = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Child = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] NeedsYouStopView? Stop = null,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] Workflow.StatusTimeout? Timeout = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusTimeout? Timeout = null,
     NeedsYouOpenView? Open = null);

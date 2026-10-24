@@ -17,6 +17,16 @@ internal static partial class Labels
     /// <summary>The button that goes up one folder.</summary>
     internal const string ContextFilesUp = "Up one folder";
 
+    /// <summary>The filter box's hint.</summary>
+    internal const string ContextFilesFilter = "Filter by name";
+
+    /// <summary>The note while a filter waits for the rest of a big folder to arrive.</summary>
+    /// <param name="loaded">How many entries are read.</param>
+    /// <param name="total">How many there are.</param>
+    /// <returns>"Still reading this folder: the filter covers 400 of 27000 so far."</returns>
+    internal static string ContextFilesFilterPartial(int loaded, int total) =>
+        string.Create(CultureInfo.InvariantCulture, $"Still reading this folder: the filter covers {loaded} of {total} so far.");
+
     /// <summary>The word while a folder is read.</summary>
     internal const string ContextFilesLoading = "Reading the files...";
 
@@ -92,4 +102,42 @@ internal static partial class Labels
 
     /// <summary>The No map state's body.</summary>
     internal const string ContextStateEmptyBody = "Build it to see why this work exists and what it touches.";
+
+    /// <summary>The whole map's Building overlay when the API says how far it is: the parts it knows, joined.</summary>
+    /// <param name="parts">The parts that are known ("3 of 7 sources", "started 4 min ago").</param>
+    /// <returns>"Building the map · 3 of 7 sources · started 4 min ago".</returns>
+    internal static string ContextBuildingLine(IEnumerable<string> parts) => string.Join(" · ", ((string[])["Building the map"]).Concat(parts));
+
+    /// <summary>How far a build has read.</summary>
+    /// <param name="done">Sources read.</param>
+    /// <param name="total">Sources to read.</param>
+    /// <returns>"3 of 7 sources".</returns>
+    internal static string ContextBuildingSources(int done, int total) => string.Create(CultureInfo.InvariantCulture, $"{done} of {total} {(total == 1 ? "source" : "sources")}");
+
+    /// <summary>When a build started.</summary>
+    /// <param name="age">How long ago.</param>
+    /// <returns>"started 4 min ago".</returns>
+    internal static string ContextBuildingStarted(TimeSpan age) => "started " + ContextAgo(age);
+
+    /// <summary>When the map that is being replaced was last synced.</summary>
+    /// <param name="age">How long ago.</param>
+    /// <returns>"last map 2 h ago".</returns>
+    internal static string ContextLastMap(TimeSpan age) => "last map " + ContextAgo(age);
+
+    /// <summary>The button that opens the build's job.</summary>
+    internal const string ContextBuildingJob = "View build job";
+
+    /// <summary>The No map overlay's title when the API names the repositories.</summary>
+    /// <param name="repos">How many repositories.</param>
+    /// <returns>"No map yet for 2 repositories".</returns>
+    internal static string ContextNoMapRepos(int repos) => string.Create(CultureInfo.InvariantCulture, $"No map yet for {repos} {(repos == 1 ? "repository" : "repositories")}");
+
+    // A short age in the Context page's words.
+    private static string ContextAgo(TimeSpan age) => age.TotalMinutes switch
+    {
+        < 1 => "just now",
+        < 60 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalMinutes} min ago"),
+        < 1440 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalHours} h ago"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays} d ago"),
+    };
 }

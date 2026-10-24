@@ -65,10 +65,17 @@ public static class EngineNotices
         }
 
         var (kind, text) = found;
+        var row = after.Suspension switch
+        {
+            { Kind: SuspensionKind.Takeover } => "takeover",
+            { Kind: SuspensionKind.Park or SuspensionKind.Escalation } => "park",
+            _ => "desk",
+        };
         var with = new Dictionary<string, WithValue>(StringComparer.Ordinal)
         {
             ["class"] = Literal(kind == NoticeClass.Interrupt ? "interrupt" : "info"),
             ["text"] = Literal(text),
+            ["row"] = Literal(row),   // which needs-you row the notice is about: 'effect.notify.desk' builds its id (NeedsYouRowId) from this and the instance
         };
         return [(new EffectCommand(_notify, EffectIdentity.ForNotice(after.Id, after.Frame.Entry, version), CommandOrigin.Engine, with), kind)];
     }

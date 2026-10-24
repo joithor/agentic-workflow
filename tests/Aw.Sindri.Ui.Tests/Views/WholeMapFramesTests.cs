@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Context.Whole;
+using Aw.Sindri.Ui.Views.Controls;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -45,7 +46,7 @@ public sealed class WholeMapFramesTests : FrameHost
         whole.Canvas.Settle();
         Assert.Equal(shell.Context.Whole.Geometry!.World.Width, whole.Canvas.WorldBounds.Width);
         Assert.InRange(whole.Canvas.View.Scale, WholeMapViewModel.FirstOpenFloor, WholeMapViewModel.MaxScale);
-        Assert.Equal(shell.Context.Whole.Areas.Count, Named<ItemsControl>(window, "WholeAreas").ItemCount);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "WholeAreas");   // the page is the graph: no row of feature chips
         Assert.Equal(shell.Context.Whole.Head, shell.Context.Head);
         Assert.False(Visible(window, "WholeStatus"));
         Assert.False(Visible(window, "ContextEmpty"));
@@ -115,6 +116,34 @@ public sealed class WholeMapFramesTests : FrameHost
 
         Assert.False(Visible(window, "WholeStatus"));
     });
+
+    // The mini-map floats over the stage's bottom-left corner: no card may be drawn under it on the first open or after Fit, at the narrow width where the map fills the stage.
+    [Theory]
+    [InlineData("nodes-small")]
+    [InlineData("areas-over-budget")]
+    public Task The_mini_map_covers_no_card_on_the_first_open_or_after_fit_at_900(string golden) => OnUi(async () =>
+    {
+        var (window, shell) = await Open(900, 800, Draft(golden));
+        var whole = Named<WholeMapView>(window, "WholeMap");
+        whole.Canvas.Settle();
+        var miniMap = Named<Border>(window, "WholeMiniMapHost").Bounds;
+
+        Assert.Empty(CardsOver(shell.Context.Whole.Geometry!, whole.Canvas.View, miniMap));
+
+        Named<Button>(window, "WholeZoomFit").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        whole.Canvas.Settle();
+
+        Assert.Empty(CardsOver(shell.Context.Whole.Geometry!, whole.Canvas.View, miniMap));
+    });
+
+    // The cards (tiles by feature, columns by node) whose rectangle on the stage meets the mini-map's.
+    private static List<Avalonia.Rect> CardsOver(WholeMapGeometry geometry, ZoomView view, Avalonia.Rect miniMap)
+    {
+        var rects = geometry.ByArea ? geometry.Tiles.Select(t => t.Rect) : geometry.Columns.Select(c => c.Rect);
+        return [.. rects
+            .Select(r => new Avalonia.Rect((r.X * view.Scale) + view.X, (r.Y * view.Scale) + view.Y, r.Width * view.Scale, r.Height * view.Scale))
+            .Where(r => r.Intersects(miniMap))];
+    }
 
     // The proof of whole-map spec §8 for W3: a frame of each state at both widths (saved when AW_UI_FRAMES=1) and the first-frame time on an over-budget map.
     [Theory]

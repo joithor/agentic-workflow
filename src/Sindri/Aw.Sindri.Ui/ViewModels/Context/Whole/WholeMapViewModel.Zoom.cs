@@ -9,6 +9,9 @@ internal sealed partial class WholeMapViewModel
     /// <summary>The nodes a query's answer holds, drawn at full strength while the rest of the map stays behind them; empty when nothing is zoomed to.</summary>
     internal IReadOnlySet<string> HitKeys { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>Whether the map read is the overview of features, which a query reaches through "locate". It stays so while zoomed, when the drawn geometry holds nodes.</summary>
+    internal bool AnswerByArea => Answer is { } answer && string.Equals(answer.Detail, "areas", StringComparison.Ordinal);
+
     /// <summary>Whether the camera is on a query's answer.</summary>
     public bool IsZoomed { get; private set; }
 
@@ -77,6 +80,7 @@ internal sealed partial class WholeMapViewModel
 
         _beforeZoom ??= (Answer, Geometry, Areas);
         Geometry = geometry;
+        ForgetHighlight();
         var byKey = overview.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
         Areas = [.. geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
         MoreTouchedText = notOpened > 0 ? Labels.ContextWholeMoreTouched(notOpened) : string.Empty;
@@ -88,17 +92,20 @@ internal sealed partial class WholeMapViewModel
     {
         if (!IsZoomed)
         {
+            EndSearch();
             return;
         }
 
         if (_beforeZoom is { } before)
         {
             (Answer, Geometry, Areas) = before;
+            ForgetHighlight();
             _beforeZoom = null;
         }
 
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
         Changed();
+        ResetSearch();
         FitRequested?.Invoke(this, EventArgs.Empty);
     }
 }

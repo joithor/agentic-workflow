@@ -98,10 +98,10 @@ public static partial class SindriErrors
     /// <summary>SND-ITEM-409: the item changed since the caller looked, or it is already closed (API spec §2.1).</summary>
     public static readonly ErrorDefinition ItemConflict = new("SND-ITEM-409", ErrorKind.Conflict, "The item changed since you looked");
 
-    /// <summary>SND-REQ-001: a request has an unknown kind, no text, or more than 2,000 characters (API spec §9).</summary>
+    /// <summary>SND-REQ-001: a request has an unknown kind, no text, or more than 65,536 characters (API spec §9).</summary>
     public static readonly ErrorDefinition RequestInvalid = new("SND-REQ-001", ErrorKind.Invalid, "The request isn't valid");
 
-    /// <summary>SND-REQ-002: too many open requests in the repo (20) or in all (50) (API spec §4.2).</summary>
+    /// <summary>SND-REQ-002: too many open requests in the repo (200) or in all (500) (API spec §4.2).</summary>
     public static readonly ErrorDefinition RequestsRateLimited = new("SND-REQ-002", ErrorKind.RateLimited, "Too many open requests");
 
     /// <summary>SND-DEC-404: no decision has that id, or a session caller may not see it.</summary>
@@ -166,6 +166,9 @@ public static partial class SindriErrors
 
     /// <summary>SND-LAUNCH-023: printed by the pre-push hook Sindri installs when an agent Step tries to push; the push is refused (line spec LN-LCH1).</summary>
     public static readonly ErrorDefinition LaunchPushRefused = new("SND-LAUNCH-023", ErrorKind.Forbidden, "Agent Steps can't push; Sindri pushes");
+
+    /// <summary>SND-LAUNCH-025: a fact a Step reads would be written over a file git tracks in the Step's worktree; the launch is refused and the file is left as it is.</summary>
+    public static readonly ErrorDefinition LaunchFactFileTracked = new("SND-LAUNCH-025", ErrorKind.Conflict, "A Step's fact file would overwrite a tracked file");
 
     /// <summary>SND-LAUNCH-024: the agent CLI's trust file can't be updated for the Step's worktree (unparseable, locked or not writable); the file is left untouched and the launch is refused.</summary>
     public static readonly ErrorDefinition LaunchTrustUnavailable = new("SND-LAUNCH-024", ErrorKind.Unavailable, "The agent CLI's trust file couldn't be updated");
@@ -265,8 +268,9 @@ public static partial class SindriErrors
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
-        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
+        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchFactFileTracked, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
         WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
         NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable, EngineUnavailable, EngineNotFound,
+        ScrubStagedSecrets, ScrubForeignHook, ScrubNotARepo, ScrubGitFailed,
     ];
 }

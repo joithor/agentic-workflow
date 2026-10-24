@@ -44,7 +44,8 @@ internal static class DesignSteps
 
     /// <summary>'step.design.lens-desk': the lens rounds hit their cap with findings left; human-only: accept them as known risks, revise with notes, or drop.</summary>
     public static BlockDescriptor LensDesk { get; } = HumanDeskStep("step.design.lens-desk", Capability.None)
-        .Reads("fact:findings", "fact:lensRounds").Reports("accept", "revise", "drop")
+        .Reads("fact:findings", "fact:lensRounds").Reviewing(ReviewOf("fact:design", DeskReviewKind.Design), ReviewOf("fact:findings", DeskReviewKind.Text))
+        .Reports("accept", "revise", "drop")
         .Writes(On("fact:accepted", "accept"), On("fact:answers", "revise"));
 
     /// <summary>'step.design.evidence': checks the design evidence and assembles the candidate design packet; 'complete' or 'incomplete' with findings.</summary>

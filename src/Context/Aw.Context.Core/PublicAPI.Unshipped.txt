@@ -1986,17 +1986,15 @@ Aw.Context.Core.Lenses.BandSearched.Empty.init -> void
 Aw.Context.Core.Lenses.BandSearched.Equals(Aw.Context.Core.Lenses.BandSearched? other) -> bool
 Aw.Context.Core.Lenses.CodeBand
 Aw.Context.Core.Lenses.CodeBand.<Clone>$() -> Aw.Context.Core.Lenses.CodeBand!
-Aw.Context.Core.Lenses.CodeBand.CodeBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, Aw.Context.Core.Lenses.LensSymbols! Symbols, Aw.Context.Core.Lenses.CodeCounts! Counts, bool Truncated) -> void
+Aw.Context.Core.Lenses.CodeBand.CodeBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, Aw.Context.Core.Lenses.LensSymbols! Symbols, Aw.Context.Core.Lenses.CodeCounts! Counts) -> void
 Aw.Context.Core.Lenses.CodeBand.Counts.get -> Aw.Context.Core.Lenses.CodeCounts!
 Aw.Context.Core.Lenses.CodeBand.Counts.init -> void
-Aw.Context.Core.Lenses.CodeBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out Aw.Context.Core.Lenses.CodeCounts! Counts, out bool Truncated) -> void
+Aw.Context.Core.Lenses.CodeBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out Aw.Context.Core.Lenses.CodeCounts! Counts) -> void
 Aw.Context.Core.Lenses.CodeBand.Equals(Aw.Context.Core.Lenses.CodeBand? other) -> bool
 Aw.Context.Core.Lenses.CodeBand.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>!
 Aw.Context.Core.Lenses.CodeBand.Files.init -> void
 Aw.Context.Core.Lenses.CodeBand.Symbols.get -> Aw.Context.Core.Lenses.LensSymbols!
 Aw.Context.Core.Lenses.CodeBand.Symbols.init -> void
-Aw.Context.Core.Lenses.CodeBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.CodeBand.Truncated.init -> void
 Aw.Context.Core.Lenses.CodeCounts
 Aw.Context.Core.Lenses.CodeCounts.<Clone>$() -> Aw.Context.Core.Lenses.CodeCounts!
 Aw.Context.Core.Lenses.CodeCounts.CodeCounts(int Files, int Symbols, int FeaturesWithNoCode) -> void
@@ -2191,13 +2189,11 @@ Aw.Context.Core.Lenses.IntentBand.Counts.get -> Aw.Context.Core.Lenses.IntentCou
 Aw.Context.Core.Lenses.IntentBand.Counts.init -> void
 Aw.Context.Core.Lenses.IntentBand.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>!
 Aw.Context.Core.Lenses.IntentBand.Decisions.init -> void
-Aw.Context.Core.Lenses.IntentBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, out Aw.Context.Core.Lenses.IntentCounts! Counts, out bool Truncated) -> void
+Aw.Context.Core.Lenses.IntentBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, out Aw.Context.Core.Lenses.IntentCounts! Counts) -> void
 Aw.Context.Core.Lenses.IntentBand.Equals(Aw.Context.Core.Lenses.IntentBand? other) -> bool
-Aw.Context.Core.Lenses.IntentBand.IntentBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, Aw.Context.Core.Lenses.IntentCounts! Counts, bool Truncated) -> void
+Aw.Context.Core.Lenses.IntentBand.IntentBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, Aw.Context.Core.Lenses.IntentCounts! Counts) -> void
 Aw.Context.Core.Lenses.IntentBand.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>!
 Aw.Context.Core.Lenses.IntentBand.Records.init -> void
-Aw.Context.Core.Lenses.IntentBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.IntentBand.Truncated.init -> void
 Aw.Context.Core.Lenses.IntentCounts
 Aw.Context.Core.Lenses.IntentCounts.<Clone>$() -> Aw.Context.Core.Lenses.IntentCounts!
 Aw.Context.Core.Lenses.IntentCounts.Decisions.get -> int
@@ -2616,7 +2612,7 @@ Aw.Context.Core.Lenses.ProductBand.Affects.get -> System.Collections.Generic.IRe
 Aw.Context.Core.Lenses.ProductBand.Affects.init -> void
 Aw.Context.Core.Lenses.ProductBand.Counts.get -> Aw.Context.Core.Lenses.ProductCounts!
 Aw.Context.Core.Lenses.ProductBand.Counts.init -> void
-Aw.Context.Core.Lenses.ProductBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, out Aw.Context.Core.Lenses.ProductCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out bool Truncated) -> void
+Aw.Context.Core.Lenses.ProductBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, out Aw.Context.Core.Lenses.ProductCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Lenses.ProductBand.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
 Aw.Context.Core.Lenses.ProductBand.Edges.init -> void
 Aw.Context.Core.Lenses.ProductBand.Equals(Aw.Context.Core.Lenses.ProductBand? other) -> bool
@@ -2624,9 +2620,7 @@ Aw.Context.Core.Lenses.ProductBand.Neighbors.get -> System.Collections.Generic.I
 Aw.Context.Core.Lenses.ProductBand.Neighbors.init -> void
 Aw.Context.Core.Lenses.ProductBand.Own.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>!
 Aw.Context.Core.Lenses.ProductBand.Own.init -> void
-Aw.Context.Core.Lenses.ProductBand.ProductBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, Aw.Context.Core.Lenses.ProductCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, bool Truncated) -> void
-Aw.Context.Core.Lenses.ProductBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.ProductBand.Truncated.init -> void
+Aw.Context.Core.Lenses.ProductBand.ProductBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, Aw.Context.Core.Lenses.ProductCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Lenses.ProductCounts
 Aw.Context.Core.Lenses.ProductCounts.<Clone>$() -> Aw.Context.Core.Lenses.ProductCounts!
 Aw.Context.Core.Lenses.ProductCounts.Affects.get -> int
@@ -3677,14 +3671,12 @@ Aw.Context.Core.Results.DiffPart
 Aw.Context.Core.Results.DiffPart.<Clone>$() -> Aw.Context.Core.Results.DiffPart!
 Aw.Context.Core.Results.DiffPart.AnchorsTotal.get -> int
 Aw.Context.Core.Results.DiffPart.AnchorsTotal.init -> void
-Aw.Context.Core.Results.DiffPart.AnchorsTruncated.get -> bool
-Aw.Context.Core.Results.DiffPart.AnchorsTruncated.init -> void
 Aw.Context.Core.Results.DiffPart.Base.get -> string!
 Aw.Context.Core.Results.DiffPart.Base.init -> void
 Aw.Context.Core.Results.DiffPart.Counts.get -> Aw.Context.Core.Results.DiffCounts!
 Aw.Context.Core.Results.DiffPart.Counts.init -> void
-Aw.Context.Core.Results.DiffPart.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out Aw.Context.Core.Results.DiffCounts! Counts, out bool Truncated, out int AnchorsTotal, out bool AnchorsTruncated) -> void
-Aw.Context.Core.Results.DiffPart.DiffPart(Aw.Context.Core.Engine.ContextRepoName Repo, string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, Aw.Context.Core.Results.DiffCounts! Counts, bool Truncated, int AnchorsTotal, bool AnchorsTruncated) -> void
+Aw.Context.Core.Results.DiffPart.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out Aw.Context.Core.Results.DiffCounts! Counts, out bool Truncated, out int AnchorsTotal) -> void
+Aw.Context.Core.Results.DiffPart.DiffPart(Aw.Context.Core.Engine.ContextRepoName Repo, string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, Aw.Context.Core.Results.DiffCounts! Counts, bool Truncated, int AnchorsTotal) -> void
 Aw.Context.Core.Results.DiffPart.Equals(Aw.Context.Core.Results.DiffPart? other) -> bool
 Aw.Context.Core.Results.DiffPart.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>!
 Aw.Context.Core.Results.DiffPart.Files.init -> void
@@ -4604,7 +4596,6 @@ const Aw.Context.Core.Engine.QueryRules.BudgetMessage = "budget must be a whole 
 const Aw.Context.Core.Engine.QueryRules.DefaultBudget = 8000 -> int
 const Aw.Context.Core.Engine.QueryRules.DepthMessage = "depth must be a whole number from 0 to 4" -> string!
 const Aw.Context.Core.Engine.QueryRules.ItemMessage = "an item anchor names a tracker key or record key of 1 to 2000 characters" -> string!
-const Aw.Context.Core.Engine.QueryRules.MaxAnchors = 20 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxDepth = 4 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxEncodedText = 6000 -> int
 const Aw.Context.Core.Engine.QueryRules.MaxSubgraphGet = 20 -> int
@@ -4642,9 +4633,7 @@ const Aw.Context.Core.History.HistoryRules.ChangesPerRepo = 101 -> int
 const Aw.Context.Core.History.HistoryRules.ListCap = 100 -> int
 const Aw.Context.Core.History.HistoryRules.MaxFiles = 50 -> int
 const Aw.Context.Core.History.HistoryRules.SubjectChars = 200 -> int
-const Aw.Context.Core.Lenses.DiffAnchors.MaxAnchors = 20 -> int
 const Aw.Context.Core.Lenses.DiffAnchors.MaxFiles = 1000 -> int
-const Aw.Context.Core.Lenses.LensesBuilder.BandCap = 100 -> int
 const Aw.Context.Core.Linking.DecisionExtractor.MaxQuote = 600 -> int
 const Aw.Context.Core.Map.MapRetention.RetainedVersions = 20 -> int
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
@@ -5592,7 +5581,6 @@ static Aw.Context.Core.Engine.QueryRules.Words(string! text, int max) -> System.
 static Aw.Context.Core.Engine.RepoHead.operator !=(Aw.Context.Core.Engine.RepoHead? left, Aw.Context.Core.Engine.RepoHead? right) -> bool
 static Aw.Context.Core.Engine.RepoHead.operator ==(Aw.Context.Core.Engine.RepoHead? left, Aw.Context.Core.Engine.RepoHead? right) -> bool
 static Aw.Context.Core.Engine.ScopeRules.Mapped(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
-static Aw.Context.Core.Engine.ScopeRules.MayRead(Aw.Context.Core.Engine.ContextCaller! caller, Aw.Context.Core.Sources.SourceDescriptor! source) -> bool
 static Aw.Context.Core.Engine.ScopeRules.Resolve(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos, Aw.Context.Core.Engine.ContextCaller! caller) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!>!
 static Aw.Context.Core.Engine.ScopeRules.Usable(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRepoEntry!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
 static Aw.Context.Core.Engine.SettingsReader.Check(System.Text.Json.JsonElement? section, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRepoEntry!>! repos) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ContextSettings!>!
@@ -6189,9 +6177,7 @@ static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.Rev
 static Aw.Context.Core.Review.ReviewDecision.operator !=(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
 static Aw.Context.Core.Review.ReviewDecision.operator ==(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
 static Aw.Context.Core.Review.ReviewDrafts.Draft(Aw.Context.Core.Map.IGraphStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot!>!>
-static Aw.Context.Core.Review.ReviewDrafts.Gate(Aw.Context.Core.Engine.ContextScope! scope, string! what) -> Aw.Kernel.Error?
-static Aw.Context.Core.Review.ReviewDrafts.GateDecision(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Review.ReviewDecision! decision) -> Aw.Kernel.Error?
-static Aw.Context.Core.Review.ReviewDrafts.Load(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, Aw.Context.Core.Engine.ContextScope! scope, string! what, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.MapSnapshot! Draft, Aw.Context.Core.Review.ReviewQueueView! Queue)>!>
+static Aw.Context.Core.Review.ReviewDrafts.Load(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.MapSnapshot! Draft, Aw.Context.Core.Review.ReviewQueueView! Queue)>!>
 static Aw.Context.Core.Review.ReviewDrafts.Visible(Aw.Context.Core.Map.MapSnapshot! draft, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Result<(Aw.Context.Core.Map.MapView! View, Aw.Context.Core.Review.ReviewQueueView! Queue)>!
 static Aw.Context.Core.Review.ReviewDrafts.Who(Aw.Context.Core.Engine.ContextCaller! caller, Aw.Context.Core.Engine.ICurrentUser! user) -> string!
 static Aw.Context.Core.Review.ReviewEntry.operator !=(Aw.Context.Core.Review.ReviewEntry? left, Aw.Context.Core.Review.ReviewEntry? right) -> bool

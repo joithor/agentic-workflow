@@ -84,9 +84,9 @@ public static class OnyxPreflight
     private static (string Detail, Error Problem) DaemonNotAnswering(ContainerRuntimeFacts docker) => docker.DaemonProblem switch
     {
         DaemonProblem.PermissionDenied => ("docker CLI found, permission denied on the daemon socket", SindriErrors.OnyxDockerUnavailable.With("Docker is running but this user can't open its socket: add your user to the docker group (`sudo usermod -aG docker $USER`, then log out and in), or use Docker Desktop, then run this again")),
-        DaemonProblem.Starting => ($"Docker didn't answer within {(docker.WaitedSeconds ?? 0).ToString(CultureInfo.InvariantCulture)} s; it may be starting (Docker Desktop's Resource Saver)", SindriErrors.OnyxDockerUnavailable.With("Docker is slow to answer and may still be starting: wait a moment until it is ready, then run this again")),
+        DaemonProblem.Starting => DockerDaemonAdvice.NotAnswering(docker),
         DaemonProblem.ContextMissing => ("docker CLI found, the selected docker context doesn't exist", SindriErrors.OnyxDockerUnavailable.With("The selected docker context doesn't exist: run `docker context use default` (`docker context ls` lists the others), then run this again")),
-        DaemonProblem.None or DaemonProblem.NotRunning => ("docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again")),
+        DaemonProblem.None or DaemonProblem.NotRunning => DockerDaemonAdvice.NotRunning(docker),
         _ => throw new ArgumentOutOfRangeException(nameof(docker), docker.DaemonProblem, "unknown daemon problem"),
     };
 

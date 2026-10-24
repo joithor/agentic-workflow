@@ -17,6 +17,12 @@ public sealed class FakeStackProbe : IStackProbe
     /// <summary>Open host:port pairs.</summary>
     public ISet<string> OpenPorts { get; } = new HashSet<string>(StringComparer.Ordinal) { "localhost:5002" };
 
+    /// <summary>The slot databases that exist.</summary>
+    public ISet<string> Databases { get; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>The directory each listening port is served from (a port that is absent has no listener).</summary>
+    public IDictionary<int, string> ListenerDirectories { get; } = new Dictionary<int, string>();
+
     /// <inheritdoc/>
     public ValueTask<Result<string>> PageTitleAsync(Uri url, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<string>>(Title is null ? EvidenceErrors.ProbeFailed.With($"{url} did not answer") : Title);
@@ -28,4 +34,12 @@ public sealed class FakeStackProbe : IStackProbe
     /// <inheritdoc/>
     public ValueTask<Result<Unit>> PortOpenAsync(string host, int port, CancellationToken cancellationToken) =>
         ValueTask.FromResult(OpenPorts.Contains(string.Create(CultureInfo.InvariantCulture, $"{host}:{port}")) ? Results.Ok() : EvidenceErrors.ProbeFailed.With(string.Create(CultureInfo.InvariantCulture, $"{host}:{port} refused the connection")));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<Unit>> DatabaseExistsAsync(string database, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Databases.Contains(database) ? Results.Ok() : EvidenceErrors.ProbeFailed.With($"database {database} does not exist"));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<string?>> ListenerDirectoryAsync(int port, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<string?>>(ListenerDirectories.TryGetValue(port, out var directory) ? directory : null);
 }

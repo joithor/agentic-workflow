@@ -7,9 +7,8 @@
              x:Class="Aw.Sindri.Ui.Views.Context.Whole.WholeMapView"
              x:DataType="vm:WholeMapViewModel"
              ClipToBounds="True">
-  <!-- The whole map (whole-map spec §3): the size line and, when the map is grouped by feature, why; the list of features (also the
-       accessible map: Tab walks it, Enter opens); the pannable canvas with the mini-map and the zoom pill over it. -->
-  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+  <!-- The whole map (whole-map spec §3): the size line and, when the map is grouped by feature, why; the pannable canvas with the mini-map and the zoom pill over it. -->
+  <Grid RowDefinitions="Auto,*" RowSpacing="8">
     <StackPanel Spacing="2">
       <Button x:Name="WholeAllFeatures" Content="{Binding AllFeaturesText}" IsVisible="{Binding IsAreaOpen}" Click="OnAllFeatures" HorizontalAlignment="Left" AutomationProperties.Name="{Binding AllFeaturesText}" />
       <TextBlock x:Name="WholeAreaTitle" Classes="body-strong" Text="{Binding AreaTitle}" IsVisible="{Binding IsAreaOpen}" AutomationProperties.Name="{Binding AreaTitle}" />
@@ -17,24 +16,7 @@
       <TextBlock x:Name="WholeNote" Classes="body" Text="{Binding ByAreaNote}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ByAreaNote}" />
     </StackPanel>
 
-    <ItemsControl x:Name="WholeAreas" Grid.Row="1" ItemsSource="{Binding Areas}" AutomationProperties.Name="{Binding AreasName}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:WholeAreaTileViewModel">
-          <Button Classes="area-chip" Click="OnAreaChip" Margin="0,0,6,6" Padding="8,2" AutomationProperties.Name="{Binding Name}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <Border Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center" Background="{Binding Colour, Converter={x:Static wv:AreaBrush.Instance}}" />
-              <TextBlock Classes="caption" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
-              <TextBlock Classes="caption subtle" Text="{Binding MembersText}" AutomationProperties.AccessibilityView="Raw" />
-            </StackPanel>
-          </Button>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-
-    <Grid Grid.Row="2">
+    <Grid Grid.Row="1">
       <ctl:ZoomBorder x:Name="WholeCanvas" AutomationProperties.Name="{Binding CanvasName}">
         <wv:WholeMapCanvas x:Name="WholeWorld" />
       </ctl:ZoomBorder>
@@ -49,11 +31,56 @@
         </StackPanel>
       </Border>
 
+      <!-- The node's side panel (owner answer q101): on the right, above the zoom pill, clear of the mini-map strip at the bottom left. -->
+      <Border x:Name="WholeNodePanel" DataContext="{Binding Panel}" x:DataType="vm:NodePanelViewModel" IsVisible="{Binding IsOpen}"
+              HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="14,14,14,56" Width="320" Padding="12,10"
+              Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.LG}"
+              AutomationProperties.Name="{Binding PanelName}">
+        <Grid RowDefinitions="Auto,*" RowSpacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock x:Name="WholeNodeKind" Classes="caption subtle" Text="{Binding Kind}" AutomationProperties.Name="{Binding Kind}" />
+              <TextBlock x:Name="WholeNodeTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
+            </StackPanel>
+            <Button x:Name="WholeNodeClose" Grid.Column="1" Content="×" Click="OnNodePanelClose" Padding="8,2" Background="Transparent" BorderThickness="0" VerticalAlignment="Top" AutomationProperties.Name="{Binding CloseText}" ToolTip.Tip="{Binding CloseText}" />
+          </Grid>
+          <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="8">
+              <TextBlock x:Name="WholeNodeLoading" Classes="caption subtle" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" />
+              <TextBlock x:Name="WholeNodeFailed" Classes="caption" Text="{Binding FailedText}" IsVisible="{Binding IsFailed}" />
+              <StackPanel Spacing="2" IsVisible="{Binding HasSource}">
+                <TextBlock x:Name="WholeNodeSource" Classes="body" Text="{Binding SourceText}" TextWrapping="Wrap" AutomationProperties.Name="{Binding SourceText}" />
+                <Button x:Name="WholeNodeOpenSource" Content="{Binding OpenSourceText}" IsVisible="{Binding HasLink}" Click="OnNodePanelOpenSource" HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0" AutomationProperties.Name="{Binding OpenSourceText}" />
+              </StackPanel>
+              <TextBlock x:Name="WholeNodeDescription" Classes="body" Text="{Binding Description}" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Description}" />
+              <ItemsControl x:Name="WholeNodeGroups" ItemsSource="{Binding Groups}" IsVisible="{Binding HasGroups}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:NodeEdgeGroupViewModel">
+                    <StackPanel Spacing="2" Margin="0,0,0,8">
+                      <TextBlock Classes="caption subtle" Text="{Binding Title}" />
+                      <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:NodeEdgeRowViewModel">
+                            <Button Content="{Binding Text}" Click="OnNodePanelEdge" Padding="4,2" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" AutomationProperties.Name="{Binding Text}" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
       <Border x:Name="WholeMiniMapHost" Focusable="True" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14" Width="180" Height="112"
               Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.SM}"
               KeyDown="OnMiniMapKey" AutomationProperties.Name="Mini-map: arrow keys move the view">
         <ctl:MiniMapControl x:Name="WholeMiniMap" />
       </Border>
+
+      <wv:WholeMapLegend x:Name="WholeLegend" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,150,14" />
 
       <Border x:Name="WholeZoom" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,14" Height="28"
               Background="{DynamicResource Brush.Surface3}" CornerRadius="{StaticResource Radius.SM}">

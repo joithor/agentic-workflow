@@ -84,6 +84,12 @@ internal sealed partial class ShellViewModel
                 _ = launcher.OpenUri(uri, CancellationToken.None);
             }
         };
+        inbox.Bar.SessionRequested += (_, e) => Navigate(new DeepLink(DeepLinkKind.Session, e.SessionRef));
+        inbox.Bar.FactRequested += (_, e) =>
+        {
+            Instance.Intend(e.Address, FrameIntent.OpenInitial);
+            Navigate(new DeepLink(DeepLinkKind.Workflow, e.Address));
+        };
         inbox.ItemRequested += (_, e) =>
         {
             if (NeedsYou.Row(e.RowId)?.ItemLink is { } link)

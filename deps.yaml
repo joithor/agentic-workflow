@@ -156,7 +156,7 @@ packages:
     db: [judge/decisions.sqlite]
     files: [judge/outbox, judge/sessions]
     namespace: judge
-    note: "decisions, health, briefs and the prompt sorter; called by hooks and tier-2 packages through its CLI"
+    note: "decisions, health, briefs, the prompt sorter (`prompt-sort`, `prompt-sort scaffold`, `config set prompt-sort`: tables prompt_sort_axes and prompt_sort_runs in decisions.sqlite, session state judge/sessions/<sid>.sort.json) and trait-check (`trait-check --edit|--stop|--scan`: the repo's traits in <repo>/.agents/traits read as YAML, diffs from the `git` runner (a system binary run through IProcessRunner, not a package, so no edge), judge/trait-check/log.jsonl); both ask Jev in batches (IBatchClassifier, one POST /v1/systemone). `label`, `adjudicate`, `eval` and `prompt-sort why|import|outcomes|adjudicate|eval|promote` answer `judge: <verb> is not in this build yet` (exit 1) until they land; then they read the Claude transcripts under ~/.claude/projects and write judge/evals, which is outside the state root the `files` edges are relative to, so it is named here and not declared (as the provider folders of the fleet note below); called by hooks and tier-2 packages through its CLI"
   # Packets and Readiness are standalone (§10 R1b, §4c): they depend on tier 0 only and Sindri (tier 3)
   # consumes both. Tier 1 rather than tier 0, because they carry domain (packet schema, readiness criteria)
   # and tier 0 stays domain-free.
@@ -190,17 +190,6 @@ packages:
     note: "context retrieval engine: product graph, source adapters, query planner (context spec §4); the package lands in stage S-1A"
 
   # ---- tier 2 ----
-  - id: Scorer
-    kind: package
-    tier: 2
-    projectPrefix: Aw.Scorer
-    ts: scorer
-    src: src/Scorer
-    scan: [scorer/src]
-    bins: [scorer]
-    files: [scorer/live, context-guard]
-    namespace: scorer
-    note: "daily cost and involvement report, live session numbers; owns the context-guard fires-log contract it reports on. Not ported as a standalone CLI (addendum §17.29, Q7): it comes back as a block of the Sindri app; the TS package runs until the switch"
   - id: Evidence
     kind: package
     tier: 2
@@ -303,21 +292,6 @@ packages:
 
 edges:
   # ---- current: found in the source today ----
-  - from: Scorer
-    to: Judge
-    kind: db
-    status: current
-    note: "scorer reads judge's decisions.sqlite (run.ts, live.ts). Read-only; should become a judge CLI or a published view"
-  - from: Scorer
-    to: Judge
-    kind: file
-    status: current
-    note: "scorer counts queued wakes in judge/outbox"
-  - from: Scorer
-    to: Evidence
-    kind: file
-    status: current
-    note: "scorer reads ui-evidence run files (§4e B10)"
   - from: Evidence
     to: Judge
     kind: cli
@@ -354,11 +328,6 @@ edges:
     status: current
     note: "external-write-guard, done-gate and turn-origin read judge/sessions; outbox-flush and send-gate use judge/outbox; send-gate, record-teammate-name and subagent-start-map keep judge/teammate-names.jsonl, hook-only state inside judge's namespace that moves with judge's port"
   - from: Hooks
-    to: Scorer
-    kind: file
-    status: current
-    note: "the context-guard hook writes the fires log scorer reports on (context-guard/); nothing depends on a shell node, so the contract sits with scorer"
-  - from: Hooks
     to: Sindri
     kind: cli
     status: current
@@ -373,22 +342,6 @@ edges:
     kind: cli
     status: current
     note: "judge health for the statusline segment"
-  - from: Statusline
-    to: Scorer
-    kind: cli
-    status: current
-    note: "scorer live refreshes the statusline cache"
-  - from: Statusline
-    to: Scorer
-    kind: file
-    status: current
-    note: "the statusline reads scorer/live snapshots and writes its own cache there (scorer/live/<sid>.statusline.json)"
-  - from: AwLive
-    to: Scorer
-    kind: cli
-    status: current
-    note: "the /live pane runs scorer live --json"
-
   - from: KernelData
     to: Kernel
     kind: project
@@ -471,21 +424,6 @@ edges:
     kind: project
     status: current
     note: "the ingest and egress scrubbers (Aw.Context.Infrastructure only; context spec D14)"
-  - from: Scorer
-    to: Kernel
-    kind: project
-    status: planned
-    note: "Result, IService, ports"
-  - from: Scorer
-    to: KernelData
-    kind: project
-    status: planned
-    note: "scorer's own SQLite file"
-  - from: Scorer
-    to: KernelTelemetry
-    kind: project
-    status: planned
-    note: "logging"
   - from: Evidence
     to: Kernel
     kind: project
@@ -556,11 +494,6 @@ edges:
     kind: cli
     status: planned
     note: "sindri readiness check (§8): runs aw-readiness check --json (schema v1, tests/Aw.Readiness.Tests/Golden/report.json); a project edge could reach only Aw.Readiness.Core and would re-implement the adapters"
-  - from: Sindri
-    to: Scorer
-    kind: cli
-    status: planned
-    note: "scorer's labeler moves into scorer's Core; sindri calls it through scorer's CLI instead of copying it (§4b.1a)"
   # ---- the context engine (context spec §4, stage S-1C; current since S-1A) ----
   - from: Sindri
     to: Context
