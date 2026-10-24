@@ -101,7 +101,7 @@ public sealed class LaneRecycleTests
 
         Assert.Equal(MetaErrors.RecycleTimedOut.Code, result.Error.Code);
         Assert.Equal(
-            "lane api did not report a new session id within 60 s of /clear; nothing more was sent. Once it is up, send the line by hand: "
+            "lane api did not report a new session id within 180 s of /clear; nothing more was sent. Once it is up, send the line by hand: "
             + "tmux -L t1 send-keys -t '=t1-api:' -l 'Read and continue from /home/x/digests/t1-api-2026-10-17.md' && tmux -L t1 send-keys -t '=t1-api:' Enter",
             result.Error.Message);
         Assert.Equal([("t1-api", "/clear")], _world.Panes.Woken);
