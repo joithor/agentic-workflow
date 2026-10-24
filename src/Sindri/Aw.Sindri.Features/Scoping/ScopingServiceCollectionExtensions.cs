@@ -29,5 +29,7 @@ internal static class ScopingServiceCollectionExtensions
         .AddBlockRuntime<ScopeReadChangeStep>()
         .AddBlockRuntime<ScopeReadTrackerStep>()
         .AddBlockRuntime<ScopeReanchorStep>()
-        .AddBlockRuntime<ScopeWithdrawStep>();
+        .AddBlockRuntime<ScopeWithdrawStep>()
+        .AddScopeRelevance()
+        .AddScopeGapSearch();
 }

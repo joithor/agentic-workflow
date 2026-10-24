@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Features.Scoping.Relevance;
+using Aw.Sindri.Features.Scoping;
 using static Aw.Sindri.Tests.Scoping.Relevance.RelevanceFixtures;
 
 namespace Aw.Sindri.Tests.Scoping.Relevance;

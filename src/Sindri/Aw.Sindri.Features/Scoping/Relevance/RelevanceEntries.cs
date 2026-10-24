@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>One thing a lens returned: a node (it has a graph or file key) or an item (a record, decision or commit; no key).</summary>
 /// <param name="Id">The lens item id, 'L-&lt;lens&gt;-&lt;n&gt;'.</param>
