@@ -13,6 +13,7 @@ internal sealed partial class WholeMapCanvas
     private const double DotRadius = 5;
     private const double TextSize = 12;
     private const double AreaLabelSize = 16;
+    private const double EdgeFade = 0.35;   // the mockup's faded edges while a node is hovered or pinned
     private const double Behind = 0.42;   // what is not part of the answer stays drawn, dimmed (whole-map spec §3.1)
 
     /// <inheritdoc/>
@@ -39,6 +40,12 @@ internal sealed partial class WholeMapCanvas
         }
     }
 
+    // Behind a search answer what is not in it stays drawn, dimmed; a highlight dims what is not linked to it, as far as it has faded.
+    private double EdgeOpacity(PlacedEdge edge, bool zoomed, IReadOnlySet<string> hits) =>
+        (zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1) * (Touches(edge.From, edge.To) ? 1 : Faded(EdgeFade));
+
+    private double NodeOpacity(string key, bool zoomed, IReadOnlySet<string> hits) => (zoomed && !hits.Contains(key) ? Behind : 1) * Strength(key);
+
     private void DrawHeaders(DrawingContext context, WholeMapGeometry geometry, WholeRect view, bool dots)
     {
         var rule = new Pen(Brush("Brush.Hairline"), 1);
@@ -61,7 +68,7 @@ internal sealed partial class WholeMapCanvas
         {
             var (colour, pattern) = WholePalette.For(node.AreaIndex);
             var area = Brush(PaletteKey(colour));
-            using (context.PushOpacity(zoomed && !hits.Contains(node.Key) ? Behind : 1))
+            using (context.PushOpacity(NodeOpacity(node.Key, zoomed, hits)))
             {
                 if (dots)
                 {
@@ -70,7 +77,7 @@ internal sealed partial class WholeMapCanvas
                 }
 
                 var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
-                context.DrawRectangle(chip, new Pen(area, node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: Radius, radiusY: Radius);
+                context.DrawRectangle(chip, new Pen(area, string.Equals(node.Key, _focus, StringComparison.Ordinal) ? 2.8 : node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: Radius, radiusY: Radius);
                 context.DrawText(Text(node.Label, TextSize, ink, node.Rect.Width - 12), new Point(node.Rect.X + 6, node.Rect.Y + 6));
             }
         }
@@ -103,10 +110,13 @@ internal sealed partial class WholeMapCanvas
             var (colour, pattern) = WholePalette.For(placed.AreaIndex);
             var area = Brush(PaletteKey(colour));
             var rect = new Rect(placed.Rect.X, placed.Rect.Y, placed.Rect.Width, placed.Rect.Height);
-            context.DrawRectangle(tile, new Pen(area, 1.6), rect, radiusX: 10, radiusY: 10);
-            DrawSwatch(context, rect, area, pattern);
-            context.DrawText(Text(placed.Label, 14, ink, rect.Width - 56, bold: true), new Point(rect.X + 36, rect.Y + 12));
-            context.DrawText(Text(Labels(placed), 12, muted, rect.Width - 24), new Point(rect.X + 12, rect.Y + 42));
+            using (context.PushOpacity(Strength(placed.Key)))
+            {
+                context.DrawRectangle(tile, new Pen(area, string.Equals(placed.Key, _focus, StringComparison.Ordinal) ? 3.2 : 1.6), rect, radiusX: 10, radiusY: 10);
+                DrawSwatch(context, rect, area, pattern);
+                context.DrawText(Text(placed.Label, 14, ink, rect.Width - 56, bold: true), new Point(rect.X + 36, rect.Y + 12));
+                context.DrawText(Text(Labels(placed), 12, muted, rect.Width - 24), new Point(rect.X + 12, rect.Y + 42));
+            }
         }
 
         DrawBundlePills(context, geometry);

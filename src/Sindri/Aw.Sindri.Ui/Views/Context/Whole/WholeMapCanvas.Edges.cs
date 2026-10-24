@@ -8,38 +8,18 @@ namespace Aw.Sindri.Ui.Views.Context.Whole;
 /// <summary>The whole map's edges (<see cref="WholeMapCanvas"/>, continued; q86): bundled lines between areas, node edges only inside an area or around the focus, and their pills.</summary>
 internal sealed partial class WholeMapCanvas
 {
-    /// <summary>The node whose edges are drawn whatever the area (the hovered or pinned one).</summary>
-    internal static readonly StyledProperty<string?> FocusKeyProperty = AvaloniaProperty.Register<WholeMapCanvas, string?>(nameof(FocusKey));
-
     private const double PillSize = 11;
     private const double Stroke = 1.2;
 
-    /// <summary>Gets or sets the node whose edges are drawn whatever the area.</summary>
-    internal string? FocusKey
-    {
-        get => GetValue(FocusKeyProperty);
-        set => SetValue(FocusKeyProperty, value);
-    }
-
-    /// <inheritdoc/>
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == FocusKeyProperty)
-        {
-            InvalidateVisual();
-        }
-    }
-
     private void DrawNodeEdges(DrawingContext context, WholeMapGeometry geometry, WholeRect view)
     {
-        var drawn = WholeEdgeSelection.Visible(geometry.Edges, geometry.Nodes, FocusKey).Where(e => Overlaps(view, e.X1, e.Y1, e.X2, e.Y2)).ToList();
+        var drawn = WholeEdgeSelection.Visible(geometry.Edges, geometry.Nodes, _focus).Where(e => Overlaps(view, e.X1, e.Y1, e.X2, e.Y2)).ToList();
         var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
         var zoomed = Map?.IsZoomed == true;
         foreach (var edge in drawn)
         {
-            var lit = WholeEdgeSelection.Touches(edge, FocusKey);
-            using (context.PushOpacity(zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1))
+            var lit = WholeEdgeSelection.Touches(edge, _focus);
+            using (context.PushOpacity(EdgeOpacity(edge, zoomed, hits)))
             {
                 context.DrawLine(EdgePen(WholeEdgeStyle.Of(edge).Dashed, lit), new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
             }
@@ -50,7 +30,7 @@ internal sealed partial class WholeMapCanvas
             return;
         }
 
-        foreach (var edge in drawn.Where(e => WholeEdgeSelection.ShowsPill(e, drawn.Count, FocusKey)))
+        foreach (var edge in drawn.Where(e => WholeEdgeSelection.ShowsPill(e, drawn.Count, _focus)))
         {
             DrawPill(context, WholeEdgeStyle.Of(edge), (edge.X1 + edge.X2) / 2, (edge.Y1 + edge.Y2) / 2);
         }
@@ -61,6 +41,7 @@ internal sealed partial class WholeMapCanvas
     {
         foreach (var bundle in WholeAreaBundle.Of(geometry.AreaEdges))
         {
+            using var _ = context.PushOpacity(Touches(bundle.From, bundle.To) ? 1 : Faded(EdgeFade));
             var width = (1 + Math.Min(4, Math.Log2(bundle.Count + 1))) / Math.Max(Scale, 0.2);
             var pen = new Pen(Brush(WholeEdgeStyle.Of(bundle).Dashed ? "Brush.Wire" : "Brush.WireHi"), width, WholeEdgeStyle.Of(bundle).Dashed ? new DashStyle([6, 4], 0) : null);
             context.DrawLine(pen, new Point(bundle.X1, bundle.Y1), new Point(bundle.X2, bundle.Y2));
