@@ -24,7 +24,11 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     internal WholeMapViewModel(Func<TimeZoneInfo>? zone = null)
     {
         _zone = zone ?? (() => TimeZoneInfo.Local);
+        Panel = new NodePanelViewModel(LookUp, Jump);
     }
+
+    /// <summary>The side panel of the node a click pinned.</summary>
+    internal NodePanelViewModel Panel { get; }
 
     /// <summary>Raised when a feature asks the camera to go to its tile or column.</summary>
     internal event EventHandler<ValueEventArgs<WholeRect>>? ZoomRequested;
@@ -132,6 +136,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(answer);
         (_overview, _beforeZoom, IsAreaOpen, AreaTitle) = (null, null, false, string.Empty);
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
+        (SearchActive, NoMatches, _searchSet) = (false, false, null);
         Answer = answer;
         Geometry = WholeMapLayout.Place(answer);
         ForgetHighlight();

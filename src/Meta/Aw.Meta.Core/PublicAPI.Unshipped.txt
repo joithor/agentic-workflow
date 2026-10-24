@@ -30,10 +30,10 @@ Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
 Aw.Meta.Core.Commands.ProgramPath
 Aw.Meta.Core.Config.BuildersConfig
 Aw.Meta.Core.Config.BuildersConfig.<Clone>$() -> Aw.Meta.Core.Config.BuildersConfig!
-Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int MaxPerLane = 4, int WorktreeGb = 4) -> void
-Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int MaxPerLane, out int WorktreeGb) -> void
+Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int? MaxPerLane = null, int WorktreeGb = 4) -> void
+Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int? MaxPerLane, out int WorktreeGb) -> void
 Aw.Meta.Core.Config.BuildersConfig.Equals(Aw.Meta.Core.Config.BuildersConfig? other) -> bool
-Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int?
 Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.init -> void
 Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.get -> int
 Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.init -> void
@@ -412,15 +412,15 @@ Aw.Meta.Core.Guard.GuardState.GuardState(string! Fingerprint, int Count) -> void
 Aw.Meta.Core.Guard.StopLoopGuard
 Aw.Meta.Core.Health.BuilderAdvice
 Aw.Meta.Core.Health.BuilderAdvice.<Clone>$() -> Aw.Meta.Core.Health.BuilderAdvice!
-Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
-Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int? MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int? MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
 Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.get -> long
 Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.Equals(Aw.Meta.Core.Health.BuilderAdvice? other) -> bool
 Aw.Meta.Core.Health.BuilderAdvice.Limit.get -> string?
 Aw.Meta.Core.Health.BuilderAdvice.Limit.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.Line() -> string!
-Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int?
 Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.get -> long
 Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.init -> void
