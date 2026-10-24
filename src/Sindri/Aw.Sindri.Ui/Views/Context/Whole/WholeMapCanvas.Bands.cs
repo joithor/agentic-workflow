@@ -42,7 +42,7 @@ internal sealed partial class WholeMapCanvas
     };
 
     // A chip in its kind's look: pill for the why, card for the product, plate for code; the kind's mark in front of the label; the border stays the area's colour.
-    private void DrawKindChip(DrawingContext context, PlacedNode node, IBrush area, IBrush fill, IBrush ink)
+    private void DrawKindChip(DrawingContext context, PlacedNode node, IBrush area, IBrush fill, IBrush ink, bool focused)
     {
         var style = NodeBands.StyleOf(node.Kind);
         var radius = style.Shape switch
@@ -52,7 +52,7 @@ internal sealed partial class WholeMapCanvas
             _ => Radius,
         };
         var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
-        context.DrawRectangle(fill, new Pen(area, node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: radius, radiusY: radius);
+        context.DrawRectangle(fill, new Pen(area, focused ? 2.8 : node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: radius, radiusY: radius);
         DrawMark(context, style.Mark, Brush(style.Accent), new Point(node.Rect.X + MarkInset, node.Rect.CenterY));
         var inset = style.Mark == KindMark.None ? 6 : MarkInset + MarkSize + 4;
         context.DrawText(Text(node.Label, TextSize, ink, node.Rect.Width - inset - 8), new Point(node.Rect.X + inset, node.Rect.Y + 6));
@@ -105,12 +105,12 @@ internal sealed partial class WholeMapCanvas
     }
 
     // An area's column on the overview: its name on top, then a line per kind counted in the band the kind belongs to (the lanes run behind it).
-    private void DrawTileColumn(DrawingContext context, PlacedTile placed)
+    private void DrawTileColumn(DrawingContext context, PlacedTile placed, bool focused)
     {
         var (colour, pattern) = WholePalette.For(placed.AreaIndex);
         var area = Brush(PaletteKey(colour));
         var rect = new Rect(placed.Rect.X, placed.Rect.Y, placed.Rect.Width, placed.Rect.Height);
-        context.DrawRectangle(Brush("Brush.Surface1"), new Pen(area, 1.6), rect, radiusX: 10, radiusY: 10);
+        context.DrawRectangle(Brush("Brush.Surface1"), new Pen(area, focused ? 3.2 : 1.6), rect, radiusX: 10, radiusY: 10);
         DrawSwatch(context, rect, area, pattern);
         context.DrawText(Text(placed.Label, 13, Brush("Brush.Ink"), rect.Width - 40, bold: true), new Point(rect.X + 32, rect.Y + 6));
         foreach (var cell in placed.BandCells)

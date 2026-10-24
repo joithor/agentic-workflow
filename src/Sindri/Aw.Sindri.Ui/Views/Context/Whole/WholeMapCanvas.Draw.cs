@@ -13,6 +13,7 @@ internal sealed partial class WholeMapCanvas
     private const double DotRadius = 5;
     private const double TextSize = 12;
     private const double AreaLabelSize = 16;
+    private const double EdgeFade = 0.35;   // the mockup's faded edges while a node is hovered or pinned
     private const double Behind = 0.42;   // what is not part of the answer stays drawn, dimmed (whole-map spec §3.1)
 
     /// <inheritdoc/>
@@ -46,14 +47,22 @@ internal sealed partial class WholeMapCanvas
         var dashed = new Pen(Brush("Brush.Wire"), 1.2 / Math.Max(Scale, 0.2), new DashStyle([6, 4], 0));
         var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
         var zoomed = Map?.IsZoomed == true;
+        var lit = new Pen(Brush("Brush.Ink"), 2.2 / Math.Max(Scale, 0.2));
         foreach (var edge in geometry.Edges.Where(e => Overlaps(view, e.X1, e.Y1, e.X2, e.Y2)))
         {
-            using (context.PushOpacity(zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1))
+            var touches = Touches(edge.From, edge.To);
+            using (context.PushOpacity(EdgeOpacity(edge, zoomed, hits)))
             {
-                context.DrawLine(edge.Confirmed ? solid : dashed, new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
+                context.DrawLine(touches ? lit : edge.Confirmed ? solid : dashed, new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
             }
         }
     }
+
+    // Behind a search answer what is not in it stays drawn, dimmed; a highlight dims what is not linked to it, as far as it has faded.
+    private double EdgeOpacity(PlacedEdge edge, bool zoomed, IReadOnlySet<string> hits) =>
+        (zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1) * (Touches(edge.From, edge.To) ? 1 : Faded(EdgeFade));
+
+    private double NodeOpacity(string key, bool zoomed, IReadOnlySet<string> hits) => (zoomed && !hits.Contains(key) ? Behind : 1) * Strength(key);
 
     private void DrawHeaders(DrawingContext context, WholeMapGeometry geometry, WholeRect view, bool dots)
     {
@@ -77,7 +86,7 @@ internal sealed partial class WholeMapCanvas
         {
             var (colour, pattern) = WholePalette.For(node.AreaIndex);
             var area = Brush(PaletteKey(colour));
-            using (context.PushOpacity(zoomed && !hits.Contains(node.Key) ? Behind : 1))
+            using (context.PushOpacity(NodeOpacity(node.Key, zoomed, hits)))
             {
                 if (dots)
                 {
@@ -85,7 +94,7 @@ internal sealed partial class WholeMapCanvas
                     continue;
                 }
 
-                DrawKindChip(context, node, area, chip, ink);
+                DrawKindChip(context, node, area, chip, ink, string.Equals(node.Key, _focus, StringComparison.Ordinal));
             }
         }
     }
@@ -110,12 +119,19 @@ internal sealed partial class WholeMapCanvas
         var muted = Brush("Brush.InkSubtle");
         foreach (var edge in geometry.AreaEdges)
         {
-            context.DrawLine(new Pen(Brush("Brush.Wire"), 1 + Math.Min(4, Math.Log2(edge.Count + 1))), new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
+            var touches = Touches(edge.From, edge.To);
+            using (context.PushOpacity(touches ? 1 : Faded(EdgeFade)))
+            {
+                context.DrawLine(new Pen(Brush(touches ? "Brush.WireHi" : "Brush.Wire"), 1 + Math.Min(4, Math.Log2(edge.Count + 1))), new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
+            }
         }
 
         foreach (var placed in geometry.Tiles.Where(t => t.Rect.Intersects(view)))
         {
-            DrawTileColumn(context, placed);
+            using (context.PushOpacity(Strength(placed.Key)))
+            {
+                DrawTileColumn(context, placed, string.Equals(placed.Key, _focus, StringComparison.Ordinal));
+            }
         }
 
         foreach (var edge in geometry.AreaEdges.Where(e => e.Count > 1))
