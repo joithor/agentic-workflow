@@ -4,6 +4,7 @@ using System.Globalization;
 using Aw.Redaction;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
@@ -21,13 +22,10 @@ internal static partial class ViewerProcess
     private static ProcessStartInfo Info(IReadOnlyList<string> argv, IReadOnlyDictionary<string, string>? environment, string? errorFile)
     {
         var detached = errorFile is not null;
-        var info = new ProcessStartInfo(detached ? "/bin/sh" : argv[0])
-        {
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = !detached,
-        };
+        var info = ChildEnvironment.Start(detached ? "/bin/sh" : argv[0]);
+        info.RedirectStandardInput = true;
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = !detached;
         if (detached)
         {
             info.ArgumentList.Add("-c");
@@ -185,7 +183,10 @@ internal static partial class ViewerProcess
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(budget);
-        var info = new ProcessStartInfo(program) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
+        var info = ChildEnvironment.Start(program);
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
+        info.RedirectStandardInput = true;
         foreach (var argument in arguments)
         {
             info.ArgumentList.Add(argument);

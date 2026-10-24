@@ -39,6 +39,24 @@ public static class HealthSummary
         return new HealthReport(word, [.. problems], Sentence(word, problems));
     }
 
+    /// <summary>A report that also counts the engine's stuck instances (API spec §3.8, E-30): any make a healthy report degraded, and join its problems and sentence.</summary>
+    /// <param name="report">The report <see cref="For"/> folded.</param>
+    /// <param name="stuck">The instances that only wait on a signal or update older than five minutes, with no timer.</param>
+    /// <returns>The report; the same one when none are stuck.</returns>
+    public static HealthReport WithStuck(HealthReport report, int stuck)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        if (stuck <= 0)
+        {
+            return report;
+        }
+
+        var clause = stuck == 1 ? "1 workflow instance is stuck waiting" : string.Create(CultureInfo.InvariantCulture, $"{stuck} workflow instances are stuck waiting");
+        var problems = report.Problems.Append(new HealthProblem("SND-ENGINE-002", $"{clause} on a signal or update with no timer: open the engine screen", clause)).ToList();
+        var word = report.Word == HealthWord.Healthy ? HealthWord.Degraded : report.Word;
+        return new HealthReport(word, problems, Sentence(word, problems));
+    }
+
     private static IEnumerable<HealthProblem> Profile(ProfileApproval profile)
     {
         if (profile == ProfileApproval.Changed)

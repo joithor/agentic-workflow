@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Judge;
 using Aw.Sindri.Core.Lease;
@@ -38,6 +39,7 @@ using Aw.Sindri.Infrastructure.BugFix;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Checks;
 using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Infrastructure.Deploy;
 using Aw.Sindri.Infrastructure.Forge;
 using Aw.Sindri.Infrastructure.Judge;
 using Aw.Sindri.Infrastructure.Launch;
@@ -129,6 +131,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILedgerReader, SqliteLedgerReader>()
+            .AddSingleton<IMirroredSequences, SqliteMirroredSequences>()   // API P13: which ledger row mirrors a Temporal event
             .AddSingleton<ILease, SqliteLease>()
             .AddSingleton<ViewsDatabase>()
             .AddSingleton<IViewStore, SqliteViewStore>()
@@ -144,6 +147,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IHumanTokenStore, FileHumanToken>()
             .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed, sp.GetRequiredService<SindriSettings>().ProverMayConfirm))
             .AddScoped<IDoctorChecks, TokenFileDoctorChecks>()
+            .AddScoped<IDoctorChecks, DeployDoctorChecks>()
             .AddSingleton<IRecipeBuild, BuildInfoRecipeBuild>()   // setup-once §5.3: doctor compares the embedded recipe set's tree hash with HEAD's
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>().AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>().AddSingleton<IProfileInitializer, FileProfileInitializer>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender

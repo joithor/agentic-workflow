@@ -151,6 +151,7 @@ sindri onyx up|down|open                  # The C# Sindri's Onyx: `up` stands th
 # Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
 scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
 scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
+scripts/images-lock.sh check             # Shape of deploy/images.lock (every deployment image by index and per-platform digest; unresolved ones are `todo` rows) and that the Dockerfile names only pinned images; exit 0 ok, 1 a check failed
 
 # Sindri-managed Onyx (docs/sindri/onyx.md, docs/csharp/sindri.md; the C# Sindri app, `dotnet run --project src/Sindri/Aw.Sindri.Host --` or the published sindri)
 sindri onyx status [--json]             # Where Onyx stands (not set up / running with url and version / stopped) and whether this box can run the pinned one; read-only, no control plane needed; exit 0 ok, 1 a check needs attention
@@ -161,7 +162,7 @@ sindri onyx down [--json]               # Stop it (containers only; data, images
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
 
 # Code index pins (context/code-index.lock: graphify version, date and requirements hash, the Ollama embedding model and digest, disk need; context/code-index-requirements.txt is the hash-pinned requirements; spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9)
-scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with sindri/package.json's graphifyPin and graphifyPinDate; exit 0 ok, 1 a check failed, 2 usage
+scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with context/graphify.pin (the graphify pin install-deps.sh reads); exit 0 ok, 1 a check failed, 2 usage
 scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes>   # One pinned value (install-deps.sh reads these)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
@@ -184,12 +185,13 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/check-launcher.test.sh   # launcher.json schema, fixtures, built-ins and argvHash goldens (node scripts/check-launcher.mjs; Ajv is a dev dependency of scripts/)
 bash scripts/tests/check-fleet.test.sh      # fleet state schema, its valid and invalid fixtures, and the /proc-shaped sessions tree (node scripts/check-fleet.mjs; Ajv as above)
 bash scripts/tests/check-scoping-schemas.test.sh # schemas/scoping/: every schema compiles, its examples get their verdicts, seeds.json matches the recipe's intake (node scripts/check-scoping-schemas.mjs; Ajv as above)
-bash scripts/tests/check-line-schemas.test.sh    # schemas/line/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
+bash scripts/tests/check-line-schemas.test.sh    # schemas/line/ and schemas/pr/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
 bash scripts/tests/check-profile-doc.test.sh # docs/csharp/sindri-profile.md names every SindriProfile key (node scripts/check-profile-doc.mjs)
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
 bash scripts/tests/onyx-lock.test.sh
+bash scripts/tests/images-lock.test.sh
 bash scripts/tests/code-index-lock.test.sh
 bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
@@ -207,6 +209,7 @@ bash scripts/tests/sindri-sandbox-e2e.test.sh   # scripts/sindri-sandbox-e2e.sh:
 bash scripts/tests/sindri-ui-fixture.test.sh
 bash scripts/tests/forge-fixture.test.sh    # scripts/forge-fixture.sh over the real aw-forge-fake (dotnet build once): the PR babysitter's fixture PR set, every variant, the guard, --github refusals and dry run
 bash scripts/tests/sindri-app.test.sh
+bash scripts/tests/sindri-pod.test.sh      # scripts/sindri-pod.sh (connect, profile edit, repo add, approve, doctor) with a fake kubectl, sindri-ui and EDITOR: --pod/--release, the dry run, the mirror home and its modes, the container wait and its state, restart and forward retry, refusals, the per-verb exit codes, --onyx (the pod's port, override warning, Onyx off, --adopt), profile edit (init, unchanged, valid, invalid then fixed or aborted, conflict, approve refused), the thin verbs' exit-code passthrough
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh

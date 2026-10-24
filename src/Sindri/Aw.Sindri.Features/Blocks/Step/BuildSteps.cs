@@ -36,7 +36,8 @@ internal static class BuildSteps
 
     /// <summary>'step.build.scope-desk': the owner's call on a file outside the allowed ones, human-only: allow, revert or stop.</summary>
     public static BlockDescriptor ScopeDesk { get; } = HumanDeskStep("step.build.scope-desk", Capability.None)
-        .Reads("fact:findings", "fact:activePacket").Reports("allow", "revert", "stop").Writes(On("fact:answers", "allow", "revert"));
+        .Reads("fact:findings", "fact:activePacket").Reviewing(ReviewOf("fact:activePacket", DeskReviewKind.Packet), ReviewOf("fact:findings", DeskReviewKind.Text))
+        .Reports("allow", "revert", "stop").Writes(On("fact:answers", "allow", "revert"));
 
     /// <summary>'step.build.amend': writes the owner-frozen child phase packet with the granted paths; 'amended' with it as the packet in force.</summary>
     public static BlockDescriptor Amend { get; } = BlockStep("step.build.amend", Capability.Tools)

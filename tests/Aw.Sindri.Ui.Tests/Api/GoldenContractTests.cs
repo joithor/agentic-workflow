@@ -56,6 +56,7 @@ public sealed class GoldenContractTests
         ["sessions"] = As<SessionList>,   // GET /sessions (collector CO-3); the 503 SND-SESSION-002 bodies are ProblemDetails
         ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
         ["context-lenses"] = As<LensesView>,
+        ["context-whole"] = As<WholeMapView>,   // GET /context/map/whole (whole-map spec §2.1); the refusals (006, 030, 044, 045, 120, 200) are ProblemDetails
         ["context-filemap"] = As<FileMapView>,
         ["context-code"] = As<CodeView>,   // GET /sindri/context/code: the code lens' callers and callees (S-9)
         ["context-map"] = As<MapStatusView>,
@@ -94,7 +95,6 @@ public sealed class GoldenContractTests
     {
         "stop",
         "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
-        "context-whole",   // the whole map (Part D, W1): the UI lane reads it in W3 and moves the slug to _read then
         "context-eval", "context-map-proposals", "context-query", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries

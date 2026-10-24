@@ -241,6 +241,22 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Status_does_not_wait_for_a_starting_OrbStack_and_names_its_fix()
+    {
+        // Status is read-only and fast: one inspection, no wait, the fix in the row (only `onyx up` waits).
+        var rig = new OnyxUpRig();
+        rig.Runtime.Facts = FakeContainerRuntime.Starting with { Endpoint = "unix:///Users/u/.orbstack/run/docker.sock" };
+        var begun = rig.Clock.GetUtcNow();
+
+        var status = await Status(rig);
+
+        var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
+        Assert.Contains("`orb restart`", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Equal(1, rig.Runtime.Calls.Count(static c => c == "Inspect"));
+        Assert.Equal(begun, rig.Clock.GetUtcNow());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Status_is_unknown_with_the_docker_group_fix_when_the_socket_is_permission_denied()
     {
         var rig = await RunningRig();

@@ -21,7 +21,10 @@ public sealed class OnyxUpStepsTests
     }
 
     private static OnyxUpService Service(OnyxUpRig rig, params IOnyxUpStep[] steps)
-        => new(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Pins, rig.Progress, steps: steps);
+    {
+        var facts = new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home));
+        return new(rig.Workspace, facts, rig.Pins, rig.Progress, new OnyxDockerWait(facts, rig.Progress, rig.Clock), steps: steps);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_steps_are_fetch_config_pull_start()
