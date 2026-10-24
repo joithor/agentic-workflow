@@ -6,11 +6,9 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Affects">What the cascade reaches, minus the lists above.</param>
 /// <param name="Counts">The full counts.</param>
 /// <param name="Edges">The edges whose two ends are product items.</param>
-/// <param name="Truncated">True when a list was cut at 100.</param>
 public sealed record ProductBand(
     IReadOnlyList<LensItem> Own,
     IReadOnlyList<LensReach> Neighbors,
     IReadOnlyList<LensReach> Affects,
     ProductCounts Counts,
-    IReadOnlyList<LensEdge> Edges,
-    bool Truncated);
+    IReadOnlyList<LensEdge> Edges);
