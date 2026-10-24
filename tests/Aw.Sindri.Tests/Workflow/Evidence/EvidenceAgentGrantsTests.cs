@@ -111,7 +111,7 @@ public sealed partial class EvidenceAgentGrantsTests
 
             Assert.DoesNotContain("--allow-writes", brief, StringComparison.Ordinal);
             Assert.DoesNotContain("--allow-preview-host", brief, StringComparison.Ordinal);
-            Assert.All(HostFlag.Matches(brief).Select(static m => m.Groups[1].Value), host => Assert.Matches(@"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", host));
+            Assert.All(HostFlag.Matches(brief).Select(static m => m.Groups["host"].Value), host => Assert.Matches(@"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", host));
         }
     }
 
@@ -137,21 +137,21 @@ public sealed partial class EvidenceAgentGrantsTests
         Assert.All(_briefedSteps.SelectMany(static b => NamedVerbs(Brief(b))).Distinct(StringComparer.Ordinal), verb => Assert.Contains(skillVerbs, v => v == verb));
     }
 
-    [GeneratedRegex(@"--host\s+(\S+)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"--host\s+(?<host>\S+)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex HostFlag { get; }
 
-    [GeneratedRegex(@"`ui-evidence ([a-z][a-z-]*)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"`ui-evidence (?<verb>[a-z][a-z-]*)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Verb { get; }
 
-    [GeneratedRegex("internal const string Name = \"([a-z-]+)\"", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("internal const string Name = \"(?<name>[a-z-]+)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex CommandName { get; }
 
-    private static IEnumerable<string> NamedVerbs(string text) => Verb.Matches(text).Select(static m => m.Groups[1].Value);
+    private static IEnumerable<string> NamedVerbs(string text) => Verb.Matches(text).Select(static m => m.Groups["verb"].Value);
 
     private static HashSet<string> BinaryVerbs() =>
         [.. Directory.GetFiles(Path.Combine(RepoRoot(), "src", "Evidence", "Aw.Evidence.Host", "Commands"), "*Command.cs")
             .Select(static f => CommandName.Match(File.ReadAllText(f)))
-            .Where(static m => m.Success).Select(static m => m.Groups[1].Value)];
+            .Where(static m => m.Success).Select(static m => m.Groups["name"].Value)];
 
     private static string RepoRoot()
     {
