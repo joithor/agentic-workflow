@@ -60,7 +60,7 @@ public sealed class StartPhaseEffectTests
         Assert.Equal(("p2", "sha256:abc", "dependency-head", "sindri/p1", "p1"),
             (packet!["phase"]!.GetValue<string>(), packet["hash"]!.GetValue<string>(), packet["base"]!["rule"]!.GetValue<string>(), packet["base"]!["ref"]!.GetValue<string>(), packet["stackParent"]!.GetValue<string>()));
         var context = await _facts.Read(start.Inputs[FactKey.From("fact:lineContext")], Token);
-        Assert.Equal("""{"base":"main"}""", Encoding.UTF8.GetString(context.Value.Span));
+        Assert.Equal("""{"base":"main","phase":"p2"}""", Encoding.UTF8.GetString(context.Value.Span));
         Assert.Equal(("started", false), (done.Value.Reply?.Value, done.Value.Existed));
     }
 
