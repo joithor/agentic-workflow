@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel.Events;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host.Server;
@@ -34,7 +35,7 @@ public sealed class ProjectorUnreadableRowTests
         Assert.Equal(ProjectorPass.CaughtUp, pass);
         Assert.Equal(4, _projection.Calls);   // the two events, then the replay of both
         Assert.True(_progress.Current is { Cursor: 2, Stalled: false, Rebuilding: false });
-        Assert.Null((await _views.Get<ProfileRow>(ViewNames.Profile, "stale", Token)).Value);   // the replay emptied the view
+        Assert.Null((await _views.Get<JobRow>(ViewNames.Profile, "stale", Token)).Value);   // the replay emptied the view
         Assert.Equal(2, (await _views.List<ServiceRow>(ViewNames.Services, Token)).Value.Count);
         Assert.Contains(_log.Lines, l => l.Contains("unreadable", StringComparison.OrdinalIgnoreCase));
     }
