@@ -20,7 +20,7 @@ internal sealed partial class WholeMapCanvas
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        if (Map?.Geometry is not { } geometry)
+        if (Map?.Shown is not { } geometry)
         {
             return;
         }
