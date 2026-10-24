@@ -280,9 +280,11 @@ for c in 'ps-machine|<system-reminder>machine text</system-reminder>' 'ps-slash|
 done
 
 # ---- done-gate on judge/sessions/<sid>.sort.json (requirements.uiEvidence, written by the sorter) ----
-# done-gate reads the flag the sorter set, blocks a done claim with no UI evidence once, and removes the flag with jq.
-# Offline the sorter sets no requirement itself (no Jev-judged UI axis), so the flag is set the way the sorter writes it
-# (a jq edit of the C# writer's own file), and the sorter's next run must still read and write the rewritten file.
+# done-gate reads the flag the sorter set: a done claim with no UI evidence is blocked (exit 2) and the flag stays; the
+# "at most once" is stop_hook_active (a re-stop exits 0 first). A claim that shows UI evidence passes the UI check and
+# done-gate deletes the flag with jq, keeping the rest. Offline the sorter sets no requirement itself (no Jev-judged UI
+# axis), so the flag is set the way the sorter writes it (a jq edit of the C# writer's own file), and the sorter's next run
+# must still read the rewritten file.
 s="$(fresh cs done-ui)"
 hook cs "$s" prompt-sort.sh '{"prompt":"redesign the settings page layout","session_id":"s1"}' done-ui-sort
 SORT="$s/judge/sessions/s1.sort.json"
@@ -290,18 +292,16 @@ jq '.requirements.uiEvidence = true' "$SORT" > "$SORT.tmp" && mv "$SORT.tmp" "$S
 hook cs "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl")" done-ui-blocked
 [ "$(rc_of done-ui-blocked)" = 2 ] || fail "done-ui-blocked: a done claim with no UI evidence must be blocked (exit 2), got $(rc_of done-ui-blocked)"
 err_of done-ui-blocked | has 'UI evidence' || fail "done-ui-blocked: expected the UI evidence message, got '$(err_of done-ui-blocked)'"
-jq -e '(.requirements.uiEvidence // false) == false and .prompts == 1' "$SORT" > /dev/null 2>&1 || fail "done-ui-blocked: done-gate must delete requirements.uiEvidence and keep the rest, got '$(cat "$SORT")'"
-hook cs "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl")" done-ui-again
-[ "$(rc_of done-ui-again)" = 0 ] || fail "done-ui-again: the block is once, got exit $(rc_of done-ui-again)"
+jq -e '.requirements.uiEvidence == true and .prompts == 1' "$SORT" > /dev/null 2>&1 || fail "done-ui-blocked: a block keeps the flag and the rest, got '$(cat "$SORT")'"
+hook cs "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl" | jq -c '. + {stop_hook_active:true}')" done-ui-again
+[ "$(rc_of done-ui-again)" = 0 ] || fail "done-ui-again: a re-stop (stop_hook_active) never blocks again, got exit $(rc_of done-ui-again)"
+transcript "$WORK/t-shot.jsonl" "Done — settings page updated, ran npm test, screenshot at shots/settings.png."
+hook cs "$s" done-gate.sh "$(stop "$WORK/t-shot.jsonl")" done-ui-shown
+[ "$(rc_of done-ui-shown)" = 0 ] || fail "done-ui-shown: a claim with a screenshot passes, got exit $(rc_of done-ui-shown): $(err_of done-ui-shown)"
+jq -e '(.requirements.uiEvidence // false) == false and .prompts == 1' "$SORT" > /dev/null 2>&1 || fail "done-ui-shown: done-gate must delete requirements.uiEvidence and keep the rest, got '$(cat "$SORT")'"
 hook cs "$s" prompt-sort.sh '{"prompt":"redesign the settings page layout again","session_id":"s1"}' done-ui-sort2
 jq -e '.prompts == 2' "$SORT" > /dev/null 2>&1 || fail "done-ui-sort2: the sorter must read the jq-rewritten file and count on (prompts 2), got '$(cat "$SORT")'"
 no_failopen done-ui-sort done-ui-again done-ui-sort2
-# A claim that shows UI evidence passes and the flag still goes.
-s="$(fresh cs done-ui-shown)"
-mkdir -p "$s/judge/sessions"; echo '{"prompts":1,"lastFired":{},"requirements":{"uiEvidence":true}}' > "$s/judge/sessions/s1.sort.json"
-transcript "$WORK/t-shot.jsonl" "Done — settings page updated, screenshot attached."
-hook cs "$s" done-gate.sh "$(stop "$WORK/t-shot.jsonl")" done-ui-shown
-[ "$(rc_of done-ui-shown)" = 0 ] || fail "done-ui-shown: a claim with a screenshot passes, got exit $(rc_of done-ui-shown)"
 
 # ---- trait-check (PostToolUse edit, Stop; opt-in lever) ----
 # exit 0 -> pass; 2 -> findings on stderr, the hook exits 2 with them; 3 -> Jev unavailable, the hook fails open
