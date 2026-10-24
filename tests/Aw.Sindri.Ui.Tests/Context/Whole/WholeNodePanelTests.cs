@@ -19,6 +19,7 @@ public sealed class WholeNodePanelTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     private static string Served(string extra = "") => $$"""
         {
           "mapVersion": "v1",
@@ -33,6 +34,7 @@ public sealed class WholeNodePanelTests
           ]
         }
         """.ReplaceLineEndings("\n");
+#pragma warning restore MA0136
 
     private static async Task<(ContextPageViewModel Page, FakeLauncher Launcher, FakeSindriApi Api)> Open(string body)
     {
