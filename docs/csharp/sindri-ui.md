@@ -637,6 +637,15 @@ State is always a word, never colour alone; each status text carries an `Automat
 `docs/sindri/DESIGN.md`: the near-black canvas, charcoal cards with hairline borders, Inter, and the lavender accent only
 on the brand mark and the state pill.
 
+## Capture mode (desktop UI evidence)
+
+`sindri-ui --capture --size WxH --shot <route> <png path> [--shot ...]` is the app run for evidence (docs/csharp/evidence.md "Desktop evidence"; `scripts/sindri-ui-capture.sh`
+publishes and launches it). It is the same window the app shows, against the control plane under `AW_SINDRI_HOME`: it sets the window to `WxH`, waits until the shell is
+connected and its queue is read, goes to each route through the shell's own `GoTo` (`page:<Page>`) or `Navigate` (a deep link), waits 1.5 s for the views to settle and saves the
+window with `RenderTargetBitmap`, then ends: exit 0, or 4 with a `sindri-ui: capture: <problem>` line, 1 for a usage mistake. Preferences are in memory, there is no tray and
+no OS motion setting, so frames do not depend on the user's settings. The code is `Views/Shell/ShellCapture.cs` in `Aw.Sindri.Ui` (the head only parses the command line) and stays
+NativeAOT-clean (no headless or test packages).
+
 ## Launching
 
 Bare `sindri` opens the app after it starts (or finds) the control plane: the `sindri-ui` binary next to `sindri`, or

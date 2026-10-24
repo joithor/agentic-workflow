@@ -234,7 +234,7 @@ packages:
     projectPrefix: Aw.Sindri.Ui
     ts: null
     src: src/Sindri/Aw.Sindri.Ui
-    bins: [sindri-ui, sindri-ui-capture]
+    bins: [sindri-ui]
     files: [sindri-app/ui/preferences.json, sindri-app/ui/instance.sock, sindri-app/ui/instance.lock, sindri-app/ui/instance.pid]
     note: "the Avalonia desktop app (readiness spec §4a UI): Aw.Sindri.Ui (views, view models, the typed API client, platform ports) and the thin Aw.Sindri.Ui.Desktop head (NativeAOT, binary sindri-ui). It references no Sindri project and holds no logic: Sindri's HTTP API and two files under AW_SINDRI_HOME, the endpoint record (control.json) and the per-start human token (auth/human.token), are its only contract (docs/csharp/sindri-ui.md). It owns its own files in a ui/ directory (0700) of Sindri's home: the local preferences and the single-instance lock and socket (instance.sock falls back to an owner-only temp directory when its path is too long for sun_path). Bare `sindri` starts sindri-ui: that Sindri -> SindriUi launch is declared as a cli edge (status planned only because check-deps does not scan C# for cli edges) and closes a cycle with the http edge, so it carries a DEPS-CYCLE-001 exception (owner decision 2026-10-12): the launch only spawns a separate process, shares no code or data, and the HTTP API (with control.json and auth/human.token) stays the app's only contract"
 

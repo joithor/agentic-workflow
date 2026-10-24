@@ -1,6 +1,6 @@
 using Aw.Sindri.Ui.Navigation;
 
-namespace Aw.Sindri.Ui.Capture;
+namespace Aw.Sindri.Ui.Views.Shell;
 
 /// <summary>Where a screen is: one of the app's pages, or a deep link, the same places a click or the palette goes to.</summary>
 internal abstract record CaptureRoute

@@ -16,6 +16,7 @@ namespace Aw.Evidence.Core.Desktop;
 /// <param name="Screens">Every screen at every size, in manifest order.</param>
 /// <param name="Refusal">Set when a guard refused the run (exit 1).</param>
 /// <param name="Error">Set when the run errored (exit 4).</param>
+/// <param name="Notes">How the frames were made that a reader should know: the capture's 'display: ...' lines (the user's display or a virtual X server).</param>
 public sealed record DesktopSummary(
     string Schema,
     string Kind,
@@ -28,7 +29,8 @@ public sealed record DesktopSummary(
     string Headline,
     IReadOnlyList<DesktopScreenResult> Screens,
     CodedMessage? Refusal,
-    CodedMessage? Error)
+    CodedMessage? Error,
+    IReadOnlyList<string> Notes)
 {
     /// <summary>The schema this build writes.</summary>
     public const string SchemaName = "ui-evidence.desktop/1";

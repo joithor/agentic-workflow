@@ -46,7 +46,6 @@
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
-    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Capture/Aw.Sindri.Ui.Capture.csproj" />
     <ProjectReference Include="../../src/Context/Aw.Context.Core/Aw.Context.Core.csproj" />
     <ProjectReference Include="../../src/Context/Aw.Context.Features/Aw.Context.Features.csproj" />
     <ProjectReference Include="../../src/Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj" />

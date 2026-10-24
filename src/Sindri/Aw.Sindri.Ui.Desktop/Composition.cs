@@ -1,6 +1,7 @@
 using Avalonia;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Views;
+using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Desktop;
 
@@ -17,10 +18,16 @@ internal static class Composition
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="userHome">The user's home directory.</param>
     /// <param name="clock">The clock for every timing rule.</param>
+    /// <param name="capture">True in capture mode: preferences in memory, no tray, no OS motion setting.</param>
     /// <returns>The adapters.</returns>
-    internal static SindriPlatform Platform(Func<string, string?> environment, string userHome, TimeProvider clock)
+    internal static SindriPlatform Platform(Func<string, string?> environment, string userHome, TimeProvider clock, bool capture = false)
     {
         var ui = UiStatePaths.From(environment, userHome);
+        if (capture)
+        {
+            return CapturePlatform(environment, userHome, ui, clock);
+        }
+
         return new SindriPlatform(
             new FileEndpointRecords(ControlFilePath.From(environment, userHome)),
             new FileHumanToken(ControlFilePath.TokenFrom(environment, userHome)),
@@ -34,6 +41,19 @@ internal static class Composition
             DockBadge = DockBadge(),
         };
     }
+
+    // Capture mode: the same control plane files, but preferences in memory (a capture starts from the defaults and leaves nothing),
+    // no tray and no OS motion setting, so the frames come out the same on every display.
+#pragma warning disable CA2000 // the single-instance claim lives for the process: the platform record is the app's for its lifetime
+    private static SindriPlatform CapturePlatform(Func<string, string?> environment, string userHome, UiStatePaths ui, TimeProvider clock) =>
+        new(
+            new FileEndpointRecords(ControlFilePath.From(environment, userHome)),
+            new FileHumanToken(ControlFilePath.TokenFrom(environment, userHome)),
+            new MemoryPreferences(),
+            new StillMotionPreference(),
+            new SocketSingleInstance(ui, clock),
+            new NullTray());
+#pragma warning restore CA2000
 
     /// <summary>This OS's dock badge: macOS NSDockTile, the Windows taskbar overlay on the main window; elsewhere none (Linux has no common one).</summary>
     /// <returns>The badge.</returns>
@@ -50,9 +70,15 @@ internal static class Composition
     /// <summary>The app over <paramref name="platform"/>.</summary>
     /// <param name="platform">The head's adapters.</param>
     /// <param name="clock">The clock for every timing rule.</param>
+    /// <param name="capture">Capture mode's request, or null for the app as a person runs it.</param>
     /// <returns>The app's builder.</returns>
-    internal static AppBuilder Compose(SindriPlatform platform, TimeProvider clock) =>
-        AppBuilder.Configure(() => SindriApp.Create(platform, clock))
+    internal static AppBuilder Compose(SindriPlatform platform, TimeProvider clock, CaptureRequest? capture = null) =>
+        AppBuilder.Configure(() =>
+            {
+                var app = SindriApp.Create(platform, clock);
+                app.Capture = capture;
+                return app;
+            })
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();

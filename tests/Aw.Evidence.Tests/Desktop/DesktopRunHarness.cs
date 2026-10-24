@@ -96,7 +96,7 @@ internal sealed class DesktopRunHarness
             }
         }
 
-        return new CommandResult(0, string.Empty, string.Empty);
+        return new CommandResult(0, string.Empty, "display: xvfb-run (virtual X server)\nsaved frames");
     }
 
     internal RgbaImage AppFrame { get; set; } = RgbaImage.Filled(40, 20, 0xFFFFFFFF);

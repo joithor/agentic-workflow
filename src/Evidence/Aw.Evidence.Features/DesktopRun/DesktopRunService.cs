@@ -57,6 +57,8 @@ internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, 
                 return await StopAsync(run, captured.Error, cancellationToken).ConfigureAwait(false);
             }
 
+            run = run with { Notes = captured.Value };
+
             var compared = await frames.CompareAsync(plan, cancellationToken).ConfigureAwait(false);
             return compared.IsError
                 ? await StopAsync(run, compared.Error, cancellationToken).ConfigureAwait(false)
@@ -102,7 +104,10 @@ internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, 
     private DesktopSummary Compose(RunFacts run, DesktopOutcome outcome, string headline, IReadOnlyList<DesktopScreenResult> screens, CodedMessage? refusal, CodedMessage? failure) =>
         new(
             DesktopSummary.SchemaName, DesktopSummary.KindName, RunId.From(RunPath.NameOf(run.Request.RunDirectory)), run.Started, clock.GetUtcNow(), run.Request.AppBuild,
-            run.Sha256, outcome, RecordedText.Of(run.Scrubber, headline, RecordedText.HeadlineLimit), screens, refusal, failure);
+            run.Sha256, outcome, RecordedText.Of(run.Scrubber, headline, RecordedText.HeadlineLimit), screens, refusal, failure, run.Notes);
 
-    private sealed record RunFacts(DesktopRunRequest Request, string Sha256, DateTimeOffset Started, ITextScrubber Scrubber);
+    private sealed record RunFacts(DesktopRunRequest Request, string Sha256, DateTimeOffset Started, ITextScrubber Scrubber)
+    {
+        internal IReadOnlyList<string> Notes { get; init; } = [];
+    }
 }

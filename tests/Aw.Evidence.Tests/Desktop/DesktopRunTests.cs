@@ -33,6 +33,7 @@ public sealed class DesktopRunTests
         Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
         Assert.Equal((DesktopOutcome.Passed, 0), (response.Summary.Outcome, response.Summary.ExitCode()));
         Assert.Equal("passed: 2 screens within their limit", response.Summary.Headline);
+        Assert.Equal(["display: xvfb-run (virtual X server)"], response.Summary.Notes);
     }
 
     [Fact, Trait("Lane", "unit")]

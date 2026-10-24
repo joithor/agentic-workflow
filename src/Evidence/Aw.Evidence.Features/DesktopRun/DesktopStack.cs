@@ -16,7 +16,7 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
     private const int TailLines = 3;
     private const int TailLimit = 300;
 
-    internal async ValueTask<Result<Unit>> RunAsync(DesktopPlan plan, CancellationToken cancellationToken)
+    internal async ValueTask<Result<IReadOnlyList<string>>> RunAsync(DesktopPlan plan, CancellationToken cancellationToken)
     {
         var home = scratch.Create(ScratchPrefix);
         if (home.IsError)
@@ -36,14 +36,15 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
         }
     }
 
-    private async ValueTask<Result<Unit>> UpAndCaptureAsync(DesktopPlan plan, Dictionary<string, string> environment, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<string>>> UpAndCaptureAsync(DesktopPlan plan, Dictionary<string, string> environment, CancellationToken cancellationToken)
     {
+        List<string> notes = [];
         foreach (var step in Steps(plan))
         {
             var ran = await RunCommandAsync(plan, [.. plan.Settings.Fixture.Command, .. step], environment, $"fixture {string.Join(' ', step)}", cancellationToken).ConfigureAwait(false);
             if (ran.IsError)
             {
-                return ran;
+                return ran.Error;
             }
         }
 
@@ -52,14 +53,16 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
             var captured = await CaptureAsync(plan, size, environment, cancellationToken).ConfigureAwait(false);
             if (captured.IsError)
             {
-                return captured;
+                return captured.Error;
             }
+
+            notes.AddRange(captured.Value.Where(n => !notes.Contains(n, StringComparer.Ordinal)));
         }
 
-        return Unit.Value;
+        return notes;
     }
 
-    private async ValueTask<Result<Unit>> CaptureAsync(DesktopPlan plan, Core.Geometry.ViewportSize size, Dictionary<string, string> environment, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<string>>> CaptureAsync(DesktopPlan plan, Core.Geometry.ViewportSize size, Dictionary<string, string> environment, CancellationToken cancellationToken)
     {
         List<(string Route, string Path)> shots = [];
         foreach (var screen in plan.At(size))
@@ -68,15 +71,20 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
             var made = await files.CreateDirectoryAsync(target[..target.LastIndexOf('/')], cancellationToken).ConfigureAwait(false);
             if (made.IsError)
             {
-                return made;
+                return made.Error;
             }
 
             shots.Add((screen.Route, target));
         }
 
         var command = DesktopCommandLine.Capture(plan.Settings.Capture.Command, size.Describe(), shots);
-        return await RunCommandAsync(plan, command, environment, $"capture at {size.Describe()}", cancellationToken).ConfigureAwait(false);
+        var captured = await RunCommandAsync(plan, command, environment, $"capture at {size.Describe()}", cancellationToken).ConfigureAwait(false);
+        return captured.IsError ? captured.Error : Results.Success<IReadOnlyList<string>>(Notes(captured.Value));
     }
+
+    // The capture command says how it got a display ('display: xvfb-run ...') on stderr; the pack records it.
+    private static List<string> Notes(string standardError) =>
+        [.. standardError.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(static l => l.StartsWith("display: ", StringComparison.Ordinal))];
 
     // The config's steps, then each screen's own, once each and in order of first use.
     private static List<IReadOnlyList<string>> Steps(DesktopPlan plan)
@@ -102,7 +110,7 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
         }
     }
 
-    private async ValueTask<Result<Unit>> RunCommandAsync(DesktopPlan plan, IReadOnlyList<string> argv, Dictionary<string, string> environment, string what, CancellationToken cancellationToken)
+    private async ValueTask<Result<string>> RunCommandAsync(DesktopPlan plan, IReadOnlyList<string> argv, Dictionary<string, string> environment, string what, CancellationToken cancellationToken)
     {
         var ran = await commands.RunAsync(new CommandSpec(argv, plan.Repo, environment, plan.Settings.Timeout), cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
@@ -111,7 +119,7 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
         }
 
         return ran.Value.ExitCode == 0
-            ? Unit.Value
+            ? ran.Value.StandardError
             : EvidenceErrors.RunFailed.With(string.Create(CultureInfo.InvariantCulture, $"{what} exited {ran.Value.ExitCode}: {Tail(ran.Value.StandardError)}"));
     }
 

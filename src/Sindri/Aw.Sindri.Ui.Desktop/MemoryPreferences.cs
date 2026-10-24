@@ -1,6 +1,6 @@
 using Aw.Sindri.Ui.Platform;
 
-namespace Aw.Sindri.Ui.Capture;
+namespace Aw.Sindri.Ui.Desktop;
 
 /// <summary>Preferences kept in memory: a capture starts from the defaults and leaves nothing behind.</summary>
 internal sealed class MemoryPreferences : IPreferencesStore

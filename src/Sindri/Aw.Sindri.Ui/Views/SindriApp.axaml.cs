@@ -81,6 +81,9 @@ public sealed partial class SindriApp : Application, IDisposable
     /// <summary>The head's adapters, or null for the theme-only app.</summary>
     internal SindriPlatform? Platform { get; }
 
+    /// <summary>Capture mode (desktop UI evidence): when set, the app saves its screens as PNGs and ends instead of staying open.</summary>
+    internal CaptureRequest? Capture { get; set; }
+
     /// <summary>
     /// Ends the app with an exit code: the lifetime's Shutdown. A headless test replaces it, since the real one also shuts
     /// the UI thread's dispatcher down, which the test session shares.
@@ -130,10 +133,32 @@ public sealed partial class SindriApp : Application, IDisposable
         var window = new ShellWindow { DataContext = shell };
         window.SettingsSlot.Content = new SettingsView { DataContext = settings };
         SettingsTheme.Follow(window, settings);
+        if (Capture is { } capture)
+        {
+            (window.Width, window.Height) = (capture.Width, capture.Height);
+        }
+
         desktop.MainWindow = window;
         window.Show();
         ShellOpened(desktop, window, shell);
+        if (Capture is { } capturing)
+        {
+            _ = Capturing(desktop, window, shell, capturing);
+        }
+
         await shell.Run(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    // Capture mode: the shots, then the app ends with 0, or with the failed code after the problem is reported.
+    private async Task Capturing(IClassicDesktopStyleApplicationLifetime desktop, ShellWindow window, ShellViewModel shell, CaptureRequest capture)
+    {
+        var problem = await ShellCapture.Run(window, shell, capture).ConfigureAwait(true);
+        if (problem is not null)
+        {
+            capture.Report(problem);
+        }
+
+        End(desktop, problem is null ? 0 : CaptureRequest.FailedExitCode);
     }
 
     // The code and the exception's type only: its message and stack can carry paths and payloads.

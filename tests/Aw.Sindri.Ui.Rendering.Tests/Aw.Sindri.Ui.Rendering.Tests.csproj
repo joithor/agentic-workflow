@@ -20,7 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
-    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Ui.Capture/Aw.Sindri.Ui.Capture.csproj" />
     <ProjectReference Include="../Aw.Sindri.Ui.Testing/Aw.Sindri.Ui.Testing.csproj" />
   </ItemGroup>
 

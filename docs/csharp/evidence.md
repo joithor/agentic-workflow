@@ -284,13 +284,17 @@ label mismatches from the side-by-side image) is the `step.evidence.desktop-revi
 
 **Run files** in `<run-dir>`: `summary.json` (`schema: "ui-evidence.desktop/1"`, `kind: "desktop"`, `runId`, `startedAt`, `finishedAt`, `appBuild`,
 `manifestSha256`, `outcome` passed|failed|refused|errored, `headline`, `screens[]` with `name`, `size`, `diffPercent`, `threshold`, `passed`, `problem`,
-`files` {`app`, `design`, `diff`, `sideBySide`}, `accepted`, `masked`, and `refusal`/`error` as `{code, message}`), `report.md`, and
+`files` {`app`, `design`, `diff`, `sideBySide`}, `accepted`, `masked`, `notes` (how the frames were made, e.g. the display), and `refusal`/`error` as `{code, message}`), `report.md`, and
 `<screen>-<WxH>/app.png`, `design.png`, `diff.png`, `side-by-side.png`. Ports: `IDesktopCommands` (process adapter), `IScratchDirectories` (temp
 directories), `IStaticSite` (loopback HTTP listener), beside the existing `IBrowser`.
 
-**Sindri's own setup**: `sindri-ui-capture` (`src/Sindri/Aw.Sindri.Ui.Capture`, a second head of the Avalonia app, Skia headless, not NativeAOT) opens
-the shell window over the control plane found under `AW_SINDRI_HOME` and saves one frame per route; this repo's config points `desktop` at
-`scripts/sindri-ui-fixture.sh` and `docs/sindri/ui-evidence/screens.json` (all eleven mockups of the screens design).
+**Sindri's own setup**: the capture is the real app. `scripts/sindri-ui-capture.sh` publishes `sindri-ui` (`scripts/sindri-app.sh --publish-only`) and launches it as
+`sindri-ui --capture --size WxH --shot <route> <png path> ...` against the fixture home in `AW_SINDRI_HOME`. In capture mode the app opens its real window at that
+size (preferences in memory, no tray, no OS motion setting), waits until it is connected and has read its queue, goes to each route through its own navigation
+(`page:<Page>` runs the rail's `GoTo`; a deep link such as `workflow/PRJ-sync` runs the palette's and tray's `Navigate`), lets the views settle, saves the window
+(Avalonia `RenderTargetBitmap`) and exits 0, or 4 with one stderr line when a screen could not be captured. It stays NativeAOT. The display is the user's `DISPLAY`
+when set, else `xvfb-run`; the script says which on stderr (`display: ...`) and `desktop-run` copies those lines into the summary's `notes`. This repo's config points
+`desktop` at `scripts/sindri-ui-fixture.sh`, that script and `docs/sindri/ui-evidence/screens.json` (all eleven mockups of the screens design).
 
 ## Run files
 

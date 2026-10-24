@@ -2600,8 +2600,8 @@ Aw.Evidence.Core.Desktop.DesktopSummary.Refusal.get -> Aw.Evidence.Core.Data.Cod
 Aw.Evidence.Core.Desktop.DesktopSummary.Refusal.init -> void
 Aw.Evidence.Core.Desktop.DesktopSummary.Error.get -> Aw.Evidence.Core.Data.CodedMessage?
 Aw.Evidence.Core.Desktop.DesktopSummary.Error.init -> void
-Aw.Evidence.Core.Desktop.DesktopSummary.DesktopSummary(string! Schema, string! Kind, Aw.Evidence.Core.Ids.RunId RunId, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string? AppBuild, string! ManifestSha256, Aw.Evidence.Core.Desktop.DesktopOutcome Outcome, string! Headline, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Desktop.DesktopScreenResult!>! Screens, Aw.Evidence.Core.Data.CodedMessage? Refusal, Aw.Evidence.Core.Data.CodedMessage? Error) -> void
-Aw.Evidence.Core.Desktop.DesktopSummary.Deconstruct(out string! Schema, out string! Kind, out Aw.Evidence.Core.Ids.RunId RunId, out System.DateTimeOffset StartedAt, out System.DateTimeOffset FinishedAt, out string? AppBuild, out string! ManifestSha256, out Aw.Evidence.Core.Desktop.DesktopOutcome Outcome, out string! Headline, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Desktop.DesktopScreenResult!>! Screens, out Aw.Evidence.Core.Data.CodedMessage? Refusal, out Aw.Evidence.Core.Data.CodedMessage? Error) -> void
+Aw.Evidence.Core.Desktop.DesktopSummary.DesktopSummary(string! Schema, string! Kind, Aw.Evidence.Core.Ids.RunId RunId, System.DateTimeOffset StartedAt, System.DateTimeOffset FinishedAt, string? AppBuild, string! ManifestSha256, Aw.Evidence.Core.Desktop.DesktopOutcome Outcome, string! Headline, System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Desktop.DesktopScreenResult!>! Screens, Aw.Evidence.Core.Data.CodedMessage? Refusal, Aw.Evidence.Core.Data.CodedMessage? Error, System.Collections.Generic.IReadOnlyList<string!>! Notes) -> void
+Aw.Evidence.Core.Desktop.DesktopSummary.Deconstruct(out string! Schema, out string! Kind, out Aw.Evidence.Core.Ids.RunId RunId, out System.DateTimeOffset StartedAt, out System.DateTimeOffset FinishedAt, out string? AppBuild, out string! ManifestSha256, out Aw.Evidence.Core.Desktop.DesktopOutcome Outcome, out string! Headline, out System.Collections.Generic.IReadOnlyList<Aw.Evidence.Core.Desktop.DesktopScreenResult!>! Screens, out Aw.Evidence.Core.Data.CodedMessage? Refusal, out Aw.Evidence.Core.Data.CodedMessage? Error, out System.Collections.Generic.IReadOnlyList<string!>! Notes) -> void
 Aw.Evidence.Core.Desktop.DesktopSummary.Equals(Aw.Evidence.Core.Desktop.DesktopSummary? other) -> bool
 override Aw.Evidence.Core.Desktop.DesktopSummary.Equals(object? obj) -> bool
 override Aw.Evidence.Core.Desktop.DesktopSummary.GetHashCode() -> int
@@ -2728,3 +2728,5 @@ Aw.Evidence.Core.Desktop.IStaticSite
 Aw.Evidence.Core.Desktop.IStaticSite.ServeAsync(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Desktop.IServedSite!>!>
 Aw.Evidence.Core.Desktop.IServedSite
 Aw.Evidence.Core.Desktop.IServedSite.Origin.get -> string!
+Aw.Evidence.Core.Desktop.DesktopSummary.Notes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Desktop.DesktopSummary.Notes.init -> void
