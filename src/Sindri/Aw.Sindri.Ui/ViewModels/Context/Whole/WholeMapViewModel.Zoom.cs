@@ -83,6 +83,7 @@ internal sealed partial class WholeMapViewModel
     {
         if (!IsZoomed)
         {
+            EndSearch();
             return;
         }
 
@@ -95,6 +96,7 @@ internal sealed partial class WholeMapViewModel
 
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
         Changed();
+        ResetSearch();
         FitRequested?.Invoke(this, EventArgs.Empty);
     }
 }

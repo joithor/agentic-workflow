@@ -23,6 +23,12 @@ internal static partial class Labels
     internal static string ContextWholeAreaTruncated(int shown, int total) =>
         string.Create(CultureInfo.InvariantCulture, $"Showing {shown} of {total} items; the rest are not shown.");
 
+    /// <summary>The note by the search box when nothing on the map matches.</summary>
+    internal const string ContextSearchNoMatches = "No matches";
+
+    /// <summary>The button that empties the search box and returns to the full map.</summary>
+    internal const string ContextSearchClear = "Clear search";
+
     /// <summary>The line when what was asked is not on the whole map.</summary>
     internal const string ContextWholeNoMatch = "None of those items are on the map.";
 
