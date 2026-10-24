@@ -40,18 +40,6 @@
       "bash-scripts": {
         "paths": ["scripts/**", "providers/**", "setup.sh"],
         "steps": [ { "name": "bash-scripts", "run": ["bash", "scripts/ci/bash-tests.sh"], "heavy": true } ]
-      },
-      "ts-sindri": {
-        "paths": ["sindri/**"],
-        "steps": [ { "name": "ts-sindri", "run": ["bash", "-c", "cd sindri && npm ci --silent && npx tsc --noEmit && npx vitest run"], "heavy": true } ]
-      },
-      "ts-scorer": {
-        "paths": ["scorer/**", "judge/**"],
-        "steps": [ { "name": "ts-scorer", "run": ["bash", "-c", "npm ci --silent --prefix judge && cd scorer && npm ci --silent && npx tsc --noEmit && npx vitest run"], "heavy": true } ]
-      },
-      "ts-ui-evidence": {
-        "paths": ["skills/ui-evidence/**"],
-        "steps": [ { "name": "ts-ui-evidence", "run": ["bash", "-c", "cd skills/ui-evidence && npm ci --silent && npx tsc --noEmit && npx vitest run"], "heavy": true } ]
       }
     }
   },
