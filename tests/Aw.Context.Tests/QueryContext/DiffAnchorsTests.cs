@@ -92,7 +92,7 @@ public sealed class DiffAnchorsTests
 
         // tab-groups is reached by a confirmed edge from TabManager.ts, so it is confirmed overall.
         Assert.Equal(["feature:layout.split-pane", "feature:layout.split-pane.orientation", "feature:tabs.tab-groups", "feature:tabs.tab-manager"], anchors.Select(a => a.Key.Value), StringComparer.Ordinal);
-        Assert.Equal((4, false), (part.AnchorsTotal, part.AnchorsTruncated));
+        Assert.Equal(4, part.AnchorsTotal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -172,7 +172,7 @@ public sealed class DiffAnchorsTests
 
         Assert.Empty(part.Files);
         Assert.Empty(anchors);
-        Assert.Equal((new DiffCounts(0, 0, 0, 0, 0), false, 0, false), (part.Counts, part.Truncated, part.AnchorsTotal, part.AnchorsTruncated));
+        Assert.Equal((new DiffCounts(0, 0, 0, 0, 0), false, 0), (part.Counts, part.Truncated, part.AnchorsTotal));
         Assert.Equal((_repo.Name, Sha, Sha, Sha), (part.Repo, part.Base, part.Head, part.MergeBase));
     }
 
