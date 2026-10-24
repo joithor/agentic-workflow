@@ -28,7 +28,7 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
         { "whole", "/sindri/context/map/whole?detail=nodes&repo=aw-split-panes" },
         { "lenses", "/sindri/context/lenses?anchor=feature%3Aa" },
         { "history", "/sindri/context/history?anchor=feature%3Ab" },
-        { "filemap", "/sindri/context/filemap?repo=aw-split-panes&path=src" },
+        { "filemap", "/sindri/context/filemap?repo=aw-split-panes&path=src%2Flayout" },
     };
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -70,11 +70,11 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:a\", label: \"A\"}",
             "  - {key: \"feature:b\", label: \"Drafted B\", provenance: model, confidence: 0.5}",
-            "  - {key: \"code:src/a.ts\", label: \"a.ts\", provenance: deterministic}",
+            "  - {key: \"code:src/layout/SplitPane.ts\", label: \"a.ts\", provenance: deterministic}",
             "edges:",
             "  - {from: \"feature:b\", to: \"feature:a\", type: part-of}",
-            "  - {from: \"code:src/a.ts\", to: \"feature:a\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}",
-            "  - {from: \"code:src/a.ts\", to: \"feature:b\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}") + "\n", ct);
+            "  - {from: \"code:src/layout/SplitPane.ts\", to: \"feature:a\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/layout/SplitPane.ts\"}]}",
+            "  - {from: \"code:src/layout/SplitPane.ts\", to: \"feature:b\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/layout/SplitPane.ts\"}]}") + "\n", ct);
         await ContextMapApiTests.Import(host, file);
         return host;
     }
