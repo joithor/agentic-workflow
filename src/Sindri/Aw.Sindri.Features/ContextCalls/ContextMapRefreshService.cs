@@ -166,7 +166,7 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
                 : new ScheduledResult(Idle: true, Left(tick.Elsewhere));
         }
 
-        return await Alarm(action, failures, both[0].Code, tick.Elsewhere, cancellationToken).ConfigureAwait(false);
+        return await Alarm(action, failures, Why(both[0]), tick.Elsewhere, cancellationToken).ConfigureAwait(false);
     }
 
     private static JobRow[] Finished(IEnumerable<JobRow> jobs) =>
@@ -187,6 +187,10 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
         var retried = await Start(elsewhere, cancellationToken).ConfigureAwait(false);
         return retried.IsError ? retried.Error : SindriErrors.ServiceFailed.With(alarm + "; " + (retried.Value.Summary ?? "the next try backs off"));
     }
+
+    // The code alone sends the owner to a lookup; the job's own line says what went wrong.
+    private static string? Why(JobRow job) =>
+        string.IsNullOrWhiteSpace(job.Summary) ? job.Code : job.Code is null ? job.Summary : job.Code + ": " + job.Summary;
 
     private static string? Left(string[] elsewhere) =>
         elsewhere.Length == 0 ? null : "not on trunk, left out: " + string.Join(", ", elsewhere);
