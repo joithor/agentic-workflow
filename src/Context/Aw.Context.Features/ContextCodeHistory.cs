@@ -3,12 +3,14 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
+using Aw.Context.Features.SearchMap;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -19,7 +21,8 @@ internal sealed class ContextCodeHistory(
     IService<GetCodeRequest, CodeView> code,
     IService<GetHistoryRequest, HistoryView> history,
     IService<GetSubgraphRequest, SubgraphView> subgraph,
-    IService<GetWholeMapRequest, WholeMapView> wholeMap) : IContextCode, IContextHistory
+    IService<GetWholeMapRequest, WholeMapView> wholeMap,
+    IService<SearchMapRequest, MapSearchView> search) : IContextCode, IContextHistory
 {
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);
@@ -32,4 +35,7 @@ internal sealed class ContextCodeHistory(
 
     public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         wholeMap.Handle(new GetWholeMapRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        search.Handle(new SearchMapRequest(query, scope), cancellationToken);
 }

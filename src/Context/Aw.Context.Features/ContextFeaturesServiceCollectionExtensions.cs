@@ -13,6 +13,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Core.WholeMap;
@@ -35,6 +36,7 @@ using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
+using Aw.Context.Features.SearchMap;
 using Aw.Context.Features.HeldMap;
 using Aw.Context.Features.HoldMap;
 using Aw.Context.Features.ImportMap;
@@ -73,6 +75,7 @@ public static class ContextFeaturesServiceCollectionExtensions
     public static IServiceCollection AddContextFeatures(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<IMapSearchIndexFactory, UnconfiguredMapSearchIndexFactory>();   // the host that wires Aw.Context.Infrastructure replaces it with the SQLite FTS5 adapter
         services.TryAddSingleton(WholeMapRules.Default);   // a host or a test may register other limits
         services.TryAddSingleton<ICodeSymbolSource, NoCodeSymbolSource>();   // the host that wires the code index (Sindri's Host adapter) replaces it
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
@@ -151,6 +154,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetSubgraphRequest, SubgraphView>, GetSubgraphService>()
         .AddScoped<IService<GetWholeMapRequest, WholeMapView>, GetWholeMapService>()
         .AddSingleton<WholeMapCache>()
+        .AddScoped<IService<SearchMapRequest, MapSearchView>, SearchMapService>()
+        .AddSingleton<MapSearchCache>()
         .AddScoped<LensBasisReader>()
         .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()
