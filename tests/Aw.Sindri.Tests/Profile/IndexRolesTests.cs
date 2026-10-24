@@ -83,4 +83,40 @@ public sealed class IndexRolesTests : IDisposable
 
         Assert.Contains("repos.web.index.roles.fixture[1]: must not contain '..'", ProfileRules.Check(profile).Error.Message, StringComparison.Ordinal);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("prefix:test_")]
+    [InlineData("suffix:.generated.ts")]
+    [InlineData("regex:^v\\d+$")]
+    public void A_prefix_suffix_or_regex_entry_is_a_valid_role_entry(string entry)
+    {
+        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = [entry] }));
+
+        Assert.True(ProfileRules.Check(profile).IsSuccess);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("prefix:", "index.roles.r[0]: 'prefix:' takes a text")]
+    [InlineData("suffix:a/b", "index.roles.r[0]: 'suffix:' matches one path segment")]
+    [InlineData("regex:(", "index.roles.r[0]: is not a valid regular expression")]
+    public void A_bad_prefix_suffix_or_regex_entry_names_its_key_path(string entry, string message)
+    {
+        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["r"] = [entry] }));
+
+        Assert.Contains(message, ProfileRules.Check(profile).Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Tagged_entries_reach_the_engine_and_deny_by_segment()
+    {
+        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web")],
+            Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = ["suffix:.generated.ts", "prefix:gen_", "regex:^v\\d+$"] }));
+
+        var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
+
+        Assert.True(repo.Denies("src/a.generated.ts"));
+        Assert.True(repo.Denies("src/gen_x/a.ts"));
+        Assert.True(repo.Denies("src/v3/a.ts"));
+        Assert.False(repo.Denies("src/a.ts"));
+    }
 }

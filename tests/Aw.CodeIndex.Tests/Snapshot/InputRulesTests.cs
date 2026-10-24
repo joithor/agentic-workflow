@@ -139,6 +139,14 @@ public sealed class InputRulesTests
     public void MatchesAny_applies_a_glob_ignoring_case(string path, string glob, bool expected)
         => Assert.Equal(expected, InputRules.MatchesAny(path, [glob]));
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("src/Test_a.py", "prefix:test_", true)]
+    [InlineData("src/a.Generated.ts", "suffix:.generated.ts", true)]
+    [InlineData("src/v2/a.ts", "regex:^v\\d+$", true)]
+    [InlineData("src/v2b/a.ts", "regex:^v\\d+$", false)]
+    public void MatchesAny_applies_a_prefix_suffix_or_regex_role_entry_to_a_segment(string path, string entry, bool expected)
+        => Assert.Equal(expected, InputRules.MatchesAny(path, [entry]));
+
     private static TreeEntry Regular(string path, string blob, long? size) => Entry("100644", path, blob, size);
 
     private static TreeEntry Entry(string mode, string path, string blob, long? size) => new(mode, path, blob, size);
