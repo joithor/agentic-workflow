@@ -81,7 +81,7 @@ public sealed class BacktestTests
 
         var run = await world.Run("graph", world.Session());
 
-        Assert.NotEqual(ContextErrors.SessionsDisabled.Code, run.IsError ? run.Error.Code : string.Empty);
+        Assert.NotEqual(ContextErrors.SessionsDisabled.Code, run.IsError ? run.Error.Code : string.Empty, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

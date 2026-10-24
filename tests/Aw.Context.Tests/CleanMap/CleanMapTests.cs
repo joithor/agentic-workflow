@@ -176,7 +176,7 @@ public sealed partial class CleanMapTests : IDisposable
 
         var refused = await _world.Map.CleanDraft(MapWorld.Session("aw-split-panes"), MapWorld.None);
 
-        Assert.NotEqual(ContextErrors.SessionsDisabled.Code, refused.IsError ? refused.Error.Code : string.Empty);
+        Assert.NotEqual(ContextErrors.SessionsDisabled.Code, refused.IsError ? refused.Error.Code : string.Empty, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

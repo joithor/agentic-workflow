@@ -95,7 +95,7 @@ public sealed class ContextReviewRowsTests
             Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
             Assert.True(Table.Decide(row.Class, A.Caller().Service("engine").Build(), row).Allowed);
             Assert.Equal(session, Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
-            Assert.Equal(session, Table.CallersFor(row).Contains("session"));
+            Assert.Equal(session, Table.CallersFor(row).Contains("session", StringComparer.Ordinal));
         }
     }
 
