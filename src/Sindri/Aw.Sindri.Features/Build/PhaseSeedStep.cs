@@ -70,10 +70,10 @@ internal sealed class PhaseSeedStep(IWorktrees worktrees, IRepoCheckouts checkou
             return (null, $"step.phase.seed has no checkout of {repo.Value} to make the worktree in: {checkout.Error.Message}");
         }
 
-        var start = await StartCommit(StepFacts.Read(context, "fact:phasePacket") as JsonObject, line, checkout.Value, cancellationToken).ConfigureAwait(false);
-        return start.Commit is null
-            ? (null, start.Failure)
-            : (new WorktreeRequest(checkout.Value, start.Commit, $"sindri/{line.Name}/{line.Phase}", System.IO.Path.Combine(checkout.Value, ".claude", "worktrees", $"sindri-{line.Name}-{line.Phase}")), null);
+        var (commit, startFailure) = await StartCommit(StepFacts.Read(context, "fact:phasePacket") as JsonObject, line, checkout.Value, cancellationToken).ConfigureAwait(false);
+        return commit is null
+            ? (null, startFailure)
+            : (new WorktreeRequest(checkout.Value, commit, $"sindri/{line.Name}/{line.Phase}", System.IO.Path.Combine(checkout.Value, ".claude", "worktrees", $"sindri-{line.Name}-{line.Phase}")), null);
     }
 
     /// <summary>
