@@ -98,7 +98,7 @@ public sealed class FileMapPagingTests
         _ = files.Rows[360];
         await Until(() => files.Loaded == Total);
 
-        Assert.Equal<string?>([null, "src/tabs/" + Name(199), "src/tabs/" + Name(399)], api.FileMapQueries.Select(q => q.Cursor), StringComparer.Ordinal);
+        Assert.Equal([null, "src/tabs/" + Name(199), "src/tabs/" + Name(399)], api.FileMapQueries.Select(q => q.Cursor), StringComparer.Ordinal);
         Assert.Equal(Total, files.Rows.Count);
         Assert.Equal(Name(450), files.Rows[450].Name);
         Assert.Equal(3, api.FileMapQueries.Count);
