@@ -22,5 +22,7 @@ internal static class MapRefreshRetry
     internal static string Line(int attempt, TimeSpan wait, Error error) =>
         string.Create(CultureInfo.InvariantCulture, $"retrying (attempt {attempt} of {Attempts}) in {Format(wait)} after {error.Code}: {error.Message}");
 
-    private static string Format(TimeSpan wait) => wait.TotalMinutes >= 1 ? $"{wait.TotalMinutes:0.#} min" : $"{wait.TotalSeconds:0.#} s";
+    private static string Format(TimeSpan wait) => wait.TotalMinutes >= 1
+        ? string.Create(CultureInfo.InvariantCulture, $"{wait.TotalMinutes:0.#} min")
+        : string.Create(CultureInfo.InvariantCulture, $"{wait.TotalSeconds:0.#} s");
 }
