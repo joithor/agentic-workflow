@@ -11,7 +11,7 @@ internal static class ScrubRig
 {
     internal static ScrubService Service() => new(new RedactingScrubber(Redactor.Default), new GitPreCommit(), Installer());
 
-    internal static PreCommitRepoHooks Hooks() => new(Installer());
+    internal static PreCommitRepoHooks Hooks() => new(Installer(), new GitPreCommit());
 
     private static PreCommitInstaller Installer() => new(new GitPreCommit());
 }

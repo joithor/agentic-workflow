@@ -46,7 +46,7 @@ internal sealed class ScrubService(ITextScrubber scrubber, IPreCommitGit git, IP
 
     private async ValueTask<Result<ScrubResponse>> Install(ScrubRequest request, CancellationToken cancellationToken)
     {
-        var bin = request.Bin ?? Environment.ProcessPath ?? "sindri";
+        var bin = request.Bin ?? git.RunningBin;
         var done = await installer.Install(request.Repo, bin, cancellationToken).ConfigureAwait(false);
         return done.IsError ? done.Error : new ScrubResponse($"Installed the secret-scan pre-commit hook at {done.Value}.\n", done.Value);
     }

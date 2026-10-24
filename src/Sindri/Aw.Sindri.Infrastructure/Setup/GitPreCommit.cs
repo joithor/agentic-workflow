@@ -9,6 +9,23 @@ namespace Aw.Sindri.Infrastructure.Setup;
 /// <summary><see cref="IPreCommitGit"/> over git. Not hardened: the repo is one the owner approved or is committing in, and core.hooksPath must be read, not blanked.</summary>
 internal sealed class GitPreCommit : IPreCommitGit
 {
+    public string StableBin { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "sindri");
+
+    public string RunningBin => Environment.ProcessPath ?? "sindri";
+
+    public async ValueTask<string?> ReadHook(string path, CancellationToken cancellationToken) =>
+        File.Exists(path) ? await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false) : null;
+
+    public async ValueTask WriteHook(string path, string text, CancellationToken cancellationToken)
+    {
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);   // why: git-path always names a file inside a hooks directory
+        await File.WriteAllTextAsync(path, text, cancellationToken).ConfigureAwait(false);
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
+    }
+
     public async ValueTask<Result<HookLocation>> HookPath(string? repo, CancellationToken cancellationToken)
     {
         var folder = repo ?? ".";

@@ -18257,6 +18257,10 @@ Aw.Sindri.Core.Setup.HookLocation.InGitDir.init -> void
 Aw.Sindri.Core.Setup.HookLocation.Path.get -> string!
 Aw.Sindri.Core.Setup.HookLocation.Path.init -> void
 Aw.Sindri.Core.Setup.IPreCommitGit
+Aw.Sindri.Core.Setup.IPreCommitGit.ReadHook(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Core.Setup.IPreCommitGit.RunningBin.get -> string!
+Aw.Sindri.Core.Setup.IPreCommitGit.StableBin.get -> string!
+Aw.Sindri.Core.Setup.IPreCommitGit.WriteHook(string! path, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Core.Setup.IPreCommitInstaller
 Aw.Sindri.Core.Setup.IPreCommitInstaller.Install(string? repo, string! bin, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Setup.IPreCommitInstaller.Kind(string! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.HookKind>
