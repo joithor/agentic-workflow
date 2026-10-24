@@ -52,7 +52,7 @@ internal static class ContextAnswers
     {
         ArgumentNullException.ThrowIfNull(query);
         var anchors = query.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if (query.Depth is > 4)
+        if (query.Depth is < 0)
         {
             return RouteAnswer.Problem("context-lenses", "bad-depth-006");
         }
