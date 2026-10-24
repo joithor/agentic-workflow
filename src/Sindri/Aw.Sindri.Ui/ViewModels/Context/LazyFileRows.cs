@@ -5,7 +5,8 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 
 /// <summary>
 /// The rows of a folder, built when the list asks for them: a folder of tens of thousands of entries makes a row view model
-/// only for the ones scrolled to. A filter is a list of positions into the entries, so narrowing copies no entry.
+/// only for the ones scrolled to. The entries are the page-source seam: today the whole served folder, later (when the
+/// filemap serves cursor pages) a list that fills pages as the indexer reaches them. A filter is a list of positions into the entries, so narrowing copies no entry.
 /// </summary>
 internal sealed class LazyFileRows : IReadOnlyList<FileRowViewModel>
 {
