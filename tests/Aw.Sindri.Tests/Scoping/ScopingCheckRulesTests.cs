@@ -6,16 +6,16 @@ namespace Aw.Sindri.Tests.Scoping;
 
 /// <summary>
 /// The rest of the spec's proof, "one broken fixture per failing rule exits 1 naming it": each rule here has one edit of the gold facts that
-/// breaks it, checked at the evidence stage, where the outcome is incomplete.
+/// breaks it, checked at the evidence stage, where the outcome is incomplete (regather for a lens fault).
 /// </summary>
 public sealed class ScopingCheckRulesTests
 {
     private static async Task<ScopingCheckResponse> Evidence(ScopingFacts facts) =>
         (await new ScopingCheckService().Handle(new ScopingCheckRequest(facts, ScopeStage.Evidence), CancellationToken.None)).Value;
 
-    private static void Fails(ScopingCheckResponse response, string rule, string item)
+    private static void Fails(ScopingCheckResponse response, string rule, string item, ScopeOutcome outcome = ScopeOutcome.Incomplete)
     {
-        Assert.Equal(ScopeOutcome.Incomplete, response.Outcome);
+        Assert.Equal(outcome, response.Outcome);
         Assert.Contains(response.Findings, f => f.Rule == rule && f.Item == item);
         Assert.Equal(ScopeRuleStatus.Fail, response.Rules.Single(r => r.Rule == rule).Status);
     }
@@ -56,7 +56,7 @@ public sealed class ScopingCheckRulesTests
     {
         var facts = ScopingFacts.Expiry().Edit("lenses", n => n["code"]!["foundCount"] = 99);
 
-        Fails(await Evidence(facts), "SCP-LENS-001", "code");
+        Fails(await Evidence(facts), "SCP-LENS-001", "code", ScopeOutcome.Regather);   // a lens fault is fixed by gathering again, not by a redraft
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -71,7 +71,7 @@ public sealed class ScopingCheckRulesTests
             ["confirmed"] = true,
         }));
 
-        Fails(await Evidence(facts), "SCP-LENS-001", "code");
+        Fails(await Evidence(facts), "SCP-LENS-001", "code", ScopeOutcome.Regather);   // a lens fault is fixed by gathering again, not by a redraft
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -75,7 +75,7 @@ internal sealed partial class NeedsYouBarViewModel
     public string QuestionsHint => HasQuestions && !AllAnswered ? Labels.NeedsYouAnswerAll : string.Empty;
 
     /// <summary>The primary button's words: the decision's own, "Send answers" for the ask step, else "Approve", or "Approve?" while it asks.</summary>
-    public string ApproveWord => HasQuestions ? Labels.NeedsYouSendAnswers : Kind == BarKind.Decision ? AcceptControl?.Action.Label ?? Labels.NeedsYouApprove : IsAsking ? Labels.NeedsYouApproveAsk : Labels.NeedsYouApprove;
+    public string ApproveWord => HasAsk ? Labels.NeedsYouSendAnswers : Kind == BarKind.Decision ? AcceptControl?.Action.Label ?? Labels.NeedsYouApprove : IsAsking ? Labels.NeedsYouApproveAsk : Labels.NeedsYouApprove;
 
     /// <summary>The primary button's accessible name: the words and the request.</summary>
     public string ApproveName => Labels.NeedsYouBarName(ApproveWord, Subject);
@@ -100,12 +100,12 @@ internal sealed partial class NeedsYouBarViewModel
     };
 
     /// <summary>True when the primary can be pressed now.</summary>
-    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (!HasQuestions || AllAnswered) && KindAllowsPrimary;
+    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (!HasAsk || AskReady) && KindAllowsPrimary;
 
     /// <summary>True when the send back button shows (disabled with its reason on a settings request).</summary>
     public bool ShowsSendBack => Kind switch
     {
-        BarKind.Desk => DeskControl is not null && !HasQuestions,
+        BarKind.Desk => DeskControl is not null && !HasAsk,
         BarKind.Decision => RejectControl is not null,
         BarKind.Settings => true,
         BarKind.None or BarKind.Run => false,
@@ -152,7 +152,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackHint,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedHint,
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedHint,
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedHint,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 
@@ -187,7 +187,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackTitle(_row.Title),
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedTitle(_row.Title),
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedTitle(_row.Title),
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedTitle(_row.Title),
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 
@@ -196,7 +196,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackBody,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedBody,
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedBody,
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedBody,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 }

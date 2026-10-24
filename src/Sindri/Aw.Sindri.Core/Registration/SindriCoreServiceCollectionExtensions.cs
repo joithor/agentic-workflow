@@ -63,6 +63,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
+            .AddSingleton<IPinRenewals, PinRenewals>()
             .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
 
     /// <summary>The views' projections, in the order the projector folds them.</summary>

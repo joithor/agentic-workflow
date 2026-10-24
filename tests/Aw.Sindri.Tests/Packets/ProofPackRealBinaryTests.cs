@@ -26,7 +26,7 @@ public sealed class ProofPackRealBinaryTests : IDisposable
     private static ProofFacts Facts()
     {
         var acceptance = JsonNode.Parse("""{"schemaVersion":1,"parent":"sha256:9b274b16f381c1ae0aa3a4988b4d5e04710db9afa0432304050254fa6e63c57b","items":[{"id":"AC-1","text":"one","status":"failing","evidence":[]},{"id":"AC-2","text":"two","status":"failing","evidence":[]}]}""")!;
-        var signals = JsonNode.Parse("""{"schemaVersion":1,"signals":{"AC-1":[{"id":"SG-1a","kind":"test","statement":"s","runsAt":"head"}],"AC-2":[{"id":"SG-2a","kind":"test","statement":"t","runsAt":"head"}]}}""")!;
+        var signals = JsonNode.Parse("""{"schemaVersion":1,"signals":[{"item":"AC-1","id":"SG-1a","kind":"test","statement":"s","runs":"head"},{"item":"AC-2","id":"SG-2a","kind":"test","statement":"t","runs":"head"}]}""")!;
         var proof = JsonNode.Parse($$"""{"head":"{{Head}}","items":[{"id":"AC-1","artifacts":[{"kind":"test","path":"evidence/a.txt","sha256":"sha256:{{new string('a', 64)}}","commit":"{{Head}}","at":"2026-10-19T10:00:00Z","passing":true,"signal":"SG-1a"}]},{"id":"AC-2","artifacts":[]}]}""");
         return new ProofFacts(
             Head,

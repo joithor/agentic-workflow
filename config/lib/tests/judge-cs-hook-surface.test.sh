@@ -9,6 +9,8 @@
 #
 # A case that expects a pass also expects no fail-open log line: send-gate and scope-gate allow, and done-gate
 # falls back to its evidence check, on any judge failure, so a pass alone can't tell a working judge from a broken one.
+# prompt-sort, done-gate on the sorter's session file, trait-check and the not-yet-built stub verbs (cutover spec §10, §5.2) are
+# checked against the C# judge only (offline, no stub Jev: the decisive-axis and findings paths are the C# unit tests').
 # Three stub `claude` CLIs (answering 'continue', answering 'batch', and one that exits 1) reach the branches the
 # offline rules can't: ask-check continue, send-gate's batch queue and flush, and a degraded health.
 #
@@ -211,8 +213,7 @@ done
 jq -e '.auto_continued_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")' "$WORK/state-cs-done-continue/judge/sessions/s1.json" > /dev/null 2>&1 \
   || fail "done-continue: expected judge/sessions/s1.json with auto_continued_at"
 [ "$(rc_of done-brief)" = 0 ] || fail "done-brief: a claim meeting the brief must pass, got $(rc_of done-brief)"
-[ "$(rc_of done-brief-miss)" = 2 ] || fail "done-brief-miss: a claim missing the brief's criteria must block (exit 2), got $(rc_of done-brief-miss)"
-err_of done-brief-miss | has 'acceptance criteria ("all tests pass")' || fail "done-brief-miss: stderr must name the criteria, got $(err_of done-brief-miss)"
+[ "$(rc_of done-brief-miss)" = 0 ] || fail "done-brief-miss: a briefed claim need not repeat the criteria (q93 JG-05), exit 0, got $(rc_of done-brief-miss)"
 [ "$(rc_of done-nobrief)" = 0 ] || fail "done-nobrief: a claim with evidence and no brief must pass, got $(rc_of done-nobrief)"
 no_failopen done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief
 for c in done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief; do same $c; done
@@ -249,6 +250,102 @@ for c in health health-degraded health-down; do
     diff "$WORK/$c.cs.statusline" "$WORK/$c.ts.statusline" > /dev/null || fail "$c: the statusline differs from the TS judge's: $(cat "$WORK/$c.cs.statusline") vs $(cat "$WORK/$c.ts.statusline")"
   fi
 done
+
+# ---- prompt-sort (UserPromptSubmit; cutover spec §10) ----
+# `judge prompt-sort` < {prompt, sessionId}: the hook reads .context and ignores the exit. Offline (rules only, so Jev is out
+# and the sorter runs on its keyword heuristics) every scaffold is off: nothing is printed, a 'prompt-sort' decision is
+# recorded and judge/sessions/<sid>.sort.json is written. A decisive axis needs a stub Jev; no real-hook case reaches one
+# (the hook has no seam for it), so that path is the C# unit tests' (SortPromptTests, over FakeBatchClassifier).
+sqlite_count() { command -v sqlite3 > /dev/null 2>&1 && sqlite3 "$1/judge/decisions.sqlite" "$2" 2> /dev/null || echo "?"; }
+s="$(fresh cs ps-plain)"
+hook cs "$s" prompt-sort.sh '{"prompt":"add a dark mode toggle to the settings page","session_id":"s1"}' ps-plain
+SORT="$s/judge/sessions/s1.sort.json"
+[ "$(rc_of ps-plain)" = 0 ] || fail "ps-plain: exit $(rc_of ps-plain)"
+[ -z "$(out_of ps-plain)" ] || fail "ps-plain: every scaffold is off, so the hook prints nothing, got '$(out_of ps-plain)'"
+no_failopen ps-plain
+jq -e '.prompts == 1 and (.requirements | type) == "object" and (.requirements.uiEvidence // false) == false' "$SORT" > /dev/null 2>&1 \
+  || fail "ps-plain: expected judge/sessions/s1.sort.json {prompts:1, requirements:{}}, got '$(cat "$SORT" 2> /dev/null)'"
+n="$(sqlite_count "$s" "SELECT COUNT(*) FROM decisions WHERE question = 'prompt-sort'")"
+{ [ "$n" = 1 ] || [ "$n" = "?" ]; } || fail "ps-plain: expected one prompt-sort decision row, got $n"
+# Machine text and slash commands stop in the hook; a confirmation stops in the sorter. None is recorded or counted.
+for c in 'ps-machine|<system-reminder>machine text</system-reminder>' 'ps-slash|/clear' 'ps-confirm|sounds good'; do
+  name="${c%%|*}"; prompt="${c#*|}"
+  s="$(fresh cs "$name")"
+  hook cs "$s" prompt-sort.sh "$(jq -nc --arg p "$prompt" '{prompt:$p, session_id:"s1"}')" "$name"
+  [ "$(rc_of "$name")" = 0 ] && [ -z "$(out_of "$name")" ] || fail "$name: exit $(rc_of "$name"), stdout '$(out_of "$name")'"
+  [ ! -e "$s/judge/sessions/s1.sort.json" ] || fail "$name: a skipped prompt must not touch the session file"
+  n="$(sqlite_count "$s" "SELECT COUNT(*) FROM decisions WHERE question = 'prompt-sort'")"
+  { [ "$n" = 0 ] || [ "$n" = "?" ]; } || fail "$name: a skipped prompt records no decision, got $n"
+  no_failopen "$name"
+done
+
+# ---- done-gate on judge/sessions/<sid>.sort.json (requirements.uiEvidence, written by the sorter) ----
+# done-gate reads the flag the sorter set: a done claim with no UI evidence is blocked (exit 2) and the flag stays; the
+# "at most once" is stop_hook_active (a re-stop exits 0 first). A claim that shows UI evidence passes the UI check and
+# done-gate deletes the flag with jq, keeping the rest. Offline the sorter sets no requirement itself (no Jev-judged UI
+# axis), so the flag is set the way the sorter writes it (a jq edit of the C# writer's own file), and the sorter's next run
+# must still read the rewritten file.
+s="$(fresh cs done-ui)"
+hook cs "$s" prompt-sort.sh '{"prompt":"redesign the settings page layout","session_id":"s1"}' done-ui-sort
+SORT="$s/judge/sessions/s1.sort.json"
+jq '.requirements.uiEvidence = true' "$SORT" > "$SORT.tmp" && mv "$SORT.tmp" "$SORT"
+hook cs "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl")" done-ui-blocked
+[ "$(rc_of done-ui-blocked)" = 2 ] || fail "done-ui-blocked: a done claim with no UI evidence must be blocked (exit 2), got $(rc_of done-ui-blocked)"
+err_of done-ui-blocked | has 'UI evidence' || fail "done-ui-blocked: expected the UI evidence message, got '$(err_of done-ui-blocked)'"
+jq -e '.requirements.uiEvidence == true and .prompts == 1' "$SORT" > /dev/null 2>&1 || fail "done-ui-blocked: a block keeps the flag and the rest, got '$(cat "$SORT")'"
+hook cs "$s" done-gate.sh "$(stop "$WORK/t-evidence.jsonl" | jq -c '. + {stop_hook_active:true}')" done-ui-again
+[ "$(rc_of done-ui-again)" = 0 ] || fail "done-ui-again: a re-stop (stop_hook_active) never blocks again, got exit $(rc_of done-ui-again)"
+transcript "$WORK/t-shot.jsonl" "Done — settings page updated, ran npm test, screenshot at shots/settings.png."
+hook cs "$s" done-gate.sh "$(stop "$WORK/t-shot.jsonl")" done-ui-shown
+[ "$(rc_of done-ui-shown)" = 0 ] || fail "done-ui-shown: a claim with a screenshot passes, got exit $(rc_of done-ui-shown): $(err_of done-ui-shown)"
+jq -e '(.requirements.uiEvidence // false) == false and .prompts == 1' "$SORT" > /dev/null 2>&1 || fail "done-ui-shown: done-gate must delete requirements.uiEvidence and keep the rest, got '$(cat "$SORT")'"
+hook cs "$s" prompt-sort.sh '{"prompt":"redesign the settings page layout again","session_id":"s1"}' done-ui-sort2
+jq -e '.prompts == 2' "$SORT" > /dev/null 2>&1 || fail "done-ui-sort2: the sorter must read the jq-rewritten file and count on (prompts 2), got '$(cat "$SORT")'"
+no_failopen done-ui-sort done-ui-again done-ui-sort2
+
+# ---- trait-check (PostToolUse edit, Stop; opt-in lever) ----
+# exit 0 -> pass; 2 -> findings on stderr, the hook exits 2 with them; 3 -> Jev unavailable, the hook fails open
+# logging jev-unavailable; anything else -> judge-exit-N. Offline (rules only) Jev is out, so a repo with a matching
+# trait is exit 3 and a repo with none is exit 0. The findings path needs a stub Jev: the C# unit tests have it.
+mkrepo() { # mkrepo <dir> [with-trait]
+  mkdir -p "$1/src"; git -C "$1" init -q; echo 'export const a = 1;' > "$1/src/a.ts"
+  if [ "${2:-}" = with-trait ]; then
+    mkdir -p "$1/.agents/traits"
+    printf 'version: 1\nname: no-todo\nsubject: TODO comments\nrequirement: No TODO comments are left in source files.\npurpose: Work left undone is tracked in issues.\nguidance: Open an issue and link it.\npaths:\n  - "src/**"\nseverity: block\n' > "$1/.agents/traits/no-todo.yaml"
+  fi
+  git -C "$1" add -A; git -C "$1" -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q -m init
+  echo '// TODO later' >> "$1/src/a.ts"
+}
+inrepo() { local dir="$1"; shift; (cd "$dir" && "$@"); }
+EDIT='{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"src/a.ts"}}'
+STOPEV='{"hook_event_name":"Stop","session_id":"s1"}'
+mkrepo "$WORK/repo-none"; mkrepo "$WORK/repo-trait" with-trait
+s="$(fresh cs tc-none-edit)"; inrepo "$WORK/repo-none" hook cs "$s" trait-check.sh "$EDIT" tc-none-edit
+s="$(fresh cs tc-none-stop)"; inrepo "$WORK/repo-none" hook cs "$s" trait-check.sh "$STOPEV" tc-none-stop
+s="$(fresh cs tc-jev-edit)"; inrepo "$WORK/repo-trait" hook cs "$s" trait-check.sh "$EDIT" tc-jev-edit
+for c in tc-none-edit tc-none-stop; do
+  [ "$(rc_of $c)" = 0 ] && [ -z "$(out_of $c)" ] && [ -z "$(err_of $c)" ] || fail "$c: a repo with no traits is exit 0 and silent, got exit $(rc_of $c): $(err_of $c)"
+done
+no_failopen tc-none-edit tc-none-stop
+[ "$(rc_of tc-jev-edit)" = 0 ] || fail "tc-jev-edit: Jev unavailable fails open (exit 0), got $(rc_of tc-jev-edit)"
+failopen_log tc-jev-edit | has 'jev-unavailable' || fail "tc-jev-edit: expected the hook to log jev-unavailable, got '$(failopen_log tc-jev-edit)'"
+# The exit codes are trait-check's own: the CLI itself.
+s="$(fresh cs tc-cli)"
+rc=0; (cd "$WORK/repo-trait" && judge_on cs "$s" trait-check --edit --file src/a.ts > /dev/null 2> "$WORK/tc-cli.err") || rc=$?
+[ "$rc" = 3 ] && has 'jev unavailable' < "$WORK/tc-cli.err" || fail "tc-cli: trait-check with Jev excluded must exit 3 'jev unavailable', got $rc: $(cat "$WORK/tc-cli.err")"
+
+# ---- the not-yet-built stub (cutover spec §5.2, Q9): empty stdout, one stderr line, exit 1 ----
+for c in 'label|label' 'label status|label' 'adjudicate ask-check|adjudicate' 'eval wake-gate|eval' 'eval import-turns x.jsonl|eval import-turns' \
+  'prompt-sort why abc|prompt-sort why' 'prompt-sort import|prompt-sort import' 'prompt-sort outcomes|prompt-sort outcomes' 'prompt-sort adjudicate|prompt-sort adjudicate' \
+  'prompt-sort eval|prompt-sort eval' 'prompt-sort promote --apply|prompt-sort promote'; do
+  args="${c%%|*}"; verb="${c#*|}"; rc=0
+  # shellcheck disable=SC2086
+  out="$(judge_on cs "$(fresh cs stub)" $args 2> "$WORK/stub.err")" || rc=$?
+  { [ "$rc" = 1 ] && [ -z "$out" ] && [ "$(cat "$WORK/stub.err")" = "judge: $verb is not in this build yet" ]; } \
+    || fail "stub '$args': expected exit 1, empty stdout and 'judge: $verb is not in this build yet', got exit $rc, stdout '$out', stderr '$(cat "$WORK/stub.err")'"
+done
+rc=0; judge_on cs "$(fresh cs stub)" prompt-sort bogus > /dev/null 2> "$WORK/stub.err" || rc=$?
+{ [ "$rc" = 1 ] && [ "$(cat "$WORK/stub.err")" = "judge: unknown prompt-sort subcommand: bogus" ]; } || fail "prompt-sort bogus: got exit $rc, '$(cat "$WORK/stub.err")'"
 
 if [ "$FAILS" -gt 0 ]; then echo "judge-cs-hook-surface: $FAILS failure(s) (sides: $SIDES)"; exit 1; fi
 echo "All judge-cs-hook-surface tests passed (sides: $SIDES)."

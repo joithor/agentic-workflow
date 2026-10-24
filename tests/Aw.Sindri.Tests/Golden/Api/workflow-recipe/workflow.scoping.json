@@ -1,6 +1,6 @@
 {
   "id": "workflow.scoping",
-  "hash": "sha256:dd97186e006e7cbc83cac6f05c604bf97a186d84ba5cdcc2c3ab2476436212d5",
+  "hash": "sha256:9968fa7b2aae1c5969316cb1988751e6efde47ae814f8b327378d2723b21e21b",
   "version": 9,
   "name": null,
   "inputs": [
@@ -217,49 +217,49 @@
       "name": "rescope",
       "from": "check",
       "to": "gather",
-      "cap": 3
+      "cap": 6
     },
     {
       "name": "rounds",
       "from": "check",
       "to": "draft",
-      "cap": 6
+      "cap": 10
     },
     {
       "name": "rescope",
       "from": "reanchor",
       "to": "gather",
-      "cap": 3
+      "cap": 6
     },
     {
       "name": "refreeze",
       "from": "freeze",
       "to": "evidence",
-      "cap": 2
+      "cap": 5
     },
     {
       "name": "rescope",
       "from": "evidence",
       "to": "gather",
-      "cap": 3
+      "cap": 6
     },
     {
       "name": "rounds",
       "from": "evidence",
       "to": "draft",
-      "cap": 6
+      "cap": 10
     },
     {
       "name": "rounds",
       "from": "challenge-log",
       "to": "draft",
-      "cap": 6
+      "cap": 10
     },
     {
       "name": "interview",
       "from": "challenge-log",
       "to": "questions",
-      "cap": 4
+      "cap": 6
     }
   ],
   "displayName": "Decide what will change",
@@ -332,9 +332,9 @@
       "from": [
         "size"
       ],
-      "to": "size-desk",
+      "to": "propose",
       "on": "step.completed",
-      "label": "AI wasn't sure: you pick the size"
+      "label": "AI wasn't sure: carry on with the size undecided"
     },
     {
       "from": [
@@ -636,20 +636,18 @@
     },
     {
       "from": [
-        "size",
+        "size"
+      ],
+      "on": "step.completed",
+      "to": "propose",
+      "label": "AI wasn't sure: carry on with the size undecided"
+    },
+    {
+      "from": [
         "size-desk"
       ],
       "on": "step.completed",
       "to": "propose"
-    },
-    {
-      "from": [
-        "size"
-      ],
-      "on": "step.completed",
-      "to": "size-desk",
-      "outcome": "uncertain",
-      "label": "AI wasn't sure: you pick the size"
     },
     {
       "from": [

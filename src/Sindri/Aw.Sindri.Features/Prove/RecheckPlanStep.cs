@@ -29,7 +29,7 @@ internal sealed class RecheckPlanStep(IBriefFiles files, IRunArea area) : IBlock
         }
 
         var handoff = RecheckFacts.Argument(context, "handoff");
-        var dir = RecheckFacts.Text(handoff?["proofPack"]?["dir"]) ?? RecheckFacts.Text(handoff?["dir"]);
+        var dir = RecheckFacts.Text(((handoff as JsonObject)?["proofPack"] as JsonObject)?["dir"]) ?? RecheckFacts.Text((handoff as JsonObject)?["dir"]);
         if (dir is null)
         {
             return await Done(address, "nothing", new JsonObject { ["planned"] = false, ["headSha"] = head }, plan: null, cancellationToken).ConfigureAwait(false);
@@ -95,9 +95,9 @@ internal sealed class RecheckPlanStep(IBriefFiles files, IRunArea area) : IBlock
     }
 
     private static IEnumerable<string> BeforeAfterScripts(JsonNode? file) =>
-        (file?["results"] as JsonArray ?? []).OfType<JsonObject>().Select(static r => RecheckFacts.Text(r["headScript"])).OfType<string>();
+        ((file as JsonObject)?["results"] as JsonArray ?? []).OfType<JsonObject>().Select(static r => RecheckFacts.Text(r["headScript"])).OfType<string>();
 
     private static IEnumerable<string> ProofScripts(JsonNode? file) =>
-        (file?["items"] as JsonArray ?? []).OfType<JsonObject>().SelectMany(static i => i["artifacts"] as JsonArray ?? [])
+        ((file as JsonObject)?["items"] as JsonArray ?? []).OfType<JsonObject>().SelectMany(static i => i["artifacts"] as JsonArray ?? [])
             .OfType<JsonObject>().Where(static a => (bool?)a["superseded"] != true).Select(static a => RecheckFacts.Text(a["script"])).OfType<string>();
 }

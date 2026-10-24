@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -17,7 +18,12 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
             return many.IsError ? many.Error : new LensesAnswer(One: null, Many: many.Value);
         }
 
-        var one = await single.Handle(new GetContextLensesRequest(anchors.Length == 0 ? string.Empty : anchors[0], request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
+        if (anchors.Length == 0)
+        {
+            return QueryRules.CheckAnchors(anchors, "lenses")!; // why: CheckAnchors answers an error for an empty set
+        }
+
+        var one = await single.Handle(new GetContextLensesRequest(anchors[0], request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
         return one.IsError ? one.Error : new LensesAnswer(One: one.Value, Many: null);
     }
 }

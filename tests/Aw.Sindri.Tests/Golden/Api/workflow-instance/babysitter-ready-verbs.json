@@ -52,67 +52,67 @@
         {
           "with": "restacking",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "pushing",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "await",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "next-comment",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "recheck",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "docs",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "docs-owner",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "ready-check",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "merging",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "rework-notes",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "owner-comment",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "held-next",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "ready",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -132,7 +132,7 @@
         {
           "with": "docs-merge-owner",
           "n": 0,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": false,
@@ -152,7 +152,7 @@
         {
           "with": "docs-merging",
           "n": 0,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": true,
@@ -172,7 +172,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": false,
@@ -226,7 +226,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": false,
@@ -246,7 +246,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": false,
@@ -301,7 +301,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -441,7 +441,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "recheck-owner",
@@ -486,12 +486,12 @@
         {
           "with": "docs",
           "n": 0,
-          "max": 3
+          "max": 5
         },
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -511,12 +511,12 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         },
         {
           "with": "docs-owner",
           "n": 0,
-          "max": 3
+          "max": 5
         }
       ],
       "desk": false,
@@ -541,7 +541,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": false,
@@ -566,7 +566,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -586,7 +586,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": false,
@@ -606,7 +606,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -636,7 +636,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,
@@ -661,7 +661,7 @@
         {
           "with": "snapshot",
           "n": 0,
-          "max": 150
+          "max": 1000
         }
       ],
       "desk": true,

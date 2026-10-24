@@ -52,7 +52,7 @@ internal static class ContextApiScenarios
         ("context-lenses", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&draft=true", ct)),
         ("context-lenses", "set-two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Atabs.tab-groups", ct)),
         ("context-lenses", "set-missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Anope.x", ct)),
-        ("context-lenses", "set-21-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/lenses?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=-1", ct)),
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
@@ -72,7 +72,6 @@ internal static class ContextApiScenarios
         ("context-code", "capped", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
         ("context-code", "deadline-152", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
         ("context-code", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/code?anchor=feature%3Anope", ct)),
-        ("context-code", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
         ("context-code", "not-retained-120", async (s, ct) => await s.Fetch(CodeRoute() + "&mapVersion=v99", ct)),
         ("context-code", "session-other-repo", async (s, ct) => await s.FetchAsSession(CodeRoute("feature%3Aother.thing"), ct)),
         ("context-history", "split-pane", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}", ct)),
@@ -83,13 +82,19 @@ internal static class ContextApiScenarios
         ("context-history", "no-files-thing", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=thing%3Apane-layout", ct)),
         ("context-history", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=feature%3Atabs.nope", ct)),
         ("context-history", "bad-window-006", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=90d", ct)),
-        ("context-history", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/history?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
         ("context-history", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/history?anchor={SplitPane}&mapVersion=v1", ct)),
         ("context-history", "not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&mapVersion=v99", ct)),
         ("context-history", "session-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Aother.thing", ct)),
         ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
         ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
+        ("context-lenses", "query-set-two-anchors", async (s, ct) => await s.Query("/sindri/context/lenses", """{"anchors":["feature:tabs.tab-manager","feature:tabs.tab-groups"]}""", ct)),
+        ("context-lenses", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/lenses", """{"anchors":[]}""", ct)),
+        ("context-lenses", "query-session-set-other-repo", async (s, ct) => await s.QueryAsSession("/sindri/context/lenses", """{"anchors":["feature:tabs.tab-manager","feature:other.thing"]}""", ct)),
+        ("context-code", "query-two-anchors", async (s, ct) => await s.Query("/sindri/context/code", """{"anchors":["feature:sharing","feature:nope"]}""", ct)),
+        ("context-code", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/code", """{"anchors":[]}""", ct)),
+        ("context-history", "query-two-anchors", async (s, ct) => await s.Query("/sindri/context/history", """{"anchors":["feature:layout.split-pane","feature:tabs.tab-manager"]}""", ct)),
+        ("context-history", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/history", """{"anchors":[]}""", ct)),
         ("context-whole", "nodes-small", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "areas-over-budget", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "area-open", async (s, ct) => await s.Fetch(WholeRoute("area=feature%3Atabs.tab-groups"), ct)),
@@ -130,11 +135,11 @@ internal static class ContextApiScenarios
         ("context-map-review", "post-repoint", async (s, ct) => await s.PostRepoint(ct)),
         ("context-map-review", "stale-047", async (s, ct) => await s.Stale(ct)),
         ("context-map-review", "post-accept-deterministic", async (s, ct) => await s.AcceptDeterministic(ct)),
-        ("context-map-review", "post-apply-file-preview", async (s, ct) => await s.ApplyFilePreview(ct)),
+        ("context-map-review", "post-apply-file", async (s, ct) => await s.ApplyFile(ct)),
         ("context-map-review-history", "after-accept-undo", async (s, ct) => await s.AcceptThenUndo(ct)),
         ("context-map-proposals", "map-tabs-run", async (s, ct) => await s.Propose(ct)),
         ("context-map-promote", "refused-046", async (s, ct) => await s.PromoteRefused(ct)),
-        ("context-map-promote", "preview", async (s, ct) => await s.PromotePreview(ct)),
+        ("context-map-promote", "promoted", async (s, ct) => await s.Promote(ct)),
     ];
 
     /// <summary>Every (slug, scenario) pair of the context goldens.</summary>
@@ -287,7 +292,7 @@ internal static class ContextApiScenarios
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
         };
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 51; i++)
         {
             var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
             nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));
