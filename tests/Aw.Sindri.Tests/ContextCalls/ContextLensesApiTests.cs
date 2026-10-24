@@ -505,15 +505,10 @@ public sealed class ContextLensesApiTests : IDisposable
         var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
         Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var shown = Json(preview.Body);
-        var draft = shown.GetProperty("draft").GetString();
-        var challenge = shown.GetProperty("challenge");
-        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft, answer }), Terminal(host)));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var draft = Json(promoted.Body).GetProperty("draft").GetString();
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
-        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
         Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
         Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
         Assert.NotNull(recorded.Value);
