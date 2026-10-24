@@ -67,30 +67,27 @@ public sealed class BuildCodeIndexServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Every_slot_busy_defers_the_build_as_a_report_not_an_error()
+    public async Task A_build_runs_while_every_heavy_slot_is_held_and_takes_none()
     {
-        var harness = new BuildHarness { Heavy = new FakeHeavyJobLock(slots: 0) };
+        var harness = new BuildHarness { Heavy = new FakeHeavyJobLock(slots: 0), Parser = new FakeSymbolParser().With("src/A.cs", new ParseOutcome([Parsed.Class("A", 1)])) };
+        _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A");
 
-        var result = await harness.TryBuild(BuildHarness.First, Token);
+        var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(BuildOutcome.Deferred, result.Value.Outcome);
-        Assert.Null(result.Value.Commit);
-        Assert.Null(await harness.Header());
+        Assert.Equal(BuildOutcome.Published, report.Outcome);
+        Assert.Equal(BuildHarness.First, (await harness.Header())!.Meta.Commit);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_slot_is_released_after_a_build_that_published_and_after_one_that_failed()
+    public async Task A_build_that_fails_is_its_own_error_and_leaves_no_index()
     {
         var harness = Arranged();
-        _ = await harness.Build(BuildHarness.First, cancellationToken: Token);
-        Assert.Equal(0, harness.Heavy.Held);
 
         var failed = await harness.TryBuild(BuildHarness.Second, Token);
 
         Assert.True(failed.IsError);
         Assert.Equal("SND-CODEIDX-002", failed.Error.Code);
-        Assert.Equal(0, harness.Heavy.Held);
+        Assert.Null(await harness.Header());
     }
 
     [Fact, Trait("Lane", "unit")]
