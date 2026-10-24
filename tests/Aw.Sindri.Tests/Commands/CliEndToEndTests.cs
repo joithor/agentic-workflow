@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;

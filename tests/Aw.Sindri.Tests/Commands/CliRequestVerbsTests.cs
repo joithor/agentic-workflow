@@ -17,7 +17,6 @@ using Aw.Sindri.Host;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.Commands;
 

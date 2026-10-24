@@ -58,7 +58,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
         var address = await TakenOver(served, item);
 
         var (shortExit, shortError) = await Short.Run(served.Sindri, "agent-session", RepoName.From("demo"), "handback", item);
-        var longForm = await served.AsSessionIn("agent-session", "demo", "handback", address);
+        var longForm = await served.AsSessionIn("demo", "handback", address);
 
         Assert.Equal(longForm.Exit, shortExit);
         Assert.NotEqual(0, shortExit);
@@ -77,7 +77,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
         var address = item + "/step/1";
         _ = await served.Until(address, static v => v.Task is not null);
 
-        var taken = await served.AsSessionIn("agent-session", "demo", "takeover", address);
+        var taken = await served.AsSessionIn("demo", "takeover", address);
 
         Assert.True(taken.Exit == 0, taken.Stderr);   // takeover is class `pause`: an agent session may take over, so the attach hook works (only handback is class `desk`)
         Assert.Equal("taken-over", (await served.Until(address, static v => v.State == "taken-over")).State);

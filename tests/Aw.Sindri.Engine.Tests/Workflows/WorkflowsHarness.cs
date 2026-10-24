@@ -13,6 +13,7 @@ using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Notifications;
 using Aw.Sindri.Tests.Workflow;

@@ -46,7 +46,7 @@ public sealed class BabysitterVerbsRefusedTests(DevServer server) : IClassFixtur
         var address = await Started(served);
         var before = await served.Events(address);
 
-        var run = await served.AsSessionIn("agent-session", "demo", "command", address, verb);
+        var run = await served.AsSessionIn("demo", "command", address, verb);
 
         Assert.Equal(2, run.Exit);
         Assert.StartsWith("SND-AUTH-002 ", run.Stderr, StringComparison.Ordinal);
