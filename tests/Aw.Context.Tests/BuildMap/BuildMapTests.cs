@@ -182,7 +182,7 @@ public sealed class BuildMapTests : IDisposable
         _ = Assert.Single(await Versions());
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact(Timeout = 30_000), Trait("Lane", "unit")]
     public async Task Two_builds_of_one_map_never_run_at_once_the_second_waits_for_the_first()
     {
         var release = new TaskCompletionSource();

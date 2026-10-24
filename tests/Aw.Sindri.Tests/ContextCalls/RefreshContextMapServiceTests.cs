@@ -281,11 +281,30 @@ public sealed class RefreshContextMapServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task An_outlooks_read_error_fails_the_job_with_the_draft_unpromoted()
     {
-        _outlooks.Failure = SindriErrors.ServiceFailed.With("index unreadable");
+        _outlooks.Failure = ContextErrors.SettingsInvalid.With("index unreadable");   // not a transient kind: a transient one would be retried (see the retry tests)
 
         var result = await Run();
 
-        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Equal(ContextErrors.SettingsInvalid.Code, result.Error.Code);
         Assert.DoesNotContain("Promote", _engine.Log, StringComparer.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "unit")]
+    public async Task A_transient_outlooks_read_error_is_retried_and_the_job_then_succeeds()
+    {
+        _outlooks.Failure = SindriErrors.ServiceFailed.With("index unreadable");
+        var run = Run();
+        while (!run.IsCompleted)
+        {
+            if (_outlooks.Reads > 0)
+            {
+                _outlooks.Failure = null;   // the read works again once the first one has failed
+            }
+
+            _h.Clock.Advance(TimeSpan.FromMinutes(10));
+            await Task.Delay(1, Ct);
+        }
+
+        Assert.True((await run).IsSuccess);
     }
 }
