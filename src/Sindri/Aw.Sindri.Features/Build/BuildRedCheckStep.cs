@@ -30,19 +30,9 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
         }
 
         var red = RedTestsFact.Parse(StepFacts.Read(context, "fact:redTests"));
-        if (Wrong(red) is { } wrong)
+        if (NothingToRun(red) is { } settled)
         {
-            return BlockStepResult.Failed($"step.build.red-check can't read fact:redTests: {wrong}");
-        }
-
-        if (red.Entries.Count > 0 && red.Entries.All(static e => e.Tests.Count == 0 && e.AppOnly))
-        {
-            return StepFacts.Done("red");   // nothing a test can fail: the items are app-only (fact:redTests says so), and prove checks them in the running app
-        }
-
-        if (red.Entries.All(static e => e.Tests.Count == 0))
-        {
-            return BlockStepResult.Failed($"step.build.red-check found no test to run in fact:redTests (expected {RedTestsFact.Shape})");
+            return settled;
         }
 
         var listed = await commands.For(cancellationToken).ConfigureAwait(false);
@@ -103,6 +93,25 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
         var tests = string.Join("; ", red.Entries.Where(static e => e.Tests.Count > 0).Select(static item => $"item {item.Item} ({string.Join(", ", item.Tests.Select(static t => t.Name))})"));
         var vacuous = new RuleFinding("BLD-RED-001", $"every command passed on the red commit, so the red tests of {tests} can't fail; a test that can't fail proves nothing", Detail: ran.Value[^1].Run.Tail);
         return StepFacts.Done("vacuous", ("fact:findings", RuleFinding.ToFact([vacuous])));
+    }
+
+    // The facts that settle the Step before any command runs: not the shape, every item app-only (nothing a test can fail: the items say so in fact:redTests and prove checks
+    // them in the running app), or no test at all. Null when there are tests to run.
+    private static BlockStepResult? NothingToRun(RedTestsFact red)
+    {
+        if (Wrong(red) is { } wrong)
+        {
+            return BlockStepResult.Failed($"step.build.red-check can't read fact:redTests: {wrong}");
+        }
+
+        if (red.Entries.Count > 0 && red.Entries.All(static e => e.Tests.Count == 0 && e.AppOnly))
+        {
+            return StepFacts.Done("red");
+        }
+
+        return red.Entries.All(static e => e.Tests.Count == 0)
+            ? BlockStepResult.Failed($"step.build.red-check found no test to run in fact:redTests (expected {RedTestsFact.Shape})")
+            : null;
     }
 
     // A fact that is not the shape: the whole-fact problem, else every item whose value is in none of the accepted shapes, each naming itself.
