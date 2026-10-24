@@ -153,13 +153,38 @@ public sealed class BuildRedCheckStepTests
     public async Task A_dirty_worktree_fails_the_Step_and_runs_nothing()
     {
         var rig = new StepRig("red-tests");
-        rig.Diff.Touch(StepRig.Tree);
+        rig.Diff.Touch(StepRig.Tree, "src/Stray.cs");
 
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Contains("uncommitted", result.Failure, StringComparison.Ordinal);
         Assert.Empty(rig.Commands.Calls);
         Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task The_red_Steps_own_output_file_is_not_a_dirty_worktree_and_the_commands_run()
+    {
+        var rig = new StepRig("red-tests");
+        _ = rig.Commands.Answer("red-tests", StepRig.Fail());
+        rig.Diff.Touch(StepRig.Tree, "redTests");   // the file the agent wrote for --output fact:redTests=
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Null(result.Failure);
+        Assert.Equal("red", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task Another_change_beside_the_output_file_still_fails_with_the_same_message()
+    {
+        var rig = new StepRig("red-tests");
+        rig.Diff.Touch(StepRig.Tree, "redTests", "src/Stray.cs");
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Contains($"the worktree {StepRig.Tree} has uncommitted or untracked files", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
     }
 
     [Fact]
