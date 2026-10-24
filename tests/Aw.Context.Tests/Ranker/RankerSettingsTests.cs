@@ -10,11 +10,11 @@ public sealed class RankerSettingsTests
     private static Result<ContextSettings> Read(string json) => SettingsReader.Read(JsonDocument.Parse(json).RootElement.Clone());
 
     [Fact, Trait("Lane", "unit")]
-    public void Both_stages_are_off_by_default_with_equal_weights_and_a_top_of_30()
+    public void Features_are_on_and_rerank_off_by_default_with_equal_weights_and_a_top_of_30()
     {
         foreach (var settings in new[] { SettingsReader.Read(section: null).Value.Ranker, Read("""{"ranker":{}}""").Value.Ranker, Read("""{"deadline":"4s"}""").Value.Ranker })
         {
-            Assert.False(settings.Features);
+            Assert.True(settings.Features);
             Assert.False(settings.Rerank);
             Assert.Equal(30, settings.RerankTop);
             Assert.Equal([1d, 1, 1, 1, 1], [settings.Weights.CascadeDistance, settings.Weights.EdgeType, settings.Weights.Provenance, settings.Weights.Supersession, settings.Weights.Recency]);

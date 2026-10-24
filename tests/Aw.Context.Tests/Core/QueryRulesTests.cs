@@ -33,16 +33,20 @@ public sealed class QueryRulesTests
     public void Two_shapes_a_bad_depth_or_a_bad_budget_are_006()
     {
         Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery("x", Node: "feature:a"), new()).Error.Code);
-        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery("x", Depth: 5), new()).Error.Code);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery("x", Depth: -1), new()).Error.Code);
         Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery("x", Budget: 0), new()).Error.Code);
-        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.Check(new ContextQuery(new string('a', 2_001)), new()).Error.Code);
+        Assert.True(QueryRules.Check(new ContextQuery(new string('a', 2_001)), new()).IsSuccess);   // a question has no length limit (owner q93)
+        Assert.True(QueryRules.Check(new ContextQuery(string.Join(' ', Enumerable.Repeat("word", 5_000))), new()).IsSuccess);
     }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData(null, null)]
     [InlineData("0", 0)]
     [InlineData("4", 4)]
-    public void A_depth_from_text_is_absent_or_a_whole_number_from_0_to_4(string? text, int? expected) =>
+    [InlineData("8", 8)]
+    [InlineData("9", 8)]
+    [InlineData("500", 8)]
+    public void A_depth_from_text_is_absent_or_a_whole_number_read_up_to_8(string? text, int? expected) =>
         Assert.Equal(expected, QueryRules.ParseDepth(text).Value);
 
     [Theory, Trait("Lane", "unit")]
@@ -55,21 +59,20 @@ public sealed class QueryRulesTests
         var error = QueryRules.ParseDepth(text).Error;
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, error.Code);
-        Assert.Equal("depth must be a whole number from 0 to 4", error.Message);
+        Assert.Equal("depth must be a whole number of 0 or more (deeper than 8 is read as 8)", error.Message);
     }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("-1")]
-    [InlineData("5")]
     [InlineData("99999999999999999999")]
-    public void A_whole_depth_outside_0_to_4_is_out_of_range_not_a_non_number(string text)
+    public void A_negative_or_oversized_whole_depth_is_out_of_range_not_a_non_number(string text)
     {
         var error = QueryRules.ParseDepth(text).Error;
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, error.Code);
         Assert.Contains("out of range", error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("is not a whole number", error.Message, StringComparison.Ordinal);
-        Assert.StartsWith("depth must be a whole number from 0 to 4", error.Message, StringComparison.Ordinal);
+        Assert.StartsWith("depth must be a whole number of 0 or more (deeper than 8 is read as 8)", error.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -132,16 +135,17 @@ public sealed class QueryRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Terms_stop_at_sixteen_and_words_at_64_characters()
+    public void Terms_stop_at_sixty_four_and_words_at_64_characters()
     {
-        var terms = QueryRules.Terms(string.Join(' ', Enumerable.Range(0, 20).Select(i => "w" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))) + " " + new string('z', 70));
+        var terms = QueryRules.Terms(string.Join(' ', Enumerable.Range(0, 80).Select(i => "w" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))) + " " + new string('z', 70));
 
+        Assert.Equal(64, QueryRules.MaxTerms);
         Assert.Equal(QueryRules.MaxTerms, terms.Count);
         Assert.Equal(64, QueryRules.Terms(new string('z', 70)).Single().Length);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Words_take_the_cap_of_the_caller_and_Terms_keeps_sixteen()
+    public void Words_take_the_cap_of_the_caller_and_Terms_keeps_sixty_four()
     {
         var text = string.Join(' ', Enumerable.Range(0, 40).Select(i => "w" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
 

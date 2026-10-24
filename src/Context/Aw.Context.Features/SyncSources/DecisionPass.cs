@@ -13,7 +13,7 @@ namespace Aw.Context.Features.SyncSources;
 /// </summary>
 internal sealed class DecisionPass(IIntentStore store, IModelPort model, LabelingSettings labeling, (IIngestFilter Ingest, TimeProvider Clock) support)
 {
-    private const int ExtractAnswerTokens = 600;
+    private const int ExtractAnswerTokens = 2_000;
     private const int VerdictAnswerTokens = 60;
     private const int VerdictTries = 3;
     private static readonly TimeSpan _askBudget = TimeSpan.FromSeconds(60);

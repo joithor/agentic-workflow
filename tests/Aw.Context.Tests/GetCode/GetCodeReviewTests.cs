@@ -18,7 +18,7 @@ public sealed class GetCodeReviewTests
     {
         // No edge test and no other test file, so the list holds exactly the 100 candidates read: only the scan's own cap says the answer is cut.
         var files = CodeWorld.Files.Where(f => !f.Key.StartsWith("tests/", StringComparison.Ordinal)).ToDictionary(f => f.Key, f => f.Value, StringComparer.Ordinal);
-        for (var i = 0; i < 150; i++)
+        for (var i = 0; i < CodeRules.MaxCandidates + 50; i++)
         {
             files[$"tests/gen/g{N(i)}.test.ts"] = "import { x } from '../../src/sharing/links';";
         }
@@ -30,7 +30,7 @@ public sealed class GetCodeReviewTests
 
         Assert.True(view.Truncated.Tests);
         Assert.Equal((SearchedState.Ok, "capped"), (Row(view, "lexical-tests").State, Row(view, "lexical-tests").Reason));
-        Assert.Equal(CodeRules.MaxListed, view.Tests.Count);
+        Assert.Equal(CodeRules.MaxCandidates, view.Tests.Count);   // the candidate scan is capped; the list itself is not cut
     }
 
     [Fact, Trait("Lane", "unit")]

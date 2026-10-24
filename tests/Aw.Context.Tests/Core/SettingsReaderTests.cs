@@ -14,7 +14,7 @@ public sealed class SettingsReaderTests
     {
         var settings = SettingsReader.Read(section: null).Value;
 
-        Assert.Equal((TimeSpan.FromSeconds(4), 32_000, 3, false), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
+        Assert.Equal((TimeSpan.FromSeconds(10), 200_000, 3, false), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(ContextSettings.DefaultDocGlobs, settings.DocGlobs);
         Assert.Null(settings.Repos);
     }
