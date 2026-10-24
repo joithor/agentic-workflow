@@ -10,8 +10,11 @@ internal static partial class Labels
     /// <returns>"Context · the whole map · v3".</returns>
     internal static string ContextWholeHead(string version) => "Context · the whole map · " + version;
 
-    /// <summary>The button that goes from one open feature back to all of them.</summary>
-    internal const string ContextWholeAllFeatures = "All features";
+    /// <summary>The last step of the map's breadcrumb while a query's answer is on it.</summary>
+    internal const string ContextCrumbAnswer = "Starting points";
+
+    /// <summary>The map breadcrumb's accessible name.</summary>
+    internal const string ContextMapCrumbsName = "Where you are on the map";
 
     /// <summary>What a feature cut at the cap shows.</summary>
     /// <param name="shown">How many items are drawn.</param>

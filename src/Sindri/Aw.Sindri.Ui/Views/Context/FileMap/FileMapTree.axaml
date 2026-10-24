@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              x:Class="Aw.Sindri.Ui.Views.Context.FileMap.FileMapTree"
              x:DataType="ctx:FileMapViewModel">
   <UserControl.Resources>
@@ -34,24 +35,7 @@
   <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
     <Grid ColumnDefinitions="*,Auto">
       <!-- The path as a breadcrumb: "~" is the top of the repo; every level but the last is a link, the last is where you are. -->
-      <ItemsControl x:Name="FilesCrumbs" ItemsSource="{Binding Crumbs}" VerticalAlignment="Center" AutomationProperties.Name="{Binding CrumbsName}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="6" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="ctx:FileCrumb">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Classes="body subtle" Text="/" IsVisible="{Binding HasSeparator}" AutomationProperties.AccessibilityView="Raw" />
-              <Button Classes="file-open" IsVisible="{Binding IsLink}" Click="OnCrumb" AutomationProperties.Name="{Binding Text}">
-                <TextBlock Classes="body-strong" Text="{Binding Text}" TextDecorations="Underline" />
-              </Button>
-              <TextBlock Classes="body-strong" Text="{Binding Text}" IsVisible="{Binding IsPlain}" AutomationProperties.Name="{Binding Text}" />
-            </StackPanel>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <ctl:CrumbTrail x:Name="FilesCrumbs" Crumbs="{Binding Crumbs}" Navigated="OnCrumb" VerticalAlignment="Center" AutomationProperties.Name="{Binding CrumbsName}" />
       <TextBlock x:Name="FilesTotals" Grid.Column="1" Classes="caption subtle" Text="{Binding TotalsText}" VerticalAlignment="Center" />
     </Grid>
 

@@ -113,6 +113,39 @@ public sealed class ContextWholeZoomTests
         Assert.False(page.BackToWholeMap());
     }
 
+    private static IEnumerable<(string Text, bool IsLink)> Trail(ContextPageViewModel page) => page.Whole.Crumbs.Select(c => (c.Text, c.IsLink));
+
+    [Fact]
+    public async Task The_map_breadcrumb_is_a_plain_tilde_on_the_whole_map_and_a_link_back_from_an_answer()
+    {
+        var page = Page(new FakeSindriApi());
+        await page.Opened(Token);
+        Assert.Equal([("~", false)], Trail(page));
+
+        page.AnchorText = Anchor;
+        await page.Submit(Token);
+        Assert.Equal([("~", true), (Labels.ContextCrumbAnswer, false)], Trail(page));
+
+        page.MapHome();
+
+        Assert.Equal([("~", false)], Trail(page));
+        Assert.False(page.IsZoomedIn);
+    }
+
+    [Fact]
+    public async Task The_tilde_closes_an_open_feature_and_the_last_step_names_it()
+    {
+        var page = Page(ByArea());
+        await page.Opened(Token);
+
+        await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
+        Assert.Equal([("~", true), ("Tab groups", false)], Trail(page));
+        page.MapHome();
+
+        Assert.False(page.Whole.IsAreaOpen);
+        Assert.Equal([("~", false)], Trail(page));
+    }
+
     [Fact]
     public async Task By_feature_the_answers_nodes_are_located_and_their_feature_is_opened_in_full_with_the_other_tiles_staying_tiles()
     {

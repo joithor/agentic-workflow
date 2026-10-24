@@ -75,8 +75,8 @@ public sealed class WholeMapFramesTests : FrameHost
         await Until(window, () => shell.Context.Whole.IsAreaOpen);
         Settle(window);
 
-        Assert.True(Visible(window, "WholeAllFeatures"));
-        Assert.Equal("Tab groups", Named<TextBlock>(window, "WholeAreaTitle").Text);
+        Assert.Equal([("~", true), ("Tab groups", false)], shell.Context.Whole.Crumbs.Select(c => (c.Text, c.IsLink)));
+        Assert.True(Visible(window, "WholeCrumbs"));
         Assert.Equal(6, shell.Context.Whole.Geometry!.Nodes.Count);
     });
 

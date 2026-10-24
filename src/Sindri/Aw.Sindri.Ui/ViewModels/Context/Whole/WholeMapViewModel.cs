@@ -46,8 +46,19 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     /// <summary>The open feature's label; empty on the overview.</summary>
     public string AreaTitle { get; private set; } = string.Empty;
 
-    /// <summary>The button back to all features.</summary>
-    public string AllFeaturesText { get; } = Labels.ContextWholeAllFeatures;
+    /// <summary>Where the map is, as a breadcrumb: "~" on the whole map, "~ / Billing" in an open feature, "~ / Starting points" on a query's answer. "~" goes back to the whole map.</summary>
+    public IReadOnlyList<Crumb> Crumbs => IsZoomed ? [Crumb.Top(isLink: true), new Crumb(Labels.ContextCrumbAnswer, Path: null, IsLink: false)]
+        : IsAreaOpen ? [Crumb.Top(isLink: true), new Crumb(AreaTitle, Path: null, IsLink: false)]
+        : [Crumb.Top(isLink: false)];
+
+    /// <summary>The breadcrumb's name.</summary>
+    public string CrumbsName { get; } = Labels.ContextMapCrumbsName;
+
+    /// <summary>Raised when "~" is pressed: the page goes back to the whole map.</summary>
+    internal event EventHandler? HomeRequested;
+
+    /// <summary>"~" was pressed.</summary>
+    internal void GoHome() => HomeRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Whether the first read has ended with an answer.</summary>
     public bool IsReady { get; private set; }
@@ -207,7 +218,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
 
     private void Changed()
     {
-        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(MoreTouchedText), nameof(HasMoreTouched)])
+        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(Crumbs), nameof(MoreTouchedText), nameof(HasMoreTouched)])
         {
             OnChanged(name);
         }

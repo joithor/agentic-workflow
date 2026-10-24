@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Context;
+using Aw.Sindri.Ui.ViewModels.Run;
 
 namespace Aw.Sindri.Ui.Views.Context.FileMap;
 
@@ -20,11 +21,11 @@ internal sealed partial class FileMapTree : UserControl
         }
     }
 
-    private void OnCrumb(object? sender, RoutedEventArgs e)
+    private void OnCrumb(object? sender, ValueEventArgs<Crumb> e)
     {
-        if (DataContext is FileMapViewModel files && sender is Control { DataContext: FileCrumb crumb })
+        if (DataContext is FileMapViewModel files)
         {
-            _ = files.Go(crumb);
+            _ = files.Go(e.Value);
         }
     }
 }

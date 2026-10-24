@@ -47,7 +47,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     public IReadOnlyList<FileRowViewModel> Rows { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The folder shown as a breadcrumb: "~ / src / tabs", each step but the last a link to that level.</summary>
-    public IReadOnlyList<FileCrumb> Crumbs { get; private set => Set(ref field, value); } = [Top(isLink: false)];
+    public IReadOnlyList<Crumb> Crumbs { get; private set => Set(ref field, value); } = [Crumb.Top(isLink: false)];
 
     /// <summary>The totals line (files, in the map, suggested, not in the map).</summary>
     public string TotalsText { get; private set => Set(ref field, value); } = string.Empty;
@@ -145,7 +145,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <param name="crumb">The step.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the folder is shown.</returns>
-    internal Task Go(FileCrumb crumb, CancellationToken cancellationToken = default)
+    internal Task Go(Crumb crumb, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(crumb);
         return crumb.IsLink ? Load(crumb.Path, cancellationToken) : Task.CompletedTask;
@@ -163,19 +163,17 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
 
         _repo = repo;
         _current = string.Empty;
-        Crumbs = [Top(isLink: false)];
+        Crumbs = [Crumb.Top(isLink: false)];
     }
 
-    private static FileCrumb Top(bool isLink) => new(Labels.ContextFilesTop, Path: null, isLink);
-
     // "src/tabs/" -> "~", "src" (a link), "tabs" (plain); the top is "~" alone, plain.
-    private static List<FileCrumb> CrumbsOf(string path)
+    private static List<Crumb> CrumbsOf(string path)
     {
         var folders = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var crumbs = new List<FileCrumb> { Top(isLink: folders.Length > 0) };
+        var crumbs = new List<Crumb> { Crumb.Top(isLink: folders.Length > 0) };
         for (var i = 0; i < folders.Length; i++)
         {
-            crumbs.Add(new FileCrumb(folders[i], string.Join('/', folders[..(i + 1)]) + "/", IsLink: i < folders.Length - 1));
+            crumbs.Add(new Crumb(folders[i], string.Join('/', folders[..(i + 1)]) + "/", IsLink: i < folders.Length - 1));
         }
 
         return crumbs;

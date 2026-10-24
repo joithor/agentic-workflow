@@ -21,6 +21,7 @@ internal sealed partial class ContextPageViewModel
     private void InitWhole()
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
+        Whole.HomeRequested += (_, _) => MapHome();
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
         Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
     }
@@ -101,6 +102,16 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasProblem));
         ChangedWhole();
+    }
+
+    /// <summary>"~" on the map: back to the whole map from a query's answer, or from one open feature to all of them.</summary>
+    internal void MapHome()
+    {
+        if (!BackToWholeMap())
+        {
+            Whole.CloseArea();
+            ChangedWhole();
+        }
     }
 
     private void ChangedWhole()
