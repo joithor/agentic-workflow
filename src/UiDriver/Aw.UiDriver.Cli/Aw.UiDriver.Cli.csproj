@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.UiDriver.Cli: the client of the UI driver and its command line, 'aw-ui-driver'. It finds a running driver through driver.json and the
-       secret next to it (AW_UI_DRIVER_DIR or --dir), sends one verb and prints the answer; a scripted run (desktop evidence) uses it to drive
+       secret next to it (AW_UI_DRIVER_DIR or the dir option), sends one verb and prints the answer; a scripted run (desktop evidence) uses it to drive
        any Avalonia app that opted in. NativeAOT entry point: PublishAot only under a runtime identifier, so a plain restore keeps
        packages.lock.json RID-free for CI's locked restore on any OS. -->
   <PropertyGroup>

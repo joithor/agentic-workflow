@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- Aw.UiDriver.Avalonia: the in-app half of the UI driver. An Avalonia app adds it and calls UseAwUiDriver() on its AppBuilder; when the run
-       asks for it (AW_UI_DRIVER=1 or --ui-driver) a loopback HTTP server starts that walks the app's visual tree and acts on it through the
+       asks for it (AW_UI_DRIVER=1 or the ui-driver flag) a loopback HTTP server starts that walks the app's visual tree and acts on it through the
        Avalonia property system and automation peers: no reflection, so an app that publishes NativeAOT stays clean. Off by default, never in a
        normal launch. It knows no app. -->
   <PropertyGroup>
