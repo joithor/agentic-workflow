@@ -58,7 +58,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
 
         var result = await dispatch(run.Step, context.Value, cancellationToken).ConfigureAwait(false);
         return result.Result is not { } done
-            ? Failed(result.Failure ?? "the Step failed")
+            ? Failed(result.Failure ?? "the Step failed") with { Dependency = result.Dependency, Code = result.Code }
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);
     }
 

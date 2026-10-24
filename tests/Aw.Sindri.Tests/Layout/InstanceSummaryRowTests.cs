@@ -53,6 +53,15 @@ public sealed partial class InstanceSummaryRowTests
     }
 
     [Fact]
+    public void An_unavailable_park_waits_on_the_engine_not_on_you_and_says_so()
+    {
+        var row = InstanceSummaries.Of(StatusCases.View("parked-unavailable-step"), new InstanceSummaryContext(StatusCases.Now));
+
+        Assert.Equal(("waiting on a dependency that is down", WaitingOn.Engine), (row.Now, row.WaitingOn));
+        Assert.Equal(AnswerKind.Resume, row.Answer?.Kind);   // the resume is still there to run
+    }
+
+    [Fact]
     public void An_answer_the_park_takes_is_on_the_row()
     {
         var row = InstanceSummaries.Of(StatusCases.View("parked-needs-answer-step"), new InstanceSummaryContext(StatusCases.Now));
@@ -132,6 +141,7 @@ public sealed partial class InstanceSummaryRowTests
     [InlineData("desk-task")]
     [InlineData("taken-over")]
     [InlineData("parked-needs-answer-step")]
+    [InlineData("parked-unavailable-step")]
     [InlineData("escalated-gate")]
     [InlineData("done")]
     [InlineData("failed")]

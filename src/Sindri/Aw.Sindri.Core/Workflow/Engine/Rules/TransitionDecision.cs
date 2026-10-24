@@ -141,10 +141,34 @@ public static partial class TransitionDecision
         }
 
         var step = d.Recipe.States[instance.State].Step?.Use.Value ?? instance.State;
+        if (!d.Context.LegacyUnavailable)
+        {
+            return Unavailable(d, instance, failed, step);
+        }
+
         var park = new Suspension(
             SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, failed.Detail is { } detail ? $"{step} failed: {failed.Reason}: {detail}" : $"{step} failed: {failed.Reason}", failed.Actor, Mirrors: null,
             new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
         return d.Changed(d.Rules.Suspend(instance, park));
+    }
+
+    /// <summary>
+    /// A Step failure no transition takes (owner decision q90, q93): the dependency is down, which no human can answer. The Step runs again, a new run in the same
+    /// entry, until <see cref="Unavailables.MaxRetries"/> reruns failed; then it parks as unavailable, whose answer is a rerun. A retry counts no loop round.
+    /// </summary>
+    private static Decision Unavailable(Deciding d, WorkflowInstance instance, StepFailed failed, string step)
+    {
+        var dependency = failed.Dependency ?? step;
+        var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
+        if (instance.Frame.Run is not { } run || d.Recipe.States[instance.State].Step is not { } use || run.Retries >= Unavailables.MaxRetries)
+        {
+            var park = Unavailables.Park(Unavailables.Question(dependency, instance.Frame.Run?.Retries ?? 0, error), failed.Actor, failed.Code);
+            return d.Changed(d.Rules.Suspend(instance, park));
+        }
+
+        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null, Retries = run.Retries + 1 };
+        var applied = d.Changed(instance with { Frame = instance.Frame with { Run = next } });
+        return applied with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, next.Token, use.Use, Answer: null)] };
     }
 
     /// <summary>One trigger being decided, with the rules it hands work to.</summary>

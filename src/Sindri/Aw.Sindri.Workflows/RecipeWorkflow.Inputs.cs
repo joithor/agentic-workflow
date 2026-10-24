@@ -83,7 +83,7 @@ internal sealed partial class RecipeWorkflow
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
                 var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
-                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}").ConfigureAwait(true);
+                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}", request.Input.Value, code.StartsWith("SND-", StringComparison.Ordinal) ? code : null).ConfigureAwait(true);
             }
 
             if (_capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
@@ -99,11 +99,14 @@ internal sealed partial class RecipeWorkflow
         return default;
     }
 
-    /// <summary>The Step failure an input's failure becomes: its texts dropped, the reason never carrying text.</summary>
-    private async Task<Filling> InputsFailed(WorkflowInstance instance, OpenRun open, string reason)
+    /// <summary>
+    /// The Step failure an input's failure becomes: its texts dropped, the reason never carrying text. The input is the dependency that was down, so a failure no
+    /// transition takes is retried and then parks as unavailable, naming it (owner decision q93).
+    /// </summary>
+    private async Task<Filling> InputsFailed(WorkflowInstance instance, OpenRun open, string reason, string? dependency = null, string? code = null)
     {
         await DropTexts(instance.Address.Value).ConfigureAwait(true);
-        return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))), Parked: null);
+        return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))) { Dependency = dependency, Code = code }, Parked: null);
     }
 
     /// <summary>

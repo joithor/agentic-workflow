@@ -51,6 +51,7 @@ public static class EngineNotices
         {
             { Kind: SuspensionKind.Takeover } when change == WorkflowEventType.Notified =>
                 (NoticeClass.Interrupt, $"hand back {after.Item.Value}? {address} is still taken over"),
+            { Kind: SuspensionKind.Park, Reason: ParkReason.Unavailable } => ((NoticeClass Class, string Text)?)null,   // a down dependency asks nothing of a human: health shows it
             { Kind: SuspensionKind.Park } park when park != before?.Suspension =>
                 (NoticeClass.Interrupt, $"{address} parked ({Reason(park.Reason)}): {park.Question}"),
             { Kind: SuspensionKind.Escalation } escalation when escalation != before?.Suspension =>
@@ -109,6 +110,7 @@ public static class EngineNotices
         ParkReason.Timeout => "timeout",
         ParkReason.SpecConflict => "spec-conflict",
         ParkReason.NoRuntime => "SND-WF-010",
+        ParkReason.Unavailable => "unavailable",
         _ => "parked",
     };
 }

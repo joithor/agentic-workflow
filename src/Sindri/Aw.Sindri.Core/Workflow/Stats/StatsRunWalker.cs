@@ -96,7 +96,7 @@ internal sealed class StatsRunWalker(StatsTally tally)
                 break;
         }
 
-        return new StatsOpen(kind, row.At);
+        return new StatsOpen(kind, row.At, kind == SuspensionKind.Park ? row.ParkReason : null);
     }
 
     private void CountEscalation(StatEvent row)
@@ -119,6 +119,8 @@ internal sealed class StatsRunWalker(StatsTally tally)
         var seconds = (row.At - open.StartedAt).TotalSeconds;
         switch (open.Kind)
         {
+            case SuspensionKind.Park when open.Reason == ParkReason.Unavailable:   // a down dependency was waited out or rerun, not answered: no human time
+                break;
             case SuspensionKind.Park when row.Answered:
                 tally.ParkSeconds.Add(seconds);
                 _run.ParkAnswered = true;

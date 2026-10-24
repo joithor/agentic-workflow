@@ -27,7 +27,7 @@ public sealed class UnavailableParkTests
         Assert.Null(after.Suspension);
         Assert.Equal((RunToken.For(1, 2), 1), (after.Frame.Run!.Token, after.Frame.Run.Retries));
         var start = Assert.Single(applied.FollowUps);
-        Assert.Equal((FollowUpKind.StartRun, RunToken.For(1, 2)), (start.Kind, start.Run));
+        Assert.Equal((FollowUpKind.StartRun, RunToken.For(1, 2)), (start.Kind, start.Run!.Value));
     }
 
     [Fact, Trait("Lane", "unit")]

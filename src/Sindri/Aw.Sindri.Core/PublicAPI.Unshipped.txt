@@ -9008,6 +9008,7 @@ override Aw.Sindri.Core.Views.EngineItemPart.GetHashCode() -> int
 override Aw.Sindri.Core.Views.EngineItemPart.ToString() -> string!
 static Aw.Sindri.Core.Items.EngineItemStates.Next(Aw.Sindri.Core.Views.EngineItemPart? prior, string! eventType, Aw.Sindri.Core.Events.WorkflowEventPayload! payload) -> Aw.Sindri.Core.Views.EngineItemPart?
 static Aw.Sindri.Core.Items.EngineItemStates.StateOf(Aw.Sindri.Core.Views.EngineItemPart! part) -> Aw.Sindri.Core.Items.Vocabulary.ItemState
+static Aw.Sindri.Core.Items.EngineItemStates.Unavailable(Aw.Sindri.Core.Views.EngineItemPart? part) -> int
 static Aw.Sindri.Core.Views.EngineItemPart.operator !=(Aw.Sindri.Core.Views.EngineItemPart? left, Aw.Sindri.Core.Views.EngineItemPart? right) -> bool
 static Aw.Sindri.Core.Views.EngineItemPart.operator ==(Aw.Sindri.Core.Views.EngineItemPart? left, Aw.Sindri.Core.Views.EngineItemPart? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers

@@ -78,7 +78,10 @@ public static partial class TransitionDecision
     {
         var step = d.Recipe.States[state].Step?.Use.Value ?? state;
         var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
-        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}", failed.Actor);
+        var question = d.Context.LegacyUnavailable
+            ? $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}"
+            : Unavailables.Question(failed.Dependency ?? "launching " + step, LoopRules.MaxLaunchFailures - 1, error);
+        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, question, failed.Actor, unavailable: !d.Context.LegacyUnavailable);
         var after = verdict.Next is { } next ? instance with { Loops = With(instance.Loops, name, next) } : instance;
         return (after, verdict.Park);
     }

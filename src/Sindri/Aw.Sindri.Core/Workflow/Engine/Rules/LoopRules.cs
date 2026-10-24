@@ -55,15 +55,16 @@ internal static partial class LoopRules
 
     /// <summary>
     /// A launch that never started a session failed, and the failed transition enters the looped state again: the round stays (a launch failure is no round of work),
-    /// and the <see cref="MaxLaunchFailures"/>th in a row parks with needs-answer, as a failed Step no transition takes does, with the last error as the question.
+    /// and the <see cref="MaxLaunchFailures"/>th in a row parks as unavailable (with needs-answer in a history from before that park), with the last error as the question.
     /// </summary>
     /// <param name="instance">The instance.</param>
     /// <param name="recipe">Its recipe.</param>
     /// <param name="state">The looped state being entered again.</param>
     /// <param name="question">What the park asks when the streak ends here: the Step and the last launch error.</param>
     /// <param name="actor">Who reported the failure.</param>
+    /// <param name="unavailable">Whether the park is the unavailable one (off for a history from before the 'step-unavailable-v1' patch).</param>
     /// <returns>Go on in the same round with the streak counted, or park with the streak cleared for the answer's re-run.</returns>
-    public static LoopVerdict LaunchFailed(WorkflowInstance instance, Recipe recipe, string state, string question, string actor)
+    public static LoopVerdict LaunchFailed(WorkflowInstance instance, Recipe recipe, string state, string question, string actor, bool unavailable = true)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
@@ -78,9 +79,11 @@ internal static partial class LoopRules
             return new LoopVerdict(loop with { LaunchFailures = loop.LaunchFailures + 1 }, Park: null);
         }
 
-        var park = new Suspension(
-            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, question, actor, Mirrors: null,
-            new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
+        var park = unavailable
+            ? Unavailables.Park(question, actor, code: null)
+            : new Suspension(
+                SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, question, actor, Mirrors: null,
+                new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
         return new LoopVerdict(loop with { LaunchFailures = 0 }, park);
     }
 

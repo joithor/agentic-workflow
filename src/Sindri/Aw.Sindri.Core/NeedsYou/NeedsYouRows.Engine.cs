@@ -144,6 +144,7 @@ public static partial class NeedsYouRows
         { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Dispatch } => ("park · dispatch refused", refusal ?? "an effect was refused"),
         { Reason: ParkReason.SpecConflict } => ("park · spec conflict", "its recipe drifted since approval"),
         { Reason: ParkReason.NoRuntime } => ("park · no runtime", "no runtime runs its step"),
+        { Reason: ParkReason.Unavailable } => ("park · unavailable", "a dependency of its step is down"),   // no row is made for it; this keeps a mirrored child's park honest if one is asked for
         _ => ("park", "it is parked"),
     };
 }

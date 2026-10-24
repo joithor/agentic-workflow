@@ -64,7 +64,15 @@ public static class HealthSummary
     public static HealthReport WithUnavailable(HealthReport report, int unavailable)
     {
         ArgumentNullException.ThrowIfNull(report);
-        return report;   // red: the stub counts nothing yet
+        if (unavailable <= 0)
+        {
+            return report;
+        }
+
+        var clause = unavailable == 1 ? "1 workflow instance waits on a dependency that is down" : string.Create(CultureInfo.InvariantCulture, $"{unavailable} workflow instances wait on a dependency that is down");
+        var problems = report.Problems.Append(new HealthProblem("SND-ENGINE-003", $"{clause}: fix it, then run each again with `sindri workflow answer <address> --resume`", clause)).ToList();
+        var word = report.Word == HealthWord.Healthy ? HealthWord.Degraded : report.Word;
+        return new HealthReport(word, problems, Sentence(word, problems));
     }
 
     private static IEnumerable<HealthProblem> Profile(ProfileApproval profile)
