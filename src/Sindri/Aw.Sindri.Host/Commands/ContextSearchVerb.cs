@@ -15,6 +15,7 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed class ContextSearchVerb(ControlPlaneClient client, Output output)
 {
     private static readonly string[] _valued = ["--limit", "--area", "--repo", "--map-version"];
+    private static readonly string[] _bare = ["--draft", "--json"];
 
     internal async Task<int> Run(string[] args, CancellationToken ct)
     {
@@ -39,7 +40,7 @@ internal sealed class ContextSearchVerb(ControlPlaneClient client, Output output
             _ = text.AppendLine(ContextLensText.Invariant($"  {hit.Key.Value}  {ContextLensText.Fenced(hit.Label, hit.Trust, fence)}  [{hit.Matched}]"));
             if (!string.Equals(hit.Snippet, hit.Label, StringComparison.Ordinal))
             {
-                _ = text.AppendLine("      " + ContextLensText.Fenced(hit.Snippet, hit.Trust, fence));
+                _ = text.Append("      ").AppendLine(ContextLensText.Fenced(hit.Snippet, hit.Trust, fence));
             }
         }
 
@@ -80,52 +81,71 @@ internal sealed class ContextSearchVerb(ControlPlaneClient client, Output output
     /// <summary>The flags in any order; a flag it doesn't know, a flag without its value, a limit that isn't a whole number, a repeated flag or no word at all is SND-CONTEXT-006.</summary>
     private static Kernel.Result<Options> Parse(string[] args)
     {
-        var words = new List<string>();
-        var values = new Dictionary<string, string>(StringComparer.Ordinal);
-        var (draft, json) = (false, false);
+        var into = (Words: new List<string>(), Values: new Dictionary<string, string>(StringComparer.Ordinal), Bare: new HashSet<string>(StringComparer.Ordinal));
         for (var i = 0; i < args.Length; i++)
         {
-            var arg = args[i];
-            if (_valued.Contains(arg, StringComparer.Ordinal))
+            if (Take(args, ref i, into) is { } refused)
             {
-                if (i + 1 >= args.Length || !values.TryAdd(arg, args[++i]))
-                {
-                    return Invalid($"'{arg}' needs one value");
-                }
-            }
-            else if (arg is "--draft" or "--json")
-            {
-                (draft, json) = (draft || arg == "--draft", json || arg == "--json");
-            }
-            else if (arg.StartsWith("--", StringComparison.Ordinal))
-            {
-                return Invalid($"'{arg}' is not a search flag");
-            }
-            else
-            {
-                words.Add(arg);
+                return refused;
             }
         }
 
-        int? limit = null;
-        if (values.TryGetValue("--limit", out var text))
+        return Finish(into);
+    }
+
+    // One argument: a valued flag (with its value), a bare flag, an unknown flag (refused) or a word.
+    private static Kernel.Error? Take(string[] args, ref int i, (List<string> Words, Dictionary<string, string> Values, HashSet<string> Bare) into)
+    {
+        var arg = args[i];
+        if (_valued.Contains(arg, StringComparer.Ordinal))
         {
-            if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed))
-            {
-                return Invalid($"'--limit' is a whole number from 1 to {MapSearchRules.MaxLimit}");
-            }
-
-            limit = parsed;
+            return i + 1 >= args.Length || !into.Values.TryAdd(arg, args[++i]) ? Invalid($"'{arg}' needs one value") : null;
         }
 
-        if (words.Count == 0)
+        if (_bare.Contains(arg, StringComparer.Ordinal))
+        {
+            _ = into.Bare.Add(arg);
+            return null;
+        }
+
+        if (arg.StartsWith("--", StringComparison.Ordinal))
+        {
+            return Invalid($"'{arg}' is not a search flag");
+        }
+
+        into.Words.Add(arg);
+        return null;
+    }
+
+    private static Kernel.Result<Options> Finish((List<string> Words, Dictionary<string, string> Values, HashSet<string> Bare) into)
+    {
+        var limit = Limit(into.Values.GetValueOrDefault("--limit"));
+        if (limit.IsError)
+        {
+            return limit.Error;
+        }
+
+        var draft = into.Bare.Contains("--draft");
+        if (into.Words.Count == 0)
         {
             return Invalid("name the words to find (fix: sindri context search tab manager)");
         }
 
-        return draft && values.ContainsKey("--map-version")
+        return draft && into.Values.ContainsKey("--map-version")
             ? Invalid("'--draft' and '--map-version' are two shapes of one question (fix: pass one of them, not both)")
-            : new Options(string.Join(' ', words), limit, values.GetValueOrDefault("--area"), values.GetValueOrDefault("--repo"), draft, values.GetValueOrDefault("--map-version"), json);
+            : new Options(string.Join(' ', into.Words), limit.Value, into.Values.GetValueOrDefault("--area"), into.Values.GetValueOrDefault("--repo"), draft, into.Values.GetValueOrDefault("--map-version"), into.Bare.Contains("--json"));
+    }
+
+    private static Kernel.Result<int?> Limit(string? text)
+    {
+        if (text is null)
+        {
+            return (int?)null;
+        }
+
+        return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed)
+            ? (int?)parsed
+            : Invalid($"'--limit' is a whole number from 1 to {MapSearchRules.MaxLimit}");
     }
 
     private static Kernel.Error Invalid(string reason) => ContextErrors.QueryInvalid.With(reason + " (fix: sindri context search <words> [--limit N] [--area KEY] [--repo R] [--map-version V | --draft] [--json])");
