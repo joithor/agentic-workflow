@@ -162,11 +162,18 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             return Answer(server.ReviewDecided);
         }
 
-        if (request.Method == HttpMethod.Query && uri.AbsolutePath is "/sindri/context/lenses" or "/sindri/context/code")
+        if (request.Method == HttpMethod.Query
+            && (string.Equals(uri.AbsolutePath, "/sindri/context/lenses", StringComparison.Ordinal) || string.Equals(uri.AbsolutePath, "/sindri/context/code", StringComparison.Ordinal)))
         {
             return await ContextQueryBody(request, uri, cancellationToken).ConfigureAwait(false);
         }
 
+        return await ContextRead(uri, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The context reads whose inputs are query values.
+    private async Task<HttpResponseMessage> ContextRead(Uri uri, CancellationToken cancellationToken)
+    {
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         var limit = int.TryParse(query["limit"], NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : (int?)null;
         switch (uri.AbsolutePath["/sindri/context/".Length..])
