@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Kernel;
 
@@ -33,8 +34,8 @@ public static partial class MapSearchRules
             return ContextErrors.QueryInvalid.With($"the search question is {q.Length} characters; the limit is {MaxQuestion} (fix: ask with fewer words)");
         }
 
-        IReadOnlyList<string> terms = [.. Word().Matches(q).Select(static m => m.Value.ToLowerInvariant()).Select(static w => w.Length > MaxTermLength ? w[..MaxTermLength] : w).Take(MaxTerms)];
-        if (terms.Count == 0)
+        string[] terms = [.. Word.Matches(q).Select(static m => m.Value.ToLowerInvariant()).Select(static w => w.Length > MaxTermLength ? w[..MaxTermLength] : w).Take(MaxTerms)];
+        if (terms.Length == 0)
         {
             return ContextErrors.QueryInvalid.With("the search question holds no letters or digits (fix: ask with words, for example q=tab manager)");
         }
@@ -54,9 +55,9 @@ public static partial class MapSearchRules
 
         return limit is >= 1 and <= MaxLimit
             ? limit.Value
-            : ContextErrors.QueryInvalid.With($"limit is {limit}; it is 1 to {MaxLimit} (fix: ask for fewer hits; 'total' says how many matched)");
+            : ContextErrors.QueryInvalid.With($"limit is {limit.Value.ToString(CultureInfo.InvariantCulture)}; it is 1 to {MaxLimit} (fix: ask for fewer hits; 'total' says how many matched)");
     }
 
     [GeneratedRegex("[\\p{L}\\p{N}]+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex Word();
+    private static partial Regex Word { get; }
 }
