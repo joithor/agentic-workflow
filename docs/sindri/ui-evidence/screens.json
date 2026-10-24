@@ -1,0 +1,112 @@
+{
+  "schema": "ui-evidence.desktop-screens/1",
+  "designRoot": "../../superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups",
+  "threshold": 10,
+  "screens": [
+    {
+      "name": "home",
+      "route": "page:Home",
+      "design": "home.html",
+      "fixture": [
+        [
+          "items"
+        ],
+        [
+          "workflows"
+        ]
+      ]
+    },
+    {
+      "name": "workflows",
+      "route": "page:Workflows",
+      "design": "workflows.html",
+      "fixture": [
+        [
+          "workflows"
+        ]
+      ]
+    },
+    {
+      "name": "workflow-project",
+      "route": "workflow/PRJ-sync",
+      "design": "workflow-project.html",
+      "fixture": [
+        [
+          "workflows"
+        ]
+      ]
+    },
+    {
+      "name": "workflow-incident",
+      "route": "workflow/INC-14",
+      "design": "workflow-incident.html",
+      "fixture": [
+        [
+          "workflows"
+        ],
+        [
+          "incident",
+          "start"
+        ]
+      ]
+    },
+    {
+      "name": "item-sheet",
+      "route": "item/ITM-01JE7",
+      "design": "item-sheet.html",
+      "fixture": [
+        [
+          "items"
+        ]
+      ]
+    },
+    {
+      "name": "recipes",
+      "route": "page:Recipes",
+      "design": "recipes.html"
+    },
+    {
+      "name": "recipe-inspector",
+      "route": "recipe/triage.alert",
+      "design": "recipe-inspector.html"
+    },
+    {
+      "name": "context",
+      "route": "page:Context",
+      "design": "context.html",
+      "fixture": [
+        [
+          "context",
+          "up"
+        ]
+      ]
+    },
+    {
+      "name": "context-filemap",
+      "route": "page:Context",
+      "design": "context-filemap.html",
+      "fixture": [
+        [
+          "context",
+          "up"
+        ]
+      ]
+    },
+    {
+      "name": "agents",
+      "route": "page:Agents",
+      "design": "agents.html",
+      "fixture": [
+        [
+          "sessions",
+          "up"
+        ]
+      ]
+    },
+    {
+      "name": "system",
+      "route": "page:System",
+      "design": "system.html"
+    }
+  ]
+}

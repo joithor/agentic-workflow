@@ -34,6 +34,7 @@
     <Project Path="src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Ui.Desktop/Aw.Sindri.Ui.Desktop.csproj" />
+    <Project Path="src/Sindri/Aw.Sindri.Ui.Capture/Aw.Sindri.Ui.Capture.csproj" />
     <Project Path="src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
   </Folder>
   <Folder Name="/src/Judge/">

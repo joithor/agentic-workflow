@@ -1,0 +1,3 @@
+#nullable enable
+Aw.Sindri.Ui.Capture.CaptureApp
+static Aw.Sindri.Ui.Capture.CaptureApp.BuildAvaloniaApp() -> Avalonia.AppBuilder!

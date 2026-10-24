@@ -34,5 +34,6 @@
     <InternalsVisibleTo Include="Aw.Sindri.Ui.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Ui.Rendering.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Ui.Testing" />
+    <InternalsVisibleTo Include="Aw.Sindri.Ui.Capture" />
   </ItemGroup>
 </Project>

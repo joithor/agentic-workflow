@@ -1,0 +1,18 @@
+{
+  "schema": "evidence.repo/1",
+  "desktop": {
+    "manifest": "docs/sindri/ui-evidence/screens.json",
+    "homeEnv": "AW_SINDRI_HOME",
+    "fixture": {
+      "command": ["scripts/sindri-ui-fixture.sh"],
+      "up": [["up"]],
+      "down": ["down"]
+    },
+    "capture": {
+      "command": ["dotnet", "run", "--project", "src/Sindri/Aw.Sindri.Ui.Capture", "--", "--size", "{size}", "{shots}"]
+    },
+    "sizes": ["1440x900", "900x900"],
+    "threshold": 10,
+    "timeoutSeconds": 900
+  }
+}
