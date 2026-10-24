@@ -20,7 +20,7 @@ public sealed class PreCommitRepoHooksTests
         using var repo = await TempGitRepo.Create();
         var hook = await repo.Git("rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-commit");
 
-        var said = await new PreCommitRepoHooks().Install(new RepoEntry("demo", repo.Path), Token);
+        var said = await ScrubRig.Hooks().Install(new RepoEntry("demo", repo.Path), Token);
 
         var text = await File.ReadAllTextAsync(hook, Token);
         Assert.Contains("# sindri-pre-commit v3", text, StringComparison.Ordinal);
@@ -36,7 +36,7 @@ public sealed class PreCommitRepoHooksTests
         _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
         await File.WriteAllTextAsync(hook, ScrubFixtures.V2Hook, Token);
 
-        _ = await new PreCommitRepoHooks().Install(new RepoEntry("demo", repo.Path), Token);
+        _ = await ScrubRig.Hooks().Install(new RepoEntry("demo", repo.Path), Token);
 
         Assert.Contains("# sindri-pre-commit v3", await File.ReadAllTextAsync(hook, Token), StringComparison.Ordinal);
     }
@@ -49,7 +49,7 @@ public sealed class PreCommitRepoHooksTests
         _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
         await File.WriteAllTextAsync(hook, ScrubFixtures.ForeignHook, Token);
 
-        var said = await new PreCommitRepoHooks().Install(new RepoEntry("demo", repo.Path), Token);
+        var said = await ScrubRig.Hooks().Install(new RepoEntry("demo", repo.Path), Token);
 
         Assert.Equal(ScrubFixtures.ForeignHook, await File.ReadAllTextAsync(hook, Token));
         Assert.Contains("SND-SCRUB-003", said, StringComparison.Ordinal);

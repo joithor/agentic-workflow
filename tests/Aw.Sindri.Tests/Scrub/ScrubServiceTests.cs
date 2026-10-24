@@ -12,7 +12,7 @@ public sealed class ScrubServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task Stdin_comes_back_redacted_and_the_secret_is_gone()
     {
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.Stdin, Text: $"key = {ScrubFixtures.Secret}\nplain\n"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.Stdin, Text: $"key = {ScrubFixtures.Secret}\nplain\n"), Token);
 
         Assert.True(done.IsSuccess, done.IsError ? done.Error.Message : null);
         Assert.DoesNotContain(ScrubFixtures.Secret, done.Value.Output, StringComparison.Ordinal);
@@ -27,7 +27,7 @@ public sealed class ScrubServiceTests
         await File.WriteAllTextAsync(Path.Combine(repo.Path, "f.txt"), $"k = \"{ScrubFixtures.Secret}\"\n", Token);
         _ = await repo.Git("add", "f.txt");
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
 
         Assert.Equal("SND-SCRUB-002", done.Error.Code);
         Assert.Contains("f.txt:1", done.Error.Message, StringComparison.Ordinal);
@@ -45,7 +45,7 @@ public sealed class ScrubServiceTests
         await File.WriteAllTextAsync(file, "k = \"gone\"\n", Token);
         _ = await repo.Git("add", "f.txt");
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
 
         Assert.True(done.IsSuccess, done.IsError ? done.Error.Message : null);
     }
@@ -55,7 +55,7 @@ public sealed class ScrubServiceTests
     {
         using var home = new TempHome();
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.Staged, Repo: home.Path), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.Staged, Repo: home.Path), Token);
 
         Assert.Equal("SND-SCRUB-004", done.Error.Code);
     }
@@ -66,7 +66,7 @@ public sealed class ScrubServiceTests
         using var repo = await TempGitRepo.Create();
         await File.WriteAllTextAsync(Path.Combine(repo.Path, ".git", "index"), "not an index", Token);
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.Staged, Repo: repo.Path), Token);
 
         Assert.Equal("SND-SCRUB-005", done.Error.Code);
     }
@@ -77,7 +77,7 @@ public sealed class ScrubServiceTests
         using var repo = await TempGitRepo.Create();
         var expected = await repo.Git("rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-commit");
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
 
         Assert.True(done.IsSuccess, done.IsError ? done.Error.Message : null);
         Assert.Equal(expected, done.Value.HookPath);
@@ -100,7 +100,7 @@ public sealed class ScrubServiceTests
         _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
         await File.WriteAllTextAsync(hook, old, Token);
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
 
         Assert.True(done.IsSuccess, done.IsError ? done.Error.Message : null);
         var text = await File.ReadAllTextAsync(hook, Token);
@@ -119,7 +119,7 @@ public sealed class ScrubServiceTests
         _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
         await File.WriteAllTextAsync(hook, foreign, Token);
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
 
         Assert.Equal("SND-SCRUB-003", done.Error.Code);
         Assert.Equal(foreign, await File.ReadAllTextAsync(hook, Token));
@@ -132,7 +132,7 @@ public sealed class ScrubServiceTests
         var shared = Path.Combine(repo.Path, "shared-hooks");
         _ = await repo.Git("config", "core.hooksPath", shared);
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: repo.Path, Bin: "/stable/sindri"), Token);
 
         Assert.Equal("SND-SCRUB-003", done.Error.Code);
         Assert.False(Directory.Exists(shared));
@@ -143,7 +143,7 @@ public sealed class ScrubServiceTests
     {
         using var home = new TempHome();
 
-        var done = await new ScrubService().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: home.Path, Bin: "/stable/sindri"), Token);
+        var done = await ScrubRig.Service().Handle(new ScrubRequest(ScrubMode.InstallPreCommit, Repo: home.Path, Bin: "/stable/sindri"), Token);
 
         Assert.Equal("SND-SCRUB-004", done.Error.Code);
     }
