@@ -106,6 +106,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -119,6 +120,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -132,6 +134,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -145,6 +148,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -158,6 +162,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -227,6 +232,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -247,6 +253,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
