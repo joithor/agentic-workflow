@@ -25,7 +25,7 @@ internal sealed class GetCodeService(MapReader reader, LensBasisReader bases, Co
 
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
         var mapRead = MapRead.Of(request.Draft, request.MapVersion);
-        if (QueryRules.CheckAnchors(anchors) is { } refused)
+        if (QueryRules.CheckAnchors(anchors, "code") is { } refused)
         {
             return refused;
         }
