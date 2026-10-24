@@ -58,7 +58,7 @@ public sealed class McpSurfaceTests
 
         var found = McpTypes()
             .SelectMany(t => t.Dependencies
-                .Where(d => d.Target.Namespace.FullName == challenges || _launchSecretMarkers.Any(m => d.Target.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)))
+                .Where(d => d.Target.Namespace?.FullName == challenges || _launchSecretMarkers.Any(m => d.Target.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)))
                 .Select(d => $"{t.FullName} uses {d.Target.FullName}"))
             .Concat(HostIntrospection.LiteralsIn(HostIntrospection.Host, McpNamespace)
                 .Where(l => _launchSecretMarkers.Any(m => l.Literal.Contains(m, StringComparison.OrdinalIgnoreCase)))
