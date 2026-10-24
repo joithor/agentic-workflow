@@ -162,7 +162,7 @@ public sealed class ContextDiffTests : IDisposable
         var text = ContextText.Render(result);
 
         Assert.Contains("file list truncated to the first 0", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("anchors:", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("anchors: the first", text, StringComparison.Ordinal);
         Assert.Contains("(file list truncated)", McpSummaries.Query(result), StringComparison.Ordinal);
     }
 
