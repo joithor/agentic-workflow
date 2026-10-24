@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Features.SweepLostSessions;
 
@@ -17,7 +18,8 @@ namespace Aw.Sindri.Features.SweepLostSessions;
 /// <param name="views">The 'launches' view: which launches have a live session.</param>
 /// <param name="status">How fresh the views are.</param>
 /// <param name="hosted">The sessions a host keeps without a wrap.</param>
-internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents session, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IProjectorStatus status, IHostedSessions hosted) : ILostSessions
+/// <param name="instances">Reads the instance a Step launch belongs to, to see whether a person took it over.</param>
+internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents session, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IProjectorStatus status, IHostedSessions hosted, IInstanceReader instances) : ILostSessions
 {
     public async ValueTask<int> Sweep(CancellationToken cancellationToken)
     {
