@@ -19,7 +19,7 @@ internal static class EvidenceServiceCollectionExtensions
     {
         foreach (var instructions in EvidenceStepInstructions.All)
         {
-            services.AddSingleton<IAgentStepInstructions>(instructions);
+            _ = services.AddSingleton<IAgentStepInstructions>(instructions);
         }
 
         return services;
