@@ -6,6 +6,8 @@ using Microsoft.Data.Sqlite;
 
 namespace Aw.Context.Infrastructure.Search;
 
+#pragma warning disable CA2100 // every command text is a constant or built from the two fixed table names and weight lists above; the question and the area go in parameters
+
 /// <summary>
 /// One map's full-text index, in memory (an FTS5 table per map version and caller scope, rebuilt when the graph a reader hands back changes; nothing is written to disk). Two tables share the document ids:
 /// 'doc' (unicode61 words, so "split pane" finds "Split pane" and the last word matches as a prefix) ranked by bm25 with title over path over text, and 'tri' (trigram over title and path) that answers
@@ -17,10 +19,15 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
     private const string Trigrams = "tri";
     private const int TrigramMinimum = 3;
 
+    private static readonly string[] _parameters = ["$id", "$title", "$path", "$area"];
+
     private readonly SqliteConnection _db;
     private readonly Lock _gate = new();
 
-    private SqliteMapSearchIndex(SqliteConnection db) => _db = db;
+    private SqliteMapSearchIndex(SqliteConnection db)
+    {
+        _db = db;
+    }
 
     /// <summary>Indexes <paramref name="docs"/> (ids are their rowids).</summary>
     internal static Result<SqliteMapSearchIndex> Create(IReadOnlyList<MapSearchDoc> docs)
@@ -34,8 +41,8 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
             Exec(db, "CREATE VIRTUAL TABLE doc USING fts5(title, path, text, area UNINDEXED, tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')");
             Exec(db, "CREATE VIRTUAL TABLE tri USING fts5(title, path, area UNINDEXED, tokenize = 'trigram')");
             using var transaction = db.BeginTransaction();
-            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area) VALUES ($id, $title, $path, $text, $area)", "$text");
-            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area) VALUES ($id, $title, $path, $area)", null);
+            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area) VALUES ($id, $title, $path, $text, $area)", text: "$text");
+            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area) VALUES ($id, $title, $path, $area)", text: null);
             foreach (var doc in docs)
             {
                 Fill(words, doc);
@@ -126,9 +133,9 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         var command = db.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = sql;
-        foreach (var name in new[] { "$id", "$title", "$path", "$area" }.Concat(text is null ? [] : [text]))
+        foreach (var name in _parameters.Concat(text is null ? [] : [text]))
         {
-            _ = command.Parameters.Add(new SqliteParameter(name, null));
+            _ = command.Parameters.Add(new SqliteParameter(name, value: null));
         }
 
         return command;
@@ -154,5 +161,6 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
     }
 
     private static Error Unavailable(SqliteException e) =>
-        ContextErrors.StoreUnavailable.With($"the map search index failed (SQLite {e.SqliteErrorCode}) (fix: retry; if it persists, the SQLite build may lack FTS5)");
+        ContextErrors.StoreUnavailable.With(string.Create(CultureInfo.InvariantCulture, $"the map search index failed (SQLite {e.SqliteErrorCode}) (fix: retry; if it persists, the SQLite build may lack FTS5)"));
 }
+#pragma warning restore CA2100

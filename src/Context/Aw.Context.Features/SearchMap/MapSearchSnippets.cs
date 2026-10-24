@@ -32,6 +32,6 @@ internal static class MapSearchSnippets
         }
 
         var start = Math.Clamp(at - Lead, 0, line.Length - Width);
-        return (start > 0 ? "…" : string.Empty) + line.Substring(start, Width) + (start + Width < line.Length ? "…" : string.Empty);
+        return string.Concat(start > 0 ? "…" : string.Empty, line.AsSpan(start, Width), start + Width < line.Length ? "…" : string.Empty);
     }
 }

@@ -1,10 +1,8 @@
-using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Search;
 using Aw.Context.Core.Trust;
 using Aw.Context.Core.WholeMap;
-using Aw.Context.Features.GetWholeMap;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -65,7 +63,7 @@ internal sealed class SearchMapService(MapReader reader, IScrubberFactory scrubb
     {
         var (matched, snippet) = MapSearchSnippets.Of(indexed.Doc, asked.Terms);
         var node = indexed.Node;
-        return new MapSearchHit(node.Key, node.Key.Kind, text.Label(node.Label, indexed.Trust), indexed.Repo ?? asked.Repo, indexed.Doc.Area, Math.Round(match.Score, 4), matched, text.Body(snippet, indexed.Trust), indexed.Trust);
+        return new MapSearchHit(node.Key, node.Key.Kind, text.Label(node.Label, indexed.Trust), indexed.Repo ?? asked.Repo, indexed.Doc.Area, Math.Round(match.Score, 4, MidpointRounding.ToEven), matched, text.Body(snippet, indexed.Trust), indexed.Trust);
     }
 
     private static string CacheKey(int version, bool draft, RepoChoice repo, ContextScope scope) =>
