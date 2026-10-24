@@ -61,6 +61,38 @@ internal sealed class GitWorktrees(IAgentTrust? trust = null) : IWorktrees
         return again.Answer ?? SindriErrors.WorktreeGitFailed.With($"git worktree add {request.Path} failed in {request.RepoRoot}: {Reason(made)}");
     }
 
+    public async ValueTask<Result<string>> Resolve(string repoRoot, string branch, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repoRoot);
+        ArgumentNullException.ThrowIfNull(branch);
+        if (!Path.IsPathRooted(repoRoot))
+        {
+            return SindriErrors.WorktreeInvalid.With("RepoRoot must be an absolute path");
+        }
+
+        if (string.IsNullOrWhiteSpace(branch) || branch.StartsWith('-') || branch.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
+        {
+            return SindriErrors.WorktreeInvalid.With("Branch must be a name without spaces that does not start with '-'");
+        }
+
+        // The local branch wins; the same name on origin is the parent's pushed head when this checkout never had it locally. Nothing is fetched.
+        foreach (var candidate in new[] { HeadsPrefix + branch, "refs/remotes/origin/" + branch })
+        {
+            var tip = await GitProcess.Run(repoRoot, ["rev-parse", "--verify", "--quiet", candidate + "^{commit}"], cancellationToken).ConfigureAwait(false);
+            if (tip.Exit == 0 && tip.Output.Length == 40)
+            {
+                return tip.Output;
+            }
+
+            if (tip.Exit > 1)
+            {
+                return SindriErrors.WorktreeGitFailed.With($"the branch {branch} can't be looked up in {repoRoot}: {Reason(tip)}");
+            }
+        }
+
+        return SindriErrors.WorktreeGitFailed.With($"the branch {branch} is not known in {repoRoot} (locally or on origin; nothing is fetched)");
+    }
+
     public async ValueTask<Result<Unit>> Remove(string path, CancellationToken cancellationToken)
     {
         var removed = await RemoveWorktree(path, cancellationToken).ConfigureAwait(false);
