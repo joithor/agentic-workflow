@@ -217,10 +217,10 @@ public sealed class BuildMapTests : IDisposable
         var second = _world.Map.BuildMap(progress: null, Scope, MapWorld.None).AsTask();
         while (_world.Clusters.Asked.Count == 0)
         {
-            await Task.Delay(1, MapWorld.None);
+            await Task.Delay(1, TestContext.Current.CancellationToken);
         }
 
-        await Task.Delay(50, MapWorld.None);   // long enough for a second build to have got inside, were it allowed
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // long enough for a second build to have got inside, were it allowed
         Assert.Equal(1, _world.Clusters.Active);
         release.SetResult();
         var both = await Task.WhenAll(first, second);
