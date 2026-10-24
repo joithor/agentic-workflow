@@ -1,10 +1,9 @@
+using System.Globalization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
-using Aw.Sindri.Core.Workflow.Ids;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -85,7 +84,7 @@ public sealed class UnavailableParkTests
     [Fact, Trait("Lane", "unit")]
     public void A_history_from_before_the_patch_parks_needs_answer_at_once()
     {
-        var legacy = Context() with { LegacyUnavailable = true };
+        var legacy = EngineFixture.Context() with { LegacyUnavailable = true };
 
         var applied = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, Failed(1, 1, "The build broke."), context: legacy));
 
@@ -110,7 +109,7 @@ public sealed class UnavailableParkTests
     }
 
     private static StepFailed Failed(int entry, int run, string reason) =>
-        new("service:agent:" + ProduceStep, RunToken.For(entry, run), reason, Tokens: 0, Sha($"{reason}\n{entry}.{run}"));
+        new("service:agent:" + ProduceStep, RunToken.For(entry, run), reason, Tokens: 0, Sha(string.Create(CultureInfo.InvariantCulture, $"{reason}\n{entry}.{run}")));
 
     private static AnswerGiven Resume() => new(
         "human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);

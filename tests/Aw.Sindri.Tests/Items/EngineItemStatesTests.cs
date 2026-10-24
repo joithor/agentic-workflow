@@ -73,7 +73,7 @@ public sealed class EngineItemStatesTests
         var parked = EngineItemStates.Next(started, EventTypes.WorkflowTransition, Row("produce", suspension: unavailable))!;
         var other = parked with { Address = "ITM-11111111111111111111111111111111/review/1" };
 
-        Assert.Equal((0, 0, 1, 2), (EngineItemStates.Unavailable(null), EngineItemStates.Unavailable(started), EngineItemStates.Unavailable(parked), EngineItemStates.Unavailable(parked with { Earlier = [other] })));
+        Assert.Equal((0, 0, 1, 2), (EngineItemStates.Unavailable(part: null), EngineItemStates.Unavailable(started), EngineItemStates.Unavailable(parked), EngineItemStates.Unavailable(parked with { Earlier = [other] })));
         Assert.Equal(0, EngineItemStates.Unavailable(parked with { Ended = true }));
     }
 
