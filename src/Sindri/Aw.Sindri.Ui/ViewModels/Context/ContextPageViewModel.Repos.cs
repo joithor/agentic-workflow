@@ -17,7 +17,7 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The repo being read; choosing another reads that repo's map from its top.</summary>
     public string? SelectedRepo
     {
-        get => _repo ?? Repos.FirstOrDefault();
+        get => _repo ?? (Repos.Count > 0 ? Repos[0] : null);
         set
         {
             if (value is not null)
