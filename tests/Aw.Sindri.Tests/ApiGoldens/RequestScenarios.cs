@@ -29,7 +29,7 @@ internal static class RequestScenarios
         ("decisions", "pending"), ("decisions", "decided"), ("decisions", "empty"), ("decisions", "empty-decided"), ("decisions", "voided"),
         ("decisions", "by-item"), ("decisions", "stalled"), ("decisions", "session-other-repo"),
         ("decisions-id", "accepted"), ("decisions-id", "declined"), ("decisions-id", "decided-elsewhere"), ("decisions-id", "voided"),
-        ("decisions-id", "not-found"), ("decisions-id", "bad-choice"), ("decisions-id", "bad-id"), ("decisions-id", "refused-session"), ("decisions-id", "while-stalled"),
+        ("decisions-id", "not-found"), ("decisions-id", "bad-choice"), ("decisions-id", "bad-id"), ("decisions-id", "while-stalled"),
         ("requests", "list-fixture"), ("requests", "list-empty"), ("requests", "list-state-accepted"), ("requests", "list-by-item"),
         ("requests", "list-session-other-repo"), ("requests", "list-bad-state"),
         ("requests", "filed"), ("requests", "filed-item"), ("requests", "invalid"), ("requests", "invalid-kind"), ("requests", "too-long"),
@@ -214,7 +214,6 @@ internal static class RequestScenarios
             "declined" => new Pick("decline", "Not now.", human),
             "decided-elsewhere" => await Elsewhere(host, decision, human, ct),
             "bad-choice" => new Pick("maybe", Note: null, human),
-            "refused-session" => new Pick("accept", Note: null, Demo),
             _ => new Pick("accept", "Good plan.", human),   // 'accepted', 'voided', 'while-stalled'
         };
         if (scenario == "voided")

@@ -8,8 +8,8 @@ namespace Aw.Sindri.Host.Catalog;
 /// <summary>
 /// The context engine's command rows (API spec §3.7; context spec §8.5, §8.7). Its GETs are queries and have no rows.
 /// README X63 set the classes of the map review; the owner's q93 decision (2026-10-23) removed the typed challenge from the protected ones, so every review
-/// action (a single decision, the bulk accept, undo, repoint, drop, apply-file, merge, add, delete) and promote are desk rows a session may also run (SessionOk);
-/// import alone keeps the terminal and its typed confirmation (X30). BuildContextMap, RefreshContextMap and RunContextBacktest are jobs a session may also start.
+/// action (a single decision, the bulk accept, undo, repoint, drop, apply-file, merge, add, delete) and promote are desk rows a session may also run;
+/// import is a protected row with no typed confirmation, like every row but the holdout (group F). A session runs every job a human starts.
 /// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap, SyncSources and RunContextBacktest are jobs on API P6's runtime (JobRows.Job,
 /// AddContextJobs, MapContextJobs): they start a job and answer its links, and the 'context-rebuild' and 'context-sync' scheduled services
 /// run the same work on a cadence.
@@ -51,8 +51,8 @@ internal static class ContextRows
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             Method: null, Route: null, ShellRows.Form("sindri services run code-index-embed"), "ready"),
         new(ActionId.From("ImportContextMap"), typeof(ImportContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
-            NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),
+            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "ready"),
         JobRows.Job("SyncSources", typeof(SyncContextSourcesRequest), "/sindri/context/sources/sync", "sindri context sources sync"),
         JobRows.Job(BacktestAction, typeof(RunContextBacktestRequest), "/sindri/context/eval/backtest", "sindri context eval backtest") with { SessionOk = true },
     ];

@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.AppConfirm;
 
-/// <summary>The app's challenge for one recipe approval, through the real command chain and the Host's catalog: the human token confirms, a session is refused.</summary>
+/// <summary>The app's challenge for one recipe approval, through the real command chain and the Host's catalog: the human token and a session both get it (owner decision q93).</summary>
 [Lane(TestLane.Unit)]
 public sealed class IssueAppRecipeChallengeTests
 {
@@ -34,14 +34,15 @@ public sealed class IssueAppRecipeChallengeTests
     }
 
     [Fact]
-    public async Task A_session_is_refused_before_the_handler()
+    public async Task A_session_is_let_through_like_a_human()
     {
         await using var registry = Harness();
-        _ = await registry.H.HoldLease();   // why: the refusal's audit row needs the lease
+        _ = await registry.H.HoldLease();
+        _ = await registry.Shipped("sindri/workflow.step.yaml");
 
         var issued = await registry.Run<IssueAppChallengeRequest, IssueChallengeResponse>(new IssueAppChallengeRequest("approve workflow.step 4"), A.Caller().Session().Build());
 
-        Assert.Equal("SND-AUTH-002", issued.Error.Code);
+        Assert.True(issued.IsSuccess, issued.IsError ? issued.Error.ToString() : null);
     }
 
     [Fact]

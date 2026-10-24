@@ -15,6 +15,9 @@ internal static class StepFactFiles
 {
     private const string FactPrefix = "fact:";
 
+    // The facts a lens frame reads from its subject besides its declared inputs (line spec A.3): not descriptor inputs, as the subject picks them. A change lens reads the diff instead.
+    private static readonly FactKey[] _designSubject = [FactKey.From("fact:design"), FactKey.From("fact:scope"), FactKey.From("fact:changedSections")];
+
     /// <summary>The file name to content of each declared read fact that is set.</summary>
     /// <param name="descriptor">The Step's descriptor; null when the catalog doesn't know it (no files).</param>
     /// <param name="facts">The instance's stored facts.</param>
@@ -22,10 +25,22 @@ internal static class StepFactFiles
     /// <param name="scrubber">Removes secrets from the text.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>The files; an error when a set fact's content can't be read.</returns>
-    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken)
+    internal static ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken) =>
+        Build(new FactFileStep(descriptor, Subject: null), facts, contents, scrubber, cancellationToken);
+
+    /// <summary>The file name to content of each declared read fact that is set, and, for a design lens, the design's own facts.</summary>
+    /// <param name="step">The Step's descriptor and its 'subject' parameter.</param>
+    /// <param name="facts">The instance's stored facts.</param>
+    /// <param name="contents">Reads the stored content.</param>
+    /// <param name="scrubber">Removes secrets from the text.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The files; an error when a set fact's content can't be read.</returns>
+    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(FactFileStep step, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken)
     {
+        var (descriptor, subject) = step;
         Dictionary<string, string> files = new(StringComparer.Ordinal);
-        foreach (var key in descriptor?.Inputs ?? [])
+        var declared = descriptor?.Inputs ?? [];
+        foreach (var key in string.Equals(subject, "design", StringComparison.Ordinal) && descriptor is not null ? declared.Union(_designSubject) : declared)
         {
             if (facts is null || !facts.TryGetValue(key, out var stored))
             {
