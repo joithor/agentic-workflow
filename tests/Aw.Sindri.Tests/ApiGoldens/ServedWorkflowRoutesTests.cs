@@ -276,7 +276,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         return changed;
     }
 
-    /// <summary>Registers <paramref name="yaml"/> and approves it with block pins that differ from this build's, as a block that changed since the approval leaves it.</summary>
+    /// <summary>Registers <paramref name="yaml"/> and approves it with block pins that differ from this build's, as a block whose interface changed since the approval leaves it (a version bump alone is renewed, PinRenewals).</summary>
     private void Drifted(string yaml)
     {
         var registered = _harness.Register(yaml);
@@ -286,7 +286,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         var recipe = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document!.Recipe;
         var pins = PinRules.Pins(recipe, sindri.GetRequiredService<BlockCatalog>(), [], json);
         Assert.NotEmpty(pins.Blocks);
-        var stale = pins with { Blocks = [.. pins.Blocks.Select(static p => p with { Hash = DescriptorHash.From("sha256:" + new string('0', 64)) })] };
+        var stale = pins with { Blocks = [.. pins.Blocks.Select(static p => p with { Hash = DescriptorHash.From("sha256:" + new string('0', 64)), Interface = DescriptorHash.From("sha256:" + new string('1', 64)) })] };
         var approved = sindri.GetRequiredService<IRecipeApprovals>()
             .Approve(new RecipeApproval(registered.Id, registered.Version, registered.Hash, "human:test", RealTime.NowOffset, ApprovalVia.Desk, Base: null, stale), ct).AsTask().GetAwaiter().GetResult();
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);

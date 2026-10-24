@@ -348,7 +348,7 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
   `{since}`, `{run}`, `{after}`, `{from}`, `{to}`, `{effects}`, `{block}`, `{marker}`, `{effect}`, `{code}`, `{recipe}`,
   `{reasons}`, `{childNext}`.
 - **Voice:** waits are descriptions ("Waiting for …"); human-action states are instructions.
-- **No approval-tier verbs** may appear in `next` (`RCP-NEXT-002`).
+- ~~**No approval-tier verbs** may appear in `next` (`RCP-NEXT-002`).~~ Dropped: owner q93, 2026-10-23 (an agent may approve a recipe once validate and eval pass; a pin drift that is only a block version bump is renewed and logged).
 
 ### 3.8 Engine-owned states
 
@@ -523,7 +523,7 @@ A changed child is never drift: it only marks the parent `child-stale`.
   - the pinned children and blocks;
   - the eval result (from P4 on).
 
-  Failing or missing evals refuse the approval with `SND-RECIPE-008`.
+  Failing or missing evals refuse the approval with `SND-RECIPE-008`. Owner q93, 2026-10-23: an agent approves with no challenge once the recipe's evals pass against that hash (the approval carries the eval files and the server runs them); a recipe that lists no evals needs only its validation; the approval record names the agent.
 - **`revoke`** shows the running instances that will park, the takeovers it will end, and the generated recipes the
   cascade revokes.
 - **`grant`** and **`accept`** show the park or escalation, and what will run next.
@@ -739,7 +739,7 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   resume runs its gates afresh. `answer --text` on a `no-progress` park works once per loop (§13).
 - **A park that arrives while parked or taken over** is recorded as `pendingPark` and takes effect when the current
   suspension pops. A revoke's `spec-conflict` park replaces the suspension, ending any takeover. A drift wake on a
-  parked instance is recorded on the suspension and refused (`SND-RECIPE-006`) until re-approved.
+  parked instance is recorded on the suspension and refused (`SND-RECIPE-006`) until re-approved. Owner q93, 2026-10-23: when only a pinned block's version moved and its interface (parameters, inputs, outputs, outcomes, capabilities) is unchanged, the approval is renewed against the build and logged (`recipe.approved` with `drift`, actor `service:pin-drift`) instead of parking; any interface change still parks.
 - **Revoke and drift wakes** are signals the registry sends to every live instance of the recipe (or of a parent
   pinning the child) on `recipe.revoked` and on startup when the build's descriptor hashes differ from an approval's
   pins. A drift approval signals the instances it lists to resume and re-sends their refused commands (§4.1).

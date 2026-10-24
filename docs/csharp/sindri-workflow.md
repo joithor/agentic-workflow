@@ -177,7 +177,7 @@ failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 `input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
 an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
-`pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
+`pin-drift` (a pinned block's interface changed in this build; a block whose version alone moved is renewed by the next check, owner q93 2026-10-23: `recipe.approved` with `drift`, actor `service:pin-drift`), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
 `{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind, generate}`
 (`type` `null` when not declared, `kind` `null` only on a legacy row, `generate` `null` when the input has no template; `name` is the instance-name template or `null`) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs`, `name` and the inputs' `kind` and `generate` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no name, no kinds); registering the same
@@ -198,9 +198,13 @@ starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cros
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 
-Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
-or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
-the audit row.
+`approve` and `revoke` (engine spec §4.2, §6.2, §6.3) are a human's with the typed text below. Owner q93, 2026-10-23: an
+**agent** (a session or a service, a CLI that detects an agent) approves a recipe without a challenge or a typed text once
+its evals pass. The CLI posts the recipe's eval files with the approval, the server runs them over the pure engine against that
+hash, and a missing or failing case is `SND-RECIPE-008` with nothing recorded; a recipe that lists no `evals:` needs only the
+validation it passed when it registered. The approval row and the `recipe.approved` event carry the agent's actor as the
+approver. Revoke stays a human's. Which caller class reaches the approve command is the API's table (Authorization.cs): until its
+`ApproveRecipe` row admits sessions, the chain still answers a session `SND-AUTH-002`.
 
 `sindri recipe approve <file|id@hash>`:
 
@@ -216,8 +220,8 @@ the audit row.
    `SND-RECIPE-009` if it changed while you read.
 4. It prints `approved workflow.step@<hash12>`.
 
-The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
-(`SND-RECIPE-008`) or a child it starts has no approved hash to pin (`SND-RECIPE-003`). An approved hash approved again
+The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`) or a child it starts has no approved
+hash to pin (`SND-RECIPE-003`). A recipe that declares no evals is approved on its validation alone (owner q93, 2026-10-23). An approved hash approved again
 with the same pins is not refused: it records nothing, sends the approve wake to its running instances again and prints
 `already approved workflow.step@<hash12>; woke N instances` (exit 0). That is the remedy for a drift-parked instance a first
 wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
@@ -397,7 +401,7 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   the park suggests a whole round's budget. An instance that began before the rule (Temporal patch `token-budget-per-round-v1`) keeps the pooled count.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
-  It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions
+  (`RCP-NEXT-002`, no approval-tier command in `next`, was dropped by owner q93, 2026-10-23.) Waits are descriptions
   ("Waiting for …"); states a human acts in are instructions.
 
 ### Engine-owned states
@@ -462,7 +466,6 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-THRESH-001` | A judge or model gate has a threshold | Add `threshold` in (0, 1] |
 | `RCP-THRESH-002` | A threshold is in (0, 1], and a deterministic gate has none | Fix or remove it |
 | `RCP-NEXT-001` | `next` uses only recipe variables | Use only the listed variables |
-| `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
 | `RCP-HUMAN-001` | An effect whose block is `humanTrigger` runs only off a human's act: a `command.*` transition, a `step.completed` out of states that each run a `humanOnly` Step, or a `when` that requires a fact (`{fact: F, is: present}`, at the top or inside `all`) that only such command transitions produce. The initial state never counts | Move the effect onto a command transition or a human-only Step, or gate it on a fact a human's command produces |
 | `RCP-RES-001` | **Information:** a `slot` wait has only the stub allocator in this build (`heavy` has the real one, LN-WF3 and is no longer reported) | None needed |

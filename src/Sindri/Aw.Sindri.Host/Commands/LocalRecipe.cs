@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.ValidateRecipe;
 
 namespace Aw.Sindri.Host.Commands;
@@ -17,7 +18,8 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="Version">Its version.</param>
 /// <param name="Hash">Its hash.</param>
 /// <param name="Evals">The eval line the preview shows: which eval files are present.</param>
-internal sealed record LocalRecipe(string Path, string Text, RecipeId Id, int Version, RecipeHash Hash, string? Evals)
+/// <param name="EvalFiles">The eval files themselves, which an agent's approval carries.</param>
+internal sealed record LocalRecipe(string Path, string Text, RecipeId Id, int Version, RecipeHash Hash, string? Evals, IReadOnlyList<EvalFile>? EvalFiles = null)
 {
     /// <summary>The file name the server's findings name.</summary>
     internal string File => System.IO.Path.GetFileName(Path);
@@ -51,7 +53,13 @@ internal sealed record LocalRecipe(string Path, string Text, RecipeId Id, int Ve
 
         var evals = recipe.Evals.Count == 0 ? null
             : string.Create(CultureInfo.InvariantCulture, $"{recipe.Evals.Count} present: {string.Join(", ", recipe.Evals)} (run at approve from P4)");
-        return new LocalRecipe(path, text.Value, recipe.Id, recipe.Version, hash, evals);
+        List<EvalFile> files = [];
+        foreach (var eval in recipe.Evals)
+        {
+            files.Add(new EvalFile(eval, await System.IO.File.ReadAllTextAsync(System.IO.Path.Combine(dir, eval), ct).ConfigureAwait(false)));
+        }
+
+        return new LocalRecipe(path, text.Value, recipe.Id, recipe.Version, hash, evals, files);
     }
 
     /// <summary>SND-RECIPE-009 when the file no longer hashes to <paramref name="previewed"/>: it changed while the human read the preview.</summary>

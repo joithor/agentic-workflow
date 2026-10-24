@@ -134,10 +134,6 @@ internal static class InvalidFixtureCases
             FixtureSetup.Shipped,
             "RCP-NEXT-001: the next of state 'produce' uses '{ticket}', which isn't a recipe variable at RCP-NEXT-001.yaml:10:5 (states.produce.next); use only {item}, {instance}, {state}, {user}, {child}, {loop.<name>}, {loop.<name>.cap} and {budget.tokens.left}",
             []),
-        ["RCP-NEXT-002"] = new(
-            FixtureSetup.Shipped,
-            "RCP-NEXT-002: the next of state 'produce' tells the reader to run '--grant', an approval-tier command at RCP-NEXT-002.yaml:10:5 (states.produce.next); leave it out, since only a human at a terminal runs approval-tier commands",
-            []),
         ["RCP-OUTCOME-001"] = new(
             FixtureSetup.Shipped,
             "RCP-OUTCOME-001: state 'checks' has no transition for outcome 'failed' of step 'step.checks' at RCP-OUTCOME-001.yaml:11:3 (states.checks); add a transition from 'checks' on step.completed with when: { outcome: failed }",

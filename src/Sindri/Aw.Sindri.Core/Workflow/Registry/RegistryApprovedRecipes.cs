@@ -17,7 +17,8 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="approvals">The approvals and revocations.</param>
 /// <param name="catalog">This build's blocks, against which an approval's pins drift.</param>
 /// <param name="json">The package's AwJson options (they read the stored text and hash the descriptors).</param>
-internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json) : IApprovedRecipes
+/// <param name="renewals">Renews an approval whose pinned blocks moved only by version.</param>
+internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json, PinRenewals renewals) : IApprovedRecipes
 {
     public async ValueTask<Result<ApprovedRecipe>> Latest(RecipeId id, CancellationToken cancellationToken)
     {
@@ -71,8 +72,23 @@ internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprova
 
         var blocks = parsed is null ? [] : PinRules.Blocks(parsed.Value.Recipe, catalog, json);
         return PinRules.Check(latest.Value, revoked.Value, blocks) is { } check
-            ? check
+            ? await Settle(check, latest.Value, blocks, cancellationToken).ConfigureAwait(false)
             : WorkflowErrors.RecipeNotApproved.With($"{recipe.Id.Value}@{recipe.Hash.Display} was never approved (fix: sindri recipe approve {recipe.Id.Value} {recipe.Version.ToString(CultureInfo.InvariantCulture)})");
+    }
+
+    /// <summary>
+    /// Owner q93 (2026-10-23): a block that only moved its version keeps its interface, so the approval is renewed (and logged) instead of
+    /// parking the instance. A renewal that can't be written (no lease) leaves the drift as it was.
+    /// </summary>
+    private async ValueTask<Result<ApprovalCheck>> Settle(ApprovalCheck check, RecipeApproval? latest, IReadOnlyList<BlockPin> blocks, CancellationToken cancellationToken)
+    {
+        if (check != ApprovalCheck.Drifted || latest is null || !PinRules.Compatible(latest, blocks))
+        {
+            return check;
+        }
+
+        var renewed = await renewals.Renew(latest, blocks, cancellationToken).ConfigureAwait(false);
+        return renewed.IsSuccess && renewed.Value ? ApprovalCheck.Holds : ApprovalCheck.Drifted;
     }
 
     /// <summary>SND-RECIPE-003, naming whether the version was revoked or never approved.</summary>

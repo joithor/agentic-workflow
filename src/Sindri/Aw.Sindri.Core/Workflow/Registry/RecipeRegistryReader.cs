@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -208,8 +207,8 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         }
 
         var stale = new List<StaleReason>();
-        if (PinRules.Check(latest, revocation: null, PinRules.Blocks(parsed, catalog, json)) == ApprovalCheck.Drifted)
-        {
+        if (PinRules.Drifts(latest, PinRules.Blocks(parsed, catalog, json)))
+        {   // a version bump alone is renewed at the next check (PinRenewals), so it isn't stale
             stale.Add(StaleReason.PinDrift);
         }
 

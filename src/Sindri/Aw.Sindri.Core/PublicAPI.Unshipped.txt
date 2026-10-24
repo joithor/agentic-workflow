@@ -4704,11 +4704,13 @@ Aw.Sindri.Core.Workflow.Registry.BlockPin
 Aw.Sindri.Core.Workflow.Registry.BlockPin.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.BlockPin!
 Aw.Sindri.Core.Workflow.Registry.BlockPin.Block.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Registry.BlockPin.Block.init -> void
-Aw.Sindri.Core.Workflow.Registry.BlockPin.BlockPin(Aw.Sindri.Core.Workflow.Ids.BlockId Block, Aw.Sindri.Core.Workflow.Ids.DescriptorHash Hash) -> void
-Aw.Sindri.Core.Workflow.Registry.BlockPin.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Block, out Aw.Sindri.Core.Workflow.Ids.DescriptorHash Hash) -> void
+Aw.Sindri.Core.Workflow.Registry.BlockPin.BlockPin(Aw.Sindri.Core.Workflow.Ids.BlockId Block, Aw.Sindri.Core.Workflow.Ids.DescriptorHash Hash, Aw.Sindri.Core.Workflow.Ids.DescriptorHash? Interface = null) -> void
+Aw.Sindri.Core.Workflow.Registry.BlockPin.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Block, out Aw.Sindri.Core.Workflow.Ids.DescriptorHash Hash, out Aw.Sindri.Core.Workflow.Ids.DescriptorHash? Interface) -> void
 Aw.Sindri.Core.Workflow.Registry.BlockPin.Equals(Aw.Sindri.Core.Workflow.Registry.BlockPin? other) -> bool
 Aw.Sindri.Core.Workflow.Registry.BlockPin.Hash.get -> Aw.Sindri.Core.Workflow.Ids.DescriptorHash
 Aw.Sindri.Core.Workflow.Registry.BlockPin.Hash.init -> void
+Aw.Sindri.Core.Workflow.Registry.BlockPin.Interface.get -> Aw.Sindri.Core.Workflow.Ids.DescriptorHash?
+Aw.Sindri.Core.Workflow.Registry.BlockPin.Interface.init -> void
 Aw.Sindri.Core.Workflow.Registry.ChildPin
 Aw.Sindri.Core.Workflow.Registry.ChildPin.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.ChildPin!
 Aw.Sindri.Core.Workflow.Registry.ChildPin.ChildPin(Aw.Sindri.Core.Workflow.Ids.RecipeId Recipe, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash) -> void
@@ -8158,6 +8160,9 @@ static Aw.Sindri.Core.Workflow.Registry.BlockPin.operator ==(Aw.Sindri.Core.Work
 static Aw.Sindri.Core.Workflow.Registry.ChildPin.operator !=(Aw.Sindri.Core.Workflow.Registry.ChildPin? left, Aw.Sindri.Core.Workflow.Registry.ChildPin? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.ChildPin.operator ==(Aw.Sindri.Core.Workflow.Registry.ChildPin? left, Aw.Sindri.Core.Workflow.Registry.ChildPin? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.PinRules.Blocks(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! options) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.BlockPin!>!
+static Aw.Sindri.Core.Workflow.Registry.PinRules.Compatible(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! approval, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.BlockPin!>! build) -> bool
+static Aw.Sindri.Core.Workflow.Registry.PinRules.Drifts(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! approval, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.BlockPin!>! build) -> bool
+static Aw.Sindri.Core.Workflow.Registry.PinRules.Interface(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Ids.DescriptorHash
 static Aw.Sindri.Core.Workflow.Registry.PinRules.Check(Aw.Sindri.Core.Workflow.Registry.RecipeApproval? approval, Aw.Sindri.Core.Workflow.Registry.RecipeRevocation? revocation, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.BlockPin!>! build) -> Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck?
 static Aw.Sindri.Core.Workflow.Registry.PinRules.Children(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Registry.RecipeApproval!>! current) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.ChildPin!>!
 static Aw.Sindri.Core.Workflow.Registry.PinRules.Digest(Aw.Sindri.Core.Workflow.Registry.RecipePins! pins, System.Text.Json.JsonSerializerOptions! options) -> string!

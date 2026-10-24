@@ -62,13 +62,48 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.get -> Aw.Sindri.C
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Hash.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.get -> long?
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.init -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody!
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Answer() -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.ApproveRecipeBody(Aw.Sindri.Core.Challenges.ChallengeId? Challenge = null, string! Typed = "", long? HeldMs = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>? Evals = null) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeId?
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Challenge.init -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId? Challenge, out string! Typed, out long? HeldMs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>? Evals) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Equals(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody? other) -> bool
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Evals.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>?
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Evals.init -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.HeldMs.get -> long?
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.HeldMs.init -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Typed.get -> string!
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Typed.init -> void
+override Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.ToString() -> string!
+static Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.operator !=(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody? left, Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody? right) -> bool
+static Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody.operator ==(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody? left, Aw.Sindri.Features.ApproveRecipe.ApproveRecipeBody? right) -> bool
+Aw.Sindri.Features.ApproveRecipe.EvalFile
+Aw.Sindri.Features.ApproveRecipe.EvalFile.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.EvalFile!
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Deconstruct(out string! Path, out string! Text) -> void
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Equals(Aw.Sindri.Features.ApproveRecipe.EvalFile? other) -> bool
+Aw.Sindri.Features.ApproveRecipe.EvalFile.EvalFile(string! Path, string! Text) -> void
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Path.get -> string!
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Path.init -> void
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Text.get -> string!
+Aw.Sindri.Features.ApproveRecipe.EvalFile.Text.init -> void
+override Aw.Sindri.Features.ApproveRecipe.EvalFile.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveRecipe.EvalFile.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveRecipe.EvalFile.ToString() -> string!
+static Aw.Sindri.Features.ApproveRecipe.EvalFile.operator !=(Aw.Sindri.Features.ApproveRecipe.EvalFile? left, Aw.Sindri.Features.ApproveRecipe.EvalFile? right) -> bool
+static Aw.Sindri.Features.ApproveRecipe.EvalFile.operator ==(Aw.Sindri.Features.ApproveRecipe.EvalFile? left, Aw.Sindri.Features.ApproveRecipe.EvalFile? right) -> bool
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest!
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.init -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.ApproveRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.ApproveRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>? Evals = null) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>? Evals) -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Equals(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest? other) -> bool
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Evals.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveRecipe.EvalFile!>?
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Evals.init -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Hash.init -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId

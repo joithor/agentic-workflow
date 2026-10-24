@@ -8,4 +8,5 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="Input">Where the typed action text is read from.</param>
 /// <param name="EnsureRunning">Starts the control plane before a human's command, or names why not.</param>
 /// <param name="Environment">Reads a process variable (a launched session's AW_SINDRI_LAUNCH_SECRET); null reads none.</param>
-internal sealed record RecipeDesk(ControlPlaneClient Client, TextReader Input, Func<CancellationToken, Task<Kernel.Error?>> EnsureRunning, Func<string, string?>? Environment = null);
+/// <param name="Agent">Whether this CLI calls as a session: its approve carries the recipe's eval files and no typed text (owner q93, 2026-10-23).</param>
+internal sealed record RecipeDesk(ControlPlaneClient Client, TextReader Input, Func<CancellationToken, Task<Kernel.Error?>> EnsureRunning, Func<string, string?>? Environment = null, bool Agent = false);

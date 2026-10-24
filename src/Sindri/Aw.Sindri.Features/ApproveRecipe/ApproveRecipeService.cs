@@ -1,10 +1,8 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Registry;
 
@@ -14,23 +12,23 @@ namespace Aw.Sindri.Features.ApproveRecipe;
 /// Approves a registered recipe hash (engine spec §4.1, §4.2, W8, W9): plans the approval again, so the pins and preview
 /// are the build's now, redeems the challenge against that plan's action and subject, then records 'recipe.approved'
 /// (through RecipeEvents) and the row. The event comes first so a refused or failed append leaves no row behind. A
-/// refused plan or challenge records nothing. Every approval's challenge binds the pins digest, so
+/// refused plan, challenge or (for an agent) eval records nothing. Every approval's challenge binds the pins digest, so
 /// a child approved while the human reads the preview makes it stale. Re-approving an approved hash with new pins is a
 /// drift approval, and it resumes the instances parked on that drift.
 /// </summary>
 /// <param name="planner">Plans the approval.</param>
-/// <param name="challenges">The server's challenges.</param>
 /// <param name="events">Appends the registry's events.</param>
 /// <param name="approvals">The approvals and revocations.</param>
 /// <param name="wake">Reaches the running instances.</param>
+/// <param name="authority">Lets the approval through: a human's challenge, an agent's evals.</param>
 /// <param name="clock">When the row says it happened.</param>
 /// <param name="callers">The caller: the approver and the command id.</param>
 internal sealed class ApproveRecipeService(
     RecipeApprovalPlanner planner,
-    IChallenges challenges,
     RecipeEvents events,
     IRecipeApprovals approvals,
     IRecipeWake wake,
+    ApprovalAuthority authority,
     TimeProvider clock,
     ICallerContextAccessor callers)
     : IService<ApproveRecipeRequest, ApproveRecipeResponse>
@@ -49,10 +47,10 @@ internal sealed class ApproveRecipeService(
             return plan.Error;
         }
 
-        var redeemed = challenges.Redeem(request.Answer, plan.Value.Action, plan.Value.Subject, WorkflowErrors.RecipeChallengeStale);
-        if (redeemed.IsError)
+        var authorized = await authority.Authorize(request, plan.Value, caller, cancellationToken).ConfigureAwait(false);
+        if (authorized.IsError)
         {
-            return redeemed.Error;
+            return authorized.Error;
         }
 
         if (plan.Value is { AlreadyApproved: true, Latest: { } standing })
