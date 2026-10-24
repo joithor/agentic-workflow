@@ -64,11 +64,4 @@ public sealed class CodeIndexReadsApiTests
 
         Assert.Equal("SND-PROFILE-005", status.Code);
     }
-
-    // The problem's words without its trace id, which is different on every call.
-    private static string Words(string body)
-    {
-        var problem = JsonDocument.Parse(body).RootElement;
-        return string.Join('|', problem.GetProperty("status").GetInt32(), problem.GetProperty("title").GetString(), problem.GetProperty("detail").GetString());
-    }
 }

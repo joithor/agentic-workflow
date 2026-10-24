@@ -205,7 +205,7 @@ public sealed class ContextJobsApiTests : IDisposable
 
         Assert.Equal(("SND-AUTH-002", null), (sync.Code, build.Code));   // build opened to sessions per owner q93 (2026-10-23); the sync stays a human's
         Assert.Contains("sindri context sources sync", sync.Body, StringComparison.Ordinal);
-        Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
+        _ = Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
