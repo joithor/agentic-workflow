@@ -109,7 +109,7 @@ public sealed class CliRunTests
     [Fact, Trait("Lane", "integration")]
     public async Task No_directory_or_a_usage_mistake_is_exit_1()
     {
-        var none = await Run(null, "tree");
+        var none = await Run(directory: null, "tree");
         var usage = await Run("/d", "tree", "--bogus", "x");
 
         Assert.Equal((1, 1), (none.Exit, usage.Exit));

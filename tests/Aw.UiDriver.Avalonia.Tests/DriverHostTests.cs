@@ -144,10 +144,10 @@ public sealed class DriverHostTests
         _ = await host.Scroll(new ScrollRequest(0, 60, new Selector(AutomationId: "list")));
         var first = await TestScreen.OnUi(() => screen.List.Offset.Y);
         _ = await host.Scroll(new ScrollRequest(0, 100_000, new Selector(AutomationId: "list")));
-        var last = await TestScreen.OnUi(() => (Offset: screen.List.Offset.Y, Max: screen.List.Extent.Height - screen.List.Viewport.Height));
+        var (offset, max) = await TestScreen.OnUi(() => (screen.List.Offset.Y, screen.List.Extent.Height - screen.List.Viewport.Height));
 
         Assert.Equal(60, first);
-        Assert.Equal(last.Max, last.Offset);
+        Assert.Equal(max, offset);
     }
 
     [Fact, Trait("Lane", "integration")]

@@ -45,8 +45,8 @@ public sealed class ProtocolTests
     [Fact, Trait("Lane", "unit")]
     public void A_tree_answer_round_trips_with_its_children()
     {
-        var leaf = new NodeInfo("0/0", "Button", "save", null, "Save", true, true, 1.5, 2, 30, 10, []);
-        var root = new NodeInfo("0", "Window", null, "Main", null, true, true, 0, 0, 800, 600, [leaf]);
+        var leaf = new NodeInfo("0/0", "Button", "save", Name: null, "Save", Visible: true, Enabled: true, X: 1.5, Y: 2, Width: 30, Height: 10, Children: []);
+        var root = new NodeInfo("0", "Window", AutomationId: null, "Main", Text: null, Visible: true, Enabled: true, X: 0, Y: 0, Width: 800, Height: 600, Children: [leaf]);
 
         var back = Read<TreeResponse>(Encoding.UTF8.GetString(AwJson.Serialize(new TreeResponse(root), UiDriverJson.Options))).Value;
 

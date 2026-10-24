@@ -25,7 +25,7 @@ internal sealed class StubDriver : IAsyncDisposable
         _listener.Start();
         File.WriteAllText(Path.Combine(_directory.FullName, "driver.json"), string.Create(CultureInfo.InvariantCulture, $$"""{"schema":"aw-ui-driver/1","url":"http://127.0.0.1:{{port}}","pid":1}"""));
         File.WriteAllText(Path.Combine(_directory.FullName, "driver.token"), Secret);
-        _loop = Task.Run(ServeAsync);
+        _loop = Task.Run(ServeAsync, _stop.Token);
     }
 
     /// <summary>The driver directory.</summary>
@@ -72,13 +72,13 @@ internal sealed class StubDriver : IAsyncDisposable
             }
 
             using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
-            var body = await reader.ReadToEndAsync();
+            var body = await reader.ReadToEndAsync(_stop.Token);
             Calls.Add((context.Request.Url!.AbsolutePath, context.Request.Headers["X-Ui-Driver-Token"], body));
             var (status, contentType, bytes) = context.Request.Url.AbsolutePath == "/v1/ping" ? (200, "application/json", "{\"ok\":true}"u8.ToArray()) : Answer;
             context.Response.StatusCode = status;
             context.Response.ContentType = contentType;
             context.Response.ContentLength64 = bytes.Length;
-            await context.Response.OutputStream.WriteAsync(bytes);
+            await context.Response.OutputStream.WriteAsync(bytes, _stop.Token);
             context.Response.Close();
         }
     }
