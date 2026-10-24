@@ -12,4 +12,7 @@ public sealed record IntentPage(SourceId Source, IReadOnlyList<IntentRecord> Rec
 {
     /// <summary>The map version the links were computed against; stored with each record so a map change re-links it even when its upstream version didn't move. 0 (the default) records none.</summary>
     public int MapVersion { get; init; }
+
+    /// <summary>The cleaned text of the records the page fetched, by record key, kept so a new map can link them again without a fetch (<see cref="IIntentStore.Relink"/>). A record with no entry keeps the text it has.</summary>
+    public IReadOnlyDictionary<string, string> Texts { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 }

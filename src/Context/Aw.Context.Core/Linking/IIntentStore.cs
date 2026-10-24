@@ -43,6 +43,20 @@ public interface IIntentStore
     /// <returns>The record keys.</returns>
     public ValueTask<Result<IReadOnlyList<RecordKey>>> LinkedUnder(SourceId source, int mapVersion, CancellationToken cancellationToken);
 
+    /// <summary>The cleaned text kept for each record that has one (<see cref="IntentPage.Texts"/>); a record stored before the text was kept is absent until a sync fetches it again.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The texts by record key.</returns>
+    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken);
+
+    /// <summary>In one transaction replaces the links of the given records with the given ones and marks the records linked under the map version. Decisions and the extraction queue are left alone (a sync that fetches a record again queues it).</summary>
+    /// <param name="records">The records whose links are replaced (a record with no link in <paramref name="links"/> ends with none).</param>
+    /// <param name="links">The new links; each names one of the records.</param>
+    /// <param name="mapVersion">The map version they were computed against.</param>
+    /// <param name="at">When they were computed.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>Unit, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken);
+
     /// <summary>Replaces a record's decisions and their edges, and marks its version extracted (only if the record still has that version).</summary>
     /// <param name="batch">What extraction found.</param>
     /// <param name="cancellationToken">Cancels the write.</param>

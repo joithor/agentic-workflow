@@ -135,6 +135,10 @@ public sealed class FakeIntentStore : IIntentStore
         : Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && _linkedMap.GetValueOrDefault(r.Key.Value) == mapVersion).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
 
+    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
         _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves

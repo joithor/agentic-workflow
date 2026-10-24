@@ -184,6 +184,10 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         }
     }
 
+    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(batch);

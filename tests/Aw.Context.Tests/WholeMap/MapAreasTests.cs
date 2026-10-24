@@ -227,5 +227,27 @@ public sealed class MapAreasTests
         Assert.Equal("feature:a", AreaOf(MapAreas.Assign(graph), "surface:screen/s1"));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_record_that_mentions_only_records_takes_the_area_those_records_settle_in()
+    {
+        var graph = new AreaGraph().Node("feature:a", "feature:b", "record:r1", "record:r2", "record:r3")
+            .Edge("record:r3", EdgeType.Mentions, "feature:a").Edge("record:r2", EdgeType.Mentions, "record:r3").Edge("record:r1", EdgeType.Mentions, "record:r2").Build();
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.Equal("feature:a feature:a feature:a", string.Join(' ', new[] { "record:r1", "record:r2", "record:r3" }.Select(k => AreaOf(index, k))));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cluster_of_records_that_never_reaches_a_feature_stays_unassigned()
+    {
+        var graph = new AreaGraph().Node("feature:a", "record:r1", "record:r2", "record:r3")
+            .Edge("record:r1", EdgeType.Mentions, "record:r2").Edge("record:r2", EdgeType.Mentions, "record:r3").Edge("record:r3", EdgeType.Mentions, "record:r1").Build();
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.All(new[] { "record:r1", "record:r2", "record:r3" }, k => Assert.Equal(AreaIndex.UnassignedKey, AreaOf(index, k)));
+    }
+
     private static string Flat(AreaIndex index) => string.Join('\n', index.ByNode.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" + p.Value.Area + "+" + string.Join(',', p.Value.AlsoIn)));
 }
