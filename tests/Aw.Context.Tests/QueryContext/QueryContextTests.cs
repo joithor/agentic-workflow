@@ -267,6 +267,19 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Records_found_but_gone_when_read_are_degraded_not_an_empty_answer()
+    {
+        var docs = FakeContextSource.FixtureDocs();
+        docs.FetchFailure = ContextErrors.OnyxDocumentNotFound.With("no such document");
+
+        var result = await Engines.Over(docs).Query(new ContextQuery("orientation"), Engines.Human(), CancellationToken.None);
+
+        var degraded = result.Value.Degraded.Single();
+        Assert.Equal(("repo-docs", "SND-CONTEXT-010"), (degraded.Source.Value, degraded.Code));
+        Assert.Contains("gone", degraded.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_record_its_source_withheld_is_cited_scrub_blocked_without_text()
     {
         var docs = FakeContextSource.FixtureDocs();
