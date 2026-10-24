@@ -14,6 +14,8 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Suggested">The suggested links under the path, with ids.</param>
 /// <param name="Totals">Counts over every file under the path.</param>
 /// <param name="Symbols">Always unavailable in S-4.</param>
+/// <param name="NextCursor">The cursor of the next page of entries, or null on the last one. Unmapped and Suggested cover this page's entries.</param>
+/// <param name="Total">How many direct children match the query (every page).</param>
 public sealed record FileMapView(
     int SchemaVersion,
     ContextRepoName Repo,
@@ -25,4 +27,6 @@ public sealed record FileMapView(
     IReadOnlyList<FileMapUnmapped> Unmapped,
     IReadOnlyList<FileMapSuggestion> Suggested,
     FileMapTotals Totals,
-    LensSymbols Symbols);
+    LensSymbols Symbols,
+    string? NextCursor = null,
+    int? Total = null);
