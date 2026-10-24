@@ -34,8 +34,11 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>The third column's heading.</summary>
     public string ColIntent { get; } = Labels.ContextMapAreaIntent;
 
-    /// <summary>The up button's words.</summary>
-    public string UpWord { get; } = Labels.ContextFilesUp;
+    /// <summary>The breadcrumb's name.</summary>
+    public string CrumbsName { get; } = Labels.ContextFilesCrumbsName;
+
+    /// <summary>The repo picker's name.</summary>
+    public string RepoName { get; } = Labels.ContextFilesRepoName;
 
     /// <summary>The word while a folder is read.</summary>
     public string LoadingWord { get; } = Labels.ContextFilesLoading;
@@ -46,11 +49,27 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>The rows of the folder shown.</summary>
     public IReadOnlyList<FileRowViewModel> Rows { get; private set => Set(ref field, value); } = [];
 
-    /// <summary>The folder shown, in words.</summary>
-    public string PathText { get; private set => Set(ref field, value); } = Labels.ContextFilesRoot;
+    /// <summary>The folder shown as a breadcrumb: "~ / src / tabs", each step but the last a link to that level.</summary>
+    public IReadOnlyList<FileCrumb> Crumbs { get; private set => Set(ref field, value); } = [Top(isLink: false)];
 
-    /// <summary>Whether there is a folder above this one.</summary>
-    public bool CanGoUp { get; private set => Set(ref field, value); }
+    /// <summary>The repos the Files view can read, by name; one when the index names no other.</summary>
+    public IReadOnlyList<string> Repos { get; private set => Set(ref field, value); } = [];
+
+    /// <summary>Whether the repo picker shows: only when there is more than one repo to pick.</summary>
+    public bool HasRepoPicker => Repos.Count > 1;
+
+    /// <summary>The repo being read. Choosing another reads the top of that one.</summary>
+    public string? SelectedRepo
+    {
+        get => _repo;
+        set
+        {
+            if (value is not null && !string.Equals(value, _repo, StringComparison.Ordinal))
+            {
+                _ = Pick(value);
+            }
+        }
+    }
 
     /// <summary>The totals line (files, in the map, suggested, not in the map).</summary>
     public string TotalsText { get; private set => Set(ref field, value); } = string.Empty;
@@ -113,6 +132,12 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         }
 
         _repo = repo;
+        await ReadRepos(api, repo, cancellationToken).ConfigureAwait(true);
+        if (generation != _generation)
+        {
+            return;
+        }
+
         var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
@@ -144,17 +169,48 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         return row.IsDirectory ? Load(row.Path, cancellationToken) : Task.CompletedTask;
     }
 
-    /// <summary>Goes up one folder.</summary>
+    /// <summary>Goes to a level of the breadcrumb; the last step is the folder already shown and does nothing.</summary>
+    /// <param name="crumb">The step.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the folder is shown.</returns>
-    internal Task Up(CancellationToken cancellationToken = default) => CanGoUp ? Load(Parent(_current), cancellationToken) : Task.CompletedTask;
-
-    // "src/tabs/" -> "src/"; "src/" -> the top (null).
-    private static string? Parent(string path)
+    internal Task Go(FileCrumb crumb, CancellationToken cancellationToken = default)
     {
-        var trimmed = path.TrimEnd('/');
-        var cut = trimmed.LastIndexOf('/');
-        return cut < 0 ? null : trimmed[..(cut + 1)];
+        ArgumentNullException.ThrowIfNull(crumb);
+        return crumb.IsLink ? Load(crumb.Path, cancellationToken) : Task.CompletedTask;
+    }
+
+    /// <summary>Switches to another repo and reads its top folder; the repo already shown reads nothing.</summary>
+    /// <param name="repo">The repo's name.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>When the top folder is shown.</returns>
+    internal Task Pick(string repo, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        if (string.Equals(repo, _repo, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        _repo = repo;
+        _current = string.Empty;
+        Crumbs = [Top(isLink: false)];
+        OnChanged(nameof(SelectedRepo));
+        return Load(path: null, cancellationToken);
+    }
+
+    private static FileCrumb Top(bool isLink) => new(Labels.ContextFilesTop, Path: null, isLink);
+
+    // "src/tabs/" -> "~", "src" (a link), "tabs" (plain); the top is "~" alone, plain.
+    private static List<FileCrumb> CrumbsOf(string path)
+    {
+        var folders = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var crumbs = new List<FileCrumb> { Top(isLink: folders.Length > 0) };
+        for (var i = 0; i < folders.Length; i++)
+        {
+            crumbs.Add(new FileCrumb(folders[i], string.Join('/', folders[..(i + 1)]) + "/", IsLink: i < folders.Length - 1));
+        }
+
+        return crumbs;
     }
 
     // The map status names the repo the caller reads; a refusal (no map yet) is the file map's refusal too.
@@ -170,14 +226,28 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         return status.Value.Version.Repo;
     }
 
+    // The repos the code index names, once: the picker lists them. When the index can't say, the repo being read is the only one.
+    private async Task ReadRepos(Uri api, string current, CancellationToken cancellationToken)
+    {
+        if (Repos.Count > 0)
+        {
+            return;
+        }
+
+        var status = await Ports.Api.CodeIndexStatus(api, cancellationToken).ConfigureAwait(true);
+        IReadOnlyList<string> named = status.IsSuccess ? [.. status.Value.Repos.Select(r => r.Repo).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)] : [];
+        Repos = named.Count > 0 ? named : [current];
+        OnChanged(nameof(HasRepoPicker));
+        OnChanged(nameof(SelectedRepo));
+    }
+
     private void Show(FileMapView view)
     {
         _current = view.Path;
         Problem = string.Empty;
         Symbols = new SymbolsColumnViewModel(view.Symbols);
         Rows = [.. view.Entries.Select(e => new FileRowViewModel(e, Symbols))];
-        PathText = view.Path.Length == 0 ? Labels.ContextFilesRoot : view.Path;
-        CanGoUp = view.Path.Length > 0;
+        Crumbs = CrumbsOf(view.Path);
         TotalsText = Labels.ContextFilesTotals(view.Totals.Files, view.Totals.Mapped, view.Totals.Suggested, view.Totals.Unmapped);
         Note = string.Equals(view.Symbols.State, "available", StringComparison.Ordinal) ? string.Empty : Labels.ContextMapNamesDetail;
     }

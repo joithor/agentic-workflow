@@ -33,10 +33,27 @@
   <!-- The Files view (F3 spec 1 §2): one folder at a time, 36 px rows, a suggested row hatched. A folder opens; a file is a row. -->
   <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
     <Grid ColumnDefinitions="Auto,*,Auto">
-      <Button x:Name="FilesUp" Click="OnUp" IsEnabled="{Binding CanGoUp}" AutomationProperties.Name="{Binding UpWord}">
-        <TextBlock Classes="button" Text="{Binding UpWord}" />
-      </Button>
-      <TextBlock x:Name="FilesPath" Grid.Column="1" Classes="body-strong" Text="{Binding PathText}" Margin="12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      <ComboBox x:Name="FilesRepo" ItemsSource="{Binding Repos}" SelectedItem="{Binding SelectedRepo, Mode=TwoWay}" IsVisible="{Binding HasRepoPicker}" MinWidth="140" Height="28" Margin="0,0,12,0"
+                VerticalAlignment="Center" AutomationProperties.Name="{Binding RepoName}" />
+      <!-- The path as a breadcrumb: "~" is the top of the repo; every level but the last is a link, the last is where you are. -->
+      <ItemsControl x:Name="FilesCrumbs" Grid.Column="1" ItemsSource="{Binding Crumbs}" VerticalAlignment="Center" AutomationProperties.Name="{Binding CrumbsName}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="6" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="ctx:FileCrumb">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Classes="body subtle" Text="/" IsVisible="{Binding HasSeparator}" AutomationProperties.AccessibilityView="Raw" />
+              <Button Classes="file-open" IsVisible="{Binding IsLink}" Click="OnCrumb" AutomationProperties.Name="{Binding Text}">
+                <TextBlock Classes="body-strong" Text="{Binding Text}" TextDecorations="Underline" />
+              </Button>
+              <TextBlock Classes="body-strong" Text="{Binding Text}" IsVisible="{Binding IsPlain}" AutomationProperties.Name="{Binding Text}" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <TextBlock x:Name="FilesTotals" Grid.Column="2" Classes="caption subtle" Text="{Binding TotalsText}" VerticalAlignment="Center" />
     </Grid>
 

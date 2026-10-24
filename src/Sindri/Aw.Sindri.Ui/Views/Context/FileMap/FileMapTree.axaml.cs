@@ -4,7 +4,7 @@ using Aw.Sindri.Ui.ViewModels.Context;
 
 namespace Aw.Sindri.Ui.Views.Context.FileMap;
 
-/// <summary>The Files view: one folder of the repo as 36 px rows. A folder's name opens it; Up goes back one level.</summary>
+/// <summary>The Files view: one folder of the repo as 36 px rows. A folder's name opens it; a step of the breadcrumb goes back to that level.</summary>
 internal sealed partial class FileMapTree : UserControl
 {
     public FileMapTree()
@@ -20,11 +20,11 @@ internal sealed partial class FileMapTree : UserControl
         }
     }
 
-    private void OnUp(object? sender, RoutedEventArgs e)
+    private void OnCrumb(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FileMapViewModel files)
+        if (DataContext is FileMapViewModel files && sender is Control { DataContext: FileCrumb crumb })
         {
-            _ = files.Up();
+            _ = files.Go(crumb);
         }
     }
 }
