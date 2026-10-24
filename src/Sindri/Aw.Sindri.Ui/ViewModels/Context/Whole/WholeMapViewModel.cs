@@ -24,7 +24,11 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     internal WholeMapViewModel(Func<TimeZoneInfo>? zone = null)
     {
         _zone = zone ?? (() => TimeZoneInfo.Local);
+        Panel = new NodePanelViewModel(LookUp, Jump);
     }
+
+    /// <summary>The side panel of the node a click pinned.</summary>
+    internal NodePanelViewModel Panel { get; }
 
     /// <summary>Raised when a feature asks the camera to go to its tile or column.</summary>
     internal event EventHandler<ValueEventArgs<WholeRect>>? ZoomRequested;
@@ -132,8 +136,10 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(answer);
         (_overview, _beforeZoom, IsAreaOpen, AreaTitle) = (null, null, false, string.Empty);
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
+        (SearchActive, NoMatches, _searchSet) = (false, false, null);
         Answer = answer;
         Geometry = WholeMapLayout.Place(answer);
+        ForgetHighlight();
         Head = Labels.ContextWholeHead(answer.MapVersion);
         ByAreaNote = Geometry.ByArea ? Labels.ContextWholeByArea(answer.Counts.Nodes) : string.Empty;
         SizeText = Labels.ContextWholeSize(answer.Counts.Nodes, answer.Counts.Edges, TimeZoneInfo.ConvertTime(answer.AsOf, _zone()));
@@ -170,6 +176,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         _overview ??= (Answer, Geometry, Areas);
         Answer = answer;
         Geometry = WholeMapLayout.Place(answer);
+        ForgetHighlight();
         var label = answer.Areas.FirstOrDefault(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))?.Label ?? opened.Key;
         AreaTitle = label;
         ByAreaNote = opened.Truncated ? Labels.ContextWholeAreaTruncated(answer.Nodes?.Count ?? 0, opened.Counts.Nodes) : string.Empty;
@@ -188,6 +195,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         }
 
         (Answer, Geometry, Areas) = overview;
+        ForgetHighlight();
         _overview = null;
         IsAreaOpen = false;
         AreaTitle = string.Empty;

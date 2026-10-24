@@ -39,8 +39,7 @@
         "records": 0,
         "decisions": 1,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -63,8 +62,7 @@
         "neighbors": 0,
         "edges": 0
       },
-      "edges": [],
-      "truncated": false
+      "edges": []
     },
     "code": {
       "files": [
@@ -92,8 +90,7 @@
         "files": 1,
         "symbols": 0,
         "featuresWithNoCode": 0
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [],

@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.Views.Controls;
 
 /// <summary>
 /// The context map's pannable, zoomable stage (F3 spec 1 §2): it holds the world as its child and moves it with a matrix.
-/// A drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms around the cursor, and the scale stays
+/// A drag on empty canvas pans, the wheel (a trackpad's two-finger scroll) pans, Ctrl or Cmd with the wheel zooms around the cursor, a pinch zooms around its origin, and the scale stays
 /// inside <see cref="MinZoom"/> and <see cref="MaxZoom"/> (62 % to 100 % unless the page says otherwise). The step and fit moves
 /// animate over Motion.Base, which is zero under reduced motion. A 22 px dotted grid fills the stage behind the world and moves
 /// with it.
@@ -22,6 +22,9 @@ internal sealed partial class ZoomBorder : Border
 
     /// <summary>The world's rectangle (origin included), which <see cref="Fit"/> fits to the stage.</summary>
     internal static readonly StyledProperty<Rect> WorldBoundsProperty = AvaloniaProperty.Register<ZoomBorder, Rect>(nameof(WorldBounds), new Rect(0, 0, 1360, 872));
+
+    /// <summary>The height along the bottom edge that a fit leaves free, for a control that floats over the stage (the mini-map).</summary>
+    internal static readonly StyledProperty<double> FitBottomInsetProperty = AvaloniaProperty.Register<ZoomBorder, double>(nameof(FitBottomInset));
 
     /// <summary>The smallest scale.</summary>
     internal static readonly StyledProperty<double> MinZoomProperty = AvaloniaProperty.Register<ZoomBorder, double>(nameof(MinZoom), ZoomRange.Default.Min);
@@ -52,6 +55,7 @@ internal sealed partial class ZoomBorder : Border
         Focusable = false;
         Background = Brushes.Transparent;
         AutomationProperties.SetName(this, "Pannable map");
+        WirePinch();
         ActualThemeVariantChanged += (_, _) =>
         {
             _dots = null;   // its dot colour was resolved for the old variant
@@ -61,6 +65,9 @@ internal sealed partial class ZoomBorder : Border
 
     /// <summary>Raised when the pointer is pressed and released on empty canvas without moving (a click, which closes the inspector).</summary>
     internal event EventHandler? EmptyClicked;
+
+    /// <summary>Raised with the same click and its pointer, for a page that asks where in its world it fell (the world takes no pointer events of its own: a press here starts a pan, so its release lands here).</summary>
+    internal event EventHandler<PointerReleasedEventArgs>? Clicked;
 
     /// <summary>Gets the current view.</summary>
     internal ZoomView View { get; private set; } = ZoomView.Identity;
@@ -74,6 +81,16 @@ internal sealed partial class ZoomBorder : Border
         get => GetValue(WorldBoundsProperty);
         set => SetValue(WorldBoundsProperty, value);
     }
+
+    /// <summary>Gets or sets the height along the bottom edge that a fit leaves free (0: the whole stage).</summary>
+    internal double FitBottomInset
+    {
+        get => GetValue(FitBottomInsetProperty);
+        set => SetValue(FitBottomInsetProperty, value);
+    }
+
+    /// <summary>Gets the part of the stage a fit uses: the stage less <see cref="FitBottomInset"/> along the bottom.</summary>
+    internal Size FitStage => new(Bounds.Width, Math.Max(1, Bounds.Height - FitBottomInset));
 
     /// <summary>Gets or sets the smallest scale.</summary>
     internal double MinZoom
@@ -107,7 +124,7 @@ internal sealed partial class ZoomBorder : Border
 
     /// <summary>Shows a rectangle of the world (clamped to the zoom range), whatever its origin.</summary>
     /// <param name="bounds">The rectangle, in world coordinates.</param>
-    internal void FitBounds(Rect bounds) => MoveTo(ZoomView.Fit(Bounds.Size, bounds, Range));
+    internal void FitBounds(Rect bounds) => MoveTo(ZoomView.Fit(FitStage, bounds, Range));
 
     /// <summary>Pans the least that brings a world rectangle fully into view, clear of the inspector over the right edge.</summary>
     /// <param name="target">The rectangle, in world coordinates.</param>
