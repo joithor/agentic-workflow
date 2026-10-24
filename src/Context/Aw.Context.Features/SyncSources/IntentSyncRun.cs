@@ -180,11 +180,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
             }
 
             var one = Linked(hit, fetched.Value, seen.Known);
-            var committed = await ports.Store.CommitPage(new IntentPage(_id, [one.Record], one.Links, Cursor: null, ports.Clock.GetUtcNow())
-            {
-                MapVersion = seen.Version,
-                Texts = new Dictionary<string, string>(StringComparer.Ordinal) { [one.Record.Key.Value] = one.Text },
-            }, ct).ConfigureAwait(false);
+            var committed = await ports.Store.CommitPage(new IntentPage(_id, [one.Record], one.Links, Cursor: null, ports.Clock.GetUtcNow()) { MapVersion = seen.Version }, ct).ConfigureAwait(false);
             if (committed.IsError)
             {
                 return (false, committed.Error.Code);

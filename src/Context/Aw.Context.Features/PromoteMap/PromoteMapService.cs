@@ -1,10 +1,8 @@
 using System.Globalization;
 using Aw.Context.Core;
-using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Review;
-using Aw.Context.Features.SyncSources;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -14,9 +12,9 @@ namespace Aw.Context.Features.PromoteMap;
 /// Makes the latest draft the current map (spec §8.7), when nothing in it is left to decide (SND-CONTEXT-046: no draft, or
 /// undecided review items; a skipped item isn't decided). The proposals a person accepted become nodes of the version first,
 /// because a 'propose' row only adds its node to a draft and a pending one is never part of the current map. Sindri checks
-/// the caller and the typed confirmation first (protected). The stored intent records are then linked again against the new current map (<see cref="IntentRelinker"/>).
+/// the caller and the typed confirmation first (protected).
 /// </summary>
-internal sealed class PromoteMapService(IGraphStore store, IntentRelinker relinker, TimeProvider clock) : IService<PromoteMapRequest, MapPromoted>
+internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) : IService<PromoteMapRequest, MapPromoted>
 {
     public async ValueTask<Result<MapPromoted>> Handle(PromoteMapRequest request, CancellationToken cancellationToken)
     {
@@ -49,25 +47,21 @@ internal sealed class PromoteMapService(IGraphStore store, IntentRelinker relink
         }
 
         var ready = PromoteReadiness.Check(seen.Value.Queue);
-        return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, request.Scope, cancellationToken).ConfigureAwait(false);
+        return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, cancellationToken).ConfigureAwait(false);
     }
 
     // The caller decided about one draft; a rebuild replaced it or it was promoted (retrieval spec §8.7a).
     private static Error Changed(int expected, int? latest) => ContextErrors.DraftChanged.With(string.Create(CultureInfo.InvariantCulture,
         $"draft {expected} was expected, {(latest is { } n ? $"the latest draft is {n}" : "there is no draft")} (a rebuild replaced it, or it was promoted); nothing was promoted"));
 
-    private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, ContextScope scope, CancellationToken cancellationToken)
+    private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var previous = await store.Current(cancellationToken).ConfigureAwait(false);
         var number = previous.IsError ? previous.Error : await WithAcceptedProposals(draft, view, cancellationToken).ConfigureAwait(false);
         var promoted = number.IsError ? Reworded(number.Error) : await store.Promote(number.Value, cancellationToken).ConfigureAwait(false);
-        if (promoted.IsError)
-        {
-            return Reworded(promoted.Error);
-        }
-
-        _ = await relinker.Run(scope, cancellationToken).ConfigureAwait(false);   // the stored records follow the map that is current; a failure leaves their links as they were (a sync links what it fetches)
-        return new MapPromoted(promoted.Value, previous.Value is { } old ? old with { Status = MapVersionStatus.Retained } : null);
+        return promoted.IsError
+            ? Reworded(promoted.Error)
+            : new MapPromoted(promoted.Value, previous.Value is { } old ? old with { Status = MapVersionStatus.Retained } : null);
     }
 
     // The store says only that the draft is gone (046); here the cause is a promote, and the way on is the one the docs name.

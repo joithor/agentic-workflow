@@ -20,13 +20,6 @@ internal static class IntentSql
 
     internal const string LinkedKeys = "SELECT key FROM intent_record WHERE source = @source AND linked_map = @map ORDER BY key";
 
-    internal const string SetText = "UPDATE intent_record SET text = @text WHERE key = @record";
-
-    internal const string Texts = "SELECT key, text FROM intent_record WHERE text IS NOT NULL ORDER BY key";
-
-    // Links computed again against the current map: the record is linked under it, and its extraction state stays as it is (MarkLinked queues a record that moves to another map; a relink does not re-extract).
-    internal const string Relinked = "UPDATE intent_record SET linked_map = @map WHERE key = @record";
-
     internal const string DeleteLinks = "DELETE FROM intent_link WHERE record = @record";
 
     internal const string InsertLink =

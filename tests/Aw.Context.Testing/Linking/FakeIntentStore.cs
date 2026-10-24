@@ -17,7 +17,6 @@ public sealed class FakeIntentStore : IIntentStore
 
     /// <summary>When set, every call fails with it (a store that can't open).</summary>
     private readonly Dictionary<string, string> _extracted = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, string> _texts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _linkedMap = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<DecisionRow>> _decisions = new(StringComparer.Ordinal);
     private readonly List<GraphEdge> _edges = [];
@@ -110,10 +109,6 @@ public sealed class FakeIntentStore : IIntentStore
                 }
 
                 _links[record.Key.Value] = [.. page.Links.Where(l => l.Record.Value == record.Key.Value).DistinctBy(l => (l.Target.Value, l.Rule))];
-                if (page.Texts.TryGetValue(record.Key.Value, out var text))
-                {
-                    _texts[record.Key.Value] = text;
-                }
             }
 
             _ = _cursors.TryGetValue(page.Source.Value, out var before);
@@ -139,26 +134,6 @@ public sealed class FakeIntentStore : IIntentStore
         ? ValueTask.FromResult<Result<IReadOnlyList<RecordKey>>>(failure)
         : Done<IReadOnlyList<RecordKey>>(() =>
         [.. _records.Values.Where(r => r.Source.Value == source.Value && _linkedMap.GetValueOrDefault(r.Key.Value) == mapVersion).OrderBy(r => r.Key.Value, StringComparer.Ordinal).Select(r => r.Key)]);
-
-    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Texts(CancellationToken cancellationToken) =>
-        Done<IReadOnlyDictionary<string, string>>(() => new Dictionary<string, string>(_texts, StringComparer.Ordinal));
-
-    public ValueTask<Result<Unit>> Relink(IReadOnlyList<RecordKey> records, IReadOnlyList<IntentLink> links, int mapVersion, DateTimeOffset at, CancellationToken cancellationToken)
-    {
-        _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves
-        ArgumentNullException.ThrowIfNull(records);
-        ArgumentNullException.ThrowIfNull(links);
-        return Done(() =>
-        {
-            foreach (var record in records.Where(r => _records.ContainsKey(r.Value)))
-            {
-                _links[record.Value] = [.. links.Where(l => l.Record == record).DistinctBy(l => (l.Target.Value, l.Rule))];
-                _linkedMap[record.Value] = mapVersion;   // SQLite: the extraction state is not touched
-            }
-
-            return Unit.Value;
-        });
-    }
 
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {

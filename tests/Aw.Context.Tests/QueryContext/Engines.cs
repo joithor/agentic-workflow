@@ -71,7 +71,7 @@ internal static class Engines
         var graphs = new MapReader(store, intents);
         var repos = new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
         return new ContextEngine(new QueryContextService(scrubbers, new SequentialIdGenerator(), clock, new LiveInputs(graphs, catalog, repos), intents, new FakeModelPort()),
-            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers, new IntentRelinker(graphs, intents, clock)),
+            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
                 new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers, new NoCodeSymbolSource()), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos, new NoCodeSymbolSource()),
                 new ContextCodeHistory(new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), new CodeSymbolSearch(new NoCodeSymbolSource()), scrubbers),
@@ -94,14 +94,14 @@ internal static class Engines
     private static EvalProbesService Probes(TimeProvider clock) => new(new NoProbes(), new NoProbes(), clock);
 
     /// <summary>The map part over its fakes (S-3a); the query tests never touch it.</summary>
-    private static ContextMap Map(TimeProvider clock, FakeGraphStore store, FakeScrubberFactory scrubbers, IntentRelinker relinker)
+    private static ContextMap Map(TimeProvider clock, FakeGraphStore store, FakeScrubberFactory scrubbers)
     {
         var exports = new FakeExportStore(clock);
         var reader = new FakeMapFileReader();
-        var admin = new MapAdmin(new PreviewMapService(reader), new ImportMapService(reader, store, relinker, clock), new ExportMapService(store, exports, clock),
+        var admin = new MapAdmin(new PreviewMapService(reader), new ImportMapService(reader, store, clock), new ExportMapService(store, exports, clock),
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock, new Features.RunBacktest.UnconfiguredBacktest()), new PurgeMapService(store, exports, clock));
         var review = new MapReview(new ReviewQueueService(store, scrubbers), new ReviewMapService(store, new FakeCurrentUser(), clock), new ReviewHistoryService(store), new ExportReviewService(store, scrubbers, new FakeReviewFileStore(), clock),
-            new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store, relinker, clock));
+            new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store, clock));
         return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, store, clock), new GetProposalsService(store, store, scrubbers)), Publishing(store), new CleanMapService(store, scrubbers, new FakeModelPort(), new FakeCurrentUser(), clock));
     }
 
