@@ -82,13 +82,13 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Text_over_2000_is_SND_REQ_001()
+    public async Task Text_over_the_cap_is_SND_REQ_001()
     {
         var ct = TestContext.Current.CancellationToken;
         var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
-        var result = await mcp.Call("sindri_request", Request("note", new string('x', 2001)), ct);
+        var result = await mcp.Call("sindri_request", Request("note", new string('x', RequestRules.TextMax + 1)), ct);
 
         Assert.Equal("SND-REQ-001", Code(result));
         McpGolden.Match(result, world.Host.Home, "sindri_request", "text-too-long");
