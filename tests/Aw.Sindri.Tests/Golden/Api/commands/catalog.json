@@ -6,8 +6,8 @@
       "allowedCallers": [
         "human+terminal",
         "human",
-        "session",
-        "service"
+        "service",
+        "session"
       ],
       "terminal": false,
       "method": "POST",
