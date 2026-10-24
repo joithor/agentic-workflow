@@ -118,7 +118,7 @@ public sealed class InterpreterAttributionTests(SindriTimeSkippingServer server)
     {
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
         limit.CancelAfter(TimeSpan.FromSeconds(60));
-        while ((await handle.FetchHistoryAsync()).Events.Count(static e => e.EventType == Temporalio.Api.Enums.V1.EventType.ActivityTaskCompleted) < count)
+        while (!(await handle.FetchHistoryAsync()).Events.Where(static e => e.EventType == Temporalio.Api.Enums.V1.EventType.ActivityTaskCompleted).Skip(count - 1).Any())
         {
             await Task.Delay(100, limit.Token);
         }
