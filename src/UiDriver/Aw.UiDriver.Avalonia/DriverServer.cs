@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -43,7 +44,7 @@ internal sealed class DriverServer : IAsyncDisposable
         {
             var port = FreePort();
             var listener = new HttpListener();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            listener.Prefixes.Add(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/"));
             try
             {
                 listener.Start();
@@ -54,8 +55,8 @@ internal sealed class DriverServer : IAsyncDisposable
                 continue;
             }
 
-            var server = new DriverServer(listener, $"http://127.0.0.1:{port}", host, secret);
-            server._loop = Task.Run(server.ServeAsync);
+            var server = new DriverServer(listener, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), host, secret);
+            server._loop = Task.Run(server.ServeAsync, server._stop.Token);
             return server;
         }
 
@@ -86,6 +87,7 @@ internal sealed class DriverServer : IAsyncDisposable
                 ErrorKind.Forbidden => 401,
                 ErrorKind.NotFound => 404,
                 ErrorKind.Timeout => 408,
+                ErrorKind.Conflict or ErrorKind.RateLimited or ErrorKind.BudgetExceeded or ErrorKind.Unavailable => 500,
                 _ => 500,
             },
             "application/json",
@@ -161,9 +163,3 @@ internal sealed class DriverServer : IAsyncDisposable
 
     private bool SecretOk(string? given) => given is not null && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(given), _secret);
 }
-
-/// <summary>An answer: status, media type, body.</summary>
-/// <param name="Status">The HTTP status.</param>
-/// <param name="ContentType">The media type.</param>
-/// <param name="Body">The body.</param>
-internal sealed record Reply(int Status, string ContentType, ReadOnlyMemory<byte> Body);

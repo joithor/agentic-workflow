@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Aw.Kernel;
@@ -18,19 +19,18 @@ internal sealed class UiTree
 {
     internal const string RootId = "0";
 
-    private readonly Window _root;
     private readonly List<(NodeFacts Facts, Visual Visual)> _nodes = [];
 
     internal UiTree(Window root)
     {
-        _root = root;
+        Root = root;
         Walk(root, RootId);
     }
 
     /// <summary>Every element in tree order, window first.</summary>
     internal IReadOnlyList<(NodeFacts Facts, Visual Visual)> Nodes => _nodes;
 
-    internal Window Root => _root;
+    internal Window Root { get; }
 
     /// <summary>The element a selector means: the match at its index.</summary>
     /// <param name="selector">The selector; it must name something.</param>
@@ -62,7 +62,7 @@ internal sealed class UiTree
     internal NodeInfo InfoOf(string id, Visual visual, int depth)
     {
         var facts = FactsOf(id, visual);
-        var origin = visual.TranslatePoint(default, _root) ?? default;
+        var origin = visual.TranslatePoint(default, Root) ?? default;
         List<NodeInfo> children = depth <= 0 ? [] : [.. ChildrenOf(id, visual).Select(c => InfoOf(c.Id, c.Visual, depth - 1))];
         return new NodeInfo(id, facts.Type, facts.AutomationId, facts.Name, facts.Text, facts.Visible, facts.Enabled, origin.X, origin.Y, visual.Bounds.Width, visual.Bounds.Height, children);
     }

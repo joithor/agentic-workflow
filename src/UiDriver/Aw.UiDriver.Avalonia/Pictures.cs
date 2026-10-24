@@ -13,7 +13,7 @@ internal static class Pictures
     /// <returns>The PNG bytes, or AW-UIDRIVER-007 when it has no size or could not be rendered.</returns>
     internal static Result<byte[]> Png(Visual visual)
     {
-        var size = new PixelSize((int)Math.Round(visual.Bounds.Width), (int)Math.Round(visual.Bounds.Height));
+        var size = new PixelSize((int)Math.Round(visual.Bounds.Width, MidpointRounding.AwayFromZero), (int)Math.Round(visual.Bounds.Height, MidpointRounding.AwayFromZero));
         if (size.Width < 1 || size.Height < 1)
         {
             return UiDriverErrors.Failed.With("the element has no size to draw");
@@ -24,7 +24,7 @@ internal static class Pictures
             using var frame = new RenderTargetBitmap(size, new Vector(96, 96));
             frame.Render(visual);
             using var stream = new MemoryStream();
-            frame.Save(stream);
+            frame.Save(stream, new PngBitmapEncoderOptions());
             return stream.ToArray();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)

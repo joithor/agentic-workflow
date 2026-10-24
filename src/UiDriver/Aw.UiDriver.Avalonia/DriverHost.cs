@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -61,7 +62,7 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
         var root = tree.Root;
         (root.Width, root.Height) = (request.Width ?? root.Width, request.Height ?? root.Height);
         root.UpdateLayout();
-        return new WindowResponse((int)Math.Round(root.Bounds.Width), (int)Math.Round(root.Bounds.Height), root.Title ?? string.Empty);
+        return new WindowResponse((int)Math.Round(root.Bounds.Width, MidpointRounding.AwayFromZero), (int)Math.Round(root.Bounds.Height, MidpointRounding.AwayFromZero), root.Title ?? string.Empty);
     });
 
     internal Task<Result<byte[]>> Screenshot(ScreenshotRequest request) => OnUi<byte[]>(tree =>
@@ -72,25 +73,18 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
 
     internal async Task<Result<WaitedResponse>> WaitFor(WaitForRequest request, CancellationToken cancellationToken)
     {
-        if (!WaitStates.TryParse(request.State, out var state))
+        var parsed = ParseWait(request);
+        if (parsed.IsError)
         {
-            return UiDriverErrors.Invalid.With($"'{request.State}' is not a wait state (exists, visible, hidden, gone, enabled, disabled, textEquals, textContains)");
+            return parsed.Error;
         }
 
-        if (WaitStates.NeedsText(state) && request.Text is null)
-        {
-            return UiDriverErrors.Invalid.With($"{state} needs the request's text");
-        }
-
+        var state = parsed.Value;
         var limit = TimeSpan.FromMilliseconds(Math.Clamp(request.TimeoutMs ?? WaitForRequest.DefaultTimeoutMs, 0, 600_000));
         var started = clock.GetTimestamp();
         while (true)
         {
-            var seen = await OnUi<(NodeInfo? Node, bool Holds)>(tree =>
-            {
-                var node = tree.Find(request.Selector);
-                return (node is { } n ? tree.InfoOf(n) : null, WaitStates.Holds(state, node?.Facts, request.Text));
-            }).ConfigureAwait(false);
+            var seen = await Look(request, state).ConfigureAwait(false);
             var waited = clock.GetElapsedTime(started);
             if (seen.IsError)
             {
@@ -104,12 +98,29 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
 
             if (waited >= limit)
             {
-                return UiDriverErrors.TimedOut.With($"{request.Selector.Describe()} was not {state} within {(int)limit.TotalMilliseconds} ms");
+                var ms = ((int)limit.TotalMilliseconds).ToString(CultureInfo.InvariantCulture);
+                return UiDriverErrors.TimedOut.With($"{request.Selector.Describe()} was not {state} within {ms} ms");
             }
 
             await Task.Delay(_poll, clock, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private static Result<WaitState> ParseWait(WaitForRequest request)
+    {
+        if (!WaitStates.TryParse(request.State, out var state))
+        {
+            return UiDriverErrors.Invalid.With($"'{request.State}' is not a wait state (exists, visible, hidden, gone, enabled, disabled, textEquals, textContains)");
+        }
+
+        return WaitStates.NeedsText(state) && request.Text is null ? UiDriverErrors.Invalid.With($"{state} needs the request's text") : state;
+    }
+
+    private Task<Result<(NodeInfo? Node, bool Holds)>> Look(WaitForRequest request, WaitState state) => OnUi<(NodeInfo? Node, bool Holds)>(tree =>
+    {
+        var node = tree.Find(request.Selector);
+        return (node is { } n ? tree.InfoOf(n) : null, WaitStates.Holds(state, node?.Facts, request.Text));
+    });
 
     private Task<Result<ActedResponse>> Act(Selector? selector, Func<UiTree, Visual, Result<Unit>> work) => OnUi<ActedResponse>(tree =>
     {

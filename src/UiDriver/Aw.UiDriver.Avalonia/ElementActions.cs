@@ -18,6 +18,7 @@ namespace Aw.UiDriver.Avalonia;
 internal static class ElementActions
 {
     private static readonly string[] _clickActions = ["invoke", "toggle", "select", "expand"];
+    private static readonly string[] _providerActions = ["INVOKE", "TOGGLE", "SELECT", "EXPAND", "COLLAPSE"];
 
     /// <summary>Clicks: invoke, else toggle, else select, else expand or collapse.</summary>
     /// <param name="visual">The element.</param>
@@ -47,18 +48,30 @@ internal static class ElementActions
             return UiDriverErrors.NotActionable.With($"{visual.GetType().Name} is disabled");
         }
 
-        var peer = visual is Control control ? ControlAutomationPeer.CreatePeerForElement(control) : null;
-        return action.ToUpperInvariant() switch
+        if (action.Equals("focus", StringComparison.OrdinalIgnoreCase))
         {
-            "INVOKE" => peer?.GetProvider<IInvokeProvider>() is { } invoke ? Run(invoke.Invoke) : Missing(visual, action),
-            "TOGGLE" => peer?.GetProvider<IToggleProvider>() is { } toggle ? Run(toggle.Toggle) : Missing(visual, action),
-            "SELECT" => peer?.GetProvider<ISelectionItemProvider>() is { } item ? Run(item.Select) : Missing(visual, action),
-            "EXPAND" => peer?.GetProvider<IExpandCollapseProvider>() is { } expand ? Run(expand.Expand) : Missing(visual, action),
-            "COLLAPSE" => peer?.GetProvider<IExpandCollapseProvider>() is { } collapse ? Run(collapse.Collapse) : Missing(visual, action),
-            "FOCUS" => visual is InputElement input && input.Focus() ? Unit.Value : Missing(visual, action),
-            _ => UiDriverErrors.Invalid.With($"'{action}' is not an action (invoke, toggle, select, expand, collapse, focus)"),
-        };
+            return visual is InputElement input && input.Focus() ? Unit.Value : Missing(visual, action);
+        }
+
+        var peer = visual is Control control ? ControlAutomationPeer.CreatePeerForElement(control) : null;
+        var run = peer is null ? null : Provided(peer, action.ToUpperInvariant());
+        return run is not null
+            ? Run(run)
+            : _providerActions.Contains(action.ToUpperInvariant(), StringComparer.Ordinal)
+                ? Missing(visual, action)
+                : UiDriverErrors.Invalid.With($"'{action}' is not an action (invoke, toggle, select, expand, collapse, focus)");
     }
+
+    // The provider call for an action the peer supports, or null.
+    private static Action? Provided(AutomationPeer peer, string action) => action switch
+    {
+        "INVOKE" => peer.GetProvider<IInvokeProvider>() is { } invoke ? new Action(invoke.Invoke) : null,
+        "TOGGLE" => peer.GetProvider<IToggleProvider>() is { } toggle ? new Action(toggle.Toggle) : null,
+        "SELECT" => peer.GetProvider<ISelectionItemProvider>() is { } item ? new Action(item.Select) : null,
+        "EXPAND" => peer.GetProvider<IExpandCollapseProvider>() is { } expand ? new Action(expand.Expand) : null,
+        "COLLAPSE" => peer.GetProvider<IExpandCollapseProvider>() is { } collapse ? new Action(collapse.Collapse) : null,
+        _ => null,
+    };
 
     /// <summary>Types into a text box.</summary>
     /// <param name="visual">The element; it must be a text box.</param>

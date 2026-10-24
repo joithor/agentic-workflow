@@ -5,7 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 namespace Aw.UiDriver.Avalonia;
 
 /// <summary>
-/// The one call an Avalonia app makes to be drivable: <c>AppBuilder.Configure&lt;App&gt;().UseAwUiDriver(args)</c>. It does nothing unless the run asks for it,
+/// The one call an Avalonia app makes to be drivable: <code language="csharp">AppBuilder.Configure&lt;App&gt;().UseAwUiDriver(args)</code>. It does nothing unless the run asks for it,
 /// with AW_UI_DRIVER=1 in the environment or --ui-driver on the command line; a normal launch never opens a port. When asked, a loopback HTTP server
 /// starts after Avalonia is set up and the directory AW_UI_DRIVER_DIR (else a new folder in the temp directory) gets driver.json (the address) and
 /// driver.token (the per-run secret, owner-only); the line "aw-ui-driver: listening, dir &lt;dir&gt;" goes to standard error.
@@ -29,5 +29,5 @@ public static class UiDriverAppBuilderExtensions
 
     // The app's main window: the classic desktop lifetime's, else its first open window.
     private static Window? MainWindow() =>
-        Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow ?? desktop.Windows.FirstOrDefault() : null;
+        Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow ?? (desktop.Windows.Count > 0 ? desktop.Windows[0] : null) : null;
 }

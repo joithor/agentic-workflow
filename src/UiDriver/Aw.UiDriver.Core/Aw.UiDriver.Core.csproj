@@ -15,6 +15,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Aw.UiDriver.Avalonia" />
     <InternalsVisibleTo Include="Aw.UiDriver.Cli" />
+    <InternalsVisibleTo Include="aw-ui-driver" />
     <InternalsVisibleTo Include="Aw.UiDriver.Tests" />
     <InternalsVisibleTo Include="Aw.UiDriver.Avalonia.Tests" />
   </ItemGroup>
