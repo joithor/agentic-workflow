@@ -528,6 +528,8 @@ Aw.Context.Core.Engine.LabelingSettings.MaxTokens.init -> void
 Aw.Context.Core.Engine.LabelingSettings.MaxTokensPerSync.get -> int
 Aw.Context.Core.Engine.LabelingSettings.MaxTokensPerSync.init -> void
 Aw.Context.Core.Engine.PathDenylist
+Aw.Context.Core.Engine.SharedRoles
+static Aw.Context.Core.Engine.SharedRoles.Defaults.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Engine.ProfileRecognizer
 Aw.Context.Core.Engine.ProfileRecognizer.Glob.get -> string!
 Aw.Context.Core.Engine.ProfileRecognizer.KeyFrom.get -> string!

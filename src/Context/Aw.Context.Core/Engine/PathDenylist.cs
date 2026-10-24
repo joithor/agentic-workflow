@@ -7,7 +7,8 @@ namespace Aw.Context.Core.Engine;
 /// <summary>
 /// The paths a repo's extraction never reads (S-4, the profile's 'index.denyPaths' and the built-in secret globs): they never
 /// reach a recognizer, the clustering snapshot or the labeler. Globs are repo-relative with '/' separators, matched without
-/// regard to case: '**/' is any directories, a trailing '**' is anything, '*' stays inside one segment, '?' is one character.
+/// regard to case: '**/' is any directories, a trailing '**' is anything, '*' stays inside one segment, '?' is one character. A glob that matches a directory
+/// matches everything under it, as in .gitignore ('**/*cron*' denies 'src/crons/run.ts' and 'src/nightly-cron.ts').
 /// </summary>
 public static class PathDenylist
 {
@@ -76,6 +77,6 @@ public static class PathDenylist
             }
         }
 
-        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | caseOption | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+        return new Regex(pattern.Append("(?:/.*)?$").ToString(), RegexOptions.CultureInvariant | caseOption | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
     }
 }

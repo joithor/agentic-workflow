@@ -124,6 +124,8 @@ public static class ProfileRules
             lists.Add(("index.denyPaths", shared));
         }
 
+        lists.AddRange(Roles("index", profile.Index));
+        lists.AddRange((profile.Repos ?? []).SelectMany(r => Roles($"repos.{r.Name}.index", r.Index)));
         lists.AddRange((profile.Repos ?? []).Where(r => r.Index?.DenyPaths is not null).Select(r => ($"repos.{r.Name}.index.denyPaths", r.Index!.DenyPaths!)));   // why: the filter keeps repos with a list
         foreach (var (path, globs) in lists)
         {
@@ -138,6 +140,9 @@ public static class ProfileRules
 
         return null;
     }
+
+    private static IEnumerable<(string Path, IReadOnlyList<string> Globs)> Roles(string path, IndexSettings? index) =>
+        (index?.Roles ?? new Dictionary<string, IReadOnlyList<string>>()).Select(r => ($"{path}.roles.{r.Key}", r.Value));
 
     internal static string? GlobProblem(string glob) => true switch
     {
