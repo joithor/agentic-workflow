@@ -39,7 +39,8 @@ public sealed class SindriApiClientContextTests
 
         var seen = Assert.Single(handler.Requests);
         Assert.Equal(("QUERY", "/sindri/context/lenses", string.Empty), (seen.Method, seen.Path, seen.Query));
-        Assert.Equal((anchors, 1, true, "v1"), (served!.Anchors, served.Depth, served.Draft, served.MapVersion));
+        Assert.Equal(anchors, served!.Anchors);
+        Assert.Equal((1, true, "v1"), (served.Depth, served.Draft, served.MapVersion));
     }
 
     [Fact]
@@ -125,7 +126,8 @@ public sealed class SindriApiClientContextTests
         var seen = Assert.Single(handler.Requests);
         Assert.Equal(("QUERY", "/sindri/context/code", string.Empty), (seen.Method, seen.Path, seen.Query));
         var served = Assert.Single(server.CodeQueries);
-        Assert.Equal(([key, "feature:other"], true, "v2"), (served.Anchors, served.Draft, served.MapVersion));
+        Assert.Equal([key, "feature:other"], served.Anchors);
+        Assert.Equal((true, "v2"), (served.Draft, served.MapVersion));
     }
 
     [Fact]
