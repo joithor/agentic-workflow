@@ -19,8 +19,8 @@ public sealed class PayloadFactsTests
     [InlineData("""{"a":1}""")]
     [InlineData("[]")]
     [InlineData("  {\n \"sections\": [] }\n")]
-    public void A_JSON_object_or_array_is_a_payload(string content) =>
-        Assert.Null(PayloadFacts.Violation(_design, Encoding.UTF8.GetBytes(content)));
+    public void A_JSON_object_or_array_is_a_payload_for_a_fact_with_no_declared_fields(string content) =>
+        Assert.Null(PayloadFacts.Violation(_notes, Encoding.UTF8.GetBytes(content)));
 
     [Theory]
     [InlineData("Here is the design.")]
@@ -36,6 +36,35 @@ public sealed class PayloadFactsTests
         Assert.NotNull(why);
         Assert.Contains("fact:design", why, StringComparison.Ordinal);
         Assert.Contains("JSON object or array", why, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_design_fact_needs_its_spec_text_and_every_field_it_names_must_be_of_the_kind_the_shape_line_shows()
+    {
+        Assert.Null(PayloadFacts.Violation(_design, """{"spec":"# D","sections":[],"coverage":{},"acceptance":{},"runs":[]}"""u8));
+        Assert.Contains("spec", PayloadFacts.Violation(_design, """{"sections":[]}"""u8), StringComparison.Ordinal);
+        Assert.Contains("spec", PayloadFacts.Violation(_design, """{"spec":42}"""u8), StringComparison.Ordinal);
+        Assert.Contains("spec", PayloadFacts.Violation(_design, "[]"u8), StringComparison.Ordinal);
+        Assert.Contains("coverage", PayloadFacts.Violation(_design, """{"spec":"# D","coverage":[]}"""u8), StringComparison.Ordinal);
+        Assert.Contains("decisions", PayloadFacts.Violation(_design, """{"spec":"# D","decisions":"x"}"""u8), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_field_the_shape_line_does_not_name_is_left_alone()
+    {
+        Assert.Null(PayloadFacts.Violation(_design, """{"spec":"# D","extra":7}"""u8));
+        Assert.Null(PayloadFacts.Violation(_notes, """{"spec":7}"""u8));
+    }
+
+    [Fact]
+    public void The_refusal_names_the_fact_the_field_and_the_fix()
+    {
+        var why = PayloadFacts.Violation(_design, """{"spec":"# D","sections":"none"}"""u8);
+
+        Assert.Contains("fact:design", why, StringComparison.Ordinal);
+        Assert.Contains("sections", why, StringComparison.Ordinal);
+        Assert.Contains("array", why, StringComparison.Ordinal);
+        Assert.Contains("fix:", why, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -89,6 +118,22 @@ public sealed class PayloadFactsTests
         Assert.Equal(["Goal: draft.", PayloadFacts.Instruction(_design)], lines);
         Assert.Equal(["Goal: draft."], PayloadFacts.WithShapes(["Goal: draft."], []));
         Assert.Null(PayloadFacts.WithShapes(instructions: null, []));
+    }
+
+    [Fact]
+    public void The_red_Step_s_brief_tells_the_agent_the_exact_redTests_shape_with_an_example_and_the_commit()
+    {
+        var redTests = FactKey.From("fact:redTests");
+        var recipe = Recipe([], [new RecipeOutput(redTests, "Red tests", "payload", "red")]);
+        var red = new BlockDescriptor(BlockId.From("step.build.red"), BlockKind.Step, 1, [], [new OutputSpec(redTests, [])], [OutcomeName.From("written")], Capability.None, [], Rung: null, DeskCapable: false);
+
+        var lines = PayloadFacts.WithShapes(["Goal: failing tests."], PayloadFacts.OutputsOf(recipe, red));
+
+        var shape = Assert.Single(lines!, static l => l.Contains("fact:redTests", StringComparison.Ordinal));
+        Assert.Contains("one key per acceptance item, and nothing else at the top level", shape, StringComparison.Ordinal);
+        Assert.Contains("\"AC-1\": { \"tests\": [\"<test id>\"], \"commit\": \"<red commit sha>\" }", shape, StringComparison.Ordinal);
+        Assert.Contains("\"AC-3\": { \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\" }", shape, StringComparison.Ordinal);
+        Assert.Contains("write the commit on every item", shape, StringComparison.Ordinal);
     }
 
     private static BlockDescriptor Descriptor(params FactKey[] outputs) =>
