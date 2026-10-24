@@ -17,7 +17,7 @@ internal static class LineDoctorVerb
     {
         var json = args.Contains("--json", StringComparer.Ordinal);
         var paths = args.Where(static a => a != "--json").ToList();
-        if (paths.Count > 1 || paths.Any(static p => p.StartsWith('-')))
+        if (paths.Count > 1 || paths.Exists(static p => p.StartsWith('-')))
         {
             return await LineCommandTable.Fail(output, SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
@@ -47,6 +47,7 @@ internal static class LineDoctorVerb
     {
         CheckState.Ok => "ok",
         CheckState.Warn => "warn",
-        _ => "fail",
+        CheckState.Fail => "fail",
+        _ => "?",
     };
 }
