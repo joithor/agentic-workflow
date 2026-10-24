@@ -16,7 +16,7 @@ public static class RepoStatusRules
 
         return status.Name is { } name
             ? $"sindri: {name} is waiting for approval; run: sindri repo onboard"
-            : $"sindri: {BaseName(status.Path)} is not onboarded (no secret scan, shape signals or index); run: sindri repo onboard";
+            : $"sindri: {BaseName(status.Path)} is not onboarded (no secret scan or index); run: sindri repo onboard";
     }
 
     private static string BaseName(string? path)
