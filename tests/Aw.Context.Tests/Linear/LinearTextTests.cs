@@ -119,4 +119,32 @@ public sealed class LinearTextTests
 
         Assert.Equal(64 * 1024, System.Text.Encoding.UTF8.GetByteCount(text));
     }
+
+    [Fact]
+    public void A_long_description_is_cut_and_every_attachment_and_image_line_survives()
+    {
+        var text = LinearText.Of(Issue(description: new string('x', 70_000) + $" ![a]({Pic})", comments: [Comment("late comment")], attachments:
+        [
+            new("1", "https://acme.slack.com/archives/C1/p1", "Thread", "slack"),
+            new("2", "https://example.com/shot.png", "Shot", "file"),
+        ]));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
+        Assert.Contains("- Thread (slack) https://acme.slack.com/archives/C1/p1", text, StringComparison.Ordinal);
+        Assert.Contains("- Shot (file) https://example.com/shot.png", text, StringComparison.Ordinal);
+        Assert.Contains("\n\nImages:\n- a " + Pic + "\n- Shot https://example.com/shot.png", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Sections_over_64_kb_are_cut_at_a_line_with_a_mark()
+    {
+        var attachments = Enumerable.Range(0, 3000).Select(n => new LinearAttachment(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"https://example.com/item/{n}", "Item " + n, "link")).ToList();
+
+        var text = LinearText.Of(Issue(description: "desc", attachments: attachments));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
+        Assert.EndsWith("\n(more not shown)", text, StringComparison.Ordinal);
+        var lines = text.Split('\n');
+        Assert.Matches("^- Item \\d+ \\(link\\) https://example.com/item/\\d+$", lines[^2]);
+    }
 }
