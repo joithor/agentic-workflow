@@ -141,13 +141,14 @@ public static partial class QueryRules
 
     /// <summary>The 006 for an anchor set that is empty; any number of anchors is taken.</summary>
     /// <param name="anchors">The distinct anchor values.</param>
+    /// <param name="call">The call named in the message: lenses, code or history.</param>
     /// <returns>Null when there is at least one, else the error.</returns>
-    public static Error? CheckAnchors(IReadOnlyList<string> anchors)
+    public static Error? CheckAnchors(IReadOnlyList<string> anchors, string call)
     {
         ArgumentNullException.ThrowIfNull(anchors);
         return anchors.Count >= 1
             ? null
-            : ContextErrors.QueryInvalid.With("a lenses call takes at least 1 anchor, not 0");
+            : ContextErrors.QueryInvalid.With($"a {call} call takes at least 1 anchor, not 0");
     }
 
     private static Result<int?> ParseWhole(string? text, string rule, int min, int max)
