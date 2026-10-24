@@ -48,15 +48,17 @@ internal static class StepPolicyFile
         return [.. AwJson.Serialize(new ClaudeSettingsDocument(permissions, TurnHooks()), _json), .. "\n"u8];
     }
 
-    // The Step's session tells Sindri when its turn ends (the Stop hook touches launches/<launch>.turn-ended) and starts (a prompt deletes the file), so a session that ends its turn with no report
+    // The Step's session tells Sindri when its turn ends (the Stop hook touches launches/<launch>.turn-ended) and starts (a prompt or a tool call deletes the file), so a session that ends its turn with no report
     // can be ended as idle. The commands never print, never fail the hook, and do nothing outside a launch (no AW_SINDRI_LAUNCH or AW_SINDRI_HOME).
     private static ClaudeHooks TurnHooks()
     {
         const string TurnFile = "\"$AW_SINDRI_HOME/" + LaunchFiles.Directory + "/$AW_SINDRI_LAUNCH" + LaunchFiles.TurnEndedSuffix + "\"";
         const string Guard = "if [ -n \"$AW_SINDRI_LAUNCH\" -a -n \"$AW_SINDRI_HOME\" ]; then ";
+        ClaudeHookGroup[] restart = [new ClaudeHookGroup([new ClaudeHookCommand("command", Guard + "rm -f " + TurnFile + "; fi; exit 0")])];
         return new ClaudeHooks(
             [new ClaudeHookGroup([new ClaudeHookCommand("command", Guard + "mkdir -p \"$AW_SINDRI_HOME/" + LaunchFiles.Directory + "\"; touch " + TurnFile + "; fi; exit 0")])],
-            [new ClaudeHookGroup([new ClaudeHookCommand("command", Guard + "rm -f " + TurnFile + "; fi; exit 0")])]);
+            restart,
+            restart);
     }
 
     /// <summary>Where the launch's settings file lives under <paramref name="directory"/>.</summary>

@@ -39,6 +39,7 @@ public sealed class StepPolicyFileTests : IDisposable
         Assert.Contains("\"Stop\"", text, StringComparison.Ordinal);
         Assert.Contains("touch \\\"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\\\"", text, StringComparison.Ordinal);
         Assert.Contains("\"UserPromptSubmit\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"PreToolUse\"", text, StringComparison.Ordinal);   // an agent woken without a prompt is working again
         Assert.Contains("rm -f \\\"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\\\"", text, StringComparison.Ordinal);
     }
 

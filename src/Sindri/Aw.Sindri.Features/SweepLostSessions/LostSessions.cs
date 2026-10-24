@@ -47,7 +47,7 @@ internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents 
         var now = clock.GetUtcNow();
         foreach (var launch in liveness.Active())
         {
-            if (files.TurnEndedAt(launch) is { } turn && now - turn >= LaunchRules.IdleAfter
+            if (files.TurnEndedAt(launch) is { } turn && now - turn >= LaunchRules.IdleAfter && !await TakenOver(launch, cancellationToken).ConfigureAwait(false)
                 && (await session.End(launch, SessionEndReason.Idle, exitCode: null, cancellationToken).ConfigureAwait(false)).IsSuccess)
             {
                 hosted.Forget(launch);
@@ -56,6 +56,27 @@ internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents 
         }
 
         return ended;
+    }
+
+    /// <summary>
+    /// Whether a person holds the Step's instance (a takeover pauses its timer, and a person reading the session is not idle), or the instance can't be read right now: either way the session is
+    /// left alone this sweep. A launch with no instance (attended) has no turn hooks, so there is nothing to ask.
+    /// </summary>
+    private async ValueTask<bool> TakenOver(LaunchId launch, CancellationToken cancellationToken)
+    {
+        var row = await views.Get(launch, cancellationToken).ConfigureAwait(false);
+        if (row.IsError)
+        {
+            return true;
+        }
+
+        if (row.Value?.Step.Instance is not { } address)
+        {
+            return false;
+        }
+
+        var instance = await instances.Get(address, cancellationToken).ConfigureAwait(false);
+        return instance.IsError || instance.Value.TakenOverBy is not null;
     }
 
     /// <summary>Heartbeats for the live hosted sessions Sindri tracks; an exit for the ones whose host says they are gone (not counted as lost).</summary>
