@@ -23,7 +23,7 @@ public sealed class TimerExpiryTests
     [Fact, Trait("Lane", "unit")]
     public void State_timeout_then_park_retries_the_state_once_before_it_parks()
     {
-        var verify = Agent(At(Step, "verify", entry: 3));   // timeout: { after: 4h, then: park }
+        var verify = Agent(At(Step, "verify", entry: 3));   // timeout: { after: 1d, then: park }
 
         var retried = Assert.IsType<Applied>(Expire(verify, DeadlineKind.State));
         var again = Assert.IsType<Applied>(Expire(retried.Changes[0].After, DeadlineKind.Retry));
@@ -34,7 +34,7 @@ public sealed class TimerExpiryTests
         var after = again.Changes[0].After;
         var park = Assert.IsType<Suspension>(after.Suspension);
         Assert.Equal((SuspensionKind.Park, ParkReason.Timeout, ResumeKind.Rearm), (park.Kind, park.Reason, park.Resume.Kind));
-        Assert.Equal(("verify ran past 4h", Timers), (park.Question, park.Actor));
+        Assert.Equal(("verify ran past 1d", Timers), (park.Question, park.Actor));
         Assert.Equal(("parked", "verify", "3.1"), (after.State, after.Frame.State, after.Frame.Run?.Token.Value));
         Assert.Equal(("deadline", Timers), (again.Changes[0].Event.Trigger.Kind, again.Changes[0].Event.Trigger.Actor));
         Assert.Empty(again.Effects);
@@ -48,7 +48,7 @@ public sealed class TimerExpiryTests
         var applied = Assert.IsType<Applied>(Expire(verify, DeadlineKind.State, EngineFixture.Context() with { LegacyTimeoutPark = true }));
 
         var park = Assert.IsType<Suspension>(applied.Changes[0].After.Suspension);
-        Assert.Equal((ParkReason.Timeout, "verify ran past 1h"), (park.Reason, park.Question));
+        Assert.Equal((ParkReason.Timeout, "verify ran past 1d"), (park.Reason, park.Question));
     }
 
     [Fact, Trait("Lane", "unit")]

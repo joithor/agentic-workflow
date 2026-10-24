@@ -120,7 +120,7 @@ public sealed class NeedsYouConfirmBarTests
         Assert.Empty(_server.Approvals);
     }
 
-    private const string StepHash = "sha256:f511ce1fc529b5b471731b4023a1f07774af2f9a8836344fd5818f5aef644784";   // workflow.step v3 in the served recipe list
+    private const string StepHash = "sha256:4ca37bf46333dc66a14c042bb4561aad96eed677f35f5fc221f0497c8b3e31f7";   // workflow.step v3 in the served recipe list
 
     private void ServeRecipeChallenge() => _server.AppChallengeAnswer = RouteAnswer.SpecShaped("challenges-app", "recipe");
 

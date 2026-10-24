@@ -21,7 +21,7 @@ public sealed class AgentParkedRunTests(SindriTimeSkippingServer skipping) : Age
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
             await Launched(ct);
 
-            await WorkflowsHarness.Skip(skipping.Environment, TimeSpan.FromMinutes(2), ct);
+            await WorkflowsHarness.Skip(skipping.Environment, TimeSpan.FromMinutes(3), ct);
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
             Assert.Equal(ParkReason.Timeout, parked.Question?.Reason);
@@ -38,7 +38,7 @@ public sealed class AgentParkedRunTests(SindriTimeSkippingServer skipping) : Age
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
             await Launched(ct);
-            await WorkflowsHarness.Skip(skipping.Environment, TimeSpan.FromMinutes(2), ct);
+            await WorkflowsHarness.Skip(skipping.Environment, TimeSpan.FromMinutes(3), ct);
             _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
             Assert.Empty(_launcher.Stops);
 
