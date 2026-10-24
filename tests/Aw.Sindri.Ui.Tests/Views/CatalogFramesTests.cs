@@ -164,7 +164,7 @@ public sealed class CatalogFramesTests : IDisposable
         Assert.Contains("Copy: Run doctor", copies, StringComparer.Ordinal);
         Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
         var blocks = page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "CliText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Contains("sindri doctor", blocks, StringComparer.Ordinal);
+        Assert.Equal(["sindri profile init", "sindri launch init [--viewer <name>] [--force] [--stdout]", "sindri launch show [<id>] [--json]", "sindri doctor", "sindri line holdout show <line> <phase>", "sindri profile validate"], blocks, StringComparer.Ordinal);
         Frame(window, "health-controls");
     });
 

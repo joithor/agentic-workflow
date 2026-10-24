@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Aw.Sindri.Core.Challenges;
@@ -65,22 +64,16 @@ public sealed class AppConfirmRoutesTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task The_app_approves_the_plan_with_a_hold_and_a_short_hold_or_an_early_answer_leaves_the_challenge_open()
+    public async Task The_app_starts_approve_all_with_no_body_and_a_session_approves_the_profile_with_no_challenge()
     {
-        await using var host = await Started();
-        var issued = await Issue(host, "approve-all " + await Digest(host));
-        var challenge = issued.GetProperty("challenge").GetString();
-        string Body(long held) => string.Create(CultureInfo.InvariantCulture, $$"""{"challenge":"{{challenge}}","heldMs":{{held}}}""");
+        await using var host = await Started(approved: false);
+        var hash = (await host.LiveHash(Token)).Value;
 
-        var early = await host.Http.Ask(Post(PlanRoute, Body(IssuedChallenge.MinHoldMs), App(host)));
-        After(host, IssuedChallenge.EarliestAnswer);
-        var shortHold = await host.Http.Ask(Post(PlanRoute, Body(IssuedChallenge.MinHoldMs - 1), App(host)));
-        var started = await host.Http.Ask(Post(PlanRoute, Body(IssuedChallenge.MinHoldMs), App(host)));
+        var profile = await host.Http.Ask(Post("/sindri/profile/approve", $$"""{"hash":"{{hash}}"}""", Session));
+        var started = await host.Http.Ask(Post(PlanRoute, json: null, App(host)));
         await JobHost.Settle(host, Token);
 
-        Assert.Equal(("held", 1500), (issued.GetProperty("confirm").GetString(), issued.GetProperty("minHoldMs").GetInt32()));
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-SETUP-003"), (HttpStatusCode.Forbidden, "SND-SETUP-003"), (HttpStatusCode.OK, null)],
-            new[] { early, shortHold, started }.Select(static a => (a.Status, a.Code)));
+        Assert.Equal((HttpStatusCode.OK, HttpStatusCode.OK), (profile.Status, started.Status));
         var again = await host.Http.Ask(Get(PlanRoute, Human(host.Token.Value)));
         Assert.Empty(JsonDocument.Parse(again.Body).RootElement.GetProperty("recipes").EnumerateArray());
     }
@@ -99,29 +92,14 @@ public sealed class AppConfirmRoutesTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_session_is_refused_the_app_challenge_and_each_approval()
-    {
-        await using var host = await Started();
-        var hash = (await host.LiveHash(Token)).Value;
-
-        var challenge = await host.Http.Ask(Post(AppChallenge, """{"action":"approve-all c41e07"}""", Session));
-        var profile = await host.Http.Ask(Post("/sindri/profile/approve", $$"""{"hash":"{{hash}}"}""", Session));
-        var all = await host.Http.Ask(Post(PlanRoute, """{"challenge":"CHL-00000000000000000000000000000000","heldMs":5000}""", Session));
-        var recipe = await host.Http.Ask(Post("/sindri/workflow/recipes/workflow.step@" + new string('a', 64) + "/approve", """{"challenge":"CHL-00000000000000000000000000000000","typed":"x"}""", Session));
-
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { challenge, profile, all, recipe }.Select(static a => (a.Status, a.Code)).Distinct().ToArray());
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task The_app_is_still_refused_the_terminal_challenge_route_and_every_other_action()
+    public async Task The_app_is_still_refused_the_app_challenge_for_any_other_action()
     {
         await using var host = await Started();
 
-        var terminal = await host.Http.Ask(Post("/sindri/workflow/challenges", """{"action":"approve-all c41e07"}""", App(host)));
         var revoke = await host.Http.Ask(Post(AppChallenge, """{"action":"revoke workflow.step@9ab2d40c1e77"}""", App(host)));
         var stop = await host.Http.Ask(Post(AppChallenge, """{"action":"stop"}""", App(host)));
 
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { terminal, revoke, stop }.Select(static a => (a.Status, a.Code)).Distinct().ToArray());
+        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { revoke, stop }.Select(static a => (a.Status, a.Code)).Distinct().ToArray());
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -134,17 +112,4 @@ public sealed class AppConfirmRoutesTests
         Assert.Equal((HttpStatusCode.Conflict, "SND-SETUP-007"), (challenge.Status, challenge.Code));
     }
 
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_hold_cannot_redeem_a_typed_challenge()
-    {
-        await using var host = await Started(approved: false);
-        var hash = (await host.LiveHash(Token)).Value;
-        var issued = await Issue(host, "approve profile " + hash[..6]);
-        After(host, IssuedChallenge.EarliestAnswer);
-
-        var held = await host.Http.Ask(Post("/sindri/profile/approve",
-            $$$"""{"hash":"{{{hash}}}","answer":{"challenge":"{{{issued.GetProperty("challenge").GetString()}}}","heldMs":5000}}""", App(host)));
-
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-SETUP-003"), (held.Status, held.Code));
-    }
 }

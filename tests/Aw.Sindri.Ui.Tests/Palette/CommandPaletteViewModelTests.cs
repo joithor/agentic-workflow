@@ -602,14 +602,14 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "revokerecipe";
+        _palette.Query = "showlineholdout";
 
         await _palette.Run(_palette.Selected, Token);
 
-        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
-        Assert.Equal(("Copied", true), (Entry("RevokeRecipe").Status, _palette.IsOpen));
+        Assert.Equal("sindri line holdout show <line> <phase>", _clipboard.Text);
+        Assert.Equal(("Copied", true), (Entry("ShowLineHoldout").Status, _palette.IsOpen));
         _clock.Advance(ControlViewModel.CopiedFor);
-        Assert.Equal("Copy: sindri recipe revoke <recipe>", Entry("RevokeRecipe").Status);
+        Assert.Equal("Copy: sindri line holdout show <line> <phase>", Entry("ShowLineHoldout").Status);
     }
 
     [Fact]
@@ -672,7 +672,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_copy_changes_the_announcement()
     {
         _palette.Open();
-        _palette.Query = "revoke recipe";
+        _palette.Query = "show line holdout";
 
         await _palette.Run(_palette.Selected, Token);
 
