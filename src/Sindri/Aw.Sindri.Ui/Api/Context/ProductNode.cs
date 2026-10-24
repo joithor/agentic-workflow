@@ -11,6 +11,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Anchors">Anchors, as served.</param>
 /// <param name="Depth">Depth, as served.</param>
 /// <param name="Path">Path, as served.</param>
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
 internal sealed record ProductNode(
     string Node,
     string Label,
@@ -21,4 +22,5 @@ internal sealed record ProductNode(
     string Trust,
     IReadOnlyList<string>? Anchors = null,
     int? Depth = null,
-    IReadOnlyList<string>? Path = null);
+    IReadOnlyList<string>? Path = null,
+    string? Repo = null);
