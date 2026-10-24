@@ -10,10 +10,10 @@ internal sealed partial class WholeMapLegend : UserControl
     public WholeMapLegend()
     {
         InitializeComponent();
-        this.FindControl<TextBlock>("WholeLegendSolidText")!.Text = Labels.ContextMapLegendConfirmed;
-        this.FindControl<TextBlock>("WholeLegendDashedText")!.Text = Labels.ContextMapLegendSuggested;
+        WholeLegendSolidText.Text = Labels.ContextMapLegendConfirmed;
+        WholeLegendDashedText.Text = Labels.ContextMapLegendSuggested;
     }
 
     /// <summary>Gets the panel after the two edge entries, where the bands' kind styles go.</summary>
-    internal Panel Extra => this.FindControl<Panel>("WholeLegendExtra")!;
+    internal Panel Extra => WholeLegendExtra;
 }
