@@ -390,6 +390,7 @@
       "paths": [
         "src/tabs/"
       ],
+      "truncated": false,
       "files": 3,
       "unmapped": 1,
       "suggested": 1,
