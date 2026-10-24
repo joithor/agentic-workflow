@@ -53,7 +53,7 @@ public sealed class WholeMapHoverTests : FrameHost
         Settle(window);
         Assert.Equal((tile.Key, 1.0), (map.Pinned, whole.World.DimStrength));   // the pin keeps it dimmed after the pointer left
 
-        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Named<Avalonia.Controls.TextBox>(window, "AnchorBox").RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
         await Until(window, () => whole.World.DimStrength <= 0);
         Assert.Null(map.Pinned);
     });
