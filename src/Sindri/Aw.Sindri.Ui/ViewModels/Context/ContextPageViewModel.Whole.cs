@@ -23,7 +23,7 @@ internal sealed partial class ContextPageViewModel
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
         Whole.Panel.Launcher = Ports.Launcher ?? NullLauncher.Instance;
-        Whole.Panel.Loader = (key, cancellationToken) => Ports.ApiUrl() is { } api ? Ports.Api.Node(api, key, cancellationToken) : null;
+        Whole.Panel.Loader = async (key, cancellationToken) => Ports.ApiUrl() is { } api ? await Ports.Api.Node(api, key, cancellationToken).ConfigureAwait(true) : null;
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
         Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
     }

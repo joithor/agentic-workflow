@@ -103,7 +103,7 @@ internal sealed partial class WholeMapView : UserControl
 
     private void OnNodePanelEdge(object? sender, RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is NodeEdgeRowViewModel row)
+        if (sender is Control { DataContext: NodeEdgeRowViewModel row })
         {
             row.Jump();
         }

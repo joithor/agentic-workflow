@@ -12,7 +12,7 @@ internal sealed class NodePanelViewModel : ObservableObject
 {
     private readonly Func<string, (string Label, string Kind)?> _lookup;
     private readonly Action<string> _jump;
-    private CancellationTokenSource? _reading;
+    private int _version;
     private Uri? _link;
 
     internal NodePanelViewModel(Func<string, (string Label, string Kind)?> lookup, Action<string> jump)
@@ -21,7 +21,7 @@ internal sealed class NodePanelViewModel : ObservableObject
     }
 
     /// <summary>Reads a node; null while the page has no connection. Set by the page.</summary>
-    internal Func<string, CancellationToken, Task<Result<NodeView>>?>? Loader { get; set; }
+    internal Func<string, CancellationToken, Task<Result<NodeView>?>>? Loader { get; set; }
 
     /// <summary>Opens a link; set by the page.</summary>
     internal ILauncher Launcher { get; set; } = NullLauncher.Instance;
@@ -94,26 +94,23 @@ internal sealed class NodePanelViewModel : ObservableObject
 
     private async Task Read(string key, CancellationToken cancellationToken)
     {
-        _reading?.Cancel();
-        var reading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _reading = reading;
+        var version = ++_version;
         var known = _lookup(key);
         (Key, IsOpen, IsLoading, IsFailed) = (key, true, true, false);
         Clear();
         (Kind, Title) = known is { } k ? (k.Kind, k.Label) : (KindOf(key), key);
         Changed();
-        var read = Loader?.Invoke(key, reading.Token);
-        Result<NodeView>? answer = null;
+        Result<NodeView>? answer;
         try
         {
-            answer = read is null ? null : await read.ConfigureAwait(true);
+            answer = Loader is { } load ? await load(key, cancellationToken).ConfigureAwait(true) : null;
         }
         catch (OperationCanceledException)
         {
             return;
         }
 
-        if (reading.IsCancellationRequested || !ReferenceEquals(_reading, reading))
+        if (version != _version)
         {
             return;   // another node was opened, or the panel closed
         }
@@ -139,8 +136,7 @@ internal sealed class NodePanelViewModel : ObservableObject
             return false;
         }
 
-        _reading?.Cancel();
-        _reading = null;
+        _version++;   // a read still in flight is stale now
         (Key, IsOpen, IsLoading, IsFailed) = (null, false, false, false);
         Clear();
         Changed();
