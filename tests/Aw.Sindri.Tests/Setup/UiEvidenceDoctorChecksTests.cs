@@ -37,7 +37,7 @@ public sealed class UiEvidenceDoctorChecksTests : IDisposable
 
         Assert.Equal(new DoctorCheck("setup:ui-evidence", CheckState.Ok, "ui-evidence 1.2.3", Fix: null), check);
         Assert.Equal(Path.Combine(_home.Path, "ui-evidence"), runner.Calls[0].FileName);
-        Assert.Equal<string>(["version"], runner.Calls[0].Arguments, StringComparer.Ordinal);
+        Assert.Equal(["version"], runner.Calls[0].Arguments, StringComparer.Ordinal);
     }
 
     [Fact]
