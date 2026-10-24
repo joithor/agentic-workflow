@@ -45,7 +45,10 @@ public sealed record DecisionContext(
     /// </summary>
     public bool LegacyLaunchRound { get; init; }
 
-    /// <summary>Whether a state's timeout with 'then: park' parks at its first expiry (stub: not read yet).</summary>
+    /// <summary>
+    /// Whether a state's timeout with 'then: park' parks at its first expiry (the behavior before the 'timeout-retries-before-park-v1' patch, which a history recorded
+    /// without the marker replays). Off: the first expiry retries the state once (the timer re-arms in the same entry) and the second parks with 'timeout'; a desk Step still parks at once.
+    /// </summary>
     public bool LegacyTimeoutPark { get; init; }
 
     /// <summary>
