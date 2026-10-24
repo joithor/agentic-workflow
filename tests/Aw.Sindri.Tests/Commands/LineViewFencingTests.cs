@@ -9,8 +9,8 @@ public sealed class LineViewFencingTests
     private static readonly LineView _view = new(
         [new LineStation("scoping", Instance: null, new LinePacket("scoping", "sha256:" + new string('1', 64), Frozen: true)), new LineStation("design", Instance: null, Packet: null)],
         [
-            new LinePhaseView(LinePhaseId.From("p1"), 1, "T-3/line/1/phase.p1.1", "failed", "out of budget", "https://example.test/pull/1", "default-branch", "/work/p1", "Parked.", 10, 5),
-            new LinePhaseView(LinePhaseId.From("p2"), 0, Address: null, "waiting", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, 0, 0),
+            new LinePhaseView(LinePhaseId.From("p1"), Attempt: 1, "T-3/line/1/phase.p1.1", "failed", "out of budget", "https://example.test/pull/1", "default-branch", "/work/p1", "Parked.", Tokens: 10, WallMinutes: 5),
+            new LinePhaseView(LinePhaseId.From("p2"), Attempt: 0, Address: null, "waiting", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, Tokens: 0, WallMinutes: 0),
         ],
         Parallel: 2,
         MaxOpenPrs: 4);

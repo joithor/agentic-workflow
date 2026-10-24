@@ -16,7 +16,6 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.GetInstanceLine;
 using Aw.Sindri.Host;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Tests.GetInstance;
 using Microsoft.Extensions.Time.Testing;
@@ -49,7 +48,7 @@ public sealed class GetInstanceLineServiceTests
 
     private sealed class NoProfile : IApprovedProfile
     {
-        public ValueTask<Result<LoadedProfile?>> Latest(CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success<LoadedProfile?>(null));
+        public ValueTask<Result<LoadedProfile?>> Latest(CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success<LoadedProfile?>(value: null));
     }
 
     private sealed class Facts
@@ -117,13 +116,13 @@ public sealed class GetInstanceLineServiceTests
     {
         var lineFacts = new Facts()
             .Add("scopePacket", new JsonObject { ["hash"] = _scopeHash, ["dir"] = "/runs/scope" }.ToJsonString())
-            .Add("designPacket", JsonValue.Create(_designHash)!.ToJsonString())
+            .Add("designPacket", JsonValue.Create(_designHash).ToJsonString())
             .Add("phaseBoard", Board(("p1", "running", 1, null), ("p2", "waiting", 0, null), ("p3", "failed", 2, "the build ran out of budget")));
         var line = Instance(Line, "workflow.line", lineFacts) with { Children = [new ChildView(InstanceAddress.From(Line + "/plan.4"), "wait")] };
         var p1Facts = new Facts()
             .Add("phasePacket", new JsonObject { ["base"] = new JsonObject { ["rule"] = "dependency-head", ["ref"] = "sindri/expiry/p0" } }.ToJsonString())
             .Add("workspace", new JsonObject { ["path"] = "/work/expiry/p1" }.ToJsonString())
-            .Add("pr", JsonValue.Create("https://github.com/o/r/pull/7")!.ToJsonString());
+            .Add("pr", JsonValue.Create("https://github.com/o/r/pull/7").ToJsonString());
         var p1 = Instance(Line + "/phase.p1.1", "workflow.phase", p1Facts, tokens: 1234, startedMinutesAgo: 90, next: "Waiting for the build.");
         var p3 = Instance(Line + "/phase.p3.2", "workflow.phase", new Facts(), tokens: 50, startedMinutesAgo: 10, next: "Parked.");
         return (await Read([line, p1, p3], Line, lineFacts.Contents, [new FrozenPacket(_designHash, "design-expiry", "design", PacketFreezer.Owner)])).Value;
@@ -149,7 +148,7 @@ public sealed class GetInstanceLineServiceTests
         var view = await Gold();
 
         var p1 = view.Phases[0];
-        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), 1, Line + "/phase.p1.1", "running", null, "https://github.com/o/r/pull/7", "sindri/expiry/p0", "/work/expiry/p1", "Waiting for the build.", 1234, 90), p1);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), Attempt: 1, Line + "/phase.p1.1", "running", ParkReason: null, "https://github.com/o/r/pull/7", "sindri/expiry/p0", "/work/expiry/p1", "Waiting for the build.", Tokens: 1234, WallMinutes: 90), p1);
     }
 
     [Fact]
@@ -157,7 +156,7 @@ public sealed class GetInstanceLineServiceTests
     {
         var view = await Gold();
 
-        Assert.Equal(new LinePhaseView(LinePhaseId.From("p2"), 0, null, "waiting", null, null, null, null, string.Empty, 0, 0), view.Phases[1]);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p2"), Attempt: 0, Address: null, "waiting", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, Tokens: 0, WallMinutes: 0), view.Phases[1]);
         Assert.Equal(("failed", "the build ran out of budget", Line + "/phase.p3.2"), (view.Phases[2].State, view.Phases[2].ParkReason, view.Phases[2].Address));
     }
 
@@ -169,7 +168,7 @@ public sealed class GetInstanceLineServiceTests
 
         var result = await Read([line], Line, facts.Contents);
 
-        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), 1, Line + "/phase.p1.1", "running", null, null, null, null, string.Empty, 0, 0), result.Value.Phases[0]);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), Attempt: 1, Line + "/phase.p1.1", "running", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, Tokens: 0, WallMinutes: 0), result.Value.Phases[0]);
     }
 
     [Fact]
