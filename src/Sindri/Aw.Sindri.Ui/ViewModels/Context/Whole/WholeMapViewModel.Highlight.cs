@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.ViewModels.Run;
+
 namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 /// <summary>The whole map's hover and pin (<see cref="WholeMapViewModel"/>, continued): what the pointer is over and what a click keeps, as the mockup does it.</summary>
@@ -20,6 +22,9 @@ internal sealed partial class WholeMapViewModel
 
     /// <summary>Raised when <see cref="Focus"/> or <see cref="Emphasis"/> changed.</summary>
     internal event EventHandler? EmphasisChanged;
+
+    /// <summary>Raised when the camera should centre on a node (a jump from the panel).</summary>
+    internal event EventHandler<ValueEventArgs<WholeRect>>? CentreRequested;
 
     /// <summary>What is under a point of the world: a tile first, else the top-most node.</summary>
     /// <param name="x">World x.</param>
@@ -71,6 +76,11 @@ internal sealed partial class WholeMapViewModel
         var again = SearchActive || string.Equals(Pinned, key, StringComparison.Ordinal);
         Pinned = again ? null : key;   // a search owns the highlight; a second click goes further and lets the pin go, so it cannot stick
         Refocus();
+        if (!isTile && !again)
+        {
+            _ = Panel.Open(key);
+        }
+
         if (again)
         {
             if (isTile)
@@ -94,9 +104,26 @@ internal sealed partial class WholeMapViewModel
         }
 
         Pinned = null;
+        _ = Panel.Close();
         Refocus();
         return true;
     }
+
+    // A link in the panel was clicked: that node is pinned and centred when it is drawn, and the panel is about it.
+    private void Jump(string key)
+    {
+        if (Geometry?.Nodes.FirstOrDefault(n => string.Equals(n.Key, key, StringComparison.Ordinal)) is { } node)
+        {
+            Pinned = key;
+            Refocus();
+            CentreRequested?.Invoke(this, new ValueEventArgs<WholeRect>(node.Rect));
+        }
+
+        _ = Panel.Open(key);
+    }
+
+    private (string Label, string Kind)? LookUp(string key) =>
+        Geometry?.Nodes.FirstOrDefault(n => string.Equals(n.Key, key, StringComparison.Ordinal)) is { } node ? (node.Label, node.Kind) : null;
 
     private void Refocus()
     {
