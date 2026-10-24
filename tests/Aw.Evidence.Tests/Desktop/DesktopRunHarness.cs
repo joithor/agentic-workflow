@@ -20,14 +20,14 @@ internal sealed class DesktopRunHarness
     internal const string Repo = "/work/repo";
     internal const string ManifestPath = "/work/repo/docs/screens.json";
     internal const string RunDirectory = "/runs/desktop-1";
-    internal const string Config = """
+    internal static readonly string Config = """
         {"desktop":{"manifest":"docs/screens.json","homeEnv":"APP_HOME",
           "fixture":{"command":["scripts/fx.sh"],"up":[["up"]],"down":["down"]},
           "app":{"command":["bin/app","--flag"]},"driver":{"command":["bin/aw-ui-driver"]},
           "sizes":["40x20"],"env":{"APP_CLI":"bin/app"}}}
-        """;
+        """.ReplaceLineEndings("\n");
 
-    internal const string Manifest = """
+    internal static readonly string Manifest = """
         {"schema":"ui-evidence.desktop-screens/1","designRoot":"mockups","screens":[
           {"name":"home","design":"home.html","fixture":[["items"]],"accepted":["clock text"],"steps":[
             {"action":"launch"},
@@ -37,7 +37,7 @@ internal sealed class DesktopRunHarness
           {"name":"agents","design":"agents.html","fixture":[["items"]],"threshold":2,"steps":[
             {"action":"click","target":{"name":"Agents"}},
             {"action":"screenshot"}]}]}
-        """;
+        """.ReplaceLineEndings("\n");
 
     internal DesktopRunHarness()
     {

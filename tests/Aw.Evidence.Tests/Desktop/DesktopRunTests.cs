@@ -54,7 +54,7 @@ public sealed class DesktopRunTests
 
         _ = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(["bin/app --flag", "bin/app --flag"], harness.Apps.Launches.Select(static l => string.Join(' ', l.Argv)));
+        Assert.Equal(["bin/app --flag", "bin/app --flag"], harness.Apps.Launches.Select(static l => string.Join(' ', l.Argv)), StringComparer.Ordinal);
         var home = harness.Apps.Launches[0];
         Assert.Equal((DesktopRunHarness.Repo, "/tmp/aw-desktop-1", "1", "/tmp/aw-driver-2"), (home.WorkingDirectory, home.Environment["APP_HOME"], home.Environment["AW_UI_DRIVER"], home.Environment["AW_UI_DRIVER_DIR"]));
         Assert.Equal("/tmp/aw-driver-3", harness.Apps.Launches[1].Environment["AW_UI_DRIVER_DIR"]);
@@ -146,7 +146,7 @@ public sealed class DesktopRunTests
         Assert.Equal(["scripts/fx.sh up", "scripts/fx.sh down"], harness.Commands.Lines());
         Assert.Empty(harness.Scratch.Live);
         Assert.Empty(harness.Browser.Sessions);
-        Assert.Equal(["release HeavyJob", "release QaStack"], harness.Locks.Events.Skip(2));
+        Assert.Equal(["release HeavyJob", "release QaStack"], harness.Locks.Events.Skip(2), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -233,7 +233,7 @@ public sealed class DesktopRunTests
         var some = (await harness.Run(DesktopRunHarness.Request(["agents"]), TestContext.Current.CancellationToken)).Value;
         var unknown = (await new DesktopRunHarness().Run(DesktopRunHarness.Request(["nope"]), TestContext.Current.CancellationToken)).Value;
 
-        Assert.Equal(["agents"], some.Summary.Screens.Select(static s => s.Name));
+        Assert.Equal(["agents"], some.Summary.Screens.Select(static s => s.Name), StringComparer.Ordinal);
         Assert.Equal($"{HomeDriver} screenshot --out {AgentsShot}", harness.Commands.Lines()[^2]);
         Assert.Equal((DesktopOutcome.Refused, 1), (unknown.Summary.Outcome, unknown.Summary.ExitCode()));
         Assert.Contains("nope", unknown.Summary.Refusal!.Message, StringComparison.Ordinal);
@@ -269,7 +269,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
         _ = harness.Files.With(DesktopRunHarness.SummaryPath, [1]);
-        _ = harness.Files.Files.Remove(DesktopRunHarness.ManifestPath);
+        _ = harness.Files.Without(DesktopRunHarness.ManifestPath);
 
         var result = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 

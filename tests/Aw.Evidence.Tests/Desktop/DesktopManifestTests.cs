@@ -27,11 +27,11 @@ public sealed class DesktopManifestTests
                {"action":"key","value":"Enter"},
                {"action":"wait-for","target":{"text":"PRJ-sync"},"expectedState":{"state":"textContains","text":"sync"}},
                {"action":"screenshot"}]}
-            """));
+            """.ReplaceLineEndings("\n")));
 
         var screen = Assert.Single(read.Value.Screens);
         Assert.Equal(("workflow-project", "workflow-project.html", 12.5, 1500), (screen.Name, screen.Design, screen.Threshold, screen.SettleMs));
-        Assert.Equal(["workflows", "items"], screen.Fixture!.Select(static step => string.Join(' ', step)));
+        Assert.Equal(["workflows", "items"], screen.Fixture!.Select(static step => string.Join(' ', step)), StringComparer.Ordinal);
         Assert.Equal(new ScreenMask(10, 20, 30, 40, "relative times", "1440x900"), Assert.Single(screen.Masks!));
         Assert.Equal(["clock text differs"], screen.Accepted);
         Assert.Equal(

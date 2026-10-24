@@ -19,8 +19,8 @@ public sealed class DesktopTargetsTests
         var desktop = Read(Config($"\"manifest\":\"docs/screens.json\",\"homeEnv\":\"APP_HOME\",{Fixture},{App}")).Value.Desktop!;
 
         Assert.Equal(("docs/screens.json", "APP_HOME", 10d, TimeSpan.FromSeconds(300)), (desktop.Manifest, desktop.HomeEnv, desktop.Threshold, desktop.Timeout));
-        Assert.Equal(["1440x900", "900x900"], desktop.Sizes.Select(static s => s.Describe()));
-        Assert.Equal(["up", "items --large"], desktop.Fixture.Up.Select(static step => string.Join(' ', step)));
+        Assert.Equal(["1440x900", "900x900"], desktop.Sizes.Select(static s => s.Describe()), StringComparer.Ordinal);
+        Assert.Equal(["up", "items --large"], desktop.Fixture.Up.Select(static step => string.Join(' ', step)), StringComparer.Ordinal);
         Assert.Equal(["down"], desktop.Fixture.Down);
         Assert.Equal(["bin/app", "--flag"], desktop.App.Command);
         Assert.Equal(["aw-ui-driver"], desktop.DriverCommand);
