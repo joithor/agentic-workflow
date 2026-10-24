@@ -11,7 +11,7 @@ public static class LensPages
     public static LensesView Window(LensesView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var window = new Window(limit, offset);
+        var window = new PageCut(limit, offset);
         var (bands, edges) = Cut(view.Bands, view.Edges, window);
         return view with { Bands = bands, Edges = edges, Page = window.Page() };
     }
@@ -24,12 +24,12 @@ public static class LensPages
     public static LensesSetView Window(LensesSetView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var window = new Window(limit, offset);
+        var window = new PageCut(limit, offset);
         var (bands, edges) = Cut(view.Bands, view.Edges, window);
         return view with { Bands = bands, Edges = edges, Page = window.Page() };
     }
 
-    private static (LensBands Bands, IReadOnlyList<LensEdge> Edges) Cut(LensBands bands, IReadOnlyList<LensEdge> edges, Window window)
+    private static (LensBands Bands, IReadOnlyList<LensEdge> Edges) Cut(LensBands bands, IReadOnlyList<LensEdge> edges, PageCut window)
     {
         var product = bands.Product;
         var intent = bands.Intent;
@@ -55,7 +55,7 @@ public static class LensPages
     }
 
     // One window over every list of an answer: what it kept, each list's full count, and whether any list has items past it.
-    private sealed class Window(int limit, int offset)
+    private sealed class PageCut(int limit, int offset)
     {
         private readonly Dictionary<string, int> _totals = new(StringComparer.Ordinal);
         private bool _more;

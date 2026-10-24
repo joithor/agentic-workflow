@@ -126,7 +126,9 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     {
         var now = clock.GetUtcNow();
         var hits = new List<SourceHit>(Math.Min(query.Limit, documents.Count));
-        int hidden = 0, unidentified = 0, overLimit = 0;
+        var hidden = 0;
+        var unidentified = 0;
+        var overLimit = 0;
         foreach (var document in documents)
         {
             if (document.Hidden)
