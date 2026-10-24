@@ -4,6 +4,7 @@ using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Extract;
 
+/// <summary>There are no built-in file roles: what a repo's 'index.roles' names never reaches clustering, and a repo that names none excludes nothing.</summary>
 public sealed class SharedFileClusterTests
 {
     private static readonly ContextRepoName _repo = ContextRepoName.From("web-app");
@@ -13,43 +14,33 @@ public sealed class SharedFileClusterTests
     private static FileCluster Cluster(string id, double confidence, params string[] files) => new(ClusterId.From(id), files, confidence);
 
     [Fact, Trait("Lane", "unit")]
-    public void Shared_files_icons_routers_crons_and_tests_are_not_feature_implementers()
+    public void A_repo_with_no_roles_excludes_nothing_every_file_of_a_cluster_implements_its_feature()
     {
-        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.55,
-            "apps/web/src/Staff/SelfScheduling/schedule.tsx",
-            "packages/icons/src/ArrowsDownUp/Fill.tsx",
-            "packages/ui-deprecated/src/components/ui/combobox.tsx",
-            "apps/web/src/AppShell/components/ChatWidget.tsx",
-            "apps/server/src/api/api-router.ts",
-            "apps/server/src/crons/deactivate-profile-cron.ts",
-            "apps/web/src/CentralStaffing/Demo/ActivitySidebar/__tests__/demo-open-shift-post.unit.test.ts")), [], ExtractedMap.Empty);
-
-        var edges = map.Edges.Where(e => e.Type == EdgeType.Implements).ToList();
-        Assert.Equal(["code:apps/web/src/Staff/SelfScheduling/schedule.tsx"], edges.Select(e => e.From.Value), StringComparer.Ordinal);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void A_cluster_of_only_shared_files_proposes_no_feature()
-    {
-        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.55,
-            "packages/icons/src/ArrowsDownUp/Fill.tsx",
-            "apps/web/src/Demo/__tests__/demo.unit.test.ts")), [], ExtractedMap.Empty);
-
-        Assert.Equal(ExtractedMap.Empty, map);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void A_shared_file_does_not_make_its_cluster_claim_the_surfaces_it_defines()
-    {
-        var extracted = MapExtractor.Extract(_repo,
+        string[] files =
         [
-            new RepoFile("src/tabs/ids.ts", "export type CommandId = \"close-tab\";"),
-            new RepoFile("src/demo/ids.ts", "export type CommandId = \"split\";"),
-        ]);
+            "src/orders/place.ts",
+            "src/icons/arrow.ts",
+            "src/crons/nightly.ts",
+            "src/api/api-router.ts",
+            "src/orders/__tests__/place.test.ts",
+            "src/demo/ids.ts",
+        ];
 
-        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.8, "src/tabs/ids.ts", "src/demo/ids.ts")), [], extracted);
+        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.55, files)), [], ExtractedMap.Empty);
 
-        var claim = Assert.Single(map.Edges, e => e.Type == EdgeType.PartOf);
-        Assert.Equal("surface:command/close-tab", claim.From.Value);
+        var implementers = map.Edges.Where(e => e.Type == EdgeType.Implements).Select(e => e.From.Value);
+        Assert.Equal(files.Select(f => "code:" + f).Order(StringComparer.Ordinal), implementers.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_file_a_role_excludes_is_filtered_before_clustering_so_it_implements_nothing()
+    {
+        var repo = new ContextRepo(_repo, "/work/web-app") { DenyPaths = [.. PathDenylist.Defaults, "**/crons/**"] };
+        var cluster = Cluster("c1", 0.55, "src/orders/place.ts", "src/crons/nightly.ts");
+        var kept = cluster with { Files = [.. cluster.Files.Where(f => !repo.Denies(f))] };
+
+        var map = ClusterFeatures.Propose(_repo, Set(kept), [], ExtractedMap.Empty);
+
+        Assert.Equal(["code:src/orders/place.ts"], map.Edges.Where(e => e.Type == EdgeType.Implements).Select(e => e.From.Value), StringComparer.Ordinal);
     }
 }

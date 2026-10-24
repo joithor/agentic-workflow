@@ -60,26 +60,6 @@ public sealed class PathDenylistTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("src/crons/run.ts")]
-    [InlineData("tests/fixtures/data.ts")]
-    [InlineData("src/__tests__/a.ts")]
-    [InlineData("src/app/demo/a.ts")]
-    [InlineData("web/icons/a.svg")]
-    [InlineData("src/old-deprecated-ui/a.ts")]
-    [InlineData("src/app.spec.ts")]
-    [InlineData("src/routers/index.ts")]
-    [InlineData("src/app.router.ts")]
-    [InlineData("src/appshell/a.ts")]
-    public void The_default_shared_roles_cover_files_and_directories(string path) =>
-        Assert.True(PathDenylist.Matches(path, SharedRoles.Defaults));
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("src/features/orders.ts")]
-    [InlineData("src/scheduler/run.ts")]
-    public void The_default_shared_roles_leave_product_code_alone(string path) =>
-        Assert.False(PathDenylist.Matches(path, SharedRoles.Defaults));
-
-    [Theory, Trait("Lane", "unit")]
     [InlineData("prefix:test_", "src/test_helpers.py", true)]
     [InlineData("prefix:test_", "src/TEST_dir/a.py", true)]
     [InlineData("prefix:test_", "src/my_test_a.py", false)]

@@ -55,7 +55,7 @@ public sealed class IndexRolesTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_profile_with_no_roles_adds_no_deny_globs_and_the_engines_default_roles_stay_a_clustering_rule()
+    public void A_profile_with_no_roles_adds_no_deny_globs_and_nothing_is_excluded_by_default()
     {
         var entry = ContextScopes.Entries(new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web")]))[0];
 
