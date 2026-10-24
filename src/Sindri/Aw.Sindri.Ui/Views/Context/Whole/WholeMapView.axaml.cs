@@ -25,6 +25,7 @@ internal sealed partial class WholeMapView : UserControl
     public WholeMapView()
     {
         InitializeComponent();
+        WholeCanvas.FitBottomInset = MiniMapBand;
         AutomationProperties.SetName(WholeZoomOut, Labels.ContextMapZoomOut);
         AutomationProperties.SetName(WholeZoomIn, Labels.ContextMapZoomIn);
         AutomationProperties.SetName(WholeZoomFit, Labels.ContextMapZoomFit);

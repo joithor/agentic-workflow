@@ -17,7 +17,7 @@
     </StackPanel>
 
     <Grid Grid.Row="1">
-      <ctl:ZoomBorder x:Name="WholeCanvas" FitBottomInset="{x:Static wv:WholeMapView.MiniMapBand}" AutomationProperties.Name="{Binding CanvasName}">
+      <ctl:ZoomBorder x:Name="WholeCanvas" AutomationProperties.Name="{Binding CanvasName}">
         <wv:WholeMapCanvas x:Name="WholeWorld" />
       </ctl:ZoomBorder>
 
