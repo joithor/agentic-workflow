@@ -61,8 +61,8 @@ public sealed class QueryContextTests
 
         var result = await Engines.Advancing(clock, () => engine.Query(new ContextQuery("orientation"), Engines.Human("""{"deadline":"2s"}"""), TestContext.Current.CancellationToken).AsTask());
 
-        Assert.Equal("onyx", result.Value.Degraded.Single().Source.Value);
-        Assert.Contains("deadline", result.Value.Degraded.Single().Message, StringComparison.Ordinal);
+        var onyx = Assert.Single(result.Value.Degraded, d => d.Source.Value == "onyx");   // why: the other source's records may also be reported as not read in time
+        Assert.Contains("deadline", onyx.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
