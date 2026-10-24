@@ -91,8 +91,10 @@ contain explicit `Goal:`, `Acceptance criteria:` and `Proof command:` lines.
 2. Take `handoff_path` from rootCause's final JSON block, then
    `bugfix-state advance investigate --state "$STATE" --evidence <handoff_path>`.
 3. Refused because the handoff status is not `diagnosed` (rootCause returned `unfixed`), because no
-   hypothesis is confirmed, or because it has no Root Cause → **Ask the user**: re-investigate with
-   more context, or stop. Never fix an unconfirmed cause. From here on the helper uses its own
+   hypothesis is confirmed and fewer than two are open, or because it has no Root Cause → re-run
+   `/rootCause` with more context (once more; then stop as unresolved). A handoff with no confirmed
+   hypothesis but two or more open ones is accepted: the first attempt is then mode B, never a single
+   implementer on an unconfirmed cause. From here on the helper uses its own
    snapshot of the hypotheses and root cause; editing the handoff changes nothing.
 
 ## Phase 3 — Reproduce (the check must FAIL first)
@@ -148,7 +150,7 @@ Choose the mode, then `bugfix-state start-attempt --state "$STATE" --mode <A|B|C
 
 | Mode | When | Dispatch |
 |------|------|----------|
-| **B** competing | A previous attempt failed **and** the handoff has ≥ 2 hypotheses not ruled out (the helper enforces both) | 2 implementers, each on a **different** open hypothesis, each in its own worktree — **Dispatch in parallel**. Re-dispatch the hypothesis whose fix just failed only if the failure reasons point at the implementation, not the hypothesis |
+| **B** competing | A previous attempt failed (or no hypothesis is confirmed: then it is the first attempt) **and** the handoff has ≥ 2 hypotheses not ruled out (the helper enforces both) | 2 implementers, each on a **different** open hypothesis, each in its own worktree — **Dispatch in parallel**. Re-dispatch the hypothesis whose fix just failed only if the failure reasons point at the implementation, not the hypothesis |
 | **C** split | The confirmed hypothesis's cause-site files span more than one area (e.g. an API route and a UI component) | One implementer per area, **in sequence** on one worktree, each given the previous one's diff |
 | **A** single | Otherwise | One implementer in one worktree |
 
@@ -181,9 +183,10 @@ When a candidate's implementer (in mode C, the **last** area's implementer) fini
 `bugfix-state record-candidate --state "$STATE" --branch <branch> --cwd <worktree> [--hypothesis <n>]`
 — once per candidate; `--hypothesis` is required in mode B. The helper reads the commit from
 `--cwd`, and refuses a clean tree that is not a real change on top of the baseline. If the fix touches
-the check (or its directory), tests, fixtures, snapshots, test config or `package.json`, the helper
-refuses: **Ask the user** whether those changes are legitimate, and only if they approve, re-run with
-`--allow-test-changes`.
+the check (or its directory), tests, fixtures, snapshots or test-runner config, the helper refuses
+(build and lock files need no flag). If the change is needed and does not weaken the check, re-run
+with `--allow-test-changes --reason "<why>"`; the reason is recorded. If it would weaken the check,
+send the implementer back to fix the code instead.
 
 ## Phase 5 — Evaluate
 
@@ -205,10 +208,14 @@ already are. The candidate's branch stays checked out in its worktree, so detach
    check, the diff stat), runs `judge resolution-check` itself, and records that decision — once per
    candidate, so the verdict it gets is the verdict that counts.
    - `decision` `resolved` / `partial` / `unresolved`, with the judge's `reasons` → use them below.
-   - `status: needs-human` (judge escalated) → **Ask the user**: start another attempt (add any
-     context they give to the implementer brief), or stop as unresolved. The helper never records
-     "resolved" without a `resolved` judge decision.
-   - Refused "judge failed" → nothing was recorded; fix the judge problem (`judge health`) and re-run.
+   - `decision: escalated` → nothing was recorded; run `judge` on the candidate once more. A second
+     escalation comes back as `unresolved` (reason code `escalated:...`): use it like any
+     `unresolved` and continue. No human step. The helper never records "resolved" without a
+     `resolved` judge decision.
+   - Refused "judge failed" (exit 3, unavailable) → nothing was recorded; retry with backoff (up to
+     3 tries; `judge health` for the cause), then `advance report --unresolved`. Same for `run-ui`.
+   - A `judge` call that died (no answer recorded) → `resume` says to ask once more; if asked twice
+     with no answer and `judge why` shows no process still running, `start-attempt --abandon-judge`.
 5. `git -C "$REPO" checkout bugfix/<ticket-slug>` before the next candidate or phase.
 
 Outcome:
@@ -216,7 +223,7 @@ Outcome:
 - A candidate with a passing run **and** a `resolved` decision → Phase 6. With two eligible B
   candidates, pick the smaller diff and say why.
 - `partial` / `unresolved` / a failing run → back to Phase 4 with the failure reasons.
-- Attempt cap reached (the helper refuses a 4th) → Phase 6 as unresolved.
+- Attempt cap reached (the helper refuses a 6th) → Phase 6 as unresolved.
 - Remove every worktree except the winning candidate's once it is evaluated (`git worktree remove`);
   keep the branches until the ticket closes.
 
@@ -241,7 +248,7 @@ Bug fix orchestration complete.
 Ticket: {id} — {title}
 Status: {resolved | unresolved}
 Root cause: {one line}
-Fix: {branch} @ {commit}   (attempts: {n}/3, modes: {A|B|C…})
+Fix: {branch} @ {commit}   (attempts: {n}/5, modes: {A|B|C…})
 Check: {ui-evidence script | test} — failed before, {passed | failed} after
 Judge: {decision} ({decision id})
 Report: {STATE}/resolution.md
