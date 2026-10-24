@@ -64,14 +64,14 @@ public sealed class UiEvidenceDoctorChecksTests : IDisposable
     }
 
     [Theory]
-    [InlineData(ToolOutcome.Exited, 2)]
-    [InlineData(ToolOutcome.TimedOut, -1)]
-    [InlineData(ToolOutcome.Missing, -1)]
-    public async Task A_binary_that_does_not_answer_version_is_a_warning(ToolOutcome outcome, int exit)
+    [InlineData("Exited", 2)]
+    [InlineData("TimedOut", -1)]
+    [InlineData("Missing", -1)]
+    public async Task A_binary_that_does_not_answer_version_is_a_warning(string outcome, int exit)
     {
         _ = Touch("ui-evidence");
 
-        var check = await Check(static _ => null, Path.Combine(_home.Path, "sindri"), new FakeToolRunner(new ToolRun(outcome, exit, "")));
+        var check = await Check(static _ => null, Path.Combine(_home.Path, "sindri"), new FakeToolRunner(new ToolRun(Enum.Parse<ToolOutcome>(outcome), exit, "")));
 
         Assert.Equal(CheckState.Warn, check.State);
         Assert.Contains("version", check.Detail, StringComparison.Ordinal);
