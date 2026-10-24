@@ -179,6 +179,24 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         Assert.NotEqual(true, other.IsError);
     }
 
+    [Theory(Timeout = 60_000), Trait("Lane", "integration")]
+    [InlineData("sindri_status", """{""")]
+    [InlineData("sindri_queue", """{""")]
+    [InlineData("sindri_pending_decisions", """{""")]
+    [InlineData("sindri_item", "ITEM")]
+    [InlineData("sindri_item_timeline", "ITEM")]
+    public async Task Every_query_tool_refuses_a_limit_under_1_and_an_offset_under_0_the_same_way(string tool, string prefix)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var mcp = await seed.Open("alpha", ct);
+        var head = prefix == "ITEM" ? $$"""{"itemId":"{{seed.AlphaItem}}",""" : prefix;
+
+        foreach (var window in new[] { "\"limit\":0}", "\"limit\":-1}", "\"offset\":-1}" })
+        {
+            Assert.Equal("SND-CONTEXT-006", Code(await mcp.Call(tool, head + window, ct)));
+        }
+    }
+
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task Sindri_pending_decisions_lists_pending_only_with_the_cli_a_human_runs()
     {
