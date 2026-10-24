@@ -100,9 +100,9 @@ internal static class ScopingSteps
         .Reads("fact:challenge", "fact:challengeRound").Reports("nothingNew", "found")
         .Writes(Every("fact:challenge"), On("fact:findings", "found"));
 
-    /// <summary>'step.scope.propose': submits the map's new surfaces as draft proposals and records each surface's graph status; 'proposed' or 'skipped'.</summary>
+    /// <summary>'step.scope.propose': submits the map's new surfaces as draft proposals and records each surface's graph status and the relevance review's map fixes; 'proposed' or 'skipped'.</summary>
     public static BlockDescriptor Propose { get; } = BlockStep("step.scope.propose", Capability.Tools)
-        .Reads("fact:scopeMap").Reports("proposed", "skipped").Writes(Every("fact:scopeMap"));
+        .Reads("fact:scopeMap", "fact:mapFixes").Reports("proposed", "skipped").Writes(Every("fact:scopeMap"), Every("fact:mapFixes"));
 
     /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts, 'incomplete' and 'regather' carry findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)

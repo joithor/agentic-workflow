@@ -137,7 +137,26 @@ internal static partial class DeskBlocks
             }
         }
 
-        return Reply("step.scope.propose", facts.Has("proposeResult") ? "proposed" : "skipped", Outputs(("scopeMap", map)), []);
+        var proposed = facts.Has("proposeResult");
+        return Reply("step.scope.propose", proposed ? "proposed" : "skipped", Outputs(("scopeMap", map), ("mapFixes", FixesWithStatus(facts, proposed ? "recorded" : "skipped"))), []);
+    }
+
+    // The relevance review's map fixes, carried through with the status of what became of them: recorded, none are submitted to the context engine yet. No fixes fact is an empty list.
+    private static JsonObject FixesWithStatus(ScopeFacts facts, string status)
+    {
+        var fixes = facts.ObjectCopy("mapFixes");
+        if (fixes["fixes"] is not JsonArray list)
+        {
+            fixes["fixes"] = new JsonArray();
+            return fixes;
+        }
+
+        foreach (var fix in list.OfType<JsonObject>())
+        {
+            fix["status"] = status;
+        }
+
+        return fixes;
     }
 
     private static string Status(JsonNode? answer)

@@ -239,6 +239,72 @@
       "schema": "coverage.json",
       "valid": false,
       "source": "SCP-COV-001: one row per lens, not four rows of one lens"
+    },
+    {
+      "file": "relevance-verdicts.valid.json",
+      "schema": "relevance-verdicts.json",
+      "valid": true,
+      "source": "issue 966 spec 4.1: the agent's verdicts, one in, one out with a relabel, one noise"
+    },
+    {
+      "file": "relevance-verdicts.noise-without-fix.invalid.json",
+      "schema": "relevance-verdicts.json",
+      "valid": false,
+      "source": "spec 4.1: every out or noise verdict names its map fix"
+    },
+    {
+      "file": "relevance-verdicts.in-with-fix.invalid.json",
+      "schema": "relevance-verdicts.json",
+      "valid": false,
+      "source": "spec 4.1: an in verdict has no fix"
+    },
+    {
+      "file": "relevance-verdicts.relabel-without-target.invalid.json",
+      "schema": "relevance-verdicts.json",
+      "valid": false,
+      "source": "spec 4.1: relabel names relabelTo"
+    },
+    {
+      "file": "relevance-rulings.valid.json",
+      "schema": "relevance-rulings.json",
+      "valid": true,
+      "source": "issue 966 spec 4.2: the judge's rulings, one decided and one uncertain"
+    },
+    {
+      "file": "relevance-rulings.bad-class.invalid.json",
+      "schema": "relevance-rulings.json",
+      "valid": false,
+      "source": "spec 4.2: class is in, out, noise or uncertain"
+    },
+    {
+      "file": "relevance.fact.valid.json",
+      "schema": "relevance.json",
+      "valid": true,
+      "source": "issue 966 spec 4.3: fact:relevance with counts, truncated and an entry carrying both verdicts"
+    },
+    {
+      "file": "relevance.file.valid.json",
+      "schema": "relevance.json",
+      "valid": true,
+      "source": "spec 4.3 plus the packet-file envelope"
+    },
+    {
+      "file": "relevance.uncertain-result.invalid.json",
+      "schema": "relevance.json",
+      "valid": false,
+      "source": "spec 4.3: an entry's result is in, out or noise"
+    },
+    {
+      "file": "map-fixes.valid.json",
+      "schema": "map-fixes.json",
+      "valid": true,
+      "source": "issue 966 spec 4.3: fact:mapFixes, one fix proposed"
+    },
+    {
+      "file": "map-fixes.bad-action.invalid.json",
+      "schema": "map-fixes.json",
+      "valid": false,
+      "source": "spec 4.3: action is relabel, demote or ignore"
     }
   ]
 }
