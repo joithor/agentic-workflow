@@ -1,5 +1,7 @@
 namespace Aw.UiDriver.Core.Selectors;
 
+#pragma warning disable MA0182 // used by the Avalonia adapter and the CLI, which the analyzer can't see from here
+
 /// <summary>A key chord read from text: the key's name and the modifiers held with it.</summary>
 /// <param name="Key">The key's name (an Avalonia Key member, as written).</param>
 /// <param name="Control">Ctrl is held.</param>
@@ -14,7 +16,7 @@ internal sealed record KeyChord(string Key, bool Control, bool Shift, bool Alt, 
     /// <returns>True for a chord with a key and only known modifiers, none twice.</returns>
     internal static bool TryParse(string? text, out KeyChord chord)
     {
-        chord = new KeyChord(string.Empty, false, false, false, false);
+        chord = new KeyChord(string.Empty, Control: false, Shift: false, Alt: false, Meta: false);
         var parts = text?.Split('+', StringSplitOptions.TrimEntries);
         if (parts is not { Length: > 0 } || parts[^1].Length == 0)
         {

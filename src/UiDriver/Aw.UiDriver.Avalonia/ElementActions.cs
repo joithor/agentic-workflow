@@ -17,15 +17,24 @@ namespace Aw.UiDriver.Avalonia;
 /// </summary>
 internal static class ElementActions
 {
+    private static readonly string[] _clickActions = ["invoke", "toggle", "select", "expand"];
+
     /// <summary>Clicks: invoke, else toggle, else select, else expand or collapse.</summary>
     /// <param name="visual">The element.</param>
     /// <returns>Success, or AW-UIDRIVER-003 when the element is disabled or has no way to be clicked.</returns>
-    internal static Result<Unit> Click(Visual visual) =>
-        Do(visual, "invoke") is { IsSuccess: true } invoked ? invoked
-        : Do(visual, "toggle") is { IsSuccess: true } toggled ? toggled
-        : Do(visual, "select") is { IsSuccess: true } selected ? selected
-        : Do(visual, "expand").IsSuccess ? Unit.Value
-        : UiDriverErrors.NotActionable.With($"{visual.GetType().Name} has nothing to click (no invoke, toggle, select or expand)");
+    internal static Result<Unit> Click(Visual visual)
+    {
+        foreach (var action in _clickActions)
+        {
+            var done = Do(visual, action);
+            if (done.IsSuccess)
+            {
+                return done;
+            }
+        }
+
+        return UiDriverErrors.NotActionable.With($"{visual.GetType().Name} has nothing to click (no invoke, toggle, select or expand)");
+    }
 
     /// <summary>Runs a named action: invoke, toggle, select, expand, collapse or focus.</summary>
     /// <param name="visual">The element.</param>
@@ -43,7 +52,7 @@ internal static class ElementActions
         {
             "INVOKE" => peer?.GetProvider<IInvokeProvider>() is { } invoke ? Run(invoke.Invoke) : Missing(visual, action),
             "TOGGLE" => peer?.GetProvider<IToggleProvider>() is { } toggle ? Run(toggle.Toggle) : Missing(visual, action),
-            "SELECT" => peer?.GetProvider<ISelectionItemProvider>() is { } select ? Run(select.Select) : Missing(visual, action),
+            "SELECT" => peer?.GetProvider<ISelectionItemProvider>() is { } item ? Run(item.Select) : Missing(visual, action),
             "EXPAND" => peer?.GetProvider<IExpandCollapseProvider>() is { } expand ? Run(expand.Expand) : Missing(visual, action),
             "COLLAPSE" => peer?.GetProvider<IExpandCollapseProvider>() is { } collapse ? Run(collapse.Collapse) : Missing(visual, action),
             "FOCUS" => visual is InputElement input && input.Focus() ? Unit.Value : Missing(visual, action),

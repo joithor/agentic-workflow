@@ -2,6 +2,8 @@ using Aw.Kernel;
 
 namespace Aw.UiDriver.Core;
 
+#pragma warning disable MA0182 // used by the Avalonia adapter and the CLI, which the analyzer can't see from here
+
 /// <summary>The UI driver's error catalogue (codes AW-UIDRIVER-NNN).</summary>
 internal static class UiDriverErrors
 {

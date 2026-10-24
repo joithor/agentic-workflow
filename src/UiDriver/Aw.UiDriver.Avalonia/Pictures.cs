@@ -19,24 +19,17 @@ internal static class Pictures
             return UiDriverErrors.Failed.With("the element has no size to draw");
         }
 
-        var path = Path.Combine(Path.GetTempPath(), "aw-ui-driver-" + Guid.NewGuid().ToString("N") + ".png");
         try
         {
-            using (var frame = new RenderTargetBitmap(size, new Vector(96, 96)))
-            {
-                frame.Render(visual);
-                frame.Save(path, new PngBitmapEncoderOptions());
-            }
-
-            return File.ReadAllBytes(path);
+            using var frame = new RenderTargetBitmap(size, new Vector(96, 96));
+            frame.Render(visual);
+            using var stream = new MemoryStream();
+            frame.Save(stream);
+            return stream.ToArray();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             return UiDriverErrors.Failed.With($"the picture could not be made: {e.Message}");
-        }
-        finally
-        {
-            File.Delete(path);
         }
     }
 }
