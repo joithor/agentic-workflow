@@ -135,6 +135,9 @@ public sealed class InputRulesTests
     [InlineData("src/util/strings.cs", "SRC/UTIL/*.cs", true)]
     [InlineData("src/Other/Strings.cs", "src/Util/**", false)]
     [InlineData("a/b/c.cs", "**/c.cs", true)]
+    [InlineData("tests/fixtures/data.ts", "**/*fixture*", true)]
+    [InlineData("tests/fixtures/data.ts", "**/*fixture*/**", true)]
+    [InlineData("src/orders/place.ts", "**/*fixture*", false)]
     [InlineData("a.cs", "", false)]
     public void MatchesAny_applies_a_glob_ignoring_case(string path, string glob, bool expected)
         => Assert.Equal(expected, InputRules.MatchesAny(path, [glob]));

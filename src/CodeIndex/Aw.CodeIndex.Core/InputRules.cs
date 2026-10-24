@@ -145,7 +145,7 @@ public static class InputRules
     {
         if (g == glob.Length)
         {
-            return p == path.Length;
+            return true;   // the glob ended on a file or a directory: a directory covers everything under it, as in .gitignore
         }
 
         if (glob[g] == "**")
