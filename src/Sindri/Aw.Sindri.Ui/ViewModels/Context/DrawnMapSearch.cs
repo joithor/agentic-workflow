@@ -7,7 +7,10 @@ internal sealed class DrawnMapSearch : IMapSearch
 
     /// <summary>Makes the search over what the page last drew.</summary>
     /// <param name="drawn">The read the page drew; null before one.</param>
-    internal DrawnMapSearch(Func<ContextMapViewModel?> drawn) => _drawn = drawn;
+    internal DrawnMapSearch(Func<ContextMapViewModel?> drawn)
+    {
+        _drawn = drawn;
+    }
 
     /// <inheritdoc/>
     public Task<IReadOnlyList<MapSearchHit>> Search(string query, CancellationToken cancellationToken) =>

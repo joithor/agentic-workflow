@@ -68,7 +68,7 @@ internal sealed partial class ContextPageViewModel
             return true;
         }
 
-        _unopenedHitAreas = [.. touched.Skip(reads.Length)];
+        _unopenedHitAreas = [.. touched.Skip(reads.Length).OfType<string>()];
         return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Length);
     }
 

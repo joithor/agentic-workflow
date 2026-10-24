@@ -7,5 +7,5 @@ internal interface IMapSearch
     /// <param name="query">What is typed in the box.</param>
     /// <param name="cancellationToken">Cancels the search.</param>
     /// <returns>The matches, best first; empty when nothing matches.</returns>
-    Task<IReadOnlyList<MapSearchHit>> Search(string query, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<MapSearchHit>> Search(string query, CancellationToken cancellationToken);
 }
