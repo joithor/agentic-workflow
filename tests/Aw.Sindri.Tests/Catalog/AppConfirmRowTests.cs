@@ -1,8 +1,5 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Features.ApproveAllRecipes;
-using Aw.Sindri.Features.ApproveProfile;
-using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Host.Catalog;
