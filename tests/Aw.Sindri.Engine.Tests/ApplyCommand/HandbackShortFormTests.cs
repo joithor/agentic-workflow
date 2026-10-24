@@ -35,7 +35,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
         Assert.NotNull((await served.Until(address, static v => v.Task is not null)).Task);
     }
 
-    [Fact]
+    [Fact(Skip = "red until api's q93-auth admits a session on handback: today main refuses it SND-AUTH-002 before the address resolves; q93-auth removes this Skip")]
     public async Task An_agent_session_cannot_resolve_an_instance_on_no_item_in_either_form()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
