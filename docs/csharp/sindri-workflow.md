@@ -531,11 +531,7 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 
    Three more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
    until DT-J, absent means today's rule), `HumanOnly` (true or absent, never false) and `HumanTrigger` (an effect that acts with a
-   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). A Step is **human-only** when its descriptor
-   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
-   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
-   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
-   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
+   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). `HumanOnly` marks a Step the owner decides: the app shows it as "only you" (`RecipeStateKind.OnlyYou`), `RCP-HUMAN-001` counts it as a human act, and a recommendation on it is dropped when it isn't one of the outcomes. It is not an authorization rule (owner q93, 2026-10-23, reworked by q100, 2026-10-24). Who may report a Step depends on who started the agent, not on which Step it is: a plain session (an agent the owner started: no launch secret) may `workflow complete` every desk Step, including the merge decision and the scoping stop. A session Sindri launched reports with its launch secret (`X-Sindri-Launch-Secret`, sent by `workflow complete` from `AW_SINDRI_LAUNCH_SECRET`), and `AgentReportAuthority` refuses that secret on a desk run with `SND-AUTH-002`, before the nonce is claimed, so a launched step child can never answer a human's Step. A session report on an instance that can't be read is refused with that read error. The command chain (`AuthorizingService`) still decides which caller classes reach `CompleteStep` (api's table).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
@@ -569,7 +565,7 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
-| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.evidence.desk` | desk | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
 | `step.review.round` | block | `change`, `phasePacket`, `lensRounds` | `ready`, `noLens` | `lensQueue`, `lensRounds` on ready |
 | `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
 | `step.review.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings`, `behaviourWrong`, `needsOwner` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong, needsOwner; `escalation` on needsOwner |
@@ -578,14 +574,14 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.apply-answer` | agent | `change`, `review`, `escalation`, `answers` | `fixed`, `needsOwner` | `change` on fixed; `escalation` on needsOwner |
 | `step.lens.ask` | desk, human-only | `escalation` | `answered`, `stop` | `answers` on answered |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
-| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+| `step.owner.decide` | desk | - | `retry`, `stop` | `notes` on retry |
 | `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
-| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
+| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext`, `workspace`, `green` | `packed` | `handoffDraft` on packed |
 | `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
 | `step.ship.open` | desk, human-only | `handoff`, `workspace` | `opened`, `updated`, `refused` | `pr` on opened and updated (stands in for `effect.pr.open`; nothing reaches the forge) |
 | `step.ship.return` | block | `findings` | `noted` | `returnNotes` on noted |
 | `step.docs.scope` | block | `pr`, `phasePacket` | `candidates`, `none`, `disabled`, `notOpen` | `docsResult` (every outcome); `docsScope`, `prState`, `findings`, `handoffNote`, `workspace` on candidates |
-| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
+| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket`, `workspace` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
 | `step.docs.check` | block | `docsScope`, `workspace` | `pass`, `fail` | `findings` on fail |
 | `step.docs.open-pr` | desk, human-only | `pr`, `workspace` | `opened`, `updated`, `rejected` | `docsPr` on opened and updated (stands in for `effect.pr.create-stacked`; nothing reaches the forge) |
 
@@ -682,7 +678,7 @@ Shapes the spec leaves open, chosen here:
 
 Run-area files: `design-packet/` (13 files) in the design instance, `plan-packet/` (7) and `phase-packets/<phase>/` (7 each) in the plan instance, written by the evidence Steps and read by the next station through `fact:*Packet.dir`. A Step has no ledger port (a write needs a lease grant), so `line.escape`, `design.approved` and `plan.approved` rows are not written (the escapes are in `escapes.json`), the holdout sets are not sealed, and LN-CTX1's proposals to the context map are not made; `step.plan.freeze` also cannot re-run the design checks (it reads no scope), so it re-runs the plan checks and confirms the design and plan packets still hash to what the evidence checked. Also known: `DSN-XSPEC-001/-002` and `DSN-STYLE-001` only warn, `PLN-PKT-001`'s `--sizes` is not passed.
 
-`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and, since owner q93 (2026-10-23) and q100 (2026-10-24), answerable by a plain agent session; their hashes moved once when the two fields
 landed (provisional owner default). The agent runtime (engine P8) moved `step.produce`, `step.build.red`, `step.build.green` and `step.prove.holdout`; every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them). `sindri recipe list --stale` shows which approved recipes use a moved descriptor and need re-approval.
 
 ### Lens loop facts (`step.lens.log` and the lens report)
@@ -742,7 +738,7 @@ Each round queues the lenses whose `when` holds, in pack order, as `fact:lensQue
 |---|---|---|
 | `fact:phasePacket`, `fact:activePacket` | `{ hash, dir, repo? }`: the packet's frozen hash and directory; `repo` is a checkout of the repository it builds on (PKT-BASE-001 needs the base commit), which `step.build.prepare` sets to `fact:workspace` | the phase's seed (`hash`, `dir`), prepare (`repo`), amend (the child's) |
 | `fact:answers` | object `{ allow?: string[], reason?: string, revert?: string[] }`, the shape the shipped `workflow.build` evals use. `allow` holds the granted paths (repo-relative globs or `new: <path>`); amend needs at least one, and takes the owner's `reason` or the stock line `allowed at the scope desk` | prepare seeds `{}`; the scope desk writes it |
-| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` (at the desk until its fact shapes are settled) |
+| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` |
 | `fact:proofPack`, `fact:review` | each holds `head`, the commit its run covered | `step.prove.evidence`, `step.review.record` |
 | `fact:handoff` | `{ hash, dir }`: the frozen hand-off | freeze |
 | `fact:findings` | array of `{ rule, message }` | `SHIP-SHA-001` on stale |
@@ -1393,7 +1389,7 @@ A Step whose descriptor says `runtime: block` and that has a registered `IBlockS
 opens a run with no launch and no desk task, calls the `RunBlockStep` activity (one attempt, no retry; heartbeating so a
 `cancel` is delivered) and feeds the result back as `step.completed` (actor `service:block:<step>`), validated like a
 desk report. An invalid result, a failure or a run past the descriptor's `maxDuration` becomes `step.failed`; the route
-sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run and stays human-only.
+sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run; a plain session may answer it (owner q93/q100).
 
 - **A desk report on a block run is refused** (`SND-WF-003`): the engine runs this Step, so only its own result applies. The
   human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:
