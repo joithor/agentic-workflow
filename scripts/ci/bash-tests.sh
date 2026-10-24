@@ -100,8 +100,8 @@ SERIAL=(
   "config/hooks/tests/sindri-nudge.test.sh	asserts the nudge gives up within a 300 ms budget (AW_SINDRI_NUDGE_BUDGET_MS) against a 5 s sleeping sindri"
   "config/lib/tests/prompt-sort.test.sh	asserts the hook gives up within a 600 ms budget (AW_PROMPT_SORT_BUDGET_MS) against a 5 s sleeping sorter"
   "config/lib/tests/aw-state-dir-isolation.test.sh	snapshots the real HOME's install-target locations around a sandboxed installer run and fails on any change, so another suite writing there at the same time is a false failure"
-  "config/lib/tests/installed-hooks-smoke.test.sh	runs the judge installer for real, which may publish the C# judge from the shared checkout (obj dirs) and races any other dotnet build there"
-  "config/lib/tests/install-wake-gating.test.sh	runs the judge installer without --hook-only, which may publish the C# judge from the shared checkout (obj dirs) and races any other dotnet build there"
+  "config/lib/tests/installed-hooks-smoke.test.sh	runs scripts/install-judge-hooks.sh for real and fires the installed hooks against a fake judge under their timeouts; it built judge/dist before the cutover and stays serial until the switch PR rechecks it"
+  "config/lib/tests/install-wake-gating.test.sh	runs scripts/install-judge-hooks.sh and the wake-gating hooks against a fake judge under their timeouts; it built judge/ before the cutover and stays serial until the switch PR rechecks it"
   "scripts/tests/forge-fixture.test.sh	dotnet-builds src/Forge in the shared checkout (obj dirs), which races any other dotnet build there; builds once, then runs git and jq only"
   "scripts/tests/readiness-baseline.test.sh	asserts a 200 ms gh timeout (READINESS_GH_TIMEOUT_MS) fires against a 3 s stub and is reported as the timeout, not a parse error"
 )
