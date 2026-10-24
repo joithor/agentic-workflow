@@ -39,6 +39,11 @@ Coverage: a source that is `degraded`, or `unavailable`/`not-configured` without
 SCP-COV-002 (outcome `regather` when it is the only failing rule). The one fix-line map is `ScopeFixLines`; the view reads `not searched: <limit> — <fix line>`.
 A `not-synced` source reads by its `sync` pair (`null`, queued, running, finished, failed with optional `retryAt` or `failures`).
 
+## Relevance review and gap search in the recipe (issue 966)
+
+`workflow.scoping` v10 runs two more checks. After `gather`, `relevance` (an agent labels every returned entry in, out or noise), `relevance-judge` (a judge that never sees those labels rules on the same entries) and `relevance-apply` (an entry leaves the lenses and coverage only when both agree and the agent's citation resolves; a disagreement keeps it in and flags it) run before `draft`. After the first passing `check`, `gap-search` (a different model, given only the brief, the acceptance list and the answer log), `gap-judge` and `gap-log` run in the `gapsearch` loop (cap 3): a `confirmed` round sends the stage back through `reanchor`, `gather`, `relevance` and `draft`; a `clear` round sets `fact:gapSearchClosed`, so no later passing check starts another round. A confirmed round that cannot regather (the gap loop or the `rescope` loop is spent) goes on with its findings open.
+The four agent states ask for a model by id in the recipe (`draft` and `relevance` `claude-sonnet-5-5`, `challenge` and `gap-search` `claude-opus-5-5`), because an agent Step cannot resolve a `{ profile: ... }` model yet; the launcher renders the id per agent entry, and the model checks (SCP-CHAL-002, SCP-GAP-002) fail only when both runs asked for a model and the ledger recorded the same one.
+
 ## Desk helper
 
 `desk` runs `intake`, `read-brief`, `anchor`, `gather`, `reanchor`, `propose`, `check`, `challenge-log`, `record`, `seed` and `evidence` (short or full ids). It writes each output fact to `<out>/<key>.json`,

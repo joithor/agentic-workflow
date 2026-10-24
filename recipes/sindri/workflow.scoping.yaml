@@ -191,7 +191,7 @@ transitions:
   - { from: size, to: size-desk, on: step.failed }
   - { from: propose, to: evidence, on: step.completed, when: { any: [ { outcome: proposed }, { outcome: skipped } ] }, produces: [fact:scopeMap] }
   - { from: evidence, to: stop, on: step.completed, when: { outcome: complete },
-      produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket, fact:recommendation] }
+      produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket, fact:recommendation, fact:runs] }
   - { label: "a source is missing: gather again", from: evidence, to: gather, on: step.completed, when: { outcome: regather },   produces: [fact:findings] }
   - { label: "proof is incomplete: draft again", from: evidence, to: draft,  on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
   - { from: stop, to: freeze,   on: step.completed, when: { outcome: approve } }

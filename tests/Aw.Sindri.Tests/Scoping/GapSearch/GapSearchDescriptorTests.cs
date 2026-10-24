@@ -78,7 +78,7 @@ public sealed class GapSearchDescriptorTests
         Assert.Equal(("model", ParameterType.Text, false), (model.Name, model.Type, model.Required));
     }
 
-    [Fact(Skip = "reads the shipped recipe, which the integration task (D) changes: it removes this Skip")]
+    [Fact]
     public void The_recipes_gap_search_and_relevance_states_have_no_inputs()
     {
         var lines = File.ReadAllLines(Path.Combine(RepoRoot(), "recipes", "sindri", "workflow.scoping.yaml"));
