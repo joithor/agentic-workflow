@@ -63,13 +63,12 @@ public sealed class BuildCodeIndexServiceTests
         Assert.Null(report.Commit);
         Assert.Null(await harness.Header());
         Assert.Equal(0, harness.Parser.Parsed);
-        Assert.Equal(0, harness.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_build_runs_while_every_heavy_slot_is_held_and_takes_none()
+    public async Task A_build_needs_no_heavy_job_slot_only_the_repos_index_lock()
     {
-        var harness = new BuildHarness { Heavy = new FakeHeavyJobLock(slots: 0), Parser = new FakeSymbolParser().With("src/A.cs", new ParseOutcome([Parsed.Class("A", 1)])) };
+        var harness = new BuildHarness { Parser = new FakeSymbolParser().With("src/A.cs", new ParseOutcome([Parsed.Class("A", 1)])) };
         _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A");
 
         var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
@@ -128,7 +127,7 @@ public sealed class BuildCodeIndexServiceTests
         var newer = new BuildHarness { Parser = new FakeSymbolParser { Version = "fake-2" }.With("src/A.cs", new ParseOutcome([])).With("src/B.cs", new ParseOutcome([])) };
 
         // The same store and snapshot, a parser that reports another version.
-        var service = new Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), new Features.BuildCodeIndex.BuildLayers(new Core.Embedding.EmbeddingsLayer(harness.Embedder, harness.Clock), new Features.BuildCodeIndex.GraphLayer(harness.Snapshot, harness.Clock, harness.Scrubber)), harness.Store, harness.Heavy, harness.Clock);
+        var service = new Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), new Features.BuildCodeIndex.BuildLayers(new Core.Embedding.EmbeddingsLayer(harness.Embedder, harness.Clock), new Features.BuildCodeIndex.GraphLayer(harness.Snapshot, harness.Clock, harness.Scrubber)), harness.Store, harness.Clock);
         var result = await service.Handle(new Features.BuildCodeIndex.BuildCodeIndexRequest(harness.Repo, BuildHarness.Second, new Progress<string>()), Token);
 
         Assert.Equal(["src/A.cs", "src/B.cs"], newer.Parser.ParsedPaths);
@@ -159,7 +158,6 @@ public sealed class BuildCodeIndexServiceTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await harness.Build(BuildHarness.Second, cancellationToken: cancel.Token));
 
         Assert.Equal(BuildHarness.First, (await harness.Header())!.Meta.Commit);
-        Assert.Equal(0, harness.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "unit")]

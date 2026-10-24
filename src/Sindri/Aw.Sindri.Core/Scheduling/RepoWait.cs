@@ -12,9 +12,6 @@ public enum RepoWait
     /// <summary>A build is running.</summary>
     Building,
 
-    /// <summary>The last build was deferred for a free heavy-job slot.</summary>
-    WaitingForSlot,
-
     /// <summary>The last build failed; a retry is due later.</summary>
     Retrying,
 
