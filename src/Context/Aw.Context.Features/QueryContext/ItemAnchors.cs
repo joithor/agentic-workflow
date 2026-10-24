@@ -8,7 +8,7 @@ namespace Aw.Context.Features.QueryContext;
 /// </summary>
 internal static class ItemAnchors
 {
-    private const int MaxSuggestions = 5;
+    private const int MaxSuggestions = 25;   // what to ask for instead: a list a person reads in a glance, not a result set
 
     internal static GraphNode? Record(GraphSnapshot graph, string item)
     {

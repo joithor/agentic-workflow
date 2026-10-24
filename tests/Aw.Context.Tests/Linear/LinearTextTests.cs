@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Context.Infrastructure.Linear;
 
 namespace Aw.Context.Tests.Linear;
@@ -115,15 +114,7 @@ public sealed class LinearTextTests
         Assert.DoesNotContain("Images:", LinearText.Of(Issue(description: "plain")), StringComparison.Ordinal);
 
     [Fact]
-    public void The_64_kb_cut_still_holds()
-    {
-        var text = LinearText.Of(Issue(description: new string('x', 70_000), attachments: [new("1", "https://example.com/a", "A")]));
-
-        Assert.Equal(64 * 1024, System.Text.Encoding.UTF8.GetByteCount(text));
-    }
-
-    [Fact]
-    public void A_long_description_is_cut_and_every_attachment_and_image_line_survives()
+    public void A_long_description_keeps_every_attachment_and_image_line()
     {
         var text = LinearText.Of(Issue(description: new string('x', 70_000) + $" ![a]({Pic})", comments: [Comment("late comment")], attachments:
         [
@@ -131,23 +122,9 @@ public sealed class LinearTextTests
             new("2", "https://example.com/shot.png", "Shot", "file"),
         ]));
 
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
         Assert.Contains("- Thread (slack) https://acme.slack.com/archives/C1/p1", text, StringComparison.Ordinal);
         Assert.Contains("- Shot (file) https://example.com/shot.png", text, StringComparison.Ordinal);
         Assert.Contains("\n\nImages:\n- a " + Pic + "\n- Shot https://example.com/shot.png", text, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Many_comments_are_cut_before_the_attachments_are()
-    {
-        var comments = Enumerable.Range(0, 400).Select(n => Comment("comment " + n.ToString(CultureInfo.InvariantCulture) + " " + new string('y', 300))).ToList();
-
-        var text = LinearText.Of(Issue(description: "desc", comments: comments, attachments: [new("1", "https://example.com/a", "A", "link"), new("2", "https://example.com/b", "B", "link")]));
-
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
-        Assert.Contains("comment 0 ", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("comment 399 ", text, StringComparison.Ordinal);
-        Assert.EndsWith("\n\nAttachments:\n- A (link) https://example.com/a\n- B (link) https://example.com/b", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -177,25 +154,11 @@ public sealed class LinearTextTests
     }
 
     [Fact]
-    public void A_long_description_still_keeps_the_project_and_relations()
+    public void A_long_description_keeps_the_project_and_relations()
     {
         var text = LinearText.Of(Issue(description: new string('x', 70_000), project: "Split panes", relations: [new("related", RelatedIssue: new("SPL-2", "Second"))]));
 
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
         Assert.Contains("Project: Split panes", text, StringComparison.Ordinal);
         Assert.Contains("- related SPL-2 Second", text, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Sections_over_64_kb_are_cut_at_a_line_with_a_mark()
-    {
-        var attachments = Enumerable.Range(0, 3000).Select(n => n.ToString(CultureInfo.InvariantCulture)).Select(id => new LinearAttachment(id, "https://example.com/item/" + id, "Item " + id, "link")).ToList();
-
-        var text = LinearText.Of(Issue(description: "desc", attachments: attachments));
-
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
-        Assert.EndsWith("\n(more not shown)", text, StringComparison.Ordinal);
-        var lines = text.Split('\n');
-        Assert.Matches("^- Item \\d+ \\(link\\) https://example.com/item/\\d+$", lines[^2]);
     }
 }

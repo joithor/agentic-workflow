@@ -1,14 +1,11 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Aw.Context.Infrastructure.Linear;
 
-/// <summary>The raw text of a fetched Linear record (the engine sanitizes, scrubs and trust-tags it): up to 64 KB of UTF-8, never splitting a surrogate pair.</summary>
+/// <summary>The raw text of a fetched Linear record (the engine sanitizes, scrubs and trust-tags it): whole, with no cut.</summary>
 internal static partial class LinearText
 {
-    private const int MaxBytes = 64 * 1024;
-
     /// <summary>
     /// An issue: its description, its comments, its project, its relations, every attachment, and the images found in all three. The ingest
     /// sanitizer removes markdown and HTML images from the stored text, so their alt text and link are listed again as
@@ -16,33 +13,28 @@ internal static partial class LinearText
     /// </summary>
     public static string Of(LinearIssue issue)
     {
-        // The project, relations, attachments and images are what the owner wants to survive: the 64 KB goes to the
-        // description, then the comments, and these keep what is left whole. Only when they alone pass 64 KB are they
-        // cut, at a line.
-        var tail = IssueTail(issue);
-        var tailBytes = Encoding.UTF8.GetByteCount(tail);
-        return tailBytes > MaxBytes ? CutLines(tail) : Cut(IssueHead(issue), MaxBytes - tailBytes) + tail;
+        return IssueHead(issue) + IssueTail(issue);
     }
 
     /// <summary>A Linear Document: its content.</summary>
-    public static string Of(LinearDocument document) => Cut(document.Content ?? "");
+    public static string Of(LinearDocument document) => document.Content ?? "";
 
     /// <summary>A project: its description, a line each for state, lead, teams and dates, and its latest updates (newest first).</summary>
     public static string Of(LinearProject project, IReadOnlyList<LinearProjectUpdate> updates)
     {
         ArgumentNullException.ThrowIfNull(updates);
-        return Cut((project.Description ?? "") + "\n\n" + string.Join('\n', new[]
+        return (project.Description ?? "") + "\n\n" + string.Join('\n', new[]
         {
             Line("State", project.State ?? "unknown"),
             Line("Lead", project.Lead?.Name),
             Line("Teams", string.Join(", ", (project.Teams?.Nodes ?? []).Select(t => t.Key))),
             Line("Start", project.StartDate),
             Line("Target", project.TargetDate),
-        }.Where(l => l.Length > 0)) + Section("Updates", updates.Select(u => $"- {u.Health ?? "unknown"} ({Day(u.CreatedAt)}): {u.Body}"), more: null));
+        }.Where(l => l.Length > 0)) + Section("Updates", updates.Select(u => $"- {u.Health ?? "unknown"} ({Day(u.CreatedAt)}): {u.Body}"), more: null);
     }
 
     /// <summary>A project update: its health, then its body.</summary>
-    public static string Of(LinearProjectUpdate update) => Cut($"Health: {update.Health ?? "unknown"}\n\n{update.Body}");
+    public static string Of(LinearProjectUpdate update) => $"Health: {update.Health ?? "unknown"}\n\n{update.Body}";
 
     /// <summary>A day as 'yyyy-MM-dd' (UTC).</summary>
     public static string Day(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -120,36 +112,4 @@ internal static partial class LinearText
 
     [GeneratedRegex("\\balt\\s*=\\s*[\"'](?<v>[^\"']*)[\"']", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
     private static partial Regex HtmlAlt { get; }
-
-    private const string MoreMark = "\n(more not shown)";
-
-    // Sections that alone pass the budget: whole lines up to it, then the mark.
-    private static string CutLines(string text)
-    {
-        var kept = Cut(text, MaxBytes - Encoding.UTF8.GetByteCount(MoreMark));
-        var lastLine = kept.LastIndexOf('\n');
-        return (lastLine > 0 ? kept[..lastLine] : kept) + MoreMark;
-    }
-
-    private static string Cut(string text) => Cut(text, MaxBytes);
-
-    private static string Cut(string text, int maxBytes)
-    {
-        var bytes = 0;
-        var end = 0;
-        while (end < text.Length)
-        {
-            var width = char.IsHighSurrogate(text[end]) && end + 1 < text.Length ? 2 : 1;
-            var size = Encoding.UTF8.GetByteCount(text.AsSpan(end, width));
-            if (bytes + size > maxBytes)
-            {
-                break;
-            }
-
-            bytes += size;
-            end += width;
-        }
-
-        return end == text.Length ? text : text[..end];
-    }
 }
