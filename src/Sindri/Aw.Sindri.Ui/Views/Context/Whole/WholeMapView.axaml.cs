@@ -58,6 +58,7 @@ internal sealed partial class WholeMapView : UserControl
             old.FitRequested -= OnFitRequested;
             old.PropertyChanged -= OnMapChanged;
             old.EmphasisChanged -= OnEmphasisChanged;
+            old.CentreRequested -= OnCentreRequested;
         }
 
         _map = DataContext as WholeMapViewModel;
@@ -68,6 +69,7 @@ internal sealed partial class WholeMapView : UserControl
             _map.FitRequested += OnFitRequested;
             _map.PropertyChanged += OnMapChanged;
             _map.EmphasisChanged += OnEmphasisChanged;
+            _map.CentreRequested += OnCentreRequested;
             _fitted = false;
             Arrange();
         }
@@ -96,6 +98,20 @@ internal sealed partial class WholeMapView : UserControl
     }
 
     private void OnEmphasisChanged(object? sender, EventArgs e) => WholeWorld.Highlight(_map?.Focus, _map?.Emphasis);
+
+    private void OnCentreRequested(object? sender, ValueEventArgs<WholeRect> e) => Centre(new Point(e.Value.CenterX, e.Value.CenterY));
+
+    private void OnNodePanelClose(object? sender, RoutedEventArgs e) => _ = _map?.Panel.Close();
+
+    private void OnNodePanelOpenSource(object? sender, RoutedEventArgs e) => _ = _map?.Panel.OpenSource();
+
+    private void OnNodePanelEdge(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: NodeEdgeRowViewModel row })
+        {
+            row.Jump();
+        }
+    }
 
     private void OnFitRequested(object? sender, EventArgs e) => WholeCanvas.Fit();
 
