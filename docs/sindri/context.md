@@ -584,7 +584,7 @@ services:
 - `index.denyPaths` adds to the built-in secret globs (`.env*`, `*.pem`, `**/secrets/**` and the like) and never
   replaces them. A denied path never reaches the recognizers, graphify, the labeler or the graph. A glob added after a map exists hides that path from every read (lenses, file maps, queries, export, `map status`, the review queue and its counts, the bulk accept, the review history, a scoping run's proposal statuses, the CLI, HTTP and MCP) as soon as the profile with the glob is approved: its code nodes, their links, the features only they implement (even one a person accepted), the surfaces only it produced, the record nodes of denied repo documents and the decisions quoting them, and any evidence that names it. A node a person rejected, deleted, merged away or accepted is cut like any other (the cut judges the stored map and the proposals together, before the overrides are applied), and a reject written before the glob still names its proposal after it. Items it hides are neither listed, decided nor counted by the review, and do not block a promote. The path leaves the stored map when a draft is promoted (a promote writes the cut map, whether the draft came from a build or from a proposal), and a rebuild after the glob writes its draft without it. Both also undo, in the same write as the cut map, the person's accept, rename, move and merge decisions about the nodes the cut removes (and merges and moves into a node it removed), under a marker that hides the undone row and its undo from every view, the review history and export included, so no name a denied file produced is listed after the cut; if the glob is removed later those items come back undecided. Rejects and deletes are not undone: once their node is gone they are satisfied (never an orphan, never blocking a promote), no view lists them while it is gone, and they stay in the log, so the item stays rejected if the node comes back. The retained versions from before the cut and the export files written before the glob keep their copy of the path on disk until the `context-purge` service (when it is named under `services:`) removes retained versions past the newest 20 and exports older than 14 days; without that service they stay, and `doctor` warns on `context:retention`. No read shows either. A glob is relative
   to the repo root, uses `/`, and has no `..`; `profile validate` names the bad one (`repos.work-app.index.denyPaths[1]: …`).
-- `index.roles` names file roles a repo does not index: `roles: { cron: ["**/*cron*"], fixture: ["**/fixtures/**"] }`, a role name to repo-relative globs (same rules as `denyPaths`; a repo's own roles are added to the profile's). The files of a named role are denied like `denyPaths` globs: never extracted, clustered, cited or searched, and cut from an existing map on approval. A glob that matches a directory denies everything under it, so `**/*cron*` covers `src/crons/run.ts` and `src/nightly-cron.ts`. An entry may be `prefix:`, `suffix:` or `regex:` text matched against one path segment, ignoring case. Roles apply at build and on every read (a role added after the map exists filters its code nodes and evidence at query time, like a late `denyPaths` glob). There are no built-in roles: roles come only from a repo's own `index.roles`, and a repo that names none excludes nothing.
+- `index.roles` names file roles a repo does not index: `roles: { cron: ["**/*cron*"], fixture: ["**/fixtures/**"] }`, a role name to repo-relative globs (same rules as `denyPaths`; set under a repo's `index`, never at the profile top: a profile-level `index.roles` is refused). The files of a named role are denied like `denyPaths` globs: never extracted, clustered, cited or searched, and cut from an existing map on approval. A glob that matches a directory denies everything under it, so `**/*cron*` covers `src/crons/run.ts` and `src/nightly-cron.ts`. An entry may be `prefix:`, `suffix:` or `regex:` text matched against one path segment, ignoring case. Roles apply at build and on every read (a role added after the map exists filters its code nodes and evidence at query time, like a late `denyPaths` glob). There are no built-in roles: roles come only from a repo's own `index.roles`, and a repo that names none excludes nothing.
 - Labeling is off by default. When on, it runs through your own agent CLIs (Claude Code, Codex or Cursor, in that order), which send the scrubbed file paths to their provider, as any session does; it never uses Judge's remote API. It asks the CLI to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
   answers, the build goes on with unnamed clusters and reports `degraded: labels`.
 - Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
@@ -798,7 +798,7 @@ embeddings, telemetry off, connectors, the service account and its key) is `docs
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }   # add managed: true when `sindri onyx up` runs it
+    onyx: { url: "http://127.0.0.1:3189", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }   # add managed: true when `sindri onyx up` runs it
     linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
 ```
 
@@ -807,7 +807,7 @@ context:
 - `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
 - `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
   exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
-  `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
+  `onyx: { url: "http://127.0.0.1:3189", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
 - `token`: a **secret pointer** to the Onyx admin token Sindri alone uses (a personal access token of the dedicated user `sindri@example.com`, or a service-account key), never the token itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
@@ -899,7 +899,7 @@ user: me
 repos: [{ name: work-app, path: /path/to/work-app }]
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3189", token: "env:SINDRI_ONYX_KEY", version: "v4.9.0" }
     linear: { teams: [ENG] }
 YAML
 $SINDRI profile validate                        # prints the hash; exit 1 = valid, not approved yet

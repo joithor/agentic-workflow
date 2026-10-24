@@ -16,13 +16,12 @@ public sealed class IndexRolesTests : IDisposable
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "integration")]
-    public async Task The_yaml_profile_reads_index_roles_at_the_top_and_on_a_repo()
+    public async Task The_yaml_profile_reads_index_roles_on_a_repo()
     {
-        _files.Write(Base + "index:\n  roles:\n    cron: [\"**/*cron*\"]\nrepos:\n  - { name: web, path: /work/web, index: { roles: { fixture: [\"**/fixtures/**\"] } } }\n");
+        _files.Write(Base + "repos:\n  - { name: web, path: /work/web, index: { roles: { fixture: [\"**/fixtures/**\"] } } }\n");
 
         var profile = (await _files.Source.Load(Token)).Value.Profile;
 
-        Assert.Equal(["**/*cron*"], profile.Index!.Roles!["cron"]);
         Assert.Equal(["**/fixtures/**"], profile.Repos![0].Index!.Roles!["fixture"]);
     }
 
@@ -31,19 +30,19 @@ public sealed class IndexRolesTests : IDisposable
     {
         var profile = new SindriProfile(1, "thor",
             Repos: [new RepoEntry("web", "/work/web", new IndexSettings(["generated/**"], Roles: new Dictionary<string, IReadOnlyList<string>> { ["fixture"] = ["**/fixtures/**"] })), new RepoEntry("api", "/work/api")],
-            Index: new IndexSettings(["vendor/**"], Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = ["**/*cron*"] }));
+            Index: new IndexSettings(["vendor/**"]));
 
         var entries = ContextScopes.Entries(profile);
 
-        Assert.Equal(["vendor/**", "generated/**", "**/*cron*", "**/fixtures/**"], entries.Single(e => e.Name == "web").DenyPaths);
-        Assert.Equal(["vendor/**", "**/*cron*"], entries.Single(e => e.Name == "api").DenyPaths);
+        Assert.Equal(["vendor/**", "generated/**", "**/fixtures/**"], entries.Single(e => e.Name == "web").DenyPaths);
+        Assert.Equal(["vendor/**"], entries.Single(e => e.Name == "api").DenyPaths);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_file_of_a_named_role_is_denied_in_a_directory_and_by_name_and_other_files_are_not()
     {
-        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web")],
-            Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = ["**/*cron*"], ["fixture"] = ["**/*fixture*"] }));
+        var profile = new SindriProfile(1, "thor",
+            Repos: [new RepoEntry("web", "/work/web", new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = ["**/*cron*"], ["fixture"] = ["**/*fixture*"] }))]);
 
         var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
 
@@ -64,12 +63,12 @@ public sealed class IndexRolesTests : IDisposable
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("", "index.roles.cron[0]: must be a non-empty glob")]
-    [InlineData("/etc/**", "index.roles.cron[0]: must be relative to the repo root")]
-    [InlineData("a/../b", "index.roles.cron[0]: must not contain '..'")]
+    [InlineData("", "repos.web.index.roles.cron[0]: must be a non-empty glob")]
+    [InlineData("/etc/**", "repos.web.index.roles.cron[0]: must be relative to the repo root")]
+    [InlineData("a/../b", "repos.web.index.roles.cron[0]: must not contain '..'")]
     public void A_role_glob_that_cant_be_one_names_its_key_path(string glob, string message)
     {
-        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = [glob] }));
+        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web", new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = [glob] }))]);
 
         var error = ProfileRules.Check(profile).Error;
 
@@ -90,18 +89,18 @@ public sealed class IndexRolesTests : IDisposable
     [InlineData("regex:^v\\d+$")]
     public void A_prefix_suffix_or_regex_entry_is_a_valid_role_entry(string entry)
     {
-        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = [entry] }));
+        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web", new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = [entry] }))]);
 
         Assert.True(ProfileRules.Check(profile).IsSuccess);
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("prefix:", "index.roles.r[0]: 'prefix:' takes a text")]
-    [InlineData("suffix:a/b", "index.roles.r[0]: 'suffix:' matches one path segment")]
-    [InlineData("regex:(", "index.roles.r[0]: is not a valid regular expression")]
+    [InlineData("prefix:", "repos.web.index.roles.r[0]: 'prefix:' takes a text")]
+    [InlineData("suffix:a/b", "repos.web.index.roles.r[0]: 'suffix:' matches one path segment")]
+    [InlineData("regex:(", "repos.web.index.roles.r[0]: is not a valid regular expression")]
     public void A_bad_prefix_suffix_or_regex_entry_names_its_key_path(string entry, string message)
     {
-        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["r"] = [entry] }));
+        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web", new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["r"] = [entry] }))]);
 
         Assert.Contains(message, ProfileRules.Check(profile).Error.Message, StringComparison.Ordinal);
     }
@@ -109,8 +108,8 @@ public sealed class IndexRolesTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void Tagged_entries_reach_the_engine_and_deny_by_segment()
     {
-        var profile = new SindriProfile(1, "thor", Repos: [new RepoEntry("web", "/work/web")],
-            Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = ["suffix:.generated.ts", "prefix:gen_", "regex:^v\\d+$"] }));
+        var profile = new SindriProfile(1, "thor",
+            Repos: [new RepoEntry("web", "/work/web", new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["generated"] = ["suffix:.generated.ts", "prefix:gen_", "regex:^v\\d+$"] }))]);
 
         var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
 
@@ -118,5 +117,13 @@ public sealed class IndexRolesTests : IDisposable
         Assert.True(repo.Denies("src/gen_x/a.ts"));
         Assert.True(repo.Denies("src/v3/a.ts"));
         Assert.False(repo.Denies("src/a.ts"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_profile_level_index_roles_is_refused_because_roles_are_per_repo()
+    {
+        var profile = new SindriProfile(1, "thor", Index: new IndexSettings(Roles: new Dictionary<string, IReadOnlyList<string>> { ["cron"] = ["**/*cron*"] }));
+
+        Assert.Contains("index.roles: roles are per repo", ProfileRules.Check(profile).Error.Message, StringComparison.Ordinal);
     }
 }

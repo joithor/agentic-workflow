@@ -10,7 +10,7 @@ namespace Aw.Context.Tests.Onyx;
 /// <summary>How the onyx client sends a request and reads replies that aren't what v4.9.0 returns, over an in-memory handler.</summary>
 public sealed class OnyxClientTests
 {
-    private static readonly OnyxSettings _settings = OnyxSettings.Create("http://127.0.0.1:3000", OnyxSourceHarness.Pointer, "v4.9.0").Value;
+    private static readonly OnyxSettings _settings = OnyxSettings.Create("http://127.0.0.1:3189", OnyxSourceHarness.Pointer, "v4.9.0").Value;
 
     [Fact, Trait("Lane", "unit")]
     public async Task It_sends_the_resolved_key_as_bearer_to_the_route_under_the_base_url()
@@ -27,7 +27,7 @@ public sealed class OnyxClientTests
         Assert.Empty(hits.Value);
         Assert.Equal("Bearer on_fixture", authorization);
         var seen = Assert.Single(handler.Requests);
-        Assert.Equal((HttpMethod.Post, new Uri("http://127.0.0.1:3000/api/admin/search")), (seen.Method, seen.Uri));
+        Assert.Equal((HttpMethod.Post, new Uri("http://127.0.0.1:3189/api/admin/search")), (seen.Method, seen.Uri));
     }
 
     [Theory, Trait("Lane", "unit")]

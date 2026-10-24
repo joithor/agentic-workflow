@@ -22,7 +22,7 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
     [Fact]
     public void Describe_says_a_live_local_intent_source_that_cannot_cut_to_a_past_time_and_declares_no_limits()
     {
-        using var harness = new OnyxSourceHarness(new Uri("http://127.0.0.1:3000"), "on_x");
+        using var harness = new OnyxSourceHarness(new Uri("http://127.0.0.1:3189"), "on_x");
 
         var descriptor = harness.Source.Describe();
 

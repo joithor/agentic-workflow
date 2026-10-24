@@ -136,7 +136,12 @@ public static class ProfileRules
             }
         }
 
-        var roles = Roles("index", profile.Index).Concat((profile.Repos ?? []).SelectMany(r => Roles($"repos.{r.Name}.index", r.Index)));
+        if (profile.Index?.Roles is { Count: > 0 })
+        {
+            return Invalid("index.roles", "roles are per repo: move them to repos.<name>.index.roles");
+        }
+
+        var roles = (profile.Repos ?? []).SelectMany(r => Roles($"repos.{r.Name}.index", r.Index));
         foreach (var (path, entries) in roles)
         {
             for (var i = 0; i < entries.Count; i++)
