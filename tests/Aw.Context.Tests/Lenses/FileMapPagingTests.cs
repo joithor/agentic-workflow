@@ -31,13 +31,23 @@ public sealed class FileMapPagingTests
         FileMapBuilder.Build(_basis, new FileMapQuery(_repo, path, unmapped, Draft: false, cursor, limit), files, Graph());
 
     [Fact, Trait("Lane", "unit")]
-    public void Without_a_cursor_the_first_page_holds_200_entries_and_names_the_next()
+    public void With_no_cursor_and_no_limit_every_child_comes_back_and_there_is_no_next_page()
     {
-        var view = Page(Files(0, 0, loose: 450)).Value;
+        var view = Page(Files(0, 0, loose: 1500)).Value;
+
+        Assert.Equal((1500, 1500), (view.Entries.Count, view.Total));
+        Assert.Null(view.NextCursor);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cursor_without_a_limit_pages_by_200_and_names_the_next()
+    {
+        var files = Files(0, 0, loose: 450);
+
+        var view = Page(files, cursor: "loose009.md").Value;
 
         Assert.Equal((200, 450), (view.Entries.Count, view.Total));
-        Assert.Equal("loose199.md", view.Entries[^1].Name);
-        Assert.Equal("loose199.md", view.NextCursor);
+        Assert.Equal("loose209.md", view.NextCursor);
     }
 
     [Fact, Trait("Lane", "unit")]

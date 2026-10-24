@@ -6,7 +6,7 @@ namespace Aw.Context.Core.Lenses;
 /// <summary>Builds the file map of a directory (spec §8.9, S-4). Pure over an applied graph and a file listing.</summary>
 public static class FileMapBuilder
 {
-    /// <summary>The page size when the query names none.</summary>
+    /// <summary>The page size when the query pages (names a cursor or a limit) but gives no limit.</summary>
     public const int DefaultLimit = 200;
 
     /// <summary>The most entries one page holds.</summary>
@@ -60,7 +60,8 @@ public static class FileMapBuilder
             return ContextErrors.QueryInvalid.With($"the cursor '{(query.Cursor!.Length <= 80 ? query.Cursor : "(a long cursor)")}' is not a child of '{path}' (fix: use the nextCursor of the previous page, or none)");
         }
 
-        var limit = Math.Clamp(query.Limit ?? DefaultLimit, 1, MaxLimit);
+        // No cursor and no limit is the unpaged ask: every child, as before paging existed. Either one pages, 200 entries unless a limit says otherwise.
+        var limit = query.Cursor is null && query.Limit is null ? children.Count : Math.Clamp(query.Limit ?? DefaultLimit, 1, MaxLimit);
         var page = children.Skip(first).Take(limit).ToList();
         var entries = page.Select(c => FileMapRollup.Entry(c, tree, links)).ToList();
         var next = first + page.Count < children.Count ? page[^1].Path : null;
