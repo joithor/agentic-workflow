@@ -54,7 +54,7 @@ public sealed partial class EvidenceAgentGrantsTests
     [Fact]
     public void No_step_gets_the_blanket_grant_and_gh_publish_goes_to_the_publish_step_alone()
     {
-        foreach (var block in Grants.Select(static d => (string)d[0]))
+        foreach (var block in _briefedSteps.Append("step.evidence.publish"))
         {
             Assert.DoesNotContain("Bash(ui-evidence:*)", Tools(block));
             Assert.Equal(block == "step.evidence.publish", Tools(block).Contains("Bash(ui-evidence gh-publish:*)"));
