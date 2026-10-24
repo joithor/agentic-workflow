@@ -9,7 +9,6 @@ using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Line;
 
 namespace Aw.Sindri.Features.GetInstanceLine;
 
@@ -45,7 +44,14 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
             return opened.Error;
         }
 
-        var line = opened.Value;
+        var limits = await Limits(cancellationToken).ConfigureAwait(false);
+        var stations = limits.IsError ? limits.Error : await Stations(opened.Value, cancellationToken).ConfigureAwait(false);
+        var phases = stations.IsError ? stations.Error : await Phases(opened.Value, cancellationToken).ConfigureAwait(false);
+        return phases.IsError ? phases.Error : new LineView(stations.Value, phases.Value, limits.Value.Parallel, limits.Value.MaxOpenPrs);
+    }
+
+    private async ValueTask<Result<(int Parallel, int MaxOpenPrs)>> Limits(CancellationToken cancellationToken)
+    {
         var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
         if (approved.IsError)
         {
@@ -53,6 +59,11 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         }
 
         var settings = approved.Value?.Profile ?? new SindriProfile(1, string.Empty);   // nothing approved: the defaults
+        return (LineProfile.Parallel(settings), LineProfile.MaxOpenPrs(settings));
+    }
+
+    private async ValueTask<Result<IReadOnlyList<LineStation>>> Stations(InstanceView line, CancellationToken cancellationToken)
+    {
         var stations = new List<LineStation>(_stations.Length);
         foreach (var (station, recipe, fact) in _stations)
         {
@@ -65,15 +76,19 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
             stations.Add(new LineStation(station, Child(line, recipe), packet.Value));
         }
 
+        return stations;
+    }
+
+    private async ValueTask<Result<IReadOnlyList<LinePhaseView>>> Phases(InstanceView line, CancellationToken cancellationToken)
+    {
         var boardFact = await Fact(line, "phaseBoard", cancellationToken).ConfigureAwait(false);
         if (boardFact.IsError)
         {
             return boardFact.Error;
         }
 
-        var rows = PhaseBoard.Read(boardFact.Value)?.Rows ?? [];
-        var phases = new List<LinePhaseView>(rows.Count);
-        foreach (var row in rows)
+        var phases = new List<LinePhaseView>();
+        foreach (var row in BoardRow.Read(boardFact.Value))
         {
             var phase = await Phase(line, row, cancellationToken).ConfigureAwait(false);
             if (phase.IsError)
@@ -84,7 +99,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
             phases.Add(phase.Value);
         }
 
-        return new LineView(stations, phases, LineProfile.Parallel(settings), LineProfile.MaxOpenPrs(settings));
+        return phases;
     }
 
     // The station's live child (an ended one is not among the line's children).
@@ -102,10 +117,10 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
             return node.Error;
         }
 
-        var hash = node.Value is JsonValue value && value.TryGetValue<string>(out var text) ? text : LineJson.Str(node.Value, "hash");
+        var hash = Text(node.Value, "hash");
         if (string.IsNullOrWhiteSpace(hash))
         {
-            return Results.Success<LinePacket?>(null);
+            return Results.Success<LinePacket?>(value: null);
         }
 
         var found = await frozen.Find(hash, cancellationToken).ConfigureAwait(false);
@@ -117,23 +132,43 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         return new LinePacket(kind, hash, found.IsSuccess && found.Value is not null);
     }
 
-    private async ValueTask<Result<LinePhaseView>> Phase(InstanceView line, PhaseRow row, CancellationToken cancellationToken)
+    private async ValueTask<Result<LinePhaseView>> Phase(InstanceView line, BoardRow row, CancellationToken cancellationToken)
     {
-        var state = PhaseRow.Name(row.State);
+        var parkReason = row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason);
+        var bare = new LinePhaseView(row.Phase, row.Attempt, Address: null, row.State, parkReason, Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
         if (row.Attempt < 1)
         {
-            return new LinePhaseView(LinePhaseId.From(row.Phase), row.Attempt, Address: null, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
+            return bare;
         }
 
-        var address = line.Address.Linked(_phaseRecipe, row.Phase, row.Attempt);
+        var address = line.Address.Linked(_phaseRecipe, row.Phase.Value, row.Attempt);
         var instance = await reader.Get(address, cancellationToken).ConfigureAwait(false);
         if (instance.IsError)
         {
-            // why: a started phase whose instance can't be read (not yet visible, or purged) still shows its board row
-            return new LinePhaseView(LinePhaseId.From(row.Phase), row.Attempt, address.Value, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
+            return bare with { Address = address.Value };   // why: a started phase whose instance can't be read (not yet visible, or purged) still shows its board row
         }
 
-        var view = instance.Value;
+        var facts = await PhaseFacts(instance.Value, cancellationToken).ConfigureAwait(false);
+        return facts.IsError ? facts.Error : Joined(bare with { Address = address.Value }, instance.Value, facts.Value);
+    }
+
+    // The phase's row joined with what its instance shows now.
+    private LinePhaseView Joined(LinePhaseView row, InstanceView view, (JsonNode? Packet, JsonNode? Workspace, JsonNode? Pr) facts)
+    {
+        var end = view.Outcome is null ? clock.GetUtcNow() : view.Since;
+        return row with
+        {
+            Pr = Text(facts.Pr, "url", "link", "pr"),
+            Base = Base(facts.Packet),
+            Worktree = Text(facts.Workspace, "path"),
+            Now = scrubber.Scrub(view.Next),
+            Tokens = view.Budget?.Instance ?? 0,
+            WallMinutes = view.StartedAt is { } started ? (int)Math.Max(0, (end - started).TotalMinutes) : 0,
+        };
+    }
+
+    private async ValueTask<Result<(JsonNode? Packet, JsonNode? Workspace, JsonNode? Pr)>> PhaseFacts(InstanceView view, CancellationToken cancellationToken)
+    {
         var packet = await Fact(view, "phasePacket", cancellationToken).ConfigureAwait(false);
         var workspace = await Fact(view, "workspace", cancellationToken).ConfigureAwait(false);
         var pr = await Fact(view, "pr", cancellationToken).ConfigureAwait(false);
@@ -142,20 +177,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
             return packet.IsError ? packet.Error : workspace.IsError ? workspace.Error : pr.Error;
         }
 
-        var end = view.Outcome is null ? clock.GetUtcNow() : view.Since;
-        var minutes = view.StartedAt is { } started ? (int)Math.Max(0, (end - started).TotalMinutes) : 0;
-        return new LinePhaseView(
-            LinePhaseId.From(row.Phase),
-            row.Attempt,
-            address.Value,
-            state,
-            row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason),
-            Text(pr.Value, "url", "link", "pr"),
-            Base(packet.Value),
-            Text(workspace.Value, "path"),
-            scrubber.Scrub(view.Next),
-            view.Budget?.Instance ?? 0,
-            minutes);
+        return (packet.Value, workspace.Value, pr.Value);
     }
 
     // The base the line chose for the phase: the head branch of the stack parent, else the default branch.
@@ -178,7 +200,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
     {
         if (view.FactShas?.GetValueOrDefault("fact:" + key) is not { } sha)
         {
-            return Results.Success<JsonNode?>(null);
+            return Results.Success<JsonNode?>(value: null);
         }
 
         var bytes = await contents.Read(new FactValue("fact:sha256:" + sha, sha, HeadSha: null), cancellationToken).ConfigureAwait(false);
@@ -193,7 +215,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         }
         catch (System.Text.Json.JsonException)
         {
-            return Results.Success<JsonNode?>(null);   // boundary: a fact that is not JSON shows as absent
+            return Results.Success<JsonNode?>(value: null);   // boundary: a fact that is not JSON shows as absent
         }
     }
 }
