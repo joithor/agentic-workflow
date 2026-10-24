@@ -19,7 +19,7 @@ public sealed class ShipPackStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ShipSteps.Pack;
 
-    protected override string ExpectedHash => "sha256:23d1f6fdb7fadca6c5cae974fd3d03a76046f2d1e73a876bf630c8f1b5f8982e";   // the reads gained fact:workspace and fact:green: the first run prints the new hash
+    protected override string ExpectedHash => "sha256:d7574819ba136ebc5f1750bd77dbbbaec873d984a2ba174682450445b1aa70d5";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
