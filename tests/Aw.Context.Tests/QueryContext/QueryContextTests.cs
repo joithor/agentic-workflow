@@ -212,7 +212,7 @@ public sealed class QueryContextTests
         var record = FakeContextSource.Doc("linear/SPL-104", "Orientation toggle", "orientation for the toggle", "o9");
         var onyx = new FakeContextSource(_onyx, [record with { Ref = record.Ref with { Source = _onyx.Id } }]);
 
-        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Session(FixtureMap.Repo), CancellationToken.None);
+        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Session("split-panes", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
 
         var item = result.Value.Sections.Single().Items.Single();
         Assert.Equal("<untrusted source=\"onyx\">Orientation toggle</untrusted>", item.Title);

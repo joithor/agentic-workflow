@@ -56,7 +56,7 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
                 }
 
                 // No model answered at all: the build goes on with file-derived names and says how to set one up (SND-CONTEXT-042).
-                return answer.Error.Code == ContextErrors.SourceUnavailable.Code
+                return answer.Error.Code == ContextErrors.SourceUnavailable.Code || answer.Error.Code == ContextErrors.LabelingUnavailable.Code
                     ? new LabelPass([], Complete: false, Unavailable: $"no model answered: {answer.Error.Message} (fix: {LabelPass.NoModelFix})")
                     : answer.Error;
             }
