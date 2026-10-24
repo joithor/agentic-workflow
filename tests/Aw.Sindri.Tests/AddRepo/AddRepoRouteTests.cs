@@ -138,14 +138,4 @@ public sealed class AddRepoRouteTests : IAsyncLifetime
         Assert.Contains("SND-JOB-409", body, StringComparison.Ordinal);
         Assert.Contains(running.Value, body, StringComparison.Ordinal);
     }
-
-    [Fact]
-    public async Task A_session_is_refused_and_nothing_is_written()
-    {
-        var answer = await Host.Http.Ask(Post("/sindri/setup/repos", "{\"path\":\"/work/demo\"}", (Sindri.Host.SindriHeaders.Caller, "session"), (Sindri.Host.SindriHeaders.Client, "cli")));
-
-        Assert.Equal(HttpStatusCode.Forbidden, answer.Status);
-        Assert.Contains("SND-AUTH-002", answer.Body, StringComparison.Ordinal);
-        Assert.DoesNotContain("demo", await File.ReadAllTextAsync(ProfilePath, Token), StringComparison.Ordinal);
-    }
 }

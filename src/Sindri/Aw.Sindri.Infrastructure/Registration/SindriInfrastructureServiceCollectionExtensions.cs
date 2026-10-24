@@ -149,7 +149,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
             .AddSingleton<IHumanTokenStore, FileHumanToken>()
-            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed, sp.GetRequiredService<SindriSettings>().ProverMayConfirm))
+            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed))
             .AddScoped<IDoctorChecks, TokenFileDoctorChecks>()
             .AddScoped<IDoctorChecks, DeployDoctorChecks>()
             .AddScoped<IDoctorChecks>(_ => new UiEvidenceDoctorChecks(environment, Environment.ProcessPath, new ProcessToolRunner()))   // cutover §3.1: `setup:ui-evidence`
