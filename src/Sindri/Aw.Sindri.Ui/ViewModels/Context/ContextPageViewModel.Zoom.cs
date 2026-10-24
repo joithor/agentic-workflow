@@ -58,7 +58,7 @@ internal sealed partial class ContextPageViewModel
         }
 
         var touched = (located.Value.Located ?? []).Where(l => l.Area is not null).GroupBy(l => l.Area, StringComparer.Ordinal)
-            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key).ToList();
+            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key!).ToList();
         if (touched.Count == 0)
         {
             return false;
@@ -71,12 +71,12 @@ internal sealed partial class ContextPageViewModel
             return true;
         }
 
-        _unopenedHitAreas = [.. touched.Skip(reads.Count).OfType<string>()];
+        _unopenedHitAreas = [.. touched.Skip(reads.Count)];
         return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Count);
     }
 
     // Eight areas at a time, most-touched first, until the drawn nodes pass the soft guard.
-    private async Task<List<Result<WholeMapView>>> ReadAreas(Uri api, IReadOnlyList<string> touched, CancellationToken cancellationToken)
+    private async Task<List<Result<WholeMapView>>> ReadAreas(Uri api, List<string> touched, CancellationToken cancellationToken)
     {
         var reads = new List<Result<WholeMapView>>();
         var drawn = 0;
