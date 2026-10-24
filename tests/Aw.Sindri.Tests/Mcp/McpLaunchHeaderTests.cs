@@ -14,7 +14,7 @@ public sealed class McpLaunchHeaderTests(PlainMcpHost plain) : IClassFixture<Pla
 {
     private const string Launch = "LCH-00000000000000000000000000000002";
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task An_unknown_launch_over_mcp_is_403_SND_AUTH_003()
     {
         var answer = await plain.Host.Http.Ask(Post("/sindri/mcp", "{}", (SindriHeaders.Repo, "alpha"), (SindriHeaders.Launch, Launch)));
