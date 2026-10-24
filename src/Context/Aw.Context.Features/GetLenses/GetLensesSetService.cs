@@ -25,7 +25,7 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
 
         var depth = request.Depth ?? settings.Value.CascadeDepth;
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if ((QueryRules.CheckAnchors(anchors) ?? QueryRules.CheckDepth(depth)) is { } refused)
+        if ((QueryRules.CheckAnchors(anchors, "lenses") ?? QueryRules.CheckDepth(depth)) is { } refused)
         {
             return refused;
         }

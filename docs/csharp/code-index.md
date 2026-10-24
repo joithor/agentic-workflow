@@ -24,7 +24,7 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 017 to 029 are re
 |---|---|---|
 | `SND-CODEIDX-001` | Invalid | the `index:` section has a bad key or value (the message starts with the key path), or a repo name is not file-safe |
 | `SND-CODEIDX-002` | NotFound | the repo path is not a git repo, git refuses it as unsafe, or the commit is not in it |
-| `SND-CODEIDX-003` | Invalid | the tracked input is over `index.maxTotalMB` |
+| `SND-CODEIDX-003` | Invalid | the tracked code input is over `index.maxTotalMB` |
 | `SND-CODEIDX-004` | Unavailable | every heavy-job slot stayed busy past the wait (a job result code only; the job ends deferred) |
 | `SND-CODEIDX-005` | Invalid | the embedding URL is not loopback, or the model is a cloud model |
 | `SND-CODEIDX-006` | Unavailable | the embedding server failed or answered in an unexpected shape (a layer code) |
@@ -47,13 +47,13 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 017 to 029 are re
 
 ## Read surfaces (CI-10a)
 
-Sindri's reads of the facade live in `Aw.Sindri.Features/CodeIndexReads` (the slices) and `Aw.Sindri.Host` (routes, CLI, text); the facade is `ICodeIndex`, scoped by `CodeIndexScopes` from the approved profile and the caller (a session's scope holds only its own repo, so another repo and a repo that does not exist answer the same SND-CODEIDX-013).
+Sindri's reads of the facade live in `Aw.Sindri.Features/CodeIndexReads` (the slices) and `Aw.Sindri.Host` (routes, CLI, text); the facade is `ICodeIndex`, scoped by `CodeIndexScopes` from the approved profile and the caller (a session's scope holds every repo of the approved profile, like a human's, since owner q93, 2026-10-23; a repo outside the profile, and one never built, answer the same SND-CODEIDX-013).
 
 | Surface | What |
 |---|---|
 | `sindri code-index status [--repo R] [--json]` | each repo's state, commit, layers and counts; exit 1 when a repo is not `ok` |
 | `sindri code-index symbols <query> [--repo R] [--prefix] [--json]` | symbols by name, path, `path#name` or ref (exact), or by name prefix |
-| `sindri code-index callers\|callees <ref> [--depth 1..3] [--repo R] [--json]` | edges with basis, confidence and coverage; `--repo` lets a ref be written `path#name` |
+| `sindri code-index callers\|callees <ref> [--depth 1..8] [--repo R] [--json]` | edges with basis, confidence and coverage; `--repo` lets a ref be written `path#name` |
 | `GET /sindri/code-index/status`, `/symbols`, `/callers`, `/callees` | the same, query class, goldens in `tests/Aw.Sindri.Tests/Golden/Api/code-index-*` |
 
 Exit codes: 0 ok; 1 attention (a repo not ok, the control plane down, SND-CODEIDX-011 and -013); 2 error (including -012). Callers and callees carry `coverage` (`full`, `partial` or `unavailable`) per row and for the answer, both taken from the facade's `CallEdge` and `CallsAnswer` (the answer rule is `CallCoverage.Of`, in `Aw.CodeIndex.Core.Facade`): any partial row, or a partial language, makes the answer `partial`, and an empty partial answer reads "none found", never "none". The CLI prints the answer's coverage in the header line, each row's after its basis (`certain (syntax, full)`), and the note line (`none found (coverage partial: ...)`); `--json` and the routes carry the `coverage` and `note` fields. Sessions get the repo text (names, signatures, paths) fenced as untrusted by the server. There are no MCP tools in version 1 (spec §10). Until CI-9 registers the real facade, the host answers every repo as `missing` through `UnbuiltCodeIndex`.

@@ -162,12 +162,12 @@ public sealed class GetCodeTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task More_than_50_implementing_files_is_ok_with_reason_capped()
+    public async Task More_than_200_implementing_files_is_ok_with_reason_capped()
     {
         var files = new Dictionary<string, string>(CodeWorld.Files, StringComparer.Ordinal);
         var nodes = new List<string>();
         var edges = new List<string>();
-        for (var i = 0; i < 51; i++)
+        for (var i = 0; i < CodeRules.MaxImplementingFiles + 1; i++)
         {
             files[$"src/gen/f{i.ToString("D2", System.Globalization.CultureInfo.InvariantCulture)}.ts"] = "export {};";
             nodes.Add($"  - {{key: \"code:src/gen/f{i.ToString("D2", System.Globalization.CultureInfo.InvariantCulture)}.ts\", label: \"f\", provenance: deterministic}}");
@@ -182,7 +182,7 @@ public sealed class GetCodeTests : IDisposable
         var row = Row(view, "lexical-tests");
         Assert.Equal((SearchedState.Ok, "capped"), (row.State, row.Reason));
         Assert.True(view.Truncated.SearchedFiles);
-        Assert.Equal(50, Assert.Single(view.Lexical).SearchedFiles);
+        Assert.Equal(CodeRules.MaxImplementingFiles, Assert.Single(view.Lexical).SearchedFiles);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -251,14 +251,14 @@ public sealed class GetCodeTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task More_than_20_anchors_is_006_and_a_draft_with_a_version_is_006()
+    public async Task Fifty_anchors_are_not_refused_for_their_count_and_a_draft_with_a_version_is_006()
     {
         _ = await _code.ImportSharing();
 
-        var many = await _code.Code(anchors: [.. Enumerable.Range(0, 21).Select(i => $"feature:n{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}")]);
+        var many = await _code.Code(anchors: [.. Enumerable.Range(0, 50).Select(i => $"feature:n{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}")]);
         var both = await _code.Code(draft: true, mapVersion: "v1");
 
-        Assert.Equal((ContextErrors.QueryInvalid.Code, ContextErrors.QueryInvalid.Code), (many.Error.Code, both.Error.Code));
+        Assert.Equal((ContextErrors.UnknownAnchor.Code, ContextErrors.QueryInvalid.Code), (many.Error.Code, both.Error.Code));
         Assert.Empty(_code.Search.Queries);
     }
 

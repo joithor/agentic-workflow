@@ -30,12 +30,12 @@ public sealed class PlainWordsTests
     [Fact]
     public void The_context_page_words_are_plain() =>
         Assert.Equal(
-            ["Ask or look up", "Ask a question, or type a topic such as feature:name", "No context map yet", "1 topic", "4 topics", "From your question: 1 topic", "From your question: 3 topics", "Why we're doing this", "What it touches in the product", "What it touches in the code", "Suggested by AI, not confirmed", "Why this matters", "No summary written for this map yet."],
-            [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextFromQuestion(1), Labels.ContextFromQuestion(3), Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextMapLegendSuggested, Labels.ContextMapWhyTitle, Labels.ContextMapWhyNone]);
+            ["Ask or look up", "Ask a question, or type a topic such as feature:name", "No context map yet", "1 topic", "4 topics", "From your question: 1 topic", "From your question: 3 topics", "Why we're doing this", "What it touches in the product", "What it touches in the code", "Suggested by AI, not confirmed"],
+            [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextFromQuestion(1), Labels.ContextFromQuestion(3), Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextMapLegendSuggested]);
 
     [Fact]
     public void The_context_page_calls_an_anchor_a_topic_everywhere_it_is_read() =>
-        Assert.Equal(("topic", "At most 20 topics at a time"), (Labels.ContextAnchorTag, Labels.ContextTooMany(20)));
+        Assert.Equal("topic", Labels.ContextAnchorTag);
 
     [Fact]
     public void The_shortcut_sheet_names_pages_and_actions_in_plain_words()

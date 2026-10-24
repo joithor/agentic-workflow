@@ -22,6 +22,16 @@ public interface IWorktrees
     public ValueTask<Result<WorktreeCheckout>> Create(WorktreeRequest request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Resolves a branch of the repo to the commit it points at, so a stacked phase can start at its parent phase's head (line spec §8.3). It never fetches:
+    /// the local branch is looked up first, then the same name on 'origin'.
+    /// </summary>
+    /// <param name="repoRoot">The repo's main checkout, an absolute path.</param>
+    /// <param name="branch">The branch name, without 'refs/heads/'.</param>
+    /// <param name="cancellationToken">Cancels the git call.</param>
+    /// <returns>The full 40-character commit sha; SND-WT-001 for a repo root that is not absolute or a branch name that is empty or starts with '-'; SND-WT-003 when git fails or the branch is not known here.</returns>
+    public ValueTask<Result<string>> Resolve(string repoRoot, string branch, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Removes the worktree at <paramref name="path"/> ('git worktree remove', never with force) and prunes. Removing a path that
     /// is already gone succeeds.
     /// </summary>
