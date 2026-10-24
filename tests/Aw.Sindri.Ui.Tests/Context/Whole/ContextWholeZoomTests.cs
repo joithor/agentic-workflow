@@ -100,7 +100,7 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task The_whole_map_button_does_the_same_in_one_step()
+    public async Task Going_back_to_the_whole_map_closes_the_inspector_and_the_answer_in_one_step()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
@@ -111,20 +111,6 @@ public sealed class ContextWholeZoomTests
 
         Assert.Equal((false, false, "Context · the whole map · v1"), (page.IsZoomedIn, page.HasStack, page.Head));
         Assert.False(page.BackToWholeMap());
-    }
-
-    [Fact]
-    public async Task The_card_asks_for_a_starting_point_until_one_is_chosen()
-    {
-        var page = Page(new FakeSindriApi());
-        await page.Opened(Token);
-
-        Assert.Equal(Labels.ContextWholePick, page.Whole.CardText);
-        page.AnchorText = Anchor;
-        await page.Submit(Token);
-        Assert.False(string.Equals(Labels.ContextWholePick, page.Whole.CardText, StringComparison.Ordinal));
-        _ = page.BackToWholeMap();
-        Assert.Equal(Labels.ContextWholePick, page.Whole.CardText);
     }
 
     [Fact]

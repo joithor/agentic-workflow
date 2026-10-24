@@ -76,7 +76,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     /// <summary>The head: "Context · the whole map · v3"; empty before the first answer.</summary>
     public string Head { get; private set; } = string.Empty;
 
-    /// <summary>Why the map is grouped by feature; empty on a node-level map.</summary>
+    /// <summary>The note over the map: that an open feature is cut at the cap; empty otherwise.</summary>
     public string ByAreaNote { get; private set; } = string.Empty;
 
     /// <summary>Whether the note shows.</summary>
@@ -136,7 +136,6 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         Geometry = WholeMapLayout.Place(answer);
         ForgetHighlight();
         Head = Labels.ContextWholeHead(answer.MapVersion);
-        ByAreaNote = Geometry.ByArea ? Labels.ContextWholeByArea(answer.Counts.Nodes) : string.Empty;
         SizeText = Labels.ContextWholeSize(answer.Counts.Nodes, answer.Counts.Edges, TimeZoneInfo.ConvertTime(answer.AsOf, _zone()));
         var byKey = answer.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
         Areas = [.. Geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
@@ -194,7 +193,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         _overview = null;
         IsAreaOpen = false;
         AreaTitle = string.Empty;
-        ByAreaNote = Geometry?.ByArea == true && Answer is { } answer ? Labels.ContextWholeByArea(answer.Counts.Nodes) : string.Empty;
+        ByAreaNote = string.Empty;
         Changed();
     }
 
@@ -208,7 +207,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
 
     private void Changed()
     {
-        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(CardText), nameof(MoreTouchedText), nameof(HasMoreTouched)])
+        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(MoreTouchedText), nameof(HasMoreTouched)])
         {
             OnChanged(name);
         }
