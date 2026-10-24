@@ -117,7 +117,6 @@ public sealed class LensesBuilderTests
         Assert.Equal((Trust.Untrusted, CitationState.Unchecked), (record.Trust, record.State));
         Assert.Empty(record.Cites);
         Assert.Equal((1, 2, null), (intent.Counts.Records, intent.Counts.Decisions, intent.Counts.Orphaned));
-        Assert.False(intent.Truncated);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -167,7 +166,7 @@ public sealed class LensesBuilderTests
         var confirmed = code.Files[1];
         Assert.Equal((true, false, null), (confirmed.Confirmed, confirmed.Suggested, confirmed.LinkId));
         Assert.Equal(["action:tab-manager.restore-layout", Anchor], Keys(confirmed.Implements));
-        Assert.Equal((2, 0, 1, false), (code.Counts.Files, code.Counts.Symbols, code.Counts.FeaturesWithNoCode, code.Truncated));
+        Assert.Equal((2, 0, 1), (code.Counts.Files, code.Counts.Symbols, code.Counts.FeaturesWithNoCode));
     }
 
     [Fact, Trait("Lane", "unit")]
