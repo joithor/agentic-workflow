@@ -10,7 +10,7 @@ source itself.
 
 ## Quick start: Sindri sets Onyx up
 
-Docker (Docker Desktop, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
+Docker (Docker Desktop, OrbStack, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
 
 ```bash
 sindri-app onyx up        # or: $SINDRI onyx up (`./setup.sh --with-sindri` runs it for you). The first bare `sindri` at a terminal offers the same thing.
@@ -19,7 +19,11 @@ sindri-app onyx up        # or: $SINDRI onyx up (`./setup.sh --with-sindri` runs
 It runs the pinned Onyx v4.9.0 (`context/onyx.lock`) as the compose project `sindri-onyx-<hash>` under `$AW_SINDRI_HOME/onyx/`: preflight
 (docker, compose, memory, disk, port), the deployment files fetched at the pinned commit and checked against their
 sha256, `.env` and a compose override (nginx on `127.0.0.1` only, every image by digest, telemetry off, local models,
-one-user sizing), the pull and the start. Then it needs you twice:
+one-user sizing), the pull and the start. A Docker that is still starting, or not running yet, is waited for before the
+preflight: `onyx up` prints a line naming it (OrbStack, Docker Desktop, or Docker) and what you can do meanwhile, then a
+dot every 2 s, for up to 3 minutes (Ctrl-C stops it); only then does it stop with `SND-ONYX-001` and the fix for that
+runtime (OrbStack: open it, or `orb restart` when it says Running but doesn't answer; Docker Desktop: open it, it may be
+waking from Resource Saver). `onyx status` never waits. Then it needs you twice:
 
 1. **Your account.** It opens Onyx's sign-up page; create your own account (the first account is Onyx's admin) and press
    Enter. Sindri never sees that account's password except at step 2.
