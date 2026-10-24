@@ -20,6 +20,6 @@ internal sealed class GetContextFileMapService(ContextScopes scopes, IContextEng
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         return scope.IsError
             ? scope.Error
-            : await engine.FileMap(new FileMapQuery(repo, request.Path ?? string.Empty, request.Unmapped, request.Draft), scope.Value, cancellationToken).ConfigureAwait(false);
+            : await engine.FileMap(new FileMapQuery(repo, request.Path ?? string.Empty, request.Unmapped, request.Draft, request.Cursor, request.Limit), scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

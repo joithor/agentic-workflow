@@ -946,6 +946,7 @@ sindri context query --diff <base>..<head> [--repo <name>] [--json]
 ```
 sindri context code <anchor>... [--draft | --map-version <v>] [--json]
 GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
+QUERY /sindri/context/code   {"anchors":[...],"draft":?,"mapVersion":?}   (the same question, for a list too long for a URL)
 ```
 
 For one or more anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
@@ -969,6 +970,7 @@ Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unk
 ```
 sindri context history <anchor>... [--since <t>] [--before <t>] [--draft | --map-version <v>] [--json]
 GET /sindri/context/history?anchor=K&anchor=K2[&since=][&before=][&draft=true | &mapVersion=]
+QUERY /sindri/context/history   {"anchors":[...],"since":?,"before":?,"draft":?,"mapVersion":?}   (for a list too long for a URL)
 ```
 
 What lies behind a node, in time: the stored records and decisions that reach it, and the changes that landed in the files that implement it. One or more anchors; each anchor's **own scope** is read (no cascade; `context lenses` is the cascade). An anchor you cannot read is listed in `missingAnchors` (one answer for every reason); none resolving is `SND-CONTEXT-003`.

@@ -15,7 +15,7 @@ internal static class MapCoverageBuilder
             .Select(k => Directory(k[CodePrefix.Length..])).Where(d => d.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var paths = directories;
         var under = basis.Files.Where(f => paths.Exists(p => f.StartsWith(p, StringComparison.Ordinal))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        var totals = FileMapBuilder.Totals(under, new FileLinks(graph));
+        var totals = FileMapBuilder.Totals(under, FileLinks.For(graph));
         var created = basis.MapCreated ?? basis.AsOf;
         return new MapCoverage(paths, Truncated: false, totals.Files, totals.Unmapped, totals.Suggested, created, Math.Max(0, (int)(basis.AsOf - created).TotalDays));
     }
