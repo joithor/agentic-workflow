@@ -42,7 +42,7 @@ internal static partial class ScopePacketChecks
         Walked(rounds, label, spent, s);
     }
 
-    private static bool Spent(ScopeContext c) => ScopeJson.Items(c.Facts["challenge"], "rounds").Count() >= c.ChallengeCap;
+    private static bool Spent(ScopeContext c) => ScopeJson.Items(c.Facts["challenge"], "rounds").Skip(c.ChallengeCap - 1).Any();
 
     private static void Walked(List<JsonNode> rounds, string label, bool spent, RuleSink s)
     {
