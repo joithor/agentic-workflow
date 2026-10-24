@@ -137,7 +137,7 @@ public sealed class QueryContextTests
 
         var records = small.Value.Sections.Single();
         Assert.Equal(2, records.Items.Count);
-        Assert.Equal(whole.Value.Sections.Single().Items.Select(i => i.Title), records.Items.Select(i => i.Title));
+        Assert.Equal(whole.Value.Sections.Single().Items.Select(i => i.Title), records.Items.Select(i => i.Title), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -54,7 +54,7 @@ public sealed class OnyxClientTests
 
         Assert.Equal(ContextErrors.OnyxKeyRefused.Code, result.Error.Code);
         Assert.Contains("Fix:", result.Error.Message, StringComparison.Ordinal);
-        Assert.Contains($"HTTP {(int)status}", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains($"HTTP {((int)status).ToString(System.Globalization.CultureInfo.InvariantCulture)}", result.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("onyx.version", result.Error.Message, StringComparison.Ordinal);
     }
 

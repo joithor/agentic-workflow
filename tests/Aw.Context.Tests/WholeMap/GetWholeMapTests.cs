@@ -281,7 +281,7 @@ public sealed class GetWholeMapTests : IDisposable
 
         Assert.Equal(3, view.Nodes!.Count);
         Assert.Equal((false, false, 3), (view.Area!.Truncated, view.Truncated, view.Area.Counts.Nodes));
-        Assert.Equal(["feature:wide", "surface:screen/s1", "surface:screen/s2"], view.Nodes.Select(n => n.Key.Value));
+        Assert.Equal(["feature:wide", "surface:screen/s1", "surface:screen/s2"], view.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
         Assert.Equal(2, view.Edges!.Count);
     }
 

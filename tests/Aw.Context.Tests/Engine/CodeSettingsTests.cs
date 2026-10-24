@@ -35,7 +35,7 @@ public sealed class CodeSettingsTests
         var settings = Read("""{"code":{"schemaGlobs":[]}}""").Value;
 
         Assert.Empty(settings.SchemaGlobs);
-        Assert.Equal(ContextSettings.DefaultTestGlobs, settings.TestGlobs);
+        Assert.Empty(settings.TestGlobs);   // why: no built-in list, so an empty profile list means no file is a test
     }
 
     [Theory, Trait("Lane", "unit")]

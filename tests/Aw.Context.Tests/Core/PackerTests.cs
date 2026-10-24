@@ -22,7 +22,7 @@ public sealed class PackerTests
     [Fact, Trait("Lane", "unit")]
     public void A_big_result_set_is_never_cut_by_size()
     {
-        var candidates = Enumerable.Range(0, 500).Select(i => Candidate("graph", "G" + i, tokens: 5_000)).ToList();
+        var candidates = Enumerable.Range(0, 500).Select(i => Candidate("graph", "G" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), tokens: 5_000)).ToList();
 
         var packed = Packer.Pack(candidates);
 
