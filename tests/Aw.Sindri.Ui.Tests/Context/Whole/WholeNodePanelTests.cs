@@ -32,7 +32,7 @@ public sealed class WholeNodePanelTests
             { "from": "unknown:y", "type": "cites", "to": "{{Node}}", "provenance": "human", "confirmed": true, "otherKind": "decision", "otherLabel": "Use tabs" }
           ]
         }
-        """;
+        """.ReplaceLineEndings("\n");
 
     private static async Task<(ContextPageViewModel Page, FakeLauncher Launcher, FakeSindriApi Api)> Open(string body)
     {
@@ -66,14 +66,14 @@ public sealed class WholeNodePanelTests
         Assert.Equal(Node, page.Whole.Pinned);
         Assert.Equal((true, false, false), (panel.IsOpen, panel.IsLoading, panel.IsFailed));
         Assert.Equal(("feature", "Tab manager"), (panel.Kind, panel.Title));
-        Assert.Contains("node:" + Node, api.ContextLog);
+        Assert.Contains("node:" + Node, api.ContextLog, StringComparer.Ordinal);
         Assert.Equal(
             [Labels.ContextWholeBandWhy, Labels.ContextMapAreaProduct, Labels.ContextMapAreaCode, Labels.ContextWholeBandOther],
-            panel.Groups.Select(g => g.Title));
-        Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions", "← Use tabs · cites"], panel.Groups[0].Rows.Select(r => r.Text));
+            panel.Groups.Select(g => g.Title), StringComparer.Ordinal);
+        Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions", "← Use tabs · cites"], panel.Groups[0].Rows.Select(r => r.Text), StringComparer.Ordinal);
         Assert.Contains(panel.Groups[1].Rows, r => r.Key == Surface && r.Text.EndsWith(" · touches", StringComparison.Ordinal) && r.Text.StartsWith("→ ", StringComparison.Ordinal));
-        Assert.Equal(["← code:src/tabs/TabManager.ts · implements"], panel.Groups[2].Rows.Select(r => r.Text));
-        Assert.Equal(["← mystery:x · relates"], panel.Groups[3].Rows.Select(r => r.Text));
+        Assert.Equal(["← code:src/tabs/TabManager.ts · implements"], panel.Groups[2].Rows.Select(r => r.Text), StringComparer.Ordinal);
+        Assert.Equal(["← mystery:x · relates"], panel.Groups[3].Rows.Select(r => r.Text), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class WholeNodePanelTests
         var panel = page.Whole.Panel;
         Assert.Equal(("ticket: Restore layout", true, true), (panel.SourceText, panel.HasSource, panel.HasLink));
         Assert.Equal(("Keeps the tabs.", true), (panel.Description, panel.HasDescription));
-        Assert.Equal(["https://linear.app/x/issue/LIN-12"], launcher.Opened);
+        Assert.Equal(["https://linear.app/x/issue/LIN-12"], launcher.Opened, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class WholeNodePanelTests
 
         Assert.Equal(Surface, page.Whole.Pinned);
         Assert.Equal(Surface, page.Whole.Panel.Key);
-        Assert.Contains("node:" + Surface, api.ContextLog);
+        Assert.Contains("node:" + Surface, api.ContextLog, StringComparer.Ordinal);
         Assert.Equal([page.Whole.Geometry!.Nodes.First(n => n.Key == Surface).Rect], centred);
     }
 
