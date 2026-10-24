@@ -9,8 +9,8 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The review half of 'sindri context map …' (context spec §8.7, README X63): review (the loop at a terminal, the queue, the
-/// history, an export, single decisions), promote, propose and proposals. The desk actions are sent at once; the protected ones
-/// (--apply, merge, add, delete, promote) show what they would do, then the human types the server's challenge at a terminal.
+/// history, an export, single decisions), promote, propose and proposals. Every action is sent at once, from a human or a session (the typed
+/// challenge on --apply, merge, add, delete and promote was removed per owner q93, 2026-10-23).
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>
@@ -42,15 +42,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
 
     internal async Task<int> Promote(CancellationToken ct)
     {
-        var shown = await client.Post<PromoteContextMapRequest, PromoteContextMapResponse>(Route + "/promote", new PromoteContextMapRequest(), ct).ConfigureAwait(false);
-        if (shown.IsError)
-        {
-            return await Failed(shown.Error).ConfigureAwait(false);
-        }
-
-        var preview = shown.Value.Value;
-        await output.Out.WriteAsync(ContextReviewText.Promote(preview)).ConfigureAwait(false);
-        var done = await client.Post<PromoteContextMapRequest, PromoteContextMapResponse>(Route + "/promote", new PromoteContextMapRequest(preview.Draft), ct).ConfigureAwait(false);
+        var done = await client.Post<PromoteContextMapRequest, PromoteContextMapResponse>(Route + "/promote", new PromoteContextMapRequest(), ct).ConfigureAwait(false);
         return done.IsError ? await Failed(done.Error).ConfigureAwait(false) : await output.Text(ContextReviewText.Promote(done.Value.Value), 0).ConfigureAwait(false);
     }
 
@@ -114,7 +106,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
             : await output.Text(ContextReviewText.Exported(answer.Value.Value), 0).ConfigureAwait(false);
     }
 
-    /// <summary>One review request; a protected variant acts at once, like the others (owner decision q93).</summary>
+    /// <summary>One review request, sent at once.</summary>
     private async Task<int> Send(ReviewContextMapRequest request, bool json, CancellationToken ct)
     {
         var done = await client.Post<ReviewContextMapRequest, ReviewContextMapResponse>(Route + "/review", request, ct).ConfigureAwait(false);

@@ -178,15 +178,10 @@ internal sealed class MapPublishRig : IAsyncDisposable
         Assert.True(proposed.Status == System.Net.HttpStatusCode.OK, proposed.Body);
     }
 
-    /// <summary>A person promotes the latest draft at the terminal (no typed confirmation).</summary>
+    /// <summary>A person promotes the latest draft at the terminal (no typed confirmation since owner q93).</summary>
     internal async Task HumanPromote()
     {
-        var preview = await Host.Http.Ask(Post("/sindri/context/map/promote", "{}", Human(Host.Token.Value)));
-        Assert.True(preview.Status == System.Net.HttpStatusCode.OK, preview.Body);
-        var shown = JsonDocument.Parse(preview.Body).RootElement;
-        var draft = shown.GetProperty("draft").GetString();
-        var body = JsonSerializer.Serialize(new { draft });
-        var promoted = await Host.Http.Ask(Post("/sindri/context/map/promote", body, Human(Host.Token.Value)));
+        var promoted = await Host.Http.Ask(Post("/sindri/context/map/promote", "{}", Human(Host.Token.Value)));
         Assert.True(promoted.Status == System.Net.HttpStatusCode.OK, promoted.Body);
     }
 

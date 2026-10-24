@@ -23,7 +23,7 @@ namespace Aw.Sindri.Tests.ContextCalls;
 
 /// <summary>
 /// The S-4 routes on a started host over the fixture repo (README X63; context spec §8.5, §8.7): a draft from the context-rebuild
-/// service, review actions as desk (the app and the terminal) and protected (the terminal and the typed confirmation), promote,
+/// service, review actions (the app, the terminal and an agent session, with no typed challenge since owner q93, 2026-10-23), promote,
 /// scoping proposals, lenses and filemap, and the exit-code errors 040 and 048.
 /// </summary>
 public sealed class ContextReviewApiTests : IDisposable
@@ -67,13 +67,12 @@ public sealed class ContextReviewApiTests : IDisposable
         return await run.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), TestContext.Current.CancellationToken);
     }
 
-    private static string Review(string verb, string? node = null, string? override_ = null, object? answer = null, string? path = null, string? label = null, string? other = null, string[]? overrides = null) =>
+    private static string Review(string verb, string? node = null, string? override_ = null, string? path = null, string? label = null, string? other = null, string[]? overrides = null) =>
         JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["verb"] = verb,
             ["node"] = node,
             ["override"] = override_,
-            ["answer"] = answer,
             ["path"] = path,
             ["label"] = label,
             ["other"] = other,
@@ -110,6 +109,8 @@ public sealed class ContextReviewApiTests : IDisposable
         var node = (await Queue(host)).GetProperty("entries")[0].GetProperty("node").GetString()!;
 
         var accepted = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept", node), App(host)));
+        var other = (await Queue(host)).GetProperty("entries")[1].GetProperty("node").GetString()!;
+        var session = await host.Http.Ask(Post("/sindri/context/map/review", Review("reject", other), Session()));
         var id = Json(accepted.Body).GetProperty("result").GetProperty("written")[0].GetString()!;
         var undone = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: id), App(host)));
         var twice = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: id), App(host)));
@@ -118,6 +119,7 @@ public sealed class ContextReviewApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, accepted.Status);
         Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("written").GetArrayLength());
+        Assert.Equal(HttpStatusCode.OK, session.Status);
         Assert.Equal(HttpStatusCode.OK, undone.Status);
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-047"), (twice.Status, twice.Code));
         Assert.Contains("\"verb\":\"undo\"", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
@@ -187,27 +189,22 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Promote_is_046_while_items_are_undecided_then_a_human_promotes_the_confirmed_draft_with_no_challenge()
+    public async Task Promote_is_046_while_items_are_undecided_then_a_session_promotes_with_no_challenge_and_the_draft_becomes_current()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
         Assert.True((await Run(host, "context-rebuild")).IsSuccess);
         var undecided = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var bulk = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), App(host)));
+        var bulk = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), Session()));
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var draft = Json(preview.Body).GetProperty("draft").GetString();
-        var bySession = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Session()));
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Terminal(host)));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Session()));
         var status = await host.Http.Ask(Get("/sindri/context/map", Terminal(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-046"), (undecided.Status, undecided.Code));
         Assert.Equal(HttpStatusCode.OK, bulk.Status);
-        Assert.Equal(HttpStatusCode.OK, preview.Status);
-        Assert.False(Json(preview.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (bySession.Status, bySession.Code));   // the context engine's own session gate, not the command chain's
         Assert.Equal(HttpStatusCode.OK, promoted.Status);
+        Assert.DoesNotContain("challenge", promoted.Body, StringComparison.Ordinal);
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.NotNull(recorded.Value);
     }
@@ -228,7 +225,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Applying_a_review_file_acts_at_once_for_a_human_with_no_challenge()
+    public async Task Applying_a_review_file_acts_at_once_for_a_session_and_a_second_apply_matches_nothing_043()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -243,14 +240,14 @@ public sealed class ContextReviewApiTests : IDisposable
 
         await File.WriteAllTextAsync(path, file.ToJsonString(), ct);
 
-        var bySession = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
-        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));
+        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
+        var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));   // every entry is decided by now
 
         Assert.Equal(HttpStatusCode.OK, export.Status);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (bySession.Status, bySession.Code));
         Assert.Equal(HttpStatusCode.OK, applied.Status);
         Assert.True(Json(applied.Body).GetProperty("result").GetProperty("written").GetArrayLength() > 0);
-        Assert.False(Json(applied.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
+        Assert.DoesNotContain("challenge", applied.Body, StringComparison.Ordinal);
+        Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-043"), (again.Status, again.Code));   // nothing is left to match, and no challenge is asked either
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -273,7 +270,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task The_catalog_serves_the_review_rows_as_desk_and_the_protected_ones_as_protected()
+    public async Task The_catalog_serves_every_review_row_and_promote_as_desk_and_the_build_jobs_as_jobs()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host(sessions: false);
@@ -283,8 +280,8 @@ public sealed class ContextReviewApiTests : IDisposable
         Assert.True(commands.Status == HttpStatusCode.OK, commands.Body);
         var rows = Json(commands.Body).GetProperty("rows").EnumerateArray().ToDictionary(r => r.GetProperty("action").GetString()!, r => r.GetProperty("class").GetString()!, StringComparer.Ordinal);
         Assert.All(["accept", "reject", "rename", "move", "accept-deterministic", "undo", "drop", "repoint"], v => Assert.Equal("desk", rows["ReviewContextMap:" + v]));
-        Assert.All(["apply-file", "merge", "add", "delete"], v => Assert.Equal("protected", rows["ReviewContextMap:" + v]));
-        Assert.Equal(("protected", "job", "job"), (rows["PromoteContextMap"], rows["ProposeContextMap"], rows["BuildContextMap"]));
+        Assert.All(["apply-file", "merge", "add", "delete"], v => Assert.Equal("desk", rows["ReviewContextMap:" + v]));
+        Assert.Equal(("desk", "job", "job"), (rows["PromoteContextMap"], rows["ProposeContextMap"], rows["BuildContextMap"]));
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

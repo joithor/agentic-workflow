@@ -46,7 +46,8 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var who = WhoIs(caller);
-        var allowed = ((Allowed(actionClass) & who) != Who.None || Granted(actionClass, caller, row)) && (!row.NeedsTerminal || who == Who.Terminal);
+        var allowed = (((Allowed(actionClass) | RowExtras(row)) & who) != Who.None || Granted(actionClass, caller, row))
+            && (!row.NeedsTerminal || who == Who.Terminal || (who == Who.App && row.AppConfirm));
         return new AuthorizationDecision(caller?.Actor ?? "none", allowed ? null : Refusal(row));
     }
 
@@ -70,8 +71,21 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var callers = CallersFor(row.Class, row.ServiceGrants);
+        if (row.SessionOk && !callers.Contains("session", StringComparer.Ordinal))
+        {
+            callers = [.. callers, "session"];
+        }
+
+        if (row.AppConfirm)
+        {
+            return [HumanAtTerminal, HumanInApp];   // a flagged row is a human's, at a terminal or in the app, and nobody else's
+        }
+
         return row.NeedsTerminal ? [.. callers.Where(static c => string.Equals(c, HumanAtTerminal, StringComparison.Ordinal))] : callers;
     }
+
+    /// <summary>The callers a row adds to its class's: the app on the three rows it confirms (setup-once spec §4 item 7: the handler redeems the challenge before its first write), a session on the context rows it may run (owner q93, 2026-10-23).</summary>
+    private static Who RowExtras(CommandRow row) => (row.AppConfirm ? Who.App : Who.None) | (row.SessionOk ? Who.Session : Who.None);
 
     private static Who Allowed(ActionClass actionClass) => _table.GetValueOrDefault(actionClass, Who.None);
 

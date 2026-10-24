@@ -359,6 +359,7 @@ public sealed class ContextLensesApiTests : IDisposable
 
         var first = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
         var second = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var session = await host.Http.Ask(Post("/sindri/context/map/proposals", body, Session()));
         var view = await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)));
         Clock(host).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and a decision is ordered after what it decides about by its time
         var reject = await host.Http.Ask(Post("/sindri/context/map/review", """{"verb":"reject","node":"feature:zoom"}""", App(host)));
@@ -373,6 +374,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
         Assert.Equal(HttpStatusCode.OK, reject.Status);
         Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
@@ -503,20 +505,17 @@ public sealed class ContextLensesApiTests : IDisposable
         var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
         Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var shown = Json(preview.Body);
-        var draft = shown.GetProperty("draft").GetString();
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Terminal(host)));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var draft = Json(promoted.Body).GetProperty("draft").GetString();
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
-        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
         Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
         Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
         Assert.NotNull(recorded.Value);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task EvalMap_route_answers_numbers_and_refuses_sessions_020()
+    public async Task EvalMap_route_answers_numbers_to_a_human_and_a_session()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -530,7 +529,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.True(run.GetProperty("report").TryGetProperty("nodePrecision", out _));
         Assert.StartsWith("map", Path.GetFileName(run.GetProperty("path").GetString()), StringComparison.Ordinal);
         Assert.Contains(Path.Combine("eval", "map"), run.GetProperty("path").GetString(), StringComparison.Ordinal);
-        Assert.Equal("SND-CONTEXT-020", session.Code);
+        Assert.Equal(HttpStatusCode.OK, session.Status);   // a session may measure the map (owner q93, 2026-10-23)
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

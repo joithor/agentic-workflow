@@ -4,8 +4,10 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Jobs;
 using Microsoft.Extensions.DependencyInjection;
@@ -105,6 +107,18 @@ public sealed class ContextBacktestJobApiTests : IDisposable
         Assert.Equal((HttpStatusCode.Conflict, "SND-JOB-409"), (second.Status, second.Code));
         Assert.Equal(first.GetProperty("jobId").GetString(), Json(second.Body).GetProperty("runningJob").GetString());
         _ = Assert.Single(_requests);
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task RunBacktest_start_by_a_session_is_allowed_and_starts_a_job()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var started = await host.Http.Ask(Post(Route, "{}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)]));   // owner q93 (2026-10-23)
+
+        Assert.Null(started.Code);
+        Assert.Contains(await Ledger(host), e => e.Envelope.Type == EventTypes.JobStarted);
     }
 
     [Fact(Timeout = 90_000), Trait("Lane", "integration")]

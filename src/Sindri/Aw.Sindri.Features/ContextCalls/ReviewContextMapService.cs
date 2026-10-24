@@ -10,9 +10,9 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
-/// One review action (context spec §8.7, README X63). The desk variants act at once: one override row each (the bulk accept: one per
-/// deterministic entry), recorded as 'context.map.reviewed'. The protected variants (apply-file, merge, add, delete) act the same way: no typed
-/// challenge is asked for (owner decision q93).
+/// One review action (context spec §8.7). Every variant acts at once, for a human or a session: one override row each (the bulk accept: one per
+/// deterministic entry), recorded as 'context.map.reviewed'; apply-file, merge, add and delete no longer ask for a typed challenge
+/// (each is a reversible override row; removed per owner q93, 2026-10-23).
 /// </summary>
 internal sealed class ReviewContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events) : IService<ReviewContextMapRequest, ReviewContextMapResponse>
 {

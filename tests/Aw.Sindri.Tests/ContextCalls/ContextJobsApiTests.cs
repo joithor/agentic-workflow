@@ -7,6 +7,7 @@ using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Host;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Jobs;
@@ -189,6 +190,22 @@ public sealed class ContextJobsApiTests : IDisposable
         Assert.Equal("SND-CONTEXT-056", rows["zeta"].GetProperty("code").GetString());
         var synced = Of(events, EventTypes.ContextSourcesSynced).Select(e => Json(e.Envelope.Payload).GetProperty("source").GetString()).ToList();
         Assert.Equal(["onyx"], synced);   // the source that finished has its event; the one that was running has the run that owns it
+    }
+
+    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
+    public async Task A_session_may_start_the_build_but_not_the_source_sync()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await SyncHost(onyx);
+        (string Name, string Value)[] session = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)];
+
+        var sync = await host.Http.Ask(Post("/sindri/context/sources/sync", "{}", session));
+        var build = await host.Http.Ask(Post("/sindri/context/map/build", "{}", session));
+
+        Assert.Equal(("SND-AUTH-002", null), (sync.Code, build.Code));   // build opened to sessions per owner q93 (2026-10-23); the sync stays a human's
+        Assert.Contains("sindri context sources sync", sync.Body, StringComparison.Ordinal);
+        _ = Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

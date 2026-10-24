@@ -12,8 +12,9 @@ using Aw.Sindri.Core.Ledger;
 namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
-/// Promotes the latest draft (context spec §8.7), a protected command (README X30, X63): a draft with undecided review items, or no
-/// draft, is SND-CONTEXT-046 before anything is asked; otherwise the preview names the draft and a confirmed draft is promoted and 'context.map.promoted' is appended.
+/// Promotes the latest draft (context spec §8.7): a draft with undecided review items, or no draft, is SND-CONTEXT-046; otherwise the
+/// engine promotes and 'context.map.promoted' is appended. A human or a session may do it, with no typed challenge (the previous version is kept;
+/// removed per owner q93, 2026-10-23). A request that names the draft it expects gets SND-CONTEXT-046 when the latest is another.
 /// </summary>
 internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEngine engine, HeldLease held, ILedgerStore ledger, EventFactory events)
     : IService<PromoteContextMapRequest, PromoteContextMapResponse>
@@ -33,17 +34,9 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
         }
 
         var draft = ready.Value;
-        if (request.Draft is null)
-        {
-            return new PromoteContextMapResponse(draft, Promoted: null, Sequence: null);
-        }
-
-        if (!string.Equals(request.Draft, draft, StringComparison.Ordinal))
-        {
-            return ContextErrors.PromoteRefused.With($"the latest draft is {draft}, not {request.Draft}, which you confirmed (fix: run 'sindri context map promote' again)");
-        }
-
-        return await Promote(draft, scope.Value, cancellationToken).ConfigureAwait(false);
+        return request.Draft is { } expected && !string.Equals(expected, draft, StringComparison.Ordinal)
+            ? ContextErrors.PromoteRefused.With($"the latest draft is {draft}, not {expected} (fix: run 'sindri context map promote' again)")
+            : await Promote(draft, scope.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The latest draft's label when nothing in it is left to decide; else SND-CONTEXT-046 (a missing draft too).</summary>
