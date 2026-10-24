@@ -51,7 +51,12 @@
                       <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="vm:NodeEdgeRowViewModel">
-                            <Button Content="{Binding Text}" Click="OnNodePanelEdge" Padding="4,2" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" AutomationProperties.Name="{Binding Text}" />
+                            <Button Click="OnNodePanelEdge" Padding="4,2" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" AutomationProperties.Name="{Binding Text}">
+                              <StackPanel>
+                                <TextBlock Classes="body" Text="{Binding Text}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption subtle" Text="{Binding KindText}" IsVisible="{Binding HasKind}" />
+                              </StackPanel>
+                            </Button>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
