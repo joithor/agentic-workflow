@@ -19,6 +19,37 @@ public sealed class AnchorMatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_name_whose_words_all_sit_in_one_feature_label_resolves_to_that_feature_in_any_order()
+    {
+        var graph = new GraphBuilder().Node("feature:staff.self-scheduling", "Staff self scheduling").Node("feature:staff.pay", "Staff pay").Build();
+
+        var node = AnchorMatch.Resolve(graph, "scheduling, staff");
+
+        Assert.Equal("feature:staff.self-scheduling", node.Value.Key.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_name_whose_words_sit_in_two_feature_labels_stays_unknown()
+    {
+        var graph = new GraphBuilder().Node("feature:a", "Staff self scheduling").Node("feature:b", "Staff open scheduling").Build();
+
+        var node = AnchorMatch.Resolve(graph, "staff scheduling");
+
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, node.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Suggestions_list_a_test_file_after_other_nodes_with_the_same_word_count()
+    {
+        var graph = new GraphBuilder().Node("code:src/a/__tests__/widget.test.ts", "widget.test.ts").Node("feature:widget", "Widget").Build();
+
+        var node = AnchorMatch.Resolve(graph, "widget gadget");
+
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, node.Error.Code);
+        Assert.True(node.Error.Message.IndexOf("feature:widget", StringComparison.Ordinal) < node.Error.Message.IndexOf("code:src/a", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_label_two_nodes_share_is_SND_CONTEXT_037_listing_both()
     {
         var graph = new GraphBuilder().Node("feature:a", "Same").Node("feature:b", "same").Build();
