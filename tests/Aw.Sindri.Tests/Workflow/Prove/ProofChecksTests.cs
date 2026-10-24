@@ -12,7 +12,7 @@ public sealed class ProofChecksTests
 
     private static JsonNode Acceptance() => JsonNode.Parse("""{"schemaVersion":1,"parent":"sha256:aa","items":[{"id":"AC-1","text":"one","status":"failing","evidence":[]},{"id":"AC-2","text":"two","status":"failing","evidence":[]},{"id":"AC-0","text":"old","status":"superseded","supersededBy":"AC-1","evidence":[]}]}""")!;
 
-    private static JsonNode Signals() => JsonNode.Parse("""{"schemaVersion":1,"signals":{"AC-1":[{"id":"SG-1a","kind":"test","statement":"s1","runsAt":"head"}],"AC-2":[{"id":"SG-2a","kind":"api-transcript","statement":"s2","runsAt":"base+head"}]}}""")!;
+    private static JsonNode Signals() => JsonNode.Parse("""{"schemaVersion":1,"signals":[{"item":"AC-1","id":"SG-1a","kind":"test","statement":"s1","runs":"head"},{"item":"AC-2","id":"SG-2a","kind":"api-transcript","statement":"s2","runs":"base+head"}]}""")!;
 
     private static string Artifact(string signal, string commit, string extra = "") => $$"""{"kind":"test","path":"evidence/{{signal}}.txt","sha256":"sha256:{{new string('a', 64)}}","commit":"{{commit}}","at":"2026-10-19T10:00:00Z","passing":true,"signal":"{{signal}}"{{extra}}}""";
 
