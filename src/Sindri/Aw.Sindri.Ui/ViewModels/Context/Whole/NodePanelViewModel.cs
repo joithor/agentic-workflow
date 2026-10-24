@@ -10,8 +10,6 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 /// </summary>
 internal sealed class NodePanelViewModel : ObservableObject
 {
-    private static readonly string[] _knownKinds = ["decision", "record", "feature", "surface", "action", "thing", "flow", "code"];
-
     private readonly Func<string, (string Label, string Kind)?> _lookup;
     private readonly Action<string> _jump;
     private CancellationTokenSource? _reading;
@@ -84,20 +82,6 @@ internal sealed class NodePanelViewModel : ObservableObject
 
     /// <summary>Gets the open-source button's words.</summary>
     public string OpenSourceText { get; } = Labels.ContextNodePanelOpenSource;
-
-    /// <summary>The band a kind sits in.</summary>
-    /// <param name="kind">The node kind.</param>
-    /// <returns>The band; Other for a kind this build does not know.</returns>
-    internal static NodePanelBand BandOf(string kind) =>
-        _knownKinds.Contains(kind, StringComparer.Ordinal)
-            ? WholeMapLayout.BandOf(kind) switch
-            {
-                WholeBand.Intent => NodePanelBand.Why,
-                WholeBand.Code => NodePanelBand.Code,
-                WholeBand.Product => NodePanelBand.Product,
-                _ => NodePanelBand.Other,
-            }
-            : NodePanelBand.Other;
 
     /// <summary>Opens the panel on a node and reads it.</summary>
     /// <param name="key">The node's key.</param>
@@ -200,30 +184,21 @@ internal sealed class NodePanelViewModel : ObservableObject
         [
             .. rows.GroupBy(r => r.Band)
                 .OrderBy(g => g.Key)
-                .Select(g => new NodeEdgeGroupViewModel(TitleOf(g.Key), [.. g.Select(r => r.Row)])),
+                .Select(g => new NodeEdgeGroupViewModel(NodeBands.Title(g.Key), [.. g.Select(r => r.Row)])),
         ];
     }
 
-    private (NodePanelBand Band, NodeEdgeRowViewModel Row) Row(string other, NodeEdge edge, bool outgoing)
+    private (WholeBand Band, NodeEdgeRowViewModel Row) Row(string other, NodeEdge edge, bool outgoing)
     {
         var known = _lookup(other);
         var kind = edge.OtherKind ?? known?.Kind ?? KindOf(other);
         var label = edge.OtherLabel ?? known?.Label ?? other;
-        return (BandOf(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, edge.Type, outgoing), _jump));
+        return (NodeBands.Of(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, edge.Type, outgoing), _jump));
     }
 
     // Only a web link is opened; any other scheme is shown as the plain reference.
     private static Uri? LinkOf(string? url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && (string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) || string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)) ? uri : null;
-
-    private static string TitleOf(NodePanelBand band) => band switch
-    {
-        NodePanelBand.Why => Labels.ContextMapBandIntent,
-        NodePanelBand.Product => Labels.ContextMapBandProduct,
-        NodePanelBand.Code => Labels.ContextMapBandCode,
-        NodePanelBand.Other => Labels.ContextNodePanelOther,
-        _ => throw new ArgumentOutOfRangeException(nameof(band), band, null),
-    };
 
     private void Changed()
     {

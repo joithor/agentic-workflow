@@ -68,7 +68,7 @@ public sealed class WholeNodePanelTests
         Assert.Equal(("feature", "Tab manager"), (panel.Kind, panel.Title));
         Assert.Contains("node:" + Node, api.ContextLog);
         Assert.Equal(
-            [Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextNodePanelOther],
+            [Labels.ContextWholeBandWhy, Labels.ContextMapAreaProduct, Labels.ContextMapAreaCode, Labels.ContextWholeBandOther],
             panel.Groups.Select(g => g.Title));
         Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions", "← Use tabs · cites"], panel.Groups[0].Rows.Select(r => r.Text));
         Assert.Contains(panel.Groups[1].Rows, r => r.Key == Surface && r.Text.EndsWith(" · touches", StringComparison.Ordinal) && r.Text.StartsWith("→ ", StringComparison.Ordinal));

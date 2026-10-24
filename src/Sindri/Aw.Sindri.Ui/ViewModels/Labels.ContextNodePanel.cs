@@ -15,9 +15,6 @@ internal static partial class Labels
     /// <summary>The line when the read failed.</summary>
     internal const string ContextNodePanelFailed = "Couldn't read this item";
 
-    /// <summary>The group of links that fit none of the bands.</summary>
-    internal const string ContextNodePanelOther = "Other links";
-
     /// <summary>The heading over the links.</summary>
     internal const string ContextNodePanelLinks = "Linked to";
 
