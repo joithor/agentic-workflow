@@ -2,6 +2,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Tests.Map;
 
@@ -108,5 +109,127 @@ public sealed class ShowNodeTests : IDisposable
         var view = await _world.Engine.ShowNode("Same", MapWorld.Human, MapWorld.None);
 
         Assert.Equal(ContextErrors.AmbiguousAnchor.Code, view.Error.Code);
+    }
+
+    private const string Ticket = "linear:issue/0e5a1b00-0000-4000-8000-000000000a01";
+    private const string Quoted = "linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
+    private const string ShortQuote = "keep the pane in view";
+    private static readonly string _longQuote = string.Join(' ', Enumerable.Range(1, 80).Select(i => $"w{i:00}"));
+
+    private static string DetailMap(string quote) => MapWorld.Yaml(
+        "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+        "  - {key: \"feature:a\", label: \"Alpha\", evidence: [{key: \"repo:aw-split-panes/docs/a.md\"}]}",
+        "  - {key: \"feature:b\", label: \"Model said so\", provenance: model, confidence: 0.5}",
+        "  - {key: \"feature:plain\", label: \"Plain\"}",
+        "  - {key: \"code:src/a.ts\", label: \"a.ts\", provenance: deterministic}",
+        $"  - {{key: \"record:{Ticket}\", label: \"Ticket title\"}}",
+        $"  - {{key: \"record:{Quoted}\", label: \"Quoted ticket\"}}",
+        "edges:",
+        "  - {from: \"code:src/a.ts\", to: \"feature:a\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/a.ts\"}]}",
+        "  - {from: \"feature:b\", to: \"feature:a\", type: part-of, provenance: model, confidence: 0.5}",
+        $"  - {{from: \"record:{Ticket}\", to: \"feature:a\", type: mentions}}",
+        $"  - {{from: \"{DecisionRow.KeyFor(RecordKey.From(Quoted), quote).Value}\", to: \"feature:a\", type: decides}}",
+        "decisions:",
+        $"  - {{record: \"{Quoted}\", quote: \"{quote}\", wording: \"Decided.\", at: 2026-07-15T10:00:00Z}}");
+
+    private async Task<NodeView> Show(string key, ContextScope? scope = null) => (await _world.Engine.ShowNode(key, scope ?? MapWorld.Human, MapWorld.None)).Value;
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_record_node_names_its_ticket_and_has_no_description()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var node = (await Show("record:" + Ticket)).Node;
+
+        Assert.Equal(new NodeSource("ticket", Ticket), node.Source);
+        Assert.Null(node.Description);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_code_node_names_its_file()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var node = (await Show("code:src/a.ts")).Node;
+
+        Assert.Equal(new NodeSource("file", "src/a.ts"), node.Source);
+        Assert.Null(node.Description);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_decision_names_the_record_it_quotes_with_its_title_and_describes_itself_with_the_quote()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var node = (await Show(DecisionRow.KeyFor(RecordKey.From(Quoted), ShortQuote).Value)).Node;
+
+        Assert.Equal(new NodeSource("ticket", Quoted, "Quoted ticket"), node.Source);
+        Assert.Equal(ShortQuote, node.Description);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_decision_quote_and_the_quoted_title_are_fenced_for_a_caller_that_gets_fences()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var node = (await Show(DecisionRow.KeyFor(RecordKey.From(Quoted), ShortQuote).Value, MapWorld.HumanVia(ContextClient.Mcp))).Node;
+
+        Assert.Equal("<untrusted source=\"map\">Quoted ticket</untrusted>", node.Source!.Title);
+        Assert.Equal($"<untrusted source=\"map\">{ShortQuote}</untrusted>", node.Description);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_long_quote_is_cut_on_a_word_at_280_characters_with_an_ellipsis()
+    {
+        _ = await _world.ImportYaml(DetailMap(_longQuote));
+
+        var description = (await Show(DecisionRow.KeyFor(RecordKey.From(Quoted), _longQuote).Value)).Node.Description!;
+
+        var body = description[..^1];
+        Assert.True(description.Length <= 280);
+        Assert.EndsWith("…", description, StringComparison.Ordinal);
+        Assert.True(description.Length > 250);
+        Assert.StartsWith(body, _longQuote, StringComparison.Ordinal);
+        Assert.Equal(' ', _longQuote[body.Length]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_node_with_evidence_names_the_first_record_and_one_without_has_no_source()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var withEvidence = (await Show("feature:a")).Node;
+        var without = (await Show("feature:plain")).Node;
+
+        Assert.Equal(new NodeSource("doc", "repo:aw-split-panes/docs/a.md"), withEvidence.Source);
+        Assert.Null(withEvidence.Description);
+        Assert.Null(without.Source);
+        Assert.Null(without.Description);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_edge_carries_the_kind_and_label_of_the_node_at_its_other_end()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var center = await Show("feature:a");
+        var model = await Show("feature:b");
+
+        Assert.Equal(
+            [("code:src/a.ts", NodeKind.Code, "a.ts"), ("feature:b", NodeKind.Feature, "Model said so"), ("record:" + Ticket, NodeKind.Record, "Ticket title")],
+            center.In.Where(e => e.Type != EdgeType.Decides).Select(e => (e.From.Value, e.OtherKind, e.OtherLabel)));
+        Assert.Contains(center.In, e => e is { Type: EdgeType.Decides, OtherKind: NodeKind.Decision, OtherLabel: "Decided." });
+        Assert.Equal([("feature:a", NodeKind.Feature, "Alpha")], model.Out.Select(e => (e.To.Value, e.OtherKind, e.OtherLabel)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_other_end_s_label_is_fenced_like_any_label_when_it_is_untrusted()
+    {
+        _ = await _world.ImportYaml(DetailMap(ShortQuote));
+
+        var center = await Show("feature:a", MapWorld.HumanVia(ContextClient.Mcp));
+
+        Assert.Equal("<untrusted source=\"map\">Model said so</untrusted>", center.In.Single(e => e.From.Value == "feature:b").OtherLabel);
+        Assert.Equal("a.ts", center.In.Single(e => e.From.Value == "code:src/a.ts").OtherLabel);
     }
 }
