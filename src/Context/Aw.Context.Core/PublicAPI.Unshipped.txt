@@ -1986,17 +1986,15 @@ Aw.Context.Core.Lenses.BandSearched.Empty.init -> void
 Aw.Context.Core.Lenses.BandSearched.Equals(Aw.Context.Core.Lenses.BandSearched? other) -> bool
 Aw.Context.Core.Lenses.CodeBand
 Aw.Context.Core.Lenses.CodeBand.<Clone>$() -> Aw.Context.Core.Lenses.CodeBand!
-Aw.Context.Core.Lenses.CodeBand.CodeBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, Aw.Context.Core.Lenses.LensSymbols! Symbols, Aw.Context.Core.Lenses.CodeCounts! Counts, bool Truncated) -> void
+Aw.Context.Core.Lenses.CodeBand.CodeBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, Aw.Context.Core.Lenses.LensSymbols! Symbols, Aw.Context.Core.Lenses.CodeCounts! Counts) -> void
 Aw.Context.Core.Lenses.CodeBand.Counts.get -> Aw.Context.Core.Lenses.CodeCounts!
 Aw.Context.Core.Lenses.CodeBand.Counts.init -> void
-Aw.Context.Core.Lenses.CodeBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out Aw.Context.Core.Lenses.CodeCounts! Counts, out bool Truncated) -> void
+Aw.Context.Core.Lenses.CodeBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>! Files, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out Aw.Context.Core.Lenses.CodeCounts! Counts) -> void
 Aw.Context.Core.Lenses.CodeBand.Equals(Aw.Context.Core.Lenses.CodeBand? other) -> bool
 Aw.Context.Core.Lenses.CodeBand.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensFile!>!
 Aw.Context.Core.Lenses.CodeBand.Files.init -> void
 Aw.Context.Core.Lenses.CodeBand.Symbols.get -> Aw.Context.Core.Lenses.LensSymbols!
 Aw.Context.Core.Lenses.CodeBand.Symbols.init -> void
-Aw.Context.Core.Lenses.CodeBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.CodeBand.Truncated.init -> void
 Aw.Context.Core.Lenses.CodeCounts
 Aw.Context.Core.Lenses.CodeCounts.<Clone>$() -> Aw.Context.Core.Lenses.CodeCounts!
 Aw.Context.Core.Lenses.CodeCounts.CodeCounts(int Files, int Symbols, int FeaturesWithNoCode) -> void
@@ -2191,13 +2189,11 @@ Aw.Context.Core.Lenses.IntentBand.Counts.get -> Aw.Context.Core.Lenses.IntentCou
 Aw.Context.Core.Lenses.IntentBand.Counts.init -> void
 Aw.Context.Core.Lenses.IntentBand.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>!
 Aw.Context.Core.Lenses.IntentBand.Decisions.init -> void
-Aw.Context.Core.Lenses.IntentBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, out Aw.Context.Core.Lenses.IntentCounts! Counts, out bool Truncated) -> void
+Aw.Context.Core.Lenses.IntentBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, out Aw.Context.Core.Lenses.IntentCounts! Counts) -> void
 Aw.Context.Core.Lenses.IntentBand.Equals(Aw.Context.Core.Lenses.IntentBand? other) -> bool
-Aw.Context.Core.Lenses.IntentBand.IntentBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, Aw.Context.Core.Lenses.IntentCounts! Counts, bool Truncated) -> void
+Aw.Context.Core.Lenses.IntentBand.IntentBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>! Decisions, Aw.Context.Core.Lenses.IntentCounts! Counts) -> void
 Aw.Context.Core.Lenses.IntentBand.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>!
 Aw.Context.Core.Lenses.IntentBand.Records.init -> void
-Aw.Context.Core.Lenses.IntentBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.IntentBand.Truncated.init -> void
 Aw.Context.Core.Lenses.IntentCounts
 Aw.Context.Core.Lenses.IntentCounts.<Clone>$() -> Aw.Context.Core.Lenses.IntentCounts!
 Aw.Context.Core.Lenses.IntentCounts.Decisions.get -> int
@@ -2616,7 +2612,7 @@ Aw.Context.Core.Lenses.ProductBand.Affects.get -> System.Collections.Generic.IRe
 Aw.Context.Core.Lenses.ProductBand.Affects.init -> void
 Aw.Context.Core.Lenses.ProductBand.Counts.get -> Aw.Context.Core.Lenses.ProductCounts!
 Aw.Context.Core.Lenses.ProductBand.Counts.init -> void
-Aw.Context.Core.Lenses.ProductBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, out Aw.Context.Core.Lenses.ProductCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out bool Truncated) -> void
+Aw.Context.Core.Lenses.ProductBand.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, out Aw.Context.Core.Lenses.ProductCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Lenses.ProductBand.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
 Aw.Context.Core.Lenses.ProductBand.Edges.init -> void
 Aw.Context.Core.Lenses.ProductBand.Equals(Aw.Context.Core.Lenses.ProductBand? other) -> bool
@@ -2624,9 +2620,7 @@ Aw.Context.Core.Lenses.ProductBand.Neighbors.get -> System.Collections.Generic.I
 Aw.Context.Core.Lenses.ProductBand.Neighbors.init -> void
 Aw.Context.Core.Lenses.ProductBand.Own.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>!
 Aw.Context.Core.Lenses.ProductBand.Own.init -> void
-Aw.Context.Core.Lenses.ProductBand.ProductBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, Aw.Context.Core.Lenses.ProductCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, bool Truncated) -> void
-Aw.Context.Core.Lenses.ProductBand.Truncated.get -> bool
-Aw.Context.Core.Lenses.ProductBand.Truncated.init -> void
+Aw.Context.Core.Lenses.ProductBand.ProductBand(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensItem!>! Own, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Neighbors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensReach!>! Affects, Aw.Context.Core.Lenses.ProductCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Lenses.ProductCounts
 Aw.Context.Core.Lenses.ProductCounts.<Clone>$() -> Aw.Context.Core.Lenses.ProductCounts!
 Aw.Context.Core.Lenses.ProductCounts.Affects.get -> int

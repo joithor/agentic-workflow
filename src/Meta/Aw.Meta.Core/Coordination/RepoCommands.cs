@@ -12,7 +12,7 @@ namespace Aw.Meta.Core.Coordination;
 /// <param name="paths">Names the gh program.</param>
 public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
 {
-    private static readonly TimeSpan _limit = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _limit = TimeSpan.FromMinutes(15);
     private CancellationToken _cancellation;
 
     /// <summary>The same calls, each stopped (its process tree killed, the cancellation thrown) when the token fires.</summary>
