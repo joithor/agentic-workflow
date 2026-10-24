@@ -151,6 +151,7 @@ sindri onyx up|down|open                  # The C# Sindri's Onyx: `up` stands th
 # Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
 scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
 scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
+scripts/images-lock.sh check             # Shape of deploy/images.lock (every deployment image by index and per-platform digest; unresolved ones are `todo` rows) and that the Dockerfile names only pinned images; exit 0 ok, 1 a check failed
 
 # Sindri-managed Onyx (docs/sindri/onyx.md, docs/csharp/sindri.md; the C# Sindri app, `dotnet run --project src/Sindri/Aw.Sindri.Host --` or the published sindri)
 sindri onyx status [--json]             # Where Onyx stands (not set up / running with url and version / stopped) and whether this box can run the pinned one; read-only, no control plane needed; exit 0 ok, 1 a check needs attention
@@ -184,12 +185,13 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/check-launcher.test.sh   # launcher.json schema, fixtures, built-ins and argvHash goldens (node scripts/check-launcher.mjs; Ajv is a dev dependency of scripts/)
 bash scripts/tests/check-fleet.test.sh      # fleet state schema, its valid and invalid fixtures, and the /proc-shaped sessions tree (node scripts/check-fleet.mjs; Ajv as above)
 bash scripts/tests/check-scoping-schemas.test.sh # schemas/scoping/: every schema compiles, its examples get their verdicts, seeds.json matches the recipe's intake (node scripts/check-scoping-schemas.mjs; Ajv as above)
-bash scripts/tests/check-line-schemas.test.sh    # schemas/line/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
+bash scripts/tests/check-line-schemas.test.sh    # schemas/line/ and schemas/pr/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
 bash scripts/tests/check-profile-doc.test.sh # docs/csharp/sindri-profile.md names every SindriProfile key (node scripts/check-profile-doc.mjs)
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
 bash scripts/tests/onyx-lock.test.sh
+bash scripts/tests/images-lock.test.sh
 bash scripts/tests/code-index-lock.test.sh
 bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
