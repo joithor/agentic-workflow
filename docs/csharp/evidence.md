@@ -288,7 +288,7 @@ label mismatches from the side-by-side image) is the `step.evidence.desktop-revi
 `<screen>-<WxH>/app.png`, `design.png`, `diff.png`, `side-by-side.png`. Ports: `IDesktopCommands` (process adapter), `IScratchDirectories` (temp
 directories), `IStaticSite` (loopback HTTP listener), beside the existing `IBrowser`.
 
-**Sindri's own setup**: the capture is the real app. `scripts/sindri-ui-capture.sh` publishes `sindri-ui` (`scripts/sindri-app.sh --publish-only`) and launches it as
+**Sindri's own setup**: the capture is the real app. `scripts/sindri-ui-capture.sh` runs the `sindri-ui` named by `AW_SINDRI_UI`, else publishes it (`scripts/sindri-app.sh --publish-only`), and launches it as
 `sindri-ui --capture --size WxH --shot <route> <png path> ...` against the fixture home in `AW_SINDRI_HOME`. In capture mode the app opens its real window at that
 size (preferences in memory, no tray, no OS motion setting), waits until it is connected and has read its queue, goes to each route through its own navigation
 (`page:<Page>` runs the rail's `GoTo`; a deep link such as `workflow/PRJ-sync` runs the palette's and tray's `Navigate`), lets the views settle, saves the window
