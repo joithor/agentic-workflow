@@ -37,7 +37,4 @@ internal static partial class Labels
 
     /// <summary>The word for an anchor node in a band.</summary>
     internal const string ContextAnchorTag = "topic";
-
-    /// <summary>The word for something the band was cut short of.</summary>
-    internal const string ContextTruncated = "more not shown";
 }

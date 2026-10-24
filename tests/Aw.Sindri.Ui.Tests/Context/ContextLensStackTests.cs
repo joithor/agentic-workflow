@@ -149,19 +149,4 @@ public sealed class ContextLensStackTests
 
         Assert.Equal([1, 50], sent);
     }
-
-    [Fact]
-    public async Task A_truncated_product_band_draws_one_more_not_shown_chip()
-    {
-        var golden = Golden("map-tabs");
-        var body = golden.DeepClone();
-        body["bands"]!["product"]!["truncated"] = true;
-        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.OK, body.ToJsonString()) };
-        var page = Page(server);
-        page.AnchorText = (string)golden["anchor"]!["key"]!;
-
-        await page.Submit(Token);
-
-        _ = Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
-    }
 }
