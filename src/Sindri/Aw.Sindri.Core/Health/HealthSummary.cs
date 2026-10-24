@@ -57,6 +57,16 @@ public static class HealthSummary
         return new HealthReport(word, problems, Sentence(word, problems));
     }
 
+    /// <summary>A report that also counts the workflow instances parked as unavailable: a dependency a Step needs stayed down through its retries (API spec §3.8).</summary>
+    /// <param name="report">The report <see cref="For"/> folded.</param>
+    /// <param name="unavailable">The live instances parked with the reason 'unavailable'.</param>
+    /// <returns>The report; the same one when none are parked.</returns>
+    public static HealthReport WithUnavailable(HealthReport report, int unavailable)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        return report;   // red: the stub counts nothing yet
+    }
+
     private static IEnumerable<HealthProblem> Profile(ProfileApproval profile)
     {
         if (profile == ProfileApproval.Changed)

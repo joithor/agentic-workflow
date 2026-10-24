@@ -37,6 +37,7 @@ public sealed class InstanceViewsTests
     [InlineData("parked-needs-answer-wait", "needs-answer", "sindri workflow answer T-3/step/1 --resume [--text <answer>]")]
     [InlineData("parked-timeout", "timeout", "sindri workflow answer T-3/step/1 --resume")]
     [InlineData("parked-no-runtime", "SND-WF-010", "sindri workflow answer T-3/step/1 --resume")]
+    [InlineData("parked-unavailable-step", "unavailable", "sindri workflow answer T-3/step/1 --resume")]
     [InlineData("escalated-gate", "gate", "sindri workflow answer T-3/step/1 --accept     (at a terminal)")]
     public void Each_park_reason_has_its_detail_and_answer_line(string name, string detail, string answer)
     {
@@ -131,6 +132,7 @@ public sealed class InstanceViewsTests
     [InlineData("parked-needs-answer-wait", "answer-resume=--resume")]
     [InlineData("parked-timeout", "answer-resume=--resume")]
     [InlineData("parked-no-runtime", "answer-resume=--resume")]
+    [InlineData("parked-unavailable-step", "answer-resume=--resume")]
     [InlineData("escalated-gate", "answer-accept=--accept", "answer-reject=--reject")]
     [InlineData("escalated-child")]
     [InlineData("parked-mirrored-needs-answer")]

@@ -22,7 +22,7 @@ internal static class StatusCases
         "desk-task", "parked-no-progress-child", "parked-budget", "escalated-gate", "taken-over", "done",
         "parked-rounds", "parked-needs-answer-step", "parked-needs-answer-wait", "parked-timeout", "parked-revoked",
         "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled", "escalated-child", "parked-mirrored-needs-answer",
-        "parked-budget-odd", "parked-budget-no-cap", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget", "parked-mirrored-two-children", "parked-mirrored-unlisted-child",
+        "parked-budget-odd", "parked-budget-no-cap", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget", "parked-mirrored-two-children", "parked-mirrored-unlisted-child", "parked-unavailable-step",
     ];
 
     /// <summary>The cases whose suspension mirrors a child.</summary>
@@ -71,6 +71,7 @@ internal static class StatusCases
         "parked-rounds" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
         "parked-needs-answer-step" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
         "parked-needs-answer-wait" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Wait, "gate.test.check refused produce -> checks (no output)"), Ago(8)),
+        "parked-unavailable-step" => Case(Produce() with { Suspension = Suspended(ParkReason.Unavailable, ParkKind.Step, "step.produce is unavailable after 2 retries; the last error: exit") with { Code = "SND-LAUNCH-007" } }, Ago(8)),
         "parked-timeout" => Case(Park(ParkReason.Timeout, kind: null, "produce ran past 2d"), Ago(60 * 26)),
         "parked-revoked" => Case(Park(ParkReason.SpecConflict, ParkKind.Revoked, "workflow.step was revoked."), Ago(4)),
         "parked-dispatch-no-runtime" => Case(DispatchPark("effect.claim.ref can't run: repo 'x' isn't in the approved profile (SND-WF-010). Fix that, then resume to send it again."), Ago(4)),

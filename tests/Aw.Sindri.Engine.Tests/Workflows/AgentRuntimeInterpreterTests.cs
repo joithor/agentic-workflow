@@ -47,7 +47,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
     }
 
     [Fact(Timeout = 120_000)]
-    public async Task A_session_that_ends_without_a_report_is_step_failed_exit()
+    public async Task A_session_that_ends_without_a_report_is_step_failed_exit_and_the_Step_runs_again()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var rig = await Rig(ct);
@@ -57,11 +57,33 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             await Launched(ct);
             _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 1);
 
+            Assert.Equal("exit", await rig.FailureReason(ct));
+            await WaitFor(() => _launcher.Requests.Count == 2, ct);   // the engine runs the Step again, and asks no one
+            await WaitFor(() => _launcher.Stops.Contains(rig.Launch), ct);   // the run closed, so its session is stopped
+            Assert.Null((await handle.QueryAsync(static wf => wf.GetInstance())).Question);
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task Three_sessions_that_end_without_a_report_park_the_Step_as_unavailable_not_as_a_question()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            for (var n = 1; n <= 3; n++)
+            {
+                await WaitFor(() => _launcher.Requests.Count == n, ct);
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                _sessions.End(_launcher.Requests[n - 1].Launch, SessionEndReason.Exit, exitCode: 1);
+            }
+
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
-            Assert.Equal("exit", await rig.FailureReason(ct));
-            Assert.Equal(ParkReason.NeedsAnswer, parked.Question?.Reason);
-            await WaitFor(() => _launcher.Stops.Contains(rig.Launch), ct);   // the run closed, so its session is stopped
+            Assert.Equal(ParkReason.Unavailable, parked.Question?.Reason);
+            Assert.Contains("unavailable after 2 retries", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Equal(3, _launcher.Requests.Count);
         });
     }
 

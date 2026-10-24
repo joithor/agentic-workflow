@@ -329,6 +329,7 @@ public sealed class InstanceViewProducerTests
     [InlineData("parked-needs-answer-wait", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume [--text <answer>]", false)]
     [InlineData("parked-timeout", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
     [InlineData("parked-no-runtime", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
+    [InlineData("parked-unavailable-step", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
     [InlineData("parked-revoked", AnswerKind.CancelOnly, "ApplyCommand:cancel", ActionClass.Desk, "sindri workflow cancel T-3/step/1", false)]
     public void The_answer_line_is_the_kind_the_catalog_action_and_the_command_the_text_prints(string name, AnswerKind kind, string action, ActionClass actionClass, string cli, bool atTerminal)
     {

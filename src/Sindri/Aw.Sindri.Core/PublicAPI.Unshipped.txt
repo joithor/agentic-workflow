@@ -2763,6 +2763,8 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.get -> boo
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyUnavailable.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyUnavailable.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext? other) -> bool
@@ -3406,6 +3408,8 @@ Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Deconstruct(out Aw.Sindri.Core.
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Launch.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Launch.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Retries.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Retries.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.OpenRun(Aw.Sindri.Core.Workflow.Engine.RunToken Token, Aw.Sindri.Core.Workflow.Engine.StepRuntime Runtime, string? Launch, string? Task) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Runtime.get -> Aw.Sindri.Core.Workflow.Engine.StepRuntime
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Runtime.init -> void
@@ -3623,6 +3627,7 @@ Aw.Sindri.Core.Workflow.Engine.ParkReason.Budget = 3 -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Core.Workflow.Engine.ParkReason.NeedsAnswer = 4 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.NoProgress = 2 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.NoRuntime = 7 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
+Aw.Sindri.Core.Workflow.Engine.ParkReason.Unavailable = 8 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.Rounds = 1 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.SpecConflict = 6 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
 Aw.Sindri.Core.Workflow.Engine.ParkReason.Timeout = 5 -> Aw.Sindri.Core.Workflow.Engine.ParkReason
@@ -4198,6 +4203,10 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Via.get -> Aw.Sindri.Core.
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Via.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out string! Reason, out int Tokens, out string! ReportSha256) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Code.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Code.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Dependency.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Dependency.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Reason.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Reason.init -> void
@@ -8977,6 +8986,8 @@ Aw.Sindri.Core.Views.EngineItemPart.Cancelled.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.Deconstruct(out string! Address, out string! State, out bool RunOpen, out Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, out bool Ended, out bool Cancelled) -> void
 Aw.Sindri.Core.Views.EngineItemPart.Earlier.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.EngineItemPart!>?
 Aw.Sindri.Core.Views.EngineItemPart.Earlier.init -> void
+Aw.Sindri.Core.Views.EngineItemPart.Reason.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
+Aw.Sindri.Core.Views.EngineItemPart.Reason.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.Ended.get -> bool
 Aw.Sindri.Core.Views.EngineItemPart.Ended.init -> void
 Aw.Sindri.Core.Views.EngineItemPart.EngineItemPart(string! Address, string! State, bool RunOpen, Aw.Sindri.Core.Workflow.Engine.StepRuntime? Runtime, Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, bool Ended, bool Cancelled) -> void
@@ -10400,6 +10411,10 @@ Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.BlockStepResult(Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, string? Failure) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Code.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Code.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Dependency.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Dependency.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Deconstruct(out Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, out string? Failure) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failure.get -> string?
@@ -10423,6 +10438,7 @@ static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator !=(Aw.Sindr
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Completed(Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! outputs) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failed(string! reason) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Unavailable(string! dependency, string! reason, string? code = null) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers
@@ -17710,6 +17726,7 @@ static Aw.Sindri.Core.EngineReads.EngineProjection.Stuck(System.Collections.Gene
 static readonly Aw.Sindri.Core.SindriErrors.EngineNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.EngineUnavailable -> Aw.Kernel.ErrorDefinition!
 static Aw.Sindri.Core.Health.HealthSummary.WithStuck(Aw.Sindri.Core.Health.HealthReport! report, int stuck) -> Aw.Sindri.Core.Health.HealthReport!
+static Aw.Sindri.Core.Health.HealthSummary.WithUnavailable(Aw.Sindri.Core.Health.HealthReport! report, int unavailable) -> Aw.Sindri.Core.Health.HealthReport!
 Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverBy.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverBy.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.TakenOverBy.get -> string?
