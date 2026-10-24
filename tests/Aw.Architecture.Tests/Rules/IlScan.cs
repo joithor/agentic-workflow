@@ -10,6 +10,7 @@ public static class IlScan
 {
     private const BindingFlags Declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
     private const byte Ldstr = 0x72;
+    private const byte Newobj = 0x73;
     private const byte UserStringTable = 0x70;
     private const byte MemberRefTable = 0x0A;
     private const byte MethodDefTable = 0x06;
@@ -48,6 +49,28 @@ public static class IlScan
             for (var i = 0; i + 4 < il.Length; i++)
             {
                 if (Array.IndexOf(_calls, il[i]) >= 0 && il[i + 4] is MemberRefTable or MethodDefTable
+                    && Resolve(() => method.Module.ResolveMethod(BitConverter.ToInt32(il, i + 1), genericTypeArguments: method.DeclaringType?.GenericTypeArguments, genericMethodArguments: null)?.DeclaringType) is { } declaring)
+                {
+                    _ = found.Add(declaring);
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>The declaring types of the constructors the type's bodies call with newobj (only construction, not other calls on the type).</summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The constructed types.</returns>
+    public static IReadOnlySet<Type> ConstructedTypes(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        var found = new HashSet<Type>();
+        foreach (var (method, il) in Bodies(type))
+        {
+            for (var i = 0; i + 4 < il.Length; i++)
+            {
+                if (il[i] == Newobj && il[i + 4] is MemberRefTable or MethodDefTable
                     && Resolve(() => method.Module.ResolveMethod(BitConverter.ToInt32(il, i + 1), genericTypeArguments: method.DeclaringType?.GenericTypeArguments, genericMethodArguments: null)?.DeclaringType) is { } declaring)
                 {
                     _ = found.Add(declaring);
