@@ -12,7 +12,7 @@ internal static class ScopingSteps
 {
     private static readonly string[] _fourReads = ["brief", "tracker", "idea", "change"];
 
-    /// <summary>'step.scope.intake': what to scope, sorted into one of four readers; every outcome carries the eight round-1 seeds.</summary>
+    /// <summary>'step.scope.intake': what to scope, sorted into one of four readers; every outcome carries the ten round-1 seeds.</summary>
     public static BlockDescriptor Intake { get; } = BlockStep("step.scope.intake", Capability.None)
         .Reads("fact:scopeInput").Reports(_fourReads)
         .Writes(Seeds());
@@ -128,5 +128,6 @@ internal static class ScopingSteps
     [
         On("fact:scopeMap", _fourReads), On("fact:acceptance", _fourReads), On("fact:findings", _fourReads), On("fact:answers", _fourReads),
         On("fact:answerLog", _fourReads), On("fact:challenge", _fourReads), On("fact:questions", _fourReads), On("fact:openQuestions", _fourReads),
+        On("fact:gapSearch", _fourReads), On("fact:gapAnchors", _fourReads),
     ];
 }
