@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host;
 /// <summary>
 /// Reads the caller headers (API spec §6, plan G12): pure, so every case is a unit test. A missing X-Sindri-Caller or
 /// 'session' is a session (the safe default), 'human' is a human, and any other value is SND-API-007. The terminal claim
-/// counts only with human; an unknown client label counts as none; a malformed repo name or launch id is SND-API-007. The launch counts only with session.
+/// counts only with human; an unknown client label counts as none; a malformed repo name or launch id is SND-API-007. A launch header makes the caller a launched session whatever X-Sindri-Caller says (a Sindri child never calls as a human).
 /// </summary>
 internal static class CallerHeaderParsing
 {
@@ -50,9 +50,9 @@ internal static class CallerHeaderParsing
         }
 
         var label = Label(client);
-        var human = known == CallerClass.Human;
-        return new ParsedCaller(known, human && string.Equals(terminal, "1", StringComparison.Ordinal), label, scope,
-            client is not null && label == ClientLabel.None ? client : null, human ? null : launched);
+        var human = known == CallerClass.Human && launched is null;
+        return new ParsedCaller(launched is null ? known : CallerClass.Session, human && string.Equals(terminal, "1", StringComparison.Ordinal), label, scope,
+            client is not null && label == ClientLabel.None ? client : null, launched);
     }
 
     private static ClientLabel Label(string? client) => client switch

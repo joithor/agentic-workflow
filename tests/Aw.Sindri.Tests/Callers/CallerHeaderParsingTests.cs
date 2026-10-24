@@ -91,8 +91,12 @@ public sealed class CallerHeaderParsingTests
         Assert.Null(CallerHeaderParsing.Parse(caller: null, terminal: null, client: null, repo: null).Value.Launch);
 
     [Fact, Trait("Lane", "unit")]
-    public void A_human_never_carries_a_launch() =>
-        Assert.Null(CallerHeaderParsing.Parse("human", terminal: null, client: null, repo: null, Launch).Value.Launch);
+    public void A_launch_makes_a_human_header_a_launched_session()
+    {
+        var parsed = CallerHeaderParsing.Parse("human", terminal: "1", client: null, repo: null, Launch).Value;
+
+        Assert.Equal((CallerClass.Session, false, LaunchId.From(Launch)), (parsed.Class, parsed.Terminal, parsed.Launch));
+    }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("not-a-launch")]

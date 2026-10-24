@@ -61,6 +61,9 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     /// <summary>The open desk task the views carry; null for none.</summary>
     public DeskTask? OpenTask { get; set; }
 
+    /// <summary>The open park, escalation or takeover the views carry; null for none.</summary>
+    public OpenQuestion? OpenPark { get; set; }
+
     /// <summary>The open agent run the views carry; null for none.</summary>
     public OpenRun? OpenAgentRun { get; set; }
 
@@ -165,7 +168,7 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
         DateTimeOffset.FromUnixTimeMilliseconds(1_000),
         string.Empty,
         [],
-        Question: null,
+        Question: OpenPark,
         Task: OpenTask,
         Run: null,
         Children: [],

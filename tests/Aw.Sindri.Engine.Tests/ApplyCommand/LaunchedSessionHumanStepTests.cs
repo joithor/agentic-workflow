@@ -18,11 +18,12 @@ public sealed class LaunchedSessionHumanStepTests
     private static readonly LaunchId _launch = LaunchId.From("LCH-00000000000000000000000000000001");
 
     private readonly TemporalLikeRuntime _instance = new() { OpenTask = DeskTaskOpen() };
+    private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
     private readonly ApplyCommandService _service;
 
     public LaunchedSessionHumanStepTests()
     {
-        _service = new ApplyCommandService(_instance, _instance, _instance, new InMemoryCommandNonces(new FakeTimeProvider()), new InMemoryChallenges(new FakeTimeProvider()), _instance);
+        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, new InMemoryChallenges(new FakeTimeProvider()), _instance);
     }
 
     public static TheoryData<ApplyCommandKind> Kinds => new() { ApplyCommandKind.Answer, ApplyCommandKind.Command };
@@ -62,6 +63,22 @@ public sealed class LaunchedSessionHumanStepTests
         var result = await _service.Handle(Request(kind), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsError, result.IsError ? result.Error.Message : null);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_launched_session_answering_an_open_park_is_refused_and_its_nonce_is_given_back()
+    {
+        _instance.OpenTask = null;
+        _instance.OpenPark = new OpenQuestion(SuspensionKind.Park, ParkReason.Rounds, "Out of rounds");
+        _instance.Current = Session() with { Launch = _launch };
+        var nonce = CommandNonce.From(new string('d', 32));
+
+        var result = await _service.Handle(Request(ApplyCommandKind.Answer) with { Nonce = nonce }, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-AUTH-002", result.IsError ? result.Error.Code : "accepted");
+        Assert.Empty(_instance.Delivered);
+        var reclaimed = await _nonces.Claim(nonce, "another subject", TestContext.Current.CancellationToken);   // a nonce still held for the refused command would be SND-WF-009
+        Assert.False(reclaimed.IsError, reclaimed.IsError ? reclaimed.Error.Message : null);
     }
 
     [Fact(Timeout = 30_000)]
