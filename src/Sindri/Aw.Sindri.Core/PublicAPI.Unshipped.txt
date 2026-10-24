@@ -8343,7 +8343,6 @@ static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Sindri.Core.SindriErrors.ProfileHashMismatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileMissing -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Sindri.Core.SindriErrors.ProfileNeedsTerminal -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileNotApproved -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.RequestInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.RequestsRateLimited -> Aw.Kernel.ErrorDefinition!
@@ -11457,6 +11456,7 @@ static Aw.Sindri.Core.Workflow.Engine.Rules.InputParks.Park(Aw.Sindri.Core.Workf
 static Aw.Sindri.Core.Workflow.Engine.Rules.InputParks.Question(Aw.Sindri.Core.Workflow.Ids.BlockId input, Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InjectionChanged -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InjectionInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.StepInputTimedOut -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InputChanged -> Aw.Kernel.ErrorDefinition!
 ~override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Equals(object obj) -> bool
 ~override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.ToString() -> string
@@ -13144,7 +13144,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.<Clone>$() -> Aw.Sindri.Cor
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.ChangeWord.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out string! Code, out string! Sentence, out string? Cli) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.DisplayName.init -> void
-Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Challenge.get -> Aw.Sindri.Core.Challenges.IssuedChallenge!
 Aw.Sindri.Core.Workflow.ApproveAll.PlanChange
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityId.IsInitialized() -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Reason.init -> void
@@ -13681,8 +13680,7 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Deconstruct(out Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.Views.InstanceRecipe.InstanceRecipe(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, int Version, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, string? DisplayName = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Batch.get -> Aw.Sindri.Core.Ids.CommandId
-static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Redeem(Aw.Sindri.Core.Challenges.IChallenges! challenges, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, Aw.Sindri.Core.Ids.CommandId batch, long? heldMs = null) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!>!
-Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.HeldMs.get -> long?
+static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.For(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, Aw.Sindri.Core.Ids.CommandId batch) -> Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.NothingToHold.get -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.ShippedRecipePlan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.NothingToHold.get -> bool
@@ -15207,10 +15205,6 @@ Aw.Sindri.Core.Setup.RepoGitCache.Invalidate() -> void
 Aw.Sindri.Core.Setup.RepoGitCache.Of(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RepoGit?>
 Aw.Sindri.Core.Setup.RepoGitCache.RepoGitCache(Aw.Sindri.Core.Setup.IRepoInspector! inspector, System.TimeProvider! clock) -> void
 Aw.Sindri.Core.Setup.RepoEvents.CanRecord() -> bool
-Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed, out bool MayConfirm) -> void
-Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.get -> bool
-Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.init -> void
-Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed, bool MayConfirm = false) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.ChallengeAnswer(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Typed = "", long? HeldMs = null) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Typed, out long? HeldMs) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.HeldMs.get -> long?
@@ -18296,6 +18290,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Discard(Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.ReportRefusals() -> void
 const Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.MaxLength = 300 -> int
+Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed) -> void
+Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed) -> void
 Aw.Sindri.Core.Line.LineView
 Aw.Sindri.Core.Line.LineView.<Clone>$() -> Aw.Sindri.Core.Line.LineView!
 Aw.Sindri.Core.Line.LineView.Stations.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineStation!>!

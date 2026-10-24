@@ -30,7 +30,7 @@ public sealed class StatusViewsHealthTests
         var approved = SliceHarness.Profile("5s");
         H.Profiles.Live = approved;
         _ = await H.HoldLease();
-        _ = await new ApproveProfileService(H.Profiles, H.Profiles, H.Held, H.Store, H.Events, H.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ApproveProfileRequest(approved.Hash, H.Confirm(approved.Hash)), Token);
+        _ = await new ApproveProfileService(H.Profiles, H.Profiles, H.Held, H.Store, H.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ApproveProfileRequest(approved.Hash, H.Confirm(approved.Hash)), Token);
     }
 
     [Fact, Trait("Lane", "unit")]

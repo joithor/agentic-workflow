@@ -28,14 +28,14 @@ internal static class JobScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("services-name-run", "started"), ("services-name-run", "refused-session"), ("services-name-run", "refused-no-header"), ("services-name-run", "refused-origin"),
+        ("services-name-run", "started"), ("services-name-run", "refused-origin"),
         ("services-name-run", "unknown-service"), ("services-name-run", "already-running"), ("services-name-run", "scheduled-in-flight"), ("services-name-run", "too-many"),
-        ("services-name-pause", "accepted"), ("services-name-pause", "refused-session"), ("services-name-pause", "unknown-service"),
-        ("services-name-resume", "accepted"), ("services-name-resume", "refused-session"), ("services-name-resume", "unknown-service"),
+        ("services-name-pause", "accepted"), ("services-name-pause", "unknown-service"),
+        ("services-name-resume", "accepted"), ("services-name-resume", "unknown-service"),
         ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("needs-you", "unknown-service"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "context-backtest"), ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
-        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
+        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"),
         ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"), ("jobs", "empty-unfiltered"), ("jobs", "bad-kind"), ("jobs", "bad-state"),
     ];
 
@@ -77,8 +77,6 @@ internal static class JobScenarios
         return scenario switch
         {
             "started" => await Ask(host, Post(path, json: null, human)),
-            "refused-session" => await Ask(host, Post(path, json: null, Session)),
-            "refused-no-header" => await Ask(host, Post(path, json: null)),
             "refused-origin" => await Ask(host, Post(path, json: null, [.. human, ("Origin", "http://localhost:3000")])),
             "unknown-service" => await Ask(host, Post("/sindri/services/ghost/run", json: null, human)),
             "already-running" or "scheduled-in-flight" or "too-many" => await RunInFlight(host, scenario),
@@ -115,8 +113,7 @@ internal static class JobScenarios
     private static async Task<string> PauseOrResume(GoldenHost host, string verb, string scenario)
     {
         var service = scenario == "unknown-service" ? "ghost" : "heartbeat";
-        var caller = scenario == "refused-session" ? Session : JobHost.Human(host);
-        return await Ask(host, Post($"/sindri/services/{service}/{verb}", json: null, caller));
+        return await Ask(host, Post($"/sindri/services/{service}/{verb}", json: null, JobHost.Human(host)));
     }
 
     private static async Task<string> Services(GoldenHost host, string scenario, CancellationToken ct)
@@ -192,8 +189,6 @@ internal static class JobScenarios
             case "not-found":
                 await ViewScenarios.CatchUp(host, ct);   // CancelJob reads the views: they must have reached the head
                 return await Ask(host, Post($"/sindri/jobs/{_unknownJob}/cancel", json: null, human));
-            case "refused-session":
-                return await Ask(host, Post($"/sindri/jobs/{Job(1).Value}/cancel", json: null, Session));
             case "already-ended":
                 await Started(host, Job(1), "EchoJob", "echo", ct);
                 await Finished(host, Job(1), JobOutcome.Succeeded, "echoed 1", code: null, result: null, ct);
