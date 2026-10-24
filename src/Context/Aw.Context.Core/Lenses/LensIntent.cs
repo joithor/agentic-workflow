@@ -13,7 +13,7 @@ internal static class LensIntent
     {
         var records = Records(scope);
         var decisions = Decisions(scope);
-        return new IntentBand(records, decisions, new IntentCounts(records.Count, decisions.Count, Orphaned: null), Truncated: false);
+        return new IntentBand(records, decisions, new IntentCounts(records.Count, decisions.Count, Orphaned: null));
     }
 
     /// <summary>Where a record lives, from its key: 'linear', 'linear:doc', 'slack', 'onyx' or 'repo-doc'.</summary>
