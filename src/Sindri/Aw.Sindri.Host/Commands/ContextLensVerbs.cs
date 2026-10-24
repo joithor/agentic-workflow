@@ -38,17 +38,21 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         var fence = client.SessionReason is null;
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
-            var set = await client.Get<LensesSetView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
+            var set = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesSetView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
             return set.IsError ? await Failed(set.Error).ConfigureAwait(false)
                 : o.Json ? await output.Raw(set.Value.Body, 0).ConfigureAwait(false)
                 : await output.Text(ContextLensText.LensesSet(set.Value.Value, fence), 0).ConfigureAwait(false);
         }
 
-        var answer = await client.Get<LensesView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
     }
+
+    /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>
+    private static GetContextLensesAnswerRequest Body((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json) o) =>
+        new(o.Anchors, o.Draft, int.TryParse(o.Depth, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var depth) ? depth : null, o.MapVersion, o.Hops);
 
     private async Task<int> History((string[] Anchors, string? Since, string? Before, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
     {
@@ -59,7 +63,7 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Since is null ? string.Empty : "&since=" + Uri.EscapeDataString(o.Since))
             + (o.Before is null ? string.Empty : "&before=" + Uri.EscapeDataString(o.Before)) + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
-        var answer = await client.Get<HistoryView>("/sindri/context/history" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetOrQuery<GetContextHistoryRequest, HistoryView>("/sindri/context/history", query, new GetContextHistoryRequest(o.Anchors, o.Since, o.Before, o.Draft, o.MapVersion), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextHistoryText.History(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
