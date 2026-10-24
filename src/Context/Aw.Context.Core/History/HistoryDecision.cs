@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
@@ -29,4 +30,9 @@ public sealed record HistoryDecision(
     DateTimeOffset? At,
     LensQuote? Quote,
     IReadOnlyList<NodeKey> Anchors,
-    bool Leaky);
+    bool Leaky)
+{
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+}

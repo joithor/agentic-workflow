@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Trust">Trust, as served.</param>
 /// <param name="Anchors">Anchors, as served.</param>
 /// <param name="Depth">Depth, as served.</param>
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
 internal sealed record CodeFile(
     string Path,
     IReadOnlyList<string> Implements,
@@ -27,4 +28,5 @@ internal sealed record CodeFile(
     string Kind,
     string Trust,
     IReadOnlyList<string>? Anchors = null,
-    int? Depth = null);
+    int? Depth = null,
+    string? Repo = null);

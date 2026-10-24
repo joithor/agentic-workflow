@@ -30,8 +30,9 @@ public static class CodeLensBuilder
         var tests = CodeTests.Of(reach);
         var things = CodeThings.Of(reach);
         var (linkedFiles, linkedTests) = CodeFiles.Link(files, tests);
-        var listedFiles = linkedFiles.Take(CodeRules.MaxListed).ToList();
-        var listedTests = linkedTests.Take(CodeRules.MaxListed).ToList();
+        var repoOf = NodeRepos.Index(graph, basis.MapRepo);
+        var listedFiles = linkedFiles.Take(CodeRules.MaxListed).Select(f => f with { Repo = repoOf.GetValueOrDefault("code:" + f.Path) }).ToList();
+        var listedTests = linkedTests.Take(CodeRules.MaxListed).Select(t => t with { Repo = repoOf.GetValueOrDefault("code:" + t.Path) }).ToList();
         var listedThings = things.Take(CodeRules.MaxListed).ToList();
         return new CodeView(
             1,

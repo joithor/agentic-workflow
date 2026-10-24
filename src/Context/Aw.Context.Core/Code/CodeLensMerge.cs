@@ -70,7 +70,7 @@ public static class CodeLensMerge
             }
 
             var anchors = view.Anchors.Select(a => a.Key).Where(a => named.Exists(n => known[n].Anchors.Any(k => k.Value == a.Value))).ToList();
-            added.Add(new CodeTest(group.Key, group.Key, NodeKind.Code, group.Min(t => t.Basis), [], named, Confirmed: false, Suggested: true, LinkId: null, Results.Trust.Trusted, anchors));
+            added.Add(new CodeTest(group.Key, group.Key, NodeKind.Code, group.Min(t => t.Basis), [], named, Confirmed: false, Suggested: true, LinkId: null, Results.Trust.Trusted, anchors) { Repo = named.Select(n => known[n].Repo).FirstOrDefault(r => r is not null) });
         }
 
         return (existing, added);

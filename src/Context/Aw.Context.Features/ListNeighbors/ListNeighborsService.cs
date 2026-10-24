@@ -27,7 +27,8 @@ internal sealed class ListNeighborsService(MapReader reader, IScrubberFactory sc
 
         var (map, text) = call.Value;
         var hood = GraphWalk.Neighbors(map.Graph, node.Value.Key, depth);
-        return new NeighborsView(map.Snapshot.Label, hood.Center, depth, [.. hood.Nodes.Select(n => new NeighborFact(text.Fact(n.Node), n.Depth))],
+        var repoOf = NodeRepos.Index(map.Graph, map.Snapshot.Version.Repo.Value);
+        return new NeighborsView(map.Snapshot.Label, hood.Center, depth, [.. hood.Nodes.Select(n => new NeighborFact(text.Fact(n.Node) with { Repo = repoOf.GetValueOrDefault(n.Node.Key.Value) }, n.Depth))],
             [.. hood.Edges.Select(EdgeFact.Of)]);
     }
 }

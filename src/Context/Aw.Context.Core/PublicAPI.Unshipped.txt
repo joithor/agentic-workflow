@@ -6178,7 +6178,7 @@ static Aw.Context.Core.Review.PromoteReadiness.Check(Aw.Context.Core.Review.Revi
 static Aw.Context.Core.Review.QueueCounts.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>! entries) -> Aw.Context.Core.Review.QueueCounts!
 static Aw.Context.Core.Review.QueueCounts.operator !=(Aw.Context.Core.Review.QueueCounts? left, Aw.Context.Core.Review.QueueCounts? right) -> bool
 static Aw.Context.Core.Review.QueueCounts.operator ==(Aw.Context.Core.Review.QueueCounts? left, Aw.Context.Core.Review.QueueCounts? right) -> bool
-static Aw.Context.Core.Review.ReviewBacklog.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Review.ReviewQueueView!
+static Aw.Context.Core.Review.ReviewBacklog.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string? mapRepo = null) -> Aw.Context.Core.Review.ReviewQueueView!
 static Aw.Context.Core.Review.ReviewBasis.operator !=(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewDecision.operator !=(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
@@ -6842,3 +6842,52 @@ static readonly Aw.Context.Core.ContextErrors.AreaUnknown -> Aw.Kernel.ErrorDefi
 Aw.Context.Core.WholeMap.WholeMapView.Deconstruct(out int SchemaVersion, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out string? Repo, out Aw.Context.Core.WholeMap.WholeMapDetail Detail, out Aw.Context.Core.WholeMap.WholeMapCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, out bool Truncated) -> void
 Aw.Context.Core.WholeMap.WholeMapView.WholeMapView(int SchemaVersion, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, string? Repo, Aw.Context.Core.WholeMap.WholeMapDetail Detail, Aw.Context.Core.WholeMap.WholeMapCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, bool Truncated) -> void
 static Aw.Context.Core.WholeMap.MapAreas.Assign(Aw.Context.Core.Graph.GraphSnapshot! graph, int areaCap) -> Aw.Context.Core.WholeMap.AreaIndex!
+Aw.Context.Core.Lenses.LensItem.Repo.get -> string?
+Aw.Context.Core.Lenses.LensItem.Repo.init -> void
+Aw.Context.Core.Lenses.LensFile.Repo.get -> string?
+Aw.Context.Core.Lenses.LensFile.Repo.init -> void
+Aw.Context.Core.Lenses.LensRecord.Repo.get -> string?
+Aw.Context.Core.Lenses.LensRecord.Repo.init -> void
+Aw.Context.Core.Lenses.LensDecision.Repo.get -> string?
+Aw.Context.Core.Lenses.LensDecision.Repo.init -> void
+Aw.Context.Core.Lenses.LensReach.Repo.get -> string?
+Aw.Context.Core.Lenses.LensReach.Repo.init -> void
+Aw.Context.Core.Code.CodeFile.Repo.get -> string?
+Aw.Context.Core.Code.CodeFile.Repo.init -> void
+Aw.Context.Core.Code.CodeTest.Repo.get -> string?
+Aw.Context.Core.Code.CodeTest.Repo.init -> void
+Aw.Context.Core.History.HistoryRecord.Repo.get -> string?
+Aw.Context.Core.History.HistoryRecord.Repo.init -> void
+Aw.Context.Core.History.HistoryDecision.Repo.get -> string?
+Aw.Context.Core.History.HistoryDecision.Repo.init -> void
+Aw.Context.Core.Review.ReviewEntry.Repo.get -> string?
+Aw.Context.Core.Review.ReviewEntry.Repo.init -> void
+Aw.Context.Core.Graph.NodeFact.Repo.get -> string?
+Aw.Context.Core.Graph.NodeFact.Repo.init -> void
+Aw.Context.Core.WholeMap.WholeMapNode.Repo.get -> string?
+Aw.Context.Core.WholeMap.WholeMapNode.Repo.init -> void
+Aw.Context.Core.Lenses.LensBasis.MapRepo.get -> string?
+Aw.Context.Core.Lenses.LensBasis.MapRepo.init -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.WholeMap.WholeMapAsk.Repos.init -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.RepoOf.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>?
+Aw.Context.Core.WholeMap.WholeMapAsk.RepoOf.init -> void
+Aw.Context.Core.WholeMap.WholeMapView.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.WholeMap.WholeMapView.Repos.init -> void
+static Aw.Context.Core.WholeMap.WholeMapBuilder.Repos(System.Collections.Generic.IReadOnlyDictionary<string!, string?>! repoOf) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.Graph.NodeRepos
+static Aw.Context.Core.Graph.NodeRepos.Index(Aw.Context.Core.Graph.GraphSnapshot! graph, string? mapRepo) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+Aw.Context.Core.WholeMap.WholeMapRepo
+Aw.Context.Core.WholeMap.WholeMapRepo.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapRepo!
+Aw.Context.Core.WholeMap.WholeMapRepo.Deconstruct(out string! Name, out int NodeCount) -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.Equals(Aw.Context.Core.WholeMap.WholeMapRepo? other) -> bool
+Aw.Context.Core.WholeMap.WholeMapRepo.Name.get -> string!
+Aw.Context.Core.WholeMap.WholeMapRepo.Name.init -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.NodeCount.get -> int
+Aw.Context.Core.WholeMap.WholeMapRepo.NodeCount.init -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.WholeMapRepo(string! Name, int NodeCount) -> void
+override Aw.Context.Core.WholeMap.WholeMapRepo.Equals(object? obj) -> bool
+override Aw.Context.Core.WholeMap.WholeMapRepo.GetHashCode() -> int
+override Aw.Context.Core.WholeMap.WholeMapRepo.ToString() -> string!
+static Aw.Context.Core.WholeMap.WholeMapRepo.operator !=(Aw.Context.Core.WholeMap.WholeMapRepo? left, Aw.Context.Core.WholeMap.WholeMapRepo? right) -> bool
+static Aw.Context.Core.WholeMap.WholeMapRepo.operator ==(Aw.Context.Core.WholeMap.WholeMapRepo? left, Aw.Context.Core.WholeMap.WholeMapRepo? right) -> bool

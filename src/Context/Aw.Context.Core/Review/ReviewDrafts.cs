@@ -74,7 +74,7 @@ public static class ReviewDrafts
     {
         ArgumentNullException.ThrowIfNull(draft);
         var view = MapAccess.View(draft.Graph, draft.Overrides, scope, pending: true, callerScope: false);
-        return view.IsError ? view.Error : (view.Value, ReviewBacklog.Build(draft.Label, view.Value.Graph, view.Value.Overrides));
+        return view.IsError ? view.Error : (view.Value, ReviewBacklog.Build(draft.Label, view.Value.Graph, view.Value.Overrides, draft.Version.Repo.Value));
     }
 
     /// <summary>The latest draft and what is left to decide in it, with labels cleaned the way every answer cleans them.</summary>

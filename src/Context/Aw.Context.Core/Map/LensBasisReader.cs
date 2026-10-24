@@ -29,6 +29,7 @@ public sealed class LensBasisReader(IRepoReader repos, IIntentStore intents, Tim
         {
             MapCreated = version.Created,
             MapCommit = ShortCommit(version.Commit),
+            MapRepo = version.Repo.Value,
             Files = await Files(version.Repo, settings, scope, cancellationToken).ConfigureAwait(false),
             IntentSources = [SearchedSources.Intent(_onyx, settings.Onyx is not null, state.IsError ? null : state.Value)],
         };
