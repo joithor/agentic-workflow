@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.ViewModels.Context;
+namespace Aw.Sindri.Ui.ViewModels.Controls;
 
 /// <summary>One step of a breadcrumb on the Context page, in the Files view and on the map alike: "~" for the top, then a level each. Every step but the last is a link.</summary>
 /// <param name="Text">What the step says: "~" or the level's name.</param>
