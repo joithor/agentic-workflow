@@ -27,7 +27,7 @@ public sealed class LaunchedSessionHumanStepTests
         _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, new InMemoryChallenges(new FakeTimeProvider()), _instance);
     }
 
-    public static TheoryData<ApplyCommandKind> Kinds => new() { ApplyCommandKind.Answer, ApplyCommandKind.Command };
+    public static TheoryData<ApplyCommandKind> Kinds => [ApplyCommandKind.Answer, ApplyCommandKind.Command];
 
     [Theory(Timeout = 30_000)]
     [MemberData(nameof(Kinds))]
