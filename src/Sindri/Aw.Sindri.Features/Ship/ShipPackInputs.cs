@@ -38,24 +38,9 @@ internal sealed record ShipPackInputs(string Address, RepoName Repo, string Pack
 
     // The line's start effect writes base as { rule, ref }, the parent's head branch as 'ref' for a dependency-head phase and an empty 'ref' for a phase on the default branch.
     private static string? StackOf(JsonNode? packet) =>
-        StepFacts.Field(packet?["base"], "rule") is "dependency-head" ? StepFacts.Field(packet?["base"], "ref") : null;
+        string.Equals(StepFacts.Field(packet?["base"], "rule"), "dependency-head", StringComparison.Ordinal) ? StepFacts.Field(packet?["base"], "ref") : null;
 
     private static string[] CommandsOf(JsonNode? green) => green?["commands"] is JsonArray commands
         ? [.. commands.OfType<JsonValue>().Select(static c => c.TryGetValue<string>(out var text) ? text : null).OfType<string>()]
         : [];
-}
-
-/// <summary>The line a phase belongs to, from fact:lineContext.</summary>
-/// <param name="Name">The line's name.</param>
-/// <param name="Phase">The phase's id.</param>
-/// <param name="Attempt">The attempt, from 1.</param>
-internal sealed record LineRef(string Name, string Phase, int Attempt)
-{
-    /// <summary>Reads the line; null for an empty context (a phase run outside a line).</summary>
-    /// <param name="context">The fact.</param>
-    /// <returns>The line.</returns>
-    internal static LineRef? Of(JsonNode? context) =>
-        StepFacts.Field(context, "line") is { } name && StepFacts.Field(context, "phase") is { } phase
-            ? new LineRef(name, phase, context?["attempt"] is JsonValue a && a.TryGetValue<int>(out var attempt) ? attempt : 1)
-            : null;
 }

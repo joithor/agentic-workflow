@@ -131,7 +131,7 @@ internal static class HandoffPack
         sources.Inputs.Line is { } line ? $"sindri/{line.Name}/{line.Phase}" : $"sindri/{sources.PacketId}";
 
     private static string DefaultBranch(JsonNode? phase) =>
-        StepFacts.Field(phase?["base"], "rule") is "default-branch" && StepFacts.Field(phase?["base"], "ref") is { } name ? name : DefaultBase;
+        string.Equals(StepFacts.Field(phase?["base"], "rule"), "default-branch", StringComparison.Ordinal) && StepFacts.Field(phase?["base"], "ref") is { } name ? name : DefaultBase;
 
     private static string Acceptance(JsonNode? acceptance)
     {
@@ -161,7 +161,7 @@ internal static class HandoffPack
             return "No hidden scenarios ran.\n";
         }
 
-        var passed = results.Count(static r => StepFacts.Field(r, "verdict") is "pass");
+        var passed = results.Count(static r => string.Equals(StepFacts.Field(r, "verdict"), "pass", StringComparison.Ordinal));
         var spent = results.Count(static r => r["spent"] is JsonValue v && v.TryGetValue<bool>(out var s) && s);
         var summary = string.Create(CultureInfo.InvariantCulture, $"{results.Count} hidden {(results.Count == 1 ? "scenario" : "scenarios")} ran: {passed} passed, {results.Count - passed} failed, {spent} spent.\n\n");
         return summary + string.Join('\n', results.Select(static r => $"- {StepFacts.Field(r, "item") ?? "(no item)"}: {StepFacts.Field(r, "verdict")}")) + "\n";
@@ -185,26 +185,8 @@ internal static class HandoffPack
 
     private static int Count(JsonNode? node, string key) => node?[key] is JsonValue value && value.TryGetValue<int>(out var count) ? count : 0;
 
-    private static string Cell(JsonNode? value) => ((value as JsonValue)?.TryGetValue<string>(out var text) == true ? text : string.Empty).Replace("|", "\\|", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal);
+    private static string Cell(JsonNode? value) => ((value as JsonValue)?.TryGetValue<string>(out var text) == true ? text : string.Empty).Replace("|", "\\|", StringComparison.Ordinal).Replace('\n', ' ');
 
     private static List<(string Path, string Reason)> TestChanges(JsonNode? phase) =>
         [.. (phase?["testChange"] as JsonArray ?? []).OfType<JsonObject>().Select(static c => (Path: StepFacts.Field(c, "path") ?? string.Empty, Reason: StepFacts.Field(c, "reason") ?? string.Empty)).Where(static c => c.Path.Length > 0)];
-}
-
-/// <summary>What the pack reads from the packets it hands off, parsed, with the head it is packed on.</summary>
-/// <param name="Inputs">The Step's inputs.</param>
-/// <param name="Head">The phase worktree's head: what the draft is packed on.</param>
-/// <param name="PacketId">The phase packet's id.</param>
-/// <param name="Repo">The phase packet's repo.</param>
-/// <param name="BaseSha">The phase packet's base commit.</param>
-/// <param name="Phase">phase.json.</param>
-/// <param name="ProofAcceptanceText">The proof pack's acceptance.json as written (the hand-off's acceptance extends its hash).</param>
-/// <param name="ProofAcceptance">The same, parsed.</param>
-/// <param name="ProofHoldout">The proof pack's holdout.json.</param>
-/// <param name="NotProven">The proof pack's not-proven.md.</param>
-/// <param name="Review">The review result's review.json.</param>
-internal sealed record HandoffSources(ShipPackInputs Inputs, string Head, string PacketId, string Repo, string BaseSha, JsonNode Phase, string ProofAcceptanceText, JsonNode ProofAcceptance, JsonNode ProofHoldout, string NotProven, JsonNode Review)
-{
-    /// <summary>The phase's goal.</summary>
-    internal string Goal => StepFacts.Field(Phase, "goal") ?? string.Empty;
 }

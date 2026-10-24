@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Prove;
 
 namespace Aw.Sindri.Features.Ship;
 
@@ -46,7 +45,7 @@ internal sealed class ShipPackStep(IPacketDirectory files, IRepoCheckouts checko
             return Failed($"has no checkout of {inputs.Repo.Value}: {checkout.Error.Message}");
         }
 
-        var (sources, failure) = await Load(inputs, PhaseDir.Of(inputs.PacketDir, checkout.Value), cancellationToken).ConfigureAwait(false);
+        var (sources, failure) = await Load(inputs, Path.IsPathRooted(inputs.PacketDir) ? inputs.PacketDir : Path.Combine(checkout.Value, inputs.PacketDir), cancellationToken).ConfigureAwait(false);
         return sources is null ? Failed(failure!) : await Pack(sources, cancellationToken).ConfigureAwait(false); // why: no sources come with their reason
     }
 
@@ -54,28 +53,30 @@ internal sealed class ShipPackStep(IPacketDirectory files, IRepoCheckouts checko
 
     private async ValueTask<(HandoffSources? Sources, string? Failure)> Load(ShipPackInputs inputs, string phaseDir, CancellationToken cancellationToken)
     {
-        var phase = await Read(phaseDir, ["packet.json", "phase.json"], cancellationToken).ConfigureAwait(false);
-        var proof = await Read(inputs.ProofDir, ["acceptance.json", "holdout.json", "not-proven.md"], cancellationToken).ConfigureAwait(false);
-        var review = await Read(inputs.ReviewDir, ["review.json"], cancellationToken).ConfigureAwait(false);
-        if ((phase.Failure ?? proof.Failure ?? review.Failure) is { } unreadable)
+        var (phase, phaseFailure) = await Read(phaseDir, ["packet.json", "phase.json"], cancellationToken).ConfigureAwait(false);
+        var (proof, proofFailure) = await Read(inputs.ProofDir, ["acceptance.json", "holdout.json", "not-proven.md"], cancellationToken).ConfigureAwait(false);
+        var (review, reviewFailure) = await Read(inputs.ReviewDir, ["review.json"], cancellationToken).ConfigureAwait(false);
+        if ((phaseFailure ?? proofFailure ?? reviewFailure) is { } unreadable)
         {
             return (null, unreadable);
         }
 
         var head = await diff.Head(inputs.Workspace, cancellationToken).ConfigureAwait(false);
-        if (head.IsError)
-        {
-            return (null, $"can't read the head of {inputs.Workspace}: {head.Error.Message}");
-        }
+        return head.IsError ? (null, $"can't read the head of {inputs.Workspace}: {head.Error.Message}") : Parse(inputs, head.Value, phase, proof, review);
+    }
 
+    private static (HandoffSources? Sources, string? Failure) Parse(ShipPackInputs inputs, string head, Dictionary<string, string> phase, Dictionary<string, string> proof, Dictionary<string, string> review)
+    {
         try
         {
-            var packet = JsonNode.Parse(phase.Files["packet.json"]);
-            return StepFacts.Field(packet, "id") is { } id && StepFacts.Field(packet, "repo") is { } repo && StepFacts.Field(packet, "baseSha") is { } baseSha
-                && JsonNode.Parse(phase.Files["phase.json"]) is { } phaseFile && JsonNode.Parse(proof.Files["acceptance.json"]) is { } acceptance
-                && JsonNode.Parse(proof.Files["holdout.json"]) is { } holdout && JsonNode.Parse(review.Files["review.json"]) is { } reviewFile
-                    ? (new HandoffSources(inputs, head.Value, id, repo, baseSha, phaseFile, proof.Files["acceptance.json"], acceptance, holdout, proof.Files["not-proven.md"], reviewFile), null)
-                    : (null, "packet.json must name the packet's id, repo and baseSha, and the other packet files must be JSON objects");
+            var packet = JsonNode.Parse(phase["packet.json"]);
+            JsonNode?[] parsed = [JsonNode.Parse(phase["phase.json"]), JsonNode.Parse(proof["acceptance.json"]), JsonNode.Parse(proof["holdout.json"]), JsonNode.Parse(review["review.json"])];
+            if (StepFacts.Field(packet, "id") is not { } id || StepFacts.Field(packet, "repo") is not { } repo || StepFacts.Field(packet, "baseSha") is not { } baseSha || Array.Exists(parsed, static n => n is null))
+            {
+                return (null, "packet.json must name the packet's id, repo and baseSha, and the other packet files must be JSON objects");
+            }
+
+            return (new HandoffSources(inputs, head, id, repo, baseSha, parsed[0]!, proof["acceptance.json"], parsed[1]!, parsed[2]!, proof["not-proven.md"], parsed[3]!), null);   // why: Array.Exists above found none null
         }
         catch (JsonException e)
         {
