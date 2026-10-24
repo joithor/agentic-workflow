@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:nyv="using:Aw.Sindri.Ui.Views.NeedsYou"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
@@ -319,6 +320,24 @@
             </ItemsControl>
             <TextBlock x:Name="NeedsYouQuestionsHint" Classes="caption muted" Text="{Binding Bar.QuestionsHint}" />
           </StackPanel>
+          <!-- What the step asks the person to read (engine q65): one button each, the agent session behind it, and why the step stands as it does. -->
+          <StackPanel x:Name="NeedsYouReviewRow" Spacing="4" IsVisible="{Binding Bar.HasReviews}">
+            <ItemsControl x:Name="NeedsYouReviews" ItemsSource="{Binding Bar.Reviews}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="comps:DeskReviewViewModel">
+                  <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <TextBlock x:Name="NeedsYouStepReason" Classes="caption muted" Text="{Binding Bar.ReasonLine}" IsVisible="{Binding Bar.HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.ReasonLine}" />
+          <Button x:Name="NeedsYouSession" Classes="bar-button" HorizontalAlignment="Left" Content="{Binding Bar.SessionLinkText}" IsVisible="{Binding Bar.HasSession}" Click="OnSession"
+                  AutomationProperties.Name="{Binding Bar.SessionLinkName}" />
           <WrapPanel x:Name="NeedsYouBarButtons" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" IsVisible="{Binding ShowsBarButtons}">
             <Button x:Name="NeedsYouApprove" Classes="bar-button primary" Classes.asking="{Binding Bar.IsAsking}" IsVisible="{Binding Bar.ShowsPrimary}" IsEnabled="{Binding Bar.PrimaryEnabled}"
                     Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
