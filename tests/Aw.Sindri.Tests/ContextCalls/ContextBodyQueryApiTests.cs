@@ -36,7 +36,8 @@ public sealed class ContextBodyQueryApiTests : IDisposable
     private static (string Name, string Value)[] Session() => [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)];
 
     private static string Body(IEnumerable<string> anchors, int? depth = null, string? mapVersion = null, bool? draft = null) =>
-        JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal) { ["anchors"] = anchors.ToArray(), ["depth"] = depth, ["mapVersion"] = mapVersion, ["draft"] = draft });
+        JsonSerializer.Serialize(new Dictionary<string, object?>(StringComparer.Ordinal) { ["anchors"] = anchors.ToArray(), ["depth"] = depth, ["mapVersion"] = mapVersion, ["draft"] = draft }
+            .Where(static pair => pair.Value is not null).ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal));   // an unset field is omitted: 'draft' is a bool, and AwJson refuses a null for it
 
     private static string Gets(IEnumerable<string> anchors) => string.Join('&', anchors.Select(a => "anchor=" + Uri.EscapeDataString(a)));
 
