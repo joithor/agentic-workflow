@@ -81,10 +81,10 @@ public sealed class FileMapPagingTests
         Assert.Equal(Total, files.Rows.Count);
         Assert.Equal(200, files.Loaded);
         Assert.Equal(Name(0), files.Rows[0].Name);
-        Assert.Equal(Labels.ContextFilesLoading, files.Rows[300].Name);
-        Assert.False(files.Rows[300].IsDirectory);
-        var first = Assert.Single(api.FileMapQueries);
+        var first = Assert.Single(api.FileMapQueries);   // loading reads one page; only a scroll toward the end reads the next
         Assert.Equal((null, FileMapViewModel.PageSize), (first.Cursor, first.Limit));
+        Assert.Equal(Labels.ContextFilesLoading, files.Rows[300].Name);   // asking for a row past what is read is a scroll there
+        Assert.False(files.Rows[300].IsDirectory);
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public sealed class FileMapPagingTests
 
         files.FilterText = "f49";
         clock.Advance(FileMapViewModel.FilterDelay);
-        await Until(() => files.Loaded == Total && files.Rows.Count == 11 && !files.HasNote);
+        await Until(() => files.Loaded == Total && files.Rows.Count == 11 && string.Equals(files.Note, Labels.ContextMapNamesDetail, StringComparison.Ordinal));
 
         Assert.Equal(3, api.FileMapQueries.Count);
         Assert.All(files.Rows, r => Assert.Contains("f49", r.Name, StringComparison.Ordinal));
