@@ -16,34 +16,9 @@ public static class NodeRepos
     public static IReadOnlyDictionary<string, string?> Index(GraphSnapshot graph, string? mapRepo)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        var direct = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        foreach (var node in graph.Nodes)
-        {
-            direct[node.Key.Value] = Direct(node);
-        }
-
         var links = graph.Edges.Where(e => e.Type is EdgeType.Implements or EdgeType.Tests).ToList();
-        foreach (var edge in links.Where(e => direct.ContainsKey(e.From.Value)))
-        {
-            direct[edge.From.Value].UnionWith(Named(edge.EvidenceOrEmpty));
-        }
-
-        var derived = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        foreach (var edge in links)
-        {
-            if (!direct.TryGetValue(edge.From.Value, out var from) || from.Count == 0)
-            {
-                continue;
-            }
-
-            if (!derived.TryGetValue(edge.To.Value, out var into))
-            {
-                derived[edge.To.Value] = into = new HashSet<string>(StringComparer.Ordinal);
-            }
-
-            into.UnionWith(from);
-        }
-
+        var direct = DirectRepos(graph, links);
+        var derived = DerivedRepos(direct, links);
         var index = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var node in graph.Nodes)
         {
@@ -63,6 +38,45 @@ public static class NodeRepos
         }
 
         return index;
+    }
+
+    // Each node's own repos: its evidence, a record's key, and the evidence of its 'implements' and 'tests' edges.
+    private static Dictionary<string, HashSet<string>> DirectRepos(GraphSnapshot graph, List<GraphEdge> links)
+    {
+        var direct = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var node in graph.Nodes)
+        {
+            direct[node.Key.Value] = Direct(node);
+        }
+
+        foreach (var edge in links.Where(e => direct.ContainsKey(e.From.Value)))
+        {
+            direct[edge.From.Value].UnionWith(Named(edge.EvidenceOrEmpty));
+        }
+
+        return direct;
+    }
+
+    // The repos a node reaches through the files that implement or test it.
+    private static Dictionary<string, HashSet<string>> DerivedRepos(Dictionary<string, HashSet<string>> direct, List<GraphEdge> links)
+    {
+        var derived = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var edge in links)
+        {
+            if (!direct.TryGetValue(edge.From.Value, out var from) || from.Count == 0)
+            {
+                continue;
+            }
+
+            if (!derived.TryGetValue(edge.To.Value, out var into))
+            {
+                derived[edge.To.Value] = into = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            into.UnionWith(from);
+        }
+
+        return derived;
     }
 
     private static HashSet<string> Direct(GraphNode node)
