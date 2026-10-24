@@ -17,11 +17,11 @@ namespace Aw.Sindri.Tests.Views;
 public sealed class ViewRowShapeTests
 {
     private const int PinnedVersion = 10;
-    private const string PinnedShape = "to be pinned: run this test once and paste the shape it prints";
+    private const string PinnedShape = "e00964cf04481f9876795ced0366038af1cbc22bb69e0768020632e6cadd1679";
 
     private static readonly Type[] _rows =
     [
-        typeof(ServiceRow), typeof(ProfileRow), typeof(ItemRow), typeof(AliasRow), typeof(Aw.Sindri.Core.Views.TimelineRow), typeof(RequestRow),
+        typeof(ServiceRow), typeof(ProfileRow), typeof(ItemRow), typeof(AliasRow), typeof(TimelineRow), typeof(RequestRow),
         typeof(HumanDecisionRow), typeof(NeedsYouRowRecord), typeof(JobRow), typeof(LaunchRow), typeof(CodeIndexRow), typeof(RecipeStatsRow),
     ];
 
