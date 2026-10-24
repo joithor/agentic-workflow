@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Prove;
 /// </summary>
 /// <param name="Head">The head sha every artifact must name (fact:built's head).</param>
 /// <param name="Acceptance">The phase packet's acceptance.json.</param>
-/// <param name="Signals">The phase packet's signals.json, or null.</param>
+/// <param name="Signals">The phase packet's signals.json as the line writes it (<see cref="PhaseSignals.Shape"/>), or null; <see cref="PhaseSignals.Of"/> reads it.</param>
 /// <param name="PhaseKind">phase.json's kind: feature, fix, refactor, docs or config; empty when unknown.</param>
 /// <param name="HoldoutCount">The hidden set's size from the phase packet's holdout.json, without the canary scenario; null when unknown.</param>
 /// <param name="Proof">fact:proof: <c language="text">{head, items[{id, signals[], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}</c>, or null.</param>

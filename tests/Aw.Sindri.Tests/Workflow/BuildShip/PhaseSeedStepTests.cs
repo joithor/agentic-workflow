@@ -53,6 +53,17 @@ public sealed class PhaseSeedStepTests
     }
 
     [Fact]
+    public async Task Two_phases_of_one_line_get_two_worktrees_and_two_branches()
+    {
+        var worktrees = Repo();
+
+        var first = await Step(worktrees).Run(Context(f => f["lineContext"] = f["lineContext"].Replace("\"p2\"", "\"p1\"", StringComparison.Ordinal)), Token);
+        var second = await Step(worktrees).Run(Context(), Token);
+
+        Assert.Equal(["/repos/dev/.claude/worktrees/sindri-L-1-p1", Path], [(string?)Out(first, "workspace"), (string?)Out(second, "workspace")]);
+    }
+
+    [Fact]
     public async Task Seeds_the_facts_the_later_waits_read()
     {
         var result = await Step(Repo()).Run(Context(), Token);

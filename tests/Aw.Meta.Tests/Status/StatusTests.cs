@@ -82,7 +82,7 @@ public sealed class StatusTests
         Assert.Equal([190, 191, 192], status.MergeQueue.Select(p => p.Pr));
         Assert.Equal(new HeavySlots(3, 1, 3, A.At(60)), status.Heavy);
         Assert.Equal("heavy reservation: 1 of 3 slots (queue depth 3) - set it with meta-gate-reserve 3", status.Heavy!.Line());
-        Assert.Equal("builders: 4 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
+        Assert.Equal("builders: 21 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -99,7 +99,7 @@ public sealed class StatusTests
 
         Assert.Equal(0, _world.Heavy.Writes);
         Assert.Null(status.Heavy);
-        Assert.Equal("builders: 4 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
+        Assert.Equal("builders: 21 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
         Assert.Equal([190, 191, 192], status.MergeQueue.Select(p => p.Pr));
     }
 

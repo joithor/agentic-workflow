@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
@@ -17,10 +18,22 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Whether the quiet loading row or the failure row shows over the stage.</summary>
     public bool ShowWholeStatus => ShowMap && !HasStack && !NoMap && !IsBuilding && (Whole.IsLoading || Whole.IsFailed);
 
+    /// <summary>The note by the search box when nothing on the map matches.</summary>
+    public string SearchNote => Whole.NoMatches ? Labels.ContextSearchNoMatches : string.Empty;
+
+    /// <summary>Whether the note shows.</summary>
+    public bool HasSearchNote => Whole.NoMatches;
+
+    /// <summary>The clear button's words.</summary>
+    public string SearchClearText { get; } = Labels.ContextSearchClear;
+
     // Registered once: whenever the control plane is reachable and the page was shown, a map that is not read yet is read (the first open may have come before the connection).
     private void InitWhole()
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
+        Whole.HomeRequested += (_, _) => MapHome();
+        Whole.Panel.Launcher = Ports.Launcher ?? NullLauncher.Instance;
+        Whole.Panel.Loader = async (key, cancellationToken) => Ports.ApiUrl() is { } api ? await Ports.Api.Node(api, key, cancellationToken).ConfigureAwait(true) : null;
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
         Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
     }
@@ -46,10 +59,11 @@ internal sealed partial class ContextPageViewModel
 
         Whole.Loading();
         ChangedWhole();
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.Show(read.Value);
+            NoteRepos(read.Value);
             if (_servedBuilding)
             {
                 (IsBuilding, _buildJob, _servedBuilding, _notReady, NoMap) = (false, null, false, MapNotReadyView.None, false);   // the build the answer named is done: the map is here
@@ -86,7 +100,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.ShowArea(read.Value);
@@ -102,11 +116,23 @@ internal sealed partial class ContextPageViewModel
         ChangedWhole();
     }
 
+    /// <summary>"~" on the map: back to the whole map from a query's answer, or from one open feature to all of them.</summary>
+    internal void MapHome()
+    {
+        if (!BackToWholeMap())
+        {
+            Whole.CloseArea();
+            ChangedWhole();
+        }
+    }
+
     private void ChangedWhole()
     {
         OnChanged(nameof(Head));
         OnChanged(nameof(HasHead));
         OnChanged(nameof(ShowWhole));
         OnChanged(nameof(ShowWholeStatus));
+        OnChanged(nameof(SearchNote));
+        OnChanged(nameof(HasSearchNote));
     }
 }
