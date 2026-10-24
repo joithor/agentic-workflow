@@ -8,8 +8,8 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Confirmed">Confirmed, as served.</param>
 /// <param name="Trust">Trust, as served.</param>
 /// <param name="Order">Order, as served.</param>
-/// <param name="OtherKind">The kind of the node at the other end, as served.</param>
-/// <param name="OtherLabel">That node's label, as served, or null.</param>
+/// <param name="OtherKind">The kind of the node at the other end, when served.</param>
+/// <param name="OtherLabel">The label of the node at the other end, when served.</param>
 internal sealed record NodeEdge(
     string From,
     string Type,
