@@ -56,9 +56,9 @@ public sealed class WholeMapSearchFilterTests
         map.ApplySearch([Hit(tile.Key)], hitAreas: [], zoomed: false);
 
         var shown = map.Shown!;
-        Assert.Contains(tile.Key, shown.Tiles.Select(t => t.Key));
+        Assert.Contains(tile.Key, shown.Tiles.Select(t => t.Key), StringComparer.Ordinal);
         Assert.True(shown.Tiles.Count < map.Geometry.Tiles.Count);
-        Assert.All(shown.AreaEdges, e => Assert.True(e.From == tile.Key || e.To == tile.Key || shown.Tiles.Any(t => t.Key == e.From) && shown.Tiles.Any(t => t.Key == e.To)));
+        Assert.All(shown.AreaEdges, e => Assert.True(e.From == tile.Key || e.To == tile.Key || (shown.Tiles.Any(t => t.Key == e.From) && shown.Tiles.Any(t => t.Key == e.To))));
     }
 
     [Fact]
