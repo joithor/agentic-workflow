@@ -148,6 +148,8 @@ public sealed class PhaseWorkspaceTests
 
         public ValueTask<Result<WorktreeCheckout>> Create(WorktreeRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
 
+        public ValueTask<Result<string>> Resolve(string repoRoot, string branch, CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public ValueTask<Result<Unit>> Remove(string path, CancellationToken cancellationToken)
         {
             Removed.Add(path);

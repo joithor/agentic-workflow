@@ -191,7 +191,8 @@ public sealed class LensesSetTests
         var many = Enumerable.Range(0, 50).Select(i => "nope:" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, LensesBuilder.BuildSet(Basis(), Tabs(), [], 2).Error.Code);
-        Assert.Null(QueryRules.CheckAnchors(many));
+        Assert.Null(QueryRules.CheckAnchors(many, "lenses"));
+        Assert.Equal("a code call takes at least 1 anchor, not 0", QueryRules.CheckAnchors([], "code")?.Message);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, LensesBuilder.BuildSet(Basis(), Tabs(), many, 2).Error.Code);
     }
 

@@ -241,11 +241,15 @@ Aw.Sindri.Features.ContextCalls.FindContextPathRequest.To.get -> string!
 Aw.Sindri.Features.ContextCalls.FindContextPathRequest.To.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest!
-Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Deconstruct(out string! Repo, out string? Path, out bool Unmapped, out bool Draft) -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Deconstruct(out string! Repo, out string? Path, out bool Unmapped, out bool Draft, out string? Cursor, out int? Limit) -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Cursor.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Cursor.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Limit.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Limit.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.GetContextFileMapRequest(string! Repo, string? Path = null, bool Unmapped = false, bool Draft = false) -> void
+Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.GetContextFileMapRequest(string! Repo, string? Path = null, bool Unmapped = false, bool Draft = false, string? Cursor = null, int? Limit = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Path.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Path.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextFileMapRequest.Repo.get -> string!
@@ -4731,3 +4735,42 @@ override Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.GetHashCode() -
 override Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.SearchContextMapRequest? left, Aw.Sindri.Features.ContextCalls.SearchContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.SearchContextMapRequest? left, Aw.Sindri.Features.ContextCalls.SearchContextMapRequest? right) -> bool
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.<Clone>$() -> Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest!
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.Instance.init -> void
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.Equals(Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest? other) -> bool
+Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.GetInstanceLineRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+override Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.ToString() -> string!
+static Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.operator !=(Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest? left, Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest? right) -> bool
+static Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest.operator ==(Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest? left, Aw.Sindri.Features.GetInstanceLine.GetInstanceLineRequest? right) -> bool
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.<Clone>$() -> Aw.Sindri.Features.LineDoctor.LineDoctorRequest!
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.LineDoctorRequest(string! Directory) -> void
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.Deconstruct(out string! Directory) -> void
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.Equals(Aw.Sindri.Features.LineDoctor.LineDoctorRequest? other) -> bool
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.Directory.get -> string!
+Aw.Sindri.Features.LineDoctor.LineDoctorRequest.Directory.init -> void
+override Aw.Sindri.Features.LineDoctor.LineDoctorRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.LineDoctor.LineDoctorRequest.GetHashCode() -> int
+override Aw.Sindri.Features.LineDoctor.LineDoctorRequest.ToString() -> string!
+static Aw.Sindri.Features.LineDoctor.LineDoctorRequest.operator !=(Aw.Sindri.Features.LineDoctor.LineDoctorRequest? left, Aw.Sindri.Features.LineDoctor.LineDoctorRequest? right) -> bool
+static Aw.Sindri.Features.LineDoctor.LineDoctorRequest.operator ==(Aw.Sindri.Features.LineDoctor.LineDoctorRequest? left, Aw.Sindri.Features.LineDoctor.LineDoctorRequest? right) -> bool
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.<Clone>$() -> Aw.Sindri.Features.LineDoctor.LineDoctorResponse!
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.LineDoctorResponse(string? Repo, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! Checks) -> void
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Deconstruct(out string? Repo, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! Checks) -> void
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Equals(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? other) -> bool
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Repo.get -> string?
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Repo.init -> void
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Checks.init -> void
+override Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.LineDoctor.LineDoctorResponse.GetHashCode() -> int
+override Aw.Sindri.Features.LineDoctor.LineDoctorResponse.ToString() -> string!
+static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator !=(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
+static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator ==(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
+Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Passed.get -> bool
