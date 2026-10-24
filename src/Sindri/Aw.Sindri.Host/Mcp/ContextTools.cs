@@ -102,10 +102,21 @@ internal static class ContextTools
             return McpResults.Failure(services, answer.Error);
         }
 
-        return answer.Value.Many is { } many
-            ? McpResults.Success(services, many, McpSummaries.LensesSet(many))
-            : McpResults.Success(services, answer.Value.One!, McpSummaries.Lenses(answer.Value.One!));   // why: exactly one of One and Many is set
+        var options = services.GetRequiredService<JsonSerializerOptions>();
+        if (answer.Value.Many is { } many)
+        {
+            var fitted = LensPayload.Fit(many, options);
+            return McpResults.Success(services, fitted.View, Note(McpSummaries.LensesSet(many), fitted.Truncated));
+        }
+
+        var single = answer.Value.One!;   // why: exactly one of One and Many is set
+        var one = LensPayload.Fit(single, options);
+        return McpResults.Success(services, one.View, Note(McpSummaries.Lenses(single), one.Truncated));
     }
+
+    /// <summary>The lenses summary, plus a note when the returned view was cut down to the MCP budget.</summary>
+    private static string Note(string summary, bool truncated) =>
+        truncated ? summary + "\ntruncated to fit" : summary;
 
     /// <summary>The lenses arguments as a request: 'anchor' then 'anchors' (in order), an optional 'mapVersion'; SND-CONTEXT-022 for anything else. The draft map is never read over MCP.</summary>
     private static Result<GetContextLensesAnswerRequest> BindLenses(IDictionary<string, JsonElement>? arguments)
