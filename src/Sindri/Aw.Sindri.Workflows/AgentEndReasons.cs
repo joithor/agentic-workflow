@@ -8,5 +8,10 @@ internal static class AgentEndReasons
     /// <summary>The reason for how the session ended.</summary>
     /// <param name="ended">How it ended; null reads as an exit.</param>
     /// <returns>'lost', 'idle' or 'exit'.</returns>
-    internal static string Of(AgentSessionEnd? ended) => ended == AgentSessionEnd.Lost ? "lost" : "exit";
+    internal static string Of(AgentSessionEnd? ended) => ended switch
+    {
+        AgentSessionEnd.Lost => "lost",
+        AgentSessionEnd.Idle => "idle",
+        _ => "exit",
+    };
 }

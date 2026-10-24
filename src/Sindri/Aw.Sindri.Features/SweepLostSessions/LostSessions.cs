@@ -7,7 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Features.SweepLostSessions;
 
 /// <summary>
-/// Ends the sessions with no heartbeat for <see cref="LaunchRules.LostAfter"/> as 'session.ended' with reason lost (API spec §8.1). A host that runs its
+/// Ends the sessions with no heartbeat for <see cref="LaunchRules.LostAfter"/> as 'session.ended' with reason lost (API spec §8.1), and the ones whose turn ended with no report for <see cref="LaunchRules.IdleAfter"/> as idle. A host that runs its
 /// sessions without 'session wrap' (T3) is asked first: each live session it reports counts as a heartbeat, and one it reports gone ends as an exit.
 /// </summary>
 /// <param name="liveness">The heartbeats.</param>
@@ -26,6 +26,27 @@ internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents 
         foreach (var launch in liveness.SilentAfterSweep(clock.GetUtcNow(), LaunchRules.LostAfter, LaunchRules.SweepGap))
         {
             if ((await session.End(launch, SessionEndReason.Lost, exitCode: null, cancellationToken).ConfigureAwait(false)).IsSuccess)
+            {
+                hosted.Forget(launch);
+                ended++;
+            }
+        }
+
+        return ended + await SweepIdle(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Ends as idle the sessions whose Stop hook says the turn ended <see cref="LaunchRules.IdleAfter"/> ago: the agent has nothing more to do and never reported, and its wrap still
+    /// beats, so the silence sweep never sees it. A prompt deletes the hook's file, so a person typing to the session starts the clock over.
+    /// </summary>
+    private async ValueTask<int> SweepIdle(CancellationToken cancellationToken)
+    {
+        var ended = 0;
+        var now = clock.GetUtcNow();
+        foreach (var launch in liveness.Active())
+        {
+            if (files.TurnEndedAt(launch) is { } turn && now - turn >= LaunchRules.IdleAfter
+                && (await session.End(launch, SessionEndReason.Idle, exitCode: null, cancellationToken).ConfigureAwait(false)).IsSuccess)
             {
                 hosted.Forget(launch);
                 ended++;

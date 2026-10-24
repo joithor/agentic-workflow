@@ -18,6 +18,7 @@ namespace Aw.Sindri.Infrastructure.Workflow;
 internal sealed class LedgerAgentSessions(ILaunchViews views, ILedgerReader ledger, EventFactory events) : IAgentSessions
 {
     private const int Page = 500;
+    private const string IdleDetail = "the agent's turn ended without a report and nothing happened for 120 s (fix: take the Step over, or send it again)";
 
     public async ValueTask<Result<AgentSessionState>> Watch(LaunchId launch, CancellationToken cancellationToken)
     {
@@ -34,7 +35,12 @@ internal sealed class LedgerAgentSessions(ILaunchViews views, ILedgerReader ledg
         }
 
         var payload = events.Payload<SessionEnded>(ended);
-        return payload.IsError ? payload.Error : new AgentSessionState(payload.Value.Reason == SessionEndReason.Exit ? AgentSessionEnd.Exit : AgentSessionEnd.Lost, payload.Value.ExitCode);
+        return payload.IsError ? payload.Error : payload.Value.Reason switch
+        {
+            SessionEndReason.Exit => new AgentSessionState(AgentSessionEnd.Exit, payload.Value.ExitCode),
+            SessionEndReason.Idle => new AgentSessionState(AgentSessionEnd.Idle, ExitCode: null, IdleDetail),
+            _ => new AgentSessionState(AgentSessionEnd.Lost, payload.Value.ExitCode),
+        };
     }
 
     public async ValueTask<Result<long>> Usage(LaunchId launch, CancellationToken cancellationToken)
