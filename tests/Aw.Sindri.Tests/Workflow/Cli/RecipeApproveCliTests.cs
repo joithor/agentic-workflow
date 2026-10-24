@@ -87,7 +87,7 @@ public sealed class RecipeApproveCliTests : IDisposable
 
         Assert.Equal((2, 2), (session, mistyped));
         Assert.StartsWith("SND-AUTH-002 IssueChallenge is a human decision", sessionError, StringComparison.Ordinal);
-        Assert.Contains("(this CLI ran as a session: CLAUDECODE is set)", sessionError, StringComparison.Ordinal);
+        Assert.Contains("(this CLI ran as a session: the per-start human token isn't readable)", sessionError, StringComparison.Ordinal);
         Assert.Contains("SND-RECIPE-009 ", _error.ToString(), StringComparison.Ordinal);
         Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 3, step.Hash, ct)).Value);
     }

@@ -81,7 +81,7 @@ internal static class LineCommandTable
             return await Fail(output, view.Error).ConfigureAwait(false);
         }
 
-        var shown = desk.Client.SessionReason is null ? view.Value : DesignStopFencing.Fence(view.Value);
+        var shown = await desk.Client.ResolveSessionReason(ct).ConfigureAwait(false) is null ? view.Value : DesignStopFencing.Fence(view.Value);
         return parsed.Json ? await output.Json(shown, 0).ConfigureAwait(false) : await output.Text(LineText.Stop(shown), 0).ConfigureAwait(false);
     }
 
