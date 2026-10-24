@@ -163,11 +163,36 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Labeling_turned_on_with_no_labeler_set_up_is_SND_CONTEXT_042()
+    public async Task Labeling_turned_on_with_no_labeler_set_up_passes_with_a_note_naming_the_fix()
     {
         var labels = await new DisabledLabeler().Label([Cluster("a.ts")], [], 400_000, MapWorld.None);
 
-        Assert.Equal(ContextErrors.LabelingUnavailable.Code, labels.Error.Code);
+        Assert.True(labels.IsSuccess);
+        Assert.Contains(LabelPass.NoModelFix, labels.Value.Unavailable, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task With_labeling_on_and_no_model_the_build_succeeds_with_one_degraded_042_naming_the_fix()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+        _world.Labeler.Unavailable = "no agent CLI answered (fix: " + LabelPass.NoModelFix + ")";
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        var note = Assert.Single(report.Degraded);
+        Assert.StartsWith("labels: " + ContextErrors.LabelingUnavailable.Code + ": ", note, StringComparison.Ordinal);
+        Assert.Contains(LabelPass.NoModelFix, note, StringComparison.Ordinal);
+        _ = Assert.Single(await Versions());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_model_that_answers_leaves_no_degraded_note()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        Assert.Empty(report.Degraded);
     }
 
     [Fact, Trait("Lane", "unit")]
