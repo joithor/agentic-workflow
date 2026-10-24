@@ -169,7 +169,7 @@ public sealed class CatalogFramesTests : IDisposable
         Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
 
         var blocks = page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "CliText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["sindri context map import <file>", "sindri profile init", "sindri launch init [--viewer <name>] [--force] [--stdout]", "sindri launch show [<id>] [--json]", "sindri doctor", "sindri line holdout show <line> <phase>", "sindri profile validate"], blocks, StringComparer.Ordinal);
+        Assert.Equal(["sindri profile init", "sindri launch init [--viewer <name>] [--force] [--stdout]", "sindri launch show [<id>] [--json]", "sindri doctor", "sindri line holdout show <line> <phase>", "sindri profile validate"], blocks, StringComparer.Ordinal);
         Assert.Contains(page.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "CopyNoteText" && t.IsEffectivelyVisible && t.Text == Labels.TypedConfirmation);
 
         Assert.True(lines[0].Focus(NavigationMethod.Tab));

@@ -109,13 +109,13 @@ public sealed partial class CommandPaletteViewModelTests
     public void Arrows_move_the_selection_over_entries_that_run()
     {
         _palette.Open();
-        Assert.Equal("ImportContextMap", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
+        Assert.Equal("InitProfile", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
 
         _palette.Move(1);
+        Assert.Equal("LaunchInit", _palette.Selected?.Id);
+        _palette.Move(-1);
+        _palette.Move(-1);
         Assert.Equal("InitProfile", _palette.Selected?.Id);
-        _palette.Move(-1);
-        _palette.Move(-1);
-        Assert.Equal("ImportContextMap", _palette.Selected?.Id);
         Assert.True(_palette.Selected!.IsSelected);
         Assert.All(_palette.Entries.Where(e => e.Control?.IsPending == true), e => Assert.False(e.IsEnabled));
     }
@@ -154,7 +154,7 @@ public sealed partial class CommandPaletteViewModelTests
     public void Open_and_every_refilter_start_at_the_top_and_only_the_arrows_follow_the_selection()
     {
         _palette.Open();
-        Assert.Equal(("ImportContextMap", false), (_palette.Selected?.Id, _palette.FollowsSelection));
+        Assert.Equal(("InitProfile", false), (_palette.Selected?.Id, _palette.FollowsSelection));
 
         _palette.Move(1);
         Assert.True(_palette.FollowsSelection);
