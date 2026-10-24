@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.Kernel;
-using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.CodeIndexJobs;
@@ -18,7 +18,7 @@ public sealed class CodeIndexLiveScopeTests
 {
     private static readonly IndexSettings _top = new(DenyPaths: ["private/**"], Embeddings: new ProfileEmbeddings(Enabled: true, Url: "http://127.0.0.1:11500", Model: "mxbai-embed-large"));
 
-    public static TheoryData<string> Copies => new() { "reads", "jobs" };
+    public static TheoryData<string> Copies => ["reads", "jobs"];
 
     private static SindriProfile Approved() => new(1, "thor", Index: _top, Repos: [new RepoEntry("demo", "/work/demo", new IndexSettings(DenyPaths: ["gen/**"]))]);
 
@@ -35,7 +35,7 @@ public sealed class CodeIndexLiveScopeTests
 
         var scope = Scope(copy, Approved(), live).Value;
 
-        Assert.Equal(["demo", "fresh"], scope.Repos.Select(static r => r.Name.Value));
+        Assert.Equal(["demo", "fresh"], scope.Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
         var fresh = Repo(scope, "fresh").Settings;
         Assert.Equal(["private/**"], fresh.DenyPaths);
         Assert.Equal("http://127.0.0.1:11500", fresh.Embeddings.Url);
@@ -110,7 +110,7 @@ public sealed class CodeIndexLiveScopeTests
 
         var scope = Scope(copy, Approved(), live, caller).Value;
 
-        Assert.Equal(["fresh"], scope.Repos.Select(static r => r.Name.Value));
+        Assert.Equal(["fresh"], scope.Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -119,18 +119,18 @@ public sealed class CodeIndexLiveScopeTests
     {
         var scope = Scope(copy, Approved(), live: null).Value;
 
-        Assert.Equal(["demo"], scope.Repos.Select(static r => r.Name.Value));
+        Assert.Equal(["demo"], scope.Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task With_no_approved_profile_nothing_is_indexed_even_when_the_live_file_has_repos()
     {
         var harness = new SliceHarness();
-        harness.Profiles.Live = new LoadedProfile(Approved(), "hash", "/home/profile.yaml");
+        harness.Profiles.Live = new LoadedProfile(Approved(), ProfileHash.From(new string('a', 64)), "/home/profile.yaml");
 
         var read = await new CodeIndexScopes(harness.Profiles, harness.Profiles, harness.Callers).Current(TestContext.Current.CancellationToken);
         var job = await new CodeIndexJobScopes(harness.Profiles, harness.Profiles, harness.Callers).Current(TestContext.Current.CancellationToken);
 
-        Assert.Equal(["SND-PROFILE-005", "SND-PROFILE-005"], new[] { read.Error.Code, job.Error.Code });
+        Assert.Equal(["SND-PROFILE-005", "SND-PROFILE-005"], [read.Error.Code, job.Error.Code]);
     }
 }

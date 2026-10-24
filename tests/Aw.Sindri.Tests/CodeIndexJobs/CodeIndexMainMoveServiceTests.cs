@@ -57,7 +57,7 @@ public sealed class CodeIndexMainMoveServiceTests
     public async Task A_repo_added_to_the_live_profile_only_is_built_on_the_next_tick_owner_q102_CIX_L59()
     {
         var live = new SindriProfile(1, "thor", Repos: [new RepoEntry("demo", "/work/demo"), new RepoEntry("fresh", "/work/fresh")]);
-        _rig.Harness.Profiles.Live = new LoadedProfile(live, "live-hash", "/home/profile.yaml");
+        _rig.Harness.Profiles.Live = new LoadedProfile(live, ProfileHash.From(new string('a', 64)), "/home/profile.yaml");
         _ = _rig.Heads.With(CodeIndexJobsRig.Fresh, CodeIndexJobsRig.New, onDefaultBranch: true);
 
         _ = await Run();

@@ -2,6 +2,7 @@ using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Testing;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.CodeIndexReads;
 using Aw.Sindri.Testing;
@@ -64,11 +65,11 @@ public sealed class CodeIndexHealthTests
         var fresh = RepoName.From("fresh");
         var index = new FakeCodeIndex().WithIndex(fresh, _old);
         var heads = new FakeRepoHeads().With(fresh, _new, onDefaultBranch: true);
-        var live = new InMemoryProfiles { Live = new LoadedProfile(new SindriProfile(1, "thor", Repos: [new RepoEntry("fresh", "/work/fresh")]), "live-hash", "/home/profile.yaml") };
+        var live = new InMemoryProfiles { Live = new LoadedProfile(new SindriProfile(1, "thor", Repos: [new RepoEntry("fresh", "/work/fresh")]), ProfileHash.From(new string('a', 64)), "/home/profile.yaml") };
 
         var problems = await Health(index, heads, live).Problems(Approved(), Token);
 
-        Assert.Contains("fresh", index.Scopes[0].Repos.Select(static r => r.Name.Value));
+        Assert.Contains("fresh", index.Scopes[0].Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
         Assert.Equal(["SND-CODEIDX-014"], problems.Select(static p => p.Code), StringComparer.Ordinal);
     }
 }

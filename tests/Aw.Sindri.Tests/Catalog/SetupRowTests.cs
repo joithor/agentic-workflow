@@ -41,9 +41,9 @@ public sealed class SetupRowTests
     {
         var rows = new CommandCatalog().Rows;
 
-        Assert.Contains("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "AddRepo")));
-        Assert.DoesNotContain("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "OnboardRepo")));
-        Assert.DoesNotContain("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "RegisterMcp")));
+        Assert.Contains("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "AddRepo")), StringComparer.Ordinal);
+        Assert.DoesNotContain("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "OnboardRepo")), StringComparer.Ordinal);
+        Assert.DoesNotContain("session", Authorization.CallersFor(rows.Single(r => r.Action.Value == "RegisterMcp")), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
