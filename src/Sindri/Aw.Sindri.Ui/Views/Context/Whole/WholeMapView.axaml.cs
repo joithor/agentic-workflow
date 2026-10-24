@@ -15,6 +15,7 @@ namespace Aw.Sindri.Ui.Views.Context.Whole;
 internal sealed partial class WholeMapView : UserControl
 {
     private const double PanStep = 0.1;
+    private const double MiniMapStrip = 140;   // the mini-map (112) and its margins, which a fitted answer keeps clear of
     private WholeMapViewModel? _map;
     private bool _fitted;
 
@@ -96,7 +97,7 @@ internal sealed partial class WholeMapView : UserControl
     private void OnFitRequested(object? sender, EventArgs e) => WholeCanvas.Fit();
 
     private void OnZoomRequested(object? sender, ValueEventArgs<WholeRect> e) =>
-        WholeCanvas.FitBounds(new Rect(e.Value.X - 24, e.Value.Y - 24, e.Value.Width + 48, e.Value.Height + 48));
+        WholeCanvas.FitBounds(new Rect(e.Value.X - 24, e.Value.Y - 24, e.Value.Width + 48, e.Value.Height + 48), MiniMapStrip);
 
     // The world, the zoom floor that shows all of it, the mini-map's cards; and, once the stage has a size, the first open.
     private void Arrange()

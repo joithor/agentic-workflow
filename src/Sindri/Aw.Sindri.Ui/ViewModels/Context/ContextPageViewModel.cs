@@ -12,6 +12,7 @@ internal sealed partial class ContextPageViewModel : ObservableObject
     internal ContextPageViewModel(ContextPorts ports)
     {
         Ports = ports;
+        MapSearch = new DrawnMapSearch(() => Map);
         InitReview();
         InitFileMap();
         InitSide();
@@ -41,6 +42,17 @@ internal sealed partial class ContextPageViewModel : ObservableObject
     public string AnchorText
     {
         get;
-        set => Set(ref field, value);
+        set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CanClearSearch));
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                _ = BackToWholeMap();   // an empty box is no search: the full map again
+            }
+        }
     } = string.Empty;
+
+    /// <summary>The search over the map; the ranked full-text endpoint replaces it with one change.</summary>
+    internal IMapSearch MapSearch { get; set; }
 }

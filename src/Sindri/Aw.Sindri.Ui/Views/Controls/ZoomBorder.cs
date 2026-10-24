@@ -110,7 +110,9 @@ internal sealed partial class ZoomBorder : Border
 
     /// <summary>Shows a rectangle of the world (clamped to the zoom range), whatever its origin.</summary>
     /// <param name="bounds">The rectangle, in world coordinates.</param>
-    internal void FitBounds(Rect bounds) => MoveTo(ZoomView.Fit(Bounds.Size, bounds, Range));
+    /// <param name="bottomInset">Height of the strip over the stage's bottom edge (a mini-map) the rectangle keeps clear of.</param>
+    internal void FitBounds(Rect bounds, double bottomInset = 0) =>
+        MoveTo(ZoomView.Fit(new Size(Bounds.Width, Math.Max(1, Bounds.Height - bottomInset)), bounds, Range));
 
     /// <summary>Pans the least that brings a world rectangle fully into view, clear of the inspector over the right edge.</summary>
     /// <param name="target">The rectangle, in world coordinates.</param>
