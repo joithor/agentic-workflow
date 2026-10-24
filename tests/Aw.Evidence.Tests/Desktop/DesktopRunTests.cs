@@ -255,7 +255,7 @@ public sealed class DesktopRunTests
     public async Task A_manifest_that_breaks_a_rule_is_refused_with_the_rule_named()
     {
         var harness = new DesktopRunHarness();
-        _ = harness.Files.With(DesktopRunHarness.ManifestPath, "{\"schema\":\"nope\"}"u8.ToArray());
+        _ = harness.Files.With(DesktopRunHarness.ManifestPath, "{\"schema\":\"nope\",\"designRoot\":\".\",\"screens\":[]}"u8.ToArray());
 
         var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 

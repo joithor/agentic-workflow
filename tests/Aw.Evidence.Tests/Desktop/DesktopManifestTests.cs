@@ -94,7 +94,7 @@ public sealed class DesktopManifestTests
     [Fact, Trait("Lane", "unit")]
     public void A_screen_without_steps_a_step_with_an_unknown_action_or_key_is_refused()
     {
-        Assert.Contains("steps: must list at least one step", Read(Manifest("""{"name":"home","design":"home.html"}""")).Error.Message, StringComparison.Ordinal);
+        Assert.Contains("$.screens[0]: missing required property \"steps\"", Read(Manifest("""{"name":"home","design":"home.html"}""")).Error.Message, StringComparison.Ordinal);
         Assert.Equal(EvidenceErrors.DesktopManifestInvalid.Code, Read(Manifest("""{"name":"home","design":"home.html","steps":[{"action":"hover"}]}""")).Error.Code);
         Assert.Contains("extra", Read(Manifest("""{"name":"home","design":"home.html","steps":[{"action":"screenshot","extra":1}]}""")).Error.Message, StringComparison.Ordinal);
         Assert.Contains("route", Read(Manifest("""{"name":"home","route":"page:Home","design":"home.html","steps":[{"action":"screenshot"}]}""")).Error.Message, StringComparison.Ordinal);
