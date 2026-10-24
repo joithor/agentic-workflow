@@ -78,10 +78,13 @@ public static partial class TransitionDecision
     {
         var step = d.Recipe.States[state].Step?.Use.Value ?? state;
         var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
-        var question = d.Context.LegacyUnavailable
-            ? $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}"
-            : Unavailables.Question(failed.Dependency ?? "launching " + step, LoopRules.MaxLaunchFailures - 1, error);
-        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, question, failed.Actor, unavailable: !d.Context.LegacyUnavailable);
+        var park = d.Context.LegacyUnavailable
+            ? new Suspension(
+                SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null,
+                $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}", failed.Actor, Mirrors: null,
+                new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []))
+            : Unavailables.Park(Unavailables.Question(failed.Dependency ?? ("launching " + step), LoopRules.MaxLaunchFailures - 1, error), failed.Actor, failed.Code);
+        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, park);
         var after = verdict.Next is { } next ? instance with { Loops = With(instance.Loops, name, next) } : instance;
         return (after, verdict.Park);
     }

@@ -156,7 +156,7 @@ public static partial class TransitionDecision
     /// A Step failure no transition takes (owner decision q90, q93): the dependency is down, which no human can answer. The Step runs again, a new run in the same
     /// entry, until <see cref="Unavailables.MaxRetries"/> reruns failed; then it parks as unavailable, whose answer is a rerun. A retry counts no loop round.
     /// </summary>
-    private static Decision Unavailable(Deciding d, WorkflowInstance instance, StepFailed failed, string step)
+    private static Applied Unavailable(Deciding d, WorkflowInstance instance, StepFailed failed, string step)
     {
         var dependency = failed.Dependency ?? step;
         var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;

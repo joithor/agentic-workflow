@@ -60,11 +60,9 @@ internal static partial class LoopRules
     /// <param name="instance">The instance.</param>
     /// <param name="recipe">Its recipe.</param>
     /// <param name="state">The looped state being entered again.</param>
-    /// <param name="question">What the park asks when the streak ends here: the Step and the last launch error.</param>
-    /// <param name="actor">Who reported the failure.</param>
-    /// <param name="unavailable">Whether the park is the unavailable one (off for a history from before the 'step-unavailable-v1' patch).</param>
+    /// <param name="park">The park the streak ends in: unavailable, or needs-answer in a history from before the 'step-unavailable-v1' patch; it carries the Step and the last launch error.</param>
     /// <returns>Go on in the same round with the streak counted, or park with the streak cleared for the answer's re-run.</returns>
-    public static LoopVerdict LaunchFailed(WorkflowInstance instance, Recipe recipe, string state, string question, string actor, bool unavailable = true)
+    public static LoopVerdict LaunchFailed(WorkflowInstance instance, Recipe recipe, string state, Suspension park)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
@@ -79,11 +77,6 @@ internal static partial class LoopRules
             return new LoopVerdict(loop with { LaunchFailures = loop.LaunchFailures + 1 }, Park: null);
         }
 
-        var park = unavailable
-            ? Unavailables.Park(question, actor, code: null)
-            : new Suspension(
-                SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, question, actor, Mirrors: null,
-                new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
         return new LoopVerdict(loop with { LaunchFailures = 0 }, park);
     }
 
