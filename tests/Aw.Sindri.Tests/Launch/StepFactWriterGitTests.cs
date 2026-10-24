@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Infrastructure.Launch;
+using Aw.Sindri.Infrastructure.Workflow;
 
 namespace Aw.Sindri.Tests.Launch;
 
@@ -61,5 +62,34 @@ public sealed class StepFactWriterGitTests : IDisposable
         Assert.Contains("fact:brief", problem.Message, StringComparison.Ordinal);
         Assert.Equal("{\"mine\":true}", await File.ReadAllTextAsync(Path.Combine(_repo, "brief.json"), TestContext.Current.CancellationToken));
         Assert.False(File.Exists(Path.Combine(_repo, "workspace.json")));
+    }
+
+    [Fact]
+    public async Task The_outputs_folder_is_made_and_excluded_once_so_files_in_it_never_show_in_status_and_the_run_diff_stays_empty()
+    {
+        _ = await Git("commit", "-q", "--allow-empty", "-m", "start");
+        var head = (await Git("rev-parse", "HEAD"))!.Trim();
+
+        Assert.Null(await StepFactWriter.Outputs(_repo, TestContext.Current.CancellationToken));
+        Assert.Null(await StepFactWriter.Outputs(_repo, TestContext.Current.CancellationToken));   // idempotent
+        await File.WriteAllTextAsync(Path.Combine(_repo, ".sindri-out", "redTests"), "{}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(string.Empty, await Git("status", "--porcelain", "--untracked-files=all"));
+        Assert.True((await new GitRunDiff().IsEmpty(_repo, head, TestContext.Current.CancellationToken)).Value);
+        var exclude = await File.ReadAllLinesAsync(Path.Combine(_repo, ".git", "info", "exclude"), TestContext.Current.CancellationToken);
+        Assert.Single(exclude, "/.sindri-out/");
+    }
+
+    [Fact]
+    public async Task A_stray_source_file_beside_the_outputs_still_makes_the_run_diff_non_empty()
+    {
+        _ = await Git("commit", "-q", "--allow-empty", "-m", "start");
+        var head = (await Git("rev-parse", "HEAD"))!.Trim();
+        _ = await StepFactWriter.Outputs(_repo, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(_repo, ".sindri-out", "redTests"), "{}", TestContext.Current.CancellationToken);
+        _ = Directory.CreateDirectory(Path.Combine(_repo, "src"));
+        await File.WriteAllTextAsync(Path.Combine(_repo, "src", "Stray.cs"), "class S;", TestContext.Current.CancellationToken);
+
+        Assert.False((await new GitRunDiff().IsEmpty(_repo, head, TestContext.Current.CancellationToken)).Value);
     }
 }
