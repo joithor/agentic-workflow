@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Setup;
@@ -10,16 +9,7 @@ namespace Aw.Sindri.Ui.Tests.Setup;
 [Lane(TestLane.Unit)]
 public sealed class SetupOutdatedWorkflowsTests
 {
-    private const string Sentence = "approve-all";
-
     private readonly SetupFixture _f = new("extra-setup-ready");
-
-    public SetupOutdatedWorkflowsTests()
-    {
-        var challenge = JsonNode.Parse(GoldenFiles.Api("workflow-challenges-app", "approve-all"))!;   // why: the golden is a JSON document
-        challenge["expiresAt"] = _f.Clock.GetUtcNow().AddMinutes(5).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-        _f.Server.AppChallengeAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, challenge.ToJsonString());
-    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -68,8 +58,7 @@ public sealed class SetupOutdatedWorkflowsTests
         var all = row.Workflows!;
 
         Assert.NotEmpty(all.Rows);   // the plan lists the versions it covers, children first
-        all.Typed = all.TypedAlternative;
-        var submitted = all.SubmitTyped();
+        var submitted = all.Approve();
         while (!submitted.IsCompleted)
         {
             _f.Clock.Advance(TimeSpan.FromMilliseconds(500));
@@ -78,8 +67,7 @@ public sealed class SetupOutdatedWorkflowsTests
 
         await submitted;
 
-        var sent = Assert.Single(_f.Server.Approvals);
-        Assert.StartsWith(Sentence, sent.Typed, StringComparison.Ordinal);
+        _ = Assert.Single(_f.Server.Approvals);
     }
 
     [Fact]
