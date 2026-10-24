@@ -51,10 +51,11 @@ extra=$(cs_hits "$FIXTURES/csharp-negative.txt")
 
 # ---- the tree ----
 # Tracked and not-ignored files, in the places that keep running; tests, fixtures and node_modules are not callers.
+# scripts/cutover-clean-ts.sh calls `judge label status` on purpose: it logs the TS judge's labels before removing it.
 list() { # list <pathspec>...
   git -C "$ROOT" ls-files -z --cached --others --exclude-standard -- "$@" \
     | tr '\0' '\n' \
-    | grep -vE '(^|/)(tests|node_modules|fixtures|bin|obj)/|\.test\.(sh|mjs|ts)$|\.spec\.ts$|(^|/)skills/judge/' || true
+    | grep -vE '(^|/)(tests|node_modules|fixtures|bin|obj)/|\.test\.(sh|mjs|ts)$|\.spec\.ts$|(^|/)skills/judge/|^scripts/cutover-clean-ts\.sh$' || true
 }
 in_root() { while IFS= read -r f; do [ -f "$ROOT/$f" ] && printf '%s\n' "$ROOT/$f"; done; }
 

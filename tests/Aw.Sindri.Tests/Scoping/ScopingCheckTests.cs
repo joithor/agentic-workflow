@@ -374,6 +374,35 @@ public sealed class ScopingCheckTests
         Assert.Equal(ScopeOutcome.Regather, (await Run(facts, ScopeStage.Evidence)).Outcome);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_evidence_stage_with_only_lens_findings_is_a_regather()
+    {
+        var facts = ScopingFacts.Expiry().Edit("lenses", n => n["code"]!["anchors"] = new JsonArray("feature:other"));
+
+        var response = await Run(facts, ScopeStage.Evidence);
+
+        Names(response, "SCP-LENS-001", ScopeOutcome.Regather);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_challenger_on_the_drafters_model_warns_once_the_second_opinion_is_spent_and_before_it_fails()
+    {
+        static void SameModel(JsonNode n) => n["runs"]![1]!["model"] = n["runs"]![0]!["model"]!.DeepClone();
+        static void Spend(JsonNode n)
+        {
+            var rounds = n["rounds"]!.AsArray();
+            rounds.Add(rounds[1]!.DeepClone());
+        }
+
+        var spent = await Run(ScopingFacts.Expiry().Edit("runs", SameModel).Edit("challenge", Spend), ScopeStage.Evidence);
+        var notYet = await Run(ScopingFacts.Expiry().Edit("runs", SameModel), ScopeStage.Evidence);
+
+        Assert.Equal(ScopeOutcome.Complete, spent.Outcome);
+        Assert.Equal(ScopeRuleStatus.Warn, spent.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
+        Assert.Equal(ScopeOutcome.Incomplete, notYet.Outcome);
+        Assert.Equal(ScopeRuleStatus.Fail, notYet.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
+    }
+
     /// <summary>The gold facts with one lens's coverage row turned into a limited one.</summary>
     internal static ScopingFacts Limited(string lens, string state, string reason, string? code, string rowState, int count) =>
         ScopingFacts.Expiry().Edit("coverage", n =>

@@ -106,6 +106,10 @@ public sealed class ContextLensesInputTests
     }
 
     [Fact]
+    public void The_backoff_gives_a_building_map_at_least_five_times_the_old_twenty_seconds() =>
+        Assert.True(ContextLensesInput.Backoff.Aggregate(TimeSpan.Zero, static (sum, wait) => sum + wait) >= TimeSpan.FromSeconds(100));
+
+    [Fact]
     public async Task A_refusal_that_may_pass_is_retried_with_a_bounded_backoff_and_the_view_comes_back_when_the_engine_answers()
     {
         var asked = 0;
