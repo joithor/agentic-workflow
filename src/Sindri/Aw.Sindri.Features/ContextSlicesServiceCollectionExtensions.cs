@@ -6,6 +6,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Kernel.Services;
@@ -56,6 +57,7 @@ internal static class ContextSlicesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextLensesRequest>, AcceptAllValidator<GetContextLensesRequest>>().AddQuery<GetContextLensesRequest, LensesView, GetContextLensesService>();
         _ = services.AddScoped<IValidator<GetContextLensesSetRequest>, AcceptAllValidator<GetContextLensesSetRequest>>().AddQuery<GetContextLensesSetRequest, LensesSetView, GetContextLensesSetService>();
         _ = services.AddScoped<WholeMapNotReady>().AddScoped<IValidator<GetContextSubgraphRequest>, AcceptAllValidator<GetContextSubgraphRequest>>().AddQuery<GetContextSubgraphRequest, SubgraphView, GetContextSubgraphService>().AddScoped<IValidator<GetContextWholeMapRequest>, AcceptAllValidator<GetContextWholeMapRequest>>().AddQuery<GetContextWholeMapRequest, WholeMapView, GetContextWholeMapService>();
+        _ = services.AddScoped<IValidator<SearchContextMapRequest>, AcceptAllValidator<SearchContextMapRequest>>().AddQuery<SearchContextMapRequest, MapSearchView, SearchContextMapService>();
         _ = services.AddScoped<IValidator<GetContextCodeRequest>, AcceptAllValidator<GetContextCodeRequest>>().AddQuery<GetContextCodeRequest, CodeView, GetContextCodeService>();
         _ = services.AddScoped<IValidator<GetContextLensesAnswerRequest>, AcceptAllValidator<GetContextLensesAnswerRequest>>().AddQuery<GetContextLensesAnswerRequest, LensesAnswer, GetContextLensesAnswerService>();
         _ = services.AddScoped<IValidator<GetContextHistoryRequest>, AcceptAllValidator<GetContextHistoryRequest>>().AddQuery<GetContextHistoryRequest, HistoryView, GetContextHistoryService>();
