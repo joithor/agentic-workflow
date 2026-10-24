@@ -55,13 +55,12 @@ public static class ReviewDrafts
     /// <param name="store">The graph store.</param>
     /// <param name="scrubbers">Builds this call's scrubbers.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
-    /// <param name="what">What is being done, for a refusal's words.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The draft and its queue, or the first refusal.</returns>
     public static async ValueTask<Result<(MapSnapshot Draft, ReviewQueueView Queue)>> Load(
-        IGraphStore store, IScrubberFactory scrubbers, ContextScope scope, string what, CancellationToken cancellationToken)
+        IGraphStore store, IScrubberFactory scrubbers, ContextScope scope, CancellationToken cancellationToken)
     {
-        if (Gate(scope, what) is { } refused)
+        if (MapAccess.Gate(scope) is { } refused)
         {
             return refused;
         }

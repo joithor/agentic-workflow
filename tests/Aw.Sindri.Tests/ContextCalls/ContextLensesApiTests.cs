@@ -520,7 +520,7 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task EvalMap_route_answers_numbers_and_refuses_sessions_020()
+    public async Task EvalMap_route_answers_numbers_to_a_human_and_a_session()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -534,7 +534,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.True(run.GetProperty("report").TryGetProperty("nodePrecision", out _));
         Assert.StartsWith("map", Path.GetFileName(run.GetProperty("path").GetString()), StringComparison.Ordinal);
         Assert.Contains(Path.Combine("eval", "map"), run.GetProperty("path").GetString(), StringComparison.Ordinal);
-        Assert.Equal("SND-CONTEXT-020", session.Code);
+        Assert.Equal(HttpStatusCode.OK, session.Status);   // a session may measure the map (owner q93, 2026-10-23)
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
