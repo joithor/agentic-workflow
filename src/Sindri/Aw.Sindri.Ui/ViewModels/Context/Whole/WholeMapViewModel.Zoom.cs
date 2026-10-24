@@ -15,15 +15,6 @@ internal sealed partial class WholeMapViewModel
     /// <summary>Whether the camera is on a query's answer.</summary>
     public bool IsZoomed { get; private set; }
 
-    /// <summary>The "Whole map" button's words.</summary>
-    public string BackText { get; } = Labels.ContextWholeBack;
-
-    /// <summary>The card's title.</summary>
-    public string CardTitle { get; } = Labels.ContextMapWhyTitle;
-
-    /// <summary>The card's words: pick a starting point until one is chosen, then what the map says about it.</summary>
-    public string CardText => IsZoomed ? Labels.ContextMapWhyNone : Labels.ContextWholePick;
-
     /// <summary>"2 more features touched" once a query touched more features than were opened; empty otherwise.</summary>
     public string MoreTouchedText { get; private set; } = string.Empty;
 
@@ -80,6 +71,7 @@ internal sealed partial class WholeMapViewModel
 
         _beforeZoom ??= (Answer, Geometry, Areas);
         Geometry = geometry;
+        ForgetHighlight();
         var byKey = overview.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
         Areas = [.. geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
         MoreTouchedText = notOpened > 0 ? Labels.ContextWholeMoreTouched(notOpened) : string.Empty;
@@ -91,17 +83,20 @@ internal sealed partial class WholeMapViewModel
     {
         if (!IsZoomed)
         {
+            EndSearch();
             return;
         }
 
         if (_beforeZoom is { } before)
         {
             (Answer, Geometry, Areas) = before;
+            ForgetHighlight();
             _beforeZoom = null;
         }
 
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
         Changed();
+        ResetSearch();
         FitRequested?.Invoke(this, EventArgs.Empty);
     }
 }

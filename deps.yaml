@@ -156,7 +156,7 @@ packages:
     db: [judge/decisions.sqlite]
     files: [judge/outbox, judge/sessions]
     namespace: judge
-    note: "decisions, health, briefs and the prompt sorter; called by hooks and tier-2 packages through its CLI"
+    note: "decisions, health, briefs, the prompt sorter (`prompt-sort`, `prompt-sort scaffold`, `config set prompt-sort`: tables prompt_sort_axes and prompt_sort_runs in decisions.sqlite, session state judge/sessions/<sid>.sort.json) and trait-check (`trait-check --edit|--stop|--scan`: the repo's traits in <repo>/.agents/traits read as YAML, diffs from the `git` runner (a system binary run through IProcessRunner, not a package, so no edge), judge/trait-check/log.jsonl); both ask Jev in batches (IBatchClassifier, one POST /v1/systemone). `label`, `adjudicate`, `eval` and `prompt-sort why|import|outcomes|adjudicate|eval|promote` answer `judge: <verb> is not in this build yet` (exit 1) until they land; then they read the Claude transcripts under ~/.claude/projects and write judge/evals, which is outside the state root the `files` edges are relative to, so it is named here and not declared (as the provider folders of the fleet note below); called by hooks and tier-2 packages through its CLI"
   # Packets and Readiness are standalone (§10 R1b, §4c): they depend on tier 0 only and Sindri (tier 3)
   # consumes both. Tier 1 rather than tier 0, because they carry domain (packet schema, readiness criteria)
   # and tier 0 stays domain-free.
@@ -169,6 +169,14 @@ packages:
     bins: [aw-packets]
     namespace: packets
     note: "packet schema, validate, freeze (§4c); a standalone NativeAOT CLI before the switch, writing only under packets/"
+  - id: UiDriver
+    kind: package
+    tier: 1
+    projectPrefix: Aw.UiDriver
+    ts: null
+    src: src/UiDriver
+    bins: [aw-ui-driver]
+    note: "a free, generic, Playwright-like driver for any Avalonia app, modelled on the DevTools MCP tool set: Aw.UiDriver.Core (protocol, selectors, wait rules), Aw.UiDriver.Avalonia (the in-app loopback server an app opts into with UseAwUiDriver(); unshaped, like the UI projects) and Aw.UiDriver.Cli (the client and the aw-ui-driver command; unshaped). It knows no app; a scripted run (desktop evidence) uses the CLI, so other packages need no project edge"
   - id: Readiness
     kind: package
     tier: 1
@@ -388,6 +396,11 @@ edges:
     kind: project
     status: current
     note: "replaces judge's copy of the scrubbing patterns"
+  - from: UiDriver
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, JSON (the in-app server and the client)"
   - from: Packets
     to: Kernel
     kind: project

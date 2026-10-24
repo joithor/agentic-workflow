@@ -1,6 +1,5 @@
 using System.Globalization;
 using Aw.Context.Core;
-using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Subgraph;
@@ -68,19 +67,18 @@ public sealed class SubgraphBuilderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_product_counts_carry_the_full_neighbor_and_edge_totals_beyond_the_cap()
+    public void The_product_band_lists_every_neighbor_and_edge_beyond_100()
     {
         var builder = new GraphBuilder();
-        foreach (var i in Enumerable.Range(0, LensesBuilder.BandCap + 5))
+        foreach (var i in Enumerable.Range(0, 105))
         {
             _ = builder.Edge(string.Create(CultureInfo.InvariantCulture, $"feature:n{i}"), EdgeType.PartOf, A);
         }
 
         var product = SubgraphBuilder.Build(_basis, builder.Build(), [A], 1, []).Value.Bands.Product;
 
-        Assert.Equal(LensesBuilder.BandCap, product.Neighbors.Count);
-        Assert.Equal((LensesBuilder.BandCap + 5, LensesBuilder.BandCap + 5, true), (product.Counts.Neighbors, product.Counts.Edges, product.Truncated));
-        Assert.Equal(LensesBuilder.BandCap, product.Edges.Count);
+        Assert.Equal((105, 105), (product.Neighbors.Count, product.Edges.Count));
+        Assert.Equal((105, 105), (product.Counts.Neighbors, product.Counts.Edges));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -142,7 +140,7 @@ public sealed class SubgraphBuilderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Band_over_100_truncated_with_full_counts()
+    public void Band_over_100_lists_every_node()
     {
         var builder = new GraphBuilder();
         var keys = Enumerable.Range(0, 150).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i:D3}")).ToArray();
@@ -153,9 +151,8 @@ public sealed class SubgraphBuilderTests
 
         var view = Of(keys, graph: builder.Build());
 
-        Assert.True(view.Bands.Product.Truncated);
         Assert.Equal(150, view.Bands.Product.Counts.Own);
-        Assert.Equal(keys.Take(100), view.Bands.Product.Own.Select(i => i.Node.Value), StringComparer.Ordinal);
+        Assert.Equal(keys, view.Bands.Product.Own.Select(i => i.Node.Value), StringComparer.Ordinal);
         Assert.Equal(150, view.Nodes.Count);
     }
 
@@ -184,28 +181,30 @@ public sealed class SubgraphBuilderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void More_than_1000_keys_is_006()
+    public void Any_number_of_keys_is_taken_and_none_is_006()
     {
-        var keys = Enumerable.Range(0, QueryRules.MaxSubgraphPost + 1).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i}")).ToArray();
+        var keys = Enumerable.Range(0, 1_500).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i}")).ToArray();   // the 1000-key limit was removed per owner q93, 2026-10-23
 
-        var over = SubgraphBuilder.Build(_basis, Graph(), keys, 0, []);
+        var many = SubgraphBuilder.Build(_basis, Graph(), keys, 0, []);
         var none = SubgraphBuilder.Build(_basis, Graph(), [], 0, []);
-        var edge = SubgraphBuilder.Build(_basis, Graph(), [.. keys.Take(QueryRules.MaxSubgraphPost)], 0, []);
 
-        Assert.Equal(ContextErrors.QueryInvalid.Code, over.Error.Code);
+        Assert.True(many.IsSuccess);
+        Assert.Equal(1_500, many.Value.Missing.Count);
         Assert.Equal(ContextErrors.QueryInvalid.Code, none.Error.Code);
-        Assert.True(edge.IsSuccess);
-        Assert.Equal(QueryRules.MaxSubgraphPost, edge.Value.Missing.Count);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData(-1)]
-    [InlineData(5)]
-    public void Depth_outside_0_to_4_is_006(int depth)
+    [Fact, Trait("Lane", "unit")]
+    public void A_negative_depth_is_006()
     {
-        var result = SubgraphBuilder.Build(_basis, Graph(), [A], depth, []);
+        var result = SubgraphBuilder.Build(_basis, Graph(), [A], -1, []);
 
         Assert.True(result.IsError);
         Assert.Equal(ContextErrors.QueryInvalid.Code, result.Error.Code);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(5)]
+    [InlineData(99)]
+    public void A_depth_past_the_old_cap_widens_and_one_past_8_is_read_as_8(int depth) =>
+        Assert.True(SubgraphBuilder.Build(_basis, Graph(), [A], depth, []).IsSuccess);
 }

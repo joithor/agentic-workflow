@@ -38,7 +38,7 @@ public static class ContextErrors
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads and the map export from sessions are off");
 
     /// <summary>SND-CONTEXT-021: an MCP call without X-Sindri-Repo, so it has no repo scope (stage S-1M).</summary>
-    public static readonly ErrorDefinition McpRepoMissing = new("SND-CONTEXT-021", ErrorKind.Invalid, "The MCP call names no repo");
+    public static readonly ErrorDefinition McpRepoMissing = new("SND-CONTEXT-021", ErrorKind.Invalid, "The call names no repo");
 
     /// <summary>SND-CONTEXT-022: an MCP tool's arguments don't match its input schema (S-1M).</summary>
     public static readonly ErrorDefinition McpArgumentsInvalid = new("SND-CONTEXT-022", ErrorKind.Invalid, "The MCP tool's arguments are invalid");
@@ -179,7 +179,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-130: a profile recognizer ('context.extract.recognizers[i]') is invalid: an unknown kind, a bad glob, a regex that doesn't compile or a key group it doesn't name. 132 is reserved for a recognizer that timed out on a file (degraded, never a failure).</summary>
     public static readonly ErrorDefinition RecognizerInvalid = new("SND-CONTEXT-130", ErrorKind.Invalid, "A profile recognizer is invalid");
 
-    /// <summary>SND-CONTEXT-131: more than 50 profile recognizers, or a pattern over 512 characters.</summary>
+    /// <summary>SND-CONTEXT-131: more than 500 profile recognizers, or a pattern over 2000 characters.</summary>
     public static readonly ErrorDefinition RecognizerOverCap = new("SND-CONTEXT-131", ErrorKind.Invalid, "Too many profile recognizers, or a pattern is too long");
 
     /// <summary>SND-CONTEXT-150: a 'context.code.schemaGlobs' or 'context.code.testGlobs' entry isn't a repo-relative glob. The message starts with the key path.</summary>

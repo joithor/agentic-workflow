@@ -13,17 +13,11 @@ namespace Aw.Sindri.Features.ContextCalls;
 internal sealed record ReviewInput(string Verb, ReviewDecision? Decision, string? Path)
 {
     /// <summary>The most overrides one undo may name.</summary>
-    internal const int MaxUndoList = 1000;
+    internal const int MaxUndoList = 10_000;
 
     /// <summary>Every variant this command takes.</summary>
     internal static IReadOnlyList<string> Verbs { get; } =
         ["accept", "reject", "rename", "move", "accept-deterministic", "undo", "drop", "repoint", "apply-file", "merge", "add", "delete"];
-
-    /// <summary>The protected variants: they show what they would do and need the human's typed answer (README X63).</summary>
-    internal static IReadOnlySet<string> Protected { get; } = new HashSet<string>(["apply-file", "merge", "add", "delete"], StringComparer.Ordinal);
-
-    /// <summary>Whether this variant is protected.</summary>
-    internal bool IsProtected => Protected.Contains(Verb);
 
     /// <summary>Reads <paramref name="request"/>: the verb, and the keys and ids it names; a bad one is SND-CLI-003 naming the field.</summary>
     /// <param name="request">The request.</param>
@@ -58,7 +52,7 @@ internal sealed record ReviewInput(string Verb, ReviewDecision? Decision, string
         return bad is { } error ? error : new ReviewDecision(ToVerb(request.Verb), node.Value, link.Value, undoes.Value, request.Label, other.Value, all.Value);
     }
 
-    /// <summary>The overrides an undo reverses together: 1 to 1000 ids, only for undo and not beside a single override.</summary>
+    /// <summary>The overrides an undo reverses together: 1 to 10000 ids, only for undo and not beside a single override.</summary>
     private static Result<IReadOnlyList<OverrideId>?> UndoList(ReviewContextMapRequest request)
     {
         if (request.Overrides is not { } ids)

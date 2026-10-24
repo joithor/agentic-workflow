@@ -71,6 +71,7 @@ using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetRepoStatus;
+using Aw.Sindri.Features.LineDoctor;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Features.GetStatus;
@@ -104,6 +105,7 @@ using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.RunService;
 using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Features.Scrub;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.SetupOnyx;
@@ -140,7 +142,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemRow)), JsonSerializable(typeof(AliasRow)), JsonSerializable(typeof(RequestRow)), JsonSerializable(typeof(HumanDecisionRow))]
 [JsonSerializable(typeof(NeedsYouRowRecord)), JsonSerializable(typeof(NestedPark)), JsonSerializable(typeof(NeedsYouRow)), JsonSerializable(typeof(NeedsYouStop)), JsonSerializable(typeof(NeedsYouSubject)), JsonSerializable(typeof(TimelineRow))]
 [JsonSerializable(typeof(HealthReport)), JsonSerializable(typeof(CommandAccepted)), JsonSerializable(typeof(GetStatusResponse)), JsonSerializable(typeof(StopProcessResponse))]
-[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(InitProfileResponse)), JsonSerializable(typeof(RunDoctorResponse))]
+[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(InitProfileResponse)), JsonSerializable(typeof(ScrubResponse)), JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(PublicEvent)), JsonSerializable(typeof(LedgerPage)), JsonSerializable(typeof(EventCatalogView)), JsonSerializable(typeof(EventTypeView))]
 [JsonSerializable(typeof(StreamErrorFrame)), JsonSerializable(typeof(InstanceChanged)), JsonSerializable(typeof(ListCommandsRequest)), JsonSerializable(typeof(ListCommandsResponse)), JsonSerializable(typeof(CommandListRow))]
 [JsonSerializable(typeof(ListServicesRequest)), JsonSerializable(typeof(ListServicesResponse)), JsonSerializable(typeof(ServiceView)), JsonSerializable(typeof(GetProfileRequest))]
@@ -160,6 +162,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ScopingApproved)), JsonSerializable(typeof(ScopingEscape)), JsonSerializable(typeof(ScopingView)), JsonSerializable(typeof(ScopingCheckResponse)), JsonSerializable(typeof(ScopingDeskReport))]   // SC-K: the scoping verbs
 [JsonSerializable(typeof(LineCheckResponse)), JsonSerializable(typeof(LineDeskReport)), JsonSerializable(typeof(DesignStopView))]   // LN-K: the line verbs
 [JsonSerializable(typeof(DocsCheckResponse)), JsonSerializable(typeof(DocsCheckFinding))]   // API17: 'docs check'
+[JsonSerializable(typeof(LineDoctorResponse))]   // LN-L: 'line doctor'
 [JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(OnyxSetupState))]
 [JsonSerializable(typeof(OnyxUpResponse))]
