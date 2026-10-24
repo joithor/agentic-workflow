@@ -96,7 +96,7 @@ public sealed class CodeLensMergeTests
 
         var view = CodeLensMerge.With(Base(), Found(tests, schema));
 
-        Assert.Equal((101, false, 102), (view.Tests.Count, view.Truncated.Tests, view.Counts.Tests));   // no list cut (owner q93, 2026-10-23)
+        Assert.Equal((102, false, 102), (view.Tests.Count, view.Truncated.Tests, view.Counts.Tests));   // no list cut (owner q93, 2026-10-23)
         Assert.Equal((100, true, 101), (view.Data.Files.Count, view.Truncated.SchemaFiles, view.Counts.SchemaFiles));
     }
 

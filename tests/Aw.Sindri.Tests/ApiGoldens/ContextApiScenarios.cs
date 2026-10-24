@@ -287,7 +287,7 @@ internal static class ContextApiScenarios
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
         };
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 51; i++)
         {
             var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
             nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));

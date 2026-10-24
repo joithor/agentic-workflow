@@ -158,7 +158,7 @@ public sealed class CodeLensBuilderTests
 
         var view = BuildOn(CodeGraphs.Sharing(nodes, edges));
 
-        Assert.Equal((101, false, 103), (view.Files.Count, view.Truncated.Files, view.Counts.Files));
+        Assert.Equal((103, false, 103), (view.Files.Count, view.Truncated.Files, view.Counts.Files));
         Assert.False(view.Truncated.Tests);
     }
 

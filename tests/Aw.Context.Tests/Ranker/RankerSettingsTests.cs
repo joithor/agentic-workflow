@@ -36,7 +36,7 @@ public sealed class RankerSettingsTests
     [InlineData("""{"ranker":{"weights":{"recency":-1}}}""", "context.ranker.weights.recency")]
     [InlineData("""{"ranker":{"weights":{"edgeType":10.5}}}""", "context.ranker.weights.edgeType")]
     [InlineData("""{"ranker":{"rerankTop":0}}""", "context.ranker.rerankTop")]
-    [InlineData("""{"ranker":{"rerankTop":51}}""", "context.ranker.rerankTop")]
+    [InlineData("""{"ranker":{"rerankTop":101}}""", "context.ranker.rerankTop")]
     public void A_value_out_of_range_is_SND_CONTEXT_001_with_the_key_path(string json, string path)
     {
         var settings = Read(json);

@@ -99,7 +99,7 @@ public sealed class QueryRulesTests
     {
         Assert.Null(QueryRules.CheckDepth(depth: null));
         Assert.Null(QueryRules.CheckDepth(3));
-        Assert.Equal(QueryRules.ParseDepth("9").Error, QueryRules.CheckDepth(9));
+        Assert.Null(QueryRules.CheckDepth(9));   // deeper than 8 is clamped where it is read, not refused
         Assert.Equal(QueryRules.ParseDepth("-1").Error, QueryRules.CheckDepth(-1));
     }
 
@@ -212,19 +212,19 @@ public sealed class QueryRulesTests
         Assert.Equal(ContextErrors.HopsInvalid.Code, QueryRules.ParseHops(text).Error.Code);
 
     [Fact, Trait("Lane", "unit")]
-    public void A_profile_fan_out_of_10_reaches_the_walk_through_CascadeFor_so_a_unit_of_6_features_is_walked()
+    public void A_profile_fan_out_of_5_reaches_the_walk_through_CascadeFor_so_a_unit_of_6_features_is_skipped()
     {
         var edges = Enumerable.Range(0, 6).Select(i => new GraphEdge(NodeKey.From("code:src/util.ts"), NodeKey.From(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i}")), EdgeType.Implements)).ToList();
         var graph = new GraphSnapshot([.. edges.SelectMany(e => new[] { e.From, e.To }).DistinctBy(k => k.Value, StringComparer.Ordinal).Select(k => new GraphNode(k, k.Value))], edges, [], []);
         var hops = QueryRules.ParseHops("component").Value;
 
+        var lowered = Cascade.Affects(graph, NodeKey.From("feature:f0"), depth: 1, QueryRules.CascadeFor(hops, new ContextSettings { CascadeComponentFanOut = 5 }));
         var byDefault = Cascade.Affects(graph, NodeKey.From("feature:f0"), depth: 1, QueryRules.CascadeFor(hops, new ContextSettings()));
-        var raised = Cascade.Affects(graph, NodeKey.From("feature:f0"), depth: 1, QueryRules.CascadeFor(hops, new ContextSettings { CascadeComponentFanOut = 10 }));
 
-        _ = Assert.Single(byDefault.SkippedComponents);
-        Assert.Empty(byDefault.Affected);
-        Assert.Empty(raised.SkippedComponents);
-        Assert.Equal(5, raised.Affected.Count);
+        _ = Assert.Single(lowered.SkippedComponents);
+        Assert.Empty(lowered.Affected);
+        Assert.Empty(byDefault.SkippedComponents);   // the default fan-out is 50 now (owner q93, 2026-10-23)
+        Assert.Equal(5, byDefault.Affected.Count);
     }
 
     [Fact, Trait("Lane", "unit")]

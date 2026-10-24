@@ -174,7 +174,7 @@
   "skippedComponents": [
     {
       "unit": "code:src/util/format.ts",
-      "features": 6
+      "features": 51
     }
   ]
 }
