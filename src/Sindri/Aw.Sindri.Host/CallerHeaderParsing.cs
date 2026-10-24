@@ -38,21 +38,29 @@ internal static class CallerHeaderParsing
             scope = name;
         }
 
-        LaunchId? launched = null;
-        if (launch is not null)
+        var parsedLaunch = Launch(launch);
+        if (parsedLaunch.IsError)
         {
-            if (!LaunchId.TryFrom(launch, out var id))
-            {
-                return SindriErrors.CallerUnknown.With($"X-Sindri-Launch '{launch}' isn't a launch id (fix: send the id Sindri set in AW_SINDRI_LAUNCH, or leave the header out)");
-            }
-
-            launched = id;
+            return parsedLaunch.Error;
         }
 
+        var launched = parsedLaunch.Value;
         var label = Label(client);
         var human = known == CallerClass.Human && launched is null;
         return new ParsedCaller(launched is null ? known : CallerClass.Session, human && string.Equals(terminal, "1", StringComparison.Ordinal), label, scope,
             client is not null && label == ClientLabel.None ? client : null, launched);
+    }
+
+    private static Result<LaunchId?> Launch(string? launch)
+    {
+        if (launch is null)
+        {
+            return (LaunchId?)null;
+        }
+
+        return LaunchId.TryFrom(launch, out var id)
+            ? id
+            : SindriErrors.CallerUnknown.With($"X-Sindri-Launch '{launch}' isn't a launch id (fix: send the id Sindri set in AW_SINDRI_LAUNCH, or leave the header out)");
     }
 
     private static ClientLabel Label(string? client) => client switch
