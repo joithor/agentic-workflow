@@ -25,6 +25,8 @@ internal sealed partial class WholeMapCanvas
         }
 
         var view = Viewport.Width > 0 ? new WholeRect(Viewport.X, Viewport.Y, Viewport.Width, Viewport.Height) : geometry.World;
+        var dots = WholeMapViewModel.UsesDots(Scale);
+        DrawLanes(context, geometry, view, dots);
         if (geometry.Tiles.Count > 0)
         {
             DrawTiles(context, geometry, view);
@@ -32,7 +34,6 @@ internal sealed partial class WholeMapCanvas
 
         if (geometry.Nodes.Count > 0 || geometry.Columns.Count > 0)
         {
-            var dots = WholeMapViewModel.UsesDots(Scale);
             DrawEdges(context, geometry, view);
             DrawHeaders(context, geometry, view, dots);
             DrawNodes(context, geometry, view, dots);
@@ -84,9 +85,7 @@ internal sealed partial class WholeMapCanvas
                     continue;
                 }
 
-                var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
-                context.DrawRectangle(chip, new Pen(area, node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: Radius, radiusY: Radius);
-                context.DrawText(Text(node.Label, TextSize, ink, node.Rect.Width - 12), new Point(node.Rect.X + 6, node.Rect.Y + 6));
+                DrawKindChip(context, node, area, chip, ink);
             }
         }
     }
@@ -108,9 +107,7 @@ internal sealed partial class WholeMapCanvas
 
     private void DrawTiles(DrawingContext context, WholeMapGeometry geometry, WholeRect view)
     {
-        var ink = Brush("Brush.Ink");
         var muted = Brush("Brush.InkSubtle");
-        var tile = Brush("Brush.Surface1");
         foreach (var edge in geometry.AreaEdges)
         {
             context.DrawLine(new Pen(Brush("Brush.Wire"), 1 + Math.Min(4, Math.Log2(edge.Count + 1))), new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
@@ -118,13 +115,7 @@ internal sealed partial class WholeMapCanvas
 
         foreach (var placed in geometry.Tiles.Where(t => t.Rect.Intersects(view)))
         {
-            var (colour, pattern) = WholePalette.For(placed.AreaIndex);
-            var area = Brush(PaletteKey(colour));
-            var rect = new Rect(placed.Rect.X, placed.Rect.Y, placed.Rect.Width, placed.Rect.Height);
-            context.DrawRectangle(tile, new Pen(area, 1.6), rect, radiusX: 10, radiusY: 10);
-            DrawSwatch(context, rect, area, pattern);
-            context.DrawText(Text(placed.Label, 14, ink, rect.Width - 56, bold: true), new Point(rect.X + 36, rect.Y + 12));
-            context.DrawText(Text(Labels(placed), 12, muted, rect.Width - 24), new Point(rect.X + 12, rect.Y + 42));
+            DrawTileColumn(context, placed);
         }
 
         foreach (var edge in geometry.AreaEdges.Where(e => e.Count > 1))
@@ -147,9 +138,6 @@ internal sealed partial class WholeMapCanvas
             context.DrawEllipse(Brushes.Black, pen: null, mark.Center, radiusX: 4, radiusY: 4);
         }
     }
-
-    private static string Labels(PlacedTile tile) => ViewModels.Labels.ContextWholeMembers(tile.Members) + " · " +
-        string.Join(", ", tile.KindCounts.Take(3).Select(k => ViewModels.Labels.ContextWholeKindCount(k.Key, k.Value)));
 
     private static bool Overlaps(WholeRect view, double x1, double y1, double x2, double y2) =>
         Math.Max(x1, x2) >= view.X && Math.Min(x1, x2) <= view.Right && Math.Max(y1, y2) >= view.Y && Math.Min(y1, y2) <= view.Bottom;
