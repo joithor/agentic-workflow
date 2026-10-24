@@ -10378,8 +10378,6 @@ Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Agent = 3 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Block = 2 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Desk = 1 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
-Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps
-static Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps.Applies(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! step, Aw.Sindri.Core.Workflow.Engine.StepRuntime runOn) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand
 static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! address, Aw.Sindri.Core.Workflow.Engine.RunToken run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! outcomes, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs) -> string!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
@@ -15227,10 +15225,12 @@ Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.get -> Aw.Sindri.Core.Challenges.
 Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.init -> void
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.get -> bool
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null) -> void
+Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null, bool SessionOk = false) -> void
 Aw.Sindri.Core.Commands.CommandRow.Confirm.get -> string?
 Aw.Sindri.Core.Commands.CommandRow.Confirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm) -> void
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.get -> bool
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.init -> void
+Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm, out bool SessionOk) -> void
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.ToString() -> string!
@@ -18238,6 +18238,30 @@ Aw.Sindri.Core.Setup.HookKind.None = 0 -> Aw.Sindri.Core.Setup.HookKind
 Aw.Sindri.Core.Setup.HookKind.V1 = 3 -> Aw.Sindri.Core.Setup.HookKind
 Aw.Sindri.Core.Setup.HookKind.V2 = 2 -> Aw.Sindri.Core.Setup.HookKind
 Aw.Sindri.Core.Setup.HookKind.V3 = 1 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookLocation
+Aw.Sindri.Core.Setup.HookLocation.<Clone>$() -> Aw.Sindri.Core.Setup.HookLocation!
+Aw.Sindri.Core.Setup.HookLocation.Deconstruct(out string! Path, out bool InGitDir) -> void
+Aw.Sindri.Core.Setup.HookLocation.Equals(Aw.Sindri.Core.Setup.HookLocation? other) -> bool
+Aw.Sindri.Core.Setup.HookLocation.HookLocation(string! Path, bool InGitDir) -> void
+Aw.Sindri.Core.Setup.HookLocation.InGitDir.get -> bool
+Aw.Sindri.Core.Setup.HookLocation.InGitDir.init -> void
+Aw.Sindri.Core.Setup.HookLocation.Path.get -> string!
+Aw.Sindri.Core.Setup.HookLocation.Path.init -> void
+Aw.Sindri.Core.Setup.IPreCommitGit
+Aw.Sindri.Core.Setup.IPreCommitGit.ReadHook(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Core.Setup.IPreCommitGit.RunningBin.get -> string!
+Aw.Sindri.Core.Setup.IPreCommitGit.StableBin.get -> string!
+Aw.Sindri.Core.Setup.IPreCommitGit.WriteHook(string! path, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Setup.IPreCommitInstaller
+Aw.Sindri.Core.Setup.IPreCommitInstaller.Install(string? repo, string! bin, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Setup.IPreCommitInstaller.Kind(string! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.HookKind>
+Aw.Sindri.Core.Setup.IPreCommitGit.HookPath(string? repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.HookLocation!>!>
+Aw.Sindri.Core.Setup.IPreCommitGit.StagedAddedLines(string? repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>!>!>
+override Aw.Sindri.Core.Setup.HookLocation.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.HookLocation.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.HookLocation.ToString() -> string!
+static Aw.Sindri.Core.Setup.HookLocation.operator !=(Aw.Sindri.Core.Setup.HookLocation? left, Aw.Sindri.Core.Setup.HookLocation? right) -> bool
+static Aw.Sindri.Core.Setup.HookLocation.operator ==(Aw.Sindri.Core.Setup.HookLocation? left, Aw.Sindri.Core.Setup.HookLocation? right) -> bool
 Aw.Sindri.Core.Setup.IRepoHookStates
 Aw.Sindri.Core.Setup.IRepoHookStates.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.RepoHookState!>!>
 Aw.Sindri.Core.Setup.RepoHookState
@@ -18365,6 +18389,30 @@ static Aw.Sindri.Core.Line.LinePhaseId.TryFrom(string? value, out Aw.Sindri.Core
 static Aw.Sindri.Core.Line.LinePhaseId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Line.LinePhaseId result) -> bool
 static Aw.Sindri.Core.Line.LinePhaseId.operator !=(Aw.Sindri.Core.Line.LinePhaseId left, Aw.Sindri.Core.Line.LinePhaseId right) -> bool
 static Aw.Sindri.Core.Line.LinePhaseId.operator ==(Aw.Sindri.Core.Line.LinePhaseId left, Aw.Sindri.Core.Line.LinePhaseId right) -> bool
+Aw.Sindri.Core.Profile.IBoxLimitsSource
+Aw.Sindri.Core.Profile.IBoxLimitsSource.Read() -> Aw.Sindri.Core.Profile.BoxLimits!
+Aw.Sindri.Core.Line.ILineSetupProbe
+Aw.Sindri.Core.Line.ILineSetupProbe.Read(string! checkout, string? credentialVariable, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Line.LineSetupFacts!>
+Aw.Sindri.Core.Line.LineSetupFacts
+Aw.Sindri.Core.Line.LineSetupFacts.<Clone>$() -> Aw.Sindri.Core.Line.LineSetupFacts!
+Aw.Sindri.Core.Line.LineSetupFacts.LineSetupFacts(bool TestFiles, bool EvidenceConfig, bool? CredentialSet) -> void
+Aw.Sindri.Core.Line.LineSetupFacts.Deconstruct(out bool TestFiles, out bool EvidenceConfig, out bool? CredentialSet) -> void
+Aw.Sindri.Core.Line.LineSetupFacts.Equals(Aw.Sindri.Core.Line.LineSetupFacts? other) -> bool
+Aw.Sindri.Core.Line.LineSetupFacts.TestFiles.get -> bool
+Aw.Sindri.Core.Line.LineSetupFacts.TestFiles.init -> void
+Aw.Sindri.Core.Line.LineSetupFacts.EvidenceConfig.get -> bool
+Aw.Sindri.Core.Line.LineSetupFacts.EvidenceConfig.init -> void
+Aw.Sindri.Core.Line.LineSetupFacts.CredentialSet.get -> bool?
+Aw.Sindri.Core.Line.LineSetupFacts.CredentialSet.init -> void
+override Aw.Sindri.Core.Line.LineSetupFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineSetupFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineSetupFacts.ToString() -> string!
+static Aw.Sindri.Core.Line.LineSetupFacts.operator !=(Aw.Sindri.Core.Line.LineSetupFacts? left, Aw.Sindri.Core.Line.LineSetupFacts? right) -> bool
+static Aw.Sindri.Core.Line.LineSetupFacts.operator ==(Aw.Sindri.Core.Line.LineSetupFacts? left, Aw.Sindri.Core.Line.LineSetupFacts? right) -> bool
+Aw.Sindri.Core.Line.LineDoctorRules
+static Aw.Sindri.Core.Line.LineDoctorRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile, string! repo, Aw.Sindri.Core.Profile.BoxLimits! box, Aw.Sindri.Core.Line.LineSetupFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!
+static Aw.Sindri.Core.Line.LineDoctorRules.CredentialVariable(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string?
+static Aw.Sindri.Core.Line.LineDoctorRules.Missing(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! checks) -> Aw.Kernel.Error?
 Aw.Sindri.Core.Prove.RedEntry
 Aw.Sindri.Core.Prove.RedEntry.AppOnly.get -> bool
 Aw.Sindri.Core.Prove.RedEntry.AppOnly.init -> void
@@ -18416,3 +18464,7 @@ static Aw.Sindri.Core.Prove.RedTest.operator ==(Aw.Sindri.Core.Prove.RedTest? le
 static Aw.Sindri.Core.Prove.RedTestsFact.operator !=(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.operator ==(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
+Aw.Sindri.Core.Prove.PhaseSignals
+static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
+static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
+static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!
