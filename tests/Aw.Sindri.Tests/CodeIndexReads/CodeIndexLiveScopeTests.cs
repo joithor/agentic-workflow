@@ -1,7 +1,7 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.Kernel;
-using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.CodeIndexJobs;
 using Aw.Sindri.Features.CodeIndexReads;
