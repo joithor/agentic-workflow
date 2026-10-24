@@ -76,4 +76,14 @@ public sealed class RepoCommandsTests
         Assert.Equal(["src/a.cs", "docs/b.md"], changed.Value);
         Assert.Equal("0123456789abcdef", main.Value);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_repo_command_may_run_for_fifteen_minutes()
+    {
+        _ = _world.Runner.When("gh pr view 190", """{"headRefOid":"abc","title":"T","isDraft":false,"state":"OPEN"}""");
+
+        _ = await _world.Repo.View("/work", 190, "headRefOid");
+
+        Assert.Equal(TimeSpan.FromMinutes(15), Assert.Single(_world.Runner.Requests).Timeout);
+    }
 }
