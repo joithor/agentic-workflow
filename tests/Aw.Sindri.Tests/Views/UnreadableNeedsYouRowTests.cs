@@ -9,7 +9,6 @@ using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;

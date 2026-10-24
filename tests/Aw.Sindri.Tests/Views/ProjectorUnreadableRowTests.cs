@@ -17,7 +17,10 @@ public sealed class ProjectorUnreadableRowTests
     private readonly StaleShapeProjection _projection = new();
     private readonly ProjectorProgress _progress;
 
-    public ProjectorUnreadableRowTests() => _progress = new ProjectorProgress(_h.Clock);
+    public ProjectorUnreadableRowTests()
+    {
+        _progress = new ProjectorProgress(_h.Clock);
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
