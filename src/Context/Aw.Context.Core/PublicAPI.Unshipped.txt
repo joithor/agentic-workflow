@@ -2101,11 +2101,11 @@ Aw.Context.Core.Lenses.FileMapEntry.Type.get -> Aw.Context.Core.Lenses.FileEntry
 Aw.Context.Core.Lenses.FileMapEntry.Type.init -> void
 Aw.Context.Core.Lenses.FileMapQuery
 Aw.Context.Core.Lenses.FileMapQuery.<Clone>$() -> Aw.Context.Core.Lenses.FileMapQuery!
-Aw.Context.Core.Lenses.FileMapQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out bool UnmappedOnly, out bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out bool UnmappedOnly, out bool Draft, out string? Cursor, out int? Limit) -> void
 Aw.Context.Core.Lenses.FileMapQuery.Draft.get -> bool
 Aw.Context.Core.Lenses.FileMapQuery.Draft.init -> void
 Aw.Context.Core.Lenses.FileMapQuery.Equals(Aw.Context.Core.Lenses.FileMapQuery? other) -> bool
-Aw.Context.Core.Lenses.FileMapQuery.FileMapQuery(Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, bool UnmappedOnly, bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.FileMapQuery(Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, bool UnmappedOnly, bool Draft, string? Cursor = null, int? Limit = null) -> void
 Aw.Context.Core.Lenses.FileMapQuery.Path.get -> string!
 Aw.Context.Core.Lenses.FileMapQuery.Path.init -> void
 Aw.Context.Core.Lenses.FileMapQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
@@ -2155,13 +2155,13 @@ Aw.Context.Core.Lenses.FileMapUnmapped.Path.get -> string!
 Aw.Context.Core.Lenses.FileMapUnmapped.Path.init -> void
 Aw.Context.Core.Lenses.FileMapView
 Aw.Context.Core.Lenses.FileMapView.<Clone>$() -> Aw.Context.Core.Lenses.FileMapView!
-Aw.Context.Core.Lenses.FileMapView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Sha, out string! MapVersion, out bool Draft, out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, out Aw.Context.Core.Lenses.FileMapTotals! Totals, out Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Sha, out string! MapVersion, out bool Draft, out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, out Aw.Context.Core.Lenses.FileMapTotals! Totals, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out string? NextCursor, out int? Total) -> void
 Aw.Context.Core.Lenses.FileMapView.Draft.get -> bool
 Aw.Context.Core.Lenses.FileMapView.Draft.init -> void
 Aw.Context.Core.Lenses.FileMapView.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>!
 Aw.Context.Core.Lenses.FileMapView.Entries.init -> void
 Aw.Context.Core.Lenses.FileMapView.Equals(Aw.Context.Core.Lenses.FileMapView? other) -> bool
-Aw.Context.Core.Lenses.FileMapView.FileMapView(int SchemaVersion, Aw.Context.Core.Engine.ContextRepoName Repo, string! Sha, string! MapVersion, bool Draft, string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, Aw.Context.Core.Lenses.FileMapTotals! Totals, Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.FileMapView(int SchemaVersion, Aw.Context.Core.Engine.ContextRepoName Repo, string! Sha, string! MapVersion, bool Draft, string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, Aw.Context.Core.Lenses.FileMapTotals! Totals, Aw.Context.Core.Lenses.LensSymbols! Symbols, string? NextCursor = null, int? Total = null) -> void
 Aw.Context.Core.Lenses.FileMapView.MapVersion.get -> string!
 Aw.Context.Core.Lenses.FileMapView.MapVersion.init -> void
 Aw.Context.Core.Lenses.FileMapView.Path.get -> string!
@@ -6829,4 +6829,17 @@ static readonly Aw.Context.Core.ContextErrors.AreaUnknown -> Aw.Kernel.ErrorDefi
 Aw.Context.Core.WholeMap.WholeMapView.Deconstruct(out int SchemaVersion, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out string? Repo, out Aw.Context.Core.WholeMap.WholeMapDetail Detail, out Aw.Context.Core.WholeMap.WholeMapCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, out bool Truncated) -> void
 Aw.Context.Core.WholeMap.WholeMapView.WholeMapView(int SchemaVersion, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, string? Repo, Aw.Context.Core.WholeMap.WholeMapDetail Detail, Aw.Context.Core.WholeMap.WholeMapCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, bool Truncated) -> void
 static Aw.Context.Core.WholeMap.MapAreas.Assign(Aw.Context.Core.Graph.GraphSnapshot! graph, int areaCap) -> Aw.Context.Core.WholeMap.AreaIndex!
+Aw.Context.Core.Lenses.FileMapQuery.Cursor.get -> string?
+Aw.Context.Core.Lenses.FileMapQuery.Cursor.init -> void
+Aw.Context.Core.Lenses.FileMapQuery.Limit.get -> int?
+Aw.Context.Core.Lenses.FileMapQuery.Limit.init -> void
+Aw.Context.Core.Lenses.FileMapView.NextCursor.get -> string?
+Aw.Context.Core.Lenses.FileMapView.NextCursor.init -> void
+Aw.Context.Core.Lenses.FileMapView.Total.get -> int?
+Aw.Context.Core.Lenses.FileMapView.Total.init -> void
+Aw.Context.Core.Lenses.RepoTree
+Aw.Context.Core.Lenses.RepoTree.RepoTree(System.Collections.Generic.IEnumerable<string!>! files) -> void
+const Aw.Context.Core.Lenses.FileMapBuilder.DefaultLimit = 200 -> int
+const Aw.Context.Core.Lenses.FileMapBuilder.MaxLimit = 1000 -> int
+static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMapBasis! basis, Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Lenses.RepoTree! tree, Aw.Context.Core.Graph.GraphSnapshot! graph) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int
