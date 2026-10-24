@@ -105,6 +105,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
+        .AddSingleton<MapBuildGate>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddReviewSlices()
         .AddPromoteSlices()

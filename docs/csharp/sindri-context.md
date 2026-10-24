@@ -412,7 +412,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 - **Core `Overrides/`, `Review/`, `Proposals/`, `Lenses/`.** Pure: `OverrideApplier`, `ReviewBacklog` (the queue), `ReviewPlanner` (one
   decision to override rows; `Repoint` is an undo of the orphan plus the same decision on the new node), `ReviewFileMatcher`, `PromoteReadiness`,
   `ReviewHistory`, `ProposalPlanner`, `GraphStatuses`, `LensesBuilder`, `FileMapBuilder`. the review paths (queue, history, bulk accept, review file, promote, clean) check only `MapAccess.Gate`: `ReviewDrafts.Gate` and `GateDecision`, which refused a session, were removed per owner q93 (2026-10-23).
-- **Core `Locks/IHeavyJobLock`** is the context engine's lock port; `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine
+- **Core `Locks/IHeavyJobLock`** is the context engine's lock port (the backtest takes it; the map build does not: `BuildMapService` waits on the in-process `MapBuildGate`, one build at a time per host, owner 2026-10-24); `Sindri.Core/Locks/IHeavySlots` is Sindri's own (one lock for the engine
   and the shell tools today; the workflow engine's `heavy` allocator is meant to use it too and is not wired yet).
 - **Infrastructure.** `GitRepoReader` over `GitCli` (048), `GraphifyClusterSource` (pinned, sandboxed, fail-closed; `GraphifySnapshot` unpacks the commit under the file and snapshot caps, counting only copied bytes; `GraphifyProcess` runs graphify under the time limit and keeps at most 64 KB of each output stream; `graph.json` is parsed from a stream). The backtest's as-of cache key gains the limits when they are not the shipped ones, and a map whose cluster pass was partial (`ClusterSet.Reason`) is not cached, `ModelLabeler` over `IModelPort`
   (042), `FileReviewFileStore`, migration `0004_s4_map_review.sql` (`map_override` rebuilt with `propose` and `undo`, `link`, `undoes` and `payload` columns).
@@ -443,7 +443,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 | `ReviewContextMap:accept`, `reject`, `rename`, `move`, `accept-deterministic`, `undo`, `drop`, `repoint`, `apply-file`, `merge`, `add`, `delete` | desk, `SessionOk` | terminal, app, agent session; no typed challenge (removed per owner q93, 2026-10-23: each is a reversible override row) |
 | `PromoteContextMap` | desk, `SessionOk` | terminal, app, agent session; no typed challenge (removed per owner q93, 2026-10-23; the previous version is retained) |
 | `ProposeContextMap` | job | terminal, app, `service:engine` |
-| `BuildContextMap`, `RefreshContextMap`, `RunContextBacktest` | job (P6 runtime), `SessionOk` | terminal, app, `service:engine`, agent session (owner q93, 2026-10-23; the single-flight and the heavy lock still bound them) |
+| `BuildContextMap`, `RefreshContextMap`, `RunContextBacktest` | job (P6 runtime), `SessionOk` | terminal, app, `service:engine`, agent session (owner q93, 2026-10-23; the single-flight bounds them; the backtest still takes a heavy slot, a map build none) |
 
 `map build` is a job on API P6's runtime: `AddContextJobs` (Features) registers it with `AddJob` (key `build`), `ContextJobEndpoints` maps it with `MapJob` (any body starts it), and `BuildContextMapService` is the work, run by the job runner under the starting caller: it passes the engine's step lines to the job's progress, appends `context.map.built` and returns a small result (`repo`, `draft`, `proposed`, at most 20 `degraded` lines). `ContextRebuildService` runs the same slice on its cadence outside the gate.
 
@@ -451,7 +451,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 
 | Code | Kind (HTTP) | CLI exit | Meaning |
 |---|---|---|---|
-| `SND-CONTEXT-040` | Unavailable (503) | 75 | The heavy-job lock stayed busy, or its directory can't be used; the message names the holder |
+| `SND-CONTEXT-040` | Unavailable (503) | 75 | The heavy-job lock stayed busy, or its directory can't be used; the message names the holder (the backtest only; the map build takes no slot) |
 | `SND-CONTEXT-042` | Invalid (400) | 1 | Labeling over its token cap (or the host has no model for it) |
 | `SND-CONTEXT-043` | Conflict (409) | 1 | No entry of the review file matches the latest draft |
 | `SND-CONTEXT-044` | NotFound (404) | 1 | A draft is needed and none exists (`draft` asked, or `map review` listing the queue) |
