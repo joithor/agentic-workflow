@@ -136,6 +136,19 @@ public sealed class LinearTextTests
     }
 
     [Fact]
+    public void Many_comments_are_cut_before_the_attachments_are()
+    {
+        var comments = Enumerable.Range(0, 400).Select(n => Comment($"comment {n} " + new string('y', 300))).ToList();
+
+        var text = LinearText.Of(Issue(description: "desc", comments: comments, attachments: [new("1", "https://example.com/a", "A", "link"), new("2", "https://example.com/b", "B", "link")]));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
+        Assert.Contains("comment 0 ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("comment 399 ", text, StringComparison.Ordinal);
+        Assert.EndsWith("\n\nAttachments:\n- A (link) https://example.com/a\n- B (link) https://example.com/b", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Sections_over_64_kb_are_cut_at_a_line_with_a_mark()
     {
         var attachments = Enumerable.Range(0, 3000).Select(n => new LinearAttachment(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"https://example.com/item/{n}", "Item " + n, "link")).ToList();
