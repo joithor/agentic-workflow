@@ -9,7 +9,13 @@ internal static class SelectorMatcher
     /// <param name="selector">The selector.</param>
     /// <param name="node">The element's facts.</param>
     /// <returns>Whether it matches.</returns>
-    internal static bool Matches(Selector selector, NodeFacts node) => throw new NotSupportedException();
+    internal static bool Matches(Selector selector, NodeFacts node) =>
+        (selector.NodeId is null || string.Equals(selector.NodeId, node.Id, StringComparison.Ordinal))
+        && (selector.AutomationId is null || string.Equals(selector.AutomationId, node.AutomationId, StringComparison.Ordinal))
+        && (selector.Name is null || string.Equals(selector.Name, node.Name, StringComparison.Ordinal))
+        && (selector.Type is null || string.Equals(selector.Type, node.Type, StringComparison.Ordinal))
+        && (selector.Text is null || string.Equals(selector.Text, node.Text, StringComparison.Ordinal))
+        && (selector.TextContains is null || (node.Text?.Contains(selector.TextContains, StringComparison.Ordinal) ?? false));
 
     /// <summary>The nodes a selector matches, in the order given.</summary>
     /// <param name="selector">The selector.</param>

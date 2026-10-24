@@ -12,5 +12,38 @@ internal sealed record KeyChord(string Key, bool Control, bool Shift, bool Alt, 
     /// <param name="text">The chord.</param>
     /// <param name="chord">The chord, when the text is one.</param>
     /// <returns>True for a chord with a key and only known modifiers, none twice.</returns>
-    internal static bool TryParse(string? text, out KeyChord chord) => throw new NotSupportedException();
+    internal static bool TryParse(string? text, out KeyChord chord)
+    {
+        chord = new KeyChord(string.Empty, false, false, false, false);
+        var parts = text?.Split('+', StringSplitOptions.TrimEntries);
+        if (parts is not { Length: > 0 } || parts[^1].Length == 0)
+        {
+            return false;
+        }
+
+        (bool Control, bool Shift, bool Alt, bool Meta) held = default;
+        foreach (var part in parts[..^1])
+        {
+            switch (part.ToUpperInvariant())
+            {
+                case "CTRL" or "CONTROL" when !held.Control:
+                    held.Control = true;
+                    break;
+                case "SHIFT" when !held.Shift:
+                    held.Shift = true;
+                    break;
+                case "ALT" when !held.Alt:
+                    held.Alt = true;
+                    break;
+                case "META" or "CMD" or "COMMAND" or "WIN" or "SUPER" when !held.Meta:
+                    held.Meta = true;
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        chord = new KeyChord(parts[^1], held.Control, held.Shift, held.Alt, held.Meta);
+        return true;
+    }
 }
