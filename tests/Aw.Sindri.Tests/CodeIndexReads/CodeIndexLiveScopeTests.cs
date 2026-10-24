@@ -103,14 +103,15 @@ public sealed class CodeIndexLiveScopeTests
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Copies))]
-    public void A_session_sees_only_its_own_live_only_repo(string copy)
+    public void A_session_reads_every_repo_but_its_jobs_scope_holds_only_its_own(string copy)
     {
         var live = Approved() with { Repos = [new RepoEntry("demo", "/work/demo"), new RepoEntry("fresh", "/work/fresh")] };
         var caller = A.Caller().Session().InRepo("fresh").Build();
 
         var scope = Scope(copy, Approved(), live, caller).Value;
 
-        Assert.Equal(["fresh"], scope.Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
+        string[] expected = copy == "reads" ? ["demo", "fresh"] : ["fresh"];   // reads: every repo since owner q93; jobs: the session's own repo
+        Assert.Equal(expected, scope.Repos.Select(static r => r.Name.Value), StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

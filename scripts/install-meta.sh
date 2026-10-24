@@ -36,7 +36,7 @@
 # 3. Links aw-meta and aw-meta-launch (scripts/meta-launch.sh) into CLAUDE_LOCAL_BIN. aw-meta-launch points into the canonical
 #    checkout only. Before anything is built or written: when the team config (team.json, $AW_META_CONFIG or
 #    $AW_STATE_DIR/meta/team.json) names a repo with scripts/meta-launch.sh, this script must run from that repo; with no team repo, a
-#    linked git worktree (git-dir differs from git-common-dir) is refused. --allow-worktree (the owner's call) permits either and
+#    linked git worktree (git-dir differs from git-common-dir) is refused. --allow-worktree permits either and
 #    links this tree.
 # The /meta skill itself is linked by setup.sh with the other skills.
 set -euo pipefail

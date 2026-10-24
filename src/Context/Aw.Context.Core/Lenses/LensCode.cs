@@ -17,7 +17,7 @@ internal static class LensCode
 
     /// <summary>The band from whole file lists (every file listed).</summary>
     internal static CodeBand Band(IReadOnlyList<LensFile> files, int featuresWithNoCode) =>
-        new([.. files], LensSymbols.Unavailable, new CodeCounts(files.Count, 0, featuresWithNoCode), Truncated: false);
+        new([.. files], LensSymbols.Unavailable, new CodeCounts(files.Count, 0, featuresWithNoCode));
 
     /// <summary>One entry per file that has an edge among <paramref name="edges"/>, ordered by file key.</summary>
     internal static List<LensFile> Files(IEnumerable<GraphEdge> edges) =>

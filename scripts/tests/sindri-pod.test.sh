@@ -83,6 +83,7 @@ EOS
 cat > "$WORK/bin/sindri-ui" <<'EOS'
 #!/usr/bin/env bash
 echo "ui home=$AW_SINDRI_HOME" >> "$CALLS"
+echo "${AW_SINDRI_APP_NO_MCP:-unset}" > "$POD/ui.nomcp"
 echo $$ > "$POD/ui.pid"
 end=$((SECONDS + 120))   # bounded: the test's temp dir going away ends it too
 while [ ! -e "$STOP" ] && [ -d "$POD" ] && [ "$SECONDS" -lt "$end" ]; do sleep 0.1; done
@@ -131,6 +132,7 @@ waitfor 10 has_ui; check "connect: the app starts" "$?" "0"
 MIRROR="$(mirror_dir)"
 check "connect: control.json holds the forwarded loopback URL, the pod's pid and epoch" \
   "$(jq -c . "$MIRROR/control.json")" '{"url":"http://127.0.0.1:47480","pid":41,"epoch":7}'
+check "connect: the app runs with AW_SINDRI_APP_NO_MCP=1 (no MCP registration in ~/.claude.json)" "$(cat "$POD/ui.nomcp")" "1"
 check "connect: the token file holds the pod's token" "$(cat "$MIRROR/auth/human.token")" "tok-one"
 check "connect: files are 0600, directories 0700" \
   "$(mode "$MIRROR/control.json"):$(mode "$MIRROR/auth/human.token"):$(mode "$MIRROR"):$(mode "$MIRROR/auth")" "600:600:700:700"

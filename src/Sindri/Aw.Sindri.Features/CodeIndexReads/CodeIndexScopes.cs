@@ -10,8 +10,8 @@ namespace Aw.Sindri.Features.CodeIndexReads;
 
 /// <summary>
 /// The one mapping from Sindri to the code index's scope (code-index spec §7, §10): the approved profile's repos, each with the
-/// settings its 'index:' sections make, and the current caller. A session's scope holds only its own repo, so another repo
-/// answers the same not-found as one never built and the status lists nothing else (spec §7.3).
+/// settings its 'index:' sections make, and the current caller. A session reads every repo of the approved profile, as a human does
+/// (owner q93, 2026-10-23; spec §7.3 narrowed it to the session's own repo).
 /// </summary>
 /// <param name="approvals">The approved profiles.</param>
 /// <param name="live">The live profile file: its repos the approved profile doesn't name are indexed too (owner q102, CIX-L59).</param>
@@ -46,7 +46,7 @@ internal sealed class CodeIndexScopes(IApprovedProfile approvals, IProfileSource
         var repos = new List<CodeIndexRepo>();
         foreach (var (entry, isLive) in Entries(approved, live))
         {
-            if (!RepoName.TryFrom(entry.Name, out var repoName) || (kind == CallerKind.Session && sessionRepo != repoName))
+            if (!RepoName.TryFrom(entry.Name, out var repoName))
             {
                 continue;
             }

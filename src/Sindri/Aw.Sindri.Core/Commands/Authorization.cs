@@ -46,8 +46,7 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var who = WhoIs(caller);
-        var app = (row.AppConfirm ? Who.App : Who.None) | SessionGrant(actionClass, row);   // the three rows the app confirms (setup-once spec §4 item 7): the handler redeems the challenge before its first write
-        var allowed = (((Allowed(actionClass) | app) & who) != Who.None || Granted(actionClass, caller, row))
+        var allowed = (((Allowed(actionClass) | RowExtras(row)) & who) != Who.None || Granted(actionClass, caller, row))
             && (!row.NeedsTerminal || who == Who.Terminal || (who == Who.App && row.AppConfirm));
         return new AuthorizationDecision(caller?.Actor ?? "none", allowed ? null : Refusal(row));
     }
@@ -59,11 +58,7 @@ public static class Authorization
     public static IReadOnlyList<string> CallersFor(ActionClass actionClass, IReadOnlyList<string> grants)
     {
         ArgumentNullException.ThrowIfNull(grants);
-        return CallersFor(Allowed(actionClass), actionClass, grants);
-    }
-
-    private static IReadOnlyList<string> CallersFor(Who allowed, ActionClass actionClass, IReadOnlyList<string> grants)
-    {
+        var allowed = Allowed(actionClass);
         (Who Who, string Name)[] named = [(Who.Terminal, HumanAtTerminal), (Who.App, HumanInApp), (Who.Session, "session"), (Who.Service, "service")];
         var granted = actionClass == ActionClass.Desk ? grants.Select(static g => ServicePrefix + g) : [];
         return [.. named.Where(n => allowed.HasFlag(n.Who)).Select(static n => n.Name), .. granted];
@@ -75,7 +70,12 @@ public static class Authorization
     public static IReadOnlyList<string> CallersFor(CommandRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        var callers = CallersFor(Allowed(row.Class) | SessionGrant(row.Class, row), row.Class, row.ServiceGrants);
+        var callers = CallersFor(row.Class, row.ServiceGrants);
+        if (row.SessionOk && !callers.Contains("session", StringComparer.Ordinal))
+        {
+            callers = [.. callers, "session"];
+        }
+
         if (row.AppConfirm)
         {
             return [HumanAtTerminal, HumanInApp];   // a flagged row is a human's, at a terminal or in the app, and nobody else's
@@ -84,8 +84,8 @@ public static class Authorization
         return row.NeedsTerminal ? [.. callers.Where(static c => string.Equals(c, HumanAtTerminal, StringComparison.Ordinal))] : callers;
     }
 
-    /// <summary>A job row that names sessions (AddRepo) lets a session start it.</summary>
-    private static Who SessionGrant(ActionClass actionClass, CommandRow row) => actionClass == ActionClass.Job && row.SessionMayRun ? Who.Session : Who.None;
+    /// <summary>The callers a row adds to its class's: the app on the three rows it confirms (setup-once spec §4 item 7: the handler redeems the challenge before its first write), a session on the context rows it may run (owner q93, 2026-10-23).</summary>
+    private static Who RowExtras(CommandRow row) => (row.AppConfirm ? Who.App : Who.None) | (row.SessionOk ? Who.Session : Who.None);
 
     private static Who Allowed(ActionClass actionClass) => _table.GetValueOrDefault(actionClass, Who.None);
 

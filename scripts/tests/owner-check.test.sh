@@ -47,6 +47,7 @@ cat > "$T/stub-sindri" <<'STUB'
 # Stub of the PR's sindri: records each call with the home and port it ran with.
 [ -z "${AW_SINDRI_PROFILE:-}" ] || echo "PROFILE-LEAK $AW_SINDRI_PROFILE" >> "$OWNER_CHECK_TEST_LOG"
 echo "home=${AW_SINDRI_HOME:-unset} port=${AW_SINDRI_PORT:-unset} args=$*" >> "$OWNER_CHECK_TEST_LOG"
+echo "${AW_SINDRI_APP_NO_MCP:-unset}" >> "$OWNER_CHECK_TEST_LOG.mcp"
 case "$*" in
   --headless)
     [ -z "${OWNER_CHECK_TEST_NOLISTEN:-}" ] || { echo "control plane went away"; exit 1; }
@@ -143,6 +144,7 @@ check "sessions are on when the check uses a session" 'awk "/^  sessions:/{f=1;n
 check "start, approve and import run against the scratch home and port, in order" '
   [ "$(grep -v "^main" "$T/calls.log" | sed "s/ args=.*//" | sort -u)" = "home=$OC_HOME port=$PORT" ] &&
   [ "$(grep -v "^main" "$T/calls.log" | sed "s/.* args=//" | tr "\n" "|")" = "--headless|profile validate --json|profile approve $(printf "a%.0s" $(seq 1 64))|context map import $OC_HOME/seed.json|" ]'
+check "the scratch instance runs with AW_SINDRI_APP_NO_MCP=1 (no MCP registration in ~/.claude.json)" '[ -s "$T/calls.log.mcp" ] && [ "$(sort -u "$T/calls.log.mcp")" = 1 ]'
 check "the MCP config names only sindri-ownercheck on the check's port, with the repo header" '
   grep -q "\"sindri-ownercheck\"" "$OC_SCRATCH/mcp.json" && grep -q "127.0.0.1:$PORT/sindri/mcp" "$OC_SCRATCH/mcp.json" &&
   grep -q "\"X-Sindri-Repo\": \"work-repo\"" "$OC_SCRATCH/mcp.json" && [ "$(grep -c "\"sindri" "$OC_SCRATCH/mcp.json")" = 1 ]'
