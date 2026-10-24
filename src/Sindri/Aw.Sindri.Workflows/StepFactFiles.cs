@@ -24,10 +24,20 @@ internal static class StepFactFiles
     /// <param name="contents">Reads the stored content.</param>
     /// <param name="scrubber">Removes secrets from the text.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <param name="subject">The Step's 'subject' parameter ('design' or 'change'); null when it has none.</param>
     /// <returns>The files; an error when a set fact's content can't be read.</returns>
-    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken, string? subject = null)
+    internal static ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(BlockDescriptor? descriptor, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken) =>
+        Build(new FactFileStep(descriptor, Subject: null), facts, contents, scrubber, cancellationToken);
+
+    /// <summary>The file name to content of each declared read fact that is set, and, for a design lens, the design's own facts.</summary>
+    /// <param name="step">The Step's descriptor and its 'subject' parameter.</param>
+    /// <param name="facts">The instance's stored facts.</param>
+    /// <param name="contents">Reads the stored content.</param>
+    /// <param name="scrubber">Removes secrets from the text.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The files; an error when a set fact's content can't be read.</returns>
+    internal static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Build(FactFileStep step, IReadOnlyDictionary<FactKey, FactValue>? facts, IFactContents contents, ITextScrubber scrubber, CancellationToken cancellationToken)
     {
+        var (descriptor, subject) = step;
         Dictionary<string, string> files = new(StringComparer.Ordinal);
         var declared = descriptor?.Inputs ?? [];
         foreach (var key in string.Equals(subject, "design", StringComparison.Ordinal) && descriptor is not null ? declared.Union(_designSubject) : declared)

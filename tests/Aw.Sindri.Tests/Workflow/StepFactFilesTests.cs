@@ -98,7 +98,7 @@ public sealed class StepFactFilesTests
     [Fact]
     public async Task A_design_lens_gets_the_design_the_scope_and_the_changed_sections_though_its_descriptor_does_not_declare_them()
     {
-        var lens = FixtureCatalog.Shipped().Find(BlockId.From("step.lens.run"))!;   // why: the shipped lens frame reads only the queue and the rounds; its subject's facts are not descriptor inputs
+        var lens = FixtureCatalog.Shipped().Find(BlockId.From("step.lens.run"));   // why: the shipped lens frame reads only the queue and the rounds; its subject's facts are not descriptor inputs
         var facts = new Dictionary<FactKey, FactValue>
         {
             [FactKey.From("fact:lensQueue")] = _stored.Put("""["product"]"""),
@@ -108,7 +108,7 @@ public sealed class StepFactFilesTests
             [FactKey.From("fact:unrelated")] = _stored.Put("not for this Step"),
         };
 
-        var files = (await StepFactFiles.Build(lens, facts, _stored, new Redacting(), CancellationToken.None, subject: "design")).Value;
+        var files = (await StepFactFiles.Build(new FactFileStep(lens, "design"), facts, _stored, new Redacting(), CancellationToken.None)).Value;
 
         Assert.Equal("changedSections.json,design.json,lensQueue.json,scope.json", string.Join(',', files.Keys.Order(StringComparer.Ordinal)));
     }
@@ -116,14 +116,14 @@ public sealed class StepFactFilesTests
     [Fact]
     public async Task A_change_lens_gets_only_its_declared_facts()
     {
-        var lens = FixtureCatalog.Shipped().Find(BlockId.From("step.lens.run"))!;
+        var lens = FixtureCatalog.Shipped().Find(BlockId.From("step.lens.run"));
         var facts = new Dictionary<FactKey, FactValue>
         {
             [FactKey.From("fact:lensQueue")] = _stored.Put("""["product"]"""),
             [FactKey.From("fact:design")] = _stored.Put("""{"sections":[]}"""),
         };
 
-        var files = (await StepFactFiles.Build(lens, facts, _stored, new Redacting(), CancellationToken.None, subject: "change")).Value;
+        var files = (await StepFactFiles.Build(new FactFileStep(lens, "change"), facts, _stored, new Redacting(), CancellationToken.None)).Value;
 
         Assert.Equal("lensQueue.json", Assert.Single(files.Keys));
     }
