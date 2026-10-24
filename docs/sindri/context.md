@@ -814,6 +814,12 @@ context:
 
 `sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
 
+### Links follow the current map
+
+A record's links are rules over its cleaned text (a Linear issue URL or key of a listed team, a repo path, a quoted title or an identifier that names one node), computed against the map that is current. They are not fixed at the first fetch: every time a map becomes current (`context map import`, or a promoted draft), every stored record is linked again against it, from the cleaned text it kept, with no source call. A record that was synced before the map had its node gains the link; a link into a node the map no longer has is replaced; a link by issue key to a record that is not synced yet stays, and resolves when the record arrives. Running it twice gives the same links. The decisions a record already has are not extracted again, and the record stays done or queued as it was.
+
+The cleaned text (after the ingest scrub, never the raw text) is stored with the record for this, and a sync that fetches a record writes it again. A record stored before the text was kept has none until the next `context sources sync` fetches it, and keeps its links until then. A relink that cannot run (the store is unreadable) leaves the links as they were; the next sync links what it fetches.
+
 ### Secret pointers
 
 | Pointer | Resolves to |
