@@ -12,6 +12,7 @@ namespace Aw.UiDriver.Avalonia.Tests;
 public sealed class UiPump : IAsyncLifetime
 {
     private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly CancellationTokenSource _stop = new();
     private Task _job = Task.CompletedTask;
 
     public async ValueTask InitializeAsync()
@@ -24,13 +25,14 @@ public sealed class UiPump : IAsyncLifetime
                 await _release.Task;
                 return true;
             },
-            CancellationToken.None);
-        await running.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            _stop.Token);
+        await running.Task.WaitAsync(TimeSpan.FromSeconds(30), _stop.Token);
     }
 
     public async ValueTask DisposeAsync()
     {
-        _release.TrySetResult();
+        _ = _release.TrySetResult();
         await _job;
+        _stop.Dispose();
     }
 }
