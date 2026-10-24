@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Infrastructure.Linear;
 
 namespace Aw.Context.Tests.Linear;
@@ -38,7 +39,7 @@ public sealed class LinearTextTests
     [Fact]
     public void A_missing_title_falls_back_to_the_host()
     {
-        var text = LinearText.Of(Issue(attachments: [new("1", "https://www.figma.com/file/x", null, "figma")]));
+        var text = LinearText.Of(Issue(attachments: [new("1", "https://www.figma.com/file/x", Title: null, "figma")]));
 
         Assert.Contains("- www.figma.com (figma) https://www.figma.com/file/x", text, StringComparison.Ordinal);
     }
@@ -106,14 +107,12 @@ public sealed class LinearTextTests
 
         Assert.Equal(1, text.Split("\n- ", StringSplitOptions.None).Count(p => p.Contains(Pic, StringComparison.Ordinal) && p.StartsWith("a ", StringComparison.Ordinal)));
         var images = text[text.IndexOf("Images:", StringComparison.Ordinal)..];
-        Assert.Single(images.Split('\n'), l => l.StartsWith("- ", StringComparison.Ordinal));
+        _ = Assert.Single(images.Split('\n'), l => l.StartsWith("- ", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void A_text_without_images_has_no_images_section()
-    {
+    public void A_text_without_images_has_no_images_section() =>
         Assert.DoesNotContain("Images:", LinearText.Of(Issue(description: "plain")), StringComparison.Ordinal);
-    }
 
     [Fact]
     public void The_64_kb_cut_still_holds()
@@ -141,7 +140,7 @@ public sealed class LinearTextTests
     [Fact]
     public void Many_comments_are_cut_before_the_attachments_are()
     {
-        var comments = Enumerable.Range(0, 400).Select(n => Comment($"comment {n} " + new string('y', 300))).ToList();
+        var comments = Enumerable.Range(0, 400).Select(n => Comment("comment " + n.ToString(CultureInfo.InvariantCulture) + " " + new string('y', 300))).ToList();
 
         var text = LinearText.Of(Issue(description: "desc", comments: comments, attachments: [new("1", "https://example.com/a", "A", "link"), new("2", "https://example.com/b", "B", "link")]));
 
@@ -190,7 +189,7 @@ public sealed class LinearTextTests
     [Fact]
     public void Sections_over_64_kb_are_cut_at_a_line_with_a_mark()
     {
-        var attachments = Enumerable.Range(0, 3000).Select(n => new LinearAttachment(n.ToString(System.Globalization.CultureInfo.InvariantCulture), $"https://example.com/item/{n}", "Item " + n, "link")).ToList();
+        var attachments = Enumerable.Range(0, 3000).Select(n => n.ToString(CultureInfo.InvariantCulture)).Select(id => new LinearAttachment(id, "https://example.com/item/" + id, "Item " + id, "link")).ToList();
 
         var text = LinearText.Of(Issue(description: "desc", attachments: attachments));
 

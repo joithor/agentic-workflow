@@ -16,23 +16,12 @@ internal static partial class LinearText
     /// </summary>
     public static string Of(LinearIssue issue)
     {
-        var comments = issue.Comments?.Nodes ?? [];
-        var attachments = issue.Attachments?.Nodes ?? [];
-        var images = ImagesIn(issue.Description).Concat(comments.SelectMany(c => ImagesIn(c.Body)))
-            .Concat(attachments.Where(IsImage).Select(a => (Alt: a.Title ?? "image", a.Url)))
-            .DistinctBy(i => i.Url, StringComparer.Ordinal);
-        var head = issue.Description + Section("Comments", comments.Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"));
-        var relations = (issue.Relations?.Nodes ?? []).Select(r => $"- {r.Type} {Ref(r.RelatedIssue)}")
-            .Concat((issue.InverseRelations?.Nodes ?? []).Select(r => $"- (from) {r.Type} {Ref(r.Issue)}"));
-        var tail = (issue.Project?.Name is { Length: > 0 } project ? $"\n\nProject: {project}" : "")
-            + Section("Relations", relations, more: null)
-            + Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
-            + Section("Images", images.Select(i => $"- {i.Alt} {i.Url}"), more: null);
-
-        // The attachments and images are what the owner wants to survive: the 64 KB goes to the description, then the
-        // comments, and the sections keep what is left whole. Only sections that alone pass 64 KB are cut, at a line.
+        // The project, relations, attachments and images are what the owner wants to survive: the 64 KB goes to the
+        // description, then the comments, and these keep what is left whole. Only when they alone pass 64 KB are they
+        // cut, at a line.
+        var tail = IssueTail(issue);
         var tailBytes = Encoding.UTF8.GetByteCount(tail);
-        return tailBytes > MaxBytes ? CutLines(tail) : Cut(head, MaxBytes - tailBytes) + tail;
+        return tailBytes > MaxBytes ? CutLines(tail) : Cut(IssueHead(issue), MaxBytes - tailBytes) + tail;
     }
 
     /// <summary>A Linear Document: its content.</summary>
@@ -58,6 +47,25 @@ internal static partial class LinearText
     /// <summary>A day as 'yyyy-MM-dd' (UTC).</summary>
     public static string Day(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+    private static string IssueHead(LinearIssue issue) =>
+        issue.Description + Section("Comments", (issue.Comments?.Nodes ?? []).Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"));
+
+    private static string IssueTail(LinearIssue issue) =>
+        (issue.Project?.Name is { Length: > 0 } project ? $"\n\nProject: {project}" : "")
+        + Section("Relations", RelationLines(issue), more: null)
+        + Section("Attachments", (issue.Attachments?.Nodes ?? []).Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
+        + Section("Images", ImageLines(issue), more: null);
+
+    private static IEnumerable<string> RelationLines(LinearIssue issue) =>
+        (issue.Relations?.Nodes ?? []).Select(r => $"- {r.Type} {Ref(r.RelatedIssue)}")
+            .Concat((issue.InverseRelations?.Nodes ?? []).Select(r => $"- (from) {r.Type} {Ref(r.Issue)}"));
+
+    private static IEnumerable<string> ImageLines(LinearIssue issue) =>
+        ImagesIn(issue.Description).Concat((issue.Comments?.Nodes ?? []).SelectMany(c => ImagesIn(c.Body)))
+            .Concat((issue.Attachments?.Nodes ?? []).Where(IsImage).Select(a => (Alt: a.Title ?? "image", a.Url)))
+            .DistinctBy(i => i.Url, StringComparer.Ordinal)
+            .Select(i => $"- {i.Alt} {i.Url}");
+
     private static string Line(string label, string? value) => string.IsNullOrEmpty(value) ? "" : $"{label}: {value}";
 
     private static string Section(string title, IEnumerable<string> lines, string? more) =>
@@ -74,9 +82,9 @@ internal static partial class LinearText
     private static bool IsImage(LinearAttachment attachment) =>
         Uri.TryCreate(attachment.Url, UriKind.Absolute, out var uri)
         && (string.Equals(uri.Host, "uploads.linear.app", StringComparison.OrdinalIgnoreCase)
-            || ImageExtensions.Contains(Path.GetExtension(uri.AbsolutePath), StringComparer.OrdinalIgnoreCase));
+            || _imageExtensions.Contains(Path.GetExtension(uri.AbsolutePath), StringComparer.OrdinalIgnoreCase));
 
-    private static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+    private static readonly string[] _imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
 
     private static IEnumerable<(string Alt, string Url)> ImagesIn(string? text)
     {
