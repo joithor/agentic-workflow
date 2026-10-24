@@ -118,7 +118,7 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
     }
 
     public ValueTask<Result<EmbeddingProgress>> CountEmbeddings(CancellationToken cancellationToken)
-        => Ok(new EmbeddingProgress(data.Embeddings.Count, data.Symbols.Count));
+        => Ok(new EmbeddingProgress(data.Embeddings.Count, data.Symbols.Count()));
 
     public ValueTask<Result<Unit>> SetLayer(LayerRecord layer, CancellationToken cancellationToken)
     {
