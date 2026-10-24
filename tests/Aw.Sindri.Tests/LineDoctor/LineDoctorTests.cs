@@ -95,10 +95,10 @@ public sealed class LineDoctorTests
     [Fact, Trait("Lane", "unit")]
     public async Task LineDoctor_wants_a_pin_for_a_pack_that_is_not_built_in_and_takes_the_repo_override()
     {
-        await Approve(Ready() with { Packs = new PackSettings(Style: new PackChoice(Default: "plain", Repos: new Dictionary<string, string> { ["demo"] = "house" })) });
+        await Approve(Ready() with { Packs = new PackSettings(Style: new PackChoice(Default: "plain", Repos: new Dictionary<string, string>(StringComparer.Ordinal) { ["demo"] = "house" })) });
         Assert.Equal(CheckState.Fail, Row(await Doctor(), "workflow.packs.style").State);
 
-        await Approve(Ready() with { Packs = new PackSettings(Style: new PackChoice(Default: "plain", Repos: new Dictionary<string, string> { ["demo"] = "house" }), Pins: new Dictionary<string, string> { ["style/house"] = "sha256:abc" }) });
+        await Approve(Ready() with { Packs = new PackSettings(Style: new PackChoice(Default: "plain", Repos: new Dictionary<string, string>(StringComparer.Ordinal) { ["demo"] = "house" }), Pins: new Dictionary<string, string>(StringComparer.Ordinal) { ["style/house"] = "sha256:abc" }) });
         Assert.Equal(CheckState.Ok, Row(await Doctor(), "workflow.packs.style").State);
     }
 
