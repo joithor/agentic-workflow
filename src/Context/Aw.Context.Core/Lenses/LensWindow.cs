@@ -6,6 +6,6 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="More">True when a later offset still has items.</param>
 public sealed record LensWindow(int Offset, int Limit, bool More)
 {
-    /// <summary>The full item count of each paged list by its path ('bands.product.own', 'edges'), as <c>page.lists</c> does in the other tools.</summary>
+    /// <summary>The full item count of each paged list by its path ('bands.product.own', 'edges'), as <c xml:lang="en">page.lists</c> does in the other tools.</summary>
     public IReadOnlyDictionary<string, int>? Totals { get; init; }
 }

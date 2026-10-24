@@ -11,9 +11,9 @@ public static class LensPages
     public static LensesView Window(LensesView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
-        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset, totals);
-        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) { Totals = totals } };
+        var window = new Window(limit, offset);
+        var (bands, edges) = Cut(view.Bands, view.Edges, window);
+        return view with { Bands = bands, Edges = edges, Page = window.Page() };
     }
 
     /// <summary>The page of <paramref name="view"/> at <paramref name="offset"/>, <paramref name="limit"/> items long.</summary>
@@ -24,15 +24,13 @@ public static class LensPages
     public static LensesSetView Window(LensesSetView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
-        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset, totals);
-        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) { Totals = totals } };
+        var window = new Window(limit, offset);
+        var (bands, edges) = Cut(view.Bands, view.Edges, window);
+        return view with { Bands = bands, Edges = edges, Page = window.Page() };
     }
 
-    private static (LensBands Bands, IReadOnlyList<LensEdge> Edges, bool More) Cut(
-        LensBands bands, IReadOnlyList<LensEdge> edges, int limit, int offset, Dictionary<string, int> totals)
+    private static (LensBands Bands, IReadOnlyList<LensEdge> Edges) Cut(LensBands bands, IReadOnlyList<LensEdge> edges, Window window)
     {
-        var more = false;
         var product = bands.Product;
         var intent = bands.Intent;
         var code = bands.Code;
@@ -41,42 +39,50 @@ public static class LensPages
             {
                 Product = product with
                 {
-                    Own = Take(product.Own, limit, offset, ref more, totals, "bands.product.own"),
-                    Neighbors = Take(product.Neighbors, limit, offset, ref more, totals, "bands.product.neighbors"),
-                    Affects = Take(product.Affects, limit, offset, ref more, totals, "bands.product.affects"),
-                    Edges = Take(product.Edges, limit, offset, ref more, totals, "bands.product.edges"),
+                    Own = window.Take(product.Own, "bands.product.own"),
+                    Neighbors = window.Take(product.Neighbors, "bands.product.neighbors"),
+                    Affects = window.Take(product.Affects, "bands.product.affects"),
+                    Edges = window.Take(product.Edges, "bands.product.edges"),
                 },
                 Intent = intent with
                 {
-                    Records = Take(intent.Records, limit, offset, ref more, totals, "bands.intent.records"),
-                    Decisions = Take(intent.Decisions, limit, offset, ref more, totals, "bands.intent.decisions"),
+                    Records = window.Take(intent.Records, "bands.intent.records"),
+                    Decisions = window.Take(intent.Decisions, "bands.intent.decisions"),
                 },
-                Code = code with { Files = Take(code.Files, limit, offset, ref more, totals, "bands.code.files") },
+                Code = code with { Files = window.Take(code.Files, "bands.code.files") },
             },
-            Take(edges, limit, offset, ref more, totals, "edges"),
-            more);
+            window.Take(edges, "edges"));
     }
 
-    private static T[] Take<T>(IReadOnlyList<T> items, int limit, int offset, ref bool more, Dictionary<string, int> totals, string path)
+    // One window over every list of an answer: what it kept, each list's full count, and whether any list has items past it.
+    private sealed class Window(int limit, int offset)
     {
-        totals[path] = items.Count;
-        if (items.Count > (long)offset + limit)
-        {
-            more = true;
-        }
+        private readonly Dictionary<string, int> _totals = new(StringComparer.Ordinal);
+        private bool _more;
 
-        if (offset >= items.Count)
-        {
-            return [];
-        }
+        internal LensWindow Page() => new(offset, limit, _more) { Totals = _totals };
 
-        var count = Math.Min(limit, items.Count - offset);
-        var kept = new T[count];
-        for (var index = 0; index < count; index++)
+        internal T[] Take<T>(IReadOnlyList<T> items, string path)
         {
-            kept[index] = items[offset + index];
-        }
+            _totals[path] = items.Count;
+            if (items.Count > (long)offset + limit)
+            {
+                _more = true;
+            }
 
-        return kept;
+            if (offset >= items.Count)
+            {
+                return [];
+            }
+
+            var count = Math.Min(limit, items.Count - offset);
+            var kept = new T[count];
+            for (var index = 0; index < count; index++)
+            {
+                kept[index] = items[offset + index];
+            }
+
+            return kept;
+        }
     }
 }

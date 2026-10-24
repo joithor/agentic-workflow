@@ -17,7 +17,7 @@ public static class RepoDenyGlobs
 
     // A role is a name for a list of globs; its files are denied like any other, roles in name order so the list is stable. There are no built-in roles.
     private static IEnumerable<string> RoleGlobs(IndexSettings? index) =>
-        (index?.Roles ?? new Dictionary<string, IReadOnlyList<string>>()).OrderBy(r => r.Key, StringComparer.Ordinal).SelectMany(r => r.Value);
+        (index?.Roles ?? new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)).OrderBy(r => r.Key, StringComparer.Ordinal).SelectMany(r => r.Value);
 
     /// <summary>Every repo of <paramref name="profile"/> with its globs: the one mapping from the profile to the scope the context engine reads (every surface and the doctor use it).</summary>
     /// <param name="profile">The approved profile.</param>

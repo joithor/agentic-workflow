@@ -8,5 +8,5 @@ public interface ISourceNotes
 {
     /// <summary>The notes the last search left, once: reading them clears them.</summary>
     /// <returns>One sentence per kind of drop, with the count and the fix; empty when nothing was dropped.</returns>
-    IReadOnlyList<string> TakeNotes();
+    public IReadOnlyList<string> TakeNotes();
 }

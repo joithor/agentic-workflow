@@ -26,7 +26,7 @@ public static class WholeMapBuilder
         ArgumentNullException.ThrowIfNull(text);
         var known = graph.Nodes.GroupBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var edges = graph.Edges.Where(e => known.ContainsKey(e.From.Value) && known.ContainsKey(e.To.Value)).ToList();
-        var (listed, truncated) = ListAreas(known, areas, rules, text);
+        var (listed, truncated) = ListAreas(known, areas, text);
         var basis = ask.Basis;
         var overview = new WholeMapView(1, basis.MapVersion, basis.Draft, basis.AsOf, basis.Repo, WholeMapDetail.Areas, Counts(known.Values, edges.Count), listed, AreaEdges(edges, areas, listed.Select(a => a.Key).ToHashSet(StringComparer.Ordinal)), truncated)
         {
@@ -77,7 +77,7 @@ public static class WholeMapBuilder
         return new WholeMapCounts(list.Count, edges, Enum.GetValues<NodeKind>().ToDictionary(KindName, k => list.Count(n => n.Key.Kind == k), StringComparer.Ordinal));
     }
 
-    private static (IReadOnlyList<WholeMapArea> Areas, bool Truncated) ListAreas(Dictionary<string, GraphNode> known, AreaIndex areas, WholeMapRules rules, MapText text)
+    private static (IReadOnlyList<WholeMapArea> Areas, bool Truncated) ListAreas(Dictionary<string, GraphNode> known, AreaIndex areas, MapText text)
     {
         List<WholeMapArea> all = [.. known.Values.GroupBy(n => areas.ByNode[n.Key.Value].Area, StringComparer.Ordinal).Select(g => Area(g.Key, [.. g], known, text))];
         return ([.. all.OrderBy(a => a.Key, StringComparer.Ordinal)], Truncated: false);

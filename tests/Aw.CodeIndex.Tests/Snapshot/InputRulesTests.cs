@@ -129,8 +129,8 @@ public sealed class InputRulesTests
         var before = InputRules.Apply(_commit, tree, _limits).Value;
         var after = InputRules.Apply(_commit, tree, _limits with { DenyPaths = ["**/*fixture*/**"] }).Value;
 
-        Assert.Equal(["src/a.cs", "tests/fixtures/data.ts"], before.Files.Select(f => f.Path));
-        Assert.Equal(["src/a.cs"], after.Files.Select(f => f.Path));
+        Assert.Equal(["src/a.cs", "tests/fixtures/data.ts"], before.Files.Select(f => f.Path), StringComparer.Ordinal);
+        Assert.Equal(["src/a.cs"], after.Files.Select(f => f.Path), StringComparer.Ordinal);
         Assert.Equal(1, after.Skipped[SkipReason.Denied]);
     }
 

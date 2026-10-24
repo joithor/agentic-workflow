@@ -43,12 +43,12 @@ public static class PathDenylist
         return globs.Any(g => Tagged(g, path, ignoreCase: false) ?? _compiledExact.GetOrAdd(g, glob => Compile(glob, RegexOptions.None)).IsMatch(path));
     }
 
-    private static readonly string[] Tags = ["prefix:", "suffix:", "regex:"];
+    private static readonly string[] _tags = ["prefix:", "suffix:", "regex:"];
 
     // A tagged entry: null when the entry is a plain glob.
     private static bool? Tagged(string entry, string path, bool ignoreCase)
     {
-        var tag = Tags.FirstOrDefault(t => entry.StartsWith(t, StringComparison.Ordinal));
+        var tag = _tags.FirstOrDefault(t => entry.StartsWith(t, StringComparison.Ordinal));
         if (tag is null)
         {
             return null;
