@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.Views.Controls;
 
 /// <summary>
 /// The context map's pannable, zoomable stage (F3 spec 1 §2): it holds the world as its child and moves it with a matrix.
-/// A drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms around the cursor, and the scale stays
+/// A drag on empty canvas pans, the wheel (a trackpad's two-finger scroll) pans, Ctrl or Cmd with the wheel zooms around the cursor, a pinch zooms around its origin, and the scale stays
 /// inside <see cref="MinZoom"/> and <see cref="MaxZoom"/> (62 % to 100 % unless the page says otherwise). The step and fit moves
 /// animate over Motion.Base, which is zero under reduced motion. A 22 px dotted grid fills the stage behind the world and moves
 /// with it.
@@ -55,6 +55,7 @@ internal sealed partial class ZoomBorder : Border
         Focusable = false;
         Background = Brushes.Transparent;
         AutomationProperties.SetName(this, "Pannable map");
+        WirePinch();
         ActualThemeVariantChanged += (_, _) =>
         {
             _dots = null;   // its dot colour was resolved for the old variant
