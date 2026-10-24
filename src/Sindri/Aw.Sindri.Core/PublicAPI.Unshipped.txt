@@ -1248,9 +1248,9 @@ Aw.Sindri.Core.Ids.TraceId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Sindri.Core.Ids.TraceId.TraceId() -> void
 Aw.Sindri.Core.Ids.TraceId.Value.get -> string!
 Aw.Sindri.Core.Items.CallerEventView
-Aw.Sindri.Core.Items.CallerEventView.CallerEventView(Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Text.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Ledger.ILedgerReader! ledger) -> void
+Aw.Sindri.Core.Items.CallerEventView.CallerEventView(Aw.Sindri.Core.Text.ITextScrubber! scrubber, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Ledger.ILedgerReader! ledger) -> void
 Aw.Sindri.Core.Items.CallerEventView.Read(Aw.Sindri.Core.Items.EventQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Items.ViewedPage!>!>
-Aw.Sindri.Core.Items.CallerEventView.Shown(Aw.Sindri.Core.Ledger.LedgerEvent! row, bool includeNonPublic, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Events.PublicEvent?>!>
+Aw.Sindri.Core.Items.CallerEventView.Shown(Aw.Sindri.Core.Ledger.LedgerEvent! row, bool includeNonPublic) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.PublicEvent?>!
 Aw.Sindri.Core.Items.EventQuery
 Aw.Sindri.Core.Items.EventQuery.<Clone>$() -> Aw.Sindri.Core.Items.EventQuery!
 Aw.Sindri.Core.Items.EventQuery.After.get -> long
@@ -1266,7 +1266,6 @@ Aw.Sindri.Core.Items.EventQuery.Keep.get -> System.Func<Aw.Sindri.Core.Ledger.Le
 Aw.Sindri.Core.Items.EventQuery.Keep.init -> void
 Aw.Sindri.Core.Items.EventQuery.Max.get -> int
 Aw.Sindri.Core.Items.EventQuery.Max.init -> void
-Aw.Sindri.Core.Items.EventVisibility
 Aw.Sindri.Core.Items.IItemRepos
 Aw.Sindri.Core.Items.IItemRepos.Exists(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Items.IItemRepos.RepoOf(Aw.Sindri.Core.Ids.ItemId item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.RepoName?>!>
@@ -1275,7 +1274,6 @@ Aw.Sindri.Core.Items.IItemResolver.Resolve(Aw.Sindri.Core.Ids.ItemRef reference,
 Aw.Sindri.Core.Items.ItemActions
 Aw.Sindri.Core.Items.ItemDecisions
 Aw.Sindri.Core.Items.ItemFilters
-Aw.Sindri.Core.Items.ItemScope
 Aw.Sindri.Core.Items.ItemStates
 Aw.Sindri.Core.Items.ItemSummaries
 Aw.Sindri.Core.Items.ItemSummary
@@ -7471,16 +7469,13 @@ static Aw.Sindri.Core.Ids.TraceId.operator !=(Aw.Sindri.Core.Ids.TraceId left, A
 static Aw.Sindri.Core.Ids.TraceId.operator ==(Aw.Sindri.Core.Ids.TraceId left, Aw.Sindri.Core.Ids.TraceId right) -> bool
 static Aw.Sindri.Core.Items.EventQuery.operator !=(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
 static Aw.Sindri.Core.Items.EventQuery.operator ==(Aw.Sindri.Core.Items.EventQuery? left, Aw.Sindri.Core.Items.EventQuery? right) -> bool
-static Aw.Sindri.Core.Items.EventVisibility.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ledger.LedgerEvent! row, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 static Aw.Sindri.Core.Items.ItemActions.For(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
 static Aw.Sindri.Core.Items.ItemActions.Primary(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> Aw.Sindri.Core.Ids.ActionId?
 static Aw.Sindri.Core.Items.ItemDecisions.Close(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Items.Vocabulary.CloseReason reason, long seenVersion, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.ItemStateChanged!>!
 static Aw.Sindri.Core.Items.ItemFilters.Resolve(Aw.Sindri.Core.Ids.ItemRef? reference, Aw.Sindri.Core.Items.IItemResolver! items, Aw.Sindri.Core.Items.IItemRepos! repos, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Ids.ItemId?>!>
-static Aw.Sindri.Core.Items.ItemScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ids.RepoName? itemRepo) -> bool
-static Aw.Sindri.Core.Items.ItemScope.VisibleOrRepoless(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Ids.RepoName? repo) -> bool
 static Aw.Sindri.Core.Items.ItemStates.IsClosed(Aw.Sindri.Core.Items.Vocabulary.ItemState state) -> bool
 static Aw.Sindri.Core.Items.ItemSummaries.From(Aw.Sindri.Core.Views.ItemRow! row) -> Aw.Sindri.Core.Items.ItemSummary!
-static Aw.Sindri.Core.Items.ItemSummaries.Visible(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Views.ItemRow!>! rows, Aw.Sindri.Core.Commands.CallerContext! caller, System.Func<Aw.Sindri.Core.Views.ItemRow!, bool>! keep) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>!
+static Aw.Sindri.Core.Items.ItemSummaries.Visible(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Views.ItemRow!>! rows, System.Func<Aw.Sindri.Core.Views.ItemRow!, bool>! keep) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Items.ItemSummary!>!
 static Aw.Sindri.Core.Items.ItemSummary.operator !=(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
 static Aw.Sindri.Core.Items.ItemSummary.operator ==(Aw.Sindri.Core.Items.ItemSummary? left, Aw.Sindri.Core.Items.ItemSummary? right) -> bool
 static Aw.Sindri.Core.Items.ItemTimelineKeys.EndOf(string! item) -> string!
@@ -7624,7 +7619,7 @@ static Aw.Sindri.Core.Secrets.SecretPointer.IsPointer(string! name) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
 static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
-static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human, Aw.Sindri.Core.Launch.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, Aw.Sindri.Core.Launch.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
 static Aw.Sindri.Core.Text.SafeText.CleanBlock(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
@@ -9081,9 +9076,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.get -> System.Colle
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.FactShas.init -> void
 Aw.Sindri.Core.Items.InstanceScope
 static Aw.Sindri.Core.Items.InstanceScope.NotFound(string! reference) -> Aw.Kernel.Error!
-static Aw.Sindri.Core.Items.InstanceScope.Refusal(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Workflow.Engine.ItemKey? item, string! reference, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
 static Aw.Sindri.Core.Items.InstanceScope.Unknown(Aw.Kernel.Error! error, string! reference) -> Aw.Kernel.Error!
-static Aw.Sindri.Core.Items.InstanceScope.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>! rows, Aw.Sindri.Core.Items.IItemRepos! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeViews
 static Aw.Sindri.Core.Workflow.Views.FactTypeJsonConverter.Word(Aw.Sindri.Core.Workflow.Views.FactType type) -> string!
 const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.NoKind = "-" -> string!
@@ -10399,8 +10392,6 @@ Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Agent = 3 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Block = 2 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
 Aw.Sindri.Core.Workflow.Blocks.BlockRuntime.Desk = 1 -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime
-Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps
-static Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps.Applies(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! step, Aw.Sindri.Core.Workflow.Engine.StepRuntime runOn) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand
 static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! address, Aw.Sindri.Core.Workflow.Engine.RunToken run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! outcomes, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs) -> string!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
@@ -11984,16 +11975,13 @@ Aw.Sindri.Core.Sessions.SessionRows
 Aw.Sindri.Core.Sessions.StateHistoryRules
 const Aw.Sindri.Core.Sessions.StateHistoryRules.Cap = 20 -> int
 static Aw.Sindri.Core.Sessions.SessionRows.Resume(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry) -> System.Collections.Generic.IReadOnlyList<string!>?
-static Aw.Sindri.Core.Sessions.SessionRows.SeesHumanFields(Aw.Sindri.Core.Commands.CallerContext! caller) -> bool
 static Aw.Sindri.Core.Sessions.SessionRows.Unavailable(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! problems) -> Aw.Kernel.Error?
-static Aw.Sindri.Core.Sessions.SessionRows.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Sessions.ObservedSession! session) -> bool
 static Aw.Sindri.Core.Sessions.SessionRows.WithSocket(Aw.Sindri.Core.Sessions.SessionRow! row, Aw.Sindri.Core.Sessions.ObservedSession! session) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.Sessions.SessionRows.Worktree(string? cwd, string? repoPath) -> string?
 static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>! previous, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.UnavailableReason?
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
-static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
-static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference) -> Aw.Sindri.Core.Sessions.ObservedSession?
 Aw.Sindri.Core.Scheduling.SyncAttempt
 Aw.Sindri.Core.Scheduling.SyncAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.SyncAttempt!
 Aw.Sindri.Core.Scheduling.SyncAttempt.Deconstruct(out bool Failed, out System.DateTimeOffset EndedAt) -> void
@@ -12893,7 +12881,7 @@ Aw.Sindri.Core.Setup.SetupRecipes
 static Aw.Sindri.Core.Setup.MapBuildProgress.Parse(string! line) -> Aw.Sindri.Core.Setup.SetupProgress?
 static Aw.Sindri.Core.Setup.McpLocalRegistration.IsRegistered(string? claudeJson, string! checkout, string! repo) -> bool
 static Aw.Sindri.Core.Setup.OnyxFact.From(Aw.Sindri.Core.Onyx.OnyxStatusReport! report) -> Aw.Sindri.Core.Setup.OnyxFact!
-static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines) -> Aw.Sindri.Core.Setup.RecipesFact!
+static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! waiting) -> Aw.Sindri.Core.Setup.RecipesFact!
 Aw.Sindri.Core.Setup.SetupItem.<Clone>$() -> Aw.Sindri.Core.Setup.SetupItem!
 Aw.Sindri.Core.Setup.SetupItem.Deconstruct(out string! Repo, out Aw.Sindri.Core.Setup.SetupState State, out string? Detail) -> void
 Aw.Sindri.Core.Setup.SetupItem.Equals(Aw.Sindri.Core.Setup.SetupItem? other) -> bool
@@ -13838,26 +13826,23 @@ static Aw.Sindri.Core.Profile.EmbeddingSettings.operator ==(Aw.Sindri.Core.Profi
 const Aw.Sindri.Core.Profile.EmbeddingSettings.DefaultUrl = "http://127.0.0.1:11434" -> string!
 Aw.Sindri.Core.Profile.GraphSettings
 Aw.Sindri.Core.Profile.GraphSettings.<Clone>$() -> Aw.Sindri.Core.Profile.GraphSettings!
-Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null, int? MaxNodes = null) -> void
-Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB, out int? MaxNodes) -> void
+Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null) -> void
+Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB) -> void
 Aw.Sindri.Core.Profile.GraphSettings.Equals(Aw.Sindri.Core.Profile.GraphSettings? other) -> bool
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.get -> bool?
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.init -> void
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.get -> int?
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.init -> void
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.get -> int?
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.init -> void
 override Aw.Sindri.Core.Profile.GraphSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.GraphSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.GraphSettings.ToString() -> string!
 static Aw.Sindri.Core.Profile.GraphSettings.operator !=(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
 static Aw.Sindri.Core.Profile.GraphSettings.operator ==(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 256 -> int
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxNodes = 500000 -> int
+const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 1024 -> int
 Aw.Sindri.Core.Profile.IndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings, out Aw.Sindri.Core.Profile.GraphSettings? Graph) -> void
 Aw.Sindri.Core.Profile.IndexSettings.IndexSettings(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings = null, Aw.Sindri.Core.Profile.GraphSettings? Graph = null) -> void
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 512 -> int
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 200 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 4096 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 4096 -> int
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.init -> void
 Aw.Sindri.Core.Profile.IndexSettings.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -15260,10 +15245,12 @@ Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.get -> Aw.Sindri.Core.Challenges.
 Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.init -> void
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.get -> bool
 Aw.Sindri.Core.Commands.CommandRow.AppConfirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null) -> void
+Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null, bool SessionOk = false) -> void
 Aw.Sindri.Core.Commands.CommandRow.Confirm.get -> string?
 Aw.Sindri.Core.Commands.CommandRow.Confirm.init -> void
-Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm) -> void
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.get -> bool
+Aw.Sindri.Core.Commands.CommandRow.SessionOk.init -> void
+Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm, out bool SessionOk) -> void
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.ToString() -> string!
@@ -17159,6 +17146,10 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.get -> Aw.Sindri.Core.Workflow.Stats.RecipeListStats?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.get -> int?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
@@ -18347,3 +18338,7 @@ static Aw.Sindri.Core.Prove.RedTest.operator ==(Aw.Sindri.Core.Prove.RedTest? le
 static Aw.Sindri.Core.Prove.RedTestsFact.operator !=(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.operator ==(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
+Aw.Sindri.Core.Prove.PhaseSignals
+static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
+static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
+static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!

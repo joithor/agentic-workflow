@@ -4,9 +4,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Files">Files, as served.</param>
 /// <param name="Symbols">Symbols, as served.</param>
 /// <param name="Counts">Counts, as served.</param>
-/// <param name="Truncated">Truncated, as served.</param>
 internal sealed record CodeBand(
     IReadOnlyList<CodeFile> Files,
     SymbolsView Symbols,
-    CodeCounts Counts,
-    bool Truncated);
+    CodeCounts Counts);
