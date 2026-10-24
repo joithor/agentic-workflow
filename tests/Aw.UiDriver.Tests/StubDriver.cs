@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -20,15 +21,15 @@ internal sealed class StubDriver : IAsyncDisposable
         probe.Start();
         var port = ((IPEndPoint)probe.LocalEndpoint).Port;
         probe.Stop();
-        _listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        _listener.Prefixes.Add(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/"));
         _listener.Start();
-        File.WriteAllText(Path.Combine(_directory.FullName, "driver.json"), $$"""{"schema":"aw-ui-driver/1","url":"http://127.0.0.1:{{port}}","pid":1}""");
+        File.WriteAllText(Path.Combine(_directory.FullName, "driver.json"), string.Create(CultureInfo.InvariantCulture, $$"""{"schema":"aw-ui-driver/1","url":"http://127.0.0.1:{{port}}","pid":1}"""));
         File.WriteAllText(Path.Combine(_directory.FullName, "driver.token"), Secret);
         _loop = Task.Run(ServeAsync);
     }
 
     /// <summary>The driver directory.</summary>
-    internal string Directory => _directory.FullName;
+    internal string Folder => _directory.FullName;
 
     /// <summary>Each call: the path, the secret header and the body.</summary>
     internal List<(string Path, string? Secret, string Body)> Calls { get; } = [];

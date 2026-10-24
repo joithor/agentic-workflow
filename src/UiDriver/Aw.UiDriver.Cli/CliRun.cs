@@ -39,7 +39,7 @@ internal sealed class CliRun(TextWriter output, TextWriter error, Func<string, s
     {
         var limit = TimeSpan.FromMilliseconds(a.Number("--wait-ms") ?? 30_000);
         var started = TimeProvider.System.GetTimestamp();
-        Error last = UiDriverErrors.Unreachable.With($"no driver answered in {directory}");
+        var last = UiDriverErrors.Unreachable.With($"no driver answered in {directory}");
         while (TimeProvider.System.GetElapsedTime(started) < limit)
         {
             var opened = await DriverClient.OpenAsync(directory, cancellationToken).ConfigureAwait(false);
@@ -122,6 +122,7 @@ internal sealed class CliRun(TextWriter output, TextWriter error, Func<string, s
         {
             ErrorKind.Invalid => 1,
             ErrorKind.NotFound or ErrorKind.Timeout => 2,
+            ErrorKind.Conflict or ErrorKind.RateLimited or ErrorKind.BudgetExceeded or ErrorKind.Unavailable or ErrorKind.Forbidden => 4,
             _ => 4,
         };
     }

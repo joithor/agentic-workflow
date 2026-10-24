@@ -20,7 +20,7 @@ public sealed class CliRunTests
         await using var driver = new StubDriver();
         driver.Answer = (200, "application/json", """{"node":{"id":"0/0"}}"""u8.ToArray());
 
-        var ran = await Run(driver.Directory, "click", "--automation-id", "save");
+        var ran = await Run(driver.Folder, "click", "--automation-id", "save");
 
         Assert.Equal((0, """{"node":{"id":"0/0"}}""", ""), (ran.Exit, ran.Output, ran.Error));
         var call = Assert.Single(driver.Calls);
@@ -33,7 +33,7 @@ public sealed class CliRunTests
     {
         await using var driver = new StubDriver();
 
-        var ran = await Run("/nonexistent", "--dir", driver.Directory, "tree");
+        var ran = await Run("/nonexistent", "--dir", driver.Folder, "tree");
 
         Assert.Equal(0, ran.Exit);
     }
@@ -49,7 +49,7 @@ public sealed class CliRunTests
         await using var driver = new StubDriver();
         driver.Fail(status, code, "it went wrong badly");
 
-        var ran = await Run(driver.Directory, "click", "--name", "x");
+        var ran = await Run(driver.Folder, "click", "--name", "x");
 
         Assert.Equal((exit, "", $"aw-ui-driver: {code} it went wrong badly"), (ran.Exit, ran.Output, ran.Error));
     }
@@ -59,9 +59,9 @@ public sealed class CliRunTests
     {
         await using var driver = new StubDriver();
         driver.Answer = (200, "image/png", [0x89, 0x50, 0x4E, 0x47]);
-        var path = Path.Combine(driver.Directory, "shots", "a.png");
+        var path = Path.Combine(driver.Folder, "shots", "a.png");
 
-        var ran = await Run(driver.Directory, "screenshot", "--out", path);
+        var ran = await Run(driver.Folder, "screenshot", "--out", path);
 
         Assert.Equal(0, ran.Exit);
         Assert.Equal([0x89, 0x50, 0x4E, 0x47], await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
@@ -74,7 +74,7 @@ public sealed class CliRunTests
         await using var driver = new StubDriver();
         driver.Answer = (200, "image/png", [1]);
 
-        var ran = await Run(driver.Directory, "screenshot");
+        var ran = await Run(driver.Folder, "screenshot");
 
         Assert.Equal((1, "aw-ui-driver: a screenshot needs --out <file.png>"), (ran.Exit, ran.Error));
     }
@@ -84,7 +84,7 @@ public sealed class CliRunTests
     {
         await using var driver = new StubDriver();
 
-        var ran = await Run(driver.Directory, "ready", "--wait-ms", "2000");
+        var ran = await Run(driver.Folder, "ready", "--wait-ms", "2000");
 
         Assert.Equal((0, """{"ok":true}"""), (ran.Exit, ran.Output));
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using Aw.Kernel;
@@ -10,6 +11,14 @@ namespace Aw.UiDriver.Cli;
 /// <summary>A running driver, found through its directory: driver.json for where it answers and the secret file beside it, sent as X-Ui-Driver-Token.</summary>
 internal sealed class DriverClient : IDisposable
 {
+    private static readonly Dictionary<HttpStatusCode, ErrorKind> _kinds = new()
+    {
+        [HttpStatusCode.BadRequest] = ErrorKind.Invalid,
+        [HttpStatusCode.Unauthorized] = ErrorKind.Forbidden,
+        [HttpStatusCode.NotFound] = ErrorKind.NotFound,
+        [HttpStatusCode.RequestTimeout] = ErrorKind.Timeout,
+    };
+
     private readonly HttpClient _http;
     private readonly Uri _origin;
 
@@ -35,7 +44,9 @@ internal sealed class DriverClient : IDisposable
                 return UiDriverErrors.Unreachable.With($"{directory} does not hold a driver.json and driver.token of this version");
             }
 
-            var http = new HttpClient(new SocketsHttpHandler { UseProxy = false }) { Timeout = Timeout.InfiniteTimeSpan };
+#pragma warning disable CA2000 // the client owns the handler (disposeHandler) and the DriverClient disposes the client
+            var http = new HttpClient(new SocketsHttpHandler { UseProxy = false }, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
+#pragma warning restore CA2000
             http.DefaultRequestHeaders.Add(DriverEndpoint.TokenHeader, secret);
             return new DriverClient(http, origin);
         }
@@ -89,17 +100,10 @@ internal sealed class DriverClient : IDisposable
         var failure = AwJson.Deserialize<DriverFailure>(body, UiDriverJson.Options);
         if (failure.IsSuccess)
         {
-            var kind = status switch
-            {
-                HttpStatusCode.BadRequest => ErrorKind.Invalid,
-                HttpStatusCode.Unauthorized => ErrorKind.Forbidden,
-                HttpStatusCode.NotFound => ErrorKind.NotFound,
-                HttpStatusCode.RequestTimeout => ErrorKind.Timeout,
-                _ => ErrorKind.Unavailable,
-            };
+            var kind = _kinds.GetValueOrDefault(status, ErrorKind.Unavailable);
             return new Error(failure.Value.Code, kind, failure.Value.Message);
         }
 
-        return UiDriverErrors.Failed.With($"the driver answered {(int)status}: {Encoding.UTF8.GetString(body)}");
+        return UiDriverErrors.Failed.With($"the driver answered {((int)status).ToString(CultureInfo.InvariantCulture)}: {Encoding.UTF8.GetString(body)}");
     }
 }
