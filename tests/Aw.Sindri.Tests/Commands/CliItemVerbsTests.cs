@@ -18,7 +18,6 @@ using Aw.Sindri.Host;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Commands;
 

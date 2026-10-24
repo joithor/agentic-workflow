@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Commands.Probe;
 
 namespace Aw.Sindri.Tests.Commands.Probe;
