@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
@@ -8,20 +9,20 @@ namespace Aw.Sindri.Ui.Tests.Context.Whole;
 [Lane(TestLane.Unit)]
 public sealed class WholeMapBandsLayoutTests
 {
-    private static readonly string[] Kinds = ["record", "decision", "feature", "surface", "action", "thing", "flow", "code", "mystery"];
+    private static readonly string[] _kinds = ["record", "decision", "feature", "surface", "action", "thing", "flow", "code", "mystery"];
 
     private static WholeMapView Nodes(params (string Area, string Kind)[] placed)
     {
         var map = WholeMapLayoutTests.Draft("nodes-small");
         var areas = placed.Select(p => p.Area).Distinct(StringComparer.Ordinal).Select(a => new WholeArea(a, a, "trusted", 1, new Dictionary<string, int>(StringComparer.Ordinal), Unassigned: false)).ToList();
-        var nodes = placed.Select((p, i) => new WholeNode("n:" + i, "Node " + i, p.Kind, p.Area, [], "trusted", "human", 1, Confirmed: true)).ToList();
+        var nodes = placed.Select((p, i) => new WholeNode("n:" + i.ToString(CultureInfo.InvariantCulture), "Node " + i.ToString(CultureInfo.InvariantCulture), p.Kind, p.Area, [], "trusted", "human", 1, Confirmed: true)).ToList();
         return map with { Areas = areas, AreaEdges = [], Nodes = nodes, Edges = [] };
     }
 
     [Fact]
     public void Each_kind_sits_inside_the_extent_of_its_own_band()
     {
-        var geometry = WholeMapLayout.Place(Nodes([.. Kinds.Select(k => ("a", k))]));
+        var geometry = WholeMapLayout.Place(Nodes([.. _kinds.Select(k => ("a", k))]));
 
         Assert.All(geometry.Nodes, node =>
         {
@@ -34,7 +35,7 @@ public sealed class WholeMapBandsLayoutTests
     [Fact]
     public void The_four_bands_stack_why_product_code_other_and_never_overlap()
     {
-        var geometry = WholeMapLayout.Place(Nodes([.. Kinds.Select(k => ("a", k))]));
+        var geometry = WholeMapLayout.Place(Nodes([.. _kinds.Select(k => ("a", k))]));
 
         Assert.Equal([WholeBand.Intent, WholeBand.Product, WholeBand.Code, WholeBand.Other], geometry.Bands.Select(b => b.Band));
         for (var i = 1; i < geometry.Bands.Count; i++)
@@ -85,7 +86,7 @@ public sealed class WholeMapBandsLayoutTests
 
         var geometry = WholeMapLayout.Place(opened);
 
-        Assert.Single(geometry.Columns);
+        _ = Assert.Single(geometry.Columns);
         Assert.Equal([WholeBand.Intent, WholeBand.Product, WholeBand.Code], geometry.Bands.Select(b => b.Band));
         Assert.All(geometry.Nodes, n => Assert.Equal(NodeBands.Of(n.Kind), geometry.Bands.Single(b => n.Rect.Y >= b.Top && n.Rect.Bottom <= b.Top + b.Height).Band));
     }

@@ -21,10 +21,8 @@ public sealed class NodeBandsTests
     public void A_kind_sits_in_the_band_the_table_gives_it(string kind, string band) => Assert.Equal(Enum.Parse<WholeBand>(band), NodeBands.Of(kind));
 
     [Fact]
-    public void The_bands_run_why_then_product_then_code_then_other()
-    {
+    public void The_bands_run_why_then_product_then_code_then_other() =>
         Assert.Equal([WholeBand.Intent, WholeBand.Product, WholeBand.Code, WholeBand.Other], Enum.GetValues<WholeBand>());
-    }
 
     [Fact]
     public void Every_kind_of_the_table_has_a_style_drawn_from_theme_tokens_and_no_two_kinds_of_a_band_look_alike()
@@ -36,7 +34,7 @@ public sealed class NodeBandsTests
 
         foreach (var band in new[] { WholeBand.Intent, WholeBand.Product })
         {
-            var looks = NodeBands.Kinds.Where(k => NodeBands.Of(k) == band).Select(k => NodeBands.StyleOf(k)).Select(s => (s.Shape, s.Mark)).ToList();
+            var looks = NodeBands.Kinds.Where(k => NodeBands.Of(k) == band).Select(NodeBands.StyleOf).Select(s => (s.Shape, s.Mark)).ToList();
             Assert.Equal(looks.Count, looks.Distinct().Count());
         }
     }
@@ -50,10 +48,8 @@ public sealed class NodeBandsTests
     }
 
     [Fact]
-    public void An_unknown_kind_still_has_a_style()
-    {
+    public void An_unknown_kind_still_has_a_style() =>
         Assert.StartsWith("Brush.", NodeBands.StyleOf("something-new").Accent, StringComparison.Ordinal);
-    }
 
     [Fact]
     public void A_band_is_summed_up_in_its_kinds_biggest_first()
