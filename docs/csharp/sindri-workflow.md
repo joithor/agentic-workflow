@@ -251,7 +251,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 
 ### Reading
 
-- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
+- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 4 MiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
 - **All schema errors** are reported with their line and column, not just the first. When the reader's only findings
@@ -441,7 +441,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 10 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |

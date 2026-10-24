@@ -6,6 +6,9 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <summary>Writes a Step's fact files into its run directory.</summary>
 internal static class StepFactWriter
 {
+    /// <summary>The folder in the run directory the agent writes its outputs to; the agent brief names the same folder.</summary>
+    internal const string OutputFolder = ".sindri-out";
+
     private const string Extension = ".json";
     private const string Marker = "# sindri step fact files (written by the launcher)";
 
@@ -50,6 +53,32 @@ internal static class StepFactWriter
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return KernelErrors.Unavailable.With($"the Step's fact files could not be written: {e.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Makes the Step's output folder in its run directory and, in a git worktree, adds it to the local 'info/exclude' (once) before the agent runs, so the files the agent writes for
+    /// 'workflow complete --output' are never untracked work: the Step's 'git add', 'status', 'ls-files --exclude-standard' and the worktree removal check all skip them.
+    /// </summary>
+    /// <param name="runDirectory">The run directory.</param>
+    /// <param name="cancellationToken">Cancels the git queries.</param>
+    /// <returns>An error when the folder or the exclude line could not be written; null when both are in place.</returns>
+    internal static async ValueTask<Error?> Outputs(string runDirectory, CancellationToken cancellationToken)
+    {
+        var root = Path.GetFullPath(runDirectory);
+        try
+        {
+            _ = Directory.CreateDirectory(Path.Combine(root, OutputFolder));
+            if (await ExcludeFile(root, cancellationToken).ConfigureAwait(false) is { } exclude)
+            {
+                await Exclude(exclude, [OutputFolder + "/"], cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return KernelErrors.Unavailable.With($"the Step's output folder could not be made: {e.Message}");
         }
 
         return null;
