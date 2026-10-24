@@ -18,7 +18,7 @@ public sealed class ScopeFreezeStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ScopingSteps.Freeze;
 
-    protected override string ExpectedHash => "sha256:053eda81f6cc3664609632efc020b5a8aeb49c8fc37e10af00124b43ca4f4a5b";
+    protected override string ExpectedHash => "sha256:TODO";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

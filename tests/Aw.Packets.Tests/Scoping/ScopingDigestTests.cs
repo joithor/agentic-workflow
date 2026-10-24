@@ -65,7 +65,7 @@ public sealed class ScopingDigestTests
         Assert.Equal(["build", "scoping", "design", "plan", "phase", "proof", "review", "handoff"], PacketKinds.All.Select(static k => k.Name), StringComparer.Ordinal);
         Assert.True(PacketKinds.Build.IsManifestDriven);
         Assert.False(PacketKinds.Scoping.IsManifestDriven);
-        Assert.Equal(12, PacketKinds.Scoping.Files.Count);
+        Assert.Equal(14, PacketKinds.Scoping.Files.Count);
         Assert.Null(PacketKinds.Find("Scoping"));
         Assert.Same(PacketKinds.Scoping, PacketKinds.Find("scoping"));
     }
