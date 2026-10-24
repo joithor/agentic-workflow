@@ -30,7 +30,7 @@ public sealed class PlainWordsTests
     [Fact]
     public void The_context_page_words_are_plain() =>
         Assert.Equal(
-            ["Ask or look up", "Ask a question, or type a topic such as feature:name", "No context map yet", "1 topic", "4 topics", "From your question: 1 topic", "From your question: 3 topics", "Why we're doing this", "What it touches in the product", "What it touches in the code", "Suggested by AI, not confirmed", "Why this matters", "No summary written for this map yet."],
+            ["Ask or look up", "Ask a question, or type a topic such as feature:name", "No context map yet", "1 topic", "4 topics", "From your question: 1 topic", "From your question: 3 topics", "Why we're doing this", "What it touches in the product", "What it touches in the code", "Suggested by AI, not confirmed"],
             [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextFromQuestion(1), Labels.ContextFromQuestion(3), Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextMapLegendSuggested]);
 
     [Fact]
