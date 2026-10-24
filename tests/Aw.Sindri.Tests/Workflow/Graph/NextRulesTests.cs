@@ -3,7 +3,7 @@ using static Aw.Sindri.Tests.Workflow.Graph.GraphRecipe;
 
 namespace Aw.Sindri.Tests.Workflow.Graph;
 
-/// <summary>RCP-NEXT-001 (only recipe variables, and loops that exist), spec §3.7. RCP-NEXT-002 was dropped (owner q93, 2026-10-23).</summary>
+/// <summary>RCP-NEXT-001 (only recipe variables, and loops that exist) and RCP-NEXT-002 (no approval-tier verbs), spec §3.7.</summary>
 public sealed class NextRulesTests
 {
     private static readonly (string, LoopSpec)[] _revisions = [("revisions", new LoopSpec(3, LoopSpec.DefaultNoProgress))];
@@ -57,6 +57,35 @@ public sealed class NextRulesTests
         var recipe = Of("produce", [("produce", Active(next: "{a} and {b}")), ("done", Terminal())], [Go("produce", "done")]);
 
         Assert.Equal(2, Lines(recipe).Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_approval_tier_verb_is_refused()
+    {
+        // The recipe of invalid/RCP-NEXT-002.yaml; 'next' is at 10:5.
+        var recipe = Of(
+            "produce",
+            [("produce", Active(next: "Produce the Step output, then run sindri workflow answer {instance} --grant 3.")), ("done", Terminal())],
+            [Go("produce", "done")],
+            id: "workflow.next-approval");
+
+        Assert.Equal(
+            ["RCP-NEXT-002: the next of state 'produce' tells the reader to run '--grant', an approval-tier command at RCP-NEXT-002.yaml:10:5 (states.produce.next); leave it out, since only a human at a terminal runs approval-tier commands"],
+            Lines(recipe, "RCP-NEXT-002.yaml", [("states.produce.next", 10, 5)]));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("Then run sindri recipe approve workflow.step.", "recipe approve")]
+    [InlineData("Run `sindri recipe revoke {item}`.", "recipe revoke")]
+    [InlineData("Run sindri profile approve.", "profile approve")]
+    [InlineData("Answer with --grant-tokens 1000.", "--grant-tokens")]
+    [InlineData("Answer with --accept.", "--accept")]
+    [InlineData("Answer with --GRANT 2.", "--GRANT")]
+    public void Every_approval_tier_command_is_refused(string next, string command)
+    {
+        var recipe = Of("produce", [("produce", Active(next: next)), ("done", Terminal())], [Go("produce", "done")]);
+
+        _ = Assert.Single(Lines(recipe), line => line.StartsWith($"RCP-NEXT-002: the next of state 'produce' tells the reader to run '{command}'", StringComparison.Ordinal));
     }
 
     [Theory, Trait("Lane", "unit")]

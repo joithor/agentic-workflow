@@ -100,7 +100,6 @@ internal static partial class CommandTable
             ["--headless"] => await start.Run(ct).ConfigureAwait(false),
             ["status", .. var rest] when Follow(rest) is { } json => await new FollowVerbs(client, probe, output, services.GetRequiredService<TimeProvider>()).Run(json, ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
-            ["scrub", .. var rest] => await new ScrubCommand(services, output, Console.In).Run(rest, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", ..] => await Profile(args, verbs, a => new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c)), output, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
@@ -118,7 +117,7 @@ internal static partial class CommandTable
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["line", "holdout", .. var rest] => await new LineHoldoutVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
-            ["recipe" or "workflow" or "scoping" or "design" or "plan" or "line" or "pack" or "outbox" or "takeover" or "handback" or "docs" or "pr", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c), environment, Agent: !session.Human), environment), ct).ConfigureAwait(false),
+            ["recipe" or "workflow" or "scoping" or "design" or "plan" or "line" or "pack" or "outbox" or "takeover" or "handback" or "docs" or "pr", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c), environment), environment), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };

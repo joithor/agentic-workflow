@@ -87,7 +87,6 @@ using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.SampleSessionUsage;
 using Aw.Sindri.Features.Scoping;
-using Aw.Sindri.Features.Scrub;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
@@ -129,7 +128,6 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
-            .AddScoped<IService<ScrubRequest, ScrubResponse>, ScrubService>()
             .AddDoctor()
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
@@ -275,12 +273,11 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)
     {
         _ = services.AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>();
-        _ = services.AddScoped<AgentEvalGate>().AddScoped<ApprovalAuthority>();
         _ = services.AddScoped<IValidator<ApproveRecipeRequest>, AcceptAllValidator<ApproveRecipeRequest>>().AddCommand<ApproveRecipeRequest, ApproveRecipeResponse, ApproveRecipeService>();
         _ = services.AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>();
         _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
         services.TryAddSingleton<IRecipeDisplayNames, NoRecipeDisplayNames>();   // until the engine supplies the recipes' names and its shipped set
-        _ = services.AddShippedRecipes();   // the recipes this build embeds, against the registry and the approvals (setup-once spec §5.3)
+        services.TryAddSingleton<IShippedRecipes, NoShippedRecipes>();
         _ = services.AddScoped<ApproveAllPlanReader>().AddSingleton<RedeemedPlans>();   // setup-once spec §5.3: approve-all is a query for the plan and a job for the hold
         _ = services.AddScoped<IValidator<GetApproveAllPlanRequest>, AcceptAllValidator<GetApproveAllPlanRequest>>().AddQuery<GetApproveAllPlanRequest, ApproveAllPlan, GetApproveAllPlanService>();
         _ = services.AddScoped<IJobAdmission<ApproveAllRecipesRequest>, ApproveAllRecipesAdmission>()

@@ -5,8 +5,8 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
-/// The 'next' rule (spec §3.7): RCP-NEXT-001 (a variable that isn't a recipe variable, or a loop variable naming an
-/// undeclared loop). RCP-NEXT-002 (no approval-tier command in 'next') was dropped with the human-only approval (owner q93, 2026-10-23).
+/// The 'next' rules (spec §3.7): RCP-NEXT-001 (a variable that isn't a recipe variable, or a loop variable naming an
+/// undeclared loop) and RCP-NEXT-002 (an approval-tier command, which only a human at a terminal runs; security L6).
 /// </summary>
 internal sealed partial class GraphRules
 {
@@ -31,6 +31,15 @@ internal sealed partial class GraphRules
             {
                 yield return finding;
             }
+        }
+
+        foreach (Match command in ApprovalTierCommand.Matches(next))
+        {
+            yield return source.Finding(
+                "RCP-NEXT-002",
+                path,
+                $"the next of state '{state}' tells the reader to run '{command.Value}', an approval-tier command",
+                "leave it out, since only a human at a terminal runs approval-tier commands");
         }
     }
 
@@ -65,4 +74,11 @@ internal sealed partial class GraphRules
     /// <summary>'loop.&lt;name&gt;' or 'loop.&lt;name&gt;.cap'.</summary>
     [GeneratedRegex("^loop\\.(?<loop>[A-Za-z0-9_-]+)(\\.cap)?\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex LoopVariable { get; }
+
+    /// <summary>The approval-tier (protected) commands of spec §6.2: recipe approve and revoke, profile approve, and answer's --grant, --grant-tokens and --accept.</summary>
+    [GeneratedRegex(
+        "\\b(recipe\\s+(approve|revoke)|profile\\s+approve)\\b|--(grant-tokens|grant|accept)\\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture,
+        matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ApprovalTierCommand { get; }
 }

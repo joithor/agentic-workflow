@@ -122,7 +122,8 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
     }
 
     /// <summary>
-    /// The plan for approving <paramref name="recipe"/>. Refused when it is legacy-shape, registered before input kinds, and not yet approved (SND-RECIPE-001; a first approval only), its hash or its base is revoked (SND-RECIPE-005), a child it starts has no approved hash to pin (SND-RECIPE-003). A recipe already approved
+    /// The plan for approving <paramref name="recipe"/>. Refused when it is legacy-shape, registered before input kinds, and not yet approved (SND-RECIPE-001; a first approval only), its hash or its base is revoked (SND-RECIPE-005), it declares no
+    /// evals (SND-RECIPE-008) or a child it starts has no approved hash to pin (SND-RECIPE-003). A recipe already approved
     /// with the same pins plans as <see cref="ApprovalPlan.AlreadyApproved"/>: approving it again records nothing and sends the
     /// wake again, so an instance a first wake missed can still resume.
     /// </summary>
@@ -172,7 +173,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         return new ApprovalPlan(recipe, preview, latest, ChallengeAction.Approve(recipe.Id, recipe.Version), subject);
     }
 
-    /// <summary>The recipe read back and the current approvals, unless the hash is revoked, or a first approval meets a legacy-shape row (SND-RECIPE-001).</summary>
+    /// <summary>The recipe read back and the current approvals, unless the hash is revoked, the recipe declares no evals, or a first approval meets a legacy-shape row (SND-RECIPE-001).</summary>
     private async ValueTask<Result<(Recipe Parsed, IReadOnlyList<RecipeApproval> Current)>> Standing(RegisteredRecipe recipe, CancellationToken cancellationToken)
     {
         var revoked = await approvals.Revocation(recipe.Hash, cancellationToken).ConfigureAwait(false);
@@ -201,7 +202,7 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         return current.IsError ? current.Error : (parsed.Value, current.Value);
     }
 
-    /// <summary>SND-RECIPE-001 for a legacy-shape row not yet approved, else null.</summary>
+    /// <summary>SND-RECIPE-001 for a legacy-shape row not yet approved, SND-RECIPE-008 for a recipe without evals, else null.</summary>
     private async ValueTask<Error?> Shape(RegisteredRecipe recipe, Recipe parsed, CancellationToken cancellationToken)
     {
         // The legacy check comes before the evals one, whose fix (write evals, register again) can't help a legacy row. Only a first approval is
@@ -214,7 +215,9 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
                 : null;
         }
 
-        return null;   // owner q93, 2026-10-23: a recipe with no evals is approved on its validation alone (it validated when it registered)
+        return parsed.Evals.Count == 0
+            ? WorkflowErrors.RecipeEvalsFailing.With($"{Name(recipe)} declares no evals; approving needs them (fix: write one with sindri recipe eval --scaffold <file>, list it under evals:, register again)")
+            : null;
     }
 
     /// <summary>SND-RECIPE-005 when <paramref name="recipe"/> was generated from a base that has been revoked since it was registered.</summary>

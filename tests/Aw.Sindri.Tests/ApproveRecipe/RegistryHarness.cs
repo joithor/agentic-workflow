@@ -81,7 +81,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddEffectPorts(H)
             .AddRecipeBlocks()
             .AddSingleton<BlockCatalog>().AddSingleton<StepInputRuntimes>()
-            .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>().AddScoped<AgentEvalGate>().AddScoped<ApprovalAuthority>().AddScoped<ApproveRecipeService>()
+            .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton(Workflow.RecipeReaderTests.Reader)
@@ -164,14 +164,6 @@ internal sealed class RegistryHarness : IAsyncDisposable
     {
         using var entered = H.Callers.Enter(Human);
         return await _provider.GetRequiredService<IApprovedRecipes>().Check(new RecipeVersion(recipe.Id, recipe.Version, recipe.Hash), TestContext.Current.CancellationToken);
-    }
-
-    /// <summary>Runs ApproveRecipe as <paramref name="caller"/> directly, without the command chain's caller-class check (api's table decides which sessions reach it).</summary>
-    public async Task<Result<ApproveRecipeResponse>> Direct(ApproveRecipeRequest request, CallerContext caller)
-    {
-        using var entered = H.Callers.Enter(caller);
-        await using var scope = _provider.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<ApproveRecipeService>().Handle(request, TestContext.Current.CancellationToken);
     }
 
     /// <summary>Approves <paramref name="recipe"/> as a human would: a challenge, its action typed back.</summary>

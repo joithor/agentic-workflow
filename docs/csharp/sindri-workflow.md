@@ -104,7 +104,7 @@ no-progress pass
 rounds pass
 ```
 
-A line the engine rejects (an answer that doesn't fit the park, a grant of 0, an undeclared
+A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
 outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
 at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approving
 such a recipe is refused (`SND-RECIPE-008`, see `sindri recipe approve` below). `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
@@ -198,13 +198,9 @@ starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cros
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 
-`approve` and `revoke` (engine spec §4.2, §6.2, §6.3) are a human's with the typed text below. Owner q93, 2026-10-23: an
-**agent** (a session or a service, a CLI that detects an agent) approves a recipe without a challenge or a typed text once
-its evals pass. The CLI posts the recipe's eval files with the approval, the server runs them over the pure engine against that
-hash, and a missing or failing case is `SND-RECIPE-008` with nothing recorded; a recipe that lists no `evals:` needs only the
-validation it passed when it registered. The approval row and the `recipe.approved` event carry the agent's actor as the
-approver. Revoke stays a human's. Which caller class reaches the approve command is the API's table (Authorization.cs): until its
-`ApproveRecipe` row admits sessions, the chain still answers a session `SND-AUTH-002`.
+Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
+or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
+the audit row.
 
 `sindri recipe approve <file|id@hash>`:
 
@@ -220,8 +216,8 @@ approver. Revoke stays a human's. Which caller class reaches the approve command
    `SND-RECIPE-009` if it changed while you read.
 4. It prints `approved workflow.step@<hash12>`.
 
-The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`) or a child it starts has no approved
-hash to pin (`SND-RECIPE-003`). A recipe that declares no evals is approved on its validation alone (owner q93, 2026-10-23). An approved hash approved again
+The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
+(`SND-RECIPE-008`) or a child it starts has no approved hash to pin (`SND-RECIPE-003`). An approved hash approved again
 with the same pins is not refused: it records nothing, sends the approve wake to its running instances again and prints
 `already approved workflow.step@<hash12>; woke N instances` (exit 0). That is the remedy for a drift-parked instance a first
 wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
@@ -397,11 +393,11 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   which starts that Step without counting a round). A run that fails over budget still parks on it.
   **A state's budget is each round's allowance**: spend is counted by (state, loop round), a fresh allowance starts with the round, a grant applies to the
   round it answers (and raises the recipe's allowance too), and the recipe's budget is the cap over the whole instance. A round that overspends is kept and
-  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes any whole number from 1, with no upper bound (owner q93, 2026-10-23; it was 4x the original budget);
+  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes at most 4x the original budget, and the error names that bound;
   the park suggests a whole round's budget. An instance that began before the rule (Temporal patch `token-budget-per-round-v1`) keeps the pooled count.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
-  (`RCP-NEXT-002`, no approval-tier command in `next`, was dropped by owner q93, 2026-10-23.) Waits are descriptions
+  It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions
   ("Waiting for …"); states a human acts in are instructions.
 
 ### Engine-owned states
@@ -466,6 +462,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-THRESH-001` | A judge or model gate has a threshold | Add `threshold` in (0, 1] |
 | `RCP-THRESH-002` | A threshold is in (0, 1], and a deterministic gate has none | Fix or remove it |
 | `RCP-NEXT-001` | `next` uses only recipe variables | Use only the listed variables |
+| `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
 | `RCP-HUMAN-001` | An effect whose block is `humanTrigger` runs only off a human's act: a `command.*` transition, a `step.completed` out of states that each run a `humanOnly` Step, or a `when` that requires a fact (`{fact: F, is: present}`, at the top or inside `all`) that only such command transitions produce. The initial state never counts | Move the effect onto a command transition or a human-only Step, or gate it on a fact a human's command produces |
 | `RCP-RES-001` | **Information:** a `slot` wait has only the stub allocator in this build (`heavy` has the real one, LN-WF3 and is no longer reported) | None needed |
@@ -776,7 +773,7 @@ The line spec names the facts but not their fields; these are the shapes the pro
 - `findings`: a list of `{rule, item, message, fix, severity}` (`severity` is `fail` or `warn`; `item` is an acceptance item id or null), the scoping findings shape as a bare list, as `step.build.prepare` seeds it.
 - `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts; `step.prove.collect` appends them (below).
 - `beforeAfter`: `{commit, results[{item, signal, base, head, baseScript?, headScript?}]}`, `base` and `head` being `fail` or `pass`. `holdoutResult`: `{commit, canary?, results[{scenario, item, verdict, category, observed, spent?}]}`, `verdict` being `pass` or `fail`, `canary` `clean` or `leaked`. Both start as `{commit, results: []}`.
-- `redTests` (spec A.7, §7.2): one shape, parsed by `RedTestsFact` (`Aw.Sindri.Core/Prove/`) for `step.build.red-check`, `step.prove.before-after` and `PRV-RED-001` alike, and told to the red agent by `PayloadFacts` (a shape line on `step.build.red`'s brief). An object keyed by item id, with nothing else at the top level. Each value is a list of test ids (`{"i1":["T1"]}`, the short form the recipe evals seed) or `{tests?: [id | {id, path}], appOnly?: {signal}, commit?, output?}`. The red commit is per item: red-check takes it from the items that name one and requires them to agree (none named, or two different, fails the Step; the short form is enough beside an item that names it). `PRV-RED-001` holds when every live (not superseded) item has at least one test or an `appOnly` entry; each item without either is one finding naming it, and a value of another shape is a finding naming the item and the expected shape, never read as "no tests"; red-check fails the Step the same way, naming each wrong key (it is never "red"). `docs` and `config` phases are exempt. Whether the tests failed (BLD-RED-001) is `step.build.red-check`'s, not checked again here. `red.json` of the pack is the fact as it is. `schemas/line/red-tests.json` describes this shape.
+- `redTests` (spec A.7, §7.2): an object keyed by item id. Each value is a list of test ids (`{"i1":["T1"]}`, the short form the evals seed) or `{tests?: [id | {id, path}], appOnly?: {signal}, commit?, output?}`. `PRV-RED-001` holds when every live (not superseded) item has at least one test or an `appOnly` entry; each item without either is one finding naming it, and a value of another shape is a finding naming the item and the expected shape, never read as "no tests". `docs` and `config` phases are exempt. Whether the tests failed (BLD-RED-001) is `step.build.red-check`'s, not checked again here. `red.json` of the pack is the fact as it is.
 - The canary: a result of `holdoutResult` with `kind` `canary`, or with no `item` (the canary scenario shows no visible item; BS-6's `HoldoutScenario.CanaryKind`), is not a hidden scenario. `PRV-HOLD-001` leaves it out of the count of scenarios that ran and out of the verdict failures, `PRV-HOLD-002` leaves it out of the unspent count, and the pack's `holdout.json` does not list it. `holdout.json`'s `count` in the phase packet counts the hidden scenarios without the canary.
 - `phasePacket.dir`: absolute as it is; relative, it is read under the repo's checkout (never under serve's working directory), by `step.prove.intake` and `step.prove.evidence` alike. A relative directory with no repo or no checkout fails the Step.
 - `beforeAfter` matching: a result with no `signal` matches any signal of its item.

@@ -13,7 +13,7 @@ namespace Aw.Sindri.Tests.ApproveRecipe;
 
 /// <summary>
 /// Refused approvals (engine spec §4.2, §6.2, §8): a stale challenge is SND-RECIPE-009, a caller other than a human at a
-/// terminal is API's SND-AUTH-002, a revoked hash is SND-RECIPE-005, a recipe's failing evals are SND-RECIPE-008. Each
+/// terminal is API's SND-AUTH-002, a revoked hash is SND-RECIPE-005, a recipe without evals is SND-RECIPE-008. Each
 /// records no 'recipe.approved' and no approval row.
 /// </summary>
 public sealed class ApproveRecipeRefusalTests
@@ -114,15 +114,16 @@ public sealed class ApproveRecipeRefusalTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Recipe_without_evals_is_approved_on_its_validation_alone()
+    public async Task Recipe_without_evals_is_008_and_records_nothing()
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
         var bare = await r.Register(RegistryHarness.Parse(step) with { Id = RecipeId.From("workflow.bare"), Evals = [] });
 
-        var issued = await r.Issue("approve workflow.bare 4");   // owner q93, 2026-10-23: it validated when it registered, and it lists no eval to run
+        var refused = await r.Issue("approve workflow.bare 4");
 
-        Assert.True(issued.IsSuccess, issued.IsError ? issued.Error.ToString() : null);
+        Assert.Equal(WorkflowErrors.RecipeEvalsFailing.Code, refused.Error.Code);
+        Assert.Contains("declares no evals", refused.Error.Message, StringComparison.Ordinal);
         Assert.Null((await r.Approvals.Latest(bare.Id, 4, bare.Hash, Token)).Value);
     }
 

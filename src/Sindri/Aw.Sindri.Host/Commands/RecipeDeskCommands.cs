@@ -9,7 +9,6 @@ using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Host.Commands.Recipe;
-using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -35,42 +34,7 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
             return await output.Error(local.Error).ConfigureAwait(false);
         }
 
-        return desk.Agent
-            ? await ApproveAsAgent(target, local?.Value, ct).ConfigureAwait(false)
-            : await Approve(target, local?.Value, ct).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// A session approves with no challenge (owner q93, 2026-10-23): it registers the file when the server doesn't know it and posts the
-    /// approve with the file's eval files, which the server runs against the hash. Without a file, an 'id@hash' (the hash in full) is approved
-    /// with no eval files, which the server accepts only for a recipe that lists none.
-    /// </summary>
-    private async Task<int> ApproveAsAgent(string target, LocalRecipe? file, CancellationToken ct)
-    {
-        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
-        {
-            return await output.Error(down).ConfigureAwait(false);
-        }
-
-        if (file is null && target.Split('@') is not [{ Length: > 0 }, { Length: > 0 }])
-        {
-            return await output.Error(SindriErrors.InvalidInput.With("recipe approve needs a recipe file, or an id@hash with the hash in full")).ConfigureAwait(false);
-        }
-
-        if (file is not null)
-        {
-            var registered = await desk.Client.Post<RegisterRecipeRequest, RegisterRecipeResponse>("/sindri/workflow/recipes", new RegisterRecipeRequest(file.Text, file.File), ct).ConfigureAwait(false);
-            if (registered.IsError)
-            {
-                return await output.Error(registered.Error).ConfigureAwait(false);
-            }
-        }
-
-        var (id, hash) = file is null ? (RecipeId.From(target.Split('@')[0]), RecipeRoute.Hash(target.Split('@')[1])) : (file.Id, file.Hash);
-        var approved = await desk.Client.Post<ApproveRecipeBody, ApproveRecipeResponse>(Route(id, hash, "approve"), new ApproveRecipeBody(Evals: file?.EvalFiles), ct).ConfigureAwait(false);
-        return approved.IsError
-            ? await output.Error(approved.Error).ConfigureAwait(false)
-            : await output.Text(Approved(approved.Value.Value), 0).ConfigureAwait(false);
+        return await Approve(target, local?.Value, ct).ConfigureAwait(false);
     }
 
     private async Task<int> Approve(string target, LocalRecipe? file, CancellationToken ct)
