@@ -29,7 +29,7 @@ internal static class RoleLists
         }
 
         var roles = index.Roles ?? new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        return Names($"{path}.ignore", index.Ignore, roles, null) ?? Names($"{path}.demote", index.Demote, roles, index.Ignore);
+        return Names($"{path}.ignore", index.Ignore, roles, other: null) ?? Names($"{path}.demote", index.Demote, roles, index.Ignore);
     }
 
     private static Error? Names(string path, IReadOnlyList<string>? names, IReadOnlyDictionary<string, IReadOnlyList<string>> roles, IReadOnlyList<string>? other)
