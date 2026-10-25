@@ -5,7 +5,9 @@ using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Testing;
 using Aw.Context.Core.Glossary;
 using Aw.Context.Testing.Glossary;
+using Aw.Kernel;
 using Aw.Sindri.Host.CodeIndexHost;
+using SymbolVector = Aw.CodeIndex.Core.Facade.SymbolVector;
 
 namespace Aw.Sindri.Tests.CodeIndexHost;
 
@@ -41,12 +43,12 @@ public sealed class CodeIndexSymbolVectorsContractTests : SymbolVectorsContract<
         Assert.True(read.IsError);
     }
 
-    private static Aw.CodeIndex.Core.Facade.SymbolVector Vector(string path, string name, params float[] vector) =>
+    private static SymbolVector Vector(string path, string name, params float[] vector) =>
         new(SymbolRef.From($"demo:{path}#{name}"), path, name, SymbolKind.Method, vector);
 
     private sealed class FixedScope(string repo = "demo") : ICodeIndexScopeSource
     {
-        public ValueTask<Aw.Kernel.Result<CodeIndexScope>> Current(CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Aw.Kernel.Result<CodeIndexScope>>(new CodeIndexScope([new CodeIndexRepo(RepoName.From(repo), "/tmp/" + repo, CodeIndexSettings.Create(new CodeIndexSettingsInput(DenyPaths: [])).Value)], new CodeIndexCaller(CallerKind.Human, Repo: null)));
+        public ValueTask<Result<CodeIndexScope>> Current(CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<CodeIndexScope>>(new CodeIndexScope([new CodeIndexRepo(RepoName.From(repo), "/tmp/" + repo, CodeIndexSettings.Create(new CodeIndexSettingsInput(DenyPaths: [])).Value)], new CodeIndexCaller(CallerKind.Human, Repo: null)));
     }
 }

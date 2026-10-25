@@ -43,6 +43,7 @@ using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.ShowPublishStatus;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Features.SyncSources;
+using Aw.Context.Infrastructure.Search;
 using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
@@ -78,7 +79,7 @@ internal static class Engines
                     new GetHistoryService(graphs, new HistoryPipeline(new LensBasisReader(repos, intents, clock), intents, new FakeFileHistory(Repos[0], new HistoryWorld("0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", [])), clock), scrubbers),
                     new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers),
                     new GetWholeMapService(graphs, scrubbers, new WholeMapCache(), WholeMapRules.Default),
-                    new Features.SearchMap.SearchMapService(graphs, scrubbers, new Aw.Context.Infrastructure.Search.SqliteMapSearchIndexFactory(), new Features.SearchMap.MapSearchCache(), WholeMapRules.Default),
+                    new Features.SearchMap.SearchMapService(graphs, scrubbers, new SqliteMapSearchIndexFactory(), new Features.SearchMap.MapSearchCache(), WholeMapRules.Default),
                     new ContextConceptReads(new Features.GetConcepts.GetConceptsService(new ConceptReader(graphs, scrubbers)), new Features.GetConceptMembers.GetConceptMembersService(new ConceptReader(graphs, scrubbers)),
                         new Features.GetConceptGlossary.GetConceptGlossaryService(new ConceptReader(graphs, scrubbers))))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()),
