@@ -39,6 +39,18 @@ public static class ClusterFeatures
         return result;
     }
 
+    /// <summary>Proposes a feature per cluster for a repo.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <param name="clusters">What the cluster source found.</param>
+    /// <param name="labels">Names the labeling pass gave some clusters, or none.</param>
+    /// <param name="extracted">The deterministic extraction.</param>
+    /// <returns>The features, their file links and their claimed surfaces.</returns>
+    public static ExtractedMap Propose(ContextRepo repo, ClusterSet clusters, IReadOnlyList<ClusterLabel> labels, ExtractedMap extracted)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        return Propose(repo.Name, clusters, labels, extracted);
+    }
+
     private static ExtractedMap One(Candidate candidate, ExtractedMap extracted, HashSet<string> claimed)
     {
         var (repo, key, label, confidence, files) = candidate;

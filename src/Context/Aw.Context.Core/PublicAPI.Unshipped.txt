@@ -7494,3 +7494,7 @@ Aw.Context.Core.Concepts.ConceptReader.Read(Aw.Context.Core.Engine.ContextScope!
 Aw.Context.Core.Engine.RepoAddressing
 static Aw.Context.Core.Engine.RepoAddressing.Addressed(Aw.Context.Core.Engine.ContextSettings! settings, Aw.Context.Core.Engine.ContextScope! scope, string? asked) -> Aw.Kernel.Result<Aw.Context.Core.Engine.RepoChoice!>!
 static Aw.Context.Core.Engine.ConceptPin.Of(Aw.Context.Core.Engine.ConceptId? id, string? name, string? summary, System.Collections.Generic.IEnumerable<string!>? features, System.Collections.Generic.IEnumerable<string!>? paths) -> Aw.Context.Core.Engine.ConceptPin!
+Aw.Context.Core.Engine.ContextRepo.DemotePaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextRepo.DemotePaths.init -> void
+Aw.Context.Core.Engine.ContextRepo.Demotes(string! path) -> bool
+static Aw.Context.Core.Extract.ClusterFeatures.Propose(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Extract.ClusterSet! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! labels, Aw.Context.Core.Extract.ExtractedMap! extracted) -> Aw.Context.Core.Extract.ExtractedMap!
