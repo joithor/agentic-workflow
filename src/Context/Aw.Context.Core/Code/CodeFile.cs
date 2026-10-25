@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
@@ -30,4 +31,9 @@ public sealed record CodeFile(
     LinkId? LinkId,
     Results.Trust Trust,
     IReadOnlyList<NodeKey> Anchors,
-    IReadOnlyList<string> TestedBy);
+    IReadOnlyList<string> TestedBy)
+{
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+}

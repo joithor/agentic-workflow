@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Kind">Kind, as served.</param>
 /// <param name="Anchors">Anchors, as served.</param>
 /// <param name="Depth">Depth, as served.</param>
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
 internal sealed record LensRecord(
     string Key,
     string Label,
@@ -23,4 +24,5 @@ internal sealed record LensRecord(
     IReadOnlyList<JsonElement> Cites,
     string Kind,
     IReadOnlyList<string>? Anchors = null,
-    int? Depth = null);
+    int? Depth = null,
+    string? Repo = null);

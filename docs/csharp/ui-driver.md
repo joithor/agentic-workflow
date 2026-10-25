@@ -93,8 +93,13 @@ No reflection: JSON is source-generated (`UiDriverJsonContext`), properties are 
 actions through automation peers. `Aw.UiDriver.Avalonia` is an ordinary library with the trim and AOT analyzers on, so an app that publishes NativeAOT stays
 clean; `aw-ui-driver` is a NativeAOT entry point.
 
+## Used by
+
+Desktop UI evidence (`desktop-run`, docs/csharp/evidence.md "Desktop evidence") starts an app with `AW_UI_DRIVER=1`, a fresh `AW_UI_DRIVER_DIR` and a display
+(the user's, else `xvfb-run -a`), runs `aw-ui-driver ready`, `window` and then each step of a screen's script (`click`, `type`, `key`, `wait-for`, `screenshot`)
+through this command line, and stops the app. Sindri's `sindri-ui` opts in with `UseAwUiDriver(args)`.
+
 ## Not in this version
 
-Raw pointer injection, drag, hover and multi-window addressing (the main window only), and the `launch` step of an evidence script (the caller starts the app
-with `AW_UI_DRIVER=1`, then runs `aw-ui-driver ready`). Desktop evidence scripts that reuse `ui-evidence`'s step shape on top of these verbs, and the Sindri
-wiring, come with the evidence change.
+Raw pointer injection, drag, hover and multi-window addressing (the main window only), and a `launch` verb (the caller starts the app with `AW_UI_DRIVER=1`, then
+runs `aw-ui-driver ready`; `desktop-run` does this for its scripts).

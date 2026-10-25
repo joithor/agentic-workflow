@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Graph;
@@ -10,4 +11,9 @@ namespace Aw.Context.Core.Graph;
 /// <param name="Confirmed">True when a human confirmed it.</param>
 /// <param name="Trust">Whether its text can be trusted.</param>
 /// <param name="Confidence">0 to 1.</param>
-public sealed record NodeFact(NodeKey Key, NodeKind Kind, string Label, Provenance Provenance, bool Confirmed, Results.Trust Trust, double Confidence);
+public sealed record NodeFact(NodeKey Key, NodeKind Kind, string Label, Provenance Provenance, bool Confirmed, Results.Trust Trust, double Confidence)
+{
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo or the answer doesn't say; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+}

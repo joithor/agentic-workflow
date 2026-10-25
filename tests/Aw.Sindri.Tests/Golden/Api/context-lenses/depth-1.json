@@ -85,7 +85,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-groups.group-selected",
@@ -94,7 +95,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-manager.restore-layout",
@@ -103,7 +105,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "feature:tabs.tab-groups",
@@ -112,7 +115,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/group-tabs",
@@ -121,7 +125,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/switch-tab",
@@ -130,7 +135,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
@@ -204,7 +210,8 @@
           "linkId": "edge:402b8bed42f6611c",
           "label": "src/tabs/TabGroups.ts",
           "kind": "code",
-          "trust": "untrusted"
+          "trust": "untrusted",
+          "repo": "aw-split-panes"
         },
         {
           "path": "src/tabs/TabManager.ts",
@@ -220,7 +227,8 @@
           "linkId": null,
           "label": "src/tabs/TabManager.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {

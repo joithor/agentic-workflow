@@ -65,7 +65,7 @@ public sealed class StrayFieldsTests
     {
         var harness = new SliceHarness();
         var instances = new NoInstances();
-        return new ApplyCommandService(instances, instances, new NoApprovals(), new InMemoryCommandNonces(harness.Clock), harness.Challenges, harness.Callers);
+        return new ApplyCommandService(instances, instances, new NoApprovals(), new InMemoryCommandNonces(harness.Clock), harness.Callers);
     }
 
     private sealed class NoApprovals : IApprovedRecipes

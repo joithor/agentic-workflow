@@ -17,6 +17,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Quote">Quote, as served.</param>
 /// <param name="Anchors">Anchors, as served.</param>
 /// <param name="Depth">Depth, as served.</param>
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
 internal sealed record LensDecision(
     string Node,
     string Text,
@@ -31,4 +32,5 @@ internal sealed record LensDecision(
     string Kind,
     DecisionQuote? Quote = null,
     IReadOnlyList<string>? Anchors = null,
-    int? Depth = null);
+    int? Depth = null,
+    string? Repo = null);
