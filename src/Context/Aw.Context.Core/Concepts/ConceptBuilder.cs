@@ -36,7 +36,7 @@ public static class ConceptBuilder
         var (offset, size) = slice.Value;
         var page = matching.Skip(offset).Take(size).ToList();
         var end = offset + page.Count;
-        var other = new ConceptOther(ConceptKeys.Other, OtherName, Size(index, index.MembersOf(ConceptKeys.Other)));
+        var other = new ConceptOther(NodeKey.From(ConceptKeys.Other), OtherName, Size(index, index.MembersOf(ConceptKeys.Other)));
         var rows = page.Select(n => Row(index, n, text)).ToList();
         return new ConceptsView(1, basis.Repo, basis.MapVersion, index.Concepts.Count == 0 ? ConceptStates.Empty : ConceptStates.Ok, null, rows, other, Links(index, edges, page), ConceptPages.Next(basis.MapVersion, end, matching.Count));
     }
@@ -61,12 +61,12 @@ public static class ConceptBuilder
 
         var (known, edges) = Known(graph);
         var index = ConceptIndex.Of(known, edges);
-        if (!index.Has(query.Concept))
+        if (!index.Has(query.Concept.Value))
         {
             return ContextErrors.UnknownAnchor.With("that concept isn't in this map (fix: read the concepts first, and name one of their ids)");
         }
 
-        var all = index.MembersOf(query.Concept);
+        var all = index.MembersOf(query.Concept.Value);
         var (offset, size) = slice.Value;
         var page = all.Skip(offset).Take(size).Select(k => Member(known[k], text)).ToList();
         return new ConceptMembersView(1, basis.Repo, basis.MapVersion, query.Concept, page, ConceptPages.Next(basis.MapVersion, offset + page.Count, all.Count));
@@ -101,7 +101,7 @@ public static class ConceptBuilder
         var summary = Attribute(node, "summary") is { Length: > 0 } written ? text.Excerpt(written, trust, SummaryMax) : string.Empty;
         var source = string.Equals(Attribute(node, "source"), "override", StringComparison.Ordinal) ? "override" : "derived";
         var citations = node.EvidenceOrEmpty.Select(e => new ConceptCitation(text.Line(e.Key.Value), e.Span)).ToList();
-        return new ConceptRow(node.Key.Value, text.Label(node.Label, trust), summary, source, Size(index, index.MembersOf(node.Key.Value)), citations);
+        return new ConceptRow(node.Key, text.Label(node.Label, trust), summary, source, Size(index, index.MembersOf(node.Key.Value)), citations);
     }
 
     private static ConceptSize Size(ConceptIndex index, IReadOnlyList<string> members) =>
@@ -122,7 +122,7 @@ public static class ConceptBuilder
             }
         }
 
-        return [.. weights.OrderBy(w => w.Key.From, StringComparer.Ordinal).ThenBy(w => w.Key.To, StringComparer.Ordinal).Select(w => new ConceptLink(w.Key.From, w.Key.To, w.Value))];
+        return [.. weights.OrderBy(w => w.Key.From, StringComparer.Ordinal).ThenBy(w => w.Key.To, StringComparer.Ordinal).Select(w => new ConceptLink(NodeKey.From(w.Key.From), NodeKey.From(w.Key.To), w.Value))];
     }
 
     private static ConceptMember Member(GraphNode node, MapText text) =>

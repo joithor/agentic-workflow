@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Concepts;
 
@@ -13,6 +14,6 @@ public sealed record ConceptMembersView(
     int ApiVersion,
     string? Repo,
     string MapVersion,
-    string Concept,
+    NodeKey Concept,
     IReadOnlyList<ConceptMember> Members,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Next);

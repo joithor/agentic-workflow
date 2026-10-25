@@ -1,3 +1,5 @@
+using Aw.Context.Core.Graph;
+
 namespace Aw.Context.Core.Concepts;
 
 /// <summary>One concept of the top band.</summary>
@@ -7,4 +9,4 @@ namespace Aw.Context.Core.Concepts;
 /// <param name="Source">'derived' or 'override'.</param>
 /// <param name="Size">What it holds.</param>
 /// <param name="Citations">The records it rests on.</param>
-public sealed record ConceptRow(string Id, string Name, string Summary, string Source, ConceptSize Size, IReadOnlyList<ConceptCitation> Citations);
+public sealed record ConceptRow(NodeKey Id, string Name, string Summary, string Source, ConceptSize Size, IReadOnlyList<ConceptCitation> Citations);

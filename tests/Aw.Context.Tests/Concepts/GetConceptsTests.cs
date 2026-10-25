@@ -54,12 +54,12 @@ public sealed class GetConceptsTests : IDisposable
         var view = (await world.Engine.Concepts(Query(), MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal((1, "v1", ConceptStates.Ok), (view.ApiVersion, view.MapVersion, view.State));
-        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id));
-        var scheduling = view.Concepts.Single(c => c.Id == "concept:scheduling");
+        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id.Value));
+        var scheduling = view.Concepts.Single(c => c.Id.Value == "concept:scheduling");
         Assert.Equal(("People pick and swap shifts.", "derived", new ConceptSize(1, 0, 0, 1)), (scheduling.Summary, scheduling.Source, scheduling.Size));
         Assert.Equal(["repo:aw-split-panes/docs/scheduling.md"], scheduling.Citations.Select(c => c.Key));
         Assert.Equal(new ConceptSize(1, 0, 0, 0), view.Other.Size);
-        Assert.Equal([("concept:billing", "concept:scheduling", 1)], view.Links.Select(l => (l.From, l.To, l.Weight)));
+        Assert.Equal([("concept:billing", "concept:scheduling", 1)], view.Links.Select(l => (l.From.Value, l.To.Value, l.Weight)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -69,7 +69,7 @@ public sealed class GetConceptsTests : IDisposable
 
         var view = (await world.Engine.Concepts(Query(), MapWorld.Session("aw-split-panes"), MapWorld.None)).Value;
 
-        Assert.Equal(["concept:scheduling"], view.Concepts.Select(c => c.Id));
+        Assert.Equal(["concept:scheduling"], view.Concepts.Select(c => c.Id.Value));
         Assert.Equal(new ConceptSize(0, 0, 0, 0), view.Other.Size);
     }
 
@@ -81,7 +81,7 @@ public sealed class GetConceptsTests : IDisposable
         var filtered = (await world.Engine.Concepts(Query("invoices"), MapWorld.Human, MapWorld.None)).Value;
         var bad = await world.Engine.Concepts(Query(page: new ConceptPage("v9:1")), MapWorld.Human, MapWorld.None);
 
-        Assert.Equal(["concept:billing"], filtered.Concepts.Select(c => c.Id));
+        Assert.Equal(["concept:billing"], filtered.Concepts.Select(c => c.Id.Value));
         Assert.Equal(ContextErrors.QueryInvalid.Code, bad.Error.Code);
     }
 
@@ -91,7 +91,7 @@ public sealed class GetConceptsTests : IDisposable
         using var world = new MapWorld();
 
         var view = await world.Engine.Concepts(Query(), MapWorld.Human, MapWorld.None);
-        var members = await world.Engine.ConceptMembers(new ConceptMembersQuery("concept:billing", MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None);
+        var members = await world.Engine.ConceptMembers(new ConceptMembersQuery(NodeKey.From("concept:billing"), MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None);
 
         Assert.Equal((ContextErrors.NoMap.Code, ContextErrors.NoMap.Code), (view.Error.Code, members.Error.Code));
     }
@@ -101,9 +101,9 @@ public sealed class GetConceptsTests : IDisposable
     {
         var world = await Imported();
 
-        var members = (await world.Engine.ConceptMembers(new ConceptMembersQuery("concept:scheduling", MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None)).Value;
-        var other = (await world.Engine.ConceptMembers(new ConceptMembersQuery(ConceptKeys.Other, MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None)).Value;
-        var unknown = await world.Engine.ConceptMembers(new ConceptMembersQuery("concept:nope", MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None);
+        var members = (await world.Engine.ConceptMembers(new ConceptMembersQuery(NodeKey.From("concept:scheduling"), MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None)).Value;
+        var other = (await world.Engine.ConceptMembers(new ConceptMembersQuery(NodeKey.From(ConceptKeys.Other), MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None)).Value;
+        var unknown = await world.Engine.ConceptMembers(new ConceptMembersQuery(NodeKey.From("concept:nope"), MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None);
 
         Assert.Equal([("feature:shifts", "feature", "Shifts")], members.Members.Select(m => (m.Key, m.Kind, m.Label)));
         Assert.Equal(["feature:lone"], other.Members.Select(m => m.Key));
