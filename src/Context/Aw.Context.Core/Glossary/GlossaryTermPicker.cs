@@ -4,6 +4,21 @@ namespace Aw.Context.Core.Glossary;
 internal static class GlossaryTermPicker
 {
     /// <summary>The terms the most of the features carry, then the heaviest, then by name.</summary>
-    internal static IReadOnlyList<string> Top(MapGlossary? glossary, IReadOnlyList<string> features, int take) =>
-        throw new NotSupportedException();
+    internal static IReadOnlyList<string> Top(MapGlossary? glossary, IReadOnlyList<string> features, int take)
+    {
+        if (glossary is null || features.Count == 0)
+        {
+            return [];
+        }
+
+        var wanted = features.ToHashSet(StringComparer.Ordinal);
+        return [.. glossary.Terms
+            .Select(t => (t.Term, t.Weight, Hits: t.Features.Count(f => wanted.Contains(f.Value))))
+            .Where(t => t.Hits > 0)
+            .OrderByDescending(t => t.Hits)
+            .ThenByDescending(t => t.Weight)
+            .ThenBy(t => t.Term, StringComparer.Ordinal)
+            .Take(take)
+            .Select(t => t.Term)];
+    }
 }

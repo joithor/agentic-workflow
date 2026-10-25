@@ -1,6 +1,5 @@
 using System.Globalization;
 using Aw.Context.Core;
-using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
@@ -99,9 +98,11 @@ internal sealed class BuildMapService(
         var at = clock.GetUtcNow();
         var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
         undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
-        var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], cancellationToken).ConfigureAwait(false);
-        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads), at, cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), note is null ? read.Degraded : [.. read.Degraded, note], read.Heads);
+        // The concepts ('index.concepts' pins of the mapped repos first) are derived over the whole joined graph (records and decisions included) and saved in the draft, so reads never call a model.
+        // A namer or a code index that can't answer leaves the deterministic names or the plain grouping and says so as a degraded note.
+        var concepts = await namers.Concepts.Run(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], mappedRepos, cancellationToken).ConfigureAwait(false);
+        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, concepts.Graph, undo, read.Heads), at, cancellationToken).ConfigureAwait(false);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), [.. read.Degraded, .. concepts.Notes], read.Heads);
     }
 
     private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads, ContextSettings Settings);
@@ -219,27 +220,6 @@ internal sealed class BuildMapService(
         return derived.Count == 0
             ? kept
             : kept with { Nodes = [.. kept.Nodes.Where(n => !derived.Contains(n.Key.Value))], Edges = [.. kept.Edges.Where(e => !derived.Contains(e.To.Value) && !derived.Contains(e.From.Value))] };
-    }
-
-    // The concepts ('index.concepts' pins of the mapped repos first) are derived over the whole joined graph (records and decisions included) and saved in the draft, so reads never call a model. A namer that can't answer leaves the deterministic names and says so as a degraded note.
-    private async ValueTask<(GraphSnapshot Graph, string? Note)> WithConcepts(ContextSettings settings, GraphSnapshot joined, IReadOnlyList<ConceptPin> pins, CancellationToken cancellationToken)
-    {
-        ConceptNames? names = null;
-        string? note = null;
-        var groups = ConceptDeriver.Groups(joined, pins);
-        if (settings.Labeling.Enabled && groups.Count > 0)
-        {
-            var named = await namers.Concepts.Name(groups, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
-            names = named.IsError ? null : named.Value;
-            note = named.IsError ? "concepts" : null;
-        }
-
-        var concepts = ConceptDeriver.Derive(joined, pins, names);
-        return (joined with
-        {
-            Nodes = [.. joined.Nodes.Concat(concepts.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal)],
-            Edges = [.. joined.Edges.Concat(concepts.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
-        }, note);
     }
 
     // The current map first (already without what the built repos' deny globs take out, spec §6.2): what a person put there wins over what the build found, and a promote loses nothing.
