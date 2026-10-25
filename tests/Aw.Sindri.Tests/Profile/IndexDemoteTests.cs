@@ -127,7 +127,7 @@ public sealed class IndexDemoteTests
         // why: the profile names roles, so the sets are not null
         var sets = RepoRoleSets.For(profile, profile.Repos![0])!;
 
-        Assert.Equal(["cron", "demo", "generated", "test"], sets.Select(r => r.Name));
+        Assert.Equal(["cron", "demo", "generated", "test"], sets.Select(r => r.Name), StringComparer.Ordinal);
         Assert.Equal([false, true, false, true], sets.Select(r => r.Demoted));
         Assert.Equal(["demo/**"], sets[1].Globs);
     }
@@ -143,7 +143,7 @@ public sealed class IndexDemoteTests
 
         var repo = ScopeRules.Usable([.. ContextScopes.Entries(profile)]).Single();
 
-        Assert.Equal(["cron", "demo", "generated", "test"], repo.Roles.Select(r => r.Name));
+        Assert.Equal(["cron", "demo", "generated", "test"], repo.Roles.Select(r => r.Name), StringComparer.Ordinal);
     }
 }
 
