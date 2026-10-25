@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Web;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
@@ -55,12 +56,15 @@ public sealed class DeskQuestionsCheckTests
         private const string Instances = "/sindri/workflow/instances";
         private readonly GetInstanceService _detail;
         private readonly GetInstanceFactService _fact;
+        private readonly ListInstancesService _list;
 
         public Routes(OneInstance instances, string questions)
         {
             var caller = new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build());
             _detail = new GetInstanceService(instances, instances, new DetailViews(), caller, new DetailContexts(new FakeTimeProvider(StatusCases.Now)), new StepRunReader(new StepRunEvents(), new StepRunRecipes()));
             _fact = new GetInstanceFactService(instances, instances, new Contents(questions), new Plain(), caller);
+            var clock = new FakeTimeProvider(StatusCases.Now);
+            _list = new ListInstancesService(instances, new NoRows(), new EndedInstanceViews(instances), new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), new InstanceRows(clock));
             var probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
             Desk = new RecipeDesk(new ControlPlaneClient(probe, SliceHarness.Json, handler: this), TextReader.Null, static _ => throw new InvalidOperationException("a read never starts the control plane"));
         }
@@ -69,13 +73,31 @@ public sealed class DeskQuestionsCheckTests
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var rest = request.RequestUri!.AbsolutePath[(Instances.Length + 1)..].Split('/');
+            var uri = request.RequestUri!;
+            if (uri.AbsolutePath == Instances)
+            {
+                var query = HttpUtility.ParseQueryString(uri.Query);
+                var item = query["item"];
+                var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"], query["recipe"], query["urgency"], query["subject"], query["root"], query["open"]);
+                return Answer(await _list.Handle(list, cancellationToken).ConfigureAwait(false));
+            }
+
+            var rest = uri.AbsolutePath[(Instances.Length + 1)..].Split('/');
             return rest switch
             {
                 [var id] => Answer(await _detail.Handle(new GetInstanceRequest(id), cancellationToken).ConfigureAwait(false)),
                 [var id, "facts", var key] => Answer(await _fact.Handle(new GetInstanceFactRequest(WorkflowInstanceId.From(InstanceRoute.Id(id)), Uri.UnescapeDataString(key)), cancellationToken).ConfigureAwait(false)),
                 _ => new HttpResponseMessage(HttpStatusCode.NotFound),
             };
+        }
+
+        private sealed class NoRows : IWorkflowInstances
+        {
+            public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(InstanceFilter filter, bool ended, CancellationToken cancellationToken) =>
+                List(InstanceFilters.ToQuery(filter), ended, cancellationToken);
+
+            public ValueTask<Result<IReadOnlyList<InstanceRow>>> List(string? query, bool ended, CancellationToken cancellationToken) =>
+                ValueTask.FromResult<Result<IReadOnlyList<InstanceRow>>>(Array.Empty<InstanceRow>());
         }
 
         private static HttpResponseMessage Answer<T>(Result<T> result) => result.IsSuccess
