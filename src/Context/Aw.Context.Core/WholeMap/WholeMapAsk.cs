@@ -10,6 +10,6 @@ public sealed record WholeMapAsk(WholeMapBasis Basis, WholeMapDetail Detail, IRe
     /// <summary>The repos the whole map holds nodes of (counted over the map before any repo cut), for the page's repo picker.</summary>
     public IReadOnlyList<WholeMapRepo> Repos { get; init; } = [];
 
-    /// <summary>Each node's repo by node key (<see cref="Aw.Context.Core.Graph.NodeRepos.Index"/> over the map before any repo cut), or null to leave the nodes' repos out.</summary>
+    /// <summary>Each node's repo by node key (<see cref="Graph.NodeRepos.Index"/> over the map before any repo cut), or null to leave the nodes' repos out.</summary>
     public IReadOnlyDictionary<string, string?>? RepoOf { get; init; }
 }
