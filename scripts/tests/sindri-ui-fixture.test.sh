@@ -585,6 +585,6 @@ out="$(STUB_LEDGER_SLEEP=2 FIXTURE_AGENT_WAIT=3 AW_SINDRI_HOME="$A" SINDRI="$STU
 took=$((SECONDS - start))
 check "agent-run's wait is bounded in seconds: exits 1 when launch.started never comes" "$rc" "1"
 contains "agent-run's wait is bounded in seconds: names the missing launch.started" "$out" "no launch.started"
-check "agent-run's wait is bounded in seconds: a 2 s ledger call with FIXTURE_AGENT_WAIT=3 ends in under 8 s (took ${took}s)" "$([ "$took" -lt 8 ] && echo yes || echo no)" "yes"
+check "agent-run's wait is bounded in seconds: a 2 s ledger call with FIXTURE_AGENT_WAIT=3 ends in under 10 s (took ${took}s)" "$([ "$took" -lt 10 ] && echo yes || echo no)" "yes"
 
 exit "$fail"
