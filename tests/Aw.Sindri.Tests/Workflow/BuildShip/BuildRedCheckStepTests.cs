@@ -119,7 +119,7 @@ public sealed class BuildRedCheckStepTests
         var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"h1+"}}""", startHead: "h1", rework: true), Token);
 
         Assert.Equal("red", result.Result!.Outcome.Value);
-        Assert.Single(rig.Commands.Calls);
+        _ = Assert.Single(rig.Commands.Calls);
     }
 
     [Fact]
