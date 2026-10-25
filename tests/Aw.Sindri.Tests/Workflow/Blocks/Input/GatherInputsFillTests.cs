@@ -5,6 +5,7 @@ using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.ScopeGraph;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
@@ -75,6 +76,8 @@ public sealed class GatherInputsFillTests : IDisposable
         public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.WholeMap(query, scope, cancellationToken);
 
         public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.FileMap(query, scope, cancellationToken);
+
+        public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.ScopeGraph(query, scope, cancellationToken);
 
         public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) => _history.History(anchors, window, read, scope, cancellationToken);
 
