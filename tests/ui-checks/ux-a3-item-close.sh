@@ -68,19 +68,17 @@ APP_WRAPPER_PID=$!
 #    shows one row per item, each with a title button named "Open ITM-…" (ItemRowViewModel.OpenName).
 "$DRIVER" click --type ListBoxItem --name Work >"$OUT/nav.log" 2>&1 \
   || setup_fail "the Work nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
-"$DRIVER" wait-for --type Button --contains "Open ITM-" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "the Work page shows no item row after the nav click (see $OUT/app.log)"
-"$DRIVER" screenshot --out "$OUT/work.png" >/dev/null 2>&1
+# --contains matches the text an element shows (the row title), not its accessible name: wait for the exact name.
 open=(--type Button --name "Open $item")
-"$DRIVER" wait-for "${open[@]}" --state visible --wait-ms 15000 >/dev/null 2>&1 \
-  || setup_fail "the Work page has item rows but no \"Open $item\" button (screenshot $OUT/work.png)"
+"$DRIVER" wait-for "${open[@]}" --state visible --wait-ms 30000 >/dev/null 2>&1 \
+  || { "$DRIVER" screenshot --out "$OUT/work.png" >/dev/null 2>&1; setup_fail "the Work page shows no \"Open $item\" button after the nav click (screenshot $OUT/work.png)"; }
 "$DRIVER" click "${open[@]}" >/dev/null 2>&1 || setup_fail "the Open $item click was not accepted"
 close=(--type CommandControl --index 0)   # the sheet's first action: Close item (CloseItem:done)
 "$DRIVER" wait-for "${close[@]}" --state visible --wait-ms 15000 >/dev/null 2>&1 \
   || setup_fail "the item sheet shows no action control (see $OUT/app.log)"
 "$DRIVER" screenshot --out "$OUT/sheet.png" >/dev/null 2>&1
 
-changed() { "$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r' | grep -c 'item.state-changed'; }
+changed() { "$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r' | grep -o 'item.state-changed' | wc -l; }
 before="$(changed)"
 
 # 4. The click must be accepted (an automation peer), and must ask, not close.
@@ -95,7 +93,7 @@ confirm=(--type Button --contains "Confirm")
 sent=0
 for _ in $(seq 1 10); do
   after="$("$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r')"
-  if [ "$(printf '%s' "$after" | grep -c 'item.state-changed')" -gt "$before" ] && printf '%s' "$after" | grep -q 'human:ui'; then sent=1; break; fi
+  if [ "$(printf '%s' "$after" | grep -o 'item.state-changed' | wc -l)" -gt "$before" ] && printf '%s' "$after" | grep -q 'human:ui'; then sent=1; break; fi
   sleep 0.5
 done
 "$DRIVER" screenshot --out "$OUT/after-confirm.png" >/dev/null 2>&1
