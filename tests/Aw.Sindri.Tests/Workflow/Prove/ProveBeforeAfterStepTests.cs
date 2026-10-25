@@ -239,8 +239,6 @@ public sealed class ProveBeforeAfterStepTests
     }
 
     [Fact]
-    public void The_Step_declares_fact_redTests_as_an_input_because_the_runner_hands_it_only_the_declared_facts()
-    {
+    public void The_Step_declares_fact_redTests_as_an_input_because_the_runner_hands_it_only_the_declared_facts() =>
         Assert.Contains(FactKey.From("fact:redTests"), ProveSteps.BeforeAfter.Inputs);
-    }
 }
