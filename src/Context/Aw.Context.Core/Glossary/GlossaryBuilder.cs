@@ -37,20 +37,25 @@ public static class GlossaryBuilder
     // A term in several clusters takes the features of all of them and its highest weight.
     private static List<GlossaryTerm> MergeTerms(List<GlossaryCluster> clusters, List<List<(string Term, double Weight)>> ranked)
     {
-        var byTerm = new Dictionary<string, (double Weight, SortedSet<string> Features)>(StringComparer.Ordinal);
+        var weights = new Dictionary<string, double>(StringComparer.Ordinal);
+        var features = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
         for (var i = 0; i < clusters.Count; i++)
         {
             foreach (var (term, weight) in ranked[i])
             {
-                (double Weight, SortedSet<string> Features) entry = byTerm.TryGetValue(term, out var existing) ? existing : (0.0, new SortedSet<string>(StringComparer.Ordinal));
-                entry.Features.UnionWith(clusters[i].Features.Select(f => f.Value));
-                byTerm[term] = (Math.Max(entry.Weight, weight), entry.Features);
+                weights[term] = Math.Max(weights.GetValueOrDefault(term), weight);
+                if (!features.TryGetValue(term, out var keys))
+                {
+                    features[term] = keys = new SortedSet<string>(StringComparer.Ordinal);
+                }
+
+                keys.UnionWith(clusters[i].Features.Select(f => f.Value));
             }
         }
 
-        return [.. byTerm
-            .OrderByDescending(t => t.Value.Weight)
+        return [.. weights
+            .OrderByDescending(t => t.Value)
             .ThenBy(t => t.Key, StringComparer.Ordinal)
-            .Select(t => new GlossaryTerm(t.Key, t.Value.Weight, [.. t.Value.Features.Select(NodeKey.From)]))];
+            .Select(t => new GlossaryTerm(t.Key, t.Value, [.. features[t.Key].Select(NodeKey.From)]))];
     }
 }
