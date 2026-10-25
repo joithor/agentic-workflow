@@ -16,6 +16,9 @@ internal enum WaitState
     /// <summary>The element is not in the tree.</summary>
     Gone,
 
+    /// <summary>No element matching is visible: each one is removed from the tree or hidden.</summary>
+    NotVisible,
+
     /// <summary>The element is in the tree and takes input.</summary>
     Enabled,
 

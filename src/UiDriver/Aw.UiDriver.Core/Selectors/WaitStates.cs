@@ -48,6 +48,20 @@ internal static class WaitStates
         };
     }
 
+    /// <summary>Whether the state holds for everything the selector matches now; a stub that still reads only the picked node.</summary>
+    /// <param name="state">The state.</param>
+    /// <param name="matches">Every element the selector matches now.</param>
+    /// <param name="picked">The one the index picks, or null.</param>
+    /// <param name="text">The text a text state compares with.</param>
+    /// <returns>Whether it holds.</returns>
+    internal static bool Holds(WaitState state, IReadOnlyList<NodeFacts> matches, NodeFacts? picked, string? text) => Holds(state, picked, text);
+
+    /// <summary>What a failed wait adds to its error: a stub that says nothing.</summary>
+    /// <param name="state">The state.</param>
+    /// <param name="matches">Every element the selector matches now.</param>
+    /// <returns>The hint, or empty.</returns>
+    internal static string Hint(WaitState state, IReadOnlyList<NodeFacts> matches) => string.Empty;
+
     /// <summary>True for a state that needs the request's text.</summary>
     /// <param name="state">The state.</param>
     /// <returns>Whether it compares text.</returns>
