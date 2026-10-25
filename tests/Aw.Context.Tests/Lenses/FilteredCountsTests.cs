@@ -43,6 +43,7 @@ public sealed class FilteredCountsTests : IDisposable
 
         var view = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, Demoting(), MapWorld.None)).Value;
 
+        // why: the demoted files are counted, so Filtered is set
         Assert.Equal(2, view.Filtered!.Demoted["test"]);
         Assert.Equal(1, view.Filtered.Demoted["fixture"]);
     }
@@ -52,8 +53,9 @@ public sealed class FilteredCountsTests : IDisposable
     {
         await Import();
 
-        var view = (await _world.Engine.LensesOf(["feature:kept"], MapRead.Current, new LensRange(null, null), Demoting(), MapWorld.None)).Value;
+        var view = (await _world.Engine.LensesOf(["feature:kept"], MapRead.Current, new LensRange(Depth: null, Hops: null), Demoting(), MapWorld.None)).Value;
 
+        // why: the demoted files are counted, so Filtered is set
         Assert.Equal(2, view.Filtered!.Demoted["test"]);
         Assert.Equal(1, view.Filtered.Demoted["fixture"]);
     }
@@ -65,6 +67,7 @@ public sealed class FilteredCountsTests : IDisposable
 
         var result = (await _world.Engine.Query(new ContextQuery(Text: "Kept"), Demoting(), MapWorld.None)).Value;
 
+        // why: the demoted files are counted, so Filtered is set
         Assert.Equal(2, result.Filtered!.Demoted["test"]);
         Assert.Equal(1, result.Filtered.Demoted["fixture"]);
     }
