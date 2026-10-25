@@ -4,6 +4,7 @@ using Aw.Context.Core.Models;
 using Aw.Judge.Core.Config;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
+using Aw.Kernel;
 using Aw.Sindri.Host.Models;
 
 namespace Aw.Sindri.Tests.ContextCalls;
@@ -35,6 +36,9 @@ public sealed class JudgeModelPortTests
             Allowed = allowed;
             return new ProviderLineup([.. providers, rules], ChainSpec.Build([AgentCliName.ClaudeCli, AgentCliName.CodexCli], jev: false));
         }
+
+        Result<IModelProvider> IProviderCatalog.Provider(ProviderName name, IReadOnlyCollection<ProviderName>? allowed) =>
+            throw new NotSupportedException("the model port asks for a lineup, never one provider by name");
     }
 
     private static ProviderDecided Answered(string text) =>

@@ -219,6 +219,10 @@ invalid input, unknown question).
 | AW-JUDGE-005 | NotFound | `brief get` of a tool use id with no brief |
 | AW-JUDGE-007 | Invalid | `config.json` can't be read as a judge config |
 | AW-JUDGE-010 | Invalid | The `--providers` flag or `AW_JUDGE_PROVIDERS` is malformed (a usage error, 64) |
+| AW-JUDGE-011 | Invalid | `eval --provider` names a provider the `--providers` allowlist excludes (a usage error, 64) |
+| AW-JUDGE-012 | NotFound | `eval --provider` names a provider that can't be asked: its CLI is not on `PATH`, or it is `rules` |
+| AW-JUDGE-013 | NotFound | `label set` of an item id no eval item has |
+| AW-JUDGE-014 | NotFound | A transcript that can't be read (`label outcomes`, `eval import-turns`) |
 
 ## Providers
 

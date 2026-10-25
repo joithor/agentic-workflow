@@ -1,4 +1,5 @@
 using Aw.Judge.Core.Config;
+using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Xunit;
@@ -61,5 +62,40 @@ public abstract class ProviderCatalogContract
 
         Expect.That(lineup.Chain.For(ContentClass.Diff).SequenceEqual([ProviderName.CodexCli, ProviderName.Rules]), "diff: codex, rules");
         Expect.That(lineup.Providers.All(p => p.Name is not ProviderName.Jev and not ProviderName.ClaudeCli), "jev and claude are left out");
+    }
+
+    /// <summary>A provider asked for by name is the installed provider of that name, with no chain around it.</summary>
+    [Fact]
+    public void A_provider_asked_for_by_name_is_the_installed_provider_of_that_name()
+    {
+        var catalog = Create([AgentCliName.ClaudeCli, AgentCliName.CodexCli]);
+
+        var codex = catalog.Provider(ProviderName.CodexCli, allowed: null);
+        var jev = catalog.Provider(ProviderName.Jev, allowed: [ProviderName.Jev]);
+
+        Expect.That(codex.IsSuccess && codex.Value.Name == ProviderName.CodexCli, "codex-cli is the codex provider");
+        Expect.That(jev.IsSuccess && jev.Value.Name == ProviderName.Jev, "jev is the jev provider");
+    }
+
+    /// <summary>The allowlist is honoured: an excluded provider is AW-JUDGE-011, even when it is installed.</summary>
+    [Fact]
+    public void A_provider_asked_for_by_name_honours_the_allowlist()
+    {
+        var excluded = Create([AgentCliName.ClaudeCli]).Provider(ProviderName.ClaudeCli, allowed: [ProviderName.Jev]);
+
+        Expect.That(excluded.IsError && excluded.Error.Code == JudgeErrors.ProviderExcluded.Code, "claude-cli is excluded by an allowlist of jev");
+    }
+
+    /// <summary>An agent CLI that isn't installed, and rules, can't be asked by name: AW-JUDGE-012.</summary>
+    [Fact]
+    public void A_provider_that_is_not_installed_or_is_rules_is_unavailable_by_name()
+    {
+        var catalog = Create([AgentCliName.ClaudeCli]);
+
+        var codex = catalog.Provider(ProviderName.CodexCli, allowed: null);
+        var rules = catalog.Provider(ProviderName.Rules, allowed: null);
+
+        Expect.That(codex.IsError && codex.Error.Code == JudgeErrors.ProviderUnavailable.Code, "codex-cli is not installed");
+        Expect.That(rules.IsError && rules.Error.Code == JudgeErrors.ProviderUnavailable.Code, "rules only closes a chain");
     }
 }

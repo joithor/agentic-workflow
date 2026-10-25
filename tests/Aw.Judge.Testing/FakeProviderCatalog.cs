@@ -1,6 +1,8 @@
 using Aw.Judge.Core.Config;
+using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
+using Aw.Kernel;
 using WireNames = Aw.Judge.Core.Providers.ProviderNames;
 
 namespace Aw.Judge.Testing;
@@ -26,5 +28,18 @@ public sealed class FakeProviderCatalog(params IModelProvider[] providers) : IPr
         chain = allowed is null ? chain : chain.Restrict(allowed);
         var named = chain.Classes.Values.SelectMany(n => n).ToHashSet();
         return new ProviderLineup([.. _providers.Where(p => named.Contains(p.Name)), rules], chain);
+    }
+
+    /// <inheritdoc />
+    public Result<IModelProvider> Provider(ProviderName name, IReadOnlyCollection<ProviderName>? allowed)
+    {
+        if (allowed is not null && !allowed.Contains(name))
+        {
+            return JudgeErrors.ProviderExcluded.With($"{WireNames.Name(name)} is excluded by the providers allowlist");
+        }
+
+        return _providers.FirstOrDefault(p => p.Name == name) is { } provider
+            ? Results.Success(provider)
+            : JudgeErrors.ProviderUnavailable.With($"{WireNames.Name(name)} is not available");
     }
 }

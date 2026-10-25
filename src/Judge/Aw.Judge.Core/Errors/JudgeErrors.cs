@@ -26,6 +26,19 @@ public static class JudgeErrors
     /// <summary>AW-JUDGE-010: the --providers flag or AW_JUDGE_PROVIDERS is malformed (a usage error).</summary>
     public static readonly ErrorDefinition ProvidersFlag = new("AW-JUDGE-010", ErrorKind.Invalid, "bad providers allowlist");
 
+    /// <summary>AW-JUDGE-011: the provider asked for by name is excluded by the --providers / AW_JUDGE_PROVIDERS allowlist (a usage error).</summary>
+    public static readonly ErrorDefinition ProviderExcluded = new("AW-JUDGE-011", ErrorKind.Invalid, "provider excluded by the providers allowlist");
+
+    /// <summary>AW-JUDGE-012: the provider asked for by name can't be asked (its CLI is not on PATH, or it is rules, which only closes a chain).</summary>
+    public static readonly ErrorDefinition ProviderUnavailable = new("AW-JUDGE-012", ErrorKind.NotFound, "provider not available");
+
+    /// <summary>AW-JUDGE-013: no eval item has this id ('label set').</summary>
+    public static readonly ErrorDefinition UnknownItem = new("AW-JUDGE-013", ErrorKind.NotFound, "unknown eval item");
+
+    /// <summary>AW-JUDGE-014: no readable transcript ('label outcomes', 'eval import-turns').</summary>
+    public static readonly ErrorDefinition NoTranscript = new("AW-JUDGE-014", ErrorKind.NotFound, "no readable transcript");
+
     /// <summary>Every Judge error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief, ConfigMalformed, ProvidersFlag];
+    public static IReadOnlyList<ErrorDefinition> All { get; } =
+        [Invalid, UnknownDecision, DecisionExists, BriefExists, NoBrief, ConfigMalformed, ProvidersFlag, ProviderExcluded, ProviderUnavailable, UnknownItem, NoTranscript];
 }
