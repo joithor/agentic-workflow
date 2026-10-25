@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// </summary>
 internal static class ScopeFixLines
 {
-    /// <summary>The four limits of the table, catching-up (the code index was read, at an older commit of main), not-configured, and anchor-missing (an asked anchor the view couldn't find), in the table's order.</summary>
+    /// <summary>The four limits of the table, catching-up (the code index was read, at an older commit of main), not-configured, anchor-missing (an asked anchor the view couldn't find) and edges-out-of-scope (edges the lens left out, #993), in the table's order.</summary>
     internal static IReadOnlyList<RecordedLimit> All { get; } =
     [
         new("index-not-built", "code", "unavailable", "index-not-built", "index-not-built", "Wait for the code index (S-9)"),
@@ -19,6 +19,7 @@ internal static class ScopeFixLines
         new("catching-up", "code", "ok", "catching-up", "code index catching up", "Sindri is building the code index at the map's commit; files listed as pending may be out of date — rescope after it publishes if they matter"),
         new("not-configured", Lens: null, "not-configured", "not-configured", "not-configured", "Name the source in the profile, then regather"),
         new("anchor-missing", Lens: null, "missing", "anchor-missing", "anchor not in the map", "Check the anchor's key (the view's suggested anchors name close ones), then regather"),
+        new("edges-out-of-scope", Lens: null, "unavailable", "edges-out-of-scope", "edges outside the lens", "Nothing to fix: the lens left out edges ending outside its found nodes and anchors"),
     ];
 
     /// <summary>The limit a source of <paramref name="lens"/> with this state and reason is, or null when it matches none (a degraded source never does).</summary>
