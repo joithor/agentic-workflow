@@ -140,7 +140,7 @@ public sealed class ContextConceptsTests
 
         var reading = page.OpenConcept("concept:sync", Token);
 
-        Expect.Equal(false, page.Whole.IsReady);
+        Assert.False(page.Whole.IsReady);
         _ = gate.TrySetResult();
         await reading;
         Expect.Equal(("concept:sync", true), (api.WholeMapAsked[^1].Concept, page.Whole.IsReady));
@@ -212,7 +212,7 @@ public sealed class ContextConceptsTests
         page.AnchorText = "surface:command/switch-tab";
         await page.Submit(Token);
 
-        Expect.Equal(false, page.Concepts.SearchActive);
+        Assert.False(page.Concepts.SearchActive);
         Expect.True(api.WholeMapAsked.All(q => q.Concept == "concept:billing"));
     }
 
@@ -235,7 +235,7 @@ public sealed class ContextConceptsTests
         var page = await ConceptPage.Shown(api);
 
         Expect.Equal((Labels.ContextConceptsBuilding, false, true), (page.Concepts.Note, page.ShowConcepts, page.ShowWhole));
-        Expect.Equal(null, api.WholeMapAsked[0].Concept);
+        Assert.Null(api.WholeMapAsked[0].Concept);
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public sealed class ContextConceptsTests
         var page = await ConceptPage.Shown(api);
 
         Expect.Equal((Labels.ContextConceptsUnavailable("SND-CONTEXT-041"), false, true), (page.Concepts.Note, page.ShowConcepts, page.ShowWhole));
-        Expect.Equal(null, api.WholeMapAsked[0].Concept);
+        Assert.Null(api.WholeMapAsked[0].Concept);
     }
 
     [Fact]
