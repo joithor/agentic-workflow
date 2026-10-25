@@ -100,4 +100,7 @@ internal static partial class Labels
         ("code", false) => "code files",
         (_, _) => kind,
     };
+
+    /// <summary>The line by the head when the live map was built under older map rules (the CLI's words).</summary>
+    internal const string ContextRulesOlder = "Built under older map rules; a refresh will rebuild it (sindri context map refresh)";
 }
