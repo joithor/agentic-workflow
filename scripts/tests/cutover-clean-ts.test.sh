@@ -326,9 +326,9 @@ if [ -n "$BF_BIN" ]; then
   bf() { (cd "$D8/bfrepo" && $BF_BIN "$@"); }
   BFSTATE="$D8/state/myrepo-slug/bugfix/real1"
   mkdir -p "$D8/bfrepo/src"; printf 'drop cookie\n' > "$D8/bfrepo/src/app.txt"
-  git -C "$D8/bfrepo" init -q -b main
+  git -C "$D8/bfrepo" -c advice.ignoredHook=false init -q -b main
   git -C "$D8/bfrepo" add -A
-  git -C "$D8/bfrepo" -c user.name=t -c user.email=t@t commit -q -m base
+  git -C "$D8/bfrepo" -c advice.ignoredHook=false -c user.name=t -c user.email=t@t commit -q -m base
   printf '{"source":"text","id":null,"title":"Login","brief":"Login shows a blank page","expected":"The dashboard opens","actual":"Blank page"}' > "$D8/ticket.json"
   printf 'status: diagnosed\n\n## Hypotheses\n\n| # | Hypothesis | Cause-site files | Likelihood | Result |\n|---|---|---|---|---|\n| 1 | Cookie dropped | `src/app.txt` | high | confirmed |\n\n## Root Cause\n\nThe cookie is dropped.\n' > "$D8/handoff.md"
   bf init --state "$BFSTATE" --ticket "$D8/ticket.json" > /dev/null 2>&1; check "real bugfix-state init exits 0" "$?" 0
