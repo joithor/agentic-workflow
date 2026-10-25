@@ -30,9 +30,14 @@ public sealed class PlanTestNamedScopeTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_plan_station_reads_allowed_files_when_the_write_scope_is_empty()
     {
-        Assert.Equal(1, await PlanPathFindings(n => Task(n, "P1")["allowedFiles"] = JsonNode.Parse(Allowed)));
+        Assert.Equal(1, await PlanPathFindings(n =>
+        {
+            Task(n, "P1")["writeScope"] = new JsonArray();   // the gold phase carries a write scope, which would win over allowedFiles
+            Task(n, "P1")["allowedFiles"] = JsonNode.Parse(Allowed);
+        }));
         Assert.Equal(0, await PlanPathFindings(n =>
         {
+            Task(n, "P1")["writeScope"] = new JsonArray();
             Task(n, "P1")["allowedFiles"] = JsonNode.Parse(Allowed);
             Task(n, "P1")["rules"]!.AsArray().Add("test-change:scripts/tests/x.test.sh:new cases");
         }));
