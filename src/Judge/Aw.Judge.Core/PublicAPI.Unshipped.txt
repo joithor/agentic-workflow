@@ -1758,3 +1758,12 @@ static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderExcluded -> Aw.Kernel.E
 static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.UnknownItem -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.NoTranscript -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Processes.ProcessRequest.InheritOnly.get -> System.Collections.Generic.IReadOnlyCollection<string!>?
+Aw.Judge.Core.Processes.ProcessRequest.InheritOnly.init -> void
+Aw.Judge.Core.Ports.IProviderCatalog.Adjudicator(System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed) -> Aw.Kernel.Result<Aw.Judge.Core.Ports.IModelProvider!>!
+Aw.Judge.Core.Evaluation.PreparedQuestion
+Aw.Judge.Core.Evaluation.PreparedQuestion.PreparedQuestion(Aw.Judge.Core.Providers.QuestionRef! reference, System.Text.Json.Nodes.JsonNode? input, System.TimeSpan timeBudget) -> void
+Aw.Judge.Core.Evaluation.PreparedQuestion.Reference.get -> Aw.Judge.Core.Providers.QuestionRef!
+Aw.Judge.Core.Evaluation.PreparedQuestion.Input.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Judge.Core.Evaluation.PreparedQuestion.TimeBudget.get -> System.TimeSpan
+static Aw.Judge.Core.Evaluation.QuestionCatalog.Prepare(string! question, string! inputJson, System.Text.Json.JsonSerializerOptions! json) -> Aw.Judge.Core.Evaluation.PreparedQuestion?

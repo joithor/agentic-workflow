@@ -42,4 +42,7 @@ public sealed class FakeProviderCatalog(params IModelProvider[] providers) : IPr
             ? Results.Success(provider)
             : JudgeErrors.ProviderUnavailable.With($"{WireNames.Name(name)} is not available");
     }
+
+    /// <inheritdoc />
+    public Result<IModelProvider> Adjudicator(IReadOnlyCollection<ProviderName>? allowed) => Provider(ProviderName.ClaudeCli, allowed);
 }

@@ -12,7 +12,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <param name="environment">Reads AW_PROVIDER.</param>
 /// <param name="locator">Finds the installed agent CLIs.</param>
 /// <param name="providers">One instance of every model provider (jev and each agent CLI); rules comes with each Lineup call.</param>
-internal sealed class ProviderCatalog(Func<string, string?> environment, IExecutableLocator locator, IReadOnlyList<IModelProvider> providers) : IProviderCatalog
+/// <param name="adjudicator">The claude-cli provider set up for 'judge adjudicate' (opus, high effort), or null when there is none.</param>
+internal sealed class ProviderCatalog(Func<string, string?> environment, IExecutableLocator locator, IReadOnlyList<IModelProvider> providers, IModelProvider? adjudicator = null) : IProviderCatalog
 {
     /// <inheritdoc />
     public ProviderLineup Lineup(ProvidersConfig? config, IReadOnlyCollection<ProviderName>? allowed, IModelProvider rules)
@@ -47,6 +48,19 @@ internal sealed class ProviderCatalog(Func<string, string?> environment, IExecut
         return provider is null || !installed
             ? JudgeErrors.ProviderUnavailable.With($"{ProviderNames.Name(name)} is not available")
             : Results.Success<IModelProvider>(new FailOpenModelProvider(provider));
+    }
+
+    /// <inheritdoc />
+    public Result<IModelProvider> Adjudicator(IReadOnlyCollection<ProviderName>? allowed)
+    {
+        if (allowed is not null && !allowed.Contains(ProviderName.ClaudeCli))
+        {
+            return JudgeErrors.ProviderExcluded.With($"{ProviderNames.Name(ProviderName.ClaudeCli)} is excluded by the providers allowlist");
+        }
+
+        return adjudicator is null || !locator.IsOnPath(AgentCliNames.Binary(AgentCliName.ClaudeCli))
+            ? JudgeErrors.ProviderUnavailable.With($"{ProviderNames.Name(ProviderName.ClaudeCli)} is not available")
+            : Results.Success<IModelProvider>(new FailOpenModelProvider(adjudicator));
     }
 
     // config.json's names are checked on read (JudgeConfigParser), so an unknown one can't reach here; skip it if it does.
