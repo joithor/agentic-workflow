@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Concepts;
@@ -108,7 +109,8 @@ public sealed class ConceptPassTests
         var graph = new ConceptGraph().Node("feature:big", "big");
         foreach (var i in Enumerable.Range(0, 2001))
         {
-            _ = graph.Node($"code:src/f{i}.cs").Edge($"code:src/f{i}.cs", EdgeType.Implements, "feature:big");
+            var file = string.Create(CultureInfo.InvariantCulture, $"code:src/f{i}.cs");
+            _ = graph.Node(file).Edge(file, EdgeType.Implements, "feature:big");
         }
 
         _ = await Run(vectors, graph: graph.Build());

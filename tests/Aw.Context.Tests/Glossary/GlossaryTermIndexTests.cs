@@ -7,16 +7,12 @@ public sealed class GlossaryTermIndexTests
     private static GlossaryTermIndex Index() => new(GlossaryFixtures.Build(GlossaryFixtures.TwoGroups()));
 
     [Fact, Trait("Lane", "unit")]
-    public void Two_groups_of_one_cluster_carry_the_same_terms()
-    {
+    public void Two_groups_of_one_cluster_carry_the_same_terms() =>
         Assert.Equal(1.0, Index().Between(["feature:billing.invoice"], ["feature:billing.refund"]));
-    }
 
     [Fact, Trait("Lane", "unit")]
-    public void Groups_of_different_clusters_share_no_term()
-    {
+    public void Groups_of_different_clusters_share_no_term() =>
         Assert.Equal(0.0, Index().Between(["feature:billing.invoice", "feature:billing.refund"], ["feature:scheduling.shift"]));
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_group_with_no_term_overlaps_with_nothing()
