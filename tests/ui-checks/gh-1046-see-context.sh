@@ -3,7 +3,7 @@
 # open the run's item in Context. It drives the REAL sindri-ui (UI driver, docs/csharp/ui-driver.md) against a guarded fixture home
 # (scripts/sindri-ui-fixture.sh through scripts/sindri-prove.sh): `context up` gives a map for a repo and `line-run` starts a
 # workflow.line run on a new item of that repo (the item has no frozen scope). The check opens the run from the Workflows page,
-# selects its first step, presses See its context and expects the Context page to be shown FOR THAT ITEM: the item's id is on
+# selects its first step, presses See its context and expects the Context page to be shown FOR THAT ITEM: the item's id is in the Context page's head
 # the page (head, crumbs or a note), and the map is loaded, not stuck on "Reading the map…".
 # Every driver call is bounded by `timeout 120`; it starts its own Xvfb (tests/ui-checks/xvfb-lib.sh) and never uses the caller's DISPLAY.
 #   bash tests/ui-checks/gh-1046-see-context.sh        exit 0 pass; 1 FAIL (one line on stderr); 2 the setup broke
@@ -87,15 +87,15 @@ done
 [ -n "$open_name" ] || { drv tree --depth 20 >"$OUT/workflows-tree-full.json" 2>/dev/null; setup_fail "the Workflows page shows no run to open (buttons in $OUT/workflows-tree.json, tree in $OUT/workflows-tree-full.json)"; }
 drv click --type Button --name "$open_name" >/dev/null 2>&1 || setup_fail "the click on \"$open_name\" was not accepted"
 
-# 4. Select the first step, so the inspector shows; its actions include See its context (the run has an item).
+# 4. Select the first step (a stage card when the stage has no steps drawn: "Scope, Stage 1 of 3, Running, Sub-workflow"), so the inspector shows; its actions include See its context (the run has an item).
 step=""
 for _ in $(seq 1 40); do
   drv search --type Button --limit 500 >"$OUT/run-tree.json" 2>/dev/null
-  step="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(contains(" stage, step "))] | first // empty' "$OUT/run-tree.json")"
+  step="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(contains(" stage, step ") or contains(", Stage "))] | first // empty' "$OUT/run-tree.json")"
   [ -n "$step" ] && break
   sleep 1
 done
-[ -n "$step" ] || setup_fail "the run page shows no step (tree in $OUT/run-tree.json)"
+[ -n "$step" ] || setup_fail "the run page shows no step or stage (tree in $OUT/run-tree.json)"
 drv click --type Button --name "$step" >/dev/null 2>&1 || setup_fail "the click on step \"$step\" was not accepted"
 drv wait-for --type Button --name "See its context" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the inspector offers no \"See its context\" (the run has item $item)"
@@ -105,8 +105,16 @@ drv screenshot --out "$OUT/inspector.png" >/dev/null 2>&1
 drv click --type Button --name "See its context" >/dev/null 2>&1 || setup_fail "the See its context click was not accepted by the driver"
 shown=""
 for _ in $(seq 1 40); do
-  drv search --limit 500 >"$OUT/context-tree.json" 2>/dev/null
-  if jq -e --arg item "$item" '[.. | objects | select(((.name // "") | contains($item)) or ((.text // "") | contains($item)))] | length > 0' "$OUT/context-tree.json" >/dev/null 2>&1; then
+  # Every page is in the tree and the Context page comes after the others: the search must be whole (the tree had 947 nodes), and a
+  # cut-off one is a broken setup, never a FAIL.
+  drv search --limit 5000 >"$OUT/context-tree.json" 2>/dev/null
+  jq -e '.total <= (.matches | length)' "$OUT/context-tree.json" >/dev/null 2>&1 \
+    || setup_fail "the driver's search was cut off or unreadable ($(jq -c '[.total, (.matches | length)]' "$OUT/context-tree.json" 2>/dev/null) total/returned; see $OUT/context-tree.json)"
+  # Only the Context page's own head counts: the search walks every page, and the item's id is also on the Workflows rows and
+  # the run page behind it. The head is the title's panel (ContextTitle, ContextHead and the item note share it).
+  if jq -e --arg item "$item" '([.. | objects | select((.name // "") == "ContextTitle") | .id] | first // empty) as $title
+      | ($title | sub("/[^/]*$"; "")) as $panel
+      | [.. | objects | select(((.id // "") | startswith($panel + "/")) and ((((.name // "") | contains($item)) or ((.text // "") | contains($item)))))] | length > 0' "$OUT/context-tree.json" >/dev/null 2>&1; then
     shown=1; break
   fi
   sleep 1
