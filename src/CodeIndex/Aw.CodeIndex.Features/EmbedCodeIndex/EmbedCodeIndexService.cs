@@ -62,7 +62,7 @@ public sealed class EmbedCodeIndexService(IIndexStore store, EmbeddingsLayer lay
             var published = await begun.Value.Publish(previous.Meta with { BuiltAt = clock.GetUtcNow() }, cancellationToken).ConfigureAwait(false);
             return published.IsError
                 ? published.Error
-                : new EmbedCodeIndexResponse(repo.Name, ran.Value.Embedded, ran.Value.Embeddable, published.Value.Layers.First(l => l.Layer == LayerName.Embeddings).State);
+                : new EmbedCodeIndexResponse(repo.Name, ran.Value.Embedded, ran.Value.Embeddable, ran.Value.Carried, ran.Value.Made, published.Value.Layers.First(l => l.Layer == LayerName.Embeddings).State);
         }
     }
 }
