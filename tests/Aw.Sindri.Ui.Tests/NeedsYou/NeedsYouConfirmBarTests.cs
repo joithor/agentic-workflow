@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -11,7 +12,8 @@ namespace Aw.Sindri.Ui.Tests.NeedsYou;
 [Lane(TestLane.Unit)]
 public sealed class NeedsYouConfirmBarTests
 {
-    private const string StepHash = "sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa";   // workflow.step v3 in the served recipe list
+    private const string StepHash = "sha256:f511ce1fc529b5b471731b4023a1f07774af2f9a8836344fd5818f5aef644784";   // workflow.step v4 in the served recipe list (the workflow-recipes list golden)
+    private const string WaitingHash = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";   // the shipped version that gained a capability
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
     private readonly FakeSindriApi _server = new();
@@ -163,6 +165,69 @@ public sealed class NeedsYouConfirmBarTests
         Assert.Equal("SND-UI-004: " + Labels.NeedsYouRecipeGone + " Run: " + entry.Cli, bar.Refusal);   // the code and the served command
         Assert.Equal("sindri recipe approve workflow.gone", entry.Cli);
         Assert.Empty(_server.RecipeApprovals);
+    }
+
+    // The served list as #983 has it: the approved row, and the shipped version that gained a capability as a row of its own.
+    private void ServeListWithWaitingVersion()
+    {
+        var list = JsonNode.Parse(GoldenFiles.Api("workflow-recipes", "list"))!;   // why: the golden is a JSON document
+        var rows = list["recipes"]!.AsArray();
+        var step = rows.Single(r => (string?)r!["id"] == "workflow.step")!;
+        var waiting = JsonNode.Parse(step.ToJsonString())!;
+        waiting["version"] = 5;
+        waiting["hash"] = WaitingHash;
+        waiting["standing"] = "unapproved";
+        waiting["status"] = "changed";
+        waiting["gainsCapability"] = true;
+        rows.Add(waiting);
+        _server.RecipeListAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, list.ToJsonString());
+    }
+
+    [Fact]
+    public async Task A_workflow_that_gained_a_capability_is_approved_at_the_waiting_hash()
+    {
+        ServeListWithWaitingVersion();
+        var bar = await Bar(NeedsYouRows.Recipe() with { Cli = "sindri recipe approve workflow.step" });
+
+        await bar.PressApprove();
+
+        var sent = Assert.Single(_server.RecipeApprovals);
+        Assert.Equal(("workflow.step", WaitingHash), (sent.Id, sent.Hash));
+        Assert.True(bar.IsApproved);
+    }
+
+    [Fact]
+    public async Task The_hash_the_rows_command_names_is_the_one_approved()
+    {
+        ServeListWithWaitingVersion();
+        var bar = await Bar(NeedsYouRows.Recipe() with { Cli = "sindri recipe approve workflow.step@" + StepHash });
+
+        await bar.PressApprove();
+
+        Assert.Equal(StepHash, Assert.Single(_server.RecipeApprovals).Hash);
+    }
+
+    [Fact]
+    public async Task The_waiting_hash_the_rows_command_names_is_approved()
+    {
+        ServeListWithWaitingVersion();
+        var bar = await Bar(NeedsYouRows.Recipe() with { Cli = "sindri recipe approve workflow.step@" + WaitingHash });
+
+        await bar.PressApprove();
+
+        Assert.Equal(WaitingHash, Assert.Single(_server.RecipeApprovals).Hash);
+    }
+
+    [Fact]
+    public void A_version_that_gains_a_capability_wins_over_a_newer_approved_one_and_a_named_hash_wins_over_both()
+    {
+        var old = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 4, "sha256:aa", "approved", Name: null);
+        var gains = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 3, "sha256:bb", "approved", Name: null, GainsCapability: true);
+
+        Assert.Same(gains, NeedsYouConfirm.Pick([old, gains], "workflow.step"));
+        Assert.Same(old, NeedsYouConfirm.Pick([old, gains], "workflow.step", "sha256:aa"));
+        Assert.Equal("sha256:bb", NeedsYouConfirm.HashOf("sindri recipe approve workflow.step@sha256:bb"));
+        Assert.Equal("", NeedsYouConfirm.HashOf("sindri recipe approve workflow.step"));
     }
 
     [Fact]

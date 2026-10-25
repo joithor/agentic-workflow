@@ -16,17 +16,27 @@ internal sealed partial class NeedsYouConfirm
     private static bool IsRecipe(NeedsYouRowViewModel row) =>
         row.Entry.Subject is { Id.Length: > 0 } subject && string.Equals(subject.Kind, NeedsYouKinds.Recipe, StringComparison.Ordinal) && string.Equals(row.Entry.PrimaryAction, RecipeAction, StringComparison.Ordinal);
 
-    /// <summary>The version a changed workflow's approval is for: the one still waiting for approval, else the newest.</summary>
-    /// <param name="recipes">The registered recipes.</param>
+    /// <summary>The hash a row's served command names ("sindri recipe approve &lt;id&gt;@&lt;hash&gt;"); empty when it names none.</summary>
+    /// <param name="cli">The row's served command.</param>
+    /// <returns>The hash, or empty.</returns>
+    internal static string HashOf(string? cli)
+    {
+        var at = cli?.LastIndexOf('@', StringComparison.Ordinal) ?? -1;
+        return at < 0 ? "" : cli![(at + 1)..].Trim();   // why: at is only >= 0 when cli is not null
+    }
+
+    /// <summary>The version a changed workflow's approval is for: the one the row names by hash, else the waiting one (it gained a capability, or its standing is not approved), else the newest.</summary>
+    /// <param name="recipes">The listed recipes, a waiting shipped version as a row of its own.</param>
     /// <param name="id">The recipe id.</param>
-    /// <returns>The version's row, or null when the recipe is not registered.</returns>
-    internal static RecipeSummaryView? Pick(IReadOnlyList<RecipeSummaryView> recipes, string id)
+    /// <param name="hash">The hash the row's command names; empty or null for none.</param>
+    /// <returns>The version's row, or null when the recipe is not listed.</returns>
+    internal static RecipeSummaryView? Pick(IReadOnlyList<RecipeSummaryView> recipes, string id, string? hash = null)
     {
         ArgumentNullException.ThrowIfNull(recipes);
-        return recipes.Where(r => string.Equals(r.Id, id, StringComparison.Ordinal))
-            .OrderBy(r => string.Equals(r.Standing, Standing, StringComparison.Ordinal) ? 1 : 0)
-            .ThenByDescending(r => r.Version)
-            .FirstOrDefault();
+        var own = recipes.Where(r => string.Equals(r.Id, id, StringComparison.Ordinal)).ToList();
+        return (hash is { Length: > 0 } ? own.FirstOrDefault(r => string.Equals(r.Hash, hash, StringComparison.Ordinal)) : null)
+            ?? own.Where(r => r.GainsCapability == true).OrderByDescending(r => r.Version).FirstOrDefault()
+            ?? own.OrderBy(r => string.Equals(r.Standing, Standing, StringComparison.Ordinal) ? 1 : 0).ThenByDescending(r => r.Version).FirstOrDefault();
     }
 
     // The approval of the shown row's kind, to its own route: the refusal, or whether it approved. A workflow is approved at the version and hash served now.
@@ -40,7 +50,7 @@ internal sealed partial class NeedsYouConfirm
                 return (listed.Error, false);
             }
 
-            if (Pick(listed.Value.Recipes, _hash) is not { } recipe)
+            if (Pick(listed.Value.Recipes, _hash, HashOf(_cli)) is not { } recipe)
             {
                 return (new Error("SND-UI-004", ErrorKind.NotFound, Labels.NeedsYouRecipeGone), false);
             }
