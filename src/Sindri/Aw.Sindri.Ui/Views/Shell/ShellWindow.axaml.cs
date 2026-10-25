@@ -34,6 +34,7 @@ internal sealed partial class ShellWindow : Window
 
     // What had focus when the palette or the ? sheet opened: it gets focus back when they close (§8, §11.2).
     private Control? _overlayOpener;
+    private Control? _invoker;   // the button that is opening an overlay, noted just before it opens
 
     public ShellWindow()
     {

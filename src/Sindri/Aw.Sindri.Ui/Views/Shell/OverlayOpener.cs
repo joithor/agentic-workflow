@@ -10,5 +10,5 @@ internal static class OverlayOpener
     /// <param name="invoker">The control whose command opened the overlay; null when a chord or the palette opened it.</param>
     /// <returns>The invoker when focus was on nothing or on the page region, else what had focus.</returns>
     internal static T? Choose<T>(T? focused, T page, T? invoker)
-        where T : class => throw new NotSupportedException();
+        where T : class => invoker is not null && (focused is null || ReferenceEquals(focused, page)) ? invoker : focused;
 }

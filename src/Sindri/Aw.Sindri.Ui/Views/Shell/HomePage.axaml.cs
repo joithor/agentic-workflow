@@ -106,7 +106,15 @@ internal sealed partial class HomePage : UserControl
 
     private void OnSetupContinue(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.Continue();
 
-    private void OnStart(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenStart();
+    private void OnStart(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control button && TopLevel.GetTopLevel(this) is ShellWindow window)
+        {
+            window.NoteInvoker(button);
+        }
+
+        (DataContext as ShellViewModel)?.OpenStart();
+    }
 
     private void OnWorkflowsMore(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Strip.OpenWorkflows();
 
