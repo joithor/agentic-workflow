@@ -38,6 +38,7 @@ internal static class McpPages
 
         var more = false;
         var lists = new JsonObject();
+        // note: an answer that already has a top-level "page" loses it here; none does today
         Slice(root, window, "", lists, ref more);
         KeepPageCites(root);
         root["page"] = new JsonObject

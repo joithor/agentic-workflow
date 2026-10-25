@@ -170,21 +170,6 @@
   },
   "degraded": [],
   "cites": {},
-  "page": {
-    "offset": 0,
-    "limit": 100,
-    "more": false,
-    "totals": {
-      "bands.product.own": 1,
-      "bands.product.neighbors": 0,
-      "bands.product.affects": 0,
-      "bands.product.edges": 0,
-      "bands.intent.records": 0,
-      "bands.intent.decisions": 0,
-      "bands.code.files": 1,
-      "edges": 1
-    }
-  },
   "skippedComponents": [
     {
       "unit": "code:src/util/format.ts",

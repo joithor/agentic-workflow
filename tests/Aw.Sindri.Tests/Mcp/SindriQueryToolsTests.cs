@@ -156,6 +156,43 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task The_mcp_windows_of_a_long_timeline_equal_the_http_pages_following_next()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var mcp = await seed.Open("alpha", ct);
+        var route = $"/sindri/items/{seed.LongItem}/timeline";
+
+        var fromHttp = new List<long>();
+        var first = JsonDocument.Parse(await seed.Http(route, "alpha", ct)).RootElement;
+        long? next;
+        do
+        {
+            var page = first;
+            fromHttp.AddRange(page.GetProperty("entries").EnumerateArray().Select(e => e.GetProperty("sequence").GetInt64()));
+            next = page.GetProperty("next").ValueKind == JsonValueKind.Null ? null : page.GetProperty("next").GetInt64();
+            if (next is { } after)
+            {
+                first = JsonDocument.Parse(await seed.Http($"{route}?after={after.ToString(CultureInfo.InvariantCulture)}", "alpha", ct)).RootElement;
+            }
+        }
+        while (next is not null);
+
+        var fromMcp = new List<long>();
+        for (var offset = 0; ; offset += 10)
+        {
+            var window = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":{{offset}}}""", ct);
+            fromMcp.AddRange(window.StructuredContent!.Value.GetProperty("entries").EnumerateArray().Select(e => e.GetProperty("sequence").GetInt64()));
+            if (!window.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean())
+            {
+                break;
+            }
+        }
+
+        Assert.True(fromHttp.Count > 100);
+        Assert.Equal(fromHttp, fromMcp);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task Sindri_item_timeline_first_page_matches_its_golden()
     {
         var ct = TestContext.Current.CancellationToken;

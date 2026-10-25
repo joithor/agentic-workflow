@@ -18,7 +18,6 @@ public static class AnchorMatch
     private const int MaxSuggestions = 5;
 
     /// <summary>The most keys an error's extension list holds (the host cuts longer arrays).</summary>
-    private const int MaxListed = 100;
 
     /// <summary>The longest key a typed list carries: the HTTP problem writer cuts longer strings, and a cut key is no key (it stays in the detail).</summary>
     private const int MaxListedKey = 200;
@@ -54,7 +53,7 @@ public static class AnchorMatch
         {
             return ContextErrors.AmbiguousAnchor
                 .With($"'{Shown(trimmed)}' is the name of {byLabel.Count} nodes: {string.Join(", ", byLabel.Select(n => n.Key.Value))} (fix: ask by key)")
-                .WithExtension("candidates", [.. byLabel.Select(n => n.Key.Value).Where(Listable).Take(MaxListed)], SettingsJsonContext.Default.ListString);
+                .WithExtension("candidates", [.. byLabel.Select(n => n.Key.Value).Where(Listable)], SettingsJsonContext.Default.ListString);
         }
 
         if (NearFeature(graph, trimmed) is { } near)
@@ -67,7 +66,7 @@ public static class AnchorMatch
         var unknown = ContextErrors.UnknownAnchor.With($"no node is named '{Shown(trimmed)}' (fix: {hint})");
         return suggested.Count == 0
             ? unknown
-            : unknown.WithExtension("suggestedAnchors", [.. suggested.Select(k => k.Value).Where(Listable).Take(MaxListed)], SettingsJsonContext.Default.ListString);
+            : unknown.WithExtension("suggestedAnchors", [.. suggested.Select(k => k.Value).Where(Listable)], SettingsJsonContext.Default.ListString);
     }
 
     /// <summary>The nodes a question names by their whole label, and others it comes close to.</summary>

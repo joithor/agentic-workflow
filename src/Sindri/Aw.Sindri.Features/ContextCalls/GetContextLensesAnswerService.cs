@@ -9,9 +9,6 @@ namespace Aw.Sindri.Features.ContextCalls;
 internal sealed class GetContextLensesAnswerService(IService<GetContextLensesRequest, LensesView> single, IService<GetContextLensesSetRequest, LensesSetView> set)
     : IService<GetContextLensesAnswerRequest, LensesAnswer>
 {
-    // why: one paging rule for every tool and transport: a call that names no limit gets this many items from each list, over HTTP as over MCP
-    private const int DefaultLimit = 100;
-
     public async ValueTask<Result<LensesAnswer>> Handle(GetContextLensesAnswerRequest request, CancellationToken cancellationToken)
     {
         if (QueryRules.CheckPage(request.Limit, request.Offset) is { } refused)
@@ -36,8 +33,8 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
     }
 
     private static LensesView Page(LensesView view, GetContextLensesAnswerRequest request) =>
-        LensPages.Window(view, request.Limit ?? DefaultLimit, request.Offset ?? 0);
+        request.Limit is null && request.Offset is null ? view : LensPages.Window(view, request.Limit ?? int.MaxValue, request.Offset ?? 0);   // why: a client that names no window (the UI, a script) gets everything; the 100-item default belongs to the MCP tools
 
     private static LensesSetView Page(LensesSetView view, GetContextLensesAnswerRequest request) =>
-        LensPages.Window(view, request.Limit ?? DefaultLimit, request.Offset ?? 0);
+        request.Limit is null && request.Offset is null ? view : LensPages.Window(view, request.Limit ?? int.MaxValue, request.Offset ?? 0);   // why: a client that names no window (the UI, a script) gets everything; the 100-item default belongs to the MCP tools
 }
