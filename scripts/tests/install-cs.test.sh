@@ -241,6 +241,7 @@ check "and publishes nothing" "$(wc -l < "$FAKE_LOG" | tr -d ' ')" "0"
 out="$(FAKE_OPEN_RUNS=1 AW_SINDRI_STOP_OK=1 bash "$INSTALL" --publish 2>&1 < /dev/null)"; rc=$?
 check "AW_SINDRI_STOP_OK=1 publishes anyway" "$rc" "0"
 has "and says so" "$out" "AW_SINDRI_STOP_OK=1: going on"
+: > "$FAKE_LOG"
 kill "$serve_pid" 2> /dev/null; serve_pid=""
 sleep 0.3
 bash "$INSTALL" --publish --rebuild > /dev/null 2>&1; check "--rebuild with no serve exits 0" "$?" "0"

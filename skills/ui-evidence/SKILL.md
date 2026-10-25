@@ -67,7 +67,7 @@ For a desktop app (Avalonia and the like) there is no URL to drive, so the plain
 ui-evidence desktop-run <screens.json> <run-dir> [--repo <dir>] [--app-build $(git rev-parse HEAD)] [--screens a,b]
 ```
 
-`desktop-run` is a verb of the Evidence binary (not `dist/bin.js`) and takes its own locks, so there is no stack-lock wrapper. Exit 0 every screen passed, 2 a screen failed, 1 usage or a refusal, 4 the run errored. `<run-dir>/summary.json` (`ui-evidence.desktop/1`), `report.md` and each screen's `app`, `design`, `diff` and `side-by-side` images are the evidence; attach them to `evidence.md` like a web run's. Any unexpected mismatch against a mockup fails the run. The publish step (Publishing to the PR) applies to these images unchanged, and a desktop run has no DB-provenance check: its data is the fixture the config names.
+`desktop-run` is a verb of the Evidence binary and takes its own locks, so there is no stack-lock wrapper. Exit 0 every screen passed, 2 a screen failed, 1 usage or a refusal, 4 the run errored. `<run-dir>/summary.json` (`ui-evidence.desktop/1`), `report.md` and each screen's `app`, `design`, `diff` and `side-by-side` images are the evidence; attach them to `evidence.md` like a web run's. Any unexpected mismatch against a mockup fails the run. The publish step (Publishing to the PR) applies to these images unchanged, and a desktop run has no DB-provenance check: its data is the fixture the config names.
 
 ## Design-parity mode (Figma pixel diff)
 
