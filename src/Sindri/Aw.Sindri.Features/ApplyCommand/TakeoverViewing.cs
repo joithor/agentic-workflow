@@ -6,7 +6,6 @@ using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Features.Launching;
 
 namespace Aw.Sindri.Features.ApplyCommand;
 
@@ -61,7 +60,7 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
     {
         using var bound = new CancellationTokenSource(_limit);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
-        var request = new ViewerRequest(new HostRef(HostKind.Tmux, LaunchSessionName.For(live.Id)), attach, LaunchOutcomes.TabTitle(live.Item), _window);
+        var request = new ViewerRequest(new HostRef(HostKind.Tmux, LaunchSessionName.For(live.Id)), attach, "sindri " + live.Item.Value, _window);
         try
         {
             var outcome = await viewer.Open(request, linked.Token).ConfigureAwait(false);
@@ -82,7 +81,7 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         {
             ViewerOutcomeKind.Opened or ViewerOutcomeKind.Unconfirmed => new LaunchViewer(kind, label, outcome.Kind, Code: null, Detail: null),
             ViewerOutcomeKind.Failed => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, outcome.Code ?? "SND-LAUNCH-001", Detail: null) { Reason = $"the {label ?? kind} viewer failed to open" },
-            _ => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, "no-viewer", Detail: null) { Reason = "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)" },
+            ViewerOutcomeKind.Skipped or _ => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, "no-viewer", Detail: null) { Reason = "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)" },
         };
     }
 
@@ -103,8 +102,3 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         _ = await ledger.Append(events.Entry(EventTypes.LaunchTakeoverOpened, opened, key, opened.Item.Value), grant, cancellationToken).ConfigureAwait(false);
     }
 }
-
-/// <summary>What a takeover opened: the launch's viewer record and the command that attaches to its session.</summary>
-/// <param name="Viewer">The viewer outcome.</param>
-/// <param name="Attach">The attach command.</param>
-internal sealed record OpenedSession(LaunchViewer Viewer, IReadOnlyList<string> Attach);
