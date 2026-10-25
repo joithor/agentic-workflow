@@ -6987,3 +6987,237 @@ Aw.Context.Core.Graph.NodeKind.Concept = 8 -> Aw.Context.Core.Graph.NodeKind
 Aw.Context.Core.Graph.EdgeType.BelongsTo = 13 -> Aw.Context.Core.Graph.EdgeType
 Aw.Context.Core.Graph.ConceptKeys
 const Aw.Context.Core.Graph.ConceptKeys.Other = "concept:other" -> string!
+Aw.Context.Core.Concepts.ConceptPage
+Aw.Context.Core.Concepts.ConceptPage.<Clone>$() -> Aw.Context.Core.Concepts.ConceptPage!
+Aw.Context.Core.Concepts.ConceptPage.Cursor.get -> string?
+Aw.Context.Core.Concepts.ConceptPage.Cursor.init -> void
+Aw.Context.Core.Concepts.ConceptPage.Limit.get -> int?
+Aw.Context.Core.Concepts.ConceptPage.Limit.init -> void
+Aw.Context.Core.Concepts.ConceptPage.Deconstruct(out string? Cursor, out int? Limit) -> void
+Aw.Context.Core.Concepts.ConceptPage.Equals(Aw.Context.Core.Concepts.ConceptPage? other) -> bool
+Aw.Context.Core.Concepts.ConceptPage.ConceptPage(string? Cursor = null, int? Limit = null) -> void
+override Aw.Context.Core.Concepts.ConceptPage.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptPage.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptPage.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptPage.operator !=(Aw.Context.Core.Concepts.ConceptPage? left, Aw.Context.Core.Concepts.ConceptPage? right) -> bool
+static Aw.Context.Core.Concepts.ConceptPage.operator ==(Aw.Context.Core.Concepts.ConceptPage? left, Aw.Context.Core.Concepts.ConceptPage? right) -> bool
+Aw.Context.Core.Concepts.ConceptsQuery
+Aw.Context.Core.Concepts.ConceptsQuery.<Clone>$() -> Aw.Context.Core.Concepts.ConceptsQuery!
+Aw.Context.Core.Concepts.ConceptsQuery.Read.get -> Aw.Context.Core.Map.MapRead
+Aw.Context.Core.Concepts.ConceptsQuery.Read.init -> void
+Aw.Context.Core.Concepts.ConceptsQuery.Page.get -> Aw.Context.Core.Concepts.ConceptPage!
+Aw.Context.Core.Concepts.ConceptsQuery.Page.init -> void
+Aw.Context.Core.Concepts.ConceptsQuery.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptsQuery.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptsQuery.Q.get -> string?
+Aw.Context.Core.Concepts.ConceptsQuery.Q.init -> void
+Aw.Context.Core.Concepts.ConceptsQuery.Deconstruct(out Aw.Context.Core.Map.MapRead Read, out Aw.Context.Core.Concepts.ConceptPage! Page, out string? Repo, out string? Q) -> void
+Aw.Context.Core.Concepts.ConceptsQuery.Equals(Aw.Context.Core.Concepts.ConceptsQuery? other) -> bool
+Aw.Context.Core.Concepts.ConceptsQuery.ConceptsQuery(Aw.Context.Core.Map.MapRead Read, Aw.Context.Core.Concepts.ConceptPage! Page, string? Repo = null, string? Q = null) -> void
+override Aw.Context.Core.Concepts.ConceptsQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptsQuery.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptsQuery.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptsQuery.operator !=(Aw.Context.Core.Concepts.ConceptsQuery? left, Aw.Context.Core.Concepts.ConceptsQuery? right) -> bool
+static Aw.Context.Core.Concepts.ConceptsQuery.operator ==(Aw.Context.Core.Concepts.ConceptsQuery? left, Aw.Context.Core.Concepts.ConceptsQuery? right) -> bool
+Aw.Context.Core.Concepts.ConceptMembersQuery
+Aw.Context.Core.Concepts.ConceptMembersQuery.<Clone>$() -> Aw.Context.Core.Concepts.ConceptMembersQuery!
+Aw.Context.Core.Concepts.ConceptMembersQuery.Concept.get -> string!
+Aw.Context.Core.Concepts.ConceptMembersQuery.Concept.init -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Read.get -> Aw.Context.Core.Map.MapRead
+Aw.Context.Core.Concepts.ConceptMembersQuery.Read.init -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Page.get -> Aw.Context.Core.Concepts.ConceptPage!
+Aw.Context.Core.Concepts.ConceptMembersQuery.Page.init -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptMembersQuery.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Deconstruct(out string! Concept, out Aw.Context.Core.Map.MapRead Read, out Aw.Context.Core.Concepts.ConceptPage! Page, out string? Repo) -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Equals(Aw.Context.Core.Concepts.ConceptMembersQuery? other) -> bool
+Aw.Context.Core.Concepts.ConceptMembersQuery.ConceptMembersQuery(string! Concept, Aw.Context.Core.Map.MapRead Read, Aw.Context.Core.Concepts.ConceptPage! Page, string? Repo = null) -> void
+override Aw.Context.Core.Concepts.ConceptMembersQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptMembersQuery.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptMembersQuery.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptMembersQuery.operator !=(Aw.Context.Core.Concepts.ConceptMembersQuery? left, Aw.Context.Core.Concepts.ConceptMembersQuery? right) -> bool
+static Aw.Context.Core.Concepts.ConceptMembersQuery.operator ==(Aw.Context.Core.Concepts.ConceptMembersQuery? left, Aw.Context.Core.Concepts.ConceptMembersQuery? right) -> bool
+Aw.Context.Core.Concepts.ConceptSize
+Aw.Context.Core.Concepts.ConceptSize.<Clone>$() -> Aw.Context.Core.Concepts.ConceptSize!
+Aw.Context.Core.Concepts.ConceptSize.Features.get -> int
+Aw.Context.Core.Concepts.ConceptSize.Features.init -> void
+Aw.Context.Core.Concepts.ConceptSize.Records.get -> int
+Aw.Context.Core.Concepts.ConceptSize.Records.init -> void
+Aw.Context.Core.Concepts.ConceptSize.Decisions.get -> int
+Aw.Context.Core.Concepts.ConceptSize.Decisions.init -> void
+Aw.Context.Core.Concepts.ConceptSize.Code.get -> int
+Aw.Context.Core.Concepts.ConceptSize.Code.init -> void
+Aw.Context.Core.Concepts.ConceptSize.Deconstruct(out int Features, out int Records, out int Decisions, out int Code) -> void
+Aw.Context.Core.Concepts.ConceptSize.Equals(Aw.Context.Core.Concepts.ConceptSize? other) -> bool
+Aw.Context.Core.Concepts.ConceptSize.ConceptSize(int Features, int Records, int Decisions, int Code) -> void
+override Aw.Context.Core.Concepts.ConceptSize.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptSize.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptSize.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptSize.operator !=(Aw.Context.Core.Concepts.ConceptSize? left, Aw.Context.Core.Concepts.ConceptSize? right) -> bool
+static Aw.Context.Core.Concepts.ConceptSize.operator ==(Aw.Context.Core.Concepts.ConceptSize? left, Aw.Context.Core.Concepts.ConceptSize? right) -> bool
+Aw.Context.Core.Concepts.ConceptCitation
+Aw.Context.Core.Concepts.ConceptCitation.<Clone>$() -> Aw.Context.Core.Concepts.ConceptCitation!
+Aw.Context.Core.Concepts.ConceptCitation.Key.get -> string!
+Aw.Context.Core.Concepts.ConceptCitation.Key.init -> void
+Aw.Context.Core.Concepts.ConceptCitation.Span.get -> string?
+Aw.Context.Core.Concepts.ConceptCitation.Span.init -> void
+Aw.Context.Core.Concepts.ConceptCitation.Deconstruct(out string! Key, out string? Span) -> void
+Aw.Context.Core.Concepts.ConceptCitation.Equals(Aw.Context.Core.Concepts.ConceptCitation? other) -> bool
+Aw.Context.Core.Concepts.ConceptCitation.ConceptCitation(string! Key, string? Span = null) -> void
+override Aw.Context.Core.Concepts.ConceptCitation.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptCitation.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptCitation.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptCitation.operator !=(Aw.Context.Core.Concepts.ConceptCitation? left, Aw.Context.Core.Concepts.ConceptCitation? right) -> bool
+static Aw.Context.Core.Concepts.ConceptCitation.operator ==(Aw.Context.Core.Concepts.ConceptCitation? left, Aw.Context.Core.Concepts.ConceptCitation? right) -> bool
+Aw.Context.Core.Concepts.ConceptRow
+Aw.Context.Core.Concepts.ConceptRow.<Clone>$() -> Aw.Context.Core.Concepts.ConceptRow!
+Aw.Context.Core.Concepts.ConceptRow.Id.get -> string!
+Aw.Context.Core.Concepts.ConceptRow.Id.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Name.get -> string!
+Aw.Context.Core.Concepts.ConceptRow.Name.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Summary.get -> string!
+Aw.Context.Core.Concepts.ConceptRow.Summary.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Source.get -> string!
+Aw.Context.Core.Concepts.ConceptRow.Source.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Size.get -> Aw.Context.Core.Concepts.ConceptSize!
+Aw.Context.Core.Concepts.ConceptRow.Size.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Citations.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>!
+Aw.Context.Core.Concepts.ConceptRow.Citations.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Deconstruct(out string! Id, out string! Name, out string! Summary, out string! Source, out Aw.Context.Core.Concepts.ConceptSize! Size, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
+Aw.Context.Core.Concepts.ConceptRow.Equals(Aw.Context.Core.Concepts.ConceptRow? other) -> bool
+Aw.Context.Core.Concepts.ConceptRow.ConceptRow(string! Id, string! Name, string! Summary, string! Source, Aw.Context.Core.Concepts.ConceptSize! Size, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
+override Aw.Context.Core.Concepts.ConceptRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptRow.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptRow.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptRow.operator !=(Aw.Context.Core.Concepts.ConceptRow? left, Aw.Context.Core.Concepts.ConceptRow? right) -> bool
+static Aw.Context.Core.Concepts.ConceptRow.operator ==(Aw.Context.Core.Concepts.ConceptRow? left, Aw.Context.Core.Concepts.ConceptRow? right) -> bool
+Aw.Context.Core.Concepts.ConceptOther
+Aw.Context.Core.Concepts.ConceptOther.<Clone>$() -> Aw.Context.Core.Concepts.ConceptOther!
+Aw.Context.Core.Concepts.ConceptOther.Id.get -> string!
+Aw.Context.Core.Concepts.ConceptOther.Id.init -> void
+Aw.Context.Core.Concepts.ConceptOther.Name.get -> string!
+Aw.Context.Core.Concepts.ConceptOther.Name.init -> void
+Aw.Context.Core.Concepts.ConceptOther.Size.get -> Aw.Context.Core.Concepts.ConceptSize!
+Aw.Context.Core.Concepts.ConceptOther.Size.init -> void
+Aw.Context.Core.Concepts.ConceptOther.Deconstruct(out string! Id, out string! Name, out Aw.Context.Core.Concepts.ConceptSize! Size) -> void
+Aw.Context.Core.Concepts.ConceptOther.Equals(Aw.Context.Core.Concepts.ConceptOther? other) -> bool
+Aw.Context.Core.Concepts.ConceptOther.ConceptOther(string! Id, string! Name, Aw.Context.Core.Concepts.ConceptSize! Size) -> void
+override Aw.Context.Core.Concepts.ConceptOther.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptOther.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptOther.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptOther.operator !=(Aw.Context.Core.Concepts.ConceptOther? left, Aw.Context.Core.Concepts.ConceptOther? right) -> bool
+static Aw.Context.Core.Concepts.ConceptOther.operator ==(Aw.Context.Core.Concepts.ConceptOther? left, Aw.Context.Core.Concepts.ConceptOther? right) -> bool
+Aw.Context.Core.Concepts.ConceptLink
+Aw.Context.Core.Concepts.ConceptLink.<Clone>$() -> Aw.Context.Core.Concepts.ConceptLink!
+Aw.Context.Core.Concepts.ConceptLink.From.get -> string!
+Aw.Context.Core.Concepts.ConceptLink.From.init -> void
+Aw.Context.Core.Concepts.ConceptLink.To.get -> string!
+Aw.Context.Core.Concepts.ConceptLink.To.init -> void
+Aw.Context.Core.Concepts.ConceptLink.Weight.get -> int
+Aw.Context.Core.Concepts.ConceptLink.Weight.init -> void
+Aw.Context.Core.Concepts.ConceptLink.Deconstruct(out string! From, out string! To, out int Weight) -> void
+Aw.Context.Core.Concepts.ConceptLink.Equals(Aw.Context.Core.Concepts.ConceptLink? other) -> bool
+Aw.Context.Core.Concepts.ConceptLink.ConceptLink(string! From, string! To, int Weight) -> void
+override Aw.Context.Core.Concepts.ConceptLink.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptLink.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptLink.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptLink.operator !=(Aw.Context.Core.Concepts.ConceptLink? left, Aw.Context.Core.Concepts.ConceptLink? right) -> bool
+static Aw.Context.Core.Concepts.ConceptLink.operator ==(Aw.Context.Core.Concepts.ConceptLink? left, Aw.Context.Core.Concepts.ConceptLink? right) -> bool
+Aw.Context.Core.Concepts.ConceptsView
+Aw.Context.Core.Concepts.ConceptsView.<Clone>$() -> Aw.Context.Core.Concepts.ConceptsView!
+Aw.Context.Core.Concepts.ConceptsView.ApiVersion.get -> int
+Aw.Context.Core.Concepts.ConceptsView.ApiVersion.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptsView.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptsView.MapVersion.get -> string!
+Aw.Context.Core.Concepts.ConceptsView.MapVersion.init -> void
+Aw.Context.Core.Concepts.ConceptsView.State.get -> string!
+Aw.Context.Core.Concepts.ConceptsView.State.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Code.get -> string?
+Aw.Context.Core.Concepts.ConceptsView.Code.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptRow!>!
+Aw.Context.Core.Concepts.ConceptsView.Concepts.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Other.get -> Aw.Context.Core.Concepts.ConceptOther!
+Aw.Context.Core.Concepts.ConceptsView.Other.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Links.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptLink!>!
+Aw.Context.Core.Concepts.ConceptsView.Links.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Next.get -> string?
+Aw.Context.Core.Concepts.ConceptsView.Next.init -> void
+Aw.Context.Core.Concepts.ConceptsView.Deconstruct(out int ApiVersion, out string? Repo, out string! MapVersion, out string! State, out string? Code, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptRow!>! Concepts, out Aw.Context.Core.Concepts.ConceptOther! Other, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptLink!>! Links, out string? Next) -> void
+Aw.Context.Core.Concepts.ConceptsView.Equals(Aw.Context.Core.Concepts.ConceptsView? other) -> bool
+Aw.Context.Core.Concepts.ConceptsView.ConceptsView(int ApiVersion, string? Repo, string! MapVersion, string! State, string? Code, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptRow!>! Concepts, Aw.Context.Core.Concepts.ConceptOther! Other, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptLink!>! Links, string? Next) -> void
+override Aw.Context.Core.Concepts.ConceptsView.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptsView.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptsView.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptsView.operator !=(Aw.Context.Core.Concepts.ConceptsView? left, Aw.Context.Core.Concepts.ConceptsView? right) -> bool
+static Aw.Context.Core.Concepts.ConceptsView.operator ==(Aw.Context.Core.Concepts.ConceptsView? left, Aw.Context.Core.Concepts.ConceptsView? right) -> bool
+Aw.Context.Core.Concepts.ConceptMember
+Aw.Context.Core.Concepts.ConceptMember.<Clone>$() -> Aw.Context.Core.Concepts.ConceptMember!
+Aw.Context.Core.Concepts.ConceptMember.Key.get -> string!
+Aw.Context.Core.Concepts.ConceptMember.Key.init -> void
+Aw.Context.Core.Concepts.ConceptMember.Kind.get -> string!
+Aw.Context.Core.Concepts.ConceptMember.Kind.init -> void
+Aw.Context.Core.Concepts.ConceptMember.Label.get -> string!
+Aw.Context.Core.Concepts.ConceptMember.Label.init -> void
+Aw.Context.Core.Concepts.ConceptMember.Deconstruct(out string! Key, out string! Kind, out string! Label) -> void
+Aw.Context.Core.Concepts.ConceptMember.Equals(Aw.Context.Core.Concepts.ConceptMember? other) -> bool
+Aw.Context.Core.Concepts.ConceptMember.ConceptMember(string! Key, string! Kind, string! Label) -> void
+override Aw.Context.Core.Concepts.ConceptMember.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptMember.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptMember.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptMember.operator !=(Aw.Context.Core.Concepts.ConceptMember? left, Aw.Context.Core.Concepts.ConceptMember? right) -> bool
+static Aw.Context.Core.Concepts.ConceptMember.operator ==(Aw.Context.Core.Concepts.ConceptMember? left, Aw.Context.Core.Concepts.ConceptMember? right) -> bool
+Aw.Context.Core.Concepts.ConceptMembersView
+Aw.Context.Core.Concepts.ConceptMembersView.<Clone>$() -> Aw.Context.Core.Concepts.ConceptMembersView!
+Aw.Context.Core.Concepts.ConceptMembersView.ApiVersion.get -> int
+Aw.Context.Core.Concepts.ConceptMembersView.ApiVersion.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptMembersView.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.MapVersion.get -> string!
+Aw.Context.Core.Concepts.ConceptMembersView.MapVersion.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Concept.get -> string!
+Aw.Context.Core.Concepts.ConceptMembersView.Concept.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Members.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>!
+Aw.Context.Core.Concepts.ConceptMembersView.Members.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Next.get -> string?
+Aw.Context.Core.Concepts.ConceptMembersView.Next.init -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Deconstruct(out int ApiVersion, out string? Repo, out string! MapVersion, out string! Concept, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, out string? Next) -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Equals(Aw.Context.Core.Concepts.ConceptMembersView? other) -> bool
+Aw.Context.Core.Concepts.ConceptMembersView.ConceptMembersView(int ApiVersion, string? Repo, string! MapVersion, string! Concept, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, string? Next) -> void
+override Aw.Context.Core.Concepts.ConceptMembersView.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptMembersView.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptMembersView.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptMembersView.operator !=(Aw.Context.Core.Concepts.ConceptMembersView? left, Aw.Context.Core.Concepts.ConceptMembersView? right) -> bool
+static Aw.Context.Core.Concepts.ConceptMembersView.operator ==(Aw.Context.Core.Concepts.ConceptMembersView? left, Aw.Context.Core.Concepts.ConceptMembersView? right) -> bool
+Aw.Context.Core.Concepts.ConceptsBasis
+Aw.Context.Core.Concepts.ConceptsBasis.<Clone>$() -> Aw.Context.Core.Concepts.ConceptsBasis!
+Aw.Context.Core.Concepts.ConceptsBasis.MapVersion.get -> string!
+Aw.Context.Core.Concepts.ConceptsBasis.MapVersion.init -> void
+Aw.Context.Core.Concepts.ConceptsBasis.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptsBasis.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptsBasis.Deconstruct(out string! MapVersion, out string? Repo) -> void
+Aw.Context.Core.Concepts.ConceptsBasis.Equals(Aw.Context.Core.Concepts.ConceptsBasis? other) -> bool
+Aw.Context.Core.Concepts.ConceptsBasis.ConceptsBasis(string! MapVersion, string? Repo) -> void
+override Aw.Context.Core.Concepts.ConceptsBasis.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptsBasis.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptsBasis.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptsBasis.operator !=(Aw.Context.Core.Concepts.ConceptsBasis? left, Aw.Context.Core.Concepts.ConceptsBasis? right) -> bool
+static Aw.Context.Core.Concepts.ConceptsBasis.operator ==(Aw.Context.Core.Concepts.ConceptsBasis? left, Aw.Context.Core.Concepts.ConceptsBasis? right) -> bool
+Aw.Context.Core.Concepts.ConceptStates
+const Aw.Context.Core.Concepts.ConceptStates.Ok = "ok" -> string!
+const Aw.Context.Core.Concepts.ConceptStates.Empty = "empty" -> string!
+const Aw.Context.Core.Concepts.ConceptStates.Building = "building" -> string!
+const Aw.Context.Core.Concepts.ConceptStates.Unavailable = "unavailable" -> string!
+Aw.Context.Core.Concepts.ConceptBuilder
+static Aw.Context.Core.Concepts.ConceptBuilder.Build(Aw.Context.Core.Concepts.ConceptsBasis! basis, Aw.Context.Core.Concepts.ConceptsQuery! query, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptsView!>!
+static Aw.Context.Core.Concepts.ConceptBuilder.Members(Aw.Context.Core.Concepts.ConceptsBasis! basis, Aw.Context.Core.Concepts.ConceptMembersQuery! query, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptMembersView!>!
+Aw.Context.Core.Facade.IContextConcepts
+Aw.Context.Core.Facade.IContextConcepts.ConceptMembers(Aw.Context.Core.Concepts.ConceptMembersQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptMembersView!>!>
+Aw.Context.Core.Facade.IContextConcepts.Concepts(Aw.Context.Core.Concepts.ConceptsQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptsView!>!>
+const Aw.Context.Core.WholeMap.AreaIndex.ConceptBandKey = "area:concepts" -> string!
+Aw.Context.Core.WholeMap.WholeMapAsk.Concept.get -> string?
+Aw.Context.Core.WholeMap.WholeMapAsk.Concept.init -> void
+Aw.Context.Core.WholeMap.WholeMapQuery.Concept.get -> string?
+Aw.Context.Core.WholeMap.WholeMapQuery.Concept.init -> void
+Aw.Context.Core.WholeMap.WholeMapLocated.Concept.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.WholeMap.WholeMapLocated.Concept.init -> void
