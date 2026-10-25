@@ -112,4 +112,31 @@ public sealed class PathDenylistTests
 
         Assert.Equal(pattern, timeout.Pattern);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("**/x/**")]
+    [InlineData("*.test.*")]
+    [InlineData("src/?.ts")]
+    [InlineData("**/__tests__/**")]
+    [InlineData("**/*cron*")]
+    [InlineData("legacy/**")]
+    [InlineData("src/a+b(1).ts")]
+    public void A_sample_profile_glob_compiles_NonBacktracking(string glob) => Assert.True(PathDenylist.GlobRegex(glob).Options.HasFlag(System.Text.RegularExpressions.RegexOptions.NonBacktracking));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_built_in_secret_glob_compiles_NonBacktracking() =>
+        Assert.All(PathDenylist.Defaults, g => Assert.True(PathDenylist.GlobRegex(g).Options.HasFlag(System.Text.RegularExpressions.RegexOptions.NonBacktracking), g));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("^v\\d+$")]
+    [InlineData("\\.(snap|golden)$")]
+    [InlineData("^old_.*")]
+    public void A_sample_role_regex_compiles_NonBacktracking(string pattern) =>
+        Assert.True(PathDenylist.SegmentRegex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase).Options.HasFlag(System.Text.RegularExpressions.RegexOptions.NonBacktracking));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("(?<name>[A-Z][A-Za-z]+)Command")]
+    [InlineData("\\bid:\\s*\"(?<name>[\\w.-]+)\"")]
+    public void A_sample_recognizer_pattern_runs_NonBacktracking(string pattern) =>
+        Assert.True(LinearRegex.Create(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant).Options.HasFlag(System.Text.RegularExpressions.RegexOptions.NonBacktracking));
 }

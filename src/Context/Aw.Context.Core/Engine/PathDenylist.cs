@@ -29,7 +29,7 @@ public static class PathDenylist
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(globs);
-        return globs.Any(g => Tagged(g, path, ignoreCase: true) ?? _compiled.GetOrAdd(g, Compile).IsMatch(path));
+        return globs.Any(g => Tagged(g, path, ignoreCase: true) ?? GlobRegex(g).IsMatch(path));
     }
 
     /// <summary>Whether a path matches any glob, with the case of the path and the glob compared exactly.</summary>
@@ -65,7 +65,10 @@ public static class PathDenylist
         };
     }
 
-    private static Regex SegmentRegex(string pattern, RegexOptions options) =>
+    // The compiled glob (internal for the test that every shipped glob runs NonBacktracking).
+    internal static Regex GlobRegex(string glob) => _compiled.GetOrAdd(glob, Compile);
+
+    internal static Regex SegmentRegex(string pattern, RegexOptions options) =>
         _segmentRegexes.GetOrAdd((pattern, options), k => LinearRegex.Create(k.Pattern, RegexOptions.CultureInvariant | k.Options));
 
     private static readonly ConcurrentDictionary<(string Pattern, RegexOptions Options), Regex> _segmentRegexes = new();
