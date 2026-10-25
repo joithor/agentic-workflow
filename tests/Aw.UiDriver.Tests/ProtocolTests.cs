@@ -76,5 +76,5 @@ public sealed class ProtocolTests
         Assert.StartsWith("{\"root\":{\"id\":\"0/0\"", json, StringComparison.Ordinal);
     }
 
-    private static NodeInfo Leaf(string id) => new(id, "Border", null, null, null, true, true, 0, 0, 10, 10, []);
+    private static NodeInfo Leaf(string id) => new(id, "Border", AutomationId: null, Name: null, Text: null, Visible: true, Enabled: true, X: 0, Y: 0, Width: 10, Height: 10, Children: []);
 }
