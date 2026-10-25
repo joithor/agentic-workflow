@@ -13,8 +13,29 @@ public static class BoundedParallel
     /// <param name="degree">The most items in flight; below 2 (or fewer than two items) runs them one at a time.</param>
     /// <param name="cancellationToken">Stops the run; items not yet started are not started.</param>
     /// <returns>One result per item, at the item's index.</returns>
-    public static ValueTask<TOut[]> Map<TIn, TOut>(IReadOnlyList<TIn> items, Func<TIn, CancellationToken, ValueTask<TOut>> work, int degree, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("not built yet");
+    public static async ValueTask<TOut[]> Map<TIn, TOut>(IReadOnlyList<TIn> items, Func<TIn, CancellationToken, ValueTask<TOut>> work, int degree, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(work);
+        var results = new TOut[items.Count];
+        if (degree < 2 || items.Count < 2)
+        {
+            for (var i = 0; i < results.Length; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results[i] = await work(items[i], cancellationToken).ConfigureAwait(false);
+            }
+
+            return results;
+        }
+
+        var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Min(degree, items.Count), CancellationToken = cancellationToken };
+        await Parallel.ForEachAsync(Enumerable.Range(0, items.Count), options, async (index, token) =>
+        {
+            results[index] = await work(items[index], token).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+        return results;
+    }
 
     /// <summary>Runs <paramref name="work"/> over every item on the calling thread and the pool, at most <paramref name="degree"/> at once.</summary>
     /// <typeparam name="TIn">The item type.</typeparam>
@@ -23,6 +44,25 @@ public static class BoundedParallel
     /// <param name="work">The work for one item; it must only read shared state.</param>
     /// <param name="degree">The most items in flight; below 2 (or fewer than two items) runs them one at a time.</param>
     /// <returns>One result per item, at the item's index.</returns>
-    public static TOut[] MapSync<TIn, TOut>(IReadOnlyList<TIn> items, Func<TIn, TOut> work, int degree) =>
-        throw new NotSupportedException("not built yet");
+    public static TOut[] MapSync<TIn, TOut>(IReadOnlyList<TIn> items, Func<TIn, TOut> work, int degree)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(work);
+        var results = new TOut[items.Count];
+        if (degree < 2 || items.Count < 2)
+        {
+            for (var i = 0; i < results.Length; i++)
+            {
+                results[i] = work(items[i]);
+            }
+
+            return results;
+        }
+
+        _ = Parallel.For(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(degree, results.Length) }, index =>
+        {
+            results[index] = work(items[index]);
+        });
+        return results;
+    }
 }

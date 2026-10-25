@@ -28,7 +28,7 @@ public static class CodeLensBuilder
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
         ArgumentNullException.ThrowIfNull(walk);
-        var resolved = AnchorSet.Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)], depth: 0);
+        var resolved = AnchorSet.Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)], depth: 0, options: null, walk);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -60,7 +60,7 @@ public static class CodeLensBuilder
             new CodeLensTruncated(Files: false, Tests: false, Things: false, SchemaFiles: false, SearchedFiles: false),
             [],
             CodeEdges.Of(graph, reach.Union, listedFiles, listedTests, listedThings),
-            AnchorSet.Coverage(basis, graph, scopes, reach.Union),
+            AnchorSet.Coverage(basis, graph, scopes, reach.Union, walk),
             Searched(basis, scopes, listedFiles.Count > 0 || listedTests.Count > 0 || listedThings.Count > 0),
             [],
             new Dictionary<string, Citation>(StringComparer.Ordinal));

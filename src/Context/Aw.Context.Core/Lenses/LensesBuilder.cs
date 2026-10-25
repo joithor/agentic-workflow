@@ -64,6 +64,6 @@ public static class LensesBuilder
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
         ArgumentNullException.ThrowIfNull(walk);
-        return LensSets.Build(basis, graph, anchors, Math.Clamp(depth, 0, GraphWalk.MaxDepth), checkedPairs ?? []);
+        return LensSets.Build(basis, graph, anchors, Math.Clamp(depth, 0, GraphWalk.MaxDepth), checkedPairs ?? [], walk);
     }
 }
