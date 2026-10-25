@@ -17,13 +17,12 @@ namespace Aw.Sindri.Host.CodeIndexHost;
 /// <summary>
 /// Context's <see cref="ICodeSymbolSource"/> over the code index facade (code-index spec §7.2, §7.3). The block's state words (the index file's state and its graph layer) become <see cref="CodeIndexState"/>;
 /// <see cref="CodeIndexReading.Head"/> then compares the index's commit with the map's ('asOf') at read time, so a mismatch reads stale with both commits and clears itself when the index for the map's commit lands.
+/// An index behind the map is catching up rather than stale when its commit is an ancestor of the map's (the repo reader's merge base says so): the files changed since are pending and only their rows are stale (#990).
 /// A repo outside the scope (no approved profile entry, or another session's repo) is not-configured, one with no index or a damaged one is an answer with no rows, and only a failed read is an error.
 /// Context names a symbol 'path#name'; the index names it '&lt;repo&gt;:path#name'.
 /// </summary>
 internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSource scopes, IRepoReader repos) : ICodeSymbolSource
 {
-    internal IRepoReader Repos => repos;
-
     private const string DamagedCode = "SND-CODEIDX-010";
     private const string NotBuiltCode = "SND-CODEIDX-013";
 
@@ -52,9 +51,8 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
             return found.Error.Code == NotBuiltCode ? new SymbolAnswer<SymbolHit>(head, []) : found.Error;
         }
 
-        var (state, asOfCommit) = CodeIndexReading.Stamp(head);
         // why: the head is readable here, so it names a commit.
-        return new SymbolAnswer<SymbolHit>(head, [.. found.Value.Hits.Select(h => new SymbolHit(Site(h), head.Commit!, asOfCommit, state))]);
+        return new SymbolAnswer<SymbolHit>(head, [.. found.Value.Hits.Select(h => Stamped(head, Site(h)))]);
     }
 
     public async ValueTask<Result<SymbolAnswer<FileSymbolsRow>>> FileSymbols(ContextRepoName repo, IReadOnlyList<string> paths, string? asOf, CancellationToken cancellationToken)
@@ -74,9 +72,8 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
         }
 
         // A file the index does not know comes back with no symbols, and has no row.
-        var (state, asOfCommit) = CodeIndexReading.Stamp(head);
         // why: the head is readable here, so it names a commit.
-        return new SymbolAnswer<FileSymbolsRow>(head, [.. files.Value.Files.Where(static f => f.Symbols.Count > 0).Select(f => new FileSymbolsRow(f.Path, [.. f.Symbols.Select(Site)], head.Commit!, asOfCommit, state))]);
+        return new SymbolAnswer<FileSymbolsRow>(head, [.. files.Value.Files.Where(static f => f.Symbols.Count > 0).Select(f => Stamped(head, f))]);
     }
 
     public ValueTask<Result<CallAnswer>> Callers(ContextRepoName repo, string symbolRef, int depth, string? asOf, CancellationToken cancellationToken) =>
@@ -111,10 +108,9 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
             return _noEdges.Contains(answer.Error.Code) ? new CallAnswer(head, [], 0) : answer.Error;
         }
 
-        var (state, asOfCommit) = CodeIndexReading.Stamp(head);
         // why: the Where keeps the edges that resolved to a symbol; the head is readable, so it names a commit.
         var rows = answer.Value.Edges.Where(static e => e.Other is not null)
-            .Select(e => new CallEdgeRow(Site(e.Other!), Name(e.Basis), Weight(e.Confidence), Name(e.Coverage), e.Level, head.Commit!, asOfCommit, state)).ToList();
+            .Select(e => Stamped(head, e)).ToList();
         return new CallAnswer(head, rows, answer.Value.UnresolvedCount + answer.Value.Edges.Count(static e => e.Other is null));
     }
 
@@ -144,7 +140,26 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
         }
 
         var row = status.Value.Repos.FirstOrDefault(r => r.Repo == name);
-        return new Reading(row is null ? CodeIndexHead.None : CodeIndexReading.Head(Own(row), asOf), scope.Value, name);
+        if (row is null)
+        {
+            return new Reading(CodeIndexHead.None, scope.Value, name);
+        }
+
+        var checkout = new ContextRepo(repo, scope.Value.Repos.First(r => r.Name == name).Path);
+        return new Reading(await Trailing(CodeIndexReading.Head(Own(row), asOf), checkout, cancellationToken).ConfigureAwait(false), scope.Value, name);
+    }
+
+    // An index behind the map is catching up, not stale, when its commit is an ancestor of the map's (main moved on): git says so through the merge base, and the files changed since are the ones whose rows may be out of date.
+    // Git unable to tell (a commit the checkout does not hold, a failed read) leaves the head stale, as does any index that is not an ancestor.
+    private async ValueTask<CodeIndexHead> Trailing(CodeIndexHead head, ContextRepo checkout, CancellationToken cancellationToken)
+    {
+        if (head is not { State: CodeIndexState.Stale, Layer: null, Commit: { } indexed, AsOfCommit: { } mapped })
+        {
+            return head;
+        }
+
+        var changes = await repos.Changes(checkout, new DiffRange(indexed, mapped), cancellationToken).ConfigureAwait(false);
+        return changes.IsError ? head : CodeIndexReading.CatchingUp(head, changes.Value.MergeBase, [.. changes.Value.Files.Select(static f => f.Path).Where(p => !checkout.Denies(p))]);
     }
 
     private static CodeIndexHead NotConfigured() => CodeIndexHead.None with { State = CodeIndexState.NotConfigured };
@@ -167,6 +182,26 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
         return down is null
             ? new CodeIndexHead(CodeIndexState.Ok, commit, row.BuiltAt, AsOfCommit: null, Layer: null, Code: null)
             : new CodeIndexHead(CodeIndexState.LayerUnavailable, commit, row.BuiltAt, AsOfCommit: null, Layer: "graph", down.Code);
+    }
+
+    // Each row carries the state of its own file under the head: with a catching-up index, only the files changed since it was built are stale.
+    private static SymbolHit Stamped(CodeIndexHead head, SymbolSite site)
+    {
+        var (state, asOfCommit) = CodeIndexReading.Stamp(head, site.Path);
+        return new SymbolHit(site, head.Commit!, asOfCommit, state);
+    }
+
+    private static FileSymbolsRow Stamped(CodeIndexHead head, FileSymbolsEntry file)
+    {
+        var (state, asOfCommit) = CodeIndexReading.Stamp(head, file.Path);
+        return new FileSymbolsRow(file.Path, [.. file.Symbols.Select(Site)], head.Commit!, asOfCommit, state);
+    }
+
+    private static CallEdgeRow Stamped(CodeIndexHead head, CallEdge edge)
+    {
+        var site = Site(edge.Other!);
+        var (state, asOfCommit) = CodeIndexReading.Stamp(head, site.Path);
+        return new CallEdgeRow(site, Name(edge.Basis), Weight(edge.Confidence), Name(edge.Coverage), edge.Level, head.Commit!, asOfCommit, state);
     }
 
     private static SymbolSite Site(IndexSymbolHit hit)

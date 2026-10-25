@@ -37,7 +37,7 @@ with the missing keys and never fails; at `evidence` it makes the outcome `incom
 
 Coverage: a source that is `degraded`, or `unavailable`/`not-configured` without matching a row of the Recorded limits table on (lens, state, reason), fails
 SCP-COV-002 (outcome `regather` when it is the only failing rule). The one fix-line map is `ScopeFixLines`; the view reads `not searched: <limit> — <fix line>`.
-A `not-synced` source reads by its `sync` pair (`null`, queued, running, finished, failed with optional `retryAt` or `failures`).
+`catching-up` is the one limit of an `ok` source (the code index was read, at an older commit of main than the map's; #990): `code-index` is `ok` with reason `catching-up` and `catchingUp {indexCommit, mapCommit, pending[]}`, the row's `limits[]` lists `catching-up`, and the view reads `code index catching up: index at <commit>, map at <commit>, N files pending — <fix line>` (not "not searched": it was searched, and only the pending files may be out of date). An index that is not an ancestor of the map's commit, or whose ancestry git cannot tell, is `degraded` `stale` and fails SCP-COV-002 as before. A `not-synced` source reads by its `sync` pair (`null`, queued, running, finished, failed with optional `retryAt` or `failures`).
 
 ## Desk helper
 
