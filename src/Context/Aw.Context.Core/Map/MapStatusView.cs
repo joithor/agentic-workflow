@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Roles;
 
 namespace Aw.Context.Core.Map;
 
@@ -25,5 +26,5 @@ public sealed record MapStatusView(
 
     /// <summary>Per repo, the indexed files each configured role matches and the role-like files no glob covers (issue 1105); left out when no repo in scope configures a role or has such a file.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public IReadOnlyList<Aw.Context.Core.Roles.RepoRoles>? Roles { get; init; }
+    public IReadOnlyList<RepoRoles>? Roles { get; init; }
 }
