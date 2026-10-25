@@ -51,22 +51,10 @@ public static partial class ProfileDiff
     private static IEnumerable<(string Key, string Value)> SetupAndContext(SindriProfile p) =>
         Present(("setup.mcp", p.Setup?.Mcp)).Concat(p.Context is { } context ? Leaves("context", context) : []);
 
-    private static IEnumerable<(string Key, string Value)> Leaves(string path, JsonElement element)
+    private static IEnumerable<(string Key, string Value)> Leaves(string path, JsonElement element) => element.ValueKind switch
     {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                return element.EnumerateObject().OrderBy(static p => p.Name, StringComparer.Ordinal).SelectMany(p => Leaves($"{path}.{p.Name}", p.Value));
-            case JsonValueKind.Array:
-                return element.EnumerateArray().SelectMany((item, position) => Leaves(string.Create(CultureInfo.InvariantCulture, $"{path}[{position}]"), item));
-            case JsonValueKind.Undefined:
-            case JsonValueKind.String:
-            case JsonValueKind.Number:
-            case JsonValueKind.True:
-            case JsonValueKind.False:
-            case JsonValueKind.Null:
-            default:
-                return [(path, element.ToString())];
-        }
-    }
+        JsonValueKind.Object => element.EnumerateObject().OrderBy(static p => p.Name, StringComparer.Ordinal).SelectMany(p => Leaves($"{path}.{p.Name}", p.Value)),
+        JsonValueKind.Array => element.EnumerateArray().SelectMany((item, position) => Leaves(string.Create(CultureInfo.InvariantCulture, $"{path}[{position}]"), item)),
+        JsonValueKind.Undefined or JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null or _ => [(path, element.ToString())],
+    };
 }
