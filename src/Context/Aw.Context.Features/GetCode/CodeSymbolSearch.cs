@@ -16,6 +16,7 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
 {
     internal async ValueTask<CodeSymbolFindings> Find(CodeView view, VisibleMap map, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {
+        using var band = FillBands.Start(FillBands.CodeSymbols);
         var inScope = ScopeRules.Resolve(settings, scope.Repos, scope.Caller);
         var allowed = inScope.IsError ? [] : inScope.Value;
         var version = map.Snapshot.Version;
