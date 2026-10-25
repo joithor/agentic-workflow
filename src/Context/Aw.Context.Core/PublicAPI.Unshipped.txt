@@ -7503,3 +7503,5 @@ Aw.Context.Core.Map.MapRuleset
 static Aw.Context.Core.Map.MapRuleset.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> string!
 Aw.Context.Core.Map.MapImport.Ruleset.get -> string?
 Aw.Context.Core.Map.MapImport.Ruleset.init -> void
+Aw.Context.Core.Map.MapStatusView.RulesOlder.get -> bool
+Aw.Context.Core.Map.MapStatusView.RulesOlder.init -> void
