@@ -111,6 +111,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -121,6 +122,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -136,7 +138,8 @@
           "depth": 1,
           "path": [
             "part-of-by surface:command/switch-tab"
-          ]
+          ],
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/group-tabs",
@@ -149,7 +152,8 @@
           "depth": 1,
           "path": [
             "part-of-by surface:command/group-tabs"
-          ]
+          ],
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-manager.restore-layout",
@@ -163,7 +167,8 @@
           "path": [
             "part-of-by surface:command/switch-tab",
             "on-by action:tab-manager.restore-layout"
-          ]
+          ],
+          "repo": "aw-split-panes"
         }
       ],
       "affects": [],
@@ -229,6 +234,7 @@
           "label": "src/tabs/TabManager.ts",
           "kind": "code",
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 1
         },
         {
@@ -245,6 +251,7 @@
           "label": "src/tabs/TabGroups.ts",
           "kind": "code",
           "trust": "untrusted",
+          "repo": "aw-split-panes",
           "depth": 1
         }
       ],
