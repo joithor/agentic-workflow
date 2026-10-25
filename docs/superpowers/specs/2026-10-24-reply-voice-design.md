@@ -130,7 +130,7 @@ Made-up delivery app. Slop first, then how to say it. The rules are in `joi.md`.
 > 2 - Pick how we backfill old orders, below.
 >
 > Moving: the checkout page fix is in review w one comment left. The nightly export is blocked on read-only DB
-> creds, I asked Sam for them.
+> creds, I asked infra for them.
 
 **Asking for a decision**
 > ✗ Option A optimizes for consistency while B minimizes migration surface. I'd lean B. Proceed?
