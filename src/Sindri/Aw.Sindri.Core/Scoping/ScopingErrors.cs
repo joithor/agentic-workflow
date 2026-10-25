@@ -29,8 +29,11 @@ public static class ScopingErrors
     /// <summary>SND-SCOPING-008: the hash tool (aw-packets) is missing or failed, so a packet file cannot be checked.</summary>
     public static readonly ErrorDefinition PacketToolFailed = new("SND-SCOPING-008", ErrorKind.Unavailable, "The packet hash tool is missing or failed");
 
+    /// <summary>SND-SCOPING-009: the context lenses gather needs were unavailable, after the input's retries. Not a question for a person: the Step is retried, then parks as unavailable (Health shows it) and runs again on `--resume`.</summary>
+    public static readonly ErrorDefinition LensesUnavailable = new("SND-SCOPING-009", ErrorKind.Unavailable, "The context lenses were unavailable");
+
     /// <summary>The catalogue's codes.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, NoTrackerSource, PacketPurged, PacketChanged, PacketToolFailed];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, NoTrackerSource, PacketPurged, PacketChanged, PacketToolFailed, LensesUnavailable];
 
     /// <summary>Codes the spec retired (never reused): SND-SCOPING-003.</summary>
     public static IReadOnlyList<string> Retired { get; } = ["SND-SCOPING-003"];

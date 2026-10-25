@@ -135,6 +135,7 @@ internal sealed partial class NeedsYouProjection
 
         return part.Suspension switch
         {
+            SuspensionKind.Park when payload.Detail?.Delta.Suspension is { Reason: ParkReason.Unavailable } => null,   // a down dependency asks nothing of a human: no row, and the desk task the park replaced is gone
             SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail?.Delta.Suspension is { } suspension && nested is { Count: > 0 } parked && NeedsYouRows.PointsAtChild(suspension, address) =>
                 (ParkPrefix, NestedPut(item, address, parked).Build),
             SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail?.Delta.Suspension is { } suspension =>
@@ -244,7 +245,7 @@ internal sealed partial class NeedsYouProjection
     {
         var instance = descendant.Payload.Instance;
         List<NestedPark> parked = [.. (before ?? []).Where(p => !string.Equals(p.Address, instance, StringComparison.Ordinal))];
-        if (descendant.Payload.Detail?.Delta.Suspension is { Kind: SuspensionKind.Park or SuspensionKind.Escalation } suspension)
+        if (descendant.Payload.Detail?.Delta.Suspension is { Kind: SuspensionKind.Park or SuspensionKind.Escalation } suspension && suspension.Reason != ParkReason.Unavailable)
         {
             parked.Add(new NestedPark(instance, suspension, descendant.Payload.Detail.Reason, descendant.Recorded.Sequence));
         }

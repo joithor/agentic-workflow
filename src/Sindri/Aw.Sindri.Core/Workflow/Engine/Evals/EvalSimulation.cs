@@ -170,7 +170,7 @@ internal sealed record EvalSimulation(
         {
             TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, line.Tokens ?? 0, StepRuntime.Agent, report)),
             TriggerNames.StepCompleted => Missing("step.completed needs the Step's 'outcome'"),
-            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, line.Tokens ?? 0, report)),
+            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, line.Tokens ?? 0, report) { Code = line.Code }),
             TriggerNames.WaitSatisfied => Satisfied(line, outputs, number),
             TriggerNames.ChildParked => Child(ChildChange.Parked, line.Park, number),
             TriggerNames.ChildResumed => Child(ChildChange.Resumed, reason: null, number),

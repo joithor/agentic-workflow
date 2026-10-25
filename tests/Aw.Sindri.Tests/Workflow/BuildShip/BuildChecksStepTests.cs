@@ -85,6 +85,20 @@ public sealed class BuildChecksStepTests
     }
 
     [Fact]
+    public async Task An_existing_test_the_plan_allows_but_does_not_name_ends_the_Step_as_a_plan_defect_that_names_the_file_and_the_fix()
+    {
+        var rig = Rig().Branch([new ChangedFile("src/a.test.ts", ChangeKind.Modified), Added("src/b.cs")]);
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("src/a.test.ts", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("testChange", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("(fix: ", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
+    [Fact]
     public async Task A_merge_commit_or_an_unconventional_subject_fails()
     {
         var rig = Rig().Branch([Added("src/a.cs")], commits: [new ChangedCommit("h1aaaaaaaa", "did stuff", IsMerge: false)]);

@@ -101,9 +101,7 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <summary>The fake keeps no eval files.</summary>
     public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<EvalPurgeReport>>(request.Scope.Caller.Kind == ContextCallerKind.Session
-            ? ContextErrors.SessionsDisabled.With("purging eval files is a human or service call: a session can't")
-            : new EvalPurgeReport(0, 0, 0));
+        ValueTask.FromResult<Result<EvalPurgeReport>>(new EvalPurgeReport(0, 0, 0));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
