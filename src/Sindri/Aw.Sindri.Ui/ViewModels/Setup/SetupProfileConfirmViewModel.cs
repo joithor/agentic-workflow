@@ -22,6 +22,11 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
 
     private bool Sending { get; set; }
 
+#pragma warning disable CS0067 // why: raised by the implementation commit; the red commit only declares it
+    /// <summary>Asked when the Approve button left the tree with focus in it: focus goes to the step heading.</summary>
+    internal event EventHandler<SetupFocusEventArgs>? FocusRequested;
+#pragma warning restore CS0067
+
     internal SetupProfileConfirmViewModel(Func<Uri?> url, Func<string?> hash, ISindriApi api, Func<string> cli)
     {
         (_url, _hash, _api, _cli) = (url, hash, api, cli);

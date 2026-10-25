@@ -78,6 +78,11 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>The repo form of the repo step; null for every other step.</summary>
     public SetupRepoFormViewModel? Repo { get; set; }
 
+#pragma warning disable CS0067 // why: raised by the implementation commit; the red commit only declares it
+    /// <summary>Asked when a form in this step needs focus on the step heading.</summary>
+    internal event EventHandler<SetupFocusEventArgs>? FocusRequested;
+#pragma warning restore CS0067
+
     /// <summary>The typed approval of the profile step; null for every other step.</summary>
     public SetupProfileConfirmViewModel? Profile
     {
