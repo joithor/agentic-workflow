@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Context;
+using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.Views.Context;
 
@@ -123,6 +124,17 @@ internal sealed partial class ContextPage : UserControl
         }
     }
 
+    // The clear button goes when the box is empty; a person who pressed it keeps focus, in the box they cleared.
+    private void ShowClear(bool shown)
+    {
+        if (!shown)
+        {
+            FocusHandOff.Before(AnchorClear, AnchorBox);
+        }
+
+        AnchorClear.IsVisible = shown;
+    }
+
     // The clear button: the box empties and the map is whole again.
     private void OnClearSearch(object? sender, RoutedEventArgs e)
     {
@@ -169,7 +181,7 @@ internal sealed partial class ContextPage : UserControl
         }
         else if (_page is not null && string.Equals(e.PropertyName, nameof(ContextPageViewModel.AnchorText), StringComparison.Ordinal))
         {
-            AnchorClear.IsVisible = _page.AnchorText.Length > 0;   // the clear button shows while the box holds something
+            ShowClear(_page.AnchorText.Length > 0);   // the clear button shows while the box holds something
         }
     }
 
@@ -177,7 +189,7 @@ internal sealed partial class ContextPage : UserControl
     private void Sync(ContextPageViewModel page)
     {
         ContextStack.DataContext = page.Map;
-        AnchorClear.IsVisible = page.AnchorText.Length > 0;
+        ShowClear(page.AnchorText.Length > 0);
         if (page.Map is { } map)
         {
             ContextCoverageStrip.Areas = map.CoverageAreas;
