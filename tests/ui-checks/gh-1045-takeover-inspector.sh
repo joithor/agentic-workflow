@@ -86,20 +86,25 @@ drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 \
 drv click --type ListBoxItem --name List >"$OUT/list.log" 2>&1 \
   || setup_fail "the List toggle was not clicked (driver: $(tr -d '\n' <"$OUT/list.log" | cut -c1-160))"
 # The run's title button is in the row; focus arriving on it selects the row (WorkflowsPage.OnSelect) and opens the drawer without opening the run.
-# The title button's text is in a child TextBlock; its NAME is "Open <title>, <workflow>". Poll a complete search (up to 60 s) for it.
-title_id=""
+# Find the run's row by its accessible name ("<title>, <workflow>, <status>, ..." on the focusable row border) in a complete search, polling up to 60 s.
+row_id=""
 for _ in $(seq 1 30); do
-  buttons="$(drv search --type Button --limit 5000 2>/dev/null)" || buttons=""
-  if [ -n "$buttons" ]; then
-    [ "$(printf '%s' "$buttons" | jq '(.total // 0) > (.matches | length)')" = false ] || setup_fail "the button search is incomplete (more buttons than --limit 5000)"
-    title_id="$(printf '%s' "$buttons" | jq -r '[.matches[] | select(.visible == true and ((.name // "") | startswith("Open Fixture agent run")))][0].id // empty')"
-    [ -n "$title_id" ] && break
+  nodes="$(drv search --limit 5000 2>/dev/null)" || nodes=""
+  if [ -n "$nodes" ]; then
+    [ "$(printf '%s' "$nodes" | jq '(.total // 0) > (.matches | length)')" = false ] || setup_fail "the node search is incomplete (more nodes than --limit 5000)"
+    row_id="$(printf '%s' "$nodes" | jq -r '[.matches[] | select(.visible == true and .type == "Border" and ((.name // "") | startswith("Fixture agent run, ")))][0].id // empty')"
+    [ -n "$row_id" ] && break
   fi
   sleep 2
 done
-[ -n "$title_id" ] || setup_fail "Workflows lists no run titled Fixture agent run"
-drv action --do focus --node-id "$title_id" >"$OUT/select.log" 2>&1 \
+[ -n "$row_id" ] || setup_fail "Workflows lists no row for Fixture agent run"
+# Focus selects the row; Enter on the selected row opens the drawer on it (a second Enter would open the run). The row border is not a button, so the key reaches the page.
+drv action --do focus --node-id "$row_id" >"$OUT/select.log" 2>&1 \
   || setup_fail "the run's row could not take focus (driver: $(tr -d '\n' <"$OUT/select.log" | cut -c1-160))"
+drv key Enter --node-id "$row_id" >"$OUT/enter.log" 2>&1 \
+  || setup_fail "Enter on the run's row was not accepted (driver: $(tr -d '\n' <"$OUT/enter.log" | cut -c1-160))"
+drv wait-for --name "Run details" --state visible --wait-ms 30000 >/dev/null 2>&1 \
+  || setup_fail "the run drawer (Run details) never opened after Enter on the row"
 drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the run drawer shows no Take over button for the live agent run"
 drv screenshot --out "$OUT/before-click.png" >/dev/null 2>&1
