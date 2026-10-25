@@ -41,7 +41,7 @@ public sealed class EvalCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task An_eval_hands_every_flag_and_the_allowlist_to_the_service_and_prints_the_report()
     {
-        var report = new EvalReport("ask-check", "claude-cli", "as-is", LabelSource.Outcome, 2, 1, 0.5, 0.5, 1, 12, []);
+        var report = Report("claude-cli", LabelSource.Outcome, p50: 12);
         var scorer = new RecordingService<EvaluateQuestionRequest, EvaluateQuestionResponse>(new EvaluateQuestionResponse(report, "/x/r.md"));
         var cli = new JudgeCli(_state) { Overrides = services => services.AddScoped<IService<EvaluateQuestionRequest, EvaluateQuestionResponse>>(_ => scorer) };
 
@@ -59,7 +59,7 @@ public sealed class EvalCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task An_eval_without_flags_asks_jev_over_any_label_as_is()
     {
-        var scorer = new RecordingService<EvaluateQuestionRequest, EvaluateQuestionResponse>(new EvaluateQuestionResponse(new EvalReport("ask-check", "jev", "as-is", null, 0, 0, 0, 0, 0, 0, []), "/x/r.md"));
+        var scorer = new RecordingService<EvaluateQuestionRequest, EvaluateQuestionResponse>(new EvaluateQuestionResponse(Report("jev"), "/x/r.md"));
         var cli = new JudgeCli(_state) { Overrides = services => services.AddScoped<IService<EvaluateQuestionRequest, EvaluateQuestionResponse>>(_ => scorer) };
 
         var run = await cli.Run("eval", "ask-check", "--labels", "any");
@@ -75,7 +75,7 @@ public sealed class EvalCommandTests : IDisposable
     [InlineData("--labels must be outcome, adjudicator, override or any", "--labels", "maybe")]
     public async Task An_unknown_provider_or_label_source_is_exit_1_and_asks_nothing(string stderr, params string[] flags)
     {
-        var scorer = new RecordingService<EvaluateQuestionRequest, EvaluateQuestionResponse>(new EvaluateQuestionResponse(new EvalReport("q", "jev", "as-is", null, 0, 0, 0, 0, 0, 0, []), "/x"));
+        var scorer = new RecordingService<EvaluateQuestionRequest, EvaluateQuestionResponse>(new EvaluateQuestionResponse(Report("jev"), "/x"));
         var cli = new JudgeCli(_state) { Overrides = services => services.AddScoped<IService<EvaluateQuestionRequest, EvaluateQuestionResponse>>(_ => scorer) };
 
         var run = await cli.Run(["eval", "ask-check", .. flags]);
@@ -147,4 +147,7 @@ public sealed class EvalCommandTests : IDisposable
     }
 
     public void Dispose() => _state.Dispose();
+
+    private static EvalReport Report(string provider, LabelSource? labels = null, long p50 = 0) =>
+        new("ask-check", provider, "as-is", labels, N: 0, Decided: 0, Accuracy: 0, DecisiveRate: 0, AccuracyDecisive: 0, P50LatencyMs: p50, Sweep: []);
 }

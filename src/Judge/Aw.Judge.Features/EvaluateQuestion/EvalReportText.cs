@@ -77,7 +77,7 @@ internal static class EvalReportText
             [
                 "## Per label source (shared items)",
                 "",
-                $"Outcome vs adjudicator agreement: {agreement.Agreed}/{agreement.Shared} ({Percent(EvalScoring.Ratio(agreement.Agreed, agreement.Shared))})",
+                string.Create(CultureInfo.InvariantCulture, $"Outcome vs adjudicator agreement: {agreement.Agreed}/{agreement.Shared} ({Percent(EvalScoring.Ratio(agreement.Agreed, agreement.Shared))})"),
                 "",
                 $"- outcome: {Summary(sources.Outcome)}",
                 $"- adjudicator: {Summary(sources.Adjudicator)}",

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Labels;
@@ -247,7 +248,7 @@ public sealed class EvaluateQuestionTests
 
         var result = await world.Service.Handle(A.EvaluateQuestionRequest().Build(), _ct);
 
-        var stem = $"{InMemoryEvalFiles.ReportsDirectory}/ask-check-jev-as-is-{world.Clock.GetUtcNow().ToUnixTimeMilliseconds()}";
+        var stem = string.Create(CultureInfo.InvariantCulture, $"{InMemoryEvalFiles.ReportsDirectory}/ask-check-jev-as-is-{world.Clock.GetUtcNow().ToUnixTimeMilliseconds()}");
         Assert.Equal(stem + ".md", result.Value.ReportPath);
         Assert.StartsWith("# judge eval: ask-check / jev / as-is", world.Files.Text(stem + ".md"), StringComparison.Ordinal);
         using var json = JsonDocument.Parse(world.Files.Text(stem + ".json")!);

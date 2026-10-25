@@ -27,7 +27,7 @@ internal sealed class FakeEvalStore : IEvalStore
         var chosen = _labels
             .Where(l => string.Equals(l.Item.Question, question, StringComparison.Ordinal) && (source is null || l.Source == source) && l.Label != "skip")
             .GroupBy(l => l.Item.Id.Value, StringComparer.Ordinal)
-            .Select(g => g.OrderBy(l => Array.IndexOf(_strength, l.Source)).First())
+            .Select(g => g.MinBy(l => Array.IndexOf(_strength, l.Source))!)   // why: a group is never empty
             .Select(l => new LabeledItem(l.Item, l.Label, l.Source))
             .ToList();
         return ValueTask.FromResult(Results.Success<IReadOnlyList<LabeledItem>>(chosen));

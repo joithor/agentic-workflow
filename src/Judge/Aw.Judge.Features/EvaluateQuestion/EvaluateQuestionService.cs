@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Errors;
@@ -22,27 +23,13 @@ internal sealed class EvaluateQuestionService(
     public async ValueTask<Result<EvaluateQuestionResponse>> Handle(EvaluateQuestionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Providers is { } allowed && !allowed.Contains(request.Provider))
+        var plan = Plan(request);
+        if (plan.IsError)
         {
-            return JudgeErrors.ProviderExcluded.With($"{ProviderNames.Name(request.Provider)} is excluded by the providers allowlist");
+            return Results.Failure<EvaluateQuestionResponse>(plan.Error);
         }
 
-        if (QuestionCatalog.Prepare(request.Question) is not { } question)
-        {
-            return JudgeErrors.Invalid.With($"unknown question: {request.Question}");
-        }
-
-        var variant = EvalVariants.Find(request.Question, request.Variant);
-        if (variant is null)
-        {
-            return JudgeErrors.Invalid.With($"unknown variant for {request.Question}: {request.Variant}");
-        }
-
-        if (request.Collapse is { } collapse && !question.Outputs.Contains(collapse, StringComparer.Ordinal))
-        {
-            return JudgeErrors.Invalid.With($"--collapse must be one of: {string.Join(", ", question.Outputs)} (got {collapse})");
-        }
-
+        var (question, variant) = plan.Value;
         var labeled = await Items(request, cancellationToken).ConfigureAwait(false);
         if (labeled.IsError)
         {
@@ -58,6 +45,29 @@ internal sealed class EvaluateQuestionService(
         }
 
         return await Report(request, question, results.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    // What the request names, checked before any store or provider is touched.
+    private static Result<(PreparedQuestion Question, Func<JsonNode?, JsonNode?> Variant)> Plan(EvaluateQuestionRequest request)
+    {
+        if (request.Providers is { } allowed && !allowed.Contains(request.Provider))
+        {
+            return JudgeErrors.ProviderExcluded.With($"{ProviderNames.Name(request.Provider)} is excluded by the providers allowlist");
+        }
+
+        if (QuestionCatalog.Prepare(request.Question) is not { } question)
+        {
+            return JudgeErrors.Invalid.With($"unknown question: {request.Question}");
+        }
+
+        if (EvalVariants.Find(request.Question, request.Variant) is not { } variant)
+        {
+            return JudgeErrors.Invalid.With($"unknown variant for {request.Question}: {request.Variant}");
+        }
+
+        return request.Collapse is { } collapse && !question.Outputs.Contains(collapse, StringComparer.Ordinal)
+            ? JudgeErrors.Invalid.With($"--collapse must be one of: {string.Join(", ", question.Outputs)} (got {collapse})")
+            : Results.Success((question, variant));
     }
 
     private async ValueTask<Result<IReadOnlyList<LabeledItem>>> Items(EvaluateQuestionRequest request, CancellationToken cancellationToken)
@@ -92,7 +102,7 @@ internal sealed class EvaluateQuestionService(
         {
             if (EvalRecordLine.TryRead(line) is not { } row)
             {
-                return JudgeErrors.Invalid.With($"cannot read replay file: line {number} is not an eval record");
+                return JudgeErrors.Invalid.With(string.Create(CultureInfo.InvariantCulture, $"cannot read replay file: line {number} is not an eval record"));
             }
 
             latest[row.ItemId] = row;

@@ -31,7 +31,8 @@ internal static class EvalVariants
     /// (the others are left out, not counted as invalid input in one variant only).
     /// </summary>
     internal static bool NeedsStoredDiff(string question, string variant) =>
-        string.Equals(question, ResolutionCheckQuestion.Name, StringComparison.Ordinal) && variant is "stat" or "full";
+        string.Equals(question, ResolutionCheckQuestion.Name, StringComparison.Ordinal)
+        && (string.Equals(variant, "stat", StringComparison.Ordinal) || string.Equals(variant, "full", StringComparison.Ordinal));
 
     internal static bool HasStoredDiff(JsonNode? input) =>
         input is JsonObject obj && obj["diff"] is JsonValue value && value.GetValueKind() == JsonValueKind.String;

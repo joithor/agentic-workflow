@@ -45,17 +45,15 @@ internal sealed class FileEvalFiles(string reportsDirectory) : IEvalFiles
                 _ = Directory.CreateDirectory(directory);
             }
 
-            var stream = new FileStream(path, new FileStreamOptions
+            using var stream = new FileStream(path, new FileStreamOptions
             {
                 Mode = mode,
                 Access = FileAccess.Write,
                 Share = FileShare.Read,
                 UnixCreateMode = OperatingSystem.IsWindows() ? null : OwnerOnly,
             });
-            using (stream)
-            {
-                stream.Write(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text));
-            }
+            stream.Write(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(text));
+            stream.Close();
 
             if (!OperatingSystem.IsWindows())
             {

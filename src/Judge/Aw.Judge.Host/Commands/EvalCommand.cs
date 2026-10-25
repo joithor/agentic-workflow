@@ -6,6 +6,7 @@ using Aw.Judge.Core.Labels;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Features.EvaluateQuestion;
 using Aw.Judge.Features.ImportTurns;
+using Aw.Kernel;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -48,33 +49,47 @@ internal static class EvalCommand
             return CommandOutput.Usage(EvalSynopsis, parsed.Positional.Count == 0 ? "a question name is required" : "one question at a time");
         }
 
-        if (!ProviderNames.TryParse(parsed.Flags.GetValueOrDefault("--provider", DefaultProvider), out var provider))
+        return await Score(parsed.Positional[0], parsed.Flags, allowed, services, json).ConfigureAwait(false);
+    }
+
+    private static async Task<int> Score(
+        string question, IReadOnlyDictionary<string, string> flags, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
+    {
+        if (!ProviderNames.TryParse(flags.GetValueOrDefault("--provider", DefaultProvider), out var provider))
         {
-            return CommandOutput.Emit(1, "", $"provider not available: {parsed.Flags["--provider"]}");
+            return CommandOutput.Emit(1, "", $"provider not available: {flags["--provider"]}");
         }
 
-        LabelSource? labels = null;
-        if (parsed.Flags.TryGetValue("--labels", out var source) && !string.Equals(source, "any", StringComparison.Ordinal))
+        var labels = Labels(flags.GetValueOrDefault("--labels"));
+        if (labels.IsError)
         {
-            if (!LabelSources.TryParse(source, out var named))
-            {
-                return CommandOutput.Emit(1, "", "--labels must be outcome, adjudicator, override or any");
-            }
-
-            labels = named;
+            return CommandOutput.Emit(1, "", labels.Error.Message);
         }
 
         var request = new EvaluateQuestionRequest(
-            parsed.Positional[0],
+            question,
             provider,
-            parsed.Flags.GetValueOrDefault("--variant", "as-is"),
-            labels,
-            parsed.Flags.GetValueOrDefault("--collapse"),
-            parsed.Flags.GetValueOrDefault("--record"),
-            parsed.Flags.GetValueOrDefault("--replay"),
+            flags.GetValueOrDefault("--variant", "as-is"),
+            labels.Value,
+            flags.GetValueOrDefault("--collapse"),
+            flags.GetValueOrDefault("--record"),
+            flags.GetValueOrDefault("--replay"),
             allowed);
         var result = await services.GetRequiredService<IService<EvaluateQuestionRequest, EvaluateQuestionResponse>>().Handle(request, CancellationToken.None).ConfigureAwait(false);
         return result.IsError ? Failed(result.Error) : CommandOutput.Emit(0, result.Value.ToJson().ToJsonString(json));
+    }
+
+    // 'any' (or no flag) is no source; the rest are label source names.
+    private static Result<LabelSource?> Labels(string? source)
+    {
+        if (source is null || string.Equals(source, "any", StringComparison.Ordinal))
+        {
+            return Results.Success<LabelSource?>(value: null);
+        }
+
+        return LabelSources.TryParse(source, out var named)
+            ? Results.Success<LabelSource?>(named)
+            : JudgeErrors.Invalid.With("--labels must be outcome, adjudicator, override or any");
     }
 
     private static async Task<int> RunImport(string[] args, IServiceProvider services, JsonSerializerOptions json)
@@ -114,7 +129,7 @@ internal static class EvalCommand
     }
 
     // An allowlist that leaves the provider out is a usage error; any other failure is an error.
-    private static int Failed(Aw.Kernel.Error error) =>
+    private static int Failed(Error error) =>
         string.Equals(error.Code, JudgeErrors.ProviderExcluded.Code, StringComparison.Ordinal)
             ? CommandOutput.Emit(CommandOutput.UsageExit, "", error.Message.ReplaceLineEndings(" "))
             : CommandOutput.Emit(1, "", error.Message.ReplaceLineEndings(" "));

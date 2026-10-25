@@ -53,14 +53,7 @@ internal static class EvalRecordLine
                 return null;
             }
 
-            ProviderResult? answer = node["status"]?.GetValue<string>() switch
-            {
-                Decided when node["decision"]?.GetValue<string>() is { } decision && node["confidence"] is { } confidence =>
-                    new ProviderDecided(decision, confidence.GetValue<double>(), reason),
-                Unavailable => new ProviderUnavailable(reason),
-                Errored => new ProviderErrored(reason),
-                _ => null,
-            };
+            var answer = Answer(node, reason);
             return answer is null ? null : new EvalResult(itemId, label, answer, latency);
         }
         catch (Exception exception) when (exception is InvalidOperationException or FormatException)
@@ -68,4 +61,13 @@ internal static class EvalRecordLine
             return null;
         }
     }
+
+    private static ProviderResult? Answer(JsonObject node, string reason) => node["status"]?.GetValue<string>() switch
+    {
+        Decided when node["decision"]?.GetValue<string>() is { } decision && node["confidence"] is { } confidence =>
+            new ProviderDecided(decision, confidence.GetValue<double>(), reason),
+        Unavailable => new ProviderUnavailable(reason),
+        Errored => new ProviderErrored(reason),
+        _ => null,
+    };
 }
