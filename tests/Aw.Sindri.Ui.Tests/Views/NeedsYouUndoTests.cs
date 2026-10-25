@@ -13,7 +13,7 @@ using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
-/// <summary>Mark all seen offers Undo for 10 s on Home (proof B2): a visible "N marked seen · Undo", reachable by keyboard, announced once.</summary>
+/// <summary>Mark all seen offers Undo for SeenTracker.UndoFor on Home (proof B2): a visible "N marked seen · Undo", reachable by keyboard, announced once.</summary>
 [Lane(TestLane.Integration)]
 public sealed class NeedsYouUndoTests : IDisposable
 {
@@ -111,7 +111,7 @@ public sealed class NeedsYouUndoTests : IDisposable
     });
 
     [Fact]
-    public Task The_offer_is_announced_once_through_a_polite_region_and_expires_after_ten_seconds() => OnUi(async () =>
+    public Task The_offer_is_announced_once_through_a_polite_region_and_expires_after_the_undo_window() => OnUi(async () =>
     {
         var (window, _) = await WithFeed(() => Parks(2));
         var live = Named<TextBlock>(window, "NeedsYouSeenLive");
@@ -131,7 +131,7 @@ public sealed class NeedsYouUndoTests : IDisposable
         Assert.Equal([Labels.MarkedSeen(2)], spoken);
         Assert.Equal(Avalonia.Automation.AutomationLiveSetting.Polite, Avalonia.Automation.AutomationProperties.GetLiveSetting(live));
 
-        _clock.Advance(TimeSpan.FromSeconds(11));
+        _clock.Advance(TimeSpan.SeenTracker.UndoFor + TimeSpan.FromSeconds(1));
         for (var i = 0; i < 50 && Named<Control>(window, "NeedsYouUndo").IsEffectivelyVisible; i++)
         {
             await Task.Delay(10, Token);
