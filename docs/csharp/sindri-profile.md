@@ -161,7 +161,9 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `denyPaths` | string[] | no | none | Repo-relative globs map extraction never reads (`private/**`, `**/*.generated.ts`), added to the built-in secret globs and never replacing them (context spec §6.2). A repo's own are added to the profile's |
-| `roles` | map of string to string[] | no | none | File roles this repo does not index: a role name to its repo-relative globs (`cron: ["**/*cron*"]`, `fixture: ["**/fixtures/**"]`; same glob rules as `denyPaths`). The files of a named role are never extracted, clustered, cited or searched, exactly as if their globs were in `denyPaths`; roles are per repo only; a profile-level `index.roles` is refused. A glob that matches a directory covers everything under it (`**/*cron*` denies `src/crons/run.ts`). An entry may instead be `prefix:<text>`, `suffix:<text>` or `regex:<pattern>`, matched against any one path segment (a directory or the file name) ignoring case (`suffix:.generated.ts`, `regex:^v\\d+$`); a bad regex or a `/` in a prefix or suffix is refused with the key path. Roles apply when the map is built and again on every read, so a role added later hides its nodes and evidence at once. There are no built-in roles: without `roles`, nothing extra is hidden |
+| `roles` | map of string to string[] | no | none | File roles of this repo, ignored unless `demote` names them (below): a role name to its repo-relative globs (`cron: ["**/*cron*"]`, `fixture: ["**/fixtures/**"]`; same glob rules as `denyPaths`). The files of a named role are never extracted, clustered, cited or searched, exactly as if their globs were in `denyPaths`; roles are per repo only; a profile-level `index.roles` is refused. A glob that matches a directory covers everything under it (`**/*cron*` denies `src/crons/run.ts`). An entry may instead be `prefix:<text>`, `suffix:<text>` or `regex:<pattern>`, matched against any one path segment (a directory or the file name) ignoring case (`suffix:.generated.ts`, `regex:^v\\d+$`); a bad regex or a `/` in a prefix or suffix is refused with the key path. Roles apply when the map is built and again on every read, so a role added later hides its nodes and evidence at once. There are no built-in roles: without `roles`, nothing extra is hidden |
+| `ignore` | string[] | no | none | Role names (keys of this repo's `roles`) whose files are not indexed and never cited, as for `denyPaths`. A role in neither `ignore` nor `demote` is ignored, so a profile with `roles` and no lists behaves as before. Per repo only (a profile-level `index.ignore` is refused); a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.ignore[0]`) |
+| `demote` | string[] | no | none | Role names (keys of this repo's `roles`) whose files stay indexed and searchable but are never a feature implementer, anchor or scope surface, and rank last in answers and lenses. Per repo only; a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.demote[1]`), and a role in both `ignore` and `demote` is refused |
 | `utilityGlobs` | string[] | no | none | Globs (same rules as `denyPaths`) of internal utility modules; the code index flags their exports `utility`. A repo's own are added to the profile's |
 | `maxFileKB` | whole number | no | `4096` | The code index skips larger files as `too-large`. 1 to 102400 |
 | `maxTotalMB` | whole number | no | `4096` | Larger tracked code input (code files only; docs, assets and lockfiles do not count) stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
@@ -170,6 +172,25 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | `graph` | mapping | no | none | The code index's graph layer, below |
 
 A repo's `index:` replaces each scalar key it names (and each `embeddings` and `graph` key it names) and adds its list keys to the profile's. Unknown keys fail validation, in `embeddings` and `graph` too; a bad value is refused with its key path (`index.graph.maxMB: must be 1 to 4096`).
+
+#### `index.ignore` and `index.demote`
+
+A role names a set of files. `ignore` hides them from the code index and the context map; `demote` keeps them indexed and searchable but out of the product picture: a demoted file keeps its node but implements no feature, is never an anchor or a scope surface, and ranks last in answers and lenses.
+
+```yaml
+repos:
+  - name: web-app
+    path: /work/web-app
+    index:
+      roles:
+        test: ["**/*.test.ts", "**/__tests__/**"]
+        fixture: ["**/fixtures/**"]
+        demo: ["demo/**"]
+        generated: ["**/*.generated.ts"]
+      ignore: [generated]
+      demote: [test, fixture, demo]
+```
+
 
 #### `index.concepts`
 

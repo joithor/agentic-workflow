@@ -534,7 +534,7 @@ Aw.Context.Core.Engine.ProfileRecognizer.Pattern.get -> string!
 Aw.Context.Core.Engine.ProfileRecognizer.ProfileRecognizer(string! kind, string! glob, string! pattern, string! keyFrom) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry
 Aw.Context.Core.Engine.ProfileRepoEntry.<Clone>$() -> Aw.Context.Core.Engine.ProfileRepoEntry!
-Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts, out System.Collections.Generic.IReadOnlyList<string!>? DemotePaths) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Equals(Aw.Context.Core.Engine.ProfileRepoEntry? other) -> bool
@@ -542,7 +542,7 @@ Aw.Context.Core.Engine.ProfileRepoEntry.Name.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Name.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.init -> void
-Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts = null) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts = null, System.Collections.Generic.IReadOnlyList<string!>? DemotePaths = null) -> void
 Aw.Context.Core.Engine.PublishSettings
 Aw.Context.Core.Engine.PublishSettings.<Clone>$() -> Aw.Context.Core.Engine.PublishSettings!
 Aw.Context.Core.Engine.PublishSettings.Equals(Aw.Context.Core.Engine.PublishSettings? other) -> bool
@@ -7498,3 +7498,5 @@ Aw.Context.Core.Engine.ContextRepo.DemotePaths.get -> System.Collections.Generic
 Aw.Context.Core.Engine.ContextRepo.DemotePaths.init -> void
 Aw.Context.Core.Engine.ContextRepo.Demotes(string! path) -> bool
 static Aw.Context.Core.Extract.ClusterFeatures.Propose(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Extract.ClusterSet! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! labels, Aw.Context.Core.Extract.ExtractedMap! extracted) -> Aw.Context.Core.Extract.ExtractedMap!
+Aw.Context.Core.Engine.ProfileRepoEntry.DemotePaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Engine.ProfileRepoEntry.DemotePaths.init -> void
