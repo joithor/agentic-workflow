@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
@@ -36,7 +37,7 @@ public sealed class AgentsPageViewModelTests
         Assert.Equal(expected, page.Head);
         page.FilterProvider("Codex");
         var shown = page.Groups.SelectMany(g => g.Rows).Count();
-        Assert.StartsWith($"{shown} of {live} ", page.Head, StringComparison.Ordinal);
+        Assert.StartsWith(string.Create(CultureInfo.InvariantCulture, $"{shown} of {live} "), page.Head, StringComparison.Ordinal);
         Assert.Contains(page.Head, page.HeadName, StringComparison.Ordinal);
         page.FilterProvider(Labels.AllProviders);
         Assert.Equal(expected, page.Head);
