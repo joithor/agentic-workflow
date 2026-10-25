@@ -118,7 +118,6 @@ public sealed class TakeoverViewerTests
         Assert.Contains(expanded.Commands, c => c.IsTakeOver);
 
         _ = expanded.TakeOverAsync();
-        _ = expanded.TakeOverAsync();
         await Until(() => expanded.AttachOutcomeLine.Length > 0 && expanded.AttachOutcomeLine != Labels.AttachSending);
 
         var sent = Assert.Single(_server.CommandCalls);

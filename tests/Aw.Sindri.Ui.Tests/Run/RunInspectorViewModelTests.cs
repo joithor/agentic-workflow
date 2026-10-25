@@ -60,7 +60,6 @@ public sealed class RunInspectorViewModelTests
         var inspector = page.Inspector!;
 
         inspector.TakeOver();
-        inspector.TakeOver();
         await Until(() => inspector.TakeOverLine.Length > 0 && inspector.TakeOverLine != Labels.AttachSending);
 
         var sent = Assert.Single(_server.CommandCalls);

@@ -161,13 +161,28 @@ public sealed class RunInspectorViewModelTests
         inspector.OpenRequested += (_, e) => asked.Add(e);
 
         inspector.TakeOver();
-        inspector.TakeOver();
         await Until(() => inspector.TakeOverLine.Length > 0 && inspector.TakeOverLine != Labels.AttachSending);
 
         var sent = Assert.Single(_server.CommandCalls);
         Assert.Equal((inspector.Row!.InstanceId, CommandKind.Takeover), (sent.Instance, sent.Body.Kind));
         Assert.Equal(Labels.LaunchOpenedIn("Warp"), inspector.TakeOverLine);
         Assert.Empty(asked);
+    }
+
+    [Fact]
+    public async Task A_second_press_while_the_takeover_is_out_sends_nothing_and_the_line_says_sending()
+    {
+        _server.WorkflowCommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var inspector = await Shown("RUNNING");
+
+        inspector.TakeOver();
+        inspector.TakeOver();
+        await Until(() => _server.CommandCalls.Count > 0);
+        Assert.Equal(Labels.AttachSending, inspector.TakeOverLine);
+        _server.WorkflowCommandGate.SetResult();
+        await Until(() => inspector.TakeOverLine != Labels.AttachSending);
+
+        _ = Assert.Single(_server.CommandCalls);
     }
 
     [Fact]
