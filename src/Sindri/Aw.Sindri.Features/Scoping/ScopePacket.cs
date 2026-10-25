@@ -138,7 +138,7 @@ internal static class ScopePacket
                 ["hops"] = ScopeJson.ToArray(ScopeJson.Strings(entry, "hops")),
                 ["mapVersion"] = ScopeJson.Str(entry, "mapVersion") ?? string.Empty,
                 ["foundCount"] = ScopeJson.Int(entry, "foundCount") ?? 0,
-                ["nodes"] = Untrusted(ScopeJson.Items(entry, "nodes")),
+                ["nodes"] = Untrusted(ScopeJson.Items(entry, "nodes"), "demoted", "role"),
                 ["edges"] = Untrusted(ScopeJson.Items(entry, "edges")),
                 ["items"] = Untrusted(ScopeJson.Items(entry, "items")),
                 ["truncated"] = ScopeJson.ToArray(ScopeJson.Strings(entry, "truncated")),
@@ -148,12 +148,18 @@ internal static class ScopePacket
         return file;
     }
 
-    private static JsonArray Untrusted(IEnumerable<JsonNode> entries)
+    // The marks named in dropped are facts-only (the coverage check reads them); the packet's closed node schema has no place for them.
+    private static JsonArray Untrusted(IEnumerable<JsonNode> entries, params string[] dropped)
     {
         var stamped = new JsonArray();
         foreach (var entry in entries)
         {
             var copy = Plain((JsonObject)entry.DeepClone());
+            foreach (var name in dropped)
+            {
+                _ = copy.Remove(name);
+            }
+
             copy["trust"] = ScopeTrust.Untrusted;
             ScopeJson.Append(stamped, copy);
         }
