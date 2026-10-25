@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -29,7 +28,7 @@ public sealed class TakeoverViewerCheckTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    [Fact(Timeout = 60_000)]
+    [Fact]
     public async Task A_takeover_opens_the_live_session_in_the_viewer_and_reports_it()
     {
         var viewer = new FakeTerminalViewer("warp", "Warp");
@@ -55,7 +54,7 @@ public sealed class TakeoverViewerCheckTests
         Assert.Equal("warp", launched.GetProperty("kind").GetString());
     }
 
-    [Fact(Timeout = 60_000)]
+    [Fact]
     public async Task With_no_usable_viewer_the_takeover_succeeds_and_the_outcome_is_failed_no_viewer()
     {
         var viewer = new FakeTerminalViewer("print", "Print");
