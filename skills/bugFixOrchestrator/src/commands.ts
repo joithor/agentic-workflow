@@ -394,28 +394,45 @@ export const DIFF_FIELD_CAP = 200_000;
 
 const DIFF_EXCLUDES = [":(exclude)package-lock.json", ":(exclude)**/dist/**"];
 
-/**
- * The paths the candidate's own commits touched since the baseline, following
- * its first-parent line. Merge commits are left out and so are the commits a
- * merge brought in from main, which are not the candidate's; empty when git
- * fails or the candidate made no commits of its own.
- */
-function ownPaths(deps: Deps, cwd: string, base: string, commit: string): string[] {
+/** The tip of the main the candidate last merged in (the second parent of its latest first-parent merge), if it merged one. */
+function mergedMainTip(deps: Deps, cwd: string, base: string, commit: string): string | undefined {
   try {
-    const names = deps.git(cwd, ["log", "--first-parent", "--no-merges", "--format=", "--name-only", `${base}..${commit}`]);
-    return [...new Set(names.split("\n").filter((n) => n !== ""))];
+    const latestMerge = deps.git(cwd, ["rev-list", "--first-parent", "--merges", "--max-count=1", `${base}..${commit}`]);
+    return latestMerge === "" ? undefined : deps.git(cwd, ["rev-parse", `${latestMerge}^2`]);
   } catch {
-    return [];
+    return undefined;
   }
 }
 
-/** The pathspec for the candidate's diff: its own files, or the whole tree when they can't be told apart. */
-const diffPathspec = (own: string[]): string[] => ["--", ...(own.length === 0 ? ["."] : own), ...DIFF_EXCLUDES];
+/** The tree of the baseline with that main merged in; undefined when the merge conflicts or git can't do it. */
+function baselinePlusMain(deps: Deps, cwd: string, base: string, mainTip: string): string | undefined {
+  try {
+    return deps.git(cwd, ["merge-tree", "--write-tree", base, mainTip]).split("\n")[0];
+  } catch {
+    return undefined;
+  }
+}
 
-function fullDiff(deps: Deps, cwd: string, base: string, commit: string, own: string[]): string | undefined {
+/**
+ * What the candidate itself changed, as a diff or (stat) a diff stat. Without a
+ * merge that is the diff from the baseline. After merging main it is the diff
+ * from the baseline-plus-main tree, so main's moves never show, even in a file
+ * the fix also edited. When that merge conflicts, the candidate's own commits
+ * on its first-parent line, as patches.
+ */
+function ownChange(deps: Deps, cwd: string, base: string, commit: string, stat: boolean): string {
+  const pathspec = ["--", ".", ...DIFF_EXCLUDES];
+  const mainTip = mergedMainTip(deps, cwd, base, commit);
+  if (mainTip === undefined) return deps.git(cwd, ["diff", ...(stat ? ["--stat"] : []), base, commit, ...pathspec]);
+  const tree = baselinePlusMain(deps, cwd, base, mainTip);
+  if (tree !== undefined) return deps.git(cwd, ["diff", ...(stat ? ["--stat"] : []), tree, commit, ...pathspec]);
+  return deps.git(cwd, ["log", "--first-parent", "--no-merges", stat ? "--stat" : "-p", "--format=commit %h %s", `${base}..${commit}`, ...pathspec]);
+}
+
+function fullDiff(deps: Deps, cwd: string, base: string, commit: string): string | undefined {
   let diff: string;
   try {
-    diff = deps.git(cwd, ["diff", base, commit, ...diffPathspec(own)]);
+    diff = ownChange(deps, cwd, base, commit, false);
   } catch {
     return undefined;
   }
@@ -441,9 +458,8 @@ export function judgeCandidate(dir: string, candidateId: string, deps: Deps): Re
     const check = state.check as NonNullable<State["check"]>;
     // Derived from state, not agent-written, so it can't steer the verdict.
     const checkSummary = check.kind === "test"
-      ? `the regression test ${check.path}, run as \`${(check.command as string[]).join(" ")}\``
+      ? `the regression test ${check.path} (committed in the baseline before the fix and frozen; it failed there), run as \`${(check.command as string[]).join(" ")}\``
       : `the ui-evidence script ${check.path}`;
-    const own = ownPaths(deps, candidate.cwd, base, candidate.commit);
     // Key order must match ResolutionCheckInputSchema: judge digests the parsed input.
     const input = {
       brief: state.ticket.brief,
@@ -454,10 +470,10 @@ export function judgeCandidate(dir: string, candidateId: string, deps: Deps): Re
       checkSummary,
       beforePassed: false,
       afterPassed: true,
-      diffStat: deps.git(candidate.cwd, ["diff", "--stat", base, candidate.commit, ...diffPathspec(own)]),
+      diffStat: ownChange(deps, candidate.cwd, base, candidate.commit, true),
       // Full diff (RF-1: lockfiles and build output excluded; judge caps what it prompts with).
       // Omitted when git fails, so judging fails open to the stat-only question.
-      diff: fullDiff(deps, candidate.cwd, base, candidate.commit, own),
+      diff: fullDiff(deps, candidate.cwd, base, candidate.commit),
     };
     const text = JSON.stringify(input);
     const judgeInputDigest = createHash("sha256").update(text).digest("hex").slice(0, 16);
