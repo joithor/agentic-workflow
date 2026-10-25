@@ -55,18 +55,16 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
             return completed.Error;
         }
 
-        return Results.Success(Assemble(run, states.Value, launches.Value, spent.Value, completed.Value.Completed, completed.Value.Transitions));
+        return Results.Success(Assemble(run, states.Value, new LedgerRead(launches.Value, spent.Value, completed.Value.Completed, completed.Value.Transitions)));
     }
 
     // Launched runs, then the completions that have no launch, in ledger order.
     private IReadOnlyList<ScopeRunRecord> Assemble(
         InstanceAddress run,
         Dictionary<string, StateAsk> states,
-        List<(long Sequence, LaunchStarted Started, string? Item)> launches,
-        Dictionary<string, (long Tokens, string? Model)> spent,
-        List<(long Sequence, WorkflowEventPayload Payload)> completed,
-        int transitions)
+        LedgerRead read)
     {
+        var (launches, spent, completed, transitions) = read;
         var launched = launches.Select(l => (l.Sequence, Record: AgentRecord(run, transitions, l.Started, states[l.Started.State!], spent.GetValueOrDefault(l.Started.Launch.Value))));   // why: Launches keeps only the launches whose state the recipe has
         var launchIds = launches.Select(static l => l.Started.Launch).ToHashSet();
         var atTheDesk = completed
@@ -76,7 +74,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     }
 
     private static ScopeRunRecord AgentRecord(InstanceAddress run, int transitions, LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
-        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value, RunTokenOf(run, transitions, started));
+        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value, RunTokenOf(run, transitions, started));   // why: Launches keeps only launches that name their state
 
     // The launch id is a hash of the instance and the run token, and the event keeps only the token's number. Every frame entry follows a transition the ledger holds for the instance, so the entry is at most that many plus one.
     private static string? RunTokenOf(InstanceAddress run, int transitions, LaunchStarted started)
@@ -254,6 +252,13 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
 
         return rows;
     }
+
+    // What the ledger scans found: the launches, their latest usage, the Step completions, and how many transitions the instance has.
+    private sealed record LedgerRead(
+        List<(long Sequence, LaunchStarted Started, string? Item)> Launches,
+        Dictionary<string, (long Tokens, string? Model)> Spent,
+        List<(long Sequence, WorkflowEventPayload Payload)> Completed,
+        int Transitions);
 
     private sealed record StateAsk(BlockId Use, string? Requested)
     {
