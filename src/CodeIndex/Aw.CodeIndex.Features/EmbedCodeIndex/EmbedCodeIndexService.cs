@@ -25,15 +25,26 @@ public sealed class EmbedCodeIndexService(IIndexStore store, EmbeddingsLayer lay
     {
         ArgumentNullException.ThrowIfNull(request);
         var last = -1;
+        int? carried = null;
+        var made = 0;
         while (true)
         {
             var chunk = await Chunk(request, cancellationToken).ConfigureAwait(false);
-            if (chunk.IsError || chunk.Value.Embeddings != LayerState.Pending || chunk.Value.Embedded <= last)
+            if (chunk.IsError)
             {
                 return chunk;
             }
 
-            last = chunk.Value.Embedded;
+            // the first chunk's carried count is what the run began with; later chunks count their predecessors' vectors as carried
+            carried ??= chunk.Value.Carried;
+            made += chunk.Value.Made;
+            var total = chunk.Value with { Carried = carried.Value, Made = made };
+            if (total.Embeddings != LayerState.Pending || total.Embedded <= last)
+            {
+                return total;
+            }
+
+            last = total.Embedded;
         }
     }
 

@@ -34,7 +34,7 @@ internal static class CodeIndexJobServiceCollectionExtensions
     internal static string EmbedSummary(EmbedCodeIndexResult result) => result.Outcome switch
     {
         EmbedCodeIndexResult.Later => $"{result.Repo}: the index was busy or not built, nothing embedded",
-        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo}: {result.Embedded:N0} of {result.Embeddable:N0} symbols embedded"),
+        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo}: embedded {result.Made:N0}, carried {result.Carried:N0} of {result.Embeddable:N0}"),
     };
 
     private static string Summary(BuildCodeIndexResult result) => result.Outcome switch
