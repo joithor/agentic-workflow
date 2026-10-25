@@ -1,7 +1,9 @@
+using System.Globalization;
 using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
@@ -22,7 +24,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="starts">The ScanContextConcepts command chain.</param>
 /// <param name="clock">Dates the failure wait.</param>
 /// <param name="logger">Logs a refused start.</param>
-internal sealed class ContextConceptScanService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<ScanContextConceptsRequest, JobStartedResponse> starts, TimeProvider clock, ILogger<ContextConceptScanService> logger) : IScheduledService
+internal sealed partial class ContextConceptScanService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<ScanContextConceptsRequest, JobStartedResponse> starts, TimeProvider clock, ILogger<ContextConceptScanService> logger) : IScheduledService
 {
     /// <summary>How long a failed scan keeps the next one from starting.</summary>
     internal static TimeSpan FailureWait { get; } = TimeSpan.FromMinutes(10);
@@ -36,6 +38,49 @@ internal sealed class ContextConceptScanService(ContextScopes scopes, IContextEn
 
     public ServiceName Identity() => ServiceId;
 
-    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
-        throw new NotSupportedException(string.Join(',', scopes, engine, jobs, starts, clock, logger));
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
+        if (scope.IsError || scope.Value.Settings is null)
+        {
+            // no approved profile is nothing to scan, not a failed run (a failed run would land in needs-you every tick)
+            return scope.IsError && scope.Error.Code != SindriErrors.ProfileNotApproved.Code ? scope.Error : ScheduledResult.Quiet;
+        }
+
+        var state = await engine.Held(scope.Value, cancellationToken).ConfigureAwait(false);
+        var scans = await jobs.List(state: null, Kind, cancellationToken).ConfigureAwait(false);
+        if (state.IsError || scans.IsError)
+        {
+            return state.IsError ? state.Error : scans.Error;
+        }
+
+        var target = state.Value.LatestDraft ?? state.Value.Current;
+        return target is not { } version || Waits(scans.Value, version)
+            ? ScheduledResult.Quiet
+            : await Start(version, cancellationToken).ConfigureAwait(false);
+    }
+
+    private bool Waits(IReadOnlyList<JobRow> scans, int version) =>
+        scans.Any(static j => j.State == JobState.Running) || ConceptScanLog.Handled(scans, version) || ConceptScanLog.FailedSince(scans, clock.GetUtcNow() - FailureWait);
+
+    private async ValueTask<Result<ScheduledResult>> Start(int version, CancellationToken cancellationToken)
+    {
+        var started = await starts.Handle(new ScanContextConceptsRequest(), cancellationToken).ConfigureAwait(false);
+        if (started.IsSuccess)
+        {
+            return new ScheduledResult(Idle: false, string.Create(CultureInfo.InvariantCulture, $"ok: concept scan {started.Value.JobId.Value} started for map v{version}"));
+        }
+
+        if (started.Error.Code != SindriErrors.JobConflict.Code)
+        {
+            return started.Error;
+        }
+
+        LogConflict(logger, started.Error.Code, started.Error.Message);   // 409: the same scan is running, or another refusal that is logged and not retried this tick
+        return ScheduledResult.Quiet;
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "context-concept-scan: the scan was refused with {Code} and is not retried this tick: {Detail}")]
+    private static partial void LogConflict(ILogger logger, string code, string? detail);
 }
