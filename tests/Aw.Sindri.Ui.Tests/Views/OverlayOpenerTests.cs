@@ -15,7 +15,7 @@ public sealed class OverlayOpenerTests
 
     [Fact]
     public void Focus_on_nothing_gives_way_to_the_invoker() =>
-        Assert.Equal("start", OverlayOpener.Choose<string>(focused: null, Page, "start"));
+        Assert.Equal("start", OverlayOpener.Choose(focused: null, Page, "start"));
 
     [Fact]
     public void A_focused_control_stays_the_opener_even_with_an_invoker() =>
