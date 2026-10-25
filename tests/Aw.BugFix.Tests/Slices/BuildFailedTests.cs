@@ -2,7 +2,6 @@ using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Ids;
 using Aw.BugFix.Core.Model;
 using Aw.BugFix.Features.RecordRun;
-using Aw.BugFix.Features.StartAttempt;
 using Aw.Kernel;
 
 namespace Aw.BugFix.Tests.Slices;
