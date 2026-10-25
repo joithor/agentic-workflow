@@ -145,18 +145,23 @@ internal sealed partial class RecipeWorkflow
 
         for (var i = 0; i < failures.Length; i++)
         {
-            switch (failures[i])
+            if (failures[i] is not { } failure)
             {
-                case null:
-                    break;
-                case { InnerException: ApplicationFailureException { ErrorType: var type } } when string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal):
-                    await DropTexts(instance.Address.Value).ConfigureAwait(true);
-                    return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, requests[i].Input).ConfigureAwait(true));
-                case { InnerException: not CanceledFailureException } failure:
-                    return await InputFailed(instance, open, requests[i].Input, failure).ConfigureAwait(true);
-                case { } cancelled:
-                    throw cancelled;   // a cancelled fill: the workflow is being cancelled
+                continue;
             }
+
+            if (failure.InnerException is ApplicationFailureException { ErrorType: var type } && string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal))
+            {
+                await DropTexts(instance.Address.Value).ConfigureAwait(true);
+                return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, requests[i].Input).ConfigureAwait(true));
+            }
+
+            if (failure.InnerException is CanceledFailureException)
+            {
+                throw failure;   // a cancelled fill: the workflow is being cancelled
+            }
+
+            return await InputFailed(instance, open, requests[i].Input, failure).ConfigureAwait(true);
         }
 
         return OverPlanCap(fills) ? await PlanOverCap(instance, open).ConfigureAwait(true) : null;
