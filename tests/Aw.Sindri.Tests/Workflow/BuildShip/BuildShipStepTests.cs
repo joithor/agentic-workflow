@@ -42,6 +42,20 @@ public sealed class BuildShipStepTests
     }
 
     [Fact]
+    public async Task Prepare_marks_a_round_that_starts_with_notes_as_a_rework_and_a_first_round_not()
+    {
+        var diff = new FakeRunDiff();
+        diff.Add(Tree);
+        var first = await new BuildPrepareStep(diff).Run(BuildShipContexts.Of("step.build.prepare", PrepareFacts()), TestContext.Current.CancellationToken);
+        var facts = PrepareFacts();
+        facts["buildNotes"] = """["the proof failed on the empty state"]""";
+        var again = await new BuildPrepareStep(diff).Run(BuildShipContexts.Of("step.build.prepare", facts), TestContext.Current.CancellationToken);
+
+        Assert.Null(Out(first, "activePacket")["rework"]);
+        Assert.True((bool?)Out(again, "activePacket")["rework"]);
+    }
+
+    [Fact]
     public async Task Prepare_on_a_dirty_worktree_fails_the_Step_and_names_the_path()
     {
         var diff = new FakeRunDiff();
