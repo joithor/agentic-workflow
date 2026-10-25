@@ -1,9 +1,9 @@
-using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Symbols;
 using Aw.Kernel;
 
-namespace Aw.Context.Core.Symbols;
+namespace Aw.Context.Core.Code;
 
 /// <summary>
 /// The code symbol port of one repo, with an index that trails the map along main told apart from one that is stale (#990). When the inner source reports the index <see cref="CodeIndexState.Stale"/> and its commit is an ancestor of
