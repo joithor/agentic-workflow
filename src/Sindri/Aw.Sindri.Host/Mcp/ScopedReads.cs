@@ -17,11 +17,13 @@ internal static class ScopedReads
     private const string OutsideName = "outside";
     private const string ReasonName = "reason";
 
-    /// <summary>The 'outside' property of a scoped tool's schema.</summary>
-    internal static JsonObject OutsideProperty { get; } = ContextTools.Property("boolean", "Set true, with a reason, to read a node outside this run's scoping graph; ignored by a session that has no scoping run");
+    /// <summary>The 'outside' property of a scoped tool's schema; a new node each call, since a JSON node has one parent.</summary>
+    /// <returns>The property.</returns>
+    internal static JsonObject OutsideProperty() => ContextTools.Property("boolean", "Set true, with a reason, to read a node outside this run's scoping graph; ignored by a session that has no scoping run");
 
-    /// <summary>The 'reason' property of a scoped tool's schema.</summary>
-    internal static JsonObject ReasonProperty { get; } = ContextTools.Property("string", "Why this read steps outside the scoping graph; required with outside");
+    /// <summary>The 'reason' property of a scoped tool's schema; a new node each call.</summary>
+    /// <returns>The property.</returns>
+    internal static JsonObject ReasonProperty() => ContextTools.Property("string", "Why this read steps outside the scoping graph; required with outside");
 
     /// <summary>The call's arguments without 'outside' and 'reason', which the tool's own binder doesn't know, and those two.</summary>
     /// <param name="Rest">The other arguments.</param>

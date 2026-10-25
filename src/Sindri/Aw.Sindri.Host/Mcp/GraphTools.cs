@@ -33,8 +33,8 @@ internal static class GraphTools
             ["key"] = ContextTools.Property("string", "A product-graph node key, name or alias"),
             ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
-            ["outside"] = ScopedReads.OutsideProperty,
-            ["reason"] = ScopedReads.ReasonProperty,
+            ["outside"] = ScopedReads.OutsideProperty(),
+            ["reason"] = ScopedReads.ReasonProperty(),
         }, required: ["key"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -51,8 +51,8 @@ internal static class GraphTools
             ["depth"] = ContextTools.Property("integer", "How many edges away to look (default 1; the engine bounds it)", minimum: 0),
             ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
-            ["outside"] = ScopedReads.OutsideProperty,
-            ["reason"] = ScopedReads.ReasonProperty,
+            ["outside"] = ScopedReads.OutsideProperty(),
+            ["reason"] = ScopedReads.ReasonProperty(),
         }, required: ["key"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };

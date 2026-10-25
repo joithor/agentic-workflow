@@ -53,8 +53,8 @@ internal static partial class ContextTools
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
             ["limit"] = Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = Property("integer", "How many items to skip in each list (default 0)", minimum: 0),
-            ["outside"] = ScopedReads.OutsideProperty,
-            ["reason"] = ScopedReads.ReasonProperty,
+            ["outside"] = ScopedReads.OutsideProperty(),
+            ["reason"] = ScopedReads.ReasonProperty(),
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
