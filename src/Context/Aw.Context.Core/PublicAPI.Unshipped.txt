@@ -4700,6 +4700,7 @@ const Aw.Context.Core.Linking.DecisionExtractor.MaxQuote = 600 -> int
 const Aw.Context.Core.Map.MapRetention.RetainedVersions = 100 -> int
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
 const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
+const Aw.Context.Core.Overrides.MapOverride.DemoteMarker = "service:demote-cut" -> string!
 const Aw.Context.Core.Overrides.ProposalRows.Confidence = 0.5 -> double
 const Aw.Context.Core.Ranking.RankFusion.K = 60 -> int
 const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
@@ -6150,6 +6151,7 @@ static Aw.Context.Core.Overrides.Confirmation.Of(Aw.Context.Core.Results.Provena
 static Aw.Context.Core.Overrides.MapOverride.operator !=(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.operator ==(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
+static Aw.Context.Core.Overrides.MapOverride.UndoingDemote(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 static Aw.Context.Core.Overrides.OverrideApplier.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Overrides.AppliedMap!
 static Aw.Context.Core.Overrides.OverrideId.From(string! value) -> Aw.Context.Core.Overrides.OverrideId
 static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
