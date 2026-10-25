@@ -36,7 +36,10 @@ public sealed class ScopedReadsMcpTests : IDisposable
         await File.WriteAllTextAsync(file, string.Join('\n',
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             $"  - {{key: \"{InGraph}\", label: \"In scope\"}}",
-            $"  - {{key: \"{NotInGraph}\", label: \"Out of scope\"}}") + "\n", ct);
+            $"  - {{key: \"{NotInGraph}\", label: \"Out of scope\"}}",
+            "aliases:",
+            $"  - {{alias: \"feature:old.in\", target: \"{InGraph}\"}}",
+            $"  - {{alias: \"feature:old.out\", target: \"{NotInGraph}\"}}") + "\n", ct);
         await ContextMapApiTests.Import(host, file);
         using var scope = host.App.Services.CreateScope();
         var graph = new ScopeGraphView(1, "v1", [InGraph], 1, [], [new ScopeGraphNode(InGraph, "feature", null, null, "In scope", 1, "product", "L-product-1", "own", [])], [], []);
@@ -132,5 +135,21 @@ public sealed class ScopedReadsMcpTests : IDisposable
         var node = await mcp.Call("context_node", $$"""{"key":"{{NotInGraph}}"}""", ct);
 
         Assert.NotEqual(true, node.IsError);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task An_alias_of_a_node_in_the_graph_is_allowed_and_logged_under_the_node_key_and_an_alias_of_one_outside_is_154()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct, RunHeaders());
+
+        var inside = await mcp.Call("context_node", """{"key":"feature:old.in"}""", ct);
+        var neighbors = await mcp.Call("context_neighbors", """{"key":"feature:old.in"}""", ct);
+        var outside = await mcp.Call("context_node", """{"key":"feature:old.out"}""", ct);
+
+        Assert.All([inside, neighbors], r => Assert.NotEqual(true, r.IsError));
+        Assert.Equal("SND-CONTEXT-154", Code(outside));
+        Assert.Equal([InGraph, InGraph], (await Reads(host)).Select(r => r.Node));
     }
 }

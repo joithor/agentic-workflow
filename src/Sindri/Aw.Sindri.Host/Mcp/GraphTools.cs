@@ -66,13 +66,12 @@ internal static class GraphTools
             return McpResults.Failure(services, bound.Error);
         }
 
-        if (await ScopedReads.Check(services, Node, bound.Value.Key, split.Value, ct).ConfigureAwait(false) is { } refused)
-        {
-            return McpResults.Failure(services, refused);
-        }
-
         var answer = await services.GetRequiredService<IService<ShowContextNodeRequest, NodeView>>().Handle(new ShowContextNodeRequest(bound.Value.Key), ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, McpSummaries.Node);
+
+        // why: the key may be a name or an alias, so the graph check uses the node key the read resolved it to
+        return answer.IsSuccess && await ScopedReads.Check(services, Node, answer.Value.Node.Key.Value, split.Value, ct).ConfigureAwait(false) is { } refused
+            ? McpResults.Failure(services, refused)
+            : McpResults.From(services, answer, McpSummaries.Node);
     }
 
     /// <summary>Runs context_neighbors.</summary>
@@ -89,14 +88,13 @@ internal static class GraphTools
             return McpResults.Failure(services, bound.Error);
         }
 
-        if (await ScopedReads.Check(services, Neighbors, bound.Value.Key, split.Value, ct).ConfigureAwait(false) is { } refused)
-        {
-            return McpResults.Failure(services, refused);
-        }
-
         var answer = await services.GetRequiredService<IService<ListContextNeighborsRequest, NeighborsView>>()
             .Handle(new ListContextNeighborsRequest(bound.Value.Key, bound.Value.Depth), ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, McpSummaries.Neighbors);
+
+        // why: the key may be a name or an alias, so the graph check uses the node key the read resolved it to
+        return answer.IsSuccess && await ScopedReads.Check(services, Neighbors, answer.Value.Center.Value, split.Value, ct).ConfigureAwait(false) is { } refused
+            ? McpResults.Failure(services, refused)
+            : McpResults.From(services, answer, McpSummaries.Neighbors);
     }
 
     /// <summary>The key (and depth) of a graph call; SND-CONTEXT-022 for a missing or blank key, an unknown property or a wrong type.</summary>
