@@ -1,6 +1,8 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Testing.Map;
+using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.Lenses;
 
@@ -17,7 +19,7 @@ public sealed class DemotedCodeBandFlagTests : IDisposable
         new(Settings: null, [new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DemotePaths = [.. globs] }],
             new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
 
-    private async Task<IReadOnlyList<Core.Lenses.LensFile>> CodeBand()
+    private async Task<IReadOnlyList<LensFile>> CodeBand()
     {
         _ = await _world.ImportYaml(MapWorld.Yaml(
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
