@@ -188,19 +188,23 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
     private static SymbolHit Stamped(CodeIndexHead head, SymbolSite site)
     {
         var (state, asOfCommit) = CodeIndexReading.Stamp(head, site.Path);
+        // why: rows are stamped only under a readable head, which names a commit.
         return new SymbolHit(site, head.Commit!, asOfCommit, state);
     }
 
     private static FileSymbolsRow Stamped(CodeIndexHead head, FileSymbolsEntry file)
     {
         var (state, asOfCommit) = CodeIndexReading.Stamp(head, file.Path);
+        // why: rows are stamped only under a readable head, which names a commit.
         return new FileSymbolsRow(file.Path, [.. file.Symbols.Select(Site)], head.Commit!, asOfCommit, state);
     }
 
     private static CallEdgeRow Stamped(CodeIndexHead head, CallEdge edge)
     {
+        // why: the caller keeps only the edges that resolved to a symbol.
         var site = Site(edge.Other!);
         var (state, asOfCommit) = CodeIndexReading.Stamp(head, site.Path);
+        // why: rows are stamped only under a readable head, which names a commit.
         return new CallEdgeRow(site, Name(edge.Basis), Weight(edge.Confidence), Name(edge.Coverage), edge.Level, head.Commit!, asOfCommit, state);
     }
 

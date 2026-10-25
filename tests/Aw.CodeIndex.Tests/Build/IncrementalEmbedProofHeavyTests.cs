@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features.BuildCodeIndex;
