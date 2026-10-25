@@ -169,7 +169,7 @@ internal sealed partial class WholeMapView : UserControl
         var viewport = view.Scale > 0 ? new Rect(-view.X / view.Scale, -view.Y / view.Scale, size.Width / view.Scale, size.Height / view.Scale) : default;
         WholeWorld.Scale = view.Scale;
         WholeWorld.Viewport = viewport;
-        WholeMiniMap.Viewport = viewport;
+        WholeMiniMap.Viewport = MiniMapControl.VisiblePart(viewport, WholeCanvas.WorldBounds);   // the part of the world on the stage, never the empty stage past it
         WholeZoomValue.Text = Labels.ContextMapZoomPct(view.Scale);
     }
 
