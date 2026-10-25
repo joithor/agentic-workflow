@@ -13,7 +13,7 @@ public sealed class FakeScopeRunStore : IScopeRunStore
     public ValueTask<Result<bool>> Remember(string instance, ScopeGraphView graph, DateTimeOffset at, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        _graphs[instance] = graph.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        _graphs[instance] = graph.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         return ValueTask.FromResult(Results.Success(true));
     }
 

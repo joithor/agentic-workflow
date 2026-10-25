@@ -101,7 +101,7 @@ public static class ScopeGraphBuilder
             var item = string.Create(CultureInfo.InvariantCulture, $"L-{candidate.Lens}-{perLens[candidate.Lens]}");
             var scheme = candidate.Id[..Math.Max(candidate.Id.IndexOf(':', StringComparison.Ordinal), 0)];
             var path = candidate.Id.StartsWith("code:", StringComparison.Ordinal) ? candidate.Id["code:".Length..] : null;
-            nodes.Add(new ScopeGraphNode(candidate.Id, scheme, path, Symbol: null, candidate.Summary, index + 1, candidate.Lens, item, candidate.Band, Citations(candidate.Id, byKey)));
+            nodes.Add(new ScopeGraphNode(ScopeGraphNodeId.From(candidate.Id), scheme, path, Symbol: null, candidate.Summary, index + 1, candidate.Lens, item, candidate.Band, Citations(candidate.Id, byKey)));
         }
 
         return nodes;
@@ -112,23 +112,23 @@ public static class ScopeGraphBuilder
 
     private static List<ScopeGraphEdge> EdgesAmong(GraphSnapshot graph, List<ScopeGraphNode> nodes)
     {
-        var ids = nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        var ids = nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         return [.. graph.Edges
             .Where(e => ids.Contains(e.From.Value) && ids.Contains(e.To.Value))
-            .Select(e => new ScopeGraphEdge(e.From.Value, e.To.Value, EdgeRules.Name(e.Type)))
+            .Select(e => new ScopeGraphEdge(ScopeGraphNodeId.From(e.From.Value), ScopeGraphNodeId.From(e.To.Value), EdgeRules.Name(e.Type)))
             .Distinct()];
     }
 
     private static int OutsideEdges(GraphSnapshot graph, List<ScopeGraphNode> nodes)
     {
-        var ids = nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        var ids = nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         return graph.Edges.Count(e => ids.Contains(e.From.Value) != ids.Contains(e.To.Value));
     }
 
     // The JSON size, estimated from the text each node and edge carries.
     private static int Bytes(List<ScopeGraphNode> nodes, List<ScopeGraphEdge> edges) =>
-        nodes.Sum(n => NodeOverheadBytes + n.Id.Length + n.Kind.Length + (n.Path?.Length ?? 0) + n.Summary.Length + n.Citations.Sum(c => c.Key.Length + (c.Span?.Length ?? 0) + 20))
-        + edges.Sum(e => EdgeOverheadBytes + e.From.Length + e.To.Length + e.Type.Length);
+        nodes.Sum(n => NodeOverheadBytes + n.Id.Value.Length + n.Kind.Length + (n.Path?.Length ?? 0) + n.Summary.Length + n.Citations.Sum(c => c.Key.Length + (c.Span?.Length ?? 0) + 20))
+        + edges.Sum(e => EdgeOverheadBytes + e.From.Value.Length + e.To.Value.Length + e.Type.Length);
 
     private static List<string> HopNames(CascadeHops hops) =>
         [.. new[] { CascadeHops.State, CascadeHops.Flow, CascadeHops.Dependency, CascadeHops.Component }.Where(h => hops.HasFlag(h)).Select(h => h.ToString().ToLowerInvariant())];

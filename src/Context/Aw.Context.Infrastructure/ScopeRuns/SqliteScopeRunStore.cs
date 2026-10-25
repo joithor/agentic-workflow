@@ -29,7 +29,7 @@ internal sealed class SqliteScopeRunStore(ContextDatabase database) : IScopeRunS
         [
             new(UpsertGraph, c => c.Bind("$instance", instance).Bind("$mapVersion", graph.MapVersion).Bind("$graph", json).Bind("$at", at)),
             new(DeleteNodes, c => c.Bind("$instance", instance)),
-            .. graph.Nodes.Select(n => new SqlStatement(InsertNode, c => c.Bind("$instance", instance).Bind("$id", n.Id))),
+            .. graph.Nodes.Select(n => new SqlStatement(InsertNode, c => c.Bind("$instance", instance).Bind("$id", n.Id.Value))),
         ];
         return await Run(statements, cancellationToken).ConfigureAwait(false);
     }

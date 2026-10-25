@@ -32,9 +32,9 @@ public sealed class ScopeGraphTests : IDisposable
         var wide = await Build([Manager], depth: 4);
 
         Assert.Equal([Manager], one.Anchors, StringComparer.Ordinal);
-        Assert.Contains(one.Nodes, n => n.Id == Groups);
-        Assert.Contains(one.Nodes, n => n.Id == SwitchTab);
-        Assert.Contains(wide.Nodes, n => n.Id == PaneLayout);
+        Assert.Contains(one.Nodes, n => n.Id.Value == Groups);
+        Assert.Contains(one.Nodes, n => n.Id.Value == SwitchTab);
+        Assert.Contains(wide.Nodes, n => n.Id.Value == PaneLayout);
         Assert.True(one.Nodes.Count < wide.Nodes.Count, $"{one.Nodes.Count} nodes at depth 1, {wide.Nodes.Count} at depth 4");
         Assert.Equal((1, 4), (one.Depth, wide.Depth));
     }
@@ -45,7 +45,7 @@ public sealed class ScopeGraphTests : IDisposable
         var view = await Build(["Tab manager"], depth: 1);
 
         Assert.Equal([Manager], view.Anchors, StringComparer.Ordinal);
-        Assert.Contains(view.Nodes, n => n.Id == Manager);
+        Assert.Contains(view.Nodes, n => n.Id.Value == Manager);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -53,9 +53,9 @@ public sealed class ScopeGraphTests : IDisposable
     {
         var view = await Build([Manager], depth: 1);
 
-        var ids = view.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        var ids = view.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(view.Edges);
-        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From) && ids.Contains(e.To), $"{e.From} {e.Type} {e.To} has an end outside the graph"));
+        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value), $"{e.From} {e.Type} {e.To} has an end outside the graph"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -63,9 +63,9 @@ public sealed class ScopeGraphTests : IDisposable
     {
         var view = await Build([Manager], depth: 2);
 
-        var code = Assert.Single(view.Nodes, n => n.Id == ManagerCode);
+        var code = Assert.Single(view.Nodes, n => n.Id.Value == ManagerCode);
         Assert.Equal("src/tabs/TabManager.ts", code.Path);
-        Assert.All(view.Nodes.Where(n => !n.Id.StartsWith("code:", StringComparison.Ordinal)), n => Assert.Null(n.Path));
+        Assert.All(view.Nodes.Where(n => !n.Id.Value.StartsWith("code:", StringComparison.Ordinal)), n => Assert.Null(n.Path));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -73,7 +73,7 @@ public sealed class ScopeGraphTests : IDisposable
     {
         var view = await Build([Manager], depth: 2);
 
-        var anchor = Assert.Single(view.Nodes, n => n.Id == Manager);
+        var anchor = Assert.Single(view.Nodes, n => n.Id.Value == Manager);
         Assert.Equal(("Tab manager", 1, "own"), (anchor.Summary, anchor.Rank, anchor.Band));
         Assert.Equal(view.Nodes.Select(n => n.Rank).Order(), view.Nodes.Select(n => n.Rank));   // best rank first
     }
@@ -83,8 +83,8 @@ public sealed class ScopeGraphTests : IDisposable
     {
         var view = await Build([Manager], depth: 4);
 
-        var worstProduct = view.Nodes.Where(n => !n.Id.StartsWith("code:", StringComparison.Ordinal)).Max(n => n.Rank);
-        var bestCode = view.Nodes.Where(n => n.Id.StartsWith("code:", StringComparison.Ordinal)).Min(n => n.Rank);
+        var worstProduct = view.Nodes.Where(n => !n.Id.Value.StartsWith("code:", StringComparison.Ordinal)).Max(n => n.Rank);
+        var bestCode = view.Nodes.Where(n => n.Id.Value.StartsWith("code:", StringComparison.Ordinal)).Min(n => n.Rank);
         Assert.True(worstProduct < bestCode, $"product ranks end at {worstProduct} but code starts at {bestCode}");
     }
 
@@ -95,10 +95,10 @@ public sealed class ScopeGraphTests : IDisposable
         var capped = await Build([Manager], depth: 4, maxNodes: 3);
 
         Assert.True(all.Nodes.Count > 3);
-        Assert.Equal(all.Nodes.Take(3).Select(n => n.Id), capped.Nodes.Select(n => n.Id), StringComparer.Ordinal);
+        Assert.Equal(all.Nodes.Take(3).Select(n => n.Id.Value), capped.Nodes.Select(n => n.Id.Value), StringComparer.Ordinal);
         Assert.Contains(capped.Limits, l => l.Why == "cap");
-        var ids = capped.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
-        Assert.All(capped.Edges, e => Assert.True(ids.Contains(e.From) && ids.Contains(e.To)));
+        var ids = capped.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
+        Assert.All(capped.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value)));
         Assert.DoesNotContain(all.Limits, l => l.Why == "cap");
     }
 
@@ -110,6 +110,6 @@ public sealed class ScopeGraphTests : IDisposable
 
         Assert.True(small.Nodes.Count < all.Nodes.Count);
         Assert.Contains(small.Limits, l => l.Why == "cap");
-        Assert.Contains(small.Nodes, n => n.Id == Manager);   // the anchor is the last to go
+        Assert.Contains(small.Nodes, n => n.Id.Value == Manager);   // the anchor is the last to go
     }
 }

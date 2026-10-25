@@ -16,7 +16,7 @@ public abstract class ScopeRunStoreContract
     protected abstract IScopeRunStore CreateStore();
 
     private static ScopeGraphView Graph(params string[] ids) =>
-        new(1, "v1", [], 1, [], [.. ids.Select((id, i) => new ScopeGraphNode(id, "feature", null, null, id, i + 1, "product", $"L-product-{i + 1}", "own", []))], [], []);
+        new(1, "v1", [], 1, [], [.. ids.Select((id, i) => new ScopeGraphNode(ScopeGraphNodeId.From(id), "feature", null, null, id, i + 1, "product", $"L-product-{i + 1}", "own", []))], [], []);
 
     /// <summary>An instance with no graph holds nothing, not even false.</summary>
     /// <returns>The test.</returns>
