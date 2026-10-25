@@ -65,17 +65,32 @@ public static partial class ScopingChecks
     {
         using var document = JsonDocument.Parse(bytes);
         var root = document.RootElement;
-        if (!root.TryGetProperty("schemaVersion", out var version) || version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var number) || number != PacketReader.SchemaVersion)
+        if (!HasSchemaVersion(root))
         {
             yield return ("schemaVersion", $"schemaVersion is not {PacketReader.SchemaVersion.ToString(CultureInfo.InvariantCulture)}; this build reads version {PacketReader.SchemaVersion.ToString(CultureInfo.InvariantCulture)}.", "Write schemaVersion 1.");
         }
 
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var index = 0;
-        foreach (var node in Items(root, "nodes"))
+        foreach (var failure in NodeFailures(Items(root, "nodes")))
         {
-            var where = $"nodes[{(index++).ToString(CultureInfo.InvariantCulture)}]";
-            var id = node.ValueKind == JsonValueKind.Object && node.TryGetProperty("id", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            yield return failure;
+        }
+
+        foreach (var failure in EdgeFailures(Items(root, "edges")))
+        {
+            yield return failure;
+        }
+    }
+
+    private static bool HasSchemaVersion(JsonElement root) =>
+        root.TryGetProperty("schemaVersion", out var version) && version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out var number) && number == PacketReader.SchemaVersion;
+
+    private static IEnumerable<(string Where, string Message, string Fix)> NodeFailures(List<JsonElement> nodes)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var index = 0; index < nodes.Count; index++)
+        {
+            var where = Position("nodes", index);
+            var id = nodes[index].ValueKind == JsonValueKind.Object && nodes[index].TryGetProperty("id", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
             if (string.IsNullOrEmpty(id))
             {
                 yield return (where, $"{where} has no id.", "Give every node its map key as id.");
@@ -85,23 +100,27 @@ public static partial class ScopingChecks
                 yield return (where, $"{where} '{id}' is used more than once.", "Give every node its own id.");
             }
         }
+    }
 
-        index = 0;
-        foreach (var edge in Items(root, "edges"))
+    private static IEnumerable<(string Where, string Message, string Fix)> EdgeFailures(List<JsonElement> edges)
+    {
+        for (var index = 0; index < edges.Count; index++)
         {
-            var where = $"edges[{(index++).ToString(CultureInfo.InvariantCulture)}]";
-            if (End(edge, "from") || End(edge, "to"))
+            if (!HasEnd(edges[index], "from") || !HasEnd(edges[index], "to"))
             {
+                var where = Position("edges", index);
                 yield return (where, $"{where} has an empty end.", "Give both ends of the edge.");
             }
         }
     }
 
-    private static IEnumerable<JsonElement> Items(JsonElement root, string name) =>
-        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var array) && array.ValueKind == JsonValueKind.Array ? array.EnumerateArray() : [];
+    private static string Position(string list, int index) => $"{list}[{index.ToString(CultureInfo.InvariantCulture)}]";
 
-    private static bool End(JsonElement edge, string name) =>
-        !(edge.ValueKind == JsonValueKind.Object && edge.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString()!.Length > 0);
+    private static List<JsonElement> Items(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var array) && array.ValueKind == JsonValueKind.Array ? [.. array.EnumerateArray()] : [];
+
+    private static bool HasEnd(JsonElement edge, string name) =>
+        edge.ValueKind == JsonValueKind.Object && edge.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 };
 
     private static IEnumerable<(string Name, string Subject, string Message, string Fix)> WellFormed(ScopingFiles files)
     {
