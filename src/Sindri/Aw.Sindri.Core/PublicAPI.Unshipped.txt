@@ -5923,7 +5923,6 @@ const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
 const Aw.Sindri.Core.Views.ViewSchema.Version = 13 -> int
-const Aw.Sindri.Core.Views.ViewSchema.Version = 12 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
