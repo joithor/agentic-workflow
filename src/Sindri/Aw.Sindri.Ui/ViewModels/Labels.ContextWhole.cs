@@ -100,4 +100,13 @@ internal static partial class Labels
         ("code", false) => "code files",
         (_, _) => kind,
     };
+
+    /// <summary>The name of the list of the map's items.</summary>
+    internal const string ContextMapItems = "Map items";
+
+    /// <summary>One item of that list: what it is called and what it is.</summary>
+    /// <param name="label">The words the map shows.</param>
+    /// <param name="what">The kind, or how many items a feature holds.</param>
+    /// <returns>"Tab groups, feature".</returns>
+    internal static string ContextMapItemName(string label, string what) => string.Create(CultureInfo.InvariantCulture, $"{label}, {what}");
 }

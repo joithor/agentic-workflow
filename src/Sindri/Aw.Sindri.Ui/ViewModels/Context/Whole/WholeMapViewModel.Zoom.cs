@@ -49,6 +49,7 @@ internal sealed partial class WholeMapViewModel
         _zoomSet = new HashSet<string>(HitKeys.SelectMany(Around), StringComparer.Ordinal);   // the answer and what it links to are drawn; the rest is not
         Changed();
         OnChanged(nameof(Shown));
+        OnChanged(nameof(Items));
         ZoomRequested?.Invoke(this, new ValueEventArgs<WholeRect>(WholeZoomBox.Around([.. hit.Select(n => n.Rect)])));
         return true;
     }
