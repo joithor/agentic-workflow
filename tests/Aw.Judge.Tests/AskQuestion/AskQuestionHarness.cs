@@ -32,6 +32,8 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IJudgeConfigStore>(Config)
             .AddSingleton<IBriefStore>(new InMemoryBriefStore())
             .AddSingleton<IPromptSortStore>(new InMemoryPromptSortStore())
+            .AddSingleton<ITranscriptReader>(new InMemoryTranscriptReader())
+            .AddSingleton<IEvalStore, Transcripts.FakeTurnEvalStore>()
             .AddSingleton<ISortSessionStore>(new InMemorySortSessionStore())
             .AddSingleton<IBatchClassifier>(FakeBatchClassifier.Unavailable())
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
