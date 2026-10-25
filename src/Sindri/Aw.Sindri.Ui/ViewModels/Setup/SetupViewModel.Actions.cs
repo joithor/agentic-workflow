@@ -37,7 +37,7 @@ internal sealed partial class SetupViewModel
             || (string.Equals(step.Id, ProfileStep, StringComparison.Ordinal) && string.Equals(action, ProfileAction, StringComparison.Ordinal))
             || (string.Equals(step.Id, RecipesStep, StringComparison.Ordinal) && string.Equals(action, ApproveAllViewModel.Action, StringComparison.Ordinal)));
 
-    private bool Ready(string action) => _catalog.For(action) is not null;
+    private bool Ready(string action) => _catalog.IsReady(action);
 
     // The refresh and the agents' registration are the app's own button when the catalog lists them as ready.
     private bool OpensHere(string action) => (string.Equals(action, MapRefresh, StringComparison.Ordinal) || string.Equals(action, RegisterAction, StringComparison.Ordinal)) && Ready(action);

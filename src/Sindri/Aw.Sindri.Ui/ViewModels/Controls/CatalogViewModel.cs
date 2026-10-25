@@ -36,6 +36,11 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <summary>"49 in this app, 14 to copy", or empty before the catalog is read.</summary>
     public string Counts { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>True when the catalog lists the action as ready: Sindri lets the app do it. A row it serves as cli-only or pending is the command to copy.</summary>
+    /// <param name="action">The action id.</param>
+    /// <returns>True for a listed row whose ui word is "ready".</returns>
+    internal bool IsReady(string action) => _rows.TryGetValue(action, out var row) && string.Equals(row.Ui, "ready", StringComparison.Ordinal);
+
     /// <summary>The control for an action id, or null when the catalog has no such row.</summary>
     /// <param name="action">The action id.</param>
     /// <returns>The control.</returns>

@@ -212,10 +212,13 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
 
     // Enter does something with a row that has a sender, with Stop Sindri (it goes to Health) and with a row the app has no form for, which it copies.
     // Never sends a destructive one: its in-app confirm is on its own control (Stop Sindri's is on Health, where Enter goes).
-    // Create item opens its form (when the shell has one); the item sheet's close actions need the version the sheet shows.
+    // Create item opens its form (when the shell has one); the item sheet's close actions need the version the sheet shows, so they point at the sheet.
     private bool Runs(ControlViewModel control) =>
         (control.IsSendable && !control.IsDestructive) || control.Action == "StopProcess"
-        || OpensForm(control) || (control.IsCopyOnly && control.CanCopy);
+        || OpensForm(control) || (control.IsCopyOnly && control.CanCopy && !NeedsForm(control) && !ItemSheetViewModel.IsSheetAction(control.Action));
+
+    // Create item, Start workflow and Approve all are done in a form or dialog of the app: with none to open (no shell) they are not a command to copy here, and not runnable.
+    private static bool NeedsForm(ControlViewModel control) => control.Action is "CreateItem" or "StartInstance" or "ApproveAllRecipes";
 
     // Create item and Start workflow open their forms (when the shell has them).
     private bool OpensForm(ControlViewModel control) =>

@@ -29,7 +29,7 @@ public sealed class SetupActionTests
     [Fact]
     public async Task Approve_all_is_an_app_button_when_the_app_can_open_it()
     {
-        var f = new SetupFixture("extra-approve-all-ready");   // the app opens the approve-all dialog itself, one click
+        var f = new SetupFixture("extra-approve-all-ready", "ApproveAllRecipes");   // listed cli-only, so the row has no plan of its own; the app opens the dialog itself, one click
         f.Serve(With("first-run", "recipes", "needs-you", "ApproveAllRecipes"));
         _ = f.InApp.Add("ApproveAllRecipes");
         var setup = await f.Read(Token);
@@ -47,7 +47,7 @@ public sealed class SetupActionTests
     [Fact]
     public async Task A_protected_action_the_app_cannot_open_shows_the_terminal_copy_of_the_catalogs_command()
     {
-        var f = new SetupFixture("extra-approve-all-ready");   // the app does not open it here (no InApp entry), so it keeps the terminal copy
+        var f = new SetupFixture("extra-approve-all-ready", "ApproveAllRecipes");   // listed cli-only and the app does not open it here (no InApp entry), so it keeps the terminal copy
         f.Serve(With("first-run", "recipes", "needs-you", "ApproveAllRecipes"));
 
         var action = Step(await f.Read(Token), "recipes").Action!;
@@ -62,7 +62,7 @@ public sealed class SetupActionTests
     [Fact]
     public async Task The_profile_approval_is_terminal_copy_until_the_app_can_open_it()
     {
-        var f = new SetupFixture("extra-approve-all-ready");
+        var f = new SetupFixture("extra-approve-all-ready", "ApproveProfile");
         f.Serve("profile-needs-approval");
         var setup = await f.Read(Token);
 

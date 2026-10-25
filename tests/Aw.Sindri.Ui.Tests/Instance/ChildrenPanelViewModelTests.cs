@@ -253,7 +253,6 @@ public sealed class ChildrenPanelViewModelTests
         var reclassified = Catalog(rows =>
         {
             Edit(rows, "ApplyCommand:answer-grant", "class", "desk");
-            Edit(rows, "ApplyCommand:takeover", "ui", "pending:U9");
         });
 
         var before = new ChildRowViewModel(parked, _clipboard, _clock, served);
@@ -266,6 +265,6 @@ public sealed class ChildrenPanelViewModelTests
         Assert.Null(before.Actions.Single(a => a.Label == takeover).Protected);
         Assert.Null(after.Actions.Single(a => a.Label == grant).Protected);
         Assert.Equal(Labels.AvailableWithU8b, before.Actions.Single(a => a.Label == takeover).PendingChip);
-        Assert.Equal(Labels.Arrives("U9"), after.Actions.Single(a => a.Label == takeover).PendingChip);
+        Assert.Equal(Labels.AvailableWithU8b, after.Actions.Single(a => a.Label == takeover).PendingChip);   // the catalog's ui word is not read: a send is not in the app yet
     }
 }

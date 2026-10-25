@@ -17,6 +17,9 @@ internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? 
     /// <summary>The scoping interview's questions, read from "fact:questions"; null for every other desk.</summary>
     internal IReadOnlyList<ScopingQuestion>? Scoping { get; init; }
 
+    /// <summary>True when the step's complete command is protected: a terminal completes it, so a send back is the step's "rework".</summary>
+    internal bool IsTerminalOnly => Complete is { } command && string.Equals(command.Class, "protected", StringComparison.Ordinal);
+
     /// <summary>The instance's address, for taking the person to its frame; empty when not read.</summary>
     internal string Address { get; init; } = string.Empty;
 

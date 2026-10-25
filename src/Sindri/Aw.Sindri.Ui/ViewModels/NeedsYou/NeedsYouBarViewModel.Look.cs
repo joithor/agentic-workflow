@@ -150,7 +150,7 @@ internal sealed partial class NeedsYouBarViewModel
 
     private string ApprovedHint => _done switch
     {
-        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackHint,
+        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackHint,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedHint,
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedHint,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
@@ -185,7 +185,7 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>The done card's title.</summary>
     public string DoneTitle => _row is null ? "" : _done switch
     {
-        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackTitle(_row.Title),
+        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackTitle(_row.Title),
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedTitle(_row.Title),
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedTitle(_row.Title),
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
@@ -194,7 +194,7 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>The done card's sentence.</summary>
     public string DoneBody => _done switch
     {
-        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackBody,
+        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackBody,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedBody,
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer or NeedsYouBarOutcome.Answered or NeedsYouBarOutcome.DoneAsking => Labels.NeedsYouApprovedBody,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),

@@ -131,7 +131,7 @@ internal sealed partial class NeedsYouBarViewModel
         }
         else if (Kind == BarKind.Desk)
         {
-            await Report(NeedsYouBarOutcome.Revise, reason).ConfigureAwait(true);
+            await Report(TerminalOnly ? NeedsYouBarOutcome.Rework : NeedsYouBarOutcome.Revise, reason).ConfigureAwait(true);
         }
     }
 
@@ -204,6 +204,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Approve => "approve",
         NeedsYouBarOutcome.Revise => "revise",
+        NeedsYouBarOutcome.Rework => "rework",
         NeedsYouBarOutcome.Drop => "drop",
         NeedsYouBarOutcome.Answer => "done",
         NeedsYouBarOutcome.Answered => "answered",

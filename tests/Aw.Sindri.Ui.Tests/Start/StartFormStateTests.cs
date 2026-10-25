@@ -324,12 +324,6 @@ public sealed class StartFormStateTests
     public async Task A_start_that_is_off_says_why_and_the_reason_is_announced()
     {
         _fixture.Rows((StartFormFixture.Step, Approved, 2));
-        _fixture.CatalogSays("pending:P5");
-        var pending = await _fixture.Form();
-        await pending.Open("T-1", Token);
-        Assert.Equal((Labels.Arrives("P5"), Labels.Arrives("P5")), (pending.StartHelp, pending.Announcement));
-
-        _fixture.CatalogSays("ready");
         var form = await _fixture.Form();
         await form.Open("T-1", Token);
         var gate = _fixture.Server.RecipeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

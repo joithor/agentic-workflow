@@ -129,6 +129,9 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
     // A desk request is reported by the engine's CompleteStep; the row must serve it ready for the bar to offer it.
     private NeedsYouActionControl? DeskControl => _row?.Controls.FirstOrDefault(c => string.Equals(c.Action.CatalogId, CompleteStepAction, StringComparison.Ordinal) && c.Action.IsReady && c.IsEnabled);
 
+    // A desk step whose complete command is protected (and that has no merge verb): a send back is the step's own "rework" outcome.
+    private bool TerminalOnly => Kind == BarKind.Desk && _target?.IsTerminalOnly == true && !HasMergeVerb;
+
     private NeedsYouActionControl? AcceptControl => _row?.Controls.FirstOrDefault(c => c is { IsPrimary: true, Action.OptionId.Length: > 0 });
 
     private NeedsYouActionControl? RejectControl => _row?.Controls.FirstOrDefault(c => c.Action is { RejectLike: true, OptionId.Length: > 0 });
