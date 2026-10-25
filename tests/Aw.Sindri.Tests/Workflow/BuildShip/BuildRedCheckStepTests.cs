@@ -17,7 +17,7 @@ public sealed class BuildRedCheckStepTests
         var start = startHead is null ? string.Empty : $",\"startHead\":\"{startHead}\"";   // prepare records where the round started
         return StepRig.Context("step.build.red-check", new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["activePacket"] = $$"""{"hash":"sha256:x","dir":"{{StepRig.PacketDir}}","repo":"{{StepRig.Tree}}"{{start}}}""",
+            ["activePacket"] = $$"""{"hash":"sha256:x","dir":"{{StepRig.PacketDir}}","repo":"{{StepRig.Tree}}"{{start}} }""",
             ["redTests"] = redTests,
         });
     }
