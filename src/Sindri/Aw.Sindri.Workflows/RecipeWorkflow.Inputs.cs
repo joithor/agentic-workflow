@@ -145,26 +145,30 @@ internal sealed partial class RecipeWorkflow
 
         for (var i = 0; i < failures.Length; i++)
         {
-            if (failures[i] is not { } failure)
+            if (failures[i] is { } failure)
             {
-                continue;
+                return await FillFailed(instance, open, step, requests[i].Input, failure).ConfigureAwait(true);
             }
-
-            if (failure.InnerException is ApplicationFailureException { ErrorType: var type } && string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal))
-            {
-                await DropTexts(instance.Address.Value).ConfigureAwait(true);
-                return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, requests[i].Input).ConfigureAwait(true));
-            }
-
-            if (failure.InnerException is CanceledFailureException)
-            {
-                throw failure;   // a cancelled fill: the workflow is being cancelled
-            }
-
-            return await InputFailed(instance, open, requests[i].Input, failure).ConfigureAwait(true);
         }
 
         return OverPlanCap(fills) ? await PlanOverCap(instance, open).ConfigureAwait(true) : null;
+    }
+
+    // One fill's failure, as the one-after-another path decides it: no runtime parks, a cancelled fill rethrows, anything else fails the Step.
+    private async Task<Filling> FillFailed(WorkflowInstance instance, OpenRun open, StepUse step, BlockId input, ActivityFailureException failure)
+    {
+        if (failure.InnerException is ApplicationFailureException { ErrorType: var type } && string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal))
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+            return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, input).ConfigureAwait(true));
+        }
+
+        if (failure.InnerException is CanceledFailureException)
+        {
+            throw failure;   // a cancelled fill: the workflow is being cancelled
+        }
+
+        return await InputFailed(instance, open, input, failure).ConfigureAwait(true);
     }
 
     private bool OverPlanCap(List<InjectionFill> fills) => _capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap;
