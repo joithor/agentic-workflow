@@ -37,7 +37,7 @@ public sealed class WholeMapConceptTests
         Assert.Equal(WholeMapDetail.Nodes, view.Detail);
         Assert.Equal(
             ["action:pick", "code:src/Shared.cs", "code:src/Shifts.cs", "concept:scheduling", "feature:shifts", "feature:swaps", "record:swap-rules", "surface:screen/shifts"],
-            view.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
+            view.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(view.Edges!, e => Assert.Contains(view.Nodes!, n => n.Key.Value == e.From.Value));
         Assert.Equal(3, view.Edges!.Count(e => e.Type == EdgeType.BelongsTo));
     }
@@ -47,7 +47,7 @@ public sealed class WholeMapConceptTests
     {
         var view = Ask(ConceptGraph.Product(), concept: ConceptKeys.Other).Value;
 
-        Assert.Equal(["feature:lone", "record:orphan"], view.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
+        Assert.Equal(["feature:lone", "record:orphan"], view.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

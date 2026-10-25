@@ -54,10 +54,10 @@ public sealed class GetConceptsTests : IDisposable
         var view = (await world.Engine.Concepts(Query(), MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal((1, "v1", ConceptStates.Ok), (view.ApiVersion, view.MapVersion, view.State));
-        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id.Value));
+        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id.Value), StringComparer.Ordinal);
         var scheduling = view.Concepts.Single(c => c.Id.Value == "concept:scheduling");
         Assert.Equal(("People pick and swap shifts.", "derived", new ConceptSize(1, 0, 0, 1)), (scheduling.Summary, scheduling.Source, scheduling.Size));
-        Assert.Equal(["repo:aw-split-panes/docs/scheduling.md"], scheduling.Citations.Select(c => c.Key));
+        Assert.Equal(["repo:aw-split-panes/docs/scheduling.md"], scheduling.Citations.Select(c => c.Key), StringComparer.Ordinal);
         Assert.Equal(new ConceptSize(1, 0, 0, 0), view.Other.Size);
         Assert.Equal([("concept:billing", "concept:scheduling", 1)], view.Links.Select(l => (l.From.Value, l.To.Value, l.Weight)));
     }
@@ -69,7 +69,7 @@ public sealed class GetConceptsTests : IDisposable
 
         var view = (await world.Engine.Concepts(Query(), MapWorld.Session("aw-split-panes"), MapWorld.None)).Value;
 
-        Assert.Equal(["concept:scheduling"], view.Concepts.Select(c => c.Id.Value));
+        Assert.Equal(["concept:scheduling"], view.Concepts.Select(c => c.Id.Value), StringComparer.Ordinal);
         Assert.Equal(new ConceptSize(0, 0, 0, 0), view.Other.Size);
     }
 
@@ -81,7 +81,7 @@ public sealed class GetConceptsTests : IDisposable
         var filtered = (await world.Engine.Concepts(Query("invoices"), MapWorld.Human, MapWorld.None)).Value;
         var bad = await world.Engine.Concepts(Query(page: new ConceptPage("v9:1")), MapWorld.Human, MapWorld.None);
 
-        Assert.Equal(["concept:billing"], filtered.Concepts.Select(c => c.Id.Value));
+        Assert.Equal(["concept:billing"], filtered.Concepts.Select(c => c.Id.Value), StringComparer.Ordinal);
         Assert.Equal(ContextErrors.QueryInvalid.Code, bad.Error.Code);
     }
 
@@ -106,7 +106,7 @@ public sealed class GetConceptsTests : IDisposable
         var unknown = await world.Engine.ConceptMembers(new ConceptMembersQuery(NodeKey.From("concept:nope"), MapRead.Current, new ConceptPage()), MapWorld.Human, MapWorld.None);
 
         Assert.Equal([("feature:shifts", "feature", "Shifts")], members.Members.Select(m => (m.Key, m.Kind, m.Label)));
-        Assert.Equal(["feature:lone"], other.Members.Select(m => m.Key));
+        Assert.Equal(["feature:lone"], other.Members.Select(m => m.Key), StringComparer.Ordinal);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, unknown.Error.Code);
     }
 
@@ -115,11 +115,11 @@ public sealed class GetConceptsTests : IDisposable
     {
         var world = await Imported();
 
-        var concept = (await world.Engine.WholeMap(new WholeMapQuery(null, [], MapRead.Current) { Concept = "concept:scheduling" }, MapWorld.Human, MapWorld.None)).Value;
-        var whole = (await world.Engine.WholeMap(new WholeMapQuery(null, [], MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
-        var again = (await world.Engine.WholeMap(new WholeMapQuery(null, [], MapRead.Current) { Concept = "concept:scheduling" }, MapWorld.Human, MapWorld.None)).Value;
+        var concept = (await world.Engine.WholeMap(new WholeMapQuery(Detail: null, [], MapRead.Current) { Concept = "concept:scheduling" }, MapWorld.Human, MapWorld.None)).Value;
+        var whole = (await world.Engine.WholeMap(new WholeMapQuery(Detail: null, [], MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
+        var again = (await world.Engine.WholeMap(new WholeMapQuery(Detail: null, [], MapRead.Current) { Concept = "concept:scheduling" }, MapWorld.Human, MapWorld.None)).Value;
 
-        Assert.Equal(["code:src/shifts.ts", "concept:scheduling", "feature:shifts"], concept.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
+        Assert.Equal(["code:src/shifts.ts", "concept:scheduling", "feature:shifts"], concept.Nodes!.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Equal(7, whole.Nodes!.Count);
         Assert.Equal(concept.Nodes!.Count, again.Nodes!.Count);
     }
