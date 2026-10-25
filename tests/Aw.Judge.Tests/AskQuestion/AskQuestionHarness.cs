@@ -33,6 +33,7 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IBriefStore>(new InMemoryBriefStore())
             .AddSingleton<IPromptSortStore>(new InMemoryPromptSortStore())
             .AddSingleton<ISortSessionStore>(new InMemorySortSessionStore())
+            .AddSingleton<IEvalStore>(new InMemoryEvalStore())
             .AddSingleton<IBatchClassifier>(FakeBatchClassifier.Unavailable())
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
