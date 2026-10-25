@@ -199,15 +199,16 @@ The viewer opens when a person takes the Step over (`sindri workflow takeover`, 
 of that instance (or of an instance under it) and opens its tmux session in the one viewer the launcher uses: `launcher.json`'s `viewer` when it is valid, else the
 terminal the box's detection chose; a T3 session goes to T3. The takeover never waits on this and never fails because of it (the Step is taken over first, the
 viewer gets 10 s). The attempt is recorded as `launch.takeover-opened` (public, key `launch.takeover-opened:<nonce>`, payload
-`{ launchId, item, instance, viewer }`) and returned on the takeover's response as `viewer`:
+`{ launchId, item, instance, viewer, attach }`); the launches view takes `viewer` as the launch's latest, so `GET /sindri/launches/{id}` shows it, and the takeover's
+response carries it as `viewer` beside `attach`, with the launch's own viewer record:
 
 ```json
-{ "kind": "warp", "label": "Warp", "outcome": "opened|unconfirmed|failed|none-usable", "reason": "…or null",
+{ "viewer": { "kind": "warp", "label": "Warp", "outcome": "opened|unconfirmed|failed|skipped", "code": null, "reason": "…or absent" },
   "attach": ["tmux", "-L", "sindri-launch", "attach", "-t", "=snd-LCH-…"] }
 ```
 
-`reason` is set for `failed` and `none-usable`; `attach` is always the command to run by hand. The field is absent when the instance has no live session, and for a
-repeat of a takeover that had already applied.
+`outcome` is `skipped` with a `reason` when no viewer on the box can open a window, and `failed` with `code` (`SND-LAUNCH-001`, or `-009` on a timeout) and a `reason`
+when the viewer was tried. Both fields are absent when the instance has no live session, and on a repeat of a takeover that had already applied.
 
 ## What a launched Step can't do
 

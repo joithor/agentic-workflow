@@ -1,3 +1,4 @@
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
@@ -29,7 +30,7 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
     /// <param name="nonce">The takeover's nonce: the event's key, so a resent command records nothing twice.</param>
     /// <param name="cancellationToken">Cancels the open.</param>
     /// <returns>What came of it, or null when the instance has no live session to open.</returns>
-    public async ValueTask<TakeoverViewer?> Open(InstanceAddress instance, CommandNonce nonce, CancellationToken cancellationToken)
+    public async ValueTask<OpenedSession?> Open(InstanceAddress instance, CommandNonce nonce, CancellationToken cancellationToken)
     {
         var item = ItemOf(instance);
         if (item is null || await Live(item.Value, instance, cancellationToken).ConfigureAwait(false) is not { Attach: { } attach } live)
@@ -38,8 +39,8 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         }
 
         var shown = await Show(live, attach, cancellationToken).ConfigureAwait(false);
-        await Record(new LaunchTakeoverOpened(live.Id, item.Value, instance, shown), nonce, cancellationToken).ConfigureAwait(false);
-        return shown;
+        await Record(new LaunchTakeoverOpened(live.Id, item.Value, instance, shown, attach), nonce, cancellationToken).ConfigureAwait(false);
+        return new OpenedSession(shown, attach);
     }
 
     private static ItemId? ItemOf(InstanceAddress instance) =>
@@ -56,7 +57,7 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
     private static bool Under(InstanceAddress? launched, InstanceAddress taken) =>
         launched is { } at && (at == taken || at.Value.StartsWith(taken.Value + "/", StringComparison.Ordinal));
 
-    private async ValueTask<TakeoverViewer> Show(LaunchRow live, IReadOnlyList<string> attach, CancellationToken cancellationToken)
+    private async ValueTask<LaunchViewer> Show(LaunchRow live, IReadOnlyList<string> attach, CancellationToken cancellationToken)
     {
         using var bound = new CancellationTokenSource(_limit);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
@@ -64,32 +65,31 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         try
         {
             var outcome = await viewer.Open(request, linked.Token).ConfigureAwait(false);
-            return await Described(outcome, attach, cancellationToken).ConfigureAwait(false);
+            return await Described(outcome, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return await Failed("the viewer did not open in time", attach, cancellationToken).ConfigureAwait(false);
+            return await Failed("the viewer did not open in time", cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async ValueTask<TakeoverViewer> Described(ViewerOutcome outcome, IReadOnlyList<string> attach, CancellationToken cancellationToken)
+    private async ValueTask<LaunchViewer> Described(ViewerOutcome outcome, CancellationToken cancellationToken)
     {
         var facts = outcome.ViewerKind is null ? await viewer.Probe(cancellationToken).ConfigureAwait(false) : null;   // a viewer that opened names itself; one that did not asks its probe
         var kind = outcome.ViewerKind ?? facts!.Kind;   // why: facts is read exactly when the outcome names no viewer
         var label = outcome.ViewerLabel ?? (string.Equals(kind, "print", StringComparison.Ordinal) ? null : facts?.Label);
         return outcome.Kind switch
         {
-            ViewerOutcomeKind.Opened => new TakeoverViewer(kind, label, TakeoverViewerOutcome.Opened, Reason: null, attach),
-            ViewerOutcomeKind.Unconfirmed => new TakeoverViewer(kind, label, TakeoverViewerOutcome.Unconfirmed, Reason: null, attach),
-            ViewerOutcomeKind.Failed => new TakeoverViewer(kind, label, TakeoverViewerOutcome.Failed, $"the {label ?? kind} viewer failed to open ({outcome.Code ?? "SND-LAUNCH-001"})", attach),
-            _ => new TakeoverViewer(kind, label, TakeoverViewerOutcome.NoneUsable, "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)", attach),
+            ViewerOutcomeKind.Opened or ViewerOutcomeKind.Unconfirmed => new LaunchViewer(kind, label, outcome.Kind, Code: null, Detail: null),
+            ViewerOutcomeKind.Failed => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, outcome.Code ?? "SND-LAUNCH-001", Detail: null) { Reason = $"the {label ?? kind} viewer failed to open" },
+            _ => new LaunchViewer(kind, label, ViewerOutcomeKind.Skipped, Code: null, Detail: null) { Reason = "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)" },
         };
     }
 
-    private async ValueTask<TakeoverViewer> Failed(string reason, IReadOnlyList<string> attach, CancellationToken cancellationToken)
+    private async ValueTask<LaunchViewer> Failed(string reason, CancellationToken cancellationToken)
     {
         var facts = await viewer.Probe(cancellationToken).ConfigureAwait(false);
-        return new TakeoverViewer(facts.Kind, facts.Label, TakeoverViewerOutcome.Failed, reason, attach);
+        return new LaunchViewer(facts.Kind, facts.Label, ViewerOutcomeKind.Failed, SindriErrors.LaunchTimedOut.Code, Detail: null) { Reason = reason };
     }
 
     private async ValueTask Record(LaunchTakeoverOpened opened, CommandNonce nonce, CancellationToken cancellationToken)
@@ -103,3 +103,8 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         _ = await ledger.Append(events.Entry(EventTypes.LaunchTakeoverOpened, opened, key, opened.Item.Value), grant, cancellationToken).ConfigureAwait(false);
     }
 }
+
+/// <summary>What a takeover opened: the launch's viewer record and the command that attaches to its session.</summary>
+/// <param name="Viewer">The viewer outcome.</param>
+/// <param name="Attach">The attach command.</param>
+internal sealed record OpenedSession(LaunchViewer Viewer, IReadOnlyList<string> Attach);

@@ -20,7 +20,7 @@ internal sealed class TakeoverViewingCommand(ApplyCommandService inner, Takeover
             return applied;
         }
 
-        var viewer = await viewing.Open(applied.Value.Result.Instance.Address, applied.Value.Nonce, cancellationToken).ConfigureAwait(false);
-        return viewer is null ? applied : applied.Value with { Viewer = viewer };
+        var opened = await viewing.Open(applied.Value.Result.Instance.Address, applied.Value.Nonce, cancellationToken).ConfigureAwait(false);
+        return opened is null ? applied : applied.Value with { Viewer = opened.Viewer, Attach = opened.Attach };
     }
 }

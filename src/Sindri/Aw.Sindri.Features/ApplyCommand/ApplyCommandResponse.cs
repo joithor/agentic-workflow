@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -12,9 +12,13 @@ namespace Aw.Sindri.Features.ApplyCommand;
 public sealed record ApplyCommandResponse(CommandResult Result, CommandNonce Nonce, bool AlreadyApplied)
 {
     /// <summary>
-    /// For a takeover of a Step with a live session (issue 1004): what opening it in a viewer came to, and, when nothing opened, the reason and the attach command to run by hand.
-    /// Null for every other command, for a takeover with no live session, and for a repeat of a takeover that already applied.
+    /// For a takeover of a Step with a live session (issue 1004): what opening it in a viewer came to, as the launch's viewer record (outcome opened, unconfirmed, failed, or
+    /// skipped when no viewer is usable; 'reason' says why when nothing opened). Null for every other command, for a takeover with no live session, and for a repeat of one that already applied.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public TakeoverViewer? Viewer { get; init; }
+    public LaunchViewer? Viewer { get; init; }
+
+    /// <summary>The command that attaches to the opened session, with <see cref="Viewer"/>; null when it is.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Attach { get; init; }
 }

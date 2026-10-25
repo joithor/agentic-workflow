@@ -42,11 +42,12 @@ public sealed class TakeoverViewingTests
 
         var shown = await Viewing.Open(_instance, _nonce, Token);
 
-        Expect.Equal(("warp", "Warp", TakeoverViewerOutcome.Opened, null), (shown!.Kind, shown.Label, shown.Outcome, shown.Reason));
+        Expect.Equal(("warp", "Warp", ViewerOutcomeKind.Opened, null), (shown!.Viewer.Kind, shown.Viewer.Label, shown.Viewer.Outcome, shown.Viewer.Reason));
         Assert.Equal(_attach, shown.Attach);
         Assert.Equal(_attach, Assert.Single(_rig.Viewer.Requests).AttachArgv);
         var recorded = _rig.Payload<LaunchTakeoverOpened>(Assert.Single(_rig.Recorded(EventTypes.LaunchTakeoverOpened)));
-        Expect.Equal((_instance, TakeoverViewerOutcome.Opened), (recorded.Instance, recorded.Viewer.Outcome));
+        Expect.Equal((_instance, ViewerOutcomeKind.Opened), (recorded.Instance, recorded.Viewer.Outcome));
+        Expect.Equal(ViewerOutcomeKind.Opened, (await new LaunchViews(_rig.H.Views).Get(A.FirstLaunchId, Token)).Value!.Viewer!.Outcome);   // the launch read shows the latest outcome after folding the event
     }
 
     [Fact]
@@ -59,9 +60,10 @@ public sealed class TakeoverViewingTests
 
         var shown = await Viewing.Open(_instance, _nonce, Token);
 
-        Assert.Equal(TakeoverViewerOutcome.Failed, shown!.Outcome);
-        Assert.Contains("SND-LAUNCH-001", shown.Reason, StringComparison.Ordinal);
-        Assert.DoesNotContain("private stderr", shown.Reason, StringComparison.Ordinal);
+        Assert.Equal(ViewerOutcomeKind.Failed, shown!.Viewer.Outcome);
+        Assert.Equal("SND-LAUNCH-001", shown.Viewer.Code);
+        Assert.NotNull(shown.Viewer.Reason);
+        Assert.Null(shown.Viewer.Detail);
         Assert.Equal(_attach, shown.Attach);
         Assert.Single(_rig.Recorded(EventTypes.LaunchTakeoverOpened));
     }
@@ -76,8 +78,8 @@ public sealed class TakeoverViewingTests
 
         var shown = await Viewing.Open(_instance, _nonce, Token);
 
-        Assert.Equal(TakeoverViewerOutcome.NoneUsable, shown!.Outcome);
-        Assert.NotNull(shown.Reason);
+        Assert.Equal(ViewerOutcomeKind.Skipped, shown!.Viewer.Outcome);
+        Assert.NotNull(shown.Viewer.Reason);
         Assert.Equal(_attach, shown.Attach);
     }
 
