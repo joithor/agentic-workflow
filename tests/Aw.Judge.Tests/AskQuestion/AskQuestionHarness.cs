@@ -37,6 +37,8 @@ internal sealed class AskQuestionHarness
             .AddSingleton<IInputRedactor>(new FakeInputRedactor())
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProviderCatalog>(new FakeProviderCatalog(providers))
+            .AddSingleton<IEvalStore>(new Aw.Judge.Tests.EvaluateQuestion.FakeEvalStore())
+            .AddSingleton<IEvalFiles>(new InMemoryEvalFiles())
             .AddTraitCheckFakes()
             .AddJudgeCore()
             .AddJudgeFeatures();

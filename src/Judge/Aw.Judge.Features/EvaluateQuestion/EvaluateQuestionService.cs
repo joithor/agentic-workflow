@@ -79,12 +79,15 @@ internal sealed class EvaluateQuestionService(
         }
 
         var items = EvalVariants.NeedsStoredDiff(request.Question, request.Variant)
-            ? labeled.Value.Where(l => EvalVariants.HasStoredDiff(StoredInput(l.Item))).ToList()
+            ? WithStoredDiff(labeled.Value)
             : labeled.Value;
         return items.Count == 0
             ? JudgeErrors.Invalid.With($"no labeled items for {request.Question} (run: judge label import, judge label outcomes, judge adjudicate {request.Question})")
             : Results.Success(items);
     }
+
+    private static IReadOnlyList<LabeledItem> WithStoredDiff(IReadOnlyList<LabeledItem> items) =>
+        [.. items.Where(l => EvalVariants.HasStoredDiff(StoredInput(l.Item)))];
 
     private static JsonNode? StoredInput(EvalItem item) => InputJson.TryParse(item.InputJson, out var node) ? node : null;
 
@@ -128,7 +131,7 @@ internal sealed class EvaluateQuestionService(
             var asked = question.Ask(input, json);
             var start = clock.GetTimestamp();
             var answer = asked is null
-                ? (ProviderResult)new ProviderErrored("invalid-input")
+                ? new ProviderErrored("invalid-input")
                 : await provider.Decide(asked, input, question.TimeBudget, cancellationToken).ConfigureAwait(false);
             var row = new EvalResult(labeled.Item.Id.Value, labeled.Label, answer, (long)clock.GetElapsedTime(start).TotalMilliseconds);
             results.Add(row);
