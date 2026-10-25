@@ -12,7 +12,7 @@ public sealed class ScopeRelevanceReviewStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => RelevanceSteps.Review;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:856fe1b54a6dfa12b4d72541d74f7f08c065350a2c691180004959b13d3d0a88";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

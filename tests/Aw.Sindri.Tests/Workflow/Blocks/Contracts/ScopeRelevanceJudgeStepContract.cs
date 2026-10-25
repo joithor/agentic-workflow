@@ -18,7 +18,7 @@ public sealed class ScopeRelevanceJudgeStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => RelevanceSteps.Judge;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:0b5679ed2d64cd7d8d7f4e31d12d471275a4a131c9c3163c5c83e4f384a5395f";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

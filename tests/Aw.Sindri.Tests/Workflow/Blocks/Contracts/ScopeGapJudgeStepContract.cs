@@ -18,7 +18,7 @@ public sealed class ScopeGapJudgeStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => GapSearchSteps.GapJudge;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:44be6fbace363693cbaf1f75b84c1a0aeea03134fcf29e17796b42159693707b";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

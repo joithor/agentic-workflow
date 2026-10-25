@@ -17,7 +17,7 @@ public sealed class ScopeReanchorStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ScopingSteps.Reanchor;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:1f871ecc02474149c071ef8577b9486b1b1d0408734a283e4fcf009b416b14e7";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
