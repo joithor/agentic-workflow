@@ -23,11 +23,13 @@ public sealed class StatusDeskQuestionsTests
 {
     private const string Sha = "0000000000000000000000000000000000000000000000000000000000000002";
 
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     private const string Questions = """
         [{"id":"Q1","dimension":"failure","question":"What happens on expiry?","options":[
           {"id":"Q1.a","answer":"A 410 page","cites":["R1"],"recommended":true},
           {"id":"Q1.b","answer":"A 404","cites":["R2"]}],"other":true,"skip":true}]
         """;
+#pragma warning restore MA0136
 
     private sealed class Contents(string text) : IFactContents
     {
@@ -57,10 +59,10 @@ public sealed class StatusDeskQuestionsTests
             new GetInstanceFactService(instances, instances, new Contents(questions), new Plain(), new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()))));
     }
 
-    private static async Task<(int Exit, string Stdout, string Stderr)> Run(ReadApi api, params string[] args)
+    private static async Task<(int Exit, string Stdout, string Stderr)> Run(ReadApi api, CancellationToken cancellationToken, params string[] args)
     {
         var (stdout, stderr) = (new StringWriter(), new StringWriter());
-        var exit = await StatusCommand.Run(args, api.Desk, new Output(stdout, stderr, SliceHarness.Json), TestContext.Current.CancellationToken);
+        var exit = await Aw.Sindri.Host.Commands.StatusCommand.Run(args, api.Desk, new Output(stdout, stderr, SliceHarness.Json), cancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
     }
 
@@ -69,7 +71,7 @@ public sealed class StatusDeskQuestionsTests
     {
         using var api = Api(Desk("step.interview.answer"), Questions);
 
-        var (exit, stdout, _) = await Run(api, "T-3/step/1");
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1");
 
         Assert.Equal(0, exit);
         Assert.Contains("Q1: What happens on expiry?", stdout, StringComparison.Ordinal);
@@ -85,7 +87,7 @@ public sealed class StatusDeskQuestionsTests
     {
         using var api = Api(Desk("step.interview.answer"), Questions);
 
-        var (exit, stdout, _) = await Run(api, "T-3/step/1", "--json");
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1", "--json");
 
         var status = JsonNode.Parse(stdout)!.AsObject();
         var question = status["questions"]![0]!;
@@ -100,7 +102,7 @@ public sealed class StatusDeskQuestionsTests
     {
         using var api = Api(Desk("step.scope.stop"), Questions);
 
-        var (_, stdout, _) = await Run(api, "T-3/step/1");
+        var (_, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1");
 
         Assert.DoesNotContain("Q1", stdout, StringComparison.Ordinal);
         Assert.DoesNotContain(api.Calls, static c => c.Contains("/facts/", StringComparison.Ordinal));
@@ -112,7 +114,7 @@ public sealed class StatusDeskQuestionsTests
         var view = Desk("step.interview.answer") with { FactShas = null };
         using var api = Api(view, Questions);
 
-        var (exit, stdout, _) = await Run(api, "T-3/step/1");
+        var (exit, stdout, _) = await Run(api, TestContext.Current.CancellationToken, "T-3/step/1");
 
         Assert.Equal((0, StatusLayout.Render(view, StatusCases.Now)), (exit, stdout));
     }
@@ -125,7 +127,7 @@ public sealed class StatusDeskQuestionsTests
         var question = questions[0]!;
         Assert.Equal(("Q1", "Q1.a"), ((string?)question["id"], (string?)question["options"]![0]!["id"]));
         Assert.Contains("What happens on expiry?", (string?)question["question"], StringComparison.Ordinal);
-        Assert.NotEqual("What happens on expiry?", (string?)question["question"]);
-        Assert.NotEqual("A 410 page", (string?)question["options"]![0]!["answer"]);
+        Assert.NotEqual("What happens on expiry?", (string?)question["question"], StringComparer.Ordinal);
+        Assert.NotEqual("A 410 page", (string?)question["options"]![0]!["answer"], StringComparer.Ordinal);
     }
 }
