@@ -55,7 +55,7 @@ internal static class CommandTable
         ConfigCommands.Name => await ConfigCommands.Run(rest, services, json).ConfigureAwait(false),
         LabelCommand.Name => LabelCommand.Run(),
         AdjudicateCommand.Name => AdjudicateCommand.Run(),
-        EvalCommand.Name => EvalCommand.Run(rest),
+        EvalCommand.Name => await Eval(rest, flag, services, json).ConfigureAwait(false),
         PromptSortCommands.Name or TraitCheckCommand.Name => await Sorter(command, rest, flag, services, json).ConfigureAwait(false),
         _ => await DecisionCommand(command, rest, services, json).ConfigureAwait(false),
     };
@@ -81,6 +81,15 @@ internal static class CommandTable
         return string.Equals(command, PromptSortCommands.Name, StringComparison.Ordinal)
             ? await PromptSortCommands.Run(rest, allowlist.Value, services, json).ConfigureAwait(false)
             : await TraitCheckCommand.Run(rest, allowlist.Value, services).ConfigureAwait(false);
+    }
+
+    // 'eval' names a provider to score, so it reads the allowlist like a question does.
+    private static async Task<int> Eval(string[] rest, string? flag, IServiceProvider services, JsonSerializerOptions json)
+    {
+        var allowlist = Allowlist(flag ?? services.GetRequiredService<ProvidersVariable>().Value);
+        return allowlist.IsError
+            ? CommandOutput.Usage(Synopsis, allowlist.Error.Message)
+            : await EvalCommand.Run(rest, allowlist.Value, services, json).ConfigureAwait(false);
     }
 
     // A question reads the allowlist (the flag, else AW_JUDGE_PROVIDERS); a list it can't read is a usage error.
