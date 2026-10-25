@@ -17,7 +17,7 @@ internal sealed partial class ContextPageViewModel
 
     private string? _itemOpened;
 
-    /// <summary>Opens the page for an item: shows that it is reading, opens the item's repo, and fills the starting points from its frozen scope, or says there is none and selects the item's node when the map has one.</summary>
+    /// <summary>Opens the page for an item: shows that it is reading, opens the item's repo, and fills the starting points from its frozen scope, or says there is none.</summary>
     /// <param name="itemId">The item.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the scope is read and the live map is drawn.</returns>
@@ -49,11 +49,6 @@ internal sealed partial class ContextPageViewModel
         if (scope.Value.Scope is not { } frozen)
         {
             NoteItem(Labels.ContextItemUnscoped(itemId, repo));
-            if ((await Ports.Api.Node(api, itemId, cancellationToken).ConfigureAwait(true)).IsSuccess)
-            {
-                await ChooseWholeNode(itemId, cancellationToken).ConfigureAwait(true);
-            }
-
             return;
         }
 
