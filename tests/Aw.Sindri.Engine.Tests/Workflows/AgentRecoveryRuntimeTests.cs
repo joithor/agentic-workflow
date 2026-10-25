@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -33,6 +34,23 @@ public sealed class AgentRecoveryRuntimeTests : AgentRuntimeTestBase
         });
     }
 
+    // Since #1001 an unmatched step.failed runs the Step again (OpenRun.Retries) before it parks 'unavailable': every run, the first and its two retries, ends the same way.
+    private async Task EndEveryRun(string? file, CancellationToken ct)
+    {
+        for (var run = 0; run <= Unavailables.MaxRetries; run++)
+        {
+            var seen = run;
+            await WaitFor(() => _launcher.Requests.Count > seen, ct);
+            var request = _launcher.Requests[run];
+            if (file is not null)
+            {
+                _outputs.Add(request.Worktree!, file, "half a thought");
+            }
+
+            _sessions.End(request.Launch, SessionEndReason.Idle);
+        }
+    }
+
     [Fact(Timeout = 120_000)]
     public async Task A_session_that_ended_with_files_that_prove_nothing_parks_naming_the_output_folder()
     {
@@ -41,13 +59,11 @@ public sealed class AgentRecoveryRuntimeTests : AgentRuntimeTestBase
         await rig.Run(async handle =>
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
-            await Launched(ct);
-            _outputs.Add(rig.Worktree, "scratch.txt", "half a thought");
-            _sessions.End(rig.Launch, SessionEndReason.Idle);
+            await EndEveryRun("scratch.txt", ct);
 
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
-            Assert.Contains("the agent finished but its result was not recorded: " + Path.Combine(rig.Worktree, ".sindri-out"), parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Contains("the agent finished but its result was not recorded: " + Path.Combine(_launcher.Requests[^1].Worktree!, ".sindri-out"), parked.Question?.Question, StringComparison.Ordinal);
             Assert.Equal("idle", await rig.FailureReason(ct));
         });
     }
@@ -60,12 +76,12 @@ public sealed class AgentRecoveryRuntimeTests : AgentRuntimeTestBase
         await rig.Run(async handle =>
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
-            await Launched(ct);
-            _sessions.End(rig.Launch, SessionEndReason.Idle);
+            await EndEveryRun(file: null, ct);
 
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
             Assert.DoesNotContain("not recorded", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Contains("idle", parked.Question?.Question, StringComparison.Ordinal);
             Assert.Equal("idle", await rig.FailureReason(ct));
         });
     }
