@@ -13,11 +13,11 @@ public sealed class ClaudeTranscriptReaderContractTests : TranscriptReaderContra
     protected override ValueTask<(ITranscriptReader Reader, string Path)> CreateWithStandard(CancellationToken cancellationToken)
     {
         var path = _state.Standard("my-project");
-        return ValueTask.FromResult<(ITranscriptReader, string)>((new ClaudeTranscriptReader(System.IO.Path.Combine(_state.Path, "projects")), path));
+        return ValueTask.FromResult<(ITranscriptReader, string)>((new ClaudeTranscriptReader(Path.Combine(_state.Path, "projects")), path));
     }
 
     protected override ValueTask<ITranscriptReader> CreateEmpty(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<ITranscriptReader>(new ClaudeTranscriptReader(System.IO.Path.Combine(_state.Path, "no-such-projects")));
+        ValueTask.FromResult<ITranscriptReader>(new ClaudeTranscriptReader(Path.Combine(_state.Path, "no-such-projects")));
 
     public void Dispose() => _state.Dispose();
 }

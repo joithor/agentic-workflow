@@ -94,7 +94,7 @@ public sealed class InMemoryEvalStore(IInputRedactor? redactor = null) : IEvalSt
             (question is null || string.Equals(i.Question, question, StringComparison.Ordinal))
             && !exclude.Contains(i.Id)
             && !_labels.Keys.Any(k => string.Equals(k.Item, i.Id.Value, StringComparison.Ordinal) && (source is null || k.Source == source)));
-        return Wrap(Results.Success<EvalItem?>(next));
+        return Wrap(Results.Success(next));
     }
 
     /// <inheritdoc />

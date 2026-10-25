@@ -100,7 +100,7 @@ public sealed class LabelCliTests : IDisposable
         var service = new RecordingService<LabelOutcomesRequest, LabelOutcomesResponse>(new LabelOutcomesResponse(Labeled: 3, NoSignal: 1));
         var cli = new JudgeCli(_state)
         {
-            Overrides = services => services.AddSingleton<Aw.Kernel.Services.IService<LabelOutcomesRequest, LabelOutcomesResponse>>(service),
+            Overrides = services => services.AddSingleton<Kernel.Services.IService<LabelOutcomesRequest, LabelOutcomesResponse>>(service),
         };
 
         var run = await cli.Run("label", "outcomes");

@@ -36,7 +36,7 @@ internal sealed class AdjudicateEvalStore : IEvalStore
             (question is null || item.Question == question)
             && !exclude.Contains(item.Id)
             && !Labels.Keys.Any(key => key.Item == item.Id && (source is null || key.Source == source)));
-        return ValueTask.FromResult(Results.Success<EvalItem?>(next));
+        return ValueTask.FromResult(Results.Success(next));
     }
 
     public ValueTask<Result<IReadOnlyList<LabeledItem>>> Labeled(string question, LabelSource? source, CancellationToken cancellationToken) => throw new NotSupportedException();

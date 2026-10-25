@@ -8,7 +8,7 @@ internal sealed record AgentCliCall(IReadOnlyList<string> Arguments, string Work
     /// <summary>Variables beyond the recursion guard every child gets.</summary>
     public IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
-    /// <summary>When set, the only inherited variables the child sees (<see cref="Aw.Judge.Core.Processes.ProcessRequest.InheritOnly"/>); null inherits all.</summary>
+    /// <summary>When set, the only inherited variables the child sees (<see cref="Core.Processes.ProcessRequest.InheritOnly"/>); null inherits all.</summary>
     public IReadOnlyCollection<string>? InheritOnly { get; init; }
 
     /// <summary>What the CLI reads on standard input (the prompt), or null for none.</summary>

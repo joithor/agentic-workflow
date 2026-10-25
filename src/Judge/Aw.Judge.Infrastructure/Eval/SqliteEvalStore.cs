@@ -70,7 +70,7 @@ internal sealed class SqliteEvalStore(JudgeDatabase database, IInputRedactor red
     {
         ArgumentNullException.ThrowIfNull(exclude);
         var found = await Read(session => SqliteQueries.List(session, EvalSql.Next(question, source, exclude), EvalMappers.Item, cancellationToken), cancellationToken).ConfigureAwait(false);
-        return found.IsError ? found.Error : Results.Success<EvalItem?>(found.Value.Count == 0 ? null : found.Value[0]);
+        return found.IsError ? found.Error : Results.Success(found.Value.Count == 0 ? null : found.Value[0]);
     }
 
     /// <inheritdoc />

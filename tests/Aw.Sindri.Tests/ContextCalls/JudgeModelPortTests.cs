@@ -39,6 +39,9 @@ public sealed class JudgeModelPortTests
 
         Result<IModelProvider> IProviderCatalog.Provider(ProviderName name, IReadOnlyCollection<ProviderName>? allowed) =>
             throw new NotSupportedException("the model port asks for a lineup, never one provider by name");
+
+        Result<IModelProvider> IProviderCatalog.Adjudicator(IReadOnlyCollection<ProviderName>? allowed) =>
+            throw new NotSupportedException("the model port asks for a lineup, never the adjudicator");
     }
 
     private static ProviderDecided Answered(string text) =>
