@@ -127,7 +127,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
 
         var blobs = files.Value.ToDictionary(f => f.Path, f => f.Blob, StringComparer.Ordinal);
         var rows = symbols.Value.ToLookup(s => s.File, s => Shape(s.Ref, s.Kind, s.StartLine, s.EndLine, s.Name), StringComparer.Ordinal);
-        IReadOnlyList<FileRecord> changed = [.. merged.Files
+        List<FileRecord> changed = [.. merged.Files
             .Where(f => unembeddable.Contains(f.Path)
                 || !blobs.TryGetValue(f.Path, out var blob)
                 || !string.Equals(blob, f.Blob, StringComparison.Ordinal)

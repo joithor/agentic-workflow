@@ -27,7 +27,6 @@ internal sealed partial class SqliteIndexBuild
             }
         }
 
-        IReadOnlySet<string> found = paths;
-        return found;
+        return paths;
     }
 }
