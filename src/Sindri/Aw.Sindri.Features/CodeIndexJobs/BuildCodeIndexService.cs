@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 
 /// <summary>
 /// The work of a code index build job (code index spec §8): resolves the repo in the caller's scope, runs the facade's build with the job's progress, and, for a published index,
-/// appends 'codeindex.built' just before the runner appends 'job.finished'. A busy box is a deferred result (the job succeeds with nothing changed), not a failure.
+/// appends 'codeindex.built' just before the runner appends 'job.finished'.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="index">The code index.</param>
@@ -43,7 +43,7 @@ internal sealed class BuildCodeIndexService(CodeIndexJobScopes scopes, ICodeInde
         return appended.IsError ? appended.Error : Result(built.Value);
     }
 
-    // A published index is announced just before the runner appends 'job.finished'; a deferred or skipped build changed nothing.
+    // A published index is announced just before the runner appends 'job.finished'; a skipped build changed nothing.
     private async ValueTask<Result<Unit>> Record(BuildReport report, CancellationToken cancellationToken)
     {
         if (report.Outcome != BuildOutcome.Published || report.Commit is not { } published)
@@ -71,7 +71,6 @@ internal sealed class BuildCodeIndexService(CodeIndexJobScopes scopes, ICodeInde
     {
         BuildOutcome.Published => "published",
         BuildOutcome.NotOnMain => "not-on-main",
-        BuildOutcome.Deferred => BuildCodeIndexResult.Deferred,
         _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, message: null),
     };
 

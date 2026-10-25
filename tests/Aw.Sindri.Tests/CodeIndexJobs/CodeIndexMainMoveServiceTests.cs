@@ -142,28 +142,6 @@ public sealed class CodeIndexMainMoveServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_build_that_ended_deferred_holds_the_next_start_for_ten_minutes()
-    {
-        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
-        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(9), outcome: "deferred");
-
-        _ = await Run();
-
-        Assert.Empty(_start.Requests);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_deferred_build_older_than_ten_minutes_no_longer_holds()
-    {
-        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
-        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(11), outcome: "deferred");
-
-        _ = await Run();
-
-        _ = Assert.Single(_start.Requests);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task A_layer_that_became_buildable_starts_a_layers_only_build_at_the_same_commit()
     {
         _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New).WithGraphUnavailable(CodeIndexJobsRig.Demo).WithGraphBuildable(CodeIndexJobsRig.Demo);

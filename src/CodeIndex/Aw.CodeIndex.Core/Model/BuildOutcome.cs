@@ -13,8 +13,4 @@ public enum BuildOutcome
     /// <summary>The commit left the default branch since the tick; nothing changed.</summary>
     [JsonStringEnumMemberName("not-on-main")]
     NotOnMain,
-
-    /// <summary>Every heavy-job slot stayed busy (SND-CODEIDX-004); nothing changed.</summary>
-    [JsonStringEnumMemberName("deferred")]
-    Deferred,
 }

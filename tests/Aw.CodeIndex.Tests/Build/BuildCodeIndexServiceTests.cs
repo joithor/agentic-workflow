@@ -63,34 +63,30 @@ public sealed class BuildCodeIndexServiceTests
         Assert.Null(report.Commit);
         Assert.Null(await harness.Header());
         Assert.Equal(0, harness.Parser.Parsed);
-        Assert.Equal(0, harness.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Every_slot_busy_defers_the_build_as_a_report_not_an_error()
+    public async Task A_build_needs_no_heavy_job_slot_only_the_repos_index_lock()
     {
-        var harness = new BuildHarness { Heavy = new FakeHeavyJobLock(slots: 0) };
+        var harness = new BuildHarness { Parser = new FakeSymbolParser().With("src/A.cs", new ParseOutcome([Parsed.Class("A", 1)])) };
+        _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A");
 
-        var result = await harness.TryBuild(BuildHarness.First, Token);
+        var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(BuildOutcome.Deferred, result.Value.Outcome);
-        Assert.Null(result.Value.Commit);
-        Assert.Null(await harness.Header());
+        Assert.Equal(BuildOutcome.Published, report.Outcome);
+        Assert.Equal(BuildHarness.First, (await harness.Header())!.Meta.Commit);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_slot_is_released_after_a_build_that_published_and_after_one_that_failed()
+    public async Task A_build_that_fails_is_its_own_error_and_leaves_no_index()
     {
         var harness = Arranged();
-        _ = await harness.Build(BuildHarness.First, cancellationToken: Token);
-        Assert.Equal(0, harness.Heavy.Held);
 
         var failed = await harness.TryBuild(BuildHarness.Second, Token);
 
         Assert.True(failed.IsError);
         Assert.Equal("SND-CODEIDX-002", failed.Error.Code);
-        Assert.Equal(0, harness.Heavy.Held);
+        Assert.Null(await harness.Header());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -131,7 +127,7 @@ public sealed class BuildCodeIndexServiceTests
         var newer = new BuildHarness { Parser = new FakeSymbolParser { Version = "fake-2" }.With("src/A.cs", new ParseOutcome([])).With("src/B.cs", new ParseOutcome([])) };
 
         // The same store and snapshot, a parser that reports another version.
-        var service = new Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), new Features.BuildCodeIndex.BuildLayers(new Core.Embedding.EmbeddingsLayer(harness.Embedder, harness.Clock), new Features.BuildCodeIndex.GraphLayer(harness.Snapshot, harness.Clock, harness.Scrubber)), harness.Store, harness.Heavy, harness.Clock);
+        var service = new Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), new Features.BuildCodeIndex.BuildLayers(new Core.Embedding.EmbeddingsLayer(harness.Embedder, harness.Clock), new Features.BuildCodeIndex.GraphLayer(harness.Snapshot, harness.Clock, harness.Scrubber)), harness.Store, harness.Clock);
         var result = await service.Handle(new Features.BuildCodeIndex.BuildCodeIndexRequest(harness.Repo, BuildHarness.Second, new Progress<string>()), Token);
 
         Assert.Equal(["src/A.cs", "src/B.cs"], newer.Parser.ParsedPaths);
@@ -162,7 +158,6 @@ public sealed class BuildCodeIndexServiceTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await harness.Build(BuildHarness.Second, cancellationToken: cancel.Token));
 
         Assert.Equal(BuildHarness.First, (await harness.Header())!.Meta.Commit);
-        Assert.Equal(0, harness.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "unit")]
