@@ -165,7 +165,12 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
     {
         var limits = new JsonArray();
         var (_, dropped) = InScope();
-        var sources = dropped > 0 ? _sources.Append(new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" }).ToList() : _sources;
+        var sources = _sources;
+        if (dropped > 0)
+        {
+            sources = [.. _sources, new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" }];
+        }
+
         foreach (var source in sources)
         {
             if (ScopeFixLines.Match(Lens, ScopeJson.Str(source, "state"), ScopeJson.Str(source, "reason")) is { } limit
