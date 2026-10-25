@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Api;
+namespace Aw.Sindri.Ui.Api.Workflow;
 
 /// <summary>What a viewer did.</summary>
 /// <param name="Kind">'warp', 'exec-template' or 'print'.</param>

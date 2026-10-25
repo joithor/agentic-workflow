@@ -40,6 +40,7 @@ internal static class RunWords
         {
             "opened" => Labels.LaunchOpenedIn(viewer.Label ?? viewer.Kind),
             "unconfirmed" => Labels.LaunchUnconfirmed(viewer.Label ?? viewer.Kind),
+            "failed" when viewer.Reason is { Length: > 0 } reason => Labels.LaunchViewerSkipped(reason),   // a served reason is the sentence; code and detail otherwise
             "failed" => Labels.LaunchViewerFailed(viewer.Code ?? "?", viewer.Detail ?? string.Empty),
             _ => viewer.Reason is { Length: > 0 } reason ? Labels.LaunchViewerSkipped(reason) : Labels.LaunchRunning,
         };
