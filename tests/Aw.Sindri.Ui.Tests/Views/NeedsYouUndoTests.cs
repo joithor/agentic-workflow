@@ -124,7 +124,7 @@ public sealed class NeedsYouUndoTests : IDisposable
         var summaryRight = summary.TranslatePoint(new Point(summary.Bounds.Width, 0), window)!.Value.X;   // why: both are in the shown window's tree
         var seenLeft = seen.TranslatePoint(new Point(0, 0), window)!.Value.X;   // why: both are in the shown window's tree
 
-        Assert.True(summaryRight <= seenLeft, $"the summary ends at x={summaryRight} but the marked-seen text starts at x={seenLeft}");
+        Assert.True(summaryRight <= seenLeft, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the summary ends at x={summaryRight} but the marked-seen text starts at x={seenLeft}"));
     });
 
     [Fact]
