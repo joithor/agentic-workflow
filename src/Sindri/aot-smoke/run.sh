@@ -8,9 +8,8 @@
 # (DOTNET_ROOT set from the 'dotnet' on PATH when unset) through the S1 and API P1 journeys against a temp home (serve
 # brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
-# the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
-# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
-# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), QUERY /context/subgraph with a JSON body on the published host (POST is 405), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the approve preview, a session's approve and the human's approve (no typed challenge, owner decision q93), status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
+# the views rebuild requested by a session and by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), QUERY /context/subgraph with a JSON body on the published host (POST is 405), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run, jobs show and the jobs list, pause and resume with a session's pause, and the services list after each), a session's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1), then Onyx P2: onyx status --json with no docker on PATH (state not-set-up, the docker row fail
@@ -45,7 +44,7 @@ bin="$out/bin/sindri"
 scratch=""
 work=""
 # On any exit, a server this run started is stopped before its home is deleted: only once this run's home is exported
-# (never the owner's default home), as the human at a terminal (a session's stop is refused, SND-AUTH-002), and, should
+# (never the owner's default home), as the human at a terminal, and, should
 # that fail, by signalling the pid control.json still names, then waiting (bounded) for it to exit. The scratch tree is
 # deleted on any exit, so the trap is set before it is made.
 cleanup() {
@@ -207,7 +206,7 @@ session_tty() { # a CLI that can't read the token, at a terminal (the server dec
   items_in new 1
   run queue
   run items --state new
-  session item add "Refused by the desk"
+  session item add "Filed by a session"
   item="$(bounded "$bin" items --json </dev/null | jq -r '.items[0].id')"
   human item close "$item" </dev/null
   items_in done 1
@@ -218,7 +217,6 @@ session_tty() { # a CLI that can't read the token, at a terminal (the server dec
   run needs-you
   decision="$(bounded "$bin" needs-you --json </dev/null | jq -r '[.rows[] | select(.title == "Smoke request")][0].subject.id')"
   session decide "$decision" accept
-  human decide "$decision" accept </dev/null
   settle
   run needs-you
   run requests --state accepted
@@ -252,7 +250,6 @@ session_tty() { # a CLI that can't read the token, at a terminal (the server dec
   settle
   run services
   session stop
-  human stop </dev/null
   run status
   doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
