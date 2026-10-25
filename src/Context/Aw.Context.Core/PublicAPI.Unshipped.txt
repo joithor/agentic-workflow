@@ -7518,3 +7518,10 @@ static Aw.Context.Core.Lenses.DemotedFiles.Last<T>(System.Collections.Generic.IR
 Aw.Context.Core.Lenses.DemotedFiles
 Aw.Context.Core.Graph.DemotedCode
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensBands!
+Aw.Context.Core.Engine.FillBands
+const Aw.Context.Core.Engine.FillBands.CodeLexical = "context.fill.code.lexical" -> string!
+const Aw.Context.Core.Engine.FillBands.CodeSymbols = "context.fill.code.symbols" -> string!
+const Aw.Context.Core.Engine.FillBands.History = "context.fill.history" -> string!
+const Aw.Context.Core.Engine.FillBands.Lenses = "context.fill.lenses" -> string!
+static Aw.Context.Core.Engine.FillBands.Source.get -> System.Diagnostics.ActivitySource!
+static Aw.Context.Core.Engine.FillBands.Start(string! band) -> System.Diagnostics.Activity?
