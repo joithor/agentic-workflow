@@ -43,4 +43,31 @@ public sealed class SearchWithRealScrubbersTests
 
         Assert.Equal("feature:tabs.tab-manager", hits[0]);
     }
+
+    // The split-panes fixture map is what the Sindri host imports: its decisions, records and edge evidence must not change what "tab manager" finds.
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_split_panes_map_puts_the_feature_first_through_the_engine_with_the_fake_scrubbers()
+    {
+        using var world = new MapWorld();
+        _ = await world.ImportYaml(FixtureMap.Yaml);
+
+        var view = (await world.Engine.Search(new MapSearchQuery("tab manager", Limit: null, Area: null, Repo: null, Aw.Context.Core.Map.MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.True(view.Hits.Count > 0 && view.Hits[0].Key.Value == "feature:tabs.tab-manager", string.Join(' ', view.Hits.Select(static h => h.Key.Value)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_split_panes_map_puts_the_feature_first_over_the_real_scrubbers()
+    {
+        using var world = new MapWorld();
+        _ = await world.ImportYaml(FixtureMap.Yaml);
+        var graph = (await world.Store.Snapshot(draft: false, MapWorld.None)).Value!.Graph;
+        var scrubbers = new RedactionScrubberFactory(new FakeTimeProvider()).For([]).Value;
+
+        var docs = MapSearchDocs.Of(graph, new AreaIndex(new Dictionary<string, NodeArea>(StringComparer.Ordinal)), new MapText(scrubbers, FencePolicy.Clean));
+        var index = new SqliteMapSearchIndexFactory().Build([.. docs.Select(static d => d.Doc)]).Value;
+        var hits = index.Search(MapSearchRules.Terms("tab manager").Value, area: null, limit: 10).Value.Matches.Select(m => docs[m.Doc].Node.Key.Value).ToList();
+
+        Assert.True(hits.Count > 0 && hits[0] == "feature:tabs.tab-manager", string.Join(' ', docs.Select(static d => $"{d.Node.Key.Value}=[{d.Doc.Title}]")) + " => " + string.Join(' ', hits));
+    }
 }
