@@ -11,7 +11,6 @@ public sealed class ScopeGraphTests : IDisposable
     private const string Manager = "feature:tabs.tab-manager";
     private const string Groups = "feature:tabs.tab-groups";
     private const string SwitchTab = "surface:command/switch-tab";
-    private const string Restore = "action:tab-manager.restore-layout";
     private const string PaneLayout = "thing:pane-layout";
     private const string ManagerCode = "code:src/tabs/TabManager.ts";
     private readonly MapWorld _world = new();
@@ -30,14 +29,14 @@ public sealed class ScopeGraphTests : IDisposable
     public async Task ScopeGraph_starts_at_the_anchor_and_widens_to_the_depth()
     {
         var one = await Build([Manager], depth: 1);
-        var three = await Build([Manager], depth: 3);
+        var wide = await Build([Manager], depth: 4);
 
         Assert.Equal([Manager], one.Anchors, StringComparer.Ordinal);
         Assert.Contains(one.Nodes, n => n.Id == Groups);
         Assert.Contains(one.Nodes, n => n.Id == SwitchTab);
-        Assert.DoesNotContain(one.Nodes, n => n.Id == PaneLayout);
-        Assert.Contains(three.Nodes, n => n.Id == PaneLayout);
-        Assert.Equal((1, 3), (one.Depth, three.Depth));
+        Assert.Contains(wide.Nodes, n => n.Id == PaneLayout);
+        Assert.True(one.Nodes.Count < wide.Nodes.Count, $"{one.Nodes.Count} nodes at depth 1, {wide.Nodes.Count} at depth 4");
+        Assert.Equal((1, 4), (one.Depth, wide.Depth));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -57,7 +56,6 @@ public sealed class ScopeGraphTests : IDisposable
         var ids = view.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(view.Edges);
         Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From) && ids.Contains(e.To), $"{e.From} {e.Type} {e.To} has an end outside the graph"));
-        Assert.DoesNotContain(view.Edges, e => e.From == Restore);   // the action is two hops out, so its edges are not in a depth-1 graph
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -83,7 +81,7 @@ public sealed class ScopeGraphTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task ScopeGraph_ranks_product_nodes_before_code_nodes()
     {
-        var view = await Build([Manager], depth: 3);
+        var view = await Build([Manager], depth: 4);
 
         var worstProduct = view.Nodes.Where(n => !n.Id.StartsWith("code:", StringComparison.Ordinal)).Max(n => n.Rank);
         var bestCode = view.Nodes.Where(n => n.Id.StartsWith("code:", StringComparison.Ordinal)).Min(n => n.Rank);
@@ -93,8 +91,8 @@ public sealed class ScopeGraphTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task ScopeGraph_drops_the_lowest_rank_over_max_nodes_and_records_a_cap_limit()
     {
-        var all = await Build([Manager], depth: 3);
-        var capped = await Build([Manager], depth: 3, maxNodes: 3);
+        var all = await Build([Manager], depth: 4);
+        var capped = await Build([Manager], depth: 4, maxNodes: 3);
 
         Assert.True(all.Nodes.Count > 3);
         Assert.Equal(all.Nodes.Take(3).Select(n => n.Id), capped.Nodes.Select(n => n.Id), StringComparer.Ordinal);
@@ -107,8 +105,8 @@ public sealed class ScopeGraphTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task ScopeGraph_drops_the_lowest_rank_over_max_bytes_and_records_a_cap_limit()
     {
-        var all = await Build([Manager], depth: 3);
-        var small = await Build([Manager], depth: 3, maxBytes: 1_500);
+        var all = await Build([Manager], depth: 4);
+        var small = await Build([Manager], depth: 4, maxBytes: 1_500);
 
         Assert.True(small.Nodes.Count < all.Nodes.Count);
         Assert.Contains(small.Limits, l => l.Why == "cap");

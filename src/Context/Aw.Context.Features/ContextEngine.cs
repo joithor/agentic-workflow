@@ -34,7 +34,8 @@ internal sealed class ContextEngine(
     IContextMap map,
     ContextGraph graph,
     ContextEval eval,
-    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads,
+    ContextScopeGraph scopeGraphs) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -152,16 +153,15 @@ internal sealed class ContextEngine(
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
 
-    // Issue 1005: the context lane builds the scoping graph and keeps the call log; until then the engine answers a named error and Sindri's gather falls back to the lenses.
     public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ScopeGraphView>>(ContextErrors.ScopeGraphUnavailable.With("the engine does not build the scoping graph yet"));
+        scopeGraphs.Build(query1, scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyList<GraphRead>>>(ContextErrors.ScopeGraphUnavailable.With("the engine keeps no graph call log yet"));
+        scopeGraphs.Reads(instanceAddress, runToken, cancellationToken);
 
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, string runToken, ScopeGraphView graph, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Issue 1005: the run's graph is not stored yet");
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken) =>
+        scopeGraphs.Remember(instanceAddress, graph, cancellationToken);
 
     public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Issue 1005: scoped reads are not checked yet");
+        scopeGraphs.Read(instanceAddress, runToken, read, cancellationToken);
 }

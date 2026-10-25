@@ -43,6 +43,14 @@
         "mapVersion": {
           "type": "string",
           "description": "A retained map version to read as of, such as v3; omit for the current map"
+        },
+        "outside": {
+          "type": "boolean",
+          "description": "Set true, with a reason, to read a node outside this run's scoping graph; ignored by a session that has no scoping run"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this read steps outside the scoping graph; required with outside"
         }
       }
     },
@@ -114,6 +122,14 @@
         "key": {
           "type": "string",
           "description": "A product-graph node key, name or alias"
+        },
+        "outside": {
+          "type": "boolean",
+          "description": "Set true, with a reason, to read a node outside this run's scoping graph; ignored by a session that has no scoping run"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this read steps outside the scoping graph; required with outside"
         }
       },
       "required": [
@@ -142,6 +158,14 @@
           "type": "integer",
           "description": "How many edges away to look (default 1; the engine bounds it)",
           "minimum": 0
+        },
+        "outside": {
+          "type": "boolean",
+          "description": "Set true, with a reason, to read a node outside this run's scoping graph; ignored by a session that has no scoping run"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this read steps outside the scoping graph; required with outside"
         }
       },
       "required": [

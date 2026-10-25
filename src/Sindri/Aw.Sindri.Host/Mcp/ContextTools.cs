@@ -48,6 +48,8 @@ internal static class ContextTools
             ["hops"] = Property("string", HopsText),
             ["budget"] = Property("integer", "Token budget for the answer", minimum: 1),
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
+            ["outside"] = ScopedReads.OutsideProperty,
+            ["reason"] = ScopedReads.ReasonProperty,
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -174,10 +176,16 @@ internal static class ContextTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallQuery(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var request = Bind(arguments);
+        var split = ScopedReads.Separate(Query, arguments);
+        Result<QueryContextRequest> request = split.IsError ? split.Error : Bind(split.Value.Rest);
         if (request.IsError)
         {
             return McpResults.Failure(services, request.Error);
+        }
+
+        if (request.Value.Node is { } node && await ScopedReads.Check(services, Query, node, split.Value, ct).ConfigureAwait(false) is { } refused)
+        {
+            return McpResults.Failure(services, refused);
         }
 
         var answer = await services.GetRequiredService<IService<QueryContextRequest, ContextResult>>().Handle(request.Value, ct).ConfigureAwait(false);

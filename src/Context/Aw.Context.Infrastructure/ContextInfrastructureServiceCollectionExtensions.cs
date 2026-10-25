@@ -9,6 +9,7 @@ using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.ScopeGraph;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Eval;
@@ -21,6 +22,7 @@ using Aw.Context.Infrastructure.Linear;
 using Aw.Context.Infrastructure.Map;
 using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Infrastructure.Review;
+using Aw.Context.Infrastructure.ScopeRuns;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
@@ -56,6 +58,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IGraphStore>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IProposalRuns>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IIntentStore, SqliteIntentStore>()
+            .AddSingleton<IScopeRunStore, SqliteScopeRunStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
             .AddSingleton<IExportStore, FileExportStore>()
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()

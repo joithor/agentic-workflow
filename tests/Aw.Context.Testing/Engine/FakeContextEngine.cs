@@ -230,7 +230,7 @@ public sealed class FakeContextEngine : IContextEngine
         ValueTask.FromResult(GraphReadsAnswer);
 
     /// <inheritdoc/>
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, string runToken, ScopeGraphView graph, CancellationToken cancellationToken) =>
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken) =>
         throw new NotSupportedException("The fake keeps no run graph");
 
     /// <inheritdoc/>

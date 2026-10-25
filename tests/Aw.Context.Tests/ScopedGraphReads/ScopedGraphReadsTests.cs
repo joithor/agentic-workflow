@@ -11,18 +11,25 @@ public sealed class ScopedGraphReadsTests : IDisposable
 {
     private const string Instance = "ITM-1/line/3/scoping.1";
     private const string Run = "1.1";
-    private const string Manager = "feature:tabs.tab-manager";
-    private const string Elsewhere = "thing:pane-layout";   // three hops out, so a depth-1 graph does not hold it
+    private const string Manager = "feature:main.core";
+    private const string Elsewhere = "feature:other.island";   // joined to nothing, so no graph around the manager holds it
+    private static readonly string Map = MapWorld.Yaml(
+        "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+        $"  - {{key: \"{Manager}\", label: \"Core\"}}",
+        "  - {key: \"feature:main.part\", label: \"Part\"}",
+        $"  - {{key: \"{Elsewhere}\", label: \"Island\"}}",
+        "edges:",
+        $"  - {{from: \"feature:main.part\", to: \"{Manager}\", type: part-of, provenance: deterministic}}");
     private readonly MapWorld _world = new();
 
     public void Dispose() => _world.Dispose();
 
-    private async Task RememberDepthOne(string instance = Instance, string run = Run)
+    private async Task RememberDepthOne()
     {
-        _ = await _world.ImportYaml(MapWorld.TabsMap);
+        _ = await _world.ImportYaml(Map);
         var graph = await _world.Engine.ScopeGraph(new ScopeGraphQuery([Manager], MapRead.Current, new LensRange(1, null), Brief: null, 400, 300_000), MapWorld.Human, MapWorld.None);
         Assert.True(graph.IsSuccess, graph.IsError ? graph.Error.Message : null);
-        var stored = await _world.Engine.RememberScopeGraph(instance, run, graph.Value, MapWorld.None);
+        var stored = await _world.Engine.RememberScopeGraph(Instance, graph.Value, MapWorld.None);
         Assert.True(stored.IsSuccess, stored.IsError ? stored.Error.Message : null);
     }
 
@@ -72,7 +79,6 @@ public sealed class ScopedGraphReadsTests : IDisposable
     public async Task GraphReads_returns_the_reads_of_one_run_in_order_and_none_of_another_run()
     {
         await RememberDepthOne();
-        await RememberDepthOne(run: "1.2");
 
         _ = await Read(Manager);
         _ = await Read(Elsewhere, outside: true, reason: "why not");
