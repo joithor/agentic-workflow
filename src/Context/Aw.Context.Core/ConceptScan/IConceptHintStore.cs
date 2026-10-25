@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Core.ConceptScan;
 
-/// <summary>Where the concept hints of a draft are kept (migration 0012). They are keyed by the draft's version number and never touch the map's graph, overrides or pins.</summary>
+/// <summary>Where the concept hints of a draft are kept (migration 0013). They are keyed by the draft's version number and never touch the map's graph, overrides or pins.</summary>
 public interface IConceptHintStore
 {
     /// <summary>Stores the hints of a version, replacing any stored before for it.</summary>
