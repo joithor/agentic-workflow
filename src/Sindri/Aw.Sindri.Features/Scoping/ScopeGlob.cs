@@ -44,16 +44,11 @@ internal static class ScopeGlob
     private static bool MatchesOne(char c, string text, int t) =>
         t < text.Length && (c == '?' ? text[t] != '/' : c == text[t]);
 
-    // '**' crosses directories ('**/' also matches zero of them); a single '*' stops at '/'.
+    // '**' crosses directories; a single '*' stops at '/'.
     private static bool MatchStar(string glob, int g, string text, int t)
     {
         var deep = g + 1 < glob.Length && glob[g + 1] == '*';
-        var next = g + (deep ? 2 : 1);
-        if (deep && next < glob.Length && glob[next] == '/')
-        {
-            next++;
-        }
-
+        var next = AfterStar(glob, g, deep);
         for (var end = t; end <= text.Length; end++)
         {
             if (Match(glob, next, text, end))
@@ -68,5 +63,12 @@ internal static class ScopeGlob
         }
 
         return false;
+    }
+
+    // The glob index after the star(s); '**/' also matches zero directories, so its slash is skipped too.
+    private static int AfterStar(string glob, int g, bool deep)
+    {
+        var next = g + (deep ? 2 : 1);
+        return deep && next < glob.Length && glob[next] == '/' ? next + 1 : next;
     }
 }
