@@ -48,14 +48,14 @@ internal sealed class EvaluateQuestionService(
     }
 
     // What the request names, checked before any store or provider is touched.
-    private static Result<(PreparedQuestion Question, Func<JsonNode?, JsonNode?> Variant)> Plan(EvaluateQuestionRequest request)
+    private static Result<(ScoringQuestion Question, Func<JsonNode?, JsonNode?> Variant)> Plan(EvaluateQuestionRequest request)
     {
         if (request.Providers is { } allowed && !allowed.Contains(request.Provider))
         {
             return JudgeErrors.ProviderExcluded.With($"{ProviderNames.Name(request.Provider)} is excluded by the providers allowlist");
         }
 
-        if (QuestionCatalog.Prepare(request.Question) is not { } question)
+        if (QuestionCatalog.Scoring(request.Question) is not { } question)
         {
             return JudgeErrors.Invalid.With($"unknown question: {request.Question}");
         }
@@ -115,7 +115,7 @@ internal sealed class EvaluateQuestionService(
     }
 
     private async ValueTask<Result<IReadOnlyList<EvalResult>>> Asked(
-        EvaluateQuestionRequest request, PreparedQuestion question, Func<JsonNode?, JsonNode?> variant, IReadOnlyList<LabeledItem> items, CancellationToken cancellationToken)
+        EvaluateQuestionRequest request, ScoringQuestion question, Func<JsonNode?, JsonNode?> variant, IReadOnlyList<LabeledItem> items, CancellationToken cancellationToken)
     {
         var found = catalog.Provider(request.Provider, request.Providers);
         if (found.IsError)
@@ -149,7 +149,7 @@ internal sealed class EvaluateQuestionService(
     }
 
     private async ValueTask<Result<EvaluateQuestionResponse>> Report(
-        EvaluateQuestionRequest request, PreparedQuestion question, IReadOnlyList<EvalResult> asked, CancellationToken cancellationToken)
+        EvaluateQuestionRequest request, ScoringQuestion question, IReadOnlyList<EvalResult> asked, CancellationToken cancellationToken)
     {
         var results = EvalScoring.Collapse(asked, request.Collapse);
         var setup = new EvalSetup(request.Question, ProviderNames.Name(request.Provider), request.Variant, question.Threshold, request.Collapse);

@@ -25,4 +25,12 @@ public interface IProviderCatalog
     /// <param name="allowed">The --providers / AW_JUDGE_PROVIDERS allowlist, or null for every provider.</param>
     /// <returns>The provider, AW-JUDGE-011 when the allowlist excludes it, or AW-JUDGE-012 when it can't be asked (its CLI is missing, or it is rules).</returns>
     public Result<IModelProvider> Provider(ProviderName name, IReadOnlyCollection<ProviderName>? allowed);
+
+    /// <summary>
+    /// The stronger model 'judge adjudicate' asks: the claude CLI on opus at high effort, in a locked-down child (no tools,
+    /// settings or hooks; a scratch directory; a minimal environment). Same refusals as <see cref="Provider"/> for claude-cli.
+    /// </summary>
+    /// <param name="allowed">The --providers / AW_JUDGE_PROVIDERS allowlist, or null for every provider.</param>
+    /// <returns>The provider, AW-JUDGE-011 when the allowlist excludes claude-cli, or AW-JUDGE-012 when the CLI is missing.</returns>
+    public Result<IModelProvider> Adjudicator(IReadOnlyCollection<ProviderName>? allowed);
 }

@@ -38,7 +38,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddScoped<IBriefStore, SqliteBriefStore>()
             .AddScoped<IPromptSortStore, SqlitePromptSortStore>()
             .AddScoped<IEvalStore, SqliteEvalStore>()
-            .AddSingleton<ITranscriptReader, ClaudeTranscriptReader>()
+            .AddSingleton<ITranscriptReader>(new ClaudeTranscriptReader(settings.ProjectsDirectory))
             .AddSingleton<IEvalFiles>(new FileEvalFiles(Path.Combine(settings.StateDirectory, "evals")))
             .AddScoped<ISortSessionStore>(_ => new FileSortSessionStore(Path.Combine(settings.StateDirectory, "sessions")))
             .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()))
@@ -67,5 +67,6 @@ public static class JudgeInfrastructureServiceCollectionExtensions
                 new ClaudeCliProvider(sp.GetRequiredService<IProcessRunner>()),
                 new CodexCliProvider(sp.GetRequiredService<IProcessRunner>()),
                 new CursorCliProvider(sp.GetRequiredService<IProcessRunner>(), sp.GetRequiredService<IInputRedactor>()),
-            ]));
+            ],
+            new ClaudeCliProvider(sp.GetRequiredService<IProcessRunner>()) { Options = ClaudeCliOptions.Adjudicator }));
 }
