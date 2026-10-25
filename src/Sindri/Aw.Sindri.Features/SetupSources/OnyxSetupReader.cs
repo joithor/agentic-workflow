@@ -19,7 +19,7 @@ namespace Aw.Sindri.Features.SetupSources;
 internal sealed class OnyxSetupReader(OnyxStatusReader status, ILedgerReader ledger, EventFactory events, IJobViews jobs, TimeProvider clock)
 {
     /// <summary>How long the status read may take (#1121): a Docker that hangs is "unknown" past it, so the setup list answers inside its callers' timeouts.</summary>
-    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(6);
+    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(4);
 
     internal async ValueTask<Result<OnyxFact>> Read(CancellationToken cancellationToken)
     {
