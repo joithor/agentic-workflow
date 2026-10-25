@@ -58,7 +58,8 @@ takeovers_by_ui() {
 # 1. The control plane, with a live agent run: an instance on a step.agent Step, its launch and a live session on its item.
 bash "$FIXTURE" up >"$OUT/up.log" 2>&1 || setup_fail "sindri-ui-fixture up (see $OUT/up.log)"
 bash "$FIXTURE" sessions up >"$OUT/sessions-up.log" 2>&1 || setup_fail "sindri-ui-fixture sessions up (see $OUT/sessions-up.log)"
-item="$(bash "$FIXTURE" agent-run 2>"$OUT/agent-run.log" | tail -1)"
+bash "$FIXTURE" agent-run >"$OUT/agent-run.log" 2>&1 || setup_fail "sindri-ui-fixture agent-run (see $OUT/agent-run.log)"
+item="$(grep -oE 'ITM-[0-9a-f]+' "$OUT/agent-run.log" | head -1)"   # the verb's output is ledger lines too: the first item id is the run's item
 [ -n "$item" ] || setup_fail "agent-run printed no item (see $OUT/agent-run.log)"
 
 # 2. The real app, drivable, on the fixture's control plane: this checkout's debug build (sindri-app.sh's publish would
