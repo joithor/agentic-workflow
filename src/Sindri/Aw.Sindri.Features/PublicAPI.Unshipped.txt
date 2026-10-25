@@ -4831,3 +4831,19 @@ Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.init -> void
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest!
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Repo.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Repo.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Deconstruct(out string? Repo, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.GetContextConceptGlossaryRequest(string? Repo = null, bool Draft = false, string? MapVersion = null) -> void
+override Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool

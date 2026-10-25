@@ -172,6 +172,9 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.ConceptMembers(query, scope, cancellationToken);
 
+    public ValueTask<Result<ConceptGlossaryView>> ConceptGlossary(ConceptGlossaryQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.ConceptGlossary(query, scope, cancellationToken);
+
     public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) => inner.CheckMap(scope, cancellationToken);
 
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken) => inner.CheckRetention(cancellationToken);

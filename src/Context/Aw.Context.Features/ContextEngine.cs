@@ -161,4 +161,7 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.ConceptMembers(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptGlossaryView>> ConceptGlossary(ConceptGlossaryQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.ConceptGlossary(query, scope, cancellationToken);
 }

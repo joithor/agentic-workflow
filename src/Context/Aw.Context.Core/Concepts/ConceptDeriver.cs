@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Concepts;
@@ -39,4 +40,19 @@ public static class ConceptDeriver
         var concepts = pinned.Concat(derived).Select(c => ConceptNodes.Concept(c, view, names)).ToList();
         return ConceptNodes.Join(view, concepts);
     }
+
+    /// <summary>The derived groups, for the namer, with the glossary's terms on each group.</summary>
+    /// <param name="graph">The map's graph, without concepts.</param>
+    /// <param name="pins">The owner's pinned concepts.</param>
+    /// <param name="glossary">The map's glossary, or null when it has none.</param>
+    /// <returns>The groups in seed order.</returns>
+    public static IReadOnlyList<ConceptGroup> Groups(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, MapGlossary? glossary) => throw new NotSupportedException();
+
+    /// <summary>The concept nodes and the belongs-to edges of a map, grouped with the glossary as one more signal and carrying their terms.</summary>
+    /// <param name="graph">The map's graph, without concepts.</param>
+    /// <param name="pins">The owner's pinned concepts.</param>
+    /// <param name="names">What a model named the groups, or null for the fallback.</param>
+    /// <param name="glossary">The map's glossary, or null when it has none.</param>
+    /// <returns>The concepts, 'concept:other' among them when the map has a feature, and the membership edges.</returns>
+    public static ExtractedMap Derive(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, ConceptNames? names, MapGlossary? glossary) => throw new NotSupportedException();
 }

@@ -5,6 +5,7 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
@@ -31,6 +32,7 @@ using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetCode;
+using Aw.Context.Features.GetConceptGlossary;
 using Aw.Context.Features.GetConceptMembers;
 using Aw.Context.Features.GetConcepts;
 using Aw.Context.Features.GetFileMap;
@@ -83,6 +85,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         services.TryAddSingleton<ICodeSymbolSource, NoCodeSymbolSource>();   // the host that wires the code index (Sindri's Host adapter) replaces it
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
         services.TryAddSingleton<IConceptNamer, DisabledConceptNamer>();   // a host that sets up labeling (AddContextLabeling) replaces it
+        services.TryAddSingleton<ISymbolVectors, DisabledSymbolVectors>();   // the host that wires the code index (Sindri's Host adapter) replaces it
+        services.TryAddScoped<ConceptPass>();
         services.TryAddSingleton<MapNamers>();
         services.TryAddSingleton<IHeavyJobLock, UnconfiguredHeavyJobLock>();   // a host that wires the box-wide lock replaces it
         services.TryAddSingleton<UnconfiguredBacktest>();   // hosts that wire the backtest ports (Infrastructure) replace these
@@ -162,6 +166,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetWholeMapRequest, WholeMapView>, GetWholeMapService>()
         .AddScoped<IService<GetConceptsRequest, ConceptsView>, GetConceptsService>()
         .AddScoped<IService<GetConceptMembersRequest, ConceptMembersView>, GetConceptMembersService>()
+        .AddScoped<IService<GetConceptGlossaryRequest, ConceptGlossaryView>, GetConceptGlossaryService>()
         .AddScoped<ConceptReader>()
         .AddSingleton<WholeMapCache>()
         .AddScoped<IService<SearchMapRequest, MapSearchView>, SearchMapService>()
