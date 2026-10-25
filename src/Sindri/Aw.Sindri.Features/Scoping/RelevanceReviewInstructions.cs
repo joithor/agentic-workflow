@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>What 'step.scope.relevance-review' is told (issue 966 spec 4.1): label every entry the map returned, with a reason and a citation, and name the map fix each removal implies.</summary>
 internal sealed class RelevanceReviewInstructions : IAgentStepInstructions

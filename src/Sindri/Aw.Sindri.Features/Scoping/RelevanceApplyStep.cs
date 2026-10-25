@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.relevance-apply' on the block runtime (spec 4.3): <see cref="RelevanceApply"/> over the lenses, the coverage, the brief and the two label sets. It rewrites 'fact:lenses' and 'fact:coverage' without the

@@ -7,7 +7,7 @@ using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.relevance-judge' on the block runtime (spec 4.2): one judge call per entry of 'fact:lenses', 'parallel' at a time, over <see cref="RelevanceJudgeProjection"/> only, so the judge never sees the agent's labels.

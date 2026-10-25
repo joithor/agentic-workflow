@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Judge;
 using Aw.Sindri.Core.Text;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// What the relevance judge sees of one entry (spec 4.2), built from code and nothing else: the brief's text, the entry's lens, key, kind, label, band and lens item id, and the lens's anchors. It never holds the agent's

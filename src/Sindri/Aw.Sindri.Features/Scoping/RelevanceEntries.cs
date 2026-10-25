@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>Reads the entries of the lenses fact.</summary>
 internal static class RelevanceEntries

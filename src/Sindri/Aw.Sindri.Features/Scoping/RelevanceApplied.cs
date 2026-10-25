@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Aw.Sindri.Features.Scoping.Relevance;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>What 'step.scope.relevance-apply' writes: the filtered lenses and coverage, the relevance record and the map fixes.</summary>
 /// <param name="Lenses">The lenses fact without the entries that left.</param>
