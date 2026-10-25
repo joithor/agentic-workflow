@@ -5,7 +5,7 @@ using Aw.Context.Core.Engine;
 namespace Aw.Context.Core.Map;
 
 /// <summary>
-/// The rules a map build runs under, as one stable hash (issue 1041): the built-in <see cref="RulesVersion"/> and, per mapped repo, its deny globs and concept pins.
+/// The rules a map build runs under, as one stable hash (issue 1041): the built-in <see cref="RulesVersion"/> and, per mapped repo, its deny globs, demote globs and concept pins.
 /// A map version stores the hash it was built with; the refresh tick and the doctor compare it with the running one, so a map built under other rules is rebuilt and named.
 /// </summary>
 public static class MapRuleset
@@ -26,6 +26,7 @@ public static class MapRuleset
         {
             var name = repo.Name.Value;
             lines.AddRange(repo.DenyPaths.Select(glob => Line("deny", name, glob)));
+            lines.AddRange(repo.DemotePaths.Select(glob => Line("demote", name, glob)));
             lines.AddRange(repo.Concepts.Select(pin => Line("concept", name, Pin(pin))));
             lines.Add(Line("repo", name));
         }

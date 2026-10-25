@@ -35,4 +35,14 @@ public sealed class MapRulesetTests
         Assert.NotEqual(MapRuleset.Of([plain]), MapRuleset.Of([pinned]), StringComparer.Ordinal);
         Assert.NotEqual(MapRuleset.Of([pinned]), MapRuleset.Of([renamed]), StringComparer.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Demote_globs_change_the_hash_and_the_same_ones_hash_the_same()
+    {
+        var plain = Repo("a", "x/**");
+        var demoting = plain with { DemotePaths = ["docs/**"] };
+
+        Assert.NotEqual(MapRuleset.Of([plain]), MapRuleset.Of([demoting]), StringComparer.Ordinal);
+        Assert.Equal(MapRuleset.Of([demoting]), MapRuleset.Of([plain with { DemotePaths = ["docs/**"] }]), StringComparer.Ordinal);
+    }
 }
