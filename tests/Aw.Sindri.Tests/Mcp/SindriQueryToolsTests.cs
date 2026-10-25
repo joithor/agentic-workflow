@@ -321,7 +321,7 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
 
         Assert.NotEqual(true, result.IsError);
         // why: the MCP answer carries the window it was cut with ('page'); the HTTP body has none
-        var unfenced = System.Text.Json.Nodes.JsonNode.Parse(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText())!.AsObject();
+        var unfenced = JsonNode.Parse(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText())!.AsObject();
         Assert.True(unfenced.Remove("page"));
         Assert.Equal(ApiGolden.Reindent(http), ApiGolden.Reindent(unfenced.ToJsonString()));
     }
@@ -413,6 +413,8 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         Assert.All(codes, c => Assert.Equal("SND-CONTEXT-022", c));
     }
 
+    private string ShortItem(string repo) => repo == "alpha" ? seed.AlphaItem : seed.BetaItem;
+
     private (string Arguments, string Route) Case(string tool, string repo)
     {
         var (item, job) = repo == "alpha" ? (seed.LongItem, seed.AlphaJob) : (seed.BetaItem, seed.BetaJob);
@@ -421,7 +423,8 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
             "sindri_status" => ("{}", "/sindri/status"),
             "sindri_queue" => ("{}", "/sindri/queue"),
             "sindri_item" => (Args("itemId", item), "/sindri/items/" + item),
-            "sindri_item_timeline" => (Args("itemId", item), $"/sindri/items/{item}/timeline"),
+            // why: the HTTP timeline pages by a server cursor ('after'/'next') and the MCP tool by limit and offset, so they agree only while the timeline fits one HTTP page; the long item's paging is covered by its own test
+            "sindri_item_timeline" => (Args("itemId", ShortItem(repo)), $"/sindri/items/{ShortItem(repo)}/timeline"),
             "sindri_pending_decisions" => ("{}", "/sindri/decisions?pending=true"),
             _ => (Args("jobId", job), "/sindri/jobs/" + job),
         };

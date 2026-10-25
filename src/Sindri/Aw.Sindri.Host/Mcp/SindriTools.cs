@@ -276,5 +276,5 @@ internal static partial class SindriTools
     }
 
     /// <summary>The page, or SND-CONTEXT-022 / SND-CONTEXT-006. Unknown names are left to the tool's own binder.</summary>
-    private static Aw.Kernel.Result<McpWindow> ReadPage(IDictionary<string, JsonElement>? arguments) => McpArguments.ReadPage(arguments);
+    private static Result<McpWindow> ReadPage(IDictionary<string, JsonElement>? arguments) => McpArguments.ReadPage(arguments);
 }
