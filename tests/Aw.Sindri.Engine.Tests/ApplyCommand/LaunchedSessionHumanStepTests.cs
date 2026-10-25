@@ -6,7 +6,6 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ApplyCommand;
-using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
 
@@ -24,7 +23,7 @@ public sealed class LaunchedSessionHumanStepTests
 
     public LaunchedSessionHumanStepTests()
     {
-        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, new InMemoryChallenges(new FakeTimeProvider()), _instance);
+        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, _instance);
     }
 
     public static TheoryData<ApplyCommandKind> Kinds => [ApplyCommandKind.Answer, ApplyCommandKind.Command];
