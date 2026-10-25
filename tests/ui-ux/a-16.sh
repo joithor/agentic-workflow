@@ -5,9 +5,9 @@
 source "$(dirname "$0")/lib.sh"
 uxu_start up recipes workflows
 
-# The strip row's open button is named "<subject>, <recipe>", and the subject is the instance address (ITM-.../recipe/N).
-d wait-for --type Button --contains "ITM-" --state visible --wait-ms 30000 >/dev/null || uxu_die "no workflow row on Home"
-d click --type Button --contains "ITM-" --index 0 >/dev/null || uxu_die "could not open the instance sheet"
+# The strip row's open button is named "<item title>, <recipe>"; the fixture starts a desk round trip on "Fixture work one".
+d wait-for --type Button --contains "Fixture work one" --state visible --wait-ms 30000 >/dev/null || uxu_die "no workflow row on Home"
+d click --type Button --contains "Fixture work one" --index 0 >/dev/null || uxu_die "could not open the instance sheet"
 d wait-for --name InstanceTitle --state visible --wait-ms 30000 >/dev/null || uxu_die "the instance sheet never showed its title"
 sleep 2
 title="$(d tree --name InstanceTitle --depth 0 | jq -r '[.. | objects | .text? // empty] | .[0]')"
