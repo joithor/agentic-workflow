@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Features.ApproveRecipe;
+using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Core.Workflow.RegistryWrites;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -18,6 +20,8 @@ internal static class ShippedRecipesRegistration
         services.TryAddScoped<ShippedRecipeSet>();
         services.TryAddScoped<ShippedPlanRows>();
         services.TryAddScoped<ShippedRecipePlanner>();
+        services.TryAddScoped<ShippedRecipeRegistration>();
+        services.TryAddScoped<WaitingShippedLines>();
         services.TryAddScoped<ShippedRecipeApprover>();
         services.TryAddScoped<IShippedRecipes, ShippedRecipes>();
         return services;

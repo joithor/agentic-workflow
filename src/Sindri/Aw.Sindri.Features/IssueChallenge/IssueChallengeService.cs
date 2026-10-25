@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Features.ApproveRecipe;
 
 namespace Aw.Sindri.Features.IssueChallenge;
 
@@ -31,8 +32,9 @@ namespace Aw.Sindri.Features.IssueChallenge;
 /// <param name="directory">Resolves an instance's address, for a protected answer.</param>
 /// <param name="runtime">Reads the instance as it is now, for a protected answer.</param>
 /// <param name="approveAll">Reads the approve-all plan, for 'approve-all &lt;digest6&gt;'.</param>
+/// <param name="shipped">Registers a shipped version that waits for its own approval, so it can be approved by version or by hash (#983).</param>
 internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles,
-    IInstanceDirectory directory, IInstanceRuntime runtime, ApproveAllPlanReader? approveAll = null)
+    IInstanceDirectory directory, IInstanceRuntime runtime, ApproveAllPlanReader? approveAll = null, ShippedRecipeRegistration? shipped = null)
     : IService<IssueChallengeRequest, IssueChallengeResponse>
 {
     private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>', 'approve profile <hash6>', 'approve-all <digest6>', 'grant <n> <address>', 'grant-tokens <n> <address>' or 'accept <address>'";
@@ -68,7 +70,8 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
             return Unknown(text);
         }
 
-        var plan = await approvals.Approve(id, version, cancellationToken).ConfigureAwait(false);
+        var registered = shipped is null ? false : await shipped.EnsureVersion(id, version, cancellationToken).ConfigureAwait(false);
+        var plan = registered.IsError ? registered.Error : await approvals.Approve(id, version, cancellationToken).ConfigureAwait(false);
         return plan.IsError ? plan.Error : Issued(Mint(plan.Value.Action, plan.Value.Subject, channel), plan.Value.Preview, revoke: null);
     }
 
@@ -79,7 +82,9 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
             return Unknown(text);
         }
 
-        var plan = await approvals.Approve(id, form.Groups["hash"].Value, cancellationToken).ConfigureAwait(false);
+        var hash = form.Groups["hash"].Value;
+        var registered = shipped is null ? false : await shipped.EnsureHash(id, hash, cancellationToken).ConfigureAwait(false);
+        var plan = registered.IsError ? registered.Error : await approvals.Approve(id, hash, cancellationToken).ConfigureAwait(false);
         return plan.IsError ? plan.Error : Issued(Mint(plan.Value.Action, plan.Value.Subject, channel), plan.Value.Preview, revoke: null);
     }
 

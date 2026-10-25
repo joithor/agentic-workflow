@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 internal sealed partial class NeedsYouConfirm
 {
     private const string Standing = "approved";
+    private const string GoneCode = "SND-RECIPE-002";   // the code the server gives a recipe it doesn't know
 
     // A recipe row with a recipe subject is typed; any other row with ApproveRecipe stays the terminal copy.
     private static NeedsYouConfirmKind RecipeKind(NeedsYouRowViewModel row) => IsRecipe(row) ? NeedsYouConfirmKind.Typed : NeedsYouConfirmKind.Terminal;
@@ -28,11 +29,25 @@ internal sealed partial class NeedsYouConfirm
     internal static RecipeSummaryView? Pick(IReadOnlyList<RecipeSummaryView> recipes, string id, string? hash = null)
     {
         ArgumentNullException.ThrowIfNull(recipes);
-        return recipes.Where(r => string.Equals(r.Id, id, StringComparison.Ordinal))
-            .OrderBy(r => string.Equals(r.Standing, Standing, StringComparison.Ordinal) ? 1 : 0)
-            .ThenByDescending(r => r.Version)
-            .FirstOrDefault();
+        var of = recipes.Where(r => string.Equals(r.Id, id, StringComparison.Ordinal)).ToList();
+        return (hash is null ? null : of.Find(r => string.Equals(r.Hash, hash, StringComparison.Ordinal)))
+            ?? of.OrderBy(r => r.GainsCapability == true ? 0 : 1)
+                .ThenBy(r => string.Equals(r.Standing, Standing, StringComparison.Ordinal) ? 1 : 0)
+                .ThenByDescending(r => r.Version)
+                .FirstOrDefault();
     }
+
+    // The hash the row's CLI line names ('sindri recipe approve <id>@<hash>'), or null for a line that names none.
+    private static string? CliHash(NeedsYouRowViewModel? row) =>
+        row?.Entry.Cli is { } cli && cli.LastIndexOf('@') is >= 0 and var at ? cli[(at + 1)..] : null;
+
+    // A refusal of a workflow's approval in words: the server's code and message, then the line that works in a terminal.
+    private string RecipeFailure(string code, string message) =>
+        $"{code}: {message} {Labels.NeedsYouRecipeTerminal} {_row?.Entry.Cli}".TrimEnd();
+
+    // What the person reads of a refusal: an agent session is told the app is the person's; a workflow's failure also carries its code and the CLI line.
+    private string Failure(Error error) =>
+        !_recipeShown || string.Equals(error.Code, SessionRefusal, StringComparison.Ordinal) ? Words(error) : RecipeFailure(error.Code, error.Message);
 
     // The challenge of the shown row's kind.
     private Task Ask(int session) => _recipeShown ? AskRecipe(session) : AskProfile(session);
@@ -56,6 +71,8 @@ internal sealed partial class NeedsYouConfirm
     {
         if (_url() is not { } api)
         {
+            (_challenge, ProfileRefusal) = (null, RecipeFailure(SindriUiErrors.NotRunning.Code, Labels.NeedsYouRecipeNotRunning));
+            Changed?.Invoke(this, EventArgs.Empty);
             return;
         }
 
@@ -65,10 +82,10 @@ internal sealed partial class NeedsYouConfirm
             return;
         }
 
-        _recipe = listed.IsError ? null : Pick(listed.Value.Recipes, _hash);
+        _recipe = listed.IsError ? null : Pick(listed.Value.Recipes, _hash, CliHash(_row));
         if (_recipe is not { } recipe)
         {
-            (_challenge, ProfileRefusal) = (null, listed.IsError ? Words(listed.Error) : Labels.NeedsYouRecipeGone);
+            (_challenge, ProfileRefusal) = (null, listed.IsError ? Failure(listed.Error) : RecipeFailure(GoneCode, Labels.NeedsYouRecipeGone));
             Changed?.Invoke(this, EventArgs.Empty);
             return;
         }
@@ -82,7 +99,7 @@ internal sealed partial class NeedsYouConfirm
 
         if (asked.IsError)
         {
-            (_challenge, ProfileRefusal) = (null, Words(asked.Error));
+            (_challenge, ProfileRefusal) = (null, Failure(asked.Error));
         }
         else
         {

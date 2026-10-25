@@ -177,7 +177,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
             return;
         }
 
-        ProfileRefusal = refused is null ? Labels.NeedsYouNotApproved : Words(refused);
+        ProfileRefusal = refused is null ? Labels.NeedsYouNotApproved : Failure(refused);
         if (refused is null || !string.Equals(refused.Code, SessionRefusal, StringComparison.Ordinal))
         {
             await Ask(session).ConfigureAwait(true);   // a fresh challenge: asking again helps unless every session is refused
