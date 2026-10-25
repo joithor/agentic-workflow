@@ -10,17 +10,7 @@ public sealed class LensEdgesInScopeTests
     private static LensGatherResult Assembled()
     {
         var lenses = JsonNode.Parse("""{ "anchors": [ { "key": "feature:a" } ] }""");
-        var code = JsonNode.Parse("""
-            {
-              "files": [ { "path": "src/a.ts" } ],
-              "edges": [
-                { "from": "code:src/a.ts", "to": "feature:a", "type": "implements" },
-                { "from": "code:src/a.ts", "to": "feature:root.package-24", "type": "implements" },
-                { "from": "code:src/other.test.ts", "to": "feature:root.package-24", "type": "tests" },
-                { "from": "code:src/other.test.ts", "to": "feature:a", "type": "tests" }
-              ]
-            }
-            """);
+        var code = JsonNode.Parse("""{ "files": [ { "path": "src/a.ts" } ], "edges": [ { "from": "code:src/a.ts", "to": "feature:a", "type": "implements" }, { "from": "code:src/a.ts", "to": "feature:root.package-24", "type": "implements" }, { "from": "code:src/other.test.ts", "to": "feature:root.package-24", "type": "tests" }, { "from": "code:src/other.test.ts", "to": "feature:a", "type": "tests" } ] }""");
         return LensGather.Assemble(lenses, code, history: null, ["feature:a"]);
     }
 
@@ -33,8 +23,8 @@ public sealed class LensEdgesInScopeTests
         var result = Assembled();
 
         var edges = result.Lenses["code"]!["edges"]!.AsArray();
-        Assert.Single(edges);
-        Assert.Equal("feature:a", edges[0]!["to"]!.GetValue<string>());
+        var edge = Assert.Single(edges);
+        Assert.Equal("feature:a", edge!["to"]!.GetValue<string>());
         Assert.Contains(CodeRow(result)["limits"]!.AsArray(), static l => l!["why"]!.GetValue<string>() == "edges-out-of-scope" && l["not"]!.GetValue<string>() == "3 edges outside the lens");
         Assert.NotNull(ScopeFixLines.ByName("edges-out-of-scope"));
     }
@@ -60,6 +50,6 @@ public sealed class LensEdgesInScopeTests
 
         var response = (await new ScopingCheckService().Handle(new ScopingCheckRequest(facts, ScopeStage.Evidence), CancellationToken.None)).Value;
 
-        Assert.DoesNotContain(response.Findings, static f => f.Rule is "SCP-LENS-001" or "SCP-COV-002" && f.Item == "code");
+        Assert.DoesNotContain(response.Findings, static f => (string.Equals(f.Rule, "SCP-LENS-001", StringComparison.Ordinal) || string.Equals(f.Rule, "SCP-COV-002", StringComparison.Ordinal)) && f.Item == "code");
     }
 }
