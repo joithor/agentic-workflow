@@ -74,8 +74,8 @@ open_settings
 "$DRIVER" click "${approve[@]}" >/dev/null 2>&1 || setup_fail "the Approve settings click was not accepted by the driver"
 approved=0
 for _ in $(seq 1 20); do
-  ledger="$("$PROVE" human ledger --json --max 1000 2>&1 | tr -d "\r")"
-  if printf "%s" "$ledger" | grep -q "profile.approved" && printf "%s" "$ledger" | grep -q "human:ui"; then approved=1; break; fi
+  ledger="$("$PROVE" human ledger --max 1000 2>&1 | tr -d "\r" | grep "profile.approved")"
+  if printf "%s\n" "$ledger" | grep -q "human:ui"; then approved=1; break; fi   # the same line: the fixture's own approval is not by human:ui
   sleep 0.5
 done
 [ "$approved" = 1 ] || setup_fail "no profile.approved by human:ui in the ledger"
