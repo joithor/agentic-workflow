@@ -27,4 +27,7 @@ public sealed record DeskTask(
 {
     /// <summary>The injection plan's sections, never null.</summary>
     public IReadOnlyList<InjectionEntry> Injection { get; init; } = Injection ?? [];
+
+    /// <summary>How long each Step input took to fill, in declared order; null when the run kept none.</summary>
+    public IReadOnlyList<InputTiming>? Timings { get; init; }
 }
