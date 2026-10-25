@@ -19,7 +19,7 @@ public sealed class HealthStalledAgentsTests
 
         Assert.Equal(HealthWord.Degraded, report.Word);
         var problem = Assert.Single(report.Problems);
-        Assert.Equal("SND-ENGINE-003", problem.Code);
+        Assert.Equal("SND-ENGINE-004", problem.Code);
         Assert.Equal("1 agent run ended its turn and has not reported", problem.Clause);
         Assert.Contains("open Needs you", problem.Text, StringComparison.Ordinal);
         Assert.Equal("Sindri is degraded: 1 agent run ended its turn and has not reported.", report.Sentence);
@@ -36,6 +36,6 @@ public sealed class HealthStalledAgentsTests
         var report = HealthSummary.WithStalledAgents(stuck, 2);
 
         Assert.Equal(HealthWord.Stalled, report.Word);
-        Assert.Equal(["SND-VIEW-001", "SND-ENGINE-002", "SND-ENGINE-003"], report.Problems.Select(static p => p.Code), StringComparer.Ordinal);
+        Assert.Equal(["SND-VIEW-001", "SND-ENGINE-002", "SND-ENGINE-004"], report.Problems.Select(static p => p.Code), StringComparer.Ordinal);
     }
 }

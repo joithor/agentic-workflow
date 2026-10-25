@@ -70,7 +70,7 @@ public static class HealthSummary
         }
 
         var clause = stalled == 1 ? "1 agent run ended its turn and has not reported" : string.Create(CultureInfo.InvariantCulture, $"{stalled} agent runs ended their turn and have not reported");
-        var problems = report.Problems.Append(new HealthProblem("SND-ENGINE-003", $"{clause}: open Needs you", clause)).ToList();
+        var problems = report.Problems.Append(new HealthProblem("SND-ENGINE-004", $"{clause}: open Needs you", clause)).ToList();
         var word = report.Word == HealthWord.Healthy ? HealthWord.Degraded : report.Word;
         return new HealthReport(word, problems, Sentence(word, problems));
     }
