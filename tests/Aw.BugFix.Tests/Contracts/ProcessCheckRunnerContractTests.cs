@@ -116,7 +116,7 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
         {
             try
             {
-                if (int.TryParse(Path.GetFileName(directory), out var pid) && File.ReadAllText(Path.Combine(directory, "cmdline")).Contains(token, StringComparison.Ordinal))
+                if (int.TryParse(Path.GetFileName(directory), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var pid) && File.ReadAllText(Path.Combine(directory, "cmdline")).Contains(token, StringComparison.Ordinal))
                 {
                     found.Add(pid);
                 }
