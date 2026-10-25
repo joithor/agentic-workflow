@@ -128,9 +128,9 @@ public sealed class ConceptDeriverTests
         };
         ConceptPin[] pins =
         [
-            new("scheduling", "Self scheduling", "People pick their shifts.", ["feature:sched", "feature:sched.*"], []),
+            new(ConceptId.From("scheduling"), "Self scheduling", "People pick their shifts.", ["feature:sched", "feature:sched.*"], []),
             new(null, "Payments", null, [], ["src/pay/**"]),
-            new("empty-one", "Nothing yet", null, ["feature:missing"], []),
+            new(ConceptId.From("empty-one"), "Nothing yet", null, ["feature:missing"], []),
         ];
 
         var map = ConceptDeriver.Derive(graph, pins, null);
