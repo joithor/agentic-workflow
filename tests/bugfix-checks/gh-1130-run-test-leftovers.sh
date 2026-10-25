@@ -31,13 +31,16 @@ trap cleanup EXIT
 setup_fail() { echo "gh-1130-run-test-leftovers: setup failed: $*" >&2; exit 2; }
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-bin="${BUGFIX_STATE_BIN:-}"
-if [ -z "$bin" ]; then
+# The built one runs as `dotnet <dll>`: run-test hands a check no DOTNET_ROOT, so the apphost could not find the runtime.
+if [ -n "${BUGFIX_STATE_BIN:-}" ]; then
+  [ -x "$BUGFIX_STATE_BIN" ] || setup_fail "no bugfix-state at $BUGFIX_STATE_BIN"
+  bf=("$BUGFIX_STATE_BIN")
+else
   dotnet build "$ROOT/src/BugFix/Aw.BugFix.Host" -nologo -v q -o "$work/bin" >"$work/build.log" 2>&1 \
     || { tail -20 "$work/build.log" >&2; setup_fail "the bugfix-state build failed"; }
-  bin="$work/bin/bugfix-state"
+  [ -f "$work/bin/bugfix-state.dll" ] || setup_fail "no bugfix-state.dll in $work/bin"
+  bf=(dotnet "$work/bin/bugfix-state.dll")
 fi
-[ -x "$bin" ] || setup_fail "no bugfix-state at $bin"
 
 # A repo whose check starts a plain child, a daemonized child (double fork: re-parented, out of the process tree) and an EXIT trap, then outlives the limit.
 repo="$work/repo"
@@ -53,11 +56,11 @@ git_ init -q -b main && git_ add -A && git_ commit -q -m base || setup_fail "git
 printf '{"source":"text","id":null,"title":"Leftovers","brief":"run-test leaves the check running","expected":"nothing left","actual":"left"}' >"$work/ticket.json"
 printf 'status: diagnosed\n\n## Hypotheses\n\n| # | Hypothesis | Cause-site files | Likelihood | Result |\n|---|---|---|---|---|\n| 1 | Kill misses detached children | `tests/slow.test.sh` | high | confirmed |\n\n## Root Cause\n\nThe kill misses them.\n' >"$work/handoff.md"
 state="$work/state"
-(cd "$repo" && "$bin" init --state "$state" --ticket "$work/ticket.json") >"$work/init.log" 2>&1 || setup_fail "init: $(cat "$work/init.log")"
-(cd "$repo" && "$bin" advance investigate --state "$state" --evidence "$work/handoff.md") >"$work/inv.log" 2>&1 || setup_fail "investigate: $(cat "$work/inv.log")"
+(cd "$repo" && "${bf[@]}" init --state "$state" --ticket "$work/ticket.json") >"$work/init.log" 2>&1 || setup_fail "init: $(cat "$work/init.log")"
+(cd "$repo" && "${bf[@]}" advance investigate --state "$state" --evidence "$work/handoff.md") >"$work/inv.log" 2>&1 || setup_fail "investigate: $(cat "$work/inv.log")"
 
 started=$(date +%s)
-(cd "$repo" && AW_BUGFIX_CHECK_TIMEOUT_SECONDS=3 "$bin" run-test --state "$state" --check tests/slow.test.sh -- bash tests/slow.test.sh) >"$work/run.log" 2>&1
+(cd "$repo" && AW_BUGFIX_CHECK_TIMEOUT_SECONDS=3 "${bf[@]}" run-test --state "$state" --check tests/slow.test.sh -- bash tests/slow.test.sh) >"$work/run.log" 2>&1
 took=$(( $(date +%s) - started ))
 [ "$took" -lt 110 ] || fail "run-test did not stop the check at its 3 s limit (took ${took}s)"
 grep -q '"evidence"' "$work/run.log" || setup_fail "run-test wrote no run record: $(tail -5 "$work/run.log")"
