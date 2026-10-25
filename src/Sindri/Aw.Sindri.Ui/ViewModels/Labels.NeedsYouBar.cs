@@ -18,12 +18,6 @@ internal static partial class Labels
     /// <summary>Said when the workflow a row names is not in the list Sindri serves any more.</summary>
     internal const string NeedsYouRecipeGone = "Sindri doesn't list that workflow any more. Reload and try again.";
 
-    /// <summary>Says what to run in a terminal when a workflow's approval did not go through from the app; the line follows.</summary>
-    internal const string NeedsYouRecipeTerminal = "In a terminal:";
-
-    /// <summary>Said when a workflow's approval can't be asked for because no Sindri is running.</summary>
-    internal const string NeedsYouRecipeNotRunning = "Sindri isn't running, so the app can't approve this workflow.";
-
     /// <summary>The secondary action of a request.</summary>
     internal const string NeedsYouSendBack = "Send back";
 
