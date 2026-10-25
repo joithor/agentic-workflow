@@ -315,7 +315,7 @@ label mismatches from the side-by-side image) is the `step.evidence.desktop-revi
 
 **Sindri's own setup**: `sindri-ui` calls `UseAwUiDriver(args)` (Aw.Sindri.Ui.Desktop `Composition.Compose`), so it is drivable when started with `AW_UI_DRIVER=1` or
 `--ui-driver`; a normal launch opens no port. `scripts/sindri-ui-app.sh` is the app command: it runs the `sindri-ui` named by `AW_SINDRI_UI`, else publishes it
-(`scripts/sindri-app.sh --publish-only`) and runs the newest build, against the fixture home in `AW_SINDRI_HOME`. `scripts/aw-ui-driver.sh` is the driver command: the
+(`scripts/install-cs.sh --publish`) and runs the build for this source from `$AW_STATE_DIR/bin/cs/<stamp>/`, against the fixture home in `AW_SINDRI_HOME`. `scripts/aw-ui-driver.sh` is the driver command: the
 `aw-ui-driver` named by `AW_UI_DRIVER_BIN`, else the CLI published into `$AW_STATE_DIR/bin/aw-ui-driver` when its sources changed. The page screens click the top bar's tab
 (`ListBoxItem` named for the page); the screens behind a row click the row by its name, so a screen whose element is not found fails with the driver's `AW-UIDRIVER-002`
 line, which names the step to fix in `docs/sindri/ui-evidence/screens.json` (all eleven mockups of the screens design).
