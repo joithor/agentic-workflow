@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="MaxTotalMB">Larger tracked input stops the build (default <see cref="DefaultMaxTotalMB"/>).</param>
 /// <param name="Embeddings">The embeddings layer's keys.</param>
 /// <param name="Graph">The graph layer's keys.</param>
+/// <param name="Concepts">Concepts the owner pins (context concepts note §3); a repo's own are added to the profile's.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record IndexSettings(
     IReadOnlyList<string>? DenyPaths = null,
@@ -21,7 +22,8 @@ public sealed record IndexSettings(
     int? MaxFileKB = null,
     int? MaxTotalMB = null,
     EmbeddingSettings? Embeddings = null,
-    GraphSettings? Graph = null)
+    GraphSettings? Graph = null,
+    IReadOnlyList<ConceptSettings>? Concepts = null)
 {
     /// <summary>The default for 'maxFileKB'.</summary>
     public const int DefaultMaxFileKB = 4_096;

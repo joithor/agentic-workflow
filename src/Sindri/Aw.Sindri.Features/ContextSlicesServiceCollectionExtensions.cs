@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
@@ -62,6 +63,13 @@ internal static class ContextSlicesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextProposalsRequest>, AcceptAllValidator<GetContextProposalsRequest>>().AddQuery<GetContextProposalsRequest, ProposalsView, GetContextProposalsService>();
         _ = services.AddScoped<IValidator<GetContextReviewRequest>, AcceptAllValidator<GetContextReviewRequest>>().AddQuery<GetContextReviewRequest, ReviewQueueView, GetContextReviewService>();
         _ = services.AddScoped<IValidator<GetContextReviewHistoryRequest>, AcceptAllValidator<GetContextReviewHistoryRequest>>().AddQuery<GetContextReviewHistoryRequest, ReviewHistoryView, GetContextReviewHistoryService>();
+        return services.AddConceptSlices();
+    }
+
+    private static IServiceCollection AddConceptSlices(this IServiceCollection services)
+    {
+        _ = services.AddScoped<ConceptsNotReady>().AddScoped<IValidator<GetContextConceptsRequest>, AcceptAllValidator<GetContextConceptsRequest>>().AddQuery<GetContextConceptsRequest, ConceptsView, GetContextConceptsService>();
+        _ = services.AddScoped<IValidator<GetContextConceptMembersRequest>, AcceptAllValidator<GetContextConceptMembersRequest>>().AddQuery<GetContextConceptMembersRequest, ConceptMembersView, GetContextConceptMembersService>();
         return services;
     }
 }
