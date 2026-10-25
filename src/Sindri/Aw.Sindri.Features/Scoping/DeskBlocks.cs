@@ -108,10 +108,10 @@ internal static partial class DeskBlocks
             return lens;
         }
 
-        var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
-            ? Outputs(("findings", FindingsFact(report.Findings)))
-            : [];
         var round = Round(facts, report);
+        var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
+            ? Outputs(("findings", FindingsFact(report.Findings)), (RoundLog.Key, RoundLog.Append(facts, "check", "step.scope.check", report.Findings, ScopeJson.Int(round, "round"))))
+            : [];
         return Reply("step.scope.check", report.Outcome == ScopeOutcome.Pass ? "pass" : report.Outcome == ScopeOutcome.Gaps ? "gaps" : "regather", outputs,
             [new ScopingDeskFile("rounds.jsonl", ScopeJson.Write(round) + "\n", Append: true)], report);
     }
@@ -189,7 +189,9 @@ internal static partial class DeskBlocks
         ScopeJson.Append(rounds, round);
         var findings = surfaces.Select(s => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(s, "title"), $"the challenger found a surface the map misses: {ScopeJson.Str(s, "title")}", "Add it to the map, or exclude it with a reason, then run the challenger again.", ScopeSeverity.Fail))
             .Concat(behaviours.Select(b => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(b, "text"), $"the challenger found a behaviour the map misses: {ScopeJson.Str(b, "text")} (question: {ScopeJson.Str(b, "question")})", "Add an acceptance item or an open question for it, then run the challenger again.", ScopeSeverity.Fail))).ToList();
-        var outputs = found ? Outputs(("challenge", log), ("findings", FindingsFact(findings))) : Outputs(("challenge", log));
+        var outputs = found
+            ? Outputs(("challenge", log), ("findings", FindingsFact(findings)), (RoundLog.Key, RoundLog.Append(facts, "challenge-log", "step.scope.challenge-log", findings)))
+            : Outputs(("challenge", log));
         return Reply("step.scope.challenge-log", verdict ?? string.Empty, outputs, []);
     }
 
@@ -244,8 +246,14 @@ internal static partial class DeskBlocks
         {
             var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
             var missing = report.Rules.Where(static r => r.Status == ScopeRuleStatus.NotRun).Select(static r => r.Rule).ToList();
-            var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail)));
-            return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings))), [], report);
+            var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail))).ToList();
+            var log = RoundLog.Append(facts, "evidence", "step.scope.evidence", findings);
+            if (outcome == "incomplete" && RoundLog.Repeats(facts, "evidence", findings) && assembled.Missing("decision", "questions").Count == 0)
+            {
+                return Converged(assembled, findings, log, report);
+            }
+
+            return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
         }
 
         if (assembled.Missing("decision", "questions") is { Count: > 0 } lacking)
@@ -260,5 +268,23 @@ internal static partial class DeskBlocks
             ("openQuestions", assembled.Require("openQuestions")),
             ("recommendation", Recommendation(assembled.Require("openQuestions"))));
         return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
+    }
+
+    /// <summary>
+    /// Two evidence rounds in a row found only the same things (#1120): another draft round would find them again, so the owner decides. The packet is assembled as on 'complete' (the stop reads it)
+    /// and the findings stay open in 'fact:findings' and the round log; the recommendation is to revise, and the freeze re-checks the packet, so nothing is approved around a failing rule.
+    /// </summary>
+    private static Result<ScopingDeskResponse> Converged(ScopeFacts assembled, List<ScopeFinding> findings, JsonArray log, ScopingCheckResponse report)
+    {
+        var open = string.Create(CultureInfo.InvariantCulture, $"{findings.Count} finding(s) are still open after two evidence rounds that found the same things.");
+        var outputs = Outputs(
+            ("scopeMap", assembled.Require("scopeMap")),
+            ("acceptance", assembled.Require("acceptance")),
+            ("coverage", assembled.Require("coverage")),
+            ("openQuestions", assembled.Require("openQuestions")),
+            ("recommendation", new JsonObject { ["outcome"] = "revise", ["why"] = open }),
+            ("findings", FindingsFact(findings)),
+            (RoundLog.Key, log));
+        return Reply("step.scope.evidence", "converged", outputs, ScopePacket.Build(assembled), report);
     }
 }

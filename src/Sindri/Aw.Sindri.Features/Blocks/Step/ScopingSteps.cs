@@ -55,18 +55,18 @@ internal static class ScopingSteps
     /// <summary>'step.scope.draft': the scope map and the acceptance list from the lenses; 'drafted'.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Draft { get; } = AgentStep("step.scope.draft", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:answerLog", "fact:challenge")
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:roundLog", "fact:answerLog", "fact:challenge")
         .Reports("drafted").Writes(On("fact:scopeMap", "drafted"), On("fact:acceptance", "drafted"));
 
     /// <summary>'step.scope.check': the draft-stage checks; 'pass', or findings on 'gaps' (the drafter can fix) and 'regather' (a lens must run again).</summary>
     public static BlockDescriptor Check { get; } = BlockStep("step.scope.check", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog")
-        .Reports("pass", "gaps", "regather").Writes(On("fact:findings", "gaps", "regather"));
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:roundLog")
+        .Reports("pass", "gaps", "regather").Writes(On("fact:findings", "gaps", "regather"), On("fact:roundLog", "gaps", "regather"));
 
     /// <summary>'step.interview.questions': the behaviour gaps as up to five questions; 'asked' or 'none'.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor InterviewQuestions { get; } = AgentStep("step.interview.questions", Capability.Tools)
-        .Reads("fact:scopeMap", "fact:acceptance", "fact:lenses", "fact:answerLog", "fact:challenge", "fact:openQuestions")
+        .Reads("fact:scopeMap", "fact:acceptance", "fact:lenses", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:roundLog")
         .Reports("asked", "none").Writes(On("fact:questions", "asked"), On("fact:openQuestions", "asked", "none"));
 
     /// <summary>'step.interview.answer': the owner's answers to the questions (the form is built from 'fact:questions'); human-only. 'doneAsking' also closes the interview.</summary>
@@ -92,23 +92,23 @@ internal static class ScopingSteps
     /// <summary>'step.scope.challenge': a second model's look for missed surfaces and behaviours; reports only its own round.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Challenge { get; } = AgentStep("step.scope.challenge", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answerLog", "fact:challenge")
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answerLog", "fact:challenge", "fact:roundLog")
         .Reports("nothingNew", "found").Writes(Every("fact:challengeRound"));
 
     /// <summary>'step.scope.challenge-log': appends the round to the challenge record and re-reports its verdict; a verdict that disagrees with its items is a failed Step.</summary>
     public static BlockDescriptor ChallengeLog { get; } = BlockStep("step.scope.challenge-log", Capability.None)
-        .Reads("fact:challenge", "fact:challengeRound").Reports("nothingNew", "found")
-        .Writes(Every("fact:challenge"), On("fact:findings", "found"));
+        .Reads("fact:challenge", "fact:challengeRound", "fact:roundLog").Reports("nothingNew", "found")
+        .Writes(Every("fact:challenge"), On("fact:findings", "found"), On("fact:roundLog", "found"));
 
     /// <summary>'step.scope.propose': submits the map's new surfaces as draft proposals and records each surface's graph status; 'proposed' or 'skipped'.</summary>
     public static BlockDescriptor Propose { get; } = BlockStep("step.scope.propose", Capability.Tools)
         .Reads("fact:scopeMap").Reports("proposed", "skipped").Writes(Every("fact:scopeMap"));
 
-    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts, 'incomplete' and 'regather' carry findings.</summary>
+    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts, 'incomplete', 'converged' (the same findings as the last evidence round) and 'regather' carry findings and the round log.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
-        .Reports("complete", "incomplete", "regather")
-        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete", "regather"));
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions", "fact:roundLog")
+        .Reports("complete", "incomplete", "converged", "regather")
+        .Writes(On("fact:scopeMap", "complete", "converged"), On("fact:acceptance", "complete", "converged"), On("fact:coverage", "complete", "converged"), On("fact:openQuestions", "complete", "converged"), On("fact:scopePacket", "complete", "converged"), On("fact:recommendation"), On("fact:findings", "incomplete", "converged", "regather"), On("fact:roundLog", "incomplete", "converged", "regather"));
 
     /// <summary>'step.scope.review': the owner's stop, human-only: approve, revise (notes become answers) or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.scope.review", Capability.None)
