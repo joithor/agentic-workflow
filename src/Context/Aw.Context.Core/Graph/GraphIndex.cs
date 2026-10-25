@@ -5,6 +5,10 @@ internal sealed class GraphIndex
 {
     private static readonly IReadOnlyList<GraphEdge> _none = [];
     private static long _builds;
+
+    // One index per graph instance: a graph is immutable and the process keeps the same instance per map version, so a walk never re-indexes every edge.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GraphSnapshot, GraphIndex> _all = [];
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GraphSnapshot, System.Collections.Concurrent.ConcurrentDictionary<string, GraphIndex>> _structures = [];
     private readonly Dictionary<string, List<GraphEdge>> _out = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<GraphEdge>> _in = new(StringComparer.Ordinal);
 
@@ -28,6 +32,20 @@ internal sealed class GraphIndex
         {
             list.Sort((a, b) => Compare(a.From, a.Type, b.From, b.Type));
         }
+    }
+
+    /// <summary>The index of every edge in a graph, built once per graph instance.</summary>
+    /// <param name="graph">The graph.</param>
+    internal static GraphIndex For(GraphSnapshot graph) => _all.GetValue(graph, static g => new GraphIndex(g));
+
+    /// <summary>The index of only the edges of <paramref name="types"/>, built once per graph instance and type set.</summary>
+    /// <param name="graph">The graph.</param>
+    /// <param name="types">The edge types kept.</param>
+    internal static GraphIndex Of(GraphSnapshot graph, IReadOnlyList<EdgeType> types)
+    {
+        var byTypes = _structures.GetOrCreateValue(graph);
+        var key = string.Join(',', types.Select(t => (int)t).Order());
+        return byTypes.GetOrAdd(key, _ => new GraphIndex(graph with { Edges = [.. graph.Edges.Where(e => types.Contains(e.Type))] }));
     }
 
     /// <summary>Test seam: how many indexes this process has built.</summary>

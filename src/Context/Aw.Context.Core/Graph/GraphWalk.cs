@@ -16,7 +16,7 @@ public static class GraphWalk
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentOutOfRangeException.ThrowIfNegative(depth);
         depth = Math.Min(depth, MaxDepth);
-        var index = new GraphIndex(graph);
+        var index = GraphIndex.For(graph);
         var depths = new Dictionary<string, int>(StringComparer.Ordinal) { [center.Value] = 0 };
         var frontier = new List<NodeKey> { center };
         for (var level = 1; level <= depth && frontier.Count > 0; level++)
@@ -40,7 +40,7 @@ public static class GraphWalk
     public static GraphPath? ShortestPath(GraphSnapshot graph, NodeKey from, NodeKey to)
     {
         ArgumentNullException.ThrowIfNull(graph);
-        var index = new GraphIndex(graph);
+        var index = GraphIndex.For(graph);
         var parents = new Dictionary<string, PathStep?>(StringComparer.Ordinal) { [from.Value] = null };
         var frontier = new List<NodeKey> { from };
         for (var level = 1; !parents.ContainsKey(to.Value) && frontier.Count > 0; level++)
