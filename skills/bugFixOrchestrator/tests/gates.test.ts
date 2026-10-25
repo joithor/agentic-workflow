@@ -198,8 +198,8 @@ describe("judge (input built from state)", { timeout: 30_000 }, () => {
     expect(input).toMatchObject({
       brief: TICKET.brief, rootCause: "updateProfile() omits phone.", checkKind: "test",
       checkSummary: "the regression test check.sh, run as `sh check.sh`", beforePassed: false, afterPassed: true,
-      diffStat: git(repo, "diff", "--stat", base, commit),
-      diff: git(repo, "diff", base, commit, "--", ".", ":(exclude)package-lock.json", ":(exclude)**/dist/**"),
+      diffStat: git(repo, "diff", "--stat", base, commit, "--", "fixed.txt", ":(exclude)package-lock.json", ":(exclude)**/dist/**"),
+      diff: git(repo, "diff", base, commit, "--", "fixed.txt", ":(exclude)package-lock.json", ":(exclude)**/dist/**"),
     });
     expect(input.diff).toContain("+ok");
     const candidate = readState().candidates[0];
@@ -218,6 +218,29 @@ describe("judge (input built from state)", { timeout: 30_000 }, () => {
     const input = JSON.parse(fs.readFileSync(path.join(state, "judge-c1.json"), "utf8")) as { diff: string };
     expect(input.diff.length).toBeLessThan(huge.length);
     expect(input.diff).toMatch(/\n\[truncated \d+ chars\]$/);
+  });
+
+  it("sends only the candidate's own files when it merged an unrelated change from main", () => {
+    investigated();
+    const baseline = out<{ evidence: string }>(run("run-test", "--check", "check.sh", "--cwd", repo, "--", "sh", "check.sh"));
+    out(run("advance", "reproduce", "--evidence", baseline.evidence, "--check", "check.sh", "--cwd", repo));
+    const base = git(repo, "rev-parse", "HEAD");
+    out(run("start-attempt", "--mode", "A"));
+    // main moves on after the baseline, in a file the fix never touches.
+    git(repo, "checkout", "-q", "-b", "fix", base);
+    commitFile(repo, "fixed.txt", "ok\n");
+    git(repo, "checkout", "-q", "-");
+    commitFile(repo, "unrelated-main.txt", "from main\n");
+    git(repo, "checkout", "-q", "fix");
+    git(repo, "merge", "-q", "--no-edit", "main");
+    out(run("record-candidate", "--branch", "fix", "--cwd", repo));
+    out(run("record-run", "c1", "--evidence", passingRun()));
+    out(run("judge", "c1"));
+    const input = JSON.parse(fs.readFileSync(path.join(state, "judge-c1.json"), "utf8")) as { diff: string; diffStat: string };
+    expect(input.diff).toContain("fixed.txt");
+    expect(input.diff).not.toContain("unrelated-main.txt");
+    expect(input.diffStat).toContain("fixed.txt");
+    expect(input.diffStat).not.toContain("unrelated-main.txt");
   });
 
   it("fails open when the full diff cannot be read: judge still gets the stat-only input (B4)", () => {

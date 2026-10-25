@@ -392,10 +392,29 @@ const firstLine = (text: string): string => text.trim().split("\n")[0];
 /** Bound on the stored diff FIELD, so a runaway diff can't bloat judge-<id>.json; the cut is inside the string, so the JSON stays valid. */
 export const DIFF_FIELD_CAP = 200_000;
 
-function fullDiff(deps: Deps, cwd: string, base: string, commit: string): string | undefined {
+const DIFF_EXCLUDES = [":(exclude)package-lock.json", ":(exclude)**/dist/**"];
+
+/**
+ * The paths the candidate's own commits touched since the baseline. Merges are
+ * left out, so what a merged-in main brought along is not counted; empty when
+ * git fails or the candidate made no commits of its own.
+ */
+function ownPaths(deps: Deps, cwd: string, base: string, commit: string): string[] {
+  try {
+    const names = deps.git(cwd, ["log", "--no-merges", "--format=", "--name-only", `${base}..${commit}`]);
+    return [...new Set(names.split("\n").filter((n) => n !== ""))];
+  } catch {
+    return [];
+  }
+}
+
+/** The pathspec for the candidate's diff: its own files, or the whole tree when they can't be told apart. */
+const diffPathspec = (own: string[]): string[] => ["--", ...(own.length === 0 ? ["."] : own), ...DIFF_EXCLUDES];
+
+function fullDiff(deps: Deps, cwd: string, base: string, commit: string, own: string[]): string | undefined {
   let diff: string;
   try {
-    diff = deps.git(cwd, ["diff", base, commit, "--", ".", ":(exclude)package-lock.json", ":(exclude)**/dist/**"]);
+    diff = deps.git(cwd, ["diff", base, commit, ...diffPathspec(own)]);
   } catch {
     return undefined;
   }
@@ -423,6 +442,7 @@ export function judgeCandidate(dir: string, candidateId: string, deps: Deps): Re
     const checkSummary = check.kind === "test"
       ? `the regression test ${check.path}, run as \`${(check.command as string[]).join(" ")}\``
       : `the ui-evidence script ${check.path}`;
+    const own = ownPaths(deps, candidate.cwd, base, candidate.commit);
     // Key order must match ResolutionCheckInputSchema: judge digests the parsed input.
     const input = {
       brief: state.ticket.brief,
@@ -433,10 +453,10 @@ export function judgeCandidate(dir: string, candidateId: string, deps: Deps): Re
       checkSummary,
       beforePassed: false,
       afterPassed: true,
-      diffStat: deps.git(candidate.cwd, ["diff", "--stat", base, candidate.commit]),
+      diffStat: deps.git(candidate.cwd, ["diff", "--stat", base, candidate.commit, ...diffPathspec(own)]),
       // Full diff (RF-1: lockfiles and build output excluded; judge caps what it prompts with).
       // Omitted when git fails, so judging fails open to the stat-only question.
-      diff: fullDiff(deps, candidate.cwd, base, candidate.commit),
+      diff: fullDiff(deps, candidate.cwd, base, candidate.commit, own),
     };
     const text = JSON.stringify(input);
     const judgeInputDigest = createHash("sha256").update(text).digest("hex").slice(0, 16);
