@@ -306,9 +306,20 @@ fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one f
   esac
 }
 
+# The dev recipes are not shipped ones: register and approve each as the owner (typing id and version) before its first start.
+approve_dev_recipe() { # $1 recipe id
+  local file version out
+  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml | head -1)"
+  [ -n "$file" ] || return 0
+  version="$(sed -n 's/^version: *//p' "$file" | head -1)"
+  out="$(printf 'approve %s %s\n' "$1" "$version" | "$PROVE" human recipe approve "$file" 2>&1)"
+  printf '%s\n' "$out" | grep -qE '^(approved|already approved)' || die "recipe approve $1 was refused: $out"
+}
+
 start_on_new_item() { # $1 recipe, $2 item title; prints the item
   local item facts=() line out
   need jq
+  approve_dev_recipe "$1" || return
   item="$(new_item "$2")" || return
   while IFS= read -r line; do facts+=("$line"); done < <(fact_args "$1" "$item" "$2")
   # The pty the owner's verbs run under joins stderr into stdout, so the output is kept to show on a refusal.
@@ -335,12 +346,7 @@ workflows() {
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
 }
 
-# workflow.dev-timeout is a dev recipe, not a shipped one: register and approve it as the owner first (typing id and version).
 park-timeout() {
-  local file="$ROOT/recipes/dev/workflow.dev-timeout.yaml" version out
-  version="$(sed -n 's/^version: *//p' "$file" | head -1)"
-  out="$(printf 'approve workflow.dev-timeout %s\n' "$version" | "$PROVE" human recipe approve "$file" 2>&1)"
-  printf '%s\n' "$out" | grep -qE '^(approved|already approved)' || die "recipe approve workflow.dev-timeout was refused: $out"
   start_on_new_item workflow.dev-timeout "Fixture timeout park"
 }
 
