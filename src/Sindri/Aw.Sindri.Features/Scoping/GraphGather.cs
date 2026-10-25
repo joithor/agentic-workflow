@@ -12,6 +12,7 @@ internal static class GraphGather
 {
     private const int Version = 1;
     private const string NoGraph = "no-graph";
+    private const string CodePrefix = "code:";
 
     /// <summary>The graph fact.</summary>
     /// <param name="graphView">The context engine's ScopeGraphView as JSON, or null when the graph input gave no result.</param>
@@ -99,8 +100,13 @@ internal static class GraphGather
             ["rank"] = ++rank,
             ["lens"] = lens,
             ["lensItem"] = ScopeJson.Str(source, "lensItem") ?? string.Empty,
-            ["citations"] = ScopeJson.ToArray(ScopeJson.Strings(source, "citations")),
+            ["citations"] = new JsonArray([.. ScopeJson.Strings(source, "citations").Select(static key => (JsonNode?)new JsonObject { ["key"] = key })]),
         };
+        if (id.StartsWith(CodePrefix, StringComparison.Ordinal))
+        {
+            node["path"] = id[CodePrefix.Length..];   // why: a path is on code: nodes only, derived from the key
+        }
+
         if (ScopeJson.Str(source, "band") is { } band)
         {
             node["band"] = band;
