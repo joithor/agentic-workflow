@@ -5,9 +5,20 @@
 source "$(dirname "$0")/lib.sh"
 uxu_start up recipes workflows
 
-# The strip row's open button is named "<item title>, <recipe>"; the fixture starts a desk round trip on "Fixture work one".
-d wait-for --type Button --contains "Fixture work one" --state visible --wait-ms 30000 >/dev/null || uxu_die "no workflow row on Home"
-d click --type Button --contains "Fixture work one" --index 0 >/dev/null || uxu_die "could not open the instance sheet"
+# The strip row's open button is x:Name StripTitle (its accessible name is "<item title>, <recipe>"; a --name or --contains on
+# either misses it when the title differs), so find it in WorkflowsRows by automationId and click it by node id.
+d click --type ListBoxItem --name Home >/dev/null || uxu_die "no Home tab"
+row=""
+for _ in $(seq 1 40); do
+  row="$(d tree --name WorkflowsRows --depth 14 2>/dev/null | jq -r '[.. | objects | select(.automationId == "StripTitle" or .name == "StripTitle") | .id][0] // empty')"
+  [ -n "$row" ] && break
+  sleep 1.5
+done
+if [ -z "$row" ]; then
+  d tree --name WorkflowsPanel --depth 14 2>&1 | jq -r '[.. | objects | select(((.text // "") != "") or ((.name // "") != "")) | "\(.type) name=\(.name) text=\(.text)"] | .[]' >&2
+  uxu_die "no workflow row on Home"
+fi
+d click --node-id "$row" >/dev/null || uxu_die "could not open the instance sheet"
 d wait-for --name InstanceTitle --state visible --wait-ms 30000 >/dev/null || uxu_die "the instance sheet never showed its title"
 sleep 2
 title="$(d tree --name InstanceTitle --depth 0 | jq -r '[.. | objects | .text? // empty] | .[0]')"
