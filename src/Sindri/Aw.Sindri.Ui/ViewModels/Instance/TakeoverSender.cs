@@ -1,0 +1,68 @@
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
+
+namespace Aw.Sindri.Ui.ViewModels.Instance;
+
+/// <summary>What a takeover came to, in words.</summary>
+/// <param name="Line">The sentence: sending, the viewer's outcome, or the refusal with its code.</param>
+/// <param name="Command">The attach command to copy when no terminal opened; empty otherwise.</param>
+internal sealed record TakeoverView(string Line, string Command);
+
+/// <summary>
+/// Sends "ApplyCommand:takeover" for a surface that has no Attach control (the run inspectors): once per press, never retried, and says
+/// what came of it: the viewer's outcome, or the refusal with its code. A server that served no viewer is asked for the launch.
+/// </summary>
+internal sealed class TakeoverSender(ISindriApi api, Func<Uri?> apiUrl)
+{
+    private readonly InstanceCommander _commands = new(api, apiUrl);
+    private bool _pressed;
+
+    /// <summary>One press: shows "Sending…", sends, then shows the answer. A press while one is out does nothing.</summary>
+    /// <param name="instance">The instance to take over.</param>
+    /// <param name="launchId">The launch of its agent Step, read when the answer served no viewer; null for none.</param>
+    /// <param name="show">Receives each state of the press.</param>
+    /// <returns>A task that completes when the answer was shown.</returns>
+    internal async Task Press(string instance, string? launchId, Action<TakeoverView> show)
+    {
+        ArgumentNullException.ThrowIfNull(show);
+        if (_pressed)
+        {
+            return;
+        }
+
+        _pressed = true;
+        try
+        {
+            show(new TakeoverView(Labels.AttachSending, string.Empty));
+            show(await Send(instance, launchId).ConfigureAwait(true));
+        }
+        finally
+        {
+            _pressed = false;
+        }
+    }
+
+    private async Task<TakeoverView> Send(string instance, string? launchId)
+    {
+        var answer = await _commands.Send(new ApplyCommandBody(instance, CommandKind.Takeover)).ConfigureAwait(true);
+        if (answer is not { } result)
+        {
+            return new TakeoverView(Labels.TakeoverNotSent, string.Empty);
+        }
+
+        if (result.IsError)
+        {
+            return new TakeoverView(Labels.TakeoverRefused(result.Error.Code, result.Error.Message), string.Empty);
+        }
+
+        var (viewer, attach) = (result.Value.Viewer, result.Value.Attach);
+        if (viewer is null && launchId is not null && apiUrl() is { } url && await api.Launch(url, launchId, CancellationToken.None).ConfigureAwait(true) is { IsError: false } read)
+        {
+            (viewer, attach) = (read.Value.Viewer, attach ?? read.Value.Attach);
+        }
+
+        var (line, command) = RunWords.TakeoverOutcome(viewer, attach);
+        return new TakeoverView(line, command);
+    }
+}

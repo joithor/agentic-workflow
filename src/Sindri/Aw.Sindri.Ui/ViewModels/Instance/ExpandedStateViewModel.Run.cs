@@ -207,7 +207,7 @@ internal sealed partial class ExpandedStateViewModel
             return;
         }
 
-        (_sendingCommand, AttachOutcomeLine, AttachCommand) = (true, string.Empty, string.Empty);
+        (_sendingCommand, AttachOutcomeLine, AttachCommand) = (true, Labels.AttachSending, string.Empty);
         OnChanged(nameof(HasAttachCommand));
         try
         {
