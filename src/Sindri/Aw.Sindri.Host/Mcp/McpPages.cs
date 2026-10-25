@@ -137,9 +137,11 @@ internal static class McpPages
         }
     }
 
+    private static readonly string[] _bucketNameKeys = ["name", "group"];
+
     // A bucket is named by its 'name' (a section) or its 'group' (a queue group).
     private static string? BucketName(JsonObject bucket) =>
-        new[] { "name", "group" }.Select(key => bucket[key] is JsonValue value && value.TryGetValue<string>(out var text) && text.Length > 0 ? text : null).FirstOrDefault(text => text is not null);
+        _bucketNameKeys.Select(key => bucket[key] is JsonValue value && value.TryGetValue<string>(out var text) && text.Length > 0 ? text : null).FirstOrDefault(text => text is not null);
 
     // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
     private static void SliceBands(JsonObject bands, McpWindow window, JsonObject lists, ref bool more)
