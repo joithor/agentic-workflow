@@ -26,7 +26,10 @@ public sealed class ContextConceptScanServiceTests
     private Core.Lease.LeaseGrant? _grant;
     private int _next;
 
-    public ContextConceptScanServiceTests() => _start = new Starter(_h);
+    public ContextConceptScanServiceTests()
+    {
+        _start = new Starter(_h);
+    }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 

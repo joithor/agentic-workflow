@@ -58,7 +58,12 @@ internal sealed class ScanContextConceptsService(ContextScopes scopes, IContextE
     private async ValueTask<Result<string?>> Refusal(CancellationToken cancellationToken)
     {
         var scans = await jobs.List(state: null, ContextConceptScanService.Kind, cancellationToken).ConfigureAwait(false);
-        return scans.IsError ? scans.Error : ConceptScanBudget.Refusal(ConceptScanLog.Started(scans.Value, clock.GetUtcNow() - ConceptScanLimits.Window));
+        if (scans.IsError)
+        {
+            return scans.Error;
+        }
+
+        return Results.Success<string?>(ConceptScanBudget.Refusal(ConceptScanLog.Started(scans.Value, clock.GetUtcNow() - ConceptScanLimits.Window)));
     }
 
     private static ScanContextConceptsResult Of(ConceptScanReport report) => new(report.Version, report.OnDraft, Outcome(report.Outcome), report.Hints, report.Searches, Reason: null);
