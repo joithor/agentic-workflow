@@ -64,4 +64,23 @@ public sealed class BuildCodeIndexGraphIncrementalTests
         Assert.Contains(texts, t => t.Contains("return 7;", StringComparison.Ordinal));
         Assert.Equal((3, 3), (embedded.Embedded, embedded.Embeddable));
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Turning_embeddings_on_gives_unchanged_graph_files_their_bodies_and_then_their_vectors()
+    {
+        using var git = A.GitRepo().WithFile("src/a.ts", FileA).WithFile("src/b.ts", FileB).Build();
+        var embedder = new FakeEmbedder();
+        using var index = new RealIndex(embedder: embedder, graph: new FakeGraphRunner { Graph = _graph });
+        var off = git.AsRepo("web");
+        off = off with { Settings = off.Settings with { Embeddings = off.Settings.Embeddings with { Enabled = false } } };
+        _ = (await index.Service.Handle(new BuildCodeIndexRequest(off, git.Head, new Progress<string>()), Token)).Value;
+        var on = git.AsRepo("web");
+        var second = git.Commit("same files");
+
+        _ = (await index.Service.Handle(new BuildCodeIndexRequest(on, second, new Progress<string>()), Token)).Value;
+        var embedded = (await index.Embed.Handle(new EmbedCodeIndexRequest(on, new Progress<string>()), Token)).Value;
+
+        Assert.Equal((2, 2), (embedded.Embedded, embedded.Embeddable));
+        Assert.Contains(embedder.Batches.SelectMany(b => b), t => t.Contains("return 42;", StringComparison.Ordinal));
+    }
 }
