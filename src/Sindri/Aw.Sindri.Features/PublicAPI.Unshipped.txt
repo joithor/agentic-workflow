@@ -4751,6 +4751,10 @@ override Aw.Sindri.Features.LineDoctor.LineDoctorResponse.ToString() -> string!
 static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator !=(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
 static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator ==(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
 Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Passed.get -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Viewer.get -> Aw.Sindri.Core.Events.LaunchViewer?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Viewer.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Attach.init -> void
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.init -> void
