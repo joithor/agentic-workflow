@@ -20,7 +20,7 @@ The diff has been provided below. Study it carefully.
 
 {evidence}
 
-Above: the newest verification `pack.json` + design `comparison-report.json` (see `_shared/evidence-pack.md`), or `none`. If your focus covers user-facing behavior and a changed route/component/flow is **not** covered by this evidence, raise a `blocking` finding ("changed user-facing path lacks verification evidence").
+Above: the newest verification `pack.json` + design `comparison-report.json` (see `_shared/evidence-pack.md`), or `none`. If your focus covers user-facing behavior and a changed route/component/flow is **not** covered by this evidence, raise a `blocking` finding ("changed user-facing path lacks verification evidence"). A diff that changes a desktop UI (`*.axaml` or the view, style and resource files of a desktop project, per `_shared/platform-detection.md`) needs a desktop evidence pack (`platform: "desktop"`, from `verify-desktop`, or a desktop `summary.json`) showing the affected screens matched their mockups; with none, or with a FAIL screen, raise a `blocking` finding ("changed desktop UI lacks a passing desktop evidence pack").
 
 ### 3. Read related files
 
