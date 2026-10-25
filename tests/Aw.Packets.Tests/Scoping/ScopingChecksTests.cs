@@ -39,7 +39,7 @@ public sealed class ScopingChecksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_relevance_and_gap_search_files_are_required_files_of_the_fourteen()
+    public async Task The_relevance_and_gap_search_files_are_required_files_of_the_fifteen()
     {
         var checks = await Run(A.ScopingPacket().Without("relevance.json").Without("gap-search.json").Build());
 
