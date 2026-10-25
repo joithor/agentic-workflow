@@ -53,6 +53,7 @@ internal sealed class PaletteEntry : ObservableObject
         { IsFailed: true } => Control.ErrorCode,
         { IsSendable: true } => Runs ? Labels.Ready : NotRun,   // a sendable row is called ready only when Enter does something with it
         _ when OpensForm => Runs ? Labels.Ready : NotRun,
+        _ when !Runs => NotRun,   // a copy-only row Enter does nothing with (the item sheet's close actions) says where it lives
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
     };

@@ -36,7 +36,7 @@ internal sealed class ItemNeedsViewModel : ObservableObject
     internal static ItemNeedsViewModel Create(ISindriApi api, DecisionSender sender, CatalogViewModel catalog)
     {
         ArgumentNullException.ThrowIfNull(catalog);
-        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide"), catalog.IsReady("Decide"), catalog.Listed is not null), catalog.Clipboard);
+        var needs = new ItemNeedsViewModel(api, sender, () => StateOf(catalog.For("Decide"), catalog.For("Decide") is not null, catalog.Listed is not null), catalog.Clipboard);
         catalog.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal))

@@ -20,7 +20,7 @@ internal static class NeedsYouMapper
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
-        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (r.Cli, Protected: string.Equals(r.Class, "protected", StringComparison.Ordinal), Ready: string.Equals(r.Ui, "ready", StringComparison.Ordinal)), StringComparer.Ordinal);
+        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (r.Cli, Protected: string.Equals(r.Class, "protected", StringComparison.Ordinal)), StringComparer.Ordinal);
         var read = catalog.Rows.Count > 0;
         return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions, read, readAt))], list.Empty ?? string.Empty)
         {
@@ -30,7 +30,7 @@ internal static class NeedsYouMapper
         };
     }
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (string Cli, bool Protected, bool Ready)> readiness, DecisionList? decisions, bool read, DateTimeOffset readAt)
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (string Cli, bool Protected)> readiness, DecisionList? decisions, bool read, DateTimeOffset readAt)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
         row = Unanswerable(row);
@@ -79,9 +79,9 @@ internal static class NeedsYouMapper
         decisionId is null ? null : decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, decisionId, StringComparison.Ordinal));
 
     // A Decide on a decision row is one button per option the pending list offers; every other action is one button with its own catalog command.
-    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, NeedsYouSubject? subject, string id, Dictionary<string, (string Cli, bool Protected, bool Ready)> readiness, DecisionList? decisions)
+    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, NeedsYouSubject? subject, string id, Dictionary<string, (string Cli, bool Protected)> readiness, DecisionList? decisions)
     {
-        var (ready, catalogCli, isProtected) = readiness.TryGetValue(id, out var listed) ? (listed.Ready ? ActionReadiness.Ready : ActionReadiness.Pending, listed.Cli, listed.Protected) : (ActionReadiness.Pending, "", false);
+        var (ready, catalogCli, isProtected) = readiness.TryGetValue(id, out var listed) ? (ActionReadiness.Ready, listed.Cli, listed.Protected) : (ActionReadiness.Pending, "", false);
         var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(subject?.DecisionId, decisions) : null;
         if (decision is null)
         {

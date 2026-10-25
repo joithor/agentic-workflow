@@ -276,7 +276,8 @@ public sealed class NeedsYouHomeTests : IDisposable
     {
         const string item = "ITM-0000000000000000000000000000000e";
         var catalog = GoldenFiles.Node("commands", "catalog");
-        catalog["rows"]!.AsArray().First(r => (string?)r!["action"] == "Decide")!["ui"] = "pending:P4";
+        var rows = catalog["rows"]!.AsArray();
+        _ = rows.Remove(rows.First(r => (string?)r!["action"] == "Decide")!);   // not listed: Decide waits
         _server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
         _server.DecisionsByItem[item] = RouteAnswer.Api("decisions", "by-item");
         _server.RequestsByItem[item] = RouteAnswer.Api("requests", "list-by-item");
