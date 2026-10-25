@@ -11,17 +11,16 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// </summary>
 internal sealed partial class ContextPageViewModel
 {
-    private string? _concept;
     private bool _conceptsRead;
 
     /// <summary>The first layer of the map: the product's concepts.</summary>
     public ConceptLayerViewModel Concepts { get; }
 
     /// <summary>Whether the concept layer is on the stage: it has concepts (or is reading them), none is open, and no query's neighbourhood, No map state or build covers it.</summary>
-    public bool ShowConcepts => ShowMap && Concepts.IsOnStage && _concept is null && !HasStack && !NoMap && !IsBuilding;
+    public bool ShowConcepts => ShowMap && Concepts.IsOnStage && OpenedConceptId is null && !HasStack && !NoMap && !IsBuilding;
 
     /// <summary>The id of the concept opened; null on the concept layer and when the map has no concepts.</summary>
-    internal string? OpenedConceptId => _concept;
+    internal string? OpenedConceptId { get; private set; }
 
     /// <summary>The back button's words.</summary>
     public string BackText { get; } = Labels.ContextConceptsBack;
@@ -43,7 +42,7 @@ internal sealed partial class ContextPageViewModel
 
         Concepts.Loading();
         ChangedConcepts();
-        var read = await Ports.Api.ContextConcepts(api, _repo ?? string.Empty, cancellationToken).ConfigureAwait(true);
+        var read = await ReadConcepts(api, cancellationToken).ConfigureAwait(true);
         _conceptsRead = read.IsSuccess || !string.Equals(read.Error.Code, SindriUiErrors.Unreachable.Code, StringComparison.Ordinal);
         NoteConcepts(read);
         if (Concepts.HasConcepts)
@@ -58,10 +57,40 @@ internal sealed partial class ContextPageViewModel
         await ReadWhole(cancellationToken).ConfigureAwait(true);
     }
 
+    // Every page of the concepts, joined: the first page's state and Other, the concepts and links of all. A later page that fails keeps what was read.
+    private async Task<Result<ContextConceptsView>> ReadConcepts(Uri api, CancellationToken cancellationToken)
+    {
+        var repo = _repo ?? string.Empty;
+        var first = await Ports.Api.ContextConcepts(api, new ConceptsQuery(repo), cancellationToken).ConfigureAwait(true);
+        if (first.IsError)
+        {
+            return first;
+        }
+
+        var joined = first.Value;
+        var concepts = new List<ContextConcept>(joined.Concepts ?? []);
+        var links = new List<ConceptLink>(joined.Links ?? []);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var next = joined.Next; next is { Length: > 0 } && seen.Add(next);)
+        {
+            var page = await Ports.Api.ContextConcepts(api, new ConceptsQuery(repo, next), cancellationToken).ConfigureAwait(true);
+            if (page.IsError)
+            {
+                break;
+            }
+
+            concepts.AddRange(page.Value.Concepts ?? []);
+            links.AddRange(page.Value.Links ?? []);
+            next = page.Value.Next;
+        }
+
+        return joined with { Concepts = concepts, Links = links, Next = null };
+    }
+
     /// <summary>Reads the page's top again (Retry, and when a build has ended): the concepts when none is open, else the open concept's map.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the answer is drawn.</returns>
-    internal Task ReadMapTop(CancellationToken cancellationToken) => _concept is null ? OpenFirst(cancellationToken) : ReadWhole(cancellationToken);
+    internal Task ReadMapTop(CancellationToken cancellationToken) => OpenedConceptId is null ? OpenFirst(cancellationToken) : ReadWhole(cancellationToken);
 
     private void NoteConcepts(Result<ContextConceptsView> read)
     {
@@ -112,7 +141,7 @@ internal sealed partial class ContextPageViewModel
         ForgetRead();
         AnchorText = string.Empty;
         _ = Concepts.EndSearch();
-        _concept = id;
+        OpenedConceptId = id;
         Whole.EnterConcept(name);
         ChangedConcepts();
         return ReadWhole(cancellationToken);
@@ -121,14 +150,14 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Goes back to the concepts: the scoped map goes and the layer shows again.</summary>
     internal void CloseConcept()
     {
-        if (_concept is null)
+        if (OpenedConceptId is null)
         {
             return;
         }
 
         CloseInspector();
         Whole.LeaveConcept();
-        _concept = null;
+        OpenedConceptId = null;
         AnchorText = string.Empty;
         ForgetRead();
         Head = Labels.ContextConceptsHead;
@@ -152,7 +181,7 @@ internal sealed partial class ContextPageViewModel
             return true;
         }
 
-        if (_concept is null)
+        if (OpenedConceptId is null)
         {
             return false;
         }
@@ -181,7 +210,7 @@ internal sealed partial class ContextPageViewModel
 
             if (located.IsSuccess)
             {
-                matches.UnionWith((located.Value.Located ?? []).Select(l => l.Concept).OfType<string>());
+                matches.UnionWith((located.Value.Located ?? []).SelectMany(l => l.Concept ?? []));
             }
         }
 

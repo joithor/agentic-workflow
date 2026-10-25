@@ -7,6 +7,6 @@ namespace Aw.Sindri.Ui.Api;
 internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
-    public Task<Result<ContextConceptsView>> ContextConcepts(Uri api, string repo, CancellationToken cancellationToken) =>
-        Get<ContextConceptsView>(api, ContextRoutes.Concepts(repo), cancellationToken);
+    public Task<Result<ContextConceptsView>> ContextConcepts(Uri api, ConceptsQuery query, CancellationToken cancellationToken) =>
+        Get<ContextConceptsView>(api, ContextRoutes.Concepts(query), cancellationToken);
 }

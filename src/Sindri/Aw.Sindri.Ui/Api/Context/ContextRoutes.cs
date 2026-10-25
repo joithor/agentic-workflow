@@ -38,10 +38,14 @@ internal static class ContextRoutes
         return With(Root + "/map/whole", parts);
     }
 
-    internal static string Concepts(string repo)
+    internal static string Concepts(ConceptsQuery query)
     {
+        ArgumentNullException.ThrowIfNull(query);
         var parts = new List<string>();
-        Add(parts, "repo", repo);
+        Add(parts, "repo", query.Repo);
+        Add(parts, "cursor", query.Cursor);
+        parts.AddRange(Limit(query.Limit));
+        Add(parts, "q", query.Q);
         return With(Root + "/concepts", parts);
     }
 

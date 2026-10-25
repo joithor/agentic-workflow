@@ -28,7 +28,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         Panel = new NodePanelViewModel(LookUp, Jump);
         Panel.PropertyChanged += (_, e) =>
         {
-            if (HasConcept && e.PropertyName is nameof(Panel.IsOpen) or nameof(Panel.Title))
+            if (HasConcept && (string.Equals(e.PropertyName, nameof(Panel.IsOpen), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(Panel.Title), StringComparison.Ordinal)))
             {
                 OnChanged(nameof(Crumbs));   // the node you are on is the last step
             }

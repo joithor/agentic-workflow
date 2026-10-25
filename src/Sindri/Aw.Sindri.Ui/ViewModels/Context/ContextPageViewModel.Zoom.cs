@@ -50,7 +50,7 @@ internal sealed partial class ContextPageViewModel
             return false;
         }
 
-        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken).ConfigureAwait(true);
+        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], MapVersion: null, Draft: false, Repo: _repo, Concept: OpenedConceptId), cancellationToken).ConfigureAwait(true);
         if (located.IsError)
         {
             Problem = located.Error.Message;
@@ -83,7 +83,7 @@ internal sealed partial class ContextPageViewModel
         var drawn = 0;
         for (var next = 0; next < touched.Count && drawn < SoftNodeGuard; next += ReadBatch)
         {
-            var batch = await Task.WhenAll(touched.Skip(next).Take(ReadBatch).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken))).ConfigureAwait(true);
+            var batch = await Task.WhenAll(touched.Skip(next).Take(ReadBatch).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo, Concept: OpenedConceptId), cancellationToken))).ConfigureAwait(true);
             reads.AddRange(batch);
             drawn += batch.Sum(r => r.IsError ? 0 : r.Value.Nodes?.Count ?? 0);
         }

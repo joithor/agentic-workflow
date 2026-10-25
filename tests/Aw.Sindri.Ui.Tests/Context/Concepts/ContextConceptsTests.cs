@@ -52,10 +52,10 @@ public sealed class ContextConceptsTests
         var api = ConceptPage.Serving(AConcepts.Three());
         var page = await ConceptPage.Shown(api);
 
-        await page.OpenConcept("billing", Token);
+        await page.OpenConcept("concept:billing", Token);
 
-        Expect.Equal("billing", api.WholeMapAsked[^1].Concept);
-        Expect.Equal(("billing", false, true), (page.OpenedConceptId, page.ShowConcepts, page.ShowWhole));
+        Expect.Equal("concept:billing", api.WholeMapAsked[^1].Concept);
+        Expect.Equal(("concept:billing", false, true), (page.OpenedConceptId, page.ShowConcepts, page.ShowWhole));
     }
 
     [Fact]
@@ -63,11 +63,11 @@ public sealed class ContextConceptsTests
     {
         var api = ConceptPage.Serving(AConcepts.Three());
         var page = await ConceptPage.Shown(api);
-        await page.OpenConcept("billing", Token);
+        await page.OpenConcept("concept:billing", Token);
 
         await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
 
-        Expect.Equal(("billing", ContextAnswers.OpenArea), (api.WholeMapAsked[^1].Concept, api.WholeMapAsked[^1].Area));
+        Expect.Equal(("concept:billing", ContextAnswers.OpenArea), (api.WholeMapAsked[^1].Concept, api.WholeMapAsked[^1].Area));
     }
 
     [Fact]
@@ -79,13 +79,13 @@ public sealed class ContextConceptsTests
 
         await page.OpenConcept(other.Id, Token);
 
-        Expect.Equal(("other", "1 feature · 3 code files"), (api.WholeMapAsked[^1].Concept, other.SizeText));
+        Expect.Equal(("concept:other", "1 feature · 3 code files"), (api.WholeMapAsked[^1].Concept, other.SizeText));
     }
 
     [Fact]
     public async Task Other_is_left_out_when_nothing_is_unassigned()
     {
-        var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Ok([AConcepts.Concept("billing", "Billing")], AConcepts.Other())));
+        var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Ok([AConcepts.Concept("concept:billing", "Billing")], AConcepts.Other())));
 
         Expect.Sequence(["Billing"], page.Concepts.Tiles.Select(t => t.Name));
     }
@@ -93,7 +93,7 @@ public sealed class ContextConceptsTests
     [Fact]
     public async Task A_concept_a_person_set_says_so()
     {
-        var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Ok([AConcepts.Concept("billing", "Billing", source: "override")])));
+        var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Ok([AConcepts.Concept("concept:billing", "Billing", source: "override")])));
 
         Expect.True(page.Concepts.Tiles[0].IsSetByPerson);
     }
@@ -102,7 +102,7 @@ public sealed class ContextConceptsTests
     public async Task The_breadcrumb_runs_from_concepts_through_the_concept_to_the_feature_and_the_node()
     {
         var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Three()));
-        await page.OpenConcept("self-scheduling", Token);
+        await page.OpenConcept("concept:self-scheduling", Token);
         Expect.Sequence([Labels.ContextConceptsCrumb, "Self scheduling"], page.Whole.Crumbs.Select(c => c.Text));
 
         await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
@@ -117,11 +117,11 @@ public sealed class ContextConceptsTests
     public async Task Up_goes_one_layer_at_a_time_from_the_feature_to_the_concept_to_the_concepts()
     {
         var page = await ConceptPage.Shown(ConceptPage.Serving(AConcepts.Three()));
-        await page.OpenConcept("self-scheduling", Token);
+        await page.OpenConcept("concept:self-scheduling", Token);
         await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
 
         Expect.True(page.Up());
-        Expect.Equal((false, "self-scheduling", false), (page.Whole.IsAreaOpen, page.OpenedConceptId, page.ShowConcepts));
+        Expect.Equal((false, "concept:self-scheduling", false), (page.Whole.IsAreaOpen, page.OpenedConceptId, page.ShowConcepts));
         Expect.True(page.Up());
         Expect.Equal((null, true, false, 4), (page.OpenedConceptId, page.ShowConcepts, page.ShowWhole, page.Concepts.Tiles.Count));
         Expect.True(!page.Up());
@@ -132,17 +132,17 @@ public sealed class ContextConceptsTests
     {
         var api = ConceptPage.Serving(AConcepts.Three());
         var page = await ConceptPage.Shown(api);
-        await page.OpenConcept("billing", Token);
+        await page.OpenConcept("concept:billing", Token);
         _ = page.Up();
         var gate = new TaskCompletionSource();
         api.WholeMapGate = gate;
 
-        var reading = page.OpenConcept("sync", Token);
+        var reading = page.OpenConcept("concept:sync", Token);
 
         Expect.Equal(false, page.Whole.IsReady);
         _ = gate.TrySetResult();
         await reading;
-        Expect.Equal(("sync", true), (api.WholeMapAsked[^1].Concept, page.Whole.IsReady));
+        Expect.Equal(("concept:sync", true), (api.WholeMapAsked[^1].Concept, page.Whole.IsReady));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class ContextConceptsTests
         var located = JsonNode.Parse(GoldenFiles.Api("context-whole", "locate"))!;   // why: the golden is a JSON object
         foreach (var entry in located["located"]!.AsArray())   // why: the golden lists what it located
         {
-            entry!["concept"] = "sync";   // why: every located entry is an object
+            entry!["concept"] = new JsonArray("concept:sync");   // why: every located entry is an object
         }
 
         var api = ConceptPage.Serving(AConcepts.Three());
@@ -206,13 +206,13 @@ public sealed class ContextConceptsTests
     {
         var api = ConceptPage.Serving(AConcepts.Three());
         var page = await ConceptPage.Shown(api);
-        await page.OpenConcept("billing", Token);
+        await page.OpenConcept("concept:billing", Token);
 
         page.AnchorText = "surface:command/switch-tab";
         await page.Submit(Token);
 
         Expect.Equal(false, page.Concepts.SearchActive);
-        Expect.True(api.WholeMapAsked.All(q => q.Concept == "billing"));
+        Expect.True(api.WholeMapAsked.All(q => q.Concept == "concept:billing"));
     }
 
     [Fact]
@@ -271,14 +271,27 @@ public sealed class ContextConceptsTests
     }
 
     [Fact]
+    public async Task Every_page_of_the_concepts_is_read_and_joined()
+    {
+        var first = AConcepts.Ok([AConcepts.Concept("concept:billing", "Billing")], next: "c2");
+        var second = AConcepts.Ok([AConcepts.Concept("concept:sync", "Sync")]);
+        var api = new FakeSindriApi { ContextConceptsAnswer = query => AConcepts.Served(query.Cursor is null ? first : second) };
+
+        var page = await ConceptPage.Shown(api);
+
+        Expect.Sequence(["Billing", "Sync"], page.Concepts.Tiles.Select(t => t.Name));
+        Expect.Sequence([null, "c2"], api.ContextConceptsAsked.Select(q => q.Cursor));
+    }
+
+    [Fact]
     public async Task Choosing_another_repo_starts_again_at_the_concepts()
     {
         var api = ConceptPage.Serving(AConcepts.Three());
         var page = await ConceptPage.Shown(api);
-        await page.OpenConcept("billing", Token);
+        await page.OpenConcept("concept:billing", Token);
 
         await page.PickRepo("other-repo", Token);
 
-        Expect.Equal((null, true, "other-repo"), (page.OpenedConceptId, page.ShowConcepts, api.ContextConceptsAsked[^1]));
+        Expect.Equal((null, true, "other-repo"), (page.OpenedConceptId, page.ShowConcepts, api.ContextConceptsAsked[^1].Repo));
     }
 }

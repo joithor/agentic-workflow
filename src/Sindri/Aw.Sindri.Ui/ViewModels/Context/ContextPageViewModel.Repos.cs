@@ -47,7 +47,7 @@ internal sealed partial class ContextPageViewModel
         ForgetRead();
         OnChanged(nameof(IsZoomedIn));
         Whole.LeaveConcept();   // the concepts are another repo's now
-        _concept = null;
+        OpenedConceptId = null;
         Concepts.Reset();
         ChangedConcepts();
         return ShowFiles ? FileMap.Opened(cancellationToken) : OpenFirst(cancellationToken);

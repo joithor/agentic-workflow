@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Aw.Sindri.Ui.ViewModels;
 
 /// <summary>The app's own copy (<see cref="Labels"/>, continued): the Context page's concept band, the first layer of the map.</summary>
@@ -51,5 +49,5 @@ internal static partial class Labels
     /// <param name="name">The concept's name.</param>
     /// <param name="size">The size line.</param>
     /// <returns>"Self scheduling, 4 features. Press Enter to open."</returns>
-    internal static string ContextConceptTileName(string name, string size) => string.Create(CultureInfo.InvariantCulture, $"{name}, {size}. Press Enter to open.");
+    internal static string ContextConceptTileName(string name, string size) => $"{name}, {size}. Press Enter to open.";
 }

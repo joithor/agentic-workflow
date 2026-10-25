@@ -59,7 +59,7 @@ internal sealed partial class ContextPageViewModel
 
         Whole.Loading();
         ChangedWhole();
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo, Concept: OpenedConceptId), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.Show(read.Value);
@@ -100,7 +100,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo, Concept: OpenedConceptId), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.ShowArea(read.Value);

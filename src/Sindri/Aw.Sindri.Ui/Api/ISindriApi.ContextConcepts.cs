@@ -8,8 +8,8 @@ internal partial interface ISindriApi
 {
     /// <summary>GET /sindri/context/concepts: the product's core concepts with their sizes. A server without the route answers 404, which the page reads as "no concepts".</summary>
     /// <param name="api">The base URL.</param>
-    /// <param name="repo">The repo to read; empty for the profile's only repo.</param>
+    /// <param name="query">The repo and the page.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The concepts, the API's refusal, or SND-UI-002/003.</returns>
-    public Task<Result<ContextConceptsView>> ContextConcepts(Uri api, string repo, CancellationToken cancellationToken);
+    public Task<Result<ContextConceptsView>> ContextConcepts(Uri api, ConceptsQuery query, CancellationToken cancellationToken);
 }

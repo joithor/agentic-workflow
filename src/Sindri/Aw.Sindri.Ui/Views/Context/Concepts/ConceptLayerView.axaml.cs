@@ -14,7 +14,7 @@ internal sealed partial class ConceptLayerView : UserControl
 
     private void OnOpen(object? sender, RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is ConceptTileViewModel tile)
+        if (sender is Control { DataContext: ConceptTileViewModel tile })
         {
             tile.Open();
         }
