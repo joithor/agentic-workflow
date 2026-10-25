@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Item;
@@ -35,7 +34,7 @@ public sealed class CreateItemLayoutTests
         await form.Submit(Token);
 
         Assert.Equal(form.TitleError, form.TitleErrorLine);
-        Assert.NotEqual("\u00A0", form.TitleErrorLine);
+        Assert.False(string.Equals("\u00A0", form.TitleErrorLine, StringComparison.Ordinal));
     }
 
     [Fact]
