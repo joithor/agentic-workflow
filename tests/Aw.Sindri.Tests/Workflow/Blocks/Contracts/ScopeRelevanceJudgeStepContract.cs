@@ -2,7 +2,7 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
-using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Features.Scoping.Relevance;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Judge;
 using Aw.Sindri.Testing.Scoping;

@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Judge;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Features.Scoping.Relevance;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
