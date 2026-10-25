@@ -3,7 +3,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Scoping;
-using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 

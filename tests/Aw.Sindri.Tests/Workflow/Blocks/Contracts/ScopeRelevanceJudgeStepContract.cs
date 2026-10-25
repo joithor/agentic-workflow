@@ -5,7 +5,6 @@ using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Judge;
-using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 
