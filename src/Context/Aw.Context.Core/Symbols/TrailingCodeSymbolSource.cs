@@ -12,46 +12,46 @@ namespace Aw.Context.Core.Symbols;
 /// </summary>
 /// <param name="inner">The source that reads the index.</param>
 /// <param name="repos">Reads the repo's history.</param>
-/// <param name="repo">The repo this reading is about: its name and checkout.</param>
-public sealed class TrailingCodeSymbolSource(ICodeSymbolSource inner, IRepoReader repos, ContextRepo repo) : ICodeSymbolSource
+/// <param name="checkout">The repo this reading is about: its name and checkout.</param>
+public sealed class TrailingCodeSymbolSource(ICodeSymbolSource inner, IRepoReader repos, ContextRepo checkout) : ICodeSymbolSource
 {
     private readonly Dictionary<string, CodeIndexHead> _trailed = new(StringComparer.Ordinal);
 
     /// <inheritdoc/>
-    public async ValueTask<Result<CodeIndexHead>> Heads(ContextRepoName name, string? asOf, CancellationToken cancellationToken)
+    public async ValueTask<Result<CodeIndexHead>> Heads(ContextRepoName repo, string? asOf, CancellationToken cancellationToken)
     {
-        var head = await inner.Heads(name, asOf, cancellationToken).ConfigureAwait(false);
+        var head = await inner.Heads(repo, asOf, cancellationToken).ConfigureAwait(false);
         if (head.IsError)
         {
             return head.Error;
         }
 
-        return await Trail(name, head.Value, cancellationToken).ConfigureAwait(false);
+        return await Trail(repo, head.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public async ValueTask<Result<SymbolAnswer<SymbolHit>>> FindSymbols(ContextRepoName name, SymbolQuery query, string? asOf, CancellationToken cancellationToken)
+    public async ValueTask<Result<SymbolAnswer<SymbolHit>>> FindSymbols(ContextRepoName repo, SymbolQuery query, string? asOf, CancellationToken cancellationToken)
     {
-        var answer = await inner.FindSymbols(name, query, asOf, cancellationToken).ConfigureAwait(false);
-        return answer.IsError ? answer : await Restamped(name, answer.Value, static (h, r) => RestampHit(h, r), cancellationToken).ConfigureAwait(false);
+        var answer = await inner.FindSymbols(repo, query, asOf, cancellationToken).ConfigureAwait(false);
+        return answer.IsError ? answer : await Restamped(repo, answer.Value, static (h, r) => RestampHit(h, r), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public async ValueTask<Result<SymbolAnswer<FileSymbolsRow>>> FileSymbols(ContextRepoName name, IReadOnlyList<string> paths, string? asOf, CancellationToken cancellationToken)
+    public async ValueTask<Result<SymbolAnswer<FileSymbolsRow>>> FileSymbols(ContextRepoName repo, IReadOnlyList<string> paths, string? asOf, CancellationToken cancellationToken)
     {
-        var answer = await inner.FileSymbols(name, paths, asOf, cancellationToken).ConfigureAwait(false);
-        return answer.IsError ? answer : await Restamped(name, answer.Value, static (h, r) => RestampFile(h, r), cancellationToken).ConfigureAwait(false);
+        var answer = await inner.FileSymbols(repo, paths, asOf, cancellationToken).ConfigureAwait(false);
+        return answer.IsError ? answer : await Restamped(repo, answer.Value, static (h, r) => RestampFile(h, r), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<CallAnswer>> Callers(ContextRepoName name, string symbolRef, int depth, string? asOf, CancellationToken cancellationToken) =>
-        Calls(name, inner.Callers(name, symbolRef, depth, asOf, cancellationToken), cancellationToken);
+    public ValueTask<Result<CallAnswer>> Callers(ContextRepoName repo, string symbolRef, int depth, string? asOf, CancellationToken cancellationToken) =>
+        Calls(repo, inner.Callers(repo, symbolRef, depth, asOf, cancellationToken), cancellationToken);
 
     /// <inheritdoc/>
-    public ValueTask<Result<CallAnswer>> Callees(ContextRepoName name, string symbolRef, int depth, string? asOf, CancellationToken cancellationToken) =>
-        Calls(name, inner.Callees(name, symbolRef, depth, asOf, cancellationToken), cancellationToken);
+    public ValueTask<Result<CallAnswer>> Callees(ContextRepoName repo, string symbolRef, int depth, string? asOf, CancellationToken cancellationToken) =>
+        Calls(repo, inner.Callees(repo, symbolRef, depth, asOf, cancellationToken), cancellationToken);
 
-    private async ValueTask<Result<CallAnswer>> Calls(ContextRepoName name, ValueTask<Result<CallAnswer>> asked, CancellationToken cancellationToken)
+    private async ValueTask<Result<CallAnswer>> Calls(ContextRepoName repo, ValueTask<Result<CallAnswer>> asked, CancellationToken cancellationToken)
     {
         var answer = await asked.ConfigureAwait(false);
         if (answer.IsError)
@@ -59,20 +59,20 @@ public sealed class TrailingCodeSymbolSource(ICodeSymbolSource inner, IRepoReade
             return answer;
         }
 
-        var head = await Trail(name, answer.Value.Head, cancellationToken).ConfigureAwait(false);
+        var head = await Trail(repo, answer.Value.Head, cancellationToken).ConfigureAwait(false);
         return ReferenceEquals(head, answer.Value.Head) ? answer : new CallAnswer(head, [.. answer.Value.Rows.Select(r => RestampCall(head, r))], answer.Value.Unresolved);
     }
 
-    private async ValueTask<Result<SymbolAnswer<T>>> Restamped<T>(ContextRepoName name, SymbolAnswer<T> answer, Func<CodeIndexHead, T, T> restamp, CancellationToken cancellationToken)
+    private async ValueTask<Result<SymbolAnswer<T>>> Restamped<T>(ContextRepoName repo, SymbolAnswer<T> answer, Func<CodeIndexHead, T, T> restamp, CancellationToken cancellationToken)
     {
-        var head = await Trail(name, answer.Head, cancellationToken).ConfigureAwait(false);
+        var head = await Trail(repo, answer.Head, cancellationToken).ConfigureAwait(false);
         return ReferenceEquals(head, answer.Head) ? answer : new SymbolAnswer<T>(head, [.. answer.Rows.Select(r => restamp(head, r))]);
     }
 
     // The stale head of this repo's index, made catching-up when its commit is an ancestor of the map's; asked of git once for each pair of commits.
-    private async ValueTask<CodeIndexHead> Trail(ContextRepoName name, CodeIndexHead head, CancellationToken cancellationToken)
+    private async ValueTask<CodeIndexHead> Trail(ContextRepoName repo, CodeIndexHead head, CancellationToken cancellationToken)
     {
-        if (name != repo.Name || head is not { State: CodeIndexState.Stale, Layer: null, Commit: { } indexed, AsOfCommit: { } mapped })
+        if (repo != checkout.Name || head is not { State: CodeIndexState.Stale, Layer: null, Commit: { } indexed, AsOfCommit: { } mapped })
         {
             return head;
         }
@@ -83,8 +83,8 @@ public sealed class TrailingCodeSymbolSource(ICodeSymbolSource inner, IRepoReade
             return known;
         }
 
-        var changes = await repos.Changes(repo, new DiffRange(indexed, mapped), cancellationToken).ConfigureAwait(false);
-        var trailed = changes.IsError ? head : CodeIndexReading.CatchingUp(head, changes.Value.MergeBase, [.. changes.Value.Files.Select(static f => f.Path).Where(p => !repo.Denies(p))]);
+        var changes = await repos.Changes(checkout, new DiffRange(indexed, mapped), cancellationToken).ConfigureAwait(false);
+        var trailed = changes.IsError ? head : CodeIndexReading.CatchingUp(head, changes.Value.MergeBase, [.. changes.Value.Files.Select(static f => f.Path).Where(p => !checkout.Denies(p))]);
         _trailed[key] = trailed;
         return trailed;
     }
