@@ -100,7 +100,7 @@ internal sealed class BuildMapService(
         var at = clock.GetUtcNow();
         var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
         undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
-        var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), cancellationToken).ConfigureAwait(false);
+        var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], cancellationToken).ConfigureAwait(false);
         var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads), at, cancellationToken).ConfigureAwait(false);
         return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), note is null ? read.Degraded : [.. read.Degraded, note], read.Heads);
     }
@@ -222,11 +222,9 @@ internal sealed class BuildMapService(
             : kept with { Nodes = [.. kept.Nodes.Where(n => !derived.Contains(n.Key.Value))], Edges = [.. kept.Edges.Where(e => !derived.Contains(e.To.Value) && !derived.Contains(e.From.Value))] };
     }
 
-    // The concepts are derived over the whole joined graph (records and decisions included) and saved in the draft, so reads never call a model. A namer that can't answer leaves the deterministic names and says so as a degraded note.
-    private async ValueTask<(GraphSnapshot Graph, string? Note)> WithConcepts(ContextSettings settings, GraphSnapshot joined, CancellationToken cancellationToken)
+    // The concepts ('index.concepts' pins of the mapped repos first) are derived over the whole joined graph (records and decisions included) and saved in the draft, so reads never call a model. A namer that can't answer leaves the deterministic names and says so as a degraded note.
+    private async ValueTask<(GraphSnapshot Graph, string? Note)> WithConcepts(ContextSettings settings, GraphSnapshot joined, IReadOnlyList<ConceptPin> pins, CancellationToken cancellationToken)
     {
-        // the pins come from 'index.concepts' (ContextRepo.Concepts) once that lands; until then no repo pins a concept
-        IReadOnlyList<ConceptPin> pins = [];
         ConceptNames? names = null;
         string? note = null;
         var groups = ConceptDeriver.Groups(joined, pins);
