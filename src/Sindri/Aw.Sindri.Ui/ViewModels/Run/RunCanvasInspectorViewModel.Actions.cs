@@ -86,6 +86,9 @@ internal sealed partial class RunCanvasInspectorViewModel
         }
     }
 
+    /// <summary>What the last Take over came to, in words; empty before one.</summary>
+    public string TakeOverLine { get; } = string.Empty;
+
     /// <summary>Opens the item's map in Context.</summary>
     public void SeeContext()
     {

@@ -111,6 +111,34 @@ public sealed class TakeoverViewerTests
     }
 
     [Fact]
+    public async Task The_instance_sheets_Take_over_command_sends_one_takeover_and_shows_the_outcome()
+    {
+        Accepted("""{"kind":"warp","label":"Warp","outcome":"opened"}""");
+        var expanded = Ready();
+        Assert.Contains(expanded.Commands, c => c.IsTakeOver);
+
+        _ = expanded.TakeOverAsync();
+        _ = expanded.TakeOverAsync();
+        await Until(() => expanded.AttachOutcomeLine.Length > 0 && expanded.AttachOutcomeLine != Labels.AttachSending);
+
+        var sent = Assert.Single(_server.CommandCalls);
+        Assert.Equal((Instance, CommandKind.Takeover), (sent.Instance, sent.Body.Kind));
+        Assert.Equal(Labels.LaunchOpenedIn("Warp"), expanded.AttachOutcomeLine);
+    }
+
+    [Fact]
+    public async Task The_instance_sheets_refused_takeover_shows_the_served_code()
+    {
+        _server.CommandAnswer = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-WF-041", "That run has moved on. Read the instance again.");
+        var expanded = Ready();
+
+        _ = expanded.TakeOverAsync();
+        await Until(() => expanded.AttachOutcomeLine.Length > 0 && expanded.AttachOutcomeLine != Labels.AttachSending);
+
+        Assert.Contains("SND-WF-041", expanded.AttachOutcomeLine, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_second_press_while_the_takeover_is_out_sends_nothing()
     {
         Accepted("""{"kind":"warp","label":"Warp","outcome":"opened"}""");

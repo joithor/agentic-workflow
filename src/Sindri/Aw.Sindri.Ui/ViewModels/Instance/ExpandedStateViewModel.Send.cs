@@ -31,6 +31,10 @@ internal sealed partial class ExpandedStateViewModel
     /// <returns>A task that completes when the answer came.</returns>
     internal Task HandBackAsync() => Send(CommandKind.Handback, Labels.HandBackSent);
 
+    /// <summary>Take over, from the instance's command list.</summary>
+    /// <returns>A task that completes when the answer came.</returns>
+    internal Task TakeOverAsync() => Task.CompletedTask;
+
     private async Task Send(CommandKind kind, string sent)
     {
         if (Commander is not { } commander || InstanceId is not { } instance)

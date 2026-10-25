@@ -1,3 +1,4 @@
+using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
@@ -141,19 +142,45 @@ public sealed class RunInspectorViewModelTests
         Assert.Equal(shows, inspector.CanCancel);
     }
 
-    [Fact]
-    public async Task Take_over_navigates_to_the_run_and_sends_nothing()
+    private static async Task Until(Func<bool> done)
     {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        limit.CancelAfter(TimeSpan.FromSeconds(10));
+        while (!done())
+        {
+            await Task.Delay(10, limit.Token);
+        }
+    }
+
+    [Fact]
+    public async Task Take_over_sends_one_takeover_for_the_instance_and_shows_the_viewer_outcome()
+    {
+        _server.CommandAnswer = new RouteAnswer(HttpStatusCode.OK, """{"alreadyApplied":false,"viewer":{"kind":"warp","label":"Warp","outcome":"opened"}}""");
         var inspector = await Shown("RUNNING");
         var asked = new List<OpenRequestedEventArgs>();
         inspector.OpenRequested += (_, e) => asked.Add(e);
 
         inspector.TakeOver();
+        inspector.TakeOver();
+        await Until(() => inspector.TakeOverLine.Length > 0 && inspector.TakeOverLine != Labels.AttachSending);
 
-        var one = Assert.Single(asked);
-        Assert.Equal((inspector.Row!.Link, FrameIntent.TakeOver), (one.Link, one.Intent));
-        Assert.Empty(_server.CompleteCalls);
-        Assert.Null(_clipboard.Text);
+        var sent = Assert.Single(_server.CommandCalls);
+        Assert.Equal((inspector.Row!.InstanceId, CommandKind.Takeover), (sent.Instance, sent.Body.Kind));
+        Assert.Equal(Labels.LaunchOpenedIn("Warp"), inspector.TakeOverLine);
+        Assert.Empty(asked);
+    }
+
+    [Fact]
+    public async Task A_refused_takeover_shows_its_code_in_the_drawer()
+    {
+        _server.CommandAnswer = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-WF-041", "That run has moved on. Read the instance again.");
+        var inspector = await Shown("RUNNING");
+
+        inspector.TakeOver();
+        await Until(() => inspector.TakeOverLine.Length > 0 && inspector.TakeOverLine != Labels.AttachSending);
+
+        Assert.Contains("SND-WF-041", inspector.TakeOverLine, StringComparison.Ordinal);
+        _ = Assert.Single(_server.CommandCalls);
     }
 
     [Fact]
