@@ -236,7 +236,7 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken)
     {
         Remembered.Add((instanceAddress, graph));
-        return ValueTask.FromResult(Results.Success(true));
+        return ValueTask.FromResult(Results.Success(value: true));
     }
 
     /// <inheritdoc/>

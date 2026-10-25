@@ -20,7 +20,7 @@ public sealed class ScopeGraphTests : IDisposable
     private async Task<ScopeGraphView> Build(string[] anchors, int depth, int maxNodes = 400, int maxBytes = 300_000)
     {
         _ = await _world.ImportYaml(MapWorld.TabsMap);
-        var answer = await _world.Engine.ScopeGraph(new ScopeGraphQuery(anchors, MapRead.Current, new LensRange(depth, null), Brief: null, maxNodes, maxBytes), MapWorld.Human, MapWorld.None);
+        var answer = await _world.Engine.ScopeGraph(new ScopeGraphQuery(anchors, MapRead.Current, new LensRange(depth, Hops: null), Brief: null, maxNodes, maxBytes), MapWorld.Human, MapWorld.None);
         Assert.True(answer.IsSuccess, answer.IsError ? answer.Error.Message : null);
         return answer.Value;
     }

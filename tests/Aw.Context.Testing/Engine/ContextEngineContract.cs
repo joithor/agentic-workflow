@@ -134,7 +134,7 @@ public abstract class ContextEngineContract<TEngine>
         var scope = new ContextScope(Settings: null, [new ContextRepo(ContextRepoName.From("split-panes"), "/repos/split-panes")],
             new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
 
-        var graph = await engine.ScopeGraph(new ScopeGraphQuery(["feature:x"], MapRead.Current, new LensRange(2, null), Brief: null, MaxNodes: 400, MaxBytes: 300_000), scope, CancellationToken.None);
+        var graph = await engine.ScopeGraph(new ScopeGraphQuery(["feature:x"], MapRead.Current, new LensRange(2, Hops: null), Brief: null, MaxNodes: 400, MaxBytes: 300_000), scope, CancellationToken.None);
         var reads = await engine.GraphReads("ITM-1/line/3/scoping.1", "run-1", CancellationToken.None);
 
         Check(graph.IsError && graph.Error.Code == ScopeGraphCodeWithNoMap, $"a scoping graph with no map to build it from is {ScopeGraphCodeWithNoMap}");

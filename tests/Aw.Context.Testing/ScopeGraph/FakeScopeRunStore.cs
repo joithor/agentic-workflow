@@ -14,7 +14,7 @@ public sealed class FakeScopeRunStore : IScopeRunStore
     {
         ArgumentNullException.ThrowIfNull(graph);
         _graphs[instance] = graph.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
-        return ValueTask.FromResult(Results.Success(true));
+        return ValueTask.FromResult(Results.Success(value: true));
     }
 
     /// <inheritdoc/>
@@ -25,7 +25,7 @@ public sealed class FakeScopeRunStore : IScopeRunStore
     public ValueTask<Result<bool>> Log(string instance, string run, GraphRead read, CancellationToken cancellationToken)
     {
         _reads.Add((instance, run, read));
-        return ValueTask.FromResult(Results.Success(true));
+        return ValueTask.FromResult(Results.Success(value: true));
     }
 
     /// <inheritdoc/>

@@ -33,7 +33,7 @@ public sealed class ScopedGraphReadsTests : IDisposable
             _imported = true;
         }
 
-        var graph = await _world.Engine.ScopeGraph(new ScopeGraphQuery([Manager], MapRead.Current, new LensRange(1, null), Brief: null, 400, 300_000), MapWorld.Human, MapWorld.None);
+        var graph = await _world.Engine.ScopeGraph(new ScopeGraphQuery([Manager], MapRead.Current, new LensRange(1, Hops: null), Brief: null, MaxNodes: 400, MaxBytes: 300_000), MapWorld.Human, MapWorld.None);
         Assert.True(graph.IsSuccess, graph.IsError ? graph.Error.Message : null);
         var stored = await _world.Engine.RememberScopeGraph(Instance, graph.Value, MapWorld.None);
         Assert.True(stored.IsSuccess, stored.IsError ? stored.Error.Message : null);

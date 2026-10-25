@@ -42,7 +42,8 @@ public sealed class ScopedReadsMcpTests : IDisposable
             $"  - {{alias: \"feature:old.out\", target: \"{NotInGraph}\"}}") + "\n", ct);
         await ContextMapApiTests.Import(host, file);
         using var scope = host.App.Services.CreateScope();
-        var graph = new ScopeGraphView(1, "v1", [InGraph], 1, [], [new ScopeGraphNode(ScopeGraphNodeId.From(InGraph), "feature", null, null, "In scope", 1, "product", "L-product-1", "own", [])], [], []);
+        var node = new ScopeGraphNode(ScopeGraphNodeId.From(InGraph), Kind: "feature", Path: null, Symbol: null, Summary: "In scope", Rank: 1, Lens: "product", LensItem: "L-product-1", Band: "own", Citations: []);
+        var graph = new ScopeGraphView(Version: 1, MapVersion: "v1", Anchors: [InGraph], Depth: 1, Hops: [], Nodes: [node], Edges: [], Limits: []);
         var kept = await scope.ServiceProvider.GetRequiredService<IContextEngine>().RememberScopeGraph(Instance, graph, ct);
         Assert.True(kept.IsSuccess, kept.IsError ? kept.Error.Message : null);
         return host;
