@@ -40,17 +40,19 @@ internal sealed class BuildPrepareStep(IRunDiff diff) : IBlockStep, IBlockStepId
         }
 
         return clean.Value
-            ? StepFacts.Done("ready", ("fact:activePacket", InForce(packet, worktree)), ("fact:redTests", new JsonObject()), ("fact:built", new JsonObject()), ("fact:change", new JsonObject()), ("fact:findings", new JsonArray()), ("fact:answers", new JsonObject()))
+            ? StepFacts.Done("ready", ("fact:activePacket", InForce(packet, worktree, head.Value)), ("fact:redTests", new JsonObject()), ("fact:built", new JsonObject()), ("fact:change", new JsonObject()), ("fact:findings", new JsonArray()), ("fact:answers", new JsonObject()))
             : BlockStepResult.Failed($"step.build.prepare: the worktree {worktree} has uncommitted changes (fix: commit or discard them, then resume)");
     }
 
-    // The packet in force is the phase packet, with the worktree as the repo checkout 'step.build.amend' hands aw-packets (PKT-BASE-001 needs the base commit's repository).
-    private static JsonNode InForce(JsonNode phasePacket, string worktree)
+    // The packet in force is the phase packet, with the worktree as the repo checkout 'step.build.amend' hands aw-packets (PKT-BASE-001 needs the base commit's repository),
+    // and the head the round started at: red-check tells a rework round (it starts at the earlier round's code head) from code committed before the red check.
+    private static JsonNode InForce(JsonNode phasePacket, string worktree, string startHead)
     {
         var active = phasePacket.DeepClone();
         if (active is JsonObject obj)
         {
             obj["repo"] = worktree;
+            obj["startHead"] = startHead;
         }
 
         return active;
