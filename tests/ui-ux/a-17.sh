@@ -5,28 +5,33 @@
 source "$(dirname "$0")/lib.sh"
 uxu_start up items
 
-d click --type ListBoxItem --name Work >/dev/null || uxu_die "no Work tab"
+# Every driver call is bounded (a hung driver is a setup error, not a hang).
+dt() { timeout 120 "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" "$@"; }
+
+dt click --type ListBoxItem --name Work >/dev/null || uxu_die "no Work tab"
 sleep 2
-d click --type Button --name "Create item" >/dev/null || uxu_die "no Create item button"
-d wait-for --type Border --name "Create item" --state visible --wait-ms 15000 >/dev/null || uxu_die "the Create item dialog never opened"
+dt click --type Button --name "Create item" >/dev/null || uxu_die "no Create item button"
+dt wait-for --type Border --name "Create item" --state visible --wait-ms 15000 >/dev/null || uxu_die "the Create item dialog never opened"
 sleep 1
 
-card_id="$(d search --type Border --name "Create item" | jq -r '.matches[0].id // empty')"
+card_id="$(dt search --type Border --name "Create item" | jq -r '.matches[0].id // empty')"
 [ -n "$card_id" ] || uxu_die "no dialog card"
-# Layout is read through props (the Bounds line); an element that cannot be found or has no Bounds is a setup error.
-node_id() { d search "$@" | jq -r '[.matches[] | select(.visible != false)] | last | .id // empty'; }
+# Layout is the x, y, width, height of a search match.
 bounds_of() {
-  local id out
-  id="$(node_id "$@")"; [ -n "$id" ] || uxu_die "no visible element for: $*"
-  out="$(d props --node-id "$id" | grep -iE '^ *"?Bounds' | head -1)"; [ -n "$out" ] || uxu_die "no Bounds for: $*"
+  local out
+  out="$(dt search "$@" | jq -c '[.matches[] | select(.visible != false)] | last | select(. != null) | [.x, .y, .width, .height]')"
+  { [ -n "$out" ] && [ "$out" != "[null,null,null,null]" ]; } || uxu_die "no bounds for: $*"
   printf '%s' "$out"
 }
 card_before="$(bounds_of --type Border --name "Create item")"
 cancel_before="$(bounds_of --name Cancel)"
 body_before="$(bounds_of --name Body)"
 
-d click --name CreateControl >/dev/null || uxu_die "no Create control in the dialog"
-d wait-for --contains "required" --state visible --wait-ms 15000 >/dev/null || uxu_die "the blank-title error never showed"
+# The Create control is a CommandControl wrapper; its Button is the first child.
+create_id="$(dt search --type CommandControl | jq -r '[.matches[] | select(.visible != false)] | last | .id // empty')"
+[ -n "$create_id" ] || uxu_die "no Create control in the dialog"
+dt click --node-id "$create_id/0" >/dev/null || uxu_die "the Create control's button did not click"
+dt wait-for --contains "required" --state visible --wait-ms 15000 >/dev/null || uxu_die "the blank-title error never showed"
 sleep 1
 
 card_after="$(bounds_of --type Border --name "Create item")"
@@ -37,7 +42,7 @@ expect "the dialog card keeps its size when the error shows ($card_before -> $ca
 expect "Cancel keeps its place when the error shows ($cancel_before -> $cancel_after)" test "$cancel_before" = "$cancel_after"
 expect "the Body field keeps its place when the error shows ($body_before -> $body_after)" test "$body_before" = "$body_after"
 expect "the Repo field is a choice box (ComboBox or AutoCompleteBox) offering the known repos" \
-  bash -c '[ "$("$0" --dir "$1" tree --node-id "$2" --depth 12 | jq "[.. | objects | select(.type? == \"ComboBox\" or .type? == \"AutoCompleteBox\")] | length")" -ge 1 ]' \
+  bash -c '[ "$(timeout 120 "$0" --dir "$1" tree --node-id "$2" --depth 12 | jq "[.. | objects | select(.type? == \"ComboBox\" or .type? == \"AutoCompleteBox\")] | length")" -ge 1 ]' \
   "$UXU_DRIVER" "$AW_UI_DRIVER_DIR" "$card_id"
 
 uxu_done
