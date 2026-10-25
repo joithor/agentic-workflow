@@ -34,7 +34,7 @@ seed() {
   cat > "$s/bin/cs/stamp1/judge" <<'EOF'
 #!/usr/bin/env bash
 if [ "${1:-}" = health ]; then
-  if grep -q TS_SHAPE "$AW_STATE_DIR/judge/decisions.sqlite" 2> /dev/null; then echo "AW-DATA-009 the database has the TS shape" >&2; exit 1; fi
+  if grep -q TS_SHAPE "$AW_STATE_DIR/judge/decisions.sqlite" 2> /dev/null; then echo "$AW_STATE_DIR/judge/decisions.sqlite has tables but no schema_version table, so this runner didn't create it. Nothing was written. Check the path points at this package's own database." >&2; exit 1; fi
   echo '{"status":"ok","failures24h":0}'; exit 0
 fi
 exit 2
@@ -203,7 +203,14 @@ has "hook install passes the stable wrapper path" "$(cat "$D4/stubs/sindri.log")
 [ ! -e "$D4/state/judge/decisions.sqlite" ] && ok "TS judge database deleted" || bad "TS judge database still there"
 [ ! -e "$D4/state/judge/config.json" ] && ok "judge config deleted" || bad "judge config still there"
 check "template dir unset" "$(git config --global --get init.templateDir || echo unset)" unset
-[ ! -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists deleted" || bad "plist still there"
+if [ "$(uname)" = Darwin ]; then
+  [ ! -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists deleted (macOS)" || bad "plist still there"
+  plists='|la/com\.agentic-workflow\.[a-z-]+\.plist$'
+else
+  [ -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists kept (Linux has no launchd)" || bad "a plist was deleted on Linux"
+  has "Linux gets the cron reminder" "$out_pre" "remove any cron line you added by hand"
+  plists=''
+fi
 bash "$D4/root/scripts/install-cs.sh" --link   # step 6, the stub
 out_post="$(run "$D4" --post-link)"; rc=$?
 check "post-link exits 0" "$rc" 0
@@ -212,7 +219,7 @@ has "post-link prints the repo onboard line" "$out_post" "sindri repo onboard $D
 has "post-link reports what it left alone" "$out_post" "left alone (not a TS wrapper this script knows): sindri-view"
 check "judge health passed through the wrapper" "$("$D4/bin/judge" health | jq -r .status)" ok
 names_after="$(names "$D4")"
-expected="$(printf '%s\n' "$names_before" | grep -vE '^\./(state/(sindri|scorer|audit|profile)(/|$)|state/myrepo-slug/bugfix(/|$)|state/bin/sindri-app(/|$)|state/judge/(config\.json|decisions\.sqlite(-shm|-wal)?)$|la/com\.agentic-workflow\.[a-z-]+\.plist$|bin/(scorer|sindri-next|sindri-app)$|root/judge/node_modules(/|$)|root/sindri/dist(/|$))' | grep -vx './state/logs' )"
+expected="$(printf '%s\n' "$names_before" | grep -vE '^\./(state/(sindri|scorer|audit|profile)(/|$)|state/myrepo-slug/bugfix(/|$)|state/bin/sindri-app(/|$)|state/judge/(config\.json|decisions\.sqlite(-shm|-wal)?)$'"$plists"'|bin/(scorer|sindri-next|sindri-app)$|root/judge/node_modules(/|$)|root/sindri/dist(/|$))' | grep -vx './state/logs' )"
 check "exactly the §8 list was removed" "$names_after" "$expected"
 check "the kept list is byte-identical" "$(kept "$D4")" "$kept_before"
 [ -f "$D4/root/scorer/dist/notes.txt" ] && ok "uncommitted work in a retired dir is kept" || bad "uncommitted work was deleted"
