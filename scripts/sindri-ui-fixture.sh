@@ -335,7 +335,14 @@ workflows() {
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
 }
 
-park-timeout() { start_on_new_item workflow.dev-timeout "Fixture timeout park"; }
+# workflow.dev-timeout is a dev recipe, not a shipped one: register and approve it as the owner first (typing id and version).
+park-timeout() {
+  local file="$ROOT/recipes/dev/workflow.dev-timeout.yaml" version out
+  version="$(sed -n 's/^version: *//p' "$file" | head -1)"
+  out="$(printf 'approve workflow.dev-timeout %s\n' "$version" | "$PROVE" human recipe approve "$file" 2>&1)"
+  printf '%s\n' "$out" | grep -qE '^(approved|already approved)' || die "recipe approve workflow.dev-timeout was refused: $out"
+  start_on_new_item workflow.dev-timeout "Fixture timeout park"
+}
 
 incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
 
