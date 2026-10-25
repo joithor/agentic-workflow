@@ -95,11 +95,19 @@ cursor_install_agents() {
   echo "  cursor: lean agent types → $(cursor_agents_dir) (manifest: $manifest)"
 }
 
+# Cursor keeps user rules in the app's settings, not in a file, so the voice can't be written for it.
+# Skill runs still get it through the preamble.
+cursor_install_voice() {
+  echo "  voice: Cursor has no global rules file; paste $TOOLKIT_DIR/config/voice/joi.md into"
+  echo "         Cursor > Settings > Rules > User Rules once (skills read it on their own)"
+}
+
 cursor_install() {
   echo ""
   echo "=== Provider: Cursor ==="
   aw_install_skills_into "$(cursor_skills_dir)"
   cursor_install_hooks
+  cursor_install_voice
   aw_install_levers cursor
   cursor_register_mcp
 }

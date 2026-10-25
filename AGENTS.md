@@ -46,7 +46,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 50 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report), the opt-in aw:fleet session-state hook (fleet-state, `--with-fleet`) (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report), the opt-in aw:fleet session-state hook (fleet-state, `--with-fleet`), the reply voice (`voice/`, inlined into each provider's global instructions) (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── context/       # Pinned external deployments: onyx.lock (Onyx v4.9.0 pins)
 ├── planning/      # Project documentation
@@ -159,6 +159,7 @@ scripts/check-env-example.sh            # Every env var the code reads is in .en
 # its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
 bash scripts/ci/bash-tests.sh   # each suite runs with its own fresh temp HOME and AW_STATE_DIR and without the lane environment (AW_META_LANE*, AW_SINDRI_CHILD, TMUX, ...) (tools keep working through GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache)
 bash providers/tests/install.test.sh
+bash providers/tests/voice.test.sh       # the aw:voice block in ~/.claude/CLAUDE.md and ~/.codex/AGENTS.md: created, appended, replaced in place, an unclosed block refused, dry run, joi.md <= 4000 bytes
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/test-grep.test.sh
 bash scripts/tests/check-deps.test.sh

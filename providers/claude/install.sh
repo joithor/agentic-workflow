@@ -305,7 +305,9 @@ claude_install_agents() {
   echo "  claude: lean agent types → $(claude_agents_dir) (manifest: $manifest)"
 }
 
-# Full Claude install (skills, config, hooks, MCP, plugins). Agents are opt-in
+claude_install_voice() { aw_install_voice "$CLAUDE_DIR/CLAUDE.md"; }
+
+# Full Claude install (skills, config, hooks, voice, MCP, plugins). Agents are opt-in
 # via `setup.sh --install-agents`.
 claude_install() {
   echo ""
@@ -314,6 +316,7 @@ claude_install() {
   claude_install_settings
   claude_install_hooks
   claude_install_shell_integration
+  claude_install_voice
   claude_install_legacy_mcp_json
   claude_register_mcp
   echo "=== Security check ==="
