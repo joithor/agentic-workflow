@@ -3,7 +3,7 @@ using Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 namespace Aw.Sindri.Ui.Tests.Context.Whole;
 
-/// <summary>A search is the strongest highlight state on the whole map: it beats a hover or a pin, lights its matches and their links, dims the rest, and Esc or an empty box returns to the full map.</summary>
+/// <summary>A search is the strongest highlight state on the whole map: it filters the map to its matches and their links, and Esc or an empty box returns to the full map.</summary>
 [Lane(TestLane.Unit)]
 public sealed class WholeMapSearchTests
 {
@@ -46,22 +46,6 @@ public sealed class WholeMapSearchTests
     }
 
     [Fact]
-    public void While_a_search_is_active_hovering_changes_nothing()
-    {
-        var map = Nodes();
-        var edge = map.Geometry!.Edges[0];
-        map.ApplySearch([Hit(edge.From)], hitAreas: [], zoomed: false);
-        var before = map.Emphasis;
-        var other = map.Geometry.Nodes.First(n => n.Key != edge.From && n.Key != edge.To);
-        var (x, y) = Centre(other.Rect);
-
-        map.PointerMoved(x, y);
-
-        Assert.Same(before, map.Emphasis);
-        Assert.Null(map.Focus);
-    }
-
-    [Fact]
     public void A_search_lights_its_matches_with_their_links_and_asks_the_camera_to_fit_them()
     {
         var map = Nodes();
@@ -89,7 +73,7 @@ public sealed class WholeMapSearchTests
     }
 
     [Fact]
-    public void No_matches_says_so_and_dims_the_whole_graph()
+    public void No_matches_says_so_and_draws_nothing()
     {
         var map = Nodes();
         var moved = false;
