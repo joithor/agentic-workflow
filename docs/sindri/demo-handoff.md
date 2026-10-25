@@ -10,9 +10,9 @@ All names are placeholders: `<work-repo>` is the repo name the owner picks for S
 
 **Goal.** The owner scopes a small project through Sindri from their local agent session. The session reaches Sindri over MCP and uses the `context_*` tools (`context_sources`, `context_query`, `context_lenses`, `context_node`, `context_neighbors`). Then the owner runs the project through the line recipe `workflow.line`. The Sindri app shows it read-only, on Home and on Workflows.
 
-**The split.** Sindri refuses a human-only command when an agent session runs it: `SND-AUTH-002` (it checks the parent process, so a child of `claude` is refused). You, the agent, must never type these for the owner, and must not try to get around the refusal:
+**The split.** Sindri no longer detects an agent session: a CLI that reads the per-start token (an agent the owner started included) is a full caller, and one that can't is refused with `SND-AUTH-002`.
 
-| Owner types (a real terminal, not an agent session) | Why |
+| Owner decisions | Why |
 |---|---|
 | `sindri profile approve <hash>`, then the typed line `approve profile <first 6 of hash>` | profile approval |
 | `sindri context map import <file>`, then `import map <first 6>`; `sindri context map promote` and its typed line | map import and promotion |
@@ -20,7 +20,7 @@ All names are placeholders: `<work-repo>` is the repo name the owner picks for S
 | `sindri workflow start ...`, `sindri workflow complete ...`, `workflow answer`, `workflow command`, `workflow cancel`, `takeover`, `handback` | instance control |
 | `sindri mcp register --apply` | writes agent config |
 | `sindri stop` | stops the control plane |
-| `sindri context sources sync`, `sindri context map build` | jobs (the owner's terminal; a session is refused) |
+| `sindri context sources sync`, `sindri context map build` | jobs (the owner's decision) |
 
 You can run these (no human needed): `sindri profile validate`, `sindri --headless`, `sindri status`, `sindri doctor`, `sindri recipe validate|eval|register|list|show`, `sindri item add`, `sindri context sources status`, `sindri context query`, `sindri context lenses`, `sindri context map status`, `sindri workflow list|status|events`, and the MCP tools. When a step is the owner's, print the exact command, say why, and wait.
 
@@ -60,7 +60,7 @@ workflow:
 `workflow.agent.target` is any agent id by pattern; `claude-code` is the built-in entry. Its model and policy forms are already set in `config/launcher/builtins.json` (`claude-flag`, `claude-settings-file`), so the demo needs **no `launcher.json` edit**. Only an entry you add yourself must set `model` and `policy`; one without a policy form parks its Steps with `SND-LAUNCH-013` (a Step never launches unrestricted). See `docs/csharp/sindri-launcher.md`. Setting the target alone switches agents on. Optional: `api: { port: <n> }` to pin the port. The full key list is in `docs/csharp/sindri-profile.md`.
 
 1. Agent: `sindri profile validate`. Expect `Profile valid ... hash <64 hex>, not approved`.
-2. Agent: start the control plane: `sindri-app` (opens the app) or `sindri --headless` (no app, about 3 s). Use `--headless` from an agent session. Do not run `serve` from an agent session.
+2. Agent: start the control plane: `sindri-app` (opens the app) or `sindri --headless` (no app, about 3 s). An agent session may start it (`--headless`, or `serve`; the lease refuses a second one).
 3. **Owner types:** `sindri profile approve <hash>`, then `approve profile <first 6 of hash>`. After this `sindri status` shows the `context-docs-refresh` service and `health healthy`.
 
 Important: the approval holds while the profile file is unchanged. Edit the file and the owner must approve again.
@@ -304,7 +304,7 @@ An interactive agent asks to approve the five `mcp__sindri__context_*` tools onc
 | `SND-CONTEXT-040` | The heavy-job lock stayed busy (often during `map build`) | Wait for the other job, then retry on a quiet box; or author the map |
 | `SND-WF-016` "uses input.context.lenses, which this build has no runtime for" | An older build (before #394) | `git pull` to a main with #394 |
 | `SND-CONTEXT-045` on start | `fact:item` has no repo, or one the session's scope does not cover | Pass `{id, repo, spec}` with the profile repo name |
-| `SND-AUTH-002` | An agent session ran a human-only command (parent process `claude`) | Owner runs it in a real terminal. An agent shell cannot get past this (not with `script` or a pty either) |
+| `SND-AUTH-002` | The CLI couldn't read the per-start token (Sindri isn't running, or another home) | Start Sindri (`sindri-app`), then rerun with the same `AW_SINDRI_HOME` |
 | `SND-RECIPE-003` "isn't approved" | A recipe or one of its children is unapproved | Owner approves children first, then the parent |
 | `SND-CLI-003` on `workflow start` | A declared input fact is missing | `sindri recipe show <id>`; pass each as `--fact fact:<name>=<file.json>` |
 | Tools return nothing / MCP "failed to connect" | The control plane restarted on another port | `sindri status` for the port; remove and re-add the MCP entry; start a new agent session |

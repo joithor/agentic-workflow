@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Ledger;
@@ -94,6 +95,32 @@ public abstract class AgentRuntimeTestBase : IDisposable
         public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken) => inner.Stop(launch, cancellationToken);
 
         public ValueTask<LaunchProbed> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
+    }
+
+    /// <summary>A launcher whose host never starts a session: every launch fails with <paramref name="error"/>, so the engine's retries run out.</summary>
+    internal sealed class FailsEveryLaunch(FakeLauncher inner, Error error) : ILauncher
+    {
+        public ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<LaunchResult>(new FailedLaunch(error, LaunchStage.Host));
+
+        public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken) => inner.Stop(launch, cancellationToken);
+
+        public ValueTask<LaunchProbed> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
+    }
+
+    /// <summary>
+    /// Ends the session of each of the Step's three runs (the first try and the engine's two retries), once each has launched, so the Step runs out its retries.
+    /// <paramref name="before"/> runs for a launch just before its session ends.
+    /// </summary>
+    internal async Task EndEveryRun(SessionEndReason reason, int? exitCode, CancellationToken ct, Action<LaunchId>? before = null)
+    {
+        for (var n = 1; n <= 3; n++)
+        {
+            await WaitFor(() => _launcher.Requests.Select(static r => r.Launch).Distinct().Skip(n - 1).Any(), ct);
+            await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            var launch = _launcher.Requests.Select(static r => r.Launch).Distinct().ElementAt(n - 1);
+            before?.Invoke(launch);
+            _sessions.End(launch, reason, exitCode);
+        }
     }
 
     /// <summary>A run diff whose first read of HEAD throws, as a worker that dies mid-activity would: the launch activity fails once and is retried.</summary>
