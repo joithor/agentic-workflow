@@ -22,4 +22,7 @@ public sealed record FakeIndexedRepo(ContextRepoName Repo, CodeIndexState State,
 
     /// <summary>The call sites that resolved to nothing, reported with every callers or callees answer.</summary>
     public int Unresolved { get; init; }
+
+    /// <summary>The files changed from the index's commit to the map's when the index is an ancestor of the map's commit (the index is then catching up); null when it is not.</summary>
+    public IReadOnlyList<string>? Ahead { get; init; }
 }
