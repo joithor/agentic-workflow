@@ -1,6 +1,5 @@
 using System.Globalization;
 using Aw.CodeIndex.Core.Facade;
-using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
 using Microsoft.Data.Sqlite;

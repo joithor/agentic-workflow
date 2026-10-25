@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core.Model;
 using Xunit;
 
@@ -32,9 +33,9 @@ public abstract partial class IndexStoreContract
         {
             var found = Ok(await reader.SymbolVectors(["src/B.cs", "src/A.cs"], "m", _none), "symbol vectors");
 
-            Expect.That(found.Select(v => v.Symbol.Value).SequenceEqual([early.Ref.Value, late.Ref.Value, other.Ref.Value]), "by path, then line, asked files only");
+            Expect.That(found.Select(v => v.Symbol.Value).SequenceEqual([early.Ref.Value, late.Ref.Value, other.Ref.Value], StringComparer.Ordinal), "by path, then line, asked files only");
             Expect.That(found[0].Path == "src/A.cs" && found[0].Name == "Early" && found[0].Kind == SymbolKind.Method, "the path, name and kind come with the vector");
-            Expect.That(found[0].Vector.Span.SequenceEqual(new float[] { 1, 0 }) && found[2].Vector.Span.SequenceEqual(new float[] { 1, 1 }), "the stored vectors come back unchanged");
+            Expect.That(found[0].Vector.Span.SequenceEqual([1f, 0f]) && found[2].Vector.Span.SequenceEqual([1f, 1f]), "the stored vectors come back unchanged");
         }
     }
 
@@ -51,7 +52,7 @@ public abstract partial class IndexStoreContract
         {
             var found = Ok(await reader.SymbolVectors(["src/A.cs", "src/B.cs", "src/Empty.cs", "src/Gone.cs"], "m", _none), "symbol vectors");
 
-            Expect.That(found.Select(v => v.Symbol.Value).SequenceEqual([current.Ref.Value]), "only the current model's rows, only files with embedded symbols");
+            Expect.That(found.Select(v => v.Symbol.Value).SequenceEqual([current.Ref.Value], StringComparer.Ordinal), "only the current model's rows, only files with embedded symbols");
             Expect.That(Ok(await reader.SymbolVectors(["src/A.cs"], "unknown", _none), "another model").Count == 0, "a model with no rows answers nothing");
         }
     }
@@ -61,7 +62,7 @@ public abstract partial class IndexStoreContract
     [Fact]
     public async Task Symbol_vectors_span_more_paths_than_one_batch()
     {
-        var paths = Enumerable.Range(0, 450).Select(i => $"src/F{i:D4}.cs").ToArray();
+        var paths = Enumerable.Range(0, 450).Select(i => string.Create(CultureInfo.InvariantCulture, $"src/F{i:D4}.cs")).ToArray();
         var symbols = paths.Select(p => SymbolOf(p, "T.Run")).ToArray();
         var files = paths.Zip(symbols, (p, s) => FileOf(p, s)).ToArray();
         var reader = await PublishVectors(Create(), files, [.. symbols.Select(s => new EmbeddingRecord(s.Ref, "m", new float[] { 1, 0 }))]);
@@ -69,7 +70,7 @@ public abstract partial class IndexStoreContract
         {
             var found = Ok(await reader.SymbolVectors([.. paths.Reverse()], "m", _none), "symbol vectors");
 
-            Expect.That(found.Select(v => v.Path).SequenceEqual(paths), "every file's vector, in path order, across batches");
+            Expect.That(found.Select(v => v.Path).SequenceEqual(paths, StringComparer.Ordinal), "every file's vector, in path order, across batches");
         }
     }
 }
