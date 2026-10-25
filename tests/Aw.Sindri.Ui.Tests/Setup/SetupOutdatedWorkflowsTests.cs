@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Setup;
 using static Aw.Sindri.Ui.Tests.Setup.SetupFixture;
 
@@ -27,6 +28,18 @@ public sealed class SetupOutdatedWorkflowsTests
 
         Assert.Equal(["approved", "approved v4, v5 available", "Out of date"], row.Recipes.Lines.Select(r => r.Status), StringComparer.Ordinal);
         Assert.Equal(["Plain step", "Review", "Triage"], row.Recipes.Lines.Select(r => r.Name), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void A_workflow_listed_twice_is_one_line_that_says_a_new_version_waits()
+    {
+        var approved = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 1, "sha256:aa", "approved", Name: null);
+        var waiting = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 2, "sha256:bb", "unapproved", Name: null, GainsCapability: true);
+
+        var list = new SetupRecipeListViewModel([approved, waiting]);
+
+        var line = Assert.Single(list.Lines);
+        Assert.Equal((true, 1, Labels.RecipeGainsCapability), (line.IsOutdated, list.OutdatedCount, line.Status));
     }
 
     [Fact]
