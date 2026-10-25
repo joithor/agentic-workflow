@@ -97,7 +97,7 @@ public abstract class ScopeRunRecordsContract
     {
         var records = await Create();
         var run = Aw.Sindri.Core.Workflow.Engine.RunToken.For(entry: 4, number: 2);
-        var id = Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Ids.WorkflowInstanceId.Of(_scoping), run);
+        var id = Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.Of(_scoping), run);
         for (var earlier = 1; earlier <= 3; earlier++)
         {
             await CompletedAtTheDesk(records, _scoping, "challenge", earlier);   // why: a frame reaches entry 4 only through the transitions before it
