@@ -7,4 +7,4 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Code">The failure code, or null.</param>
 /// <param name="Detail">The failure sentence, or null.</param>
 /// <param name="Reason">Why the viewer was skipped, as served, or null.</param>
-internal sealed record LaunchViewerView(string Kind, string? Label, string Outcome, string? Code, string? Detail = null, string? Reason = null);
+internal sealed record LaunchViewerView(string Kind, string? Label, string Outcome, string? Code = null, string? Detail = null, string? Reason = null);

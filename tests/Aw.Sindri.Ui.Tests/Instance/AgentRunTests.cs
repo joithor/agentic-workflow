@@ -78,7 +78,7 @@ public sealed class AgentRunTests
                 break;
         }
 
-        Assert.Equal(scenario == "started-print", RunWords.ShowsCommand(launch));
+        Assert.Equal(scenario is "started-print" or "started-viewer-failed", RunWords.ShowsCommand(launch));   // a failed viewer leaves the command to run
     }
 
     [Fact]

@@ -37,7 +37,9 @@ internal sealed class AgentAttacher(ISindriApi api, Func<Uri?> url, string itemI
 
         var view = launch.Value;
         var command = RunWords.ShowsCommand(view) ? RunWords.Command(view) : string.Empty;
-        var line = command.Length > 0 ? Labels.AttachRunThis : RunWords.LaunchLine(view);
+        // only a launch with no viewer, or the print viewer, says "no viewer is set up"; a viewer that failed or was skipped says what it did, with the command beside it
+        var noViewer = view.Viewer is null || string.Equals(view.Viewer.Kind, "print", StringComparison.Ordinal);
+        var line = command.Length > 0 && noViewer ? Labels.AttachRunThis : RunWords.LaunchLine(view);
         return new AttachOutcome(line, command, string.Equals(view.State, "failed", StringComparison.Ordinal));
     }
 
