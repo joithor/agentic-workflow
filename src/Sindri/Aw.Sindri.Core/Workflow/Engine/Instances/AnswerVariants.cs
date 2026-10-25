@@ -27,17 +27,17 @@ internal static class AnswerVariants
                 ParkReason.NoProgress => [AnswerVariant.Grant, AnswerVariant.Text],
                 ParkReason.Budget => [AnswerVariant.GrantTokens],
                 ParkReason.NeedsAnswer => suspension.ParkKind == ParkKind.Wait ? [AnswerVariant.Resume] : [AnswerVariant.Text],
-                ParkReason.Timeout or ParkReason.NoRuntime => [AnswerVariant.Resume],
+                ParkReason.Timeout or ParkReason.NoRuntime or ParkReason.Unavailable => [AnswerVariant.Resume],
                 ParkReason.SpecConflict or _ => suspension.ParkKind == ParkKind.Dispatch ? [AnswerVariant.Resume] : [],
             };
     }
 
     /// <summary>
     /// Whether the reason alone fixes which variants fit, whatever the child's park kind or budget: a rounds, no-progress,
-    /// timeout or no-runtime park. A mirrored needs-answer (a wait or a Step), budget (the child's own cap) or
+    /// timeout, no-runtime or unavailable park. A mirrored needs-answer (a wait or a Step), budget (the child's own cap) or
     /// spec-conflict park does not, so a suspension mirroring one offers no answer entry and points its status line at the child.
     /// </summary>
     /// <param name="reason">The park reason.</param>
     /// <returns>Whether the fit is the reason's alone.</returns>
-    internal static bool ReasonFixesChildFit(ParkReason? reason) => reason is ParkReason.Rounds or ParkReason.NoProgress or ParkReason.Timeout or ParkReason.NoRuntime;
+    internal static bool ReasonFixesChildFit(ParkReason? reason) => reason is ParkReason.Rounds or ParkReason.NoProgress or ParkReason.Timeout or ParkReason.NoRuntime or ParkReason.Unavailable;
 }

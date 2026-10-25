@@ -23,6 +23,7 @@ public sealed class ParkAnswersTests
     [InlineData("parked-revoked", SuspensionKind.Park, ParkReason.SpecConflict, ParkKind.Revoked, null)]
     [InlineData("parked-drift", SuspensionKind.Park, ParkReason.SpecConflict, ParkKind.Drift, null)]
     [InlineData("parked-no-runtime", SuspensionKind.Park, ParkReason.NoRuntime, null, null)]
+    [InlineData("parked-unavailable-step", SuspensionKind.Park, ParkReason.Unavailable, ParkKind.Step, null)]
     [InlineData("escalated-gate", SuspensionKind.Escalation, null, null, EscalationKind.Gate)]
     public void Park_answers_equal_the_status_answer_line_for_every_layout(string layout, SuspensionKind kind, ParkReason? reason, ParkKind? parkKind, EscalationKind? escalation)
     {

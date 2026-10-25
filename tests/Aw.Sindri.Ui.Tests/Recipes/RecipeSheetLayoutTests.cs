@@ -1,6 +1,7 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Recipes;
 
 namespace Aw.Sindri.Ui.Tests.Recipes;
@@ -68,6 +69,18 @@ public sealed class RecipeSheetLayoutTests
         await sheet.CopyApprove(Token);
 
         Assert.Equal(("sindri recipe approve " + Id, "Copied"), (_clipboard.Text, sheet.CopyLabel));
+    }
+
+    [Fact]
+    public async Task Copy_hash_puts_the_whole_hash_on_the_clipboard_though_the_sheet_shows_twelve_digits()
+    {
+        var sheet = await Opened("approved");
+
+        await sheet.CopyHash(Token);
+
+        Assert.StartsWith("sha256:", _clipboard.Text, StringComparison.Ordinal);
+        Assert.True(_clipboard.Text!.Length > "sha256:".Length + 12);
+        Assert.Contains(Labels.Hash12(_clipboard.Text), sheet.Identity, StringComparison.Ordinal);
     }
 
     [Fact]
