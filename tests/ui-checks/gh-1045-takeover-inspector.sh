@@ -79,11 +79,9 @@ APP_WRAPPER_PID=$!
 drv ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never answered (see $OUT/app.log)"
 
 # 3. Workflows -> the instance -> its run drawer (the Take over button of the drawer, named "Take over").
-opened=0
-for type in Button RadioButton ListItem TabItem; do
-  if drv click --type "$type" --text "Workflows" >/dev/null 2>&1; then opened=1; break; fi
-done
-[ "$opened" = 1 ] || setup_fail "no Workflows entry to click (see $OUT/app.log)"
+# The top bar's pages are ListBoxItems named by their label.
+drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 \
+  || setup_fail "the Workflows nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
 drv wait-for --type ListItem --state visible --wait-ms 60000 >/dev/null 2>&1 || setup_fail "Workflows lists no instance"
 drv click --type ListItem --index 0 >/dev/null 2>&1 || setup_fail "the instance row click was not accepted by the driver"
 drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
