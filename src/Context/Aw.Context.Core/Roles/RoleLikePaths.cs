@@ -15,5 +15,5 @@ public static class RoleLikePaths
     /// <summary>Whether a path looks like a role.</summary>
     /// <param name="path">The repo-relative path.</param>
     /// <returns>True when a pattern matches it.</returns>
-    public static bool Matches(string path) => throw new NotSupportedException();
+    public static bool Matches(string path) => PathDenylist.Matches(path, Patterns);
 }

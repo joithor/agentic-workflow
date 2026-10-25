@@ -10,5 +10,16 @@ internal static class RepoRoleSets
     /// <param name="profile">The approved profile.</param>
     /// <param name="repo">One of its repos.</param>
     /// <returns>One entry per role, in name order; or null when the repo has no roles.</returns>
-    internal static IReadOnlyList<RepoRole>? For(SindriProfile profile, RepoEntry repo) => throw new NotSupportedException();
+    internal static IReadOnlyList<RepoRole>? For(SindriProfile profile, RepoEntry repo) 
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(repo);
+        if (repo.Index?.Roles is not { Count: > 0 } roles)
+        {
+            return null;
+        }
+
+        var demoted = repo.Index.Demote ?? [];
+        return [.. roles.OrderBy(static r => r.Key, StringComparer.Ordinal).Select(r => new RepoRole(r.Key, demoted.Contains(r.Key, StringComparer.Ordinal), r.Value))];
+    }
 }
