@@ -36,7 +36,7 @@ public sealed class SetLabelTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(new SetLabelResponse(EvalItemId.From("item-d1"), "ask"), result.Value);
-        var labeled = Assert.Single((await _store.Labeled("ask-check", null, _ct)).Value);
+        var labeled = Assert.Single((await _store.Labeled("ask-check", source: null, _ct)).Value);
         Assert.Equal(LabelSource.Override, labeled.Source);
         Assert.Equal("ask", labeled.Label);
     }
@@ -49,7 +49,7 @@ public sealed class SetLabelTests
         var result = await new SetLabelService(_store, _clock).Handle(A.SetLabelRequest().Item("item-d1").Label("skip").Build(), _ct);
 
         Assert.True(result.IsSuccess);
-        Assert.Empty((await _store.Labeled("ask-check", null, _ct)).Value);
+        Assert.Empty((await _store.Labeled("ask-check", source: null, _ct)).Value);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -62,6 +62,6 @@ public sealed class SetLabelTests
         Assert.True(result.IsError);
         Assert.Equal(JudgeErrors.Invalid.Code, result.Error.Code);
         Assert.Contains("continue, ask, skip", result.Error.Message, StringComparison.Ordinal);
-        Assert.Empty((await _store.Labeled("ask-check", null, _ct)).Value);
+        Assert.Empty((await _store.Labeled("ask-check", source: null, _ct)).Value);
     }
 }

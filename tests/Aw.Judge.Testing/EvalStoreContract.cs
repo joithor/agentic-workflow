@@ -36,7 +36,7 @@ public abstract class EvalStoreContract
     protected abstract ValueTask SeedDecision(IEvalStore store, DecidedInput input, DateTimeOffset at, SessionId? session, CancellationToken cancellationToken);
 
     private static EvalItem Item(string id, string question = "ask-check", int minute = 0, string? source = null) =>
-        new(EvalItemId.From(id), question, """{"transcriptTail":"x"}""", source ?? "decision:" + id, "continue", _t0.AddMinutes(minute));
+        new(EvalItemId.From(id), question, """{"transcriptTail":"x"}""", source ?? ("decision:" + id), "continue", _t0.AddMinutes(minute));
 
     private static EvalItemId Id(string id) => EvalItemId.From(id);
 
@@ -120,8 +120,8 @@ public abstract class EvalStoreContract
         _ = await store.AddItem(Item("item-w", question: "wake-gate", minute: 0), CancellationToken.None);
         _ = await store.RecordLabel(Id("item-a"), LabelSource.Adjudicator, "ask", _t0, CancellationToken.None);
 
-        var any = await store.NextUnlabeled(null, null, new HashSet<EvalItemId>(), CancellationToken.None);
-        var ask = await store.NextUnlabeled("ask-check", null, new HashSet<EvalItemId>(), CancellationToken.None);
+        var any = await store.NextUnlabeled(question: null, source: null, new HashSet<EvalItemId>(), CancellationToken.None);
+        var ask = await store.NextUnlabeled("ask-check", source: null, new HashSet<EvalItemId>(), CancellationToken.None);
         var byOutcome = await store.NextUnlabeled("ask-check", LabelSource.Outcome, new HashSet<EvalItemId>(), CancellationToken.None);
         var excluded = await store.NextUnlabeled("ask-check", LabelSource.Outcome, new HashSet<EvalItemId> { Id("item-a") }, CancellationToken.None);
         var none = await store.NextUnlabeled("ask-check", LabelSource.Outcome, new HashSet<EvalItemId> { Id("item-a"), Id("item-b") }, CancellationToken.None);
@@ -149,7 +149,7 @@ public abstract class EvalStoreContract
         _ = await store.RecordLabel(Id("item-3"), LabelSource.Adjudicator, "continue", _t0, CancellationToken.None);
         _ = await store.RecordLabel(Id("item-3"), LabelSource.Outcome, "ask", _t0, CancellationToken.None);
 
-        var labeled = await store.Labeled("ask-check", null, CancellationToken.None);
+        var labeled = await store.Labeled("ask-check", source: null, CancellationToken.None);
 
         Expect.That(labeled.IsSuccess && labeled.Value.Count == 2, "the skipped item is left out");
         Expect.That(labeled.Value[0].Item.Id.Value == "item-1" && labeled.Value[0].Source == LabelSource.Override && labeled.Value[0].Label == "ask", "an override beats the other sources");
@@ -191,12 +191,12 @@ public abstract class EvalStoreContract
     public async Task Decided_decisions_come_from_the_window_oldest_first()
     {
         var store = await Create(CancellationToken.None);
-        await SeedDecision(store, Decided("d-late", "ask-check", "ask", "b"), _t0.AddDays(2), null, CancellationToken.None);
-        await SeedDecision(store, Decided("d-early", "ask-check", "continue", "a"), _t0.AddDays(1), null, CancellationToken.None);
-        await SeedDecision(store, Decided("d-old", "ask-check", "ask", "c"), _t0, null, CancellationToken.None);
-        await SeedDecision(store, Decided("d-wake", "wake-gate", "wake", "m"), _t0.AddDays(1), null, CancellationToken.None);
+        await SeedDecision(store, Decided("d-late", "ask-check", "ask", "b"), _t0.AddDays(2), session: null, CancellationToken.None);
+        await SeedDecision(store, Decided("d-early", "ask-check", "continue", "a"), _t0.AddDays(1), session: null, CancellationToken.None);
+        await SeedDecision(store, Decided("d-old", "ask-check", "ask", "c"), _t0, session: null, CancellationToken.None);
+        await SeedDecision(store, Decided("d-wake", "wake-gate", "wake", "m"), _t0.AddDays(1), session: null, CancellationToken.None);
 
-        var all = await store.DecidedSince(null, _t0.AddDays(1), CancellationToken.None);
+        var all = await store.DecidedSince(question: null, _t0.AddDays(1), CancellationToken.None);
         var asks = await store.DecidedSince("ask-check", _t0.AddDays(1), CancellationToken.None);
 
         Expect.That(all.IsSuccess && all.Value.Select(d => d.Id.Value).SequenceEqual(["d-early", "d-wake", "d-late"], StringComparer.Ordinal), "the window's decisions, oldest first");
@@ -211,8 +211,8 @@ public abstract class EvalStoreContract
     {
         var store = await Create(CancellationToken.None);
         await SeedDecision(store, Decided("d1", "ask-check", "ask", "a"), _t0.AddMinutes(5), SessionId.From("s1"), CancellationToken.None);
-        await SeedDecision(store, Decided("d2", "ask-check", "continue", "b"), _t0.AddMinutes(1), null, CancellationToken.None);
-        await SeedDecision(store, Decided("d3", "ask-check", "ask", "c"), _t0.AddMinutes(2), null, CancellationToken.None);
+        await SeedDecision(store, Decided("d2", "ask-check", "continue", "b"), _t0.AddMinutes(1), session: null, CancellationToken.None);
+        await SeedDecision(store, Decided("d3", "ask-check", "ask", "c"), _t0.AddMinutes(2), session: null, CancellationToken.None);
         foreach (var n in new[] { "d1", "d2", "d3" })
         {
             _ = await store.AddItem(Item("item-" + n, source: "decision:" + n), CancellationToken.None);
@@ -225,7 +225,7 @@ public abstract class EvalStoreContract
         var candidates = await store.OutcomeCandidates(CancellationToken.None);
 
         Expect.That(candidates.IsSuccess && candidates.Value.Count == 2, "an outcome-labelled item and a transcript item are left out");
-        Expect.That(candidates.Value[0] == new OutcomeCandidate(Id("item-d2"), _t0.AddMinutes(1), "continue", null), "oldest decision first; another source's label does not count");
+        Expect.That(candidates.Value[0] == new OutcomeCandidate(Id("item-d2"), _t0.AddMinutes(1), "continue", Session: null), "oldest decision first; another source's label does not count");
         Expect.That(candidates.Value[1] == new OutcomeCandidate(Id("item-d1"), _t0.AddMinutes(5), "ask", SessionId.From("s1")), "the session of the details comes back");
     }
 
@@ -240,11 +240,11 @@ public abstract class EvalStoreContract
         Expect.That((await store.AddItem(Item("item-1"), ct)).IsError, "AddItem is an error");
         Expect.That((await store.FindItem(Id("item-1"), ct)).IsError, "FindItem is an error");
         Expect.That((await store.RecordLabel(Id("item-1"), LabelSource.Override, "ask", _t0, ct)).IsError, "RecordLabel is an error");
-        Expect.That((await store.NextUnlabeled(null, null, new HashSet<EvalItemId>(), ct)).IsError, "NextUnlabeled is an error");
-        Expect.That((await store.Labeled("ask-check", null, ct)).IsError, "Labeled is an error");
+        Expect.That((await store.NextUnlabeled(question: null, source: null, new HashSet<EvalItemId>(), ct)).IsError, "NextUnlabeled is an error");
+        Expect.That((await store.Labeled("ask-check", source: null, ct)).IsError, "Labeled is an error");
         Expect.That((await store.Counts(ct)).IsError, "Counts is an error");
         Expect.That((await store.Agreement("ask-check", ct)).IsError, "Agreement is an error");
-        Expect.That((await store.DecidedSince(null, _t0, ct)).IsError, "DecidedSince is an error");
+        Expect.That((await store.DecidedSince(question: null, _t0, ct)).IsError, "DecidedSince is an error");
         Expect.That((await store.OutcomeCandidates(ct)).IsError, "OutcomeCandidates is an error");
     }
 }

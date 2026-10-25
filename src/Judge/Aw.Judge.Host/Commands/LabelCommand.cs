@@ -5,7 +5,6 @@ using Aw.Judge.Features.GetLabelStatus;
 using Aw.Judge.Features.ImportLabels;
 using Aw.Judge.Features.LabelOutcomes;
 using Aw.Judge.Features.SetLabel;
-using Aw.Kernel;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,9 +27,9 @@ internal static class LabelCommand
     private const int MaxDays = 36_500;
     private static readonly TimeSpan _defaultSince = TimeSpan.FromDays(14);
 
-    internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    internal static async Task<int> Run(string[] args, IServiceProvider services, JsonSerializerOptions json)
     {
-        if (args.Count == 0)
+        if (args.Length == 0)
         {
             return CommandOutput.Usage(Synopsis);
         }
@@ -39,23 +38,23 @@ internal static class LabelCommand
         return args[0] switch
         {
             Import => await RunImport(rest, services, json).ConfigureAwait(false),
-            Outcomes when rest.Length == 0 => await Call(new LabelOutcomesRequest(), services, json).ConfigureAwait(false),
+            Outcomes when rest.Length == 0 => await Call<LabelOutcomesRequest, LabelOutcomesResponse>(new LabelOutcomesRequest(), services, json).ConfigureAwait(false),
             Outcomes => CommandOutput.Usage("label outcomes"),
             Set => await RunSet(rest, services, json).ConfigureAwait(false),
-            Status when rest.Length == 0 => await Call(new GetLabelStatusRequest(), services, json).ConfigureAwait(false),
+            Status when rest.Length == 0 => await Call<GetLabelStatusRequest, GetLabelStatusResponse>(new GetLabelStatusRequest(), services, json).ConfigureAwait(false),
             Status => CommandOutput.Usage("label status"),
             _ => CommandOutput.Usage(Synopsis, $"unknown subcommand '{args[0]}'"),
         };
     }
 
-    private static async Task<int> RunImport(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    private static async Task<int> RunImport(string[] args, IServiceProvider services, JsonSerializerOptions json)
     {
         const string synopsis = "label import [--question <q>] [--since <n>d]";
         string? question = null;
         var since = _defaultSince;
-        for (var i = 0; i < args.Count; i += 2)
+        for (var i = 0; i < args.Length; i += 2)
         {
-            if (i + 1 >= args.Count)
+            if (i + 1 >= args.Length)
             {
                 return CommandOutput.Usage(synopsis, $"{args[i]} needs a value");
             }
@@ -75,18 +74,18 @@ internal static class LabelCommand
             }
         }
 
-        return await Call(new ImportLabelsRequest(since, question), services, json).ConfigureAwait(false);
+        return await Call<ImportLabelsRequest, ImportLabelsResponse>(new ImportLabelsRequest(since, question), services, json).ConfigureAwait(false);
     }
 
-    private static async Task<int> RunSet(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
+    private static async Task<int> RunSet(string[] args, IServiceProvider services, JsonSerializerOptions json)
     {
         const string synopsis = "label set <itemId> <label|skip>";
-        if (args.Count != 2 || !EvalItemId.TryFrom(args[0], out var item) || args[1].Length == 0)
+        if (args.Length != 2 || !EvalItemId.TryFrom(args[0], out var item) || args[1].Length == 0)
         {
             return CommandOutput.Usage(synopsis, "needs an item id and a label");
         }
 
-        return await Call(new SetLabelRequest(item, args[1]), services, json).ConfigureAwait(false);
+        return await Call<SetLabelRequest, SetLabelResponse>(new SetLabelRequest(item, args[1]), services, json).ConfigureAwait(false);
     }
 
     // '14d' or '14': whole days, at most a century (a larger window would overflow the clock's range).
@@ -99,6 +98,7 @@ internal static class LabelCommand
     }
 
     private static async Task<int> Call<TRequest, TResponse>(TRequest request, IServiceProvider services, JsonSerializerOptions json)
+        where TRequest : notnull
     {
         var service = services.GetRequiredService<IService<TRequest, TResponse>>();
         var result = await service.Handle(request, CancellationToken.None).ConfigureAwait(false);

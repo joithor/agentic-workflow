@@ -13,7 +13,7 @@ public sealed class GetLabelStatusTests
     private readonly InMemoryEvalStore _store = new();
 
     private async Task Item(string id, string question) =>
-        _ = await _store.AddItem(new EvalItem(EvalItemId.From(id), question, """{"transcriptTail":"a"}""", "decision:" + id, null, KnownInstants.Epoch), _ct);
+        _ = await _store.AddItem(new EvalItem(EvalItemId.From(id), question, """{"transcriptTail":"a"}""", "decision:" + id, ModelDecision: null, KnownInstants.Epoch), _ct);
 
     [Fact, Trait("Lane", "unit")]
     public async Task GetLabelStatus_lists_no_questions_when_no_item_was_imported()

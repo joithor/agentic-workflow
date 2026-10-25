@@ -45,12 +45,12 @@ public sealed class InMemoryEvalStore(IInputRedactor? redactor = null) : IEvalSt
 
         if (_items.Exists(i => string.Equals(i.Source, item.Source, StringComparison.Ordinal) || i.Id.Equals(item.Id)))
         {
-            return Ok(false);
+            return Ok(value: false);
         }
 
         var parsed = InputJson.TryParse(item.InputJson, out var node) ? node : System.Text.Json.Nodes.JsonValue.Create(item.InputJson);
         _items.Add(item with { InputJson = InputCap.Write(_redactor.Redact(parsed), InputCap.MaxChars, TestJson.Options) });
-        return Ok(true);
+        return Ok(value: true);
     }
 
     /// <inheritdoc />
@@ -90,10 +90,10 @@ public sealed class InMemoryEvalStore(IInputRedactor? redactor = null) : IEvalSt
             return Fail<EvalItem?>(_unavailable);
         }
 
-        var next = Ordered(_items)
-            .Where(i => question is null || string.Equals(i.Question, question, StringComparison.Ordinal))
-            .Where(i => !exclude.Contains(i.Id))
-            .FirstOrDefault(i => !_labels.Keys.Any(k => string.Equals(k.Item, i.Id.Value, StringComparison.Ordinal) && (source is null || k.Source == source)));
+        var next = Ordered(_items).FirstOrDefault(i =>
+            (question is null || string.Equals(i.Question, question, StringComparison.Ordinal))
+            && !exclude.Contains(i.Id)
+            && !_labels.Keys.Any(k => string.Equals(k.Item, i.Id.Value, StringComparison.Ordinal) && (source is null || k.Source == source)));
         return Wrap(Results.Success<EvalItem?>(next));
     }
 
@@ -110,7 +110,7 @@ public sealed class InMemoryEvalStore(IInputRedactor? redactor = null) : IEvalSt
         {
             var strongest = _strongestFirst
                 .Where(s => (source is null || s == source) && _labels.TryGetValue((item.Id.Value, s), out var label) && !IsSkip(label))
-                .Select(s => (LabelSource?)s)
+                .Cast<LabelSource?>()
                 .FirstOrDefault();
             if (strongest is { } from)
             {
