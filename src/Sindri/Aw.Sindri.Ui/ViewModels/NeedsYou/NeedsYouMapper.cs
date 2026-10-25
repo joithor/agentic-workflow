@@ -57,6 +57,7 @@ internal static class NeedsYouMapper
             Stop = row.Stop,
             Open = row.Open,
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,
+            FiledBy = PendingDecision(subject?.DecisionId, decisions)?.FiledBy ?? string.Empty,
         };
     }
 

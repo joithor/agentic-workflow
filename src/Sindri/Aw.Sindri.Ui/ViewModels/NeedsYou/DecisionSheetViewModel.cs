@@ -9,6 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// </summary>
 internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender, Platform.IClipboard? clipboard = null) : ObservableObject
 {
+    private const string Conflict = "SND-ITEM-409";
     private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
     private NeedsYouRowViewModel? _row;
 
@@ -22,16 +23,16 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     internal string Question => _row is null ? "" : _row.Entry.Question.Length > 0 ? _row.Entry.Question : _row.Title;
 
     /// <summary>The sheet's title: the request's own words.</summary>
-    internal string Heading => "";
+    internal string Heading => _row is null ? "" : _row.Title.Length > 0 ? _row.Title : DecisionId;
 
     /// <summary>Who filed the request, how long ago and for which item.</summary>
-    internal string FiledLine => "";
+    internal string FiledLine => _row is null ? "" : Labels.DecisionFiled(_row.Entry.FiledBy, _row.Entry.Since == default ? null : clock.GetUtcNow() - _row.Entry.Since, _row.Entry.ItemId);
 
     /// <summary>What was decided, once Decide was accepted; it stays (unlike <see cref="Outcome"/>).</summary>
-    internal string DecidedLine => "";
+    internal string DecidedLine { get; private set => Set(ref field, value); } = "";
 
     /// <summary>True while the sheet still asks its question: not decided here, not cleared.</summary>
-    internal bool IsAsking => true;
+    internal bool IsAsking => !IsCleared && DecidedLine.Length == 0;
 
     /// <summary>The recorded-only sentence as served; empty for none.</summary>
     internal string Notice => _row?.Notice ?? "";
@@ -97,7 +98,10 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     internal bool IsCleared { get; private set => Set(ref field, value); }
 
     /// <summary>The cleared line, once the row is gone.</summary>
-    internal string ClearedLine => !IsCleared ? "" : ServedCleared.Length > 0 ? ServedCleared : Labels.Cleared(DecisionId);
+    internal string ClearedLine => !IsCleared || DecidedLine.Length > 0 || IsRefusedAsDecided ? "" : ServedCleared.Length > 0 ? ServedCleared : Labels.Cleared(DecisionId);
+
+    // A stale Decide's refusal already says the decision was answered; the cleared line would say it a second time.
+    private bool IsRefusedAsDecided => Refusal.Length > 0 && string.Equals(RefusalCode, Conflict, StringComparison.Ordinal);
 
     /// <summary>The polite live region: set true before the text, spoken once.</summary>
     internal bool IsAnnouncing { get; private set => Set(ref field, value); }
@@ -122,7 +126,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
         var id = row.Entry.Subject?.Id ?? row.Id;
         if (!string.Equals(id, DecisionId, StringComparison.Ordinal) || IsCleared)
         {
-            (Note, Refusal, RefusalCode, Outcome, IsCleared, ServedCleared) = ("", "", "", "", false, "");
+            (Note, Refusal, RefusalCode, Outcome, DecidedLine, IsCleared, ServedCleared) = ("", "", "", "", "", false, "");
             DecisionId = id;
             OnChanged(nameof(ClearedLine));
         }
@@ -150,18 +154,31 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     // The decision is found by id in GET /decisions?pending=false (no route by id); not held there, the line stays "<id> cleared".
     private async Task ReadClearedLine(string id)
     {
+        var row = await ReadDecided(id).ConfigureAwait(true);
+        var line = row is null ? "" : row.DecidedBy is { Length: > 0 } ? Labels.Decided(WordsOf(row)) : row.Cleared ?? "";
+        if (line.Length > 0 && string.Equals(DecisionId, id, StringComparison.Ordinal))
+        {
+            ServedCleared = line;
+            OnChanged(nameof(ClearedLine));
+        }
+    }
+
+    private async Task<DecisionView?> ReadDecided(string id)
+    {
         if (apiUrl() is not { } url)
         {
-            return;
+            return null;
         }
 
         var decided = await api.Decisions(url, pending: false, item: null, CancellationToken.None).ConfigureAwait(true);
-        var served = decided.IsSuccess ? decided.Value.Decisions.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal))?.Cleared : null;
-        if (served is { Length: > 0 } && string.Equals(DecisionId, id, StringComparison.Ordinal))
-        {
-            ServedCleared = served;
-            OnChanged(nameof(ClearedLine));
-        }
+        return decided.IsSuccess ? decided.Value.Decisions.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.Ordinal)) : null;
+    }
+
+    // How a decision that was answered reads: what was chosen, by whom (the app's words for the actor) and how long ago.
+    private string WordsOf(DecisionView row)
+    {
+        var label = row.Options.FirstOrDefault(o => string.Equals(o.Id, row.Choice, StringComparison.Ordinal))?.Label ?? row.Choice ?? "";
+        return Labels.DecidedWords(row.Choice ?? "", label, row.DecidedBy ?? "", row.DecidedAt is { } at ? clock.GetUtcNow() - at : null);
     }
 
     /// <summary>True when this row is the decision shown.</summary>
@@ -203,10 +220,15 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
         {
             if (shown)
             {
-                (RefusalCode, Refusal) = (answer.Error.Code, answer.Error.Message);
+                var conflict = string.Equals(answer.Error.Code, Conflict, StringComparison.Ordinal);
+                (RefusalCode, Refusal) = (answer.Error.Code, conflict ? Labels.AlreadyDecidedBare : answer.Error.Message);
                 Say(Refusal);
                 Raise();
                 Refused?.Invoke(this, EventArgs.Empty);
+                if (conflict)
+                {
+                    await ExplainConflict(id).ConfigureAwait(true);
+                }
             }
 
             return;
@@ -215,11 +237,25 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
         if (shown)
         {
             Outcome = Labels.Decided(label);
+            DecidedLine = Outcome;
             Say(Outcome);
         }
 
         Raise();
         Expiry = DropOutcome(id);
+    }
+
+    // The refusal says how the decision was answered, in words, once the decided list has it; a voided decision says its served line.
+    private async Task ExplainConflict(string id)
+    {
+        var row = await ReadDecided(id).ConfigureAwait(true);
+        var line = row is null ? "" : row.DecidedBy is { Length: > 0 } ? Labels.AlreadyDecided(WordsOf(row)) : row.Cleared ?? "";
+        if (line.Length > 0 && string.Equals(DecisionId, id, StringComparison.Ordinal))
+        {
+            Refusal = line;
+            Say(line);
+            Raise();
+        }
     }
 
     // The outcome shows for 2 s; the row clears on the refresh the accepted command brings.
@@ -242,6 +278,10 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
         }
 
         OnChanged(nameof(Question));
+        OnChanged(nameof(Heading));
+        OnChanged(nameof(FiledLine));
+        OnChanged(nameof(IsAsking));
+        OnChanged(nameof(ClearedLine));
         OnChanged(nameof(Notice));
         OnChanged(nameof(DecideLine));
         OnChanged(nameof(DecideCli));

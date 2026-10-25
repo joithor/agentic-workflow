@@ -71,6 +71,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
         ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
+        Decision.PropertyChanged += OnDecisionChanged;
         InitNeedsYou(clipboard);
         Inbox = InitInbox(api, clipboard, (window ?? WindowPorts.None).Launcher);
         Strip = new WorkflowsStripViewModel(clipboard, clock);

@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -10,6 +12,25 @@ internal sealed partial class ShellViewModel
 
     /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
     public string SheetSubject => SheetLink?.Subject ?? string.Empty;
+
+    /// <summary>The sheet's title text: a workflow's name for its sheet, a decision's request for its sheet, else the link's subject.</summary>
+    public string SheetHeading => NamedHeading is { Length: > 0 } heading ? heading : SheetSubject;
+
+    // The title of the sheets whose subject is an id nobody reads (a workflow's slug, a decision's DEC id); empty for the others.
+    private string NamedHeading => SheetLink?.Kind switch
+    {
+        DeepLinkKind.Recipe => Recipe.Title,
+        DeepLinkKind.Decision => Decision.Heading,
+        _ => string.Empty,
+    };
+
+    private void OnDecisionChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(DecisionSheetViewModel.Heading), StringComparison.Ordinal))
+        {
+            Changed(nameof(SheetHeading), nameof(SheetName), nameof(EdgeTabName));
+        }
+    }
 
     /// <summary>The link the sheet was opened by (its kind and subject); null before the first.</summary>
     public DeepLink? SheetLink { get; private set; }

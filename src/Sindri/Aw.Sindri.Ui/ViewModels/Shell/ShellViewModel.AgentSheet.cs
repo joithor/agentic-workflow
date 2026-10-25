@@ -13,7 +13,7 @@ internal sealed partial class ShellViewModel
     private string NamedSubject =>
         SheetLink?.Kind == DeepLinkKind.Session && AgentSheet.Heading.Length > 0 ? AgentSheet.Heading
         : SheetLink?.Kind == DeepLinkKind.Job && JobSheet.Heading.Length > 0 ? JobSheet.Heading
-        : SheetLink?.Kind == DeepLinkKind.Recipe && Recipe.Title.Length > 0 ? Recipe.Title
+        : NamedHeading.Length > 0 ? NamedHeading
         : SheetSubject;
 
     partial void InitAgentSheet()
