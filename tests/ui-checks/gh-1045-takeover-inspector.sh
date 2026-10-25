@@ -82,6 +82,9 @@ drv ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never
 # The top bar's pages are ListBoxItems named by their label.
 drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 \
   || setup_fail "the Workflows nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
+# The page opens as the board, which holds only runs on a lane; the List toggle shows every run.
+drv click --type ListBoxItem --name List >"$OUT/list.log" 2>&1 \
+  || setup_fail "the List toggle was not clicked (driver: $(tr -d '\n' <"$OUT/list.log" | cut -c1-160))"
 drv wait-for --type ListItem --state visible --wait-ms 60000 >/dev/null 2>&1 || setup_fail "Workflows lists no instance"
 drv click --type ListItem --index 0 >/dev/null 2>&1 || setup_fail "the instance row click was not accepted by the driver"
 drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
