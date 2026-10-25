@@ -32,14 +32,14 @@ public sealed class PageLayoutBandTests
     }
 
     [Theory]
-    [InlineData(PageTier.Wide, 1120)]
-    [InlineData(PageTier.Mid, 1000)]
-    [InlineData(PageTier.Narrow, 760)]
-    public void The_columns_beside_the_title_leave_it_160_px_at_the_start_of_each_tier(PageTier tier, double width)
+    [InlineData("Wide", 1120)]
+    [InlineData("Mid", 1000)]
+    [InlineData("Narrow", 760)]
+    public void The_columns_beside_the_title_leave_it_160_px_at_the_start_of_each_tier(string tier, double width)
     {
         var grid = SixColumns();
 
-        PageLayout.Apply(grid, tier);
+        PageLayout.Apply(grid, Enum.Parse<PageTier>(tier));
 
         var fixedWidth = grid.ColumnDefinitions.Skip(1).Sum(c => c.Width.Value);
         Assert.True(width - fixedWidth >= 160, $"{tier}: the title column gets {width - fixedWidth} px");
@@ -47,17 +47,17 @@ public sealed class PageLayoutBandTests
     }
 
     [Theory]
-    [InlineData(PageTier.Wide)]
-    [InlineData(PageTier.Mid)]
-    [InlineData(PageTier.Narrow)]
-    [InlineData(PageTier.Tight)]
-    public void The_header_and_the_rows_get_the_same_column_widths(PageTier tier)
+    [InlineData("Wide")]
+    [InlineData("Mid")]
+    [InlineData("Narrow")]
+    [InlineData("Tight")]
+    public void The_header_and_the_rows_get_the_same_column_widths(string tier)
     {
         var header = SixColumns();
         var row = SixColumns();
 
-        PageLayout.Apply(header, tier);
-        PageLayout.Apply(row, tier);
+        PageLayout.Apply(header, Enum.Parse<PageTier>(tier));
+        PageLayout.Apply(row, Enum.Parse<PageTier>(tier));
 
         Assert.Equal(header.ColumnDefinitions.Select(c => c.Width), row.ColumnDefinitions.Select(c => c.Width));
     }
