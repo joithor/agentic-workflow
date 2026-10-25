@@ -77,9 +77,18 @@ internal static class WorktreeRules
         {
             reasons.Add("main checkout (never swept)");
         }
-        else if (!facts.HeadMerged && facts.UnpushedCommits > 0)
+        else
         {
-            reasons.Add("no pull request: work not finished (not all of it is pushed)");
+            if (!facts.HeadMerged && facts.UnpushedCommits > 0)
+            {
+                reasons.Add("no pull request: work not finished (not all of it is pushed)");
+            }
+
+            // Rule 7 needs a recorded sweep; without one a live tree on a fresh branch would look unchanged.
+            if (facts.NoPreviousSweep)
+            {
+                reasons.Add("no previous sweep to compare with");
+            }
         }
     }
 

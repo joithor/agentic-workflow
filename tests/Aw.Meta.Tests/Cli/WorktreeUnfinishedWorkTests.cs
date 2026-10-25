@@ -39,6 +39,8 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
     {
         var (fresh, _, _) = await Box();
 
+        var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
+        Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
         var sweep = await _lab.Cli.Run("worktree-sweep");
 
         Assert.Equal(0, sweep.Exit);
@@ -50,9 +52,23 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
     {
         var (_, reachable, _) = await Box();
 
+        var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
+        Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
         var sweep = await _lab.Cli.Run("worktree-sweep");
 
         Assert.False(Directory.Exists(reachable), sweep.Out);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task No_pr_branch_is_kept_on_the_first_sweep()
+    {
+        var (fresh, reachable, _) = await Box();
+
+        var sweep = await _lab.Cli.Run("worktree-sweep");
+
+        Assert.True(Directory.Exists(fresh), sweep.Out);
+        Assert.True(Directory.Exists(reachable), sweep.Out);
+        Assert.Contains("no previous sweep to compare with", sweep.Out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

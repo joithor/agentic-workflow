@@ -109,6 +109,14 @@ public sealed class WorktreeRulesTests
     public void No_pr_branch_with_unpushed_commit_is_kept() => AssertKept(Judge(NoPr() with { UnpushedCommits = 2 }), "2 commit", "no pull request");
 
     [Fact, Trait("Lane", "unit")]
+    public void No_pr_branch_is_kept_when_there_is_no_previous_sweep()
+    {
+        AssertKept(Judge(NoPr() with { NoPreviousSweep = true }), "no previous sweep to compare with");
+        AssertKept(Judge(new WorktreeFacts { Path = "/wt/fresh", Branch = "docs/fresh", HeadMerged = true, NoPreviousSweep = true }), "no previous sweep to compare with");
+        Assert.Equal(WorktreeDecision.Removable, Judge(Merged() with { NoPreviousSweep = true }).Decision);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void No_pr_branch_dirty_is_kept() => AssertKept(Judge(NoPr() with { DirtyEntries = ["NOTES.md"] }), "NOTES.md");
 
     [Fact, Trait("Lane", "unit")]
