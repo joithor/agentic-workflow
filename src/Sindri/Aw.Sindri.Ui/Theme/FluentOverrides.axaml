@@ -70,6 +70,16 @@
     </Setter>
   </Style>
 
+  <!-- The sheet's title is a line of text that takes focus as the sheet opens: a box ring round it reads as a focused text field
+       (#1100), so its focus is an underline, 2 px PrimaryHover, 4 px below the text. -->
+  <Style Selector="Border.sheet-title">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{DynamicResource Brush.PrimaryHover}" BorderThickness="0,0,0,2" Margin="0,0,0,-4" AdornerLayer.IsClipEnabled="False" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
+
   <!-- Reduced motion (§11.4) for stock controls: their own transitions run on fixed durations the Motion.* tokens don't
        reach (Fluent's ToggleSwitch knob slides for 200 ms), so under the window's reduce-motion class (SettingsTheme.Follow)
        they're off. A stock control with its own transitions gets its line here. -->
