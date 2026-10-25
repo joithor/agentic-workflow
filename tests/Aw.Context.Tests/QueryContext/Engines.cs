@@ -81,7 +81,7 @@ internal static class Engines
                     new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers),
                     new GetWholeMapService(graphs, scrubbers, new WholeMapCache(), WholeMapRules.Default),
                     new ContextMapReads(
-                        new Features.SearchMap.SearchMapService(graphs, scrubbers, new Aw.Context.Infrastructure.Search.SqliteMapSearchIndexFactory(), new Features.SearchMap.MapSearchCache(), WholeMapRules.Default),
+                        new Features.SearchMap.SearchMapService(graphs, scrubbers, new Context.Infrastructure.Search.SqliteMapSearchIndexFactory(), new Features.SearchMap.MapSearchCache(), WholeMapRules.Default),
                         new Features.GetConcepts.GetConceptsService(new ConceptReader(graphs, scrubbers)), new Features.GetConceptMembers.GetConceptMembersService(new ConceptReader(graphs, scrubbers))),
                     new ContextScopeGraph(new GetScopeGraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new FakeScopeRunStore(), clock))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()),
