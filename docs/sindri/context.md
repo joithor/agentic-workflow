@@ -628,6 +628,20 @@ many repos were stale, how long it waited), or drops the hold with `context.map.
 then 60 minutes. The move check compares the checkouts with the held draft's heads (else the current version's), starts no refresh while a publish runs,
 and three failed refreshes or publishes in a row raise the one service row.
 
+**Concept scan (q110).** The `context-concept-scan` service (every minute, no profile entry) starts a `ScanContextConcepts` job (key `concept-scan`, no route or
+verb of its own; `sindri services run context-concept-scan` runs the service by hand; a session may not start it) for each map version it has not scanned: the
+latest draft, else the current version, because a refresh promotes its draft within moments. It takes no heavy-job slot and waits 10 minutes after a failed scan.
+The job reads a compact summary of the map (one line per feature with its label and top files; the summary takes the glossary's terms too, and the engine passes none until it can read the code index's symbol vectors), scrubbed,
+and makes two calls through the engine's model port: the first returns candidate product concepts and 1 to 3 search queries each; the engine runs those queries
+with the map search over the same version; the second reads the hits and returns concept hints, each `{ name, members, evidence, confidence }`. Each call is held to
+60,000 input characters and 4,000 output tokens, with 2 minutes to answer, and a repo gets at most 6 scans in 24 hours: the 7th ends `succeeded` with outcome
+`over-budget` and the reason `over budget: 6 concept scans started in the last 24 hours (the limit is 6)`. A model that does not answer (`model-unavailable`), a reply
+that is not JSON or holds no usable concept (`no-concepts`) and a map with no feature (`nothing-to-scan`) also end `succeeded` with that outcome: the scan never fails a
+build, and only an engine error (the store, the profile) fails the job. A member that is not a feature of the map is dropped, a feature stays in the hint of the highest
+confidence that names it, and at most 15 hints are kept. The hints are stored in `context.db` (`map_concept_hint`, one row per map version) beside the map, not in it:
+the graph, the overrides and the pins are never touched, a feature no hint names stays unplaced, and nothing asks a model to place it. The job summary reads
+`map v<N>: <hints> concept hint(s) from <searches> search(es)`, and the job result carries the version, the outcome and the counts.
+
 A build takes no heavy-job slot: it is mostly git reads and one model call, so a busy box never fails it. One build runs at a time (a second, from the
 refresh, the build job or the `context-rebuild` service, waits for the first), so two builds never write over each other. The backtest still takes a slot
 (`SND-CONTEXT-040`, exit 75, after 12 hours). A second build keeps every decision you made
