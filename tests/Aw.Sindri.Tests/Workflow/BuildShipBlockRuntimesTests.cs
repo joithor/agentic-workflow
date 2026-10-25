@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -67,7 +68,7 @@ public sealed class BuildShipBlockRuntimesTests
     {
         await using var provider = ShippedComposition.Compose();
         var (recipe, context) = Read(provider, "workflow.phase.yaml");
-        var entered = StateEntry.Enter(EngineFixture.At(recipe, "drift"), recipe, "drift", context);
+        var entered = StateEntry.Enter(Pinned(EngineFixture.At(recipe, "drift")), recipe, "drift", context);
         var diff = new FakeRunDiff();
         diff.Add("/work/p1", "abc");
         diff.Advance("/work/p1");
@@ -102,21 +103,29 @@ public sealed class BuildShipBlockRuntimesTests
         return (recipe, new DecisionContext(ApprovalCheck.Holds, provider.GetRequiredService<BlockCatalog>(), runtimes, Siblings()));
     }
 
-    // The pinned child recipes a phase's wait enters: every shipped recipe, as the approval would pin them.
+    // The shipped recipes as an approval pins them: the resolver for the children a wait enters, and the hash each parent holds per child.
+    private static readonly Lazy<IReadOnlyList<Recipe>> _shipped = new(static () =>
+        [.. ShippedRecipes.Recipes.Where(static r => r.StartsWith("sindri/", StringComparison.Ordinal)).Select(EvalComposition.Recipe)]);
+
     private static InMemoryChildRecipes Siblings()
     {
         var children = InMemoryChildRecipes.None;
-        foreach (var path in ShippedRecipes.Recipes.Where(r => r.StartsWith("sindri/", StringComparison.Ordinal)))
+        foreach (var recipe in _shipped.Value)
         {
-            var recipe = EvalComposition.Recipe(path);
             _ = children.With(new ChildRecipe(recipe, recipe.Hash!.Value));
         }
 
         return children;
     }
 
+    // The instance with every shipped recipe pinned as its child (EngineFixture.At pins none for a recipe other than the item's).
+    private static WorkflowInstance Pinned(WorkflowInstance instance) => instance with
+    {
+        Recipe = instance.Recipe with { Children = _shipped.Value.ToDictionary(static r => r.Id, static r => r.Hash!.Value) },
+    };
+
     // The state the engine moves to on the Step's result, after the same report validation a desk report gets.
-    private static string Next(Core.Workflow.Engine.Instances.WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
+    private static string Next(WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
     {
         var done = run.Result ?? throw new InvalidOperationException(run.Failure);
         var outputs = done.Outputs.ToDictionary(static o => o.Key, static o => EngineFixture.Fact(o.Value.ValueKind == JsonValueKind.String ? o.Value.GetString()! : o.Value.GetRawText()));   // why: a string element always holds its text
