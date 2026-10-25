@@ -55,6 +55,38 @@ public sealed class ResolutionCheckTests
         Assert.Contains("A regression test failed before the fix and passes after it: draft round trip", prompt, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("partial")]
+    [InlineData("unresolved")]
+    public async Task A_partial_or_unresolved_answer_without_reasons_is_not_a_decision(string decision)
+    {
+        var cli = Cli(ContentClass.Brief).Decides(decision, 0.8);
+
+        var outcome = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(), cli);
+
+        Assert.IsNotType<DecidedOutcome>(outcome);
+    }
+
+    [Fact]
+    public async Task A_resolved_answer_without_reasons_is_still_a_decision()
+    {
+        var outcome = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(), Cli(ContentClass.Brief).Decides("resolved", 1));
+
+        _ = AssertModel("resolved", outcome);
+    }
+
+    [Fact]
+    public async Task An_answer_without_reasons_falls_through_to_the_next_provider()
+    {
+        var reasons = new System.Text.Json.Nodes.JsonObject { ["reasons"] = new System.Text.Json.Nodes.JsonArray("the list view still drops it") };
+        var jev = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("partial", 0.8);
+        var cli = Cli(ContentClass.Brief).Returns(new ProviderDecided("partial", 0.9, "model") { Extra = reasons });
+
+        var outcome = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(), jev, cli);
+
+        Assert.Equal("""{"reasons":["the list view still drops it"]}""", AssertModel("partial", outcome).Extra?.ToJsonString());
+    }
+
     [Fact]
     public async Task Without_a_diff_the_prompt_has_no_diff_block_and_an_unsure_model_escalates()
     {
