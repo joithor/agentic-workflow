@@ -7501,3 +7501,5 @@ Aw.Context.Core.Map.MapVersion.Ruleset.init -> void
 const Aw.Context.Core.Map.MapRuleset.RulesVersion = "1" -> string!
 Aw.Context.Core.Map.MapRuleset
 static Aw.Context.Core.Map.MapRuleset.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> string!
+Aw.Context.Core.Map.MapImport.Ruleset.get -> string?
+Aw.Context.Core.Map.MapImport.Ruleset.init -> void

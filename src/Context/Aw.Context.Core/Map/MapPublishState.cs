@@ -7,6 +7,6 @@ namespace Aw.Context.Core.Map;
 /// <param name="CurrentHeads">The current version's heads; empty for one built before heads were recorded.</param>
 public sealed record MapPublishState(MapHold? Hold, int? LatestDraft, int? Current, IReadOnlyList<MapHead> CurrentHeads)
 {
-    /// <summary>The hash of the map rules the current version was built under, or null when none was recorded (stub, issue 1041: nothing sets it yet).</summary>
+    /// <summary>The hash of the map rules the current version was built under, or null when none was recorded (a map built before issue 1041).</summary>
     public string? CurrentRuleset { get; init; }
 }

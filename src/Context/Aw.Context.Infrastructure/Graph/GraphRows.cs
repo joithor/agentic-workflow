@@ -55,7 +55,7 @@ internal static class GraphRows
     private sealed class VersionMapper : IRowMapper<MapVersion>
     {
         public MapVersion Map(SqliteDataReader r) => new(r.GetInt32(0) is > 0 and var number ? number : throw new InvalidOperationException("map_version.id is not positive"), Core.Engine.ContextRepoName.From(r.GetString(1)), Text(r, 2), r.GetInt32(3),
-            GraphText.Time(r.GetString(4)) ?? default, GraphText.Status(r.GetString(5)));
+            GraphText.Time(r.GetString(4)) ?? default, GraphText.Status(r.GetString(5))) { Ruleset = Text(r, 6) };
     }
 
     private sealed class NodeMapper : IRowMapper<GraphNode>

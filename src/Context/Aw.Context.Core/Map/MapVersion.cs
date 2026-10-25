@@ -12,6 +12,6 @@ namespace Aw.Context.Core.Map;
 // The number is a plain int, not a Vogen id: a Vogen int id makes PublicApiAnalyzers report RS0041 on its generated members.
 public sealed record MapVersion(int Number, ContextRepoName Repo, string? Commit, int KeyVersion, DateTimeOffset Created, MapVersionStatus Status)
 {
-    /// <summary>The hash of the map rules it was built under, or null when none was recorded (stub, issue 1041: nothing sets it yet).</summary>
+    /// <summary>The hash of the map rules it was built under, or null when none was recorded (a version built before issue 1041, or imported).</summary>
     public string? Ruleset { get; init; }
 }
