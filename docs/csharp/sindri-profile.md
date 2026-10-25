@@ -70,6 +70,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `review` | object (`models`) | no | none | The review lens model (line spec §7.4) |
 | `steps` | object (`longMax`) | no | none | The longest a block Step may declare (line spec LN-WF7) |
 | `docs` | object (`globs`, `sync`) | no | none | Where docs sync may write (line spec §7.6) and whether it runs (`workflow.docs.sync`, below) |
+| `scoping` | object (`historyWindow`) | no | none | The scoping recipe's keys (see `workflow.scoping.historyWindow` below) |
 
 ### The line's keys (`workflow.packs`, `.line`, `.plan`, `.prove`, `.build`, `.ship`, `.design`, `.review`, `.steps`, `.docs`)
 
@@ -99,6 +100,7 @@ Line spec Appendix D and LN-WF9. Every key is optional and each is a re-approval
 | `workflow.design.models` | object (`writer`, `lens`) | no | profile roles | The agents that write the design (`writer`) and run its lenses (`lens`); `DSN-LENS-002` warns when they are one model |
 | `workflow.review.models` | object (`lens`) | no | profile roles | The agent that runs the review lenses |
 | `workflow.steps.longMax` | duration | no | `2h` | The longest `MaxDuration` a block Step may declare (LN-WF7) |
+| `workflow.scoping.historyWindow` | object (`since`, `before`) | no | `{}` in the profile `profile init` writes | The window the scoping recipe's `input.context.history` reads (#399): `since` and `before` are RFC 3339 instants or dates (`2026-01-01`), either may be left out; `{}` is all history. The recipe names this key as `window: { profile: workflow.scoping.historyWindow }`, and the input resolves it from the approved profile when it fills: a profile that does not set the key fails the fill with `SND-WF-021` (add `scoping: { historyWindow: {} }` under `workflow` and approve), it is never the open window by accident |
 | `workflow.docs.globs` | string[] | no | `docs/**`, `*.md` | The paths docs sync may write (BD5): repo-relative globs with `/` separators and no `..`, as `index.denyPaths` takes them |
 
 `workflow.effects` gains no key of its own: the line's effects (`effect.line.start-phase`, `effect.line.report`, `effect.pr.open`) are entries of the allowlist. Code reads the values with their defaults through `LineProfile` (`Aw.Sindri.Core.Profile`).

@@ -15657,8 +15657,8 @@ static Aw.Sindri.Core.Scoping.ChangeRead.Scoping.get -> Aw.Sindri.Core.Scoping.C
 Aw.Sindri.Core.Scoping.ChangeRead.Cut(string! text) -> (string! Text, bool Truncated)
 Aw.Sindri.Core.Profile.DocsSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Globs, out string? Sync) -> void
 Aw.Sindri.Core.Profile.DocsSettings.DocsSettings(System.Collections.Generic.IReadOnlyList<string!>? Globs = null, string? Sync = null) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route, out Aw.Sindri.Core.Profile.PackSettings? Packs, out Aw.Sindri.Core.Profile.LineSettings? Line, out Aw.Sindri.Core.Profile.PlanSettings? Plan, out Aw.Sindri.Core.Profile.ProveSettings? Prove, out Aw.Sindri.Core.Profile.BuildSettings? Build, out Aw.Sindri.Core.Profile.ShipSettings? Ship, out Aw.Sindri.Core.Profile.DesignSettings? Design, out Aw.Sindri.Core.Profile.ReviewSettings? Review, out Aw.Sindri.Core.Profile.StepsSettings? Steps, out Aw.Sindri.Core.Profile.DocsSettings? Docs, out Aw.Sindri.Core.Profile.PrSettings? Pr) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null, Aw.Sindri.Core.Profile.PackSettings? Packs = null, Aw.Sindri.Core.Profile.LineSettings? Line = null, Aw.Sindri.Core.Profile.PlanSettings? Plan = null, Aw.Sindri.Core.Profile.ProveSettings? Prove = null, Aw.Sindri.Core.Profile.BuildSettings? Build = null, Aw.Sindri.Core.Profile.ShipSettings? Ship = null, Aw.Sindri.Core.Profile.DesignSettings? Design = null, Aw.Sindri.Core.Profile.ReviewSettings? Review = null, Aw.Sindri.Core.Profile.StepsSettings? Steps = null, Aw.Sindri.Core.Profile.DocsSettings? Docs = null, Aw.Sindri.Core.Profile.PrSettings? Pr = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route, out Aw.Sindri.Core.Profile.PackSettings? Packs, out Aw.Sindri.Core.Profile.LineSettings? Line, out Aw.Sindri.Core.Profile.PlanSettings? Plan, out Aw.Sindri.Core.Profile.ProveSettings? Prove, out Aw.Sindri.Core.Profile.BuildSettings? Build, out Aw.Sindri.Core.Profile.ShipSettings? Ship, out Aw.Sindri.Core.Profile.DesignSettings? Design, out Aw.Sindri.Core.Profile.ReviewSettings? Review, out Aw.Sindri.Core.Profile.StepsSettings? Steps, out Aw.Sindri.Core.Profile.DocsSettings? Docs, out Aw.Sindri.Core.Profile.PrSettings? Pr, out Aw.Sindri.Core.Profile.ScopingSettings? Scoping) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null, Aw.Sindri.Core.Profile.PackSettings? Packs = null, Aw.Sindri.Core.Profile.LineSettings? Line = null, Aw.Sindri.Core.Profile.PlanSettings? Plan = null, Aw.Sindri.Core.Profile.ProveSettings? Prove = null, Aw.Sindri.Core.Profile.BuildSettings? Build = null, Aw.Sindri.Core.Profile.ShipSettings? Ship = null, Aw.Sindri.Core.Profile.DesignSettings? Design = null, Aw.Sindri.Core.Profile.ReviewSettings? Review = null, Aw.Sindri.Core.Profile.StepsSettings? Steps = null, Aw.Sindri.Core.Profile.DocsSettings? Docs = null, Aw.Sindri.Core.Profile.PrSettings? Pr = null, Aw.Sindri.Core.Profile.ScopingSettings? Scoping = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.LoopCaps.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
@@ -18635,3 +18635,32 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.HistoryWindowSettings
+Aw.Sindri.Core.Profile.HistoryWindowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.HistoryWindowSettings!
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Deconstruct(out string? Since, out string? Before) -> void
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Equals(Aw.Sindri.Core.Profile.HistoryWindowSettings? other) -> bool
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Since.get -> string?
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Since.init -> void
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Before.get -> string?
+Aw.Sindri.Core.Profile.HistoryWindowSettings.Before.init -> void
+Aw.Sindri.Core.Profile.HistoryWindowSettings.HistoryWindowSettings(string? Since = null, string? Before = null) -> void
+override Aw.Sindri.Core.Profile.HistoryWindowSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.HistoryWindowSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.HistoryWindowSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.HistoryWindowSettings.operator !=(Aw.Sindri.Core.Profile.HistoryWindowSettings? left, Aw.Sindri.Core.Profile.HistoryWindowSettings? right) -> bool
+static Aw.Sindri.Core.Profile.HistoryWindowSettings.operator ==(Aw.Sindri.Core.Profile.HistoryWindowSettings? left, Aw.Sindri.Core.Profile.HistoryWindowSettings? right) -> bool
+Aw.Sindri.Core.Profile.ScopingSettings
+Aw.Sindri.Core.Profile.ScopingSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ScopingSettings!
+Aw.Sindri.Core.Profile.ScopingSettings.Deconstruct(out Aw.Sindri.Core.Profile.HistoryWindowSettings? HistoryWindow) -> void
+Aw.Sindri.Core.Profile.ScopingSettings.Equals(Aw.Sindri.Core.Profile.ScopingSettings? other) -> bool
+Aw.Sindri.Core.Profile.ScopingSettings.HistoryWindow.get -> Aw.Sindri.Core.Profile.HistoryWindowSettings?
+Aw.Sindri.Core.Profile.ScopingSettings.HistoryWindow.init -> void
+Aw.Sindri.Core.Profile.ScopingSettings.ScopingSettings(Aw.Sindri.Core.Profile.HistoryWindowSettings? HistoryWindow = null) -> void
+override Aw.Sindri.Core.Profile.ScopingSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ScopingSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ScopingSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.ScopingSettings.operator !=(Aw.Sindri.Core.Profile.ScopingSettings? left, Aw.Sindri.Core.Profile.ScopingSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ScopingSettings.operator ==(Aw.Sindri.Core.Profile.ScopingSettings? left, Aw.Sindri.Core.Profile.ScopingSettings? right) -> bool
+Aw.Sindri.Core.Profile.WorkflowSettings.Scoping.get -> Aw.Sindri.Core.Profile.ScopingSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Scoping.init -> void
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.ProfileKeyMissing -> Aw.Kernel.ErrorDefinition!

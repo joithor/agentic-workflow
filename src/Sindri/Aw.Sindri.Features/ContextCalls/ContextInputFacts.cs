@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Kernel;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -14,10 +15,13 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// Turns a '{ fact: … }' argument into the fact's content. The engine hands a Step input the stored reference ('{ref, sha256, headSha}', the
 /// serialized <see cref="FactValue"/>), never the content; so an input that wants the value (anchors, a window) reads it here through the same
 /// <see cref="IFactContents"/> port the effects use, checks it against the reference's SHA-256, and parses it as JSON (a content that isn't JSON is its text).
+/// A '{ profile: key }' argument is resolved here too, against the approved profile snapshot (never in workflow code, which must replay): a key the
+/// snapshot does not hold is SND-WF-021 (see <see cref="Fails"/>), never the open window.
 /// A reference that can't be read is an error that names the argument and the fact (an honest unavailable section); content that isn't what its SHA-256 says is SND-WF-018 (see <see cref="Fails"/>), which fails the fill.
 /// </summary>
 /// <param name="contents">The fact content port.</param>
-internal sealed class ContextInputFacts(IFactContents contents)
+/// <param name="profile">The approved profile, for '{ profile: key }' arguments; without it every such argument is SND-WF-021.</param>
+internal sealed class ContextInputFacts(IFactContents contents, IApprovedProfile? profile = null)
 {
     /// <summary>The context with every fact-reference argument replaced by the fact's content.</summary>
     /// <param name="context">The input's context.</param>
@@ -29,6 +33,19 @@ internal sealed class ContextInputFacts(IFactContents contents)
         Dictionary<string, JsonElement>? resolved = null;
         foreach (var (name, value) in context.Arguments)
         {
+            if (ProfileKey(value) is { } key)
+            {
+                var setting = await ProfileValue(name, key, cancellationToken).ConfigureAwait(false);
+                if (setting.IsError)
+                {
+                    return setting.Error;
+                }
+
+                resolved ??= new Dictionary<string, JsonElement>(context.Arguments, StringComparer.Ordinal);
+                resolved[name] = setting.Value;
+                continue;
+            }
+
             if (Reference(value) is not { } fact)
             {
                 continue;
@@ -49,12 +66,70 @@ internal sealed class ContextInputFacts(IFactContents contents)
 
     /// <summary>Whether <paramref name="error"/> must fail the fill (the data changed) rather than become an unavailable section.</summary>
     /// <param name="error">An error from <see cref="Resolve"/>.</param>
-    /// <returns>True for SND-WF-018.</returns>
+    /// <returns>True for SND-WF-018 and SND-WF-021.</returns>
     internal static bool Fails(Error error)
     {
         ArgumentNullException.ThrowIfNull(error);
-        return string.Equals(error.Code, WorkflowErrors.InputChanged.Code, StringComparison.Ordinal);
+        return string.Equals(error.Code, WorkflowErrors.InputChanged.Code, StringComparison.Ordinal)
+            || string.Equals(error.Code, WorkflowErrors.ProfileKeyMissing.Code, StringComparison.Ordinal);
     }
+
+    private async ValueTask<Result<JsonElement>> ProfileValue(string name, string key, CancellationToken cancellationToken)
+    {
+        if (profile is null)
+        {
+            return WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, and this input has no profile to read it from");
+        }
+
+        var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
+        if (approved.IsError)
+        {
+            return approved.Error;
+        }
+
+        if (approved.Value is not { } loaded)
+        {
+            return WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, and no profile is approved (fix: sindri profile approve)");
+        }
+
+        return Setting(loaded.Profile, key) is { } setting
+            ? setting
+            : WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, which the approved profile does not set (fix: add it to the profile and approve it; an empty value is the open window)");
+    }
+
+    /// <summary>The value of a profile key a Step input may name, or null when the profile does not set it or the key is not one.</summary>
+    private static JsonElement? Setting(SindriProfile profile, string key)
+    {
+        if (!string.Equals(key, "workflow.scoping.historyWindow", StringComparison.Ordinal) || profile.Workflow?.Scoping?.HistoryWindow is not { } window)
+        {
+            return null;
+        }
+
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            if (window.Since is not null)
+            {
+                writer.WriteString("since", window.Since);
+            }
+
+            if (window.Before is not null)
+            {
+                writer.WriteString("before", window.Before);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        return document.RootElement.Clone();
+    }
+
+    private static string? ProfileKey(JsonElement value) =>
+        value is { ValueKind: JsonValueKind.Object } && value.GetPropertyCount() == 1 && value.TryGetProperty("profile", out var key) && key.ValueKind == JsonValueKind.String
+            ? key.GetString()
+            : null;
 
     private async ValueTask<Result<JsonElement>> Content(string name, FactValue fact, CancellationToken cancellationToken)
     {
