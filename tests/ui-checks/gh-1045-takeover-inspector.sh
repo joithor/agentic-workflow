@@ -48,6 +48,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
+export FIXTURE_AGENT_WAIT="${FIXTURE_AGENT_WAIT:-600}"   # a busy heavy lock delays the launch
 command -v jq >/dev/null 2>&1 || setup_fail "jq is needed"
 
 # The takeover lines of the ledger that human:ui had accepted (one line each).
