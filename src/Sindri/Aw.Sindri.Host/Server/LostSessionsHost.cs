@@ -30,6 +30,12 @@ internal sealed partial class LostSessionsHost(IServiceScopeFactory scopes, Time
                     {
                         LogLost(log, ended);
                     }
+
+                    var idle = await scope.ServiceProvider.GetRequiredService<IIdleSessions>().Sweep(stoppingToken).ConfigureAwait(false);
+                    if (idle > 0)
+                    {
+                        LogIdle(log, idle);
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -45,6 +51,9 @@ internal sealed partial class LostSessionsHost(IServiceScopeFactory scopes, Time
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{Count} launched session(s) went silent for 120 s and were ended as lost")]
     private static partial void LogLost(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} launched session(s) ended a turn without reporting and were ended as idle")]
+    private static partial void LogIdle(ILogger logger, int count);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The silent-session sweep threw {Type}: {Detail}; trying again")]
     private static partial void LogFailed(ILogger logger, string type, string detail);

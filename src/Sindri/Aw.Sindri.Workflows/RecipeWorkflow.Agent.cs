@@ -156,7 +156,7 @@ internal sealed partial class RecipeWorkflow
 
         var ended = await watching.ConfigureAwait(true);
         var closed = await Close(running, measure: true).ConfigureAwait(true);
-        var reason = ended.EndedAs == AgentSessionEnd.Lost ? "lost" : "exit";
+        var reason = AgentEndReasons.Of(ended.EndedAs);
         return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, ended.Detail), reportId: null, context).ConfigureAwait(true);
     }
 

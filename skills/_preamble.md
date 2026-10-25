@@ -68,6 +68,10 @@ Every skill starts by reading this file and following it. Run **Session Close** 
 >
 > Every native pipeline skill ends its response with a `## Next steps` block listing 1–3 recommended successor skills with one-line reasons. This is the meta-orchestration layer — skills hand off through structured suggestions, not by importing each other's logic. Three stage orchestrators (`/autoplan`, `/design-refine`, `/shipRelease`) fan out subagents in parallel and consolidate findings.
 
+## Reply Voice
+
+Every reply to the user follows `$HOME/.agentic-workflow/toolkit/config/voice/joi.md` (concrete, answer first, in Joi's voice). Read it now, and read `config/voice/joi-examples.md` next to it before a long or complex reply. It covers replies only, not PR bodies, issues, commits or code comments.
+
 ## Codebase Navigation
 
 Prefer **Serena** for all code exploration — LSP-based symbol lookup is faster and more precise than file scanning.

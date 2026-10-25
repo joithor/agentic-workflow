@@ -9,6 +9,9 @@ public static class LaunchRules
     /// <summary>How long a session may stay silent before it ends as lost (API spec §8.1).</summary>
     public static TimeSpan LostAfter { get; } = TimeSpan.FromSeconds(120);
 
+    /// <summary>How long a session may sit with its turn ended and no report before it ends as idle; a new prompt starts the clock over.</summary>
+    public static TimeSpan IdleAfter { get; } = TimeSpan.FromSeconds(120);
+
     /// <summary>The longest gap between two silence sweeps that still counts as running normally (the sweep runs every 10 s); a longer one means the machine slept.</summary>
     public static TimeSpan SweepGap { get; } = TimeSpan.FromSeconds(60);
 

@@ -138,6 +138,7 @@ public sealed class AgentRunTests
     [InlineData("launch", "The agent couldn't start")]
     [InlineData("lost", "The agent session was lost")]
     [InlineData("exit", "The agent exited")]
+    [InlineData("idle", "The agent stopped without reporting")]
     [InlineData("limit", "The agent hit its limit")]
     public void A_failed_agent_step_reads_its_reason_and_where_it_went(string reason, string sentence)
     {

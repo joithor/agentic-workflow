@@ -13,4 +13,8 @@ public enum SessionEndReason
     /// <summary>No heartbeat for 120 s.</summary>
     [JsonStringEnumMemberName("lost")]
     Lost,
+
+    /// <summary>The agent's turn ended with no report, and nothing happened for <see cref="Launches.LaunchRules.IdleAfter"/>.</summary>
+    [JsonStringEnumMemberName("idle")]
+    Idle,
 }

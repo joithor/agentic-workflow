@@ -15,7 +15,7 @@ internal sealed partial class WholeMapViewModel
     internal string? Pinned { get; private set; }
 
     /// <summary>The key the highlight is about: the one under the pointer, else the pinned one.</summary>
-    internal string? Focus => SearchActive ? null : Hovered ?? Pinned;
+    internal string? Focus => Hovered ?? Pinned;
 
     /// <summary>The focus and what it is directly linked to, drawn at full strength while the rest dims; null when nothing is highlighted.</summary>
     internal IReadOnlySet<string>? Emphasis { get; private set; }
@@ -33,7 +33,7 @@ internal sealed partial class WholeMapViewModel
     /// <returns>The tile's or node's key; null over nothing.</returns>
     internal string? KeyAt(double x, double y, double slop = 0)
     {
-        if (Geometry is not { } geometry)
+        if (Shown is not { } geometry)
         {
             return null;
         }
@@ -52,7 +52,7 @@ internal sealed partial class WholeMapViewModel
     /// <param name="key">The key; null over nothing.</param>
     internal void Hover(string? key)
     {
-        if (!SearchActive && !string.Equals(Hovered, key, StringComparison.Ordinal))
+        if (!string.Equals(Hovered, key, StringComparison.Ordinal))
         {
             Hovered = key;
             Refocus();
@@ -72,9 +72,9 @@ internal sealed partial class WholeMapViewModel
             return;
         }
 
-        var isTile = Geometry?.Tiles.Any(t => string.Equals(t.Key, key, StringComparison.Ordinal)) == true;
-        var again = SearchActive || string.Equals(Pinned, key, StringComparison.Ordinal);
-        Pinned = again ? null : key;   // a search owns the highlight; a second click goes further and lets the pin go, so it cannot stick
+        var isTile = Shown?.Tiles.Any(t => string.Equals(t.Key, key, StringComparison.Ordinal)) == true;
+        var again = string.Equals(Pinned, key, StringComparison.Ordinal);
+        Pinned = again ? null : key;   // a second click goes further and lets the pin go, so it cannot stick
         Refocus();
         if (!isTile && !again)
         {
@@ -127,8 +127,19 @@ internal sealed partial class WholeMapViewModel
 
     private void Refocus()
     {
-        Emphasis = SearchActive ? _searchSet : Focus is { } focus ? Around(focus) : null;
+        Emphasis = Focus is { } focus ? Within(Around(focus)) : SearchActive ? _searchSet : null;
         EmphasisChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // During a search only what is drawn can be lit.
+    private HashSet<string> Within(HashSet<string> keys)
+    {
+        if (Kept is { } kept)
+        {
+            keys.IntersectWith(kept);
+        }
+
+        return keys;
     }
 
     // The key and the keys one edge away, through the node edges or the edges between features.

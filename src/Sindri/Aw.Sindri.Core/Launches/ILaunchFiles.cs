@@ -15,6 +15,11 @@ public interface ILaunchFiles
     /// <returns>Success, or SND-AUTH-003 when the launch has no stored hash (never launched, or ended) or the secret doesn't match.</returns>
     public Result<Unit> Verify(LaunchId launch, LaunchSecret secret);
 
+    /// <summary>When the launch's session last ended a turn: the Stop hook's file, gone again once a new prompt starts a turn.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <returns>When the turn ended, or null while a turn runs or the session has no such hook.</returns>
+    public DateTimeOffset? TurnEndedAt(LaunchId launch);
+
     /// <summary>Deletes the launch's hash, capture rule and reported-id files; whatever is already gone is fine.</summary>
     /// <param name="launch">The launch.</param>
     public void Forget(LaunchId launch);
