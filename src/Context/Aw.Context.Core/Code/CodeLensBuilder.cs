@@ -1,6 +1,7 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Walks;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Code;
@@ -13,11 +14,20 @@ public static class CodeLensBuilder
     /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
     /// <param name="anchors">The anchors (keys, aliases or labels).</param>
     /// <returns>The view; SND-CONTEXT-003 when none resolves, SND-CONTEXT-037 for an ambiguous name.</returns>
-    public static Result<CodeView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors)
+    public static Result<CodeView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors) => Build(basis, graph, anchors, WalkOptions.Serial);
+
+    /// <summary>Builds the view without lexical data, running the per-anchor walks over <paramref name="walk"/>'s cores; the answer is the same at any degree.</summary>
+    /// <param name="basis">The map read and when.</param>
+    /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
+    /// <param name="anchors">The anchors (keys, aliases or labels).</param>
+    /// <param name="walk">How many anchors' walks may run at once.</param>
+    /// <returns>The view; SND-CONTEXT-003 when none resolves, SND-CONTEXT-037 for an ambiguous name.</returns>
+    public static Result<CodeView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors, WalkOptions walk)
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
+        ArgumentNullException.ThrowIfNull(walk);
         var resolved = AnchorSet.Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)], depth: 0);
         if (resolved.IsError)
         {

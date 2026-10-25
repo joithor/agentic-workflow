@@ -7,6 +7,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Walks;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.GetHistory;
@@ -15,13 +16,15 @@ namespace Aw.Context.Features.GetHistory;
 /// The history lens over one map (S-H): the anchors' own scopes, the stored intent they reach cut by the window, and the landed changes of the files that implement them.
 /// Text is not cleaned here (<see cref="HistoryTexts"/> does it), so a backtest arm can hand it an as-of map and read the same cut.
 /// </summary>
-internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intents, IFileHistory files, TimeProvider clock)
+internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intents, IFileHistory files, TimeProvider clock, WalkOptions? walk = null)
 {
     private const string Capped = "capped";
 
+    private WalkOptions Walk => walk ?? WalkDefaults.Default;
+
     internal async ValueTask<Result<HistoryView>> Run(HistoryInputs inputs, IReadOnlyList<string> anchors, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {
-        var resolved = HistoryLens.Resolve(inputs.Map.Graph, anchors);
+        var resolved = HistoryLens.Resolve(inputs.Map.Graph, anchors, Walk);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -56,7 +59,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var records = cut.Records.Select(r => r with { Repo = repoOf.GetValueOrDefault(r.Key.Value) }).ToList();
         var decisions = cut.Decisions.Select(d => d with { Repo = repoOf.GetValueOrDefault(d.Node.Value) }).ToList();
         return new HistoryView(1, found.Anchors, found.MissingAnchors, basis.Map, basis.Draft, basis.AsOf, inputs.Window, records, decisions, changes.Items,
-            HistoryIncidents.NotConfigured, HistoryLens.Edges(found, kept), counts, truncated, git.Repos, HistoryLens.Coverage(found, basis), searched, degraded,
+            HistoryIncidents.NotConfigured, HistoryLens.Edges(found, kept), counts, truncated, git.Repos, HistoryLens.Coverage(found, basis, Walk), searched, degraded,
             new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
 
