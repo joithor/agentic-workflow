@@ -385,6 +385,7 @@ imports.
 $SINDRI context map status [--anchor <key>] [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
 # 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
+# built under older map rules; a refresh will rebuild it (sindri context map refresh)   <- only when the map recorded its rules and they differ from the running ones
 $SINDRI context map export [<name-or-path>] [--json]
 # Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 20 nodes, …
 ```
@@ -396,6 +397,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 - An export is **not scrubbed**: map text is written as imported (answers clean it on the way out), and the file is owner-readable
   only (0600). Exports older than 14 days are purged by the `context-purge` service, and only when it is enabled under
   `services:` (`doctor` warns on `context:retention` otherwise).
+- `map status` also says when the current map was built under older map rules than the profile runs under now (`rulesOlder: true` in `--json`, left out otherwise). A map that recorded no rules (built before issue 1041, or imported) says nothing there; `doctor`'s `context:map` warns for it and the refresh service rebuilds it.
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
   `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes, plus
@@ -415,7 +417,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 
 ### Doctor and the purge
 
-`$SINDRI doctor` adds `context:map` (warns with no map or with orphaned overrides; how far the map is behind HEAD is
+`$SINDRI doctor` adds `context:map` (warns with no map, with orphaned overrides or when the current map was built under older map rules, or none recorded, with the fix `sindri context map build`; how far the map is behind HEAD is
 unknown until a build records its commit, S-4) and `context:retention` (warns while exports older than 14 days or
 retained versions past the newest 100 are still there, except those replaced within the last 90 days, which a backtest can still read). The `context-purge` service removes both: name it under
 `services:` in the profile.
@@ -627,6 +629,15 @@ many repos were stale, how long it waited), or drops the hold with `context.map.
 `SND-CONTEXT-190`: the job ends `succeeded` with that code and raises nothing; `SND-CONTEXT-046` fails it, keeps the hold and backs it off 5, 10, 20, 40,
 then 60 minutes. The move check compares the checkouts with the held draft's heads (else the current version's), starts no refresh while a publish runs,
 and three failed refreshes or publishes in a row raise the one service row.
+
+**Rules changes start a refresh too (issue 1041).** Each map version records a hash of the rules it was built under (`MapRuleset`, table column
+`map_version.ruleset`): a built-in `RulesVersion` that is bumped in every change to the clustering or extraction rules, and per mapped repo the deny
+globs (the built-in secret globs, `index.denyPaths` and the role globs), the demote globs (`index.demote`) and the concept pins. The `context-map-refresh` tick computes the hash for the
+approved profile and starts a refresh when the current map's differs, with no head move needed, under the same running guard and backoff as a move. A map
+stored before the hash was recorded, and one imported from a file, has none, so it is refreshed once after the upgrade. While a draft is held, the tick
+waits for that publish instead of starting another build. A draft you build by hand (`context map build`) with nothing left to decide (the review queue
+shows 0 undecided) goes through the same hold and publish decision, so the service promotes it on its next tick; a draft with decisions left waits for
+`map review` and `map promote` as before.
 
 A build takes no heavy-job slot: it is mostly git reads and one model call, so a busy box never fails it. One build runs at a time (a second, from the
 refresh, the build job or the `context-rebuild` service, waits for the first), so two builds never write over each other. The backtest still takes a slot
