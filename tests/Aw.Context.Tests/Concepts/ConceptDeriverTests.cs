@@ -191,4 +191,22 @@ public sealed class ConceptDeriverTests
         Assert.Equal(["sched", "sched.one", "sched.two"], group.Features);
         Assert.Equal(["Shift swaps"], group.Records);
     }
+
+    [Fact]
+    public void A_feature_key_with_accents_gets_a_plain_ascii_slug()
+    {
+        var map = ConceptDeriver.Derive(Graph([Feature("caf\u00e9-r\u00e9sum\u00e9")], []), _noPins, null);
+
+        Assert.Contains(map.Nodes, n => n.Key.Value == "concept:cafe-resume");
+    }
+
+    [Fact]
+    public void Feature_keys_with_no_latin_letters_get_distinct_valid_slugs()
+    {
+        var map = ConceptDeriver.Derive(Graph([Feature("\u65e5\u672c\u8a9e"), Feature("\u0434\u043e\u043c")], []), _noPins, null);
+
+        var slugs = map.Nodes.Where(n => n.Key.Value != ConceptKeys.Other).Select(n => n.Key.Value["concept:".Length..]).ToList();
+        Assert.Equal(2, slugs.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(slugs, slug => Assert.Matches("^concept-[0-9a-f]{8}$", slug));
+    }
 }

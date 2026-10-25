@@ -1,31 +1,42 @@
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>Concept ids: lower-case words joined by '-', unique within one derivation.</summary>
+/// <summary>Concept ids: lower-case ASCII words joined by '-' or '.', at most 64 characters, unique within one derivation (the shape <see cref="ConceptId"/> accepts).</summary>
 internal static class ConceptSlug
 {
+    private const int MaxLength = 64;
+
     internal static string Unique(string text, HashSet<string> taken)
     {
         var slug = Of(text);
         var candidate = slug;
         for (var n = 2; !taken.Add(candidate); n++)
         {
-            candidate = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{slug}-{n}");
+            var suffix = string.Create(CultureInfo.InvariantCulture, $"-{n}");
+            candidate = slug[..Math.Min(slug.Length, MaxLength - suffix.Length)].TrimEnd('-', '.') + suffix;
         }
 
         return candidate;
     }
 
+    // Accents are dropped (e-acute becomes e); any other character outside [a-z0-9.] becomes '-'. A text with nothing left (all non-Latin, say) gets a short stable hash of itself.
     private static string Of(string text)
     {
         var slug = new StringBuilder();
-        foreach (var c in text.Trim().ToLowerInvariant())
+        foreach (var c in text.Trim().Normalize(NormalizationForm.FormD))
         {
-            var keep = char.IsLetterOrDigit(c) || c == '.';
-            if (keep)
+            if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
             {
-                _ = slug.Append(c);
+                continue;
+            }
+
+            var lower = char.ToLowerInvariant(c);
+            if (lower is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '.')
+            {
+                _ = slug.Append(lower);
             }
             else if (slug.Length > 0 && slug[^1] != '-')
             {
@@ -34,6 +45,10 @@ internal static class ConceptSlug
         }
 
         var cleaned = slug.ToString().Trim('-', '.');
-        return cleaned.Length == 0 ? "concept" : cleaned;
+        cleaned = cleaned.Length > MaxLength ? cleaned[..MaxLength].TrimEnd('-', '.') : cleaned;
+        return cleaned.Length == 0 ? Hashed(text) : cleaned;
     }
+
+    private static string Hashed(string text) =>
+        "concept-" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)).AsSpan(0, 4));
 }
