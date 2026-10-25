@@ -10,12 +10,17 @@ source "$(dirname "${BASH_SOURCE[0]}")/context-lib.sh"
 ctx_init ux-c2-search-question
 ctx_start 1280 900
 
-"$DRIVER" type --name "Ask or look up" --value "Tab groups" --replace >/dev/null 2>&1 || setup_fail "could not type into the search box"
+# A question with spaces whose words name nothing on the map: the text query finds no anchors and no suggestions, so the baseline
+# splits it at its spaces and asks the lenses for the first word alone ("Tab groups" would match a node whole and never take this path).
+q="zzqx wwvk"
+"$DRIVER" type --name "Ask or look up" --value "$q" --replace >/dev/null 2>&1 || setup_fail "could not type into the search box"
 "$DRIVER" key --chord Enter --name "Ask or look up" >/dev/null 2>&1 || setup_fail "Enter in the search box was not accepted"
 sleep 4
 
 cli="$(ctx_text --type TextBlock --contains "(fix:")"
-[ -z "$cli" ] || fail "the question 'Tab groups' ended in CLI error text: '$cli'"
-cut="$(ctx_text --type TextBlock --contains "is named 'Tab'")"
-[ -z "$cut" ] || fail "the question 'Tab groups' was cut at its first space: '$cut'"
-echo "PASS: the question 'Tab groups' was searched whole and showed no CLI text"
+[ -z "$cli" ] || fail "the question '$q' ended in CLI error text: '$cli'"
+cut="$(ctx_text --type TextBlock --contains "is named 'zzqx'")"
+[ -z "$cut" ] || fail "the question '$q' was cut at its first space: '$cut'"
+blank="$(ctx_text --type TextBlock --text "No matches")"
+[ -z "$blank" ] || fail "the failed question '$q' blanked the map (the page says 'No matches')"
+echo "PASS: the question '$q' was searched whole, showed no CLI text and left the map drawn"
