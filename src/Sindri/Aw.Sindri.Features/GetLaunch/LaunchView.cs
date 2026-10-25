@@ -33,7 +33,7 @@ public sealed record LaunchView(LaunchId Id, ItemId Item, LaunchMode Mode, Launc
     DateTimeOffset? OutcomeAt, string? Code, string? Detail, LaunchStage? Stage, SessionId? SessionId, string? TabTitle, LaunchViewer? Viewer, bool Late,
     IReadOnlyList<string>? Attach, CatalogSource? CatalogSource, string? ArgvHash, LaunchEnd? Ended, LaunchStep Step, AsOf AsOf)
 {
-    /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021 and -028), left out otherwise.</summary>
+    /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021), left out otherwise.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 

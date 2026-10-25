@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Sandbox;
 public static class SandboxRefusal
 {
     /// <summary>Makes the refusal error.</summary>
-    /// <param name="definition">One of the SND-LAUNCH-014..021 and -028 entries.</param>
+    /// <param name="definition">One of the SND-LAUNCH-014..021 entries.</param>
     /// <param name="reason">A reason from <see cref="SandboxReasons"/> (for -018 'http-' and a status).</param>
     /// <param name="detail">What happened this time (the failing argv, the missing tool), already scrubbed; or null.</param>
     /// <param name="source">The credential source for -017, or null.</param>

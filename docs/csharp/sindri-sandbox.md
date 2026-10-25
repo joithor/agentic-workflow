@@ -16,7 +16,7 @@ mistakes, not a deliberate escape (spec §2).
 |---|---|
 | **Plan** | The data the pure builder produces for one launch: mounts (read-only, read-write, denied), network rules, environment allowlist, limits, credentials. Written to `launches/<id>.sandbox.json`; hashed; summarised on `StartedLaunch`. |
 | **`planHash`** | The hash of the plan, including the resolved login source. Two launches with the same hash were confined the same way. |
-| **Park** | A run waiting for the owner. A **`launch` park** (`-028`, `-016`) resumes into a **new run** (new token, launch id and worktree). A sandbox-marked **NoRuntime park** (`-014`, `-017`) resumes into a new agent run that tries the launch again. |
+| **Park** | A run waiting for the owner. A **`launch` park** (`-015`, `-016`) resumes into a **new run** (new token, launch id and worktree). A sandbox-marked **NoRuntime park** (`-014`, `-017`) resumes into a new agent run that tries the launch again. |
 | **Step failure** | `step.failed(launch)` (`-018`, `-021`) or `step.failed(limit)` (`-019`): the Step ends, the owner retries or uses the desk twin; never auto-retried in the same run. |
 | **Resource wait** | `-020`: a queue condition, not a fault. The launch activity retries until the Step's state timeout. |
 | **Check again** | The button and the `sindri sandbox check` command: re-runs the box probe, the form check and the login check, shows every blocker on one card and lists the parked Steps it would resume (oldest first, up to the free session slots). |
@@ -46,7 +46,7 @@ code form, and `Code_kinds_match_the_engine_table` pins them together.
 | Code | Kind | HTTP | Reasons (`reason` extension) |
 |---|---|---|---|
 | `SND-LAUNCH-014` | no runtime | 503 | `no-bwrap`, `no-user-namespace`, `no-user-manager`, `no-cgroup-controllers` (which), `no-forwarder`, `unsupported-platform` |
-| `SND-LAUNCH-028` | launch park | 409 | `form-none`, `form-reserved`, `tool-not-expressible`, `bin-denied`, `host-not-tmux`, `worktree-outside-repo`, `no-stored-plan` |
+| `SND-LAUNCH-015` | launch park | 409 | `form-none`, `form-reserved`, `tool-not-expressible`, `bin-denied`, `host-not-tmux`, `worktree-outside-repo`, `no-stored-plan` |
 | `SND-LAUNCH-016` | launch park | 409 | the failing canary: `fs-deny`, `fs-write`, `git-ref`, `env`, `login`, `hooks-run`, `net-forward`, `net-deny` |
 | `SND-LAUNCH-017` | no runtime | 409 | `no-login`, `expired`, `source-unsupported`, with the `source` extension (`owner-copy`, `separate-login`) |
 | `SND-LAUNCH-018` | step failure | 503 | `no-key`, `http-<status>`, `no-network` |
@@ -79,7 +79,7 @@ with no `sandbox:` section is valid and gets `SandboxDefaults`; `sindri doctor` 
 ## The plan file
 
 `$AW_SINDRI_HOME/launches/<launchId>.sandbox.json` (0600), written by the launcher before the agent starts and read by a resume, which is
-refused with `-028 no-stored-plan` if it is gone. `AW_SANDBOX_PLAN` names a value-free copy that `sindri sandbox explain` reads and nothing
+refused with `-015 no-stored-plan` if it is gone. `AW_SANDBOX_PLAN` names a value-free copy that `sindri sandbox explain` reads and nothing
 else. The summary's `inner` is the resolved `on` or `off` (`InnerState`), never the profile's `auto`. Shape (camelCase, enums by their wire names; SB-1 owns the C# type and a golden of it):
 
 ```json

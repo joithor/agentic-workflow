@@ -10,7 +10,7 @@ public enum LaunchCodeKind
     [JsonStringEnumMemberName("no-runtime")]
     NoRuntime,
 
-    /// <summary>A 'launch' park whose Resume starts a new run (-028, -016).</summary>
+    /// <summary>A 'launch' park whose Resume starts a new run (-015, -016).</summary>
     [JsonStringEnumMemberName("launch-park")]
     LaunchPark,
 

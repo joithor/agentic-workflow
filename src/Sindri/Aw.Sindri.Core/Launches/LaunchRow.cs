@@ -69,7 +69,7 @@ public sealed record LaunchRow(
     /// <summary>True while the session exists: started and not ended.</summary>
     public bool Live => State == LaunchState.Started && Ended is null && Mode != LaunchMode.Attach;
 
-    /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021 and -028), otherwise null.</summary>
+    /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021), otherwise null.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? Reason { get; init; }
 

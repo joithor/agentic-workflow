@@ -2,14 +2,14 @@ using Aw.Kernel;
 
 namespace Aw.Sindri.Core;
 
-// The sandbox launch codes (sandbox spec §6); -015 is the session id timeout in SindriErrors.cs, so unconfinable is -028 (-022 to -027 are taken by the launcher).
+// The sandbox launch codes (sandbox spec §6, -014 to -021); the session id pattern timeout in SindriErrors.cs is -028, since the sandbox reserved -015 first.
 public static partial class SindriErrors
 {
     /// <summary>SND-LAUNCH-014: the sandbox isn't available on this box (sandbox spec §6; kind no-runtime); detail 'reason' is no-bwrap, no-user-namespace, no-user-manager, no-cgroup-controllers, no-forwarder or unsupported-platform.</summary>
     public static readonly ErrorDefinition LaunchSandboxUnavailable = new("SND-LAUNCH-014", ErrorKind.Unavailable, "The sandbox isn't available on this machine");
 
-    /// <summary>SND-LAUNCH-028: the target or its form can't be confined to this policy (kind launch-park; Resume starts a new run).</summary>   // not -015 (the session id pattern timeout, shipped before the sandbox contracts merged) or -025 to -027 (the launcher)
-    public static readonly ErrorDefinition LaunchUnconfinable = new("SND-LAUNCH-028", ErrorKind.Conflict, "The agent can't be confined to this Step's policy");
+    /// <summary>SND-LAUNCH-015: the target or its form can't be confined to this policy (kind launch-park; Resume starts a new run).</summary>
+    public static readonly ErrorDefinition LaunchUnconfinable = new("SND-LAUNCH-015", ErrorKind.Conflict, "The agent can't be confined to this Step's policy");
 
     /// <summary>SND-LAUNCH-016: the sandbox self-check failed; 'reason' names the canary (kind launch-park).</summary>
     public static readonly ErrorDefinition LaunchSelfCheckFailed = new("SND-LAUNCH-016", ErrorKind.Conflict, "The sandbox self-check failed");
