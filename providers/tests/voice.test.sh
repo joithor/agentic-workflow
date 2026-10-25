@@ -56,7 +56,7 @@ test_block_appended_and_outside_text_kept() {
   [ "$(sed -n 1,2p "$f")" = "$(printf '## Mine\nkeep me')" ] || fail "text before the block changed"
   has "line one" < "$f" || fail "content missing"
   local mode
-  mode="$(stat -f %Lp "$f" 2>/dev/null || stat -c %a "$f")"
+  mode="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f")"
   [ "$mode" = "600" ] || fail "file mode changed to $mode"
   teardown_env
   echo "PASS: test_block_appended_and_outside_text_kept"
