@@ -306,7 +306,8 @@ fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one f
       printf 'Fixture scope for %s\n' "$3" > "$dir/$2.scope.txt" || return
       printf '%s\n%s\n%s\n%s\n' --fact "fact:item=$dir/$2.item.json" --fact "fact:scope=$dir/$2.scope.txt" ;;
     *dev-agent-hold)
-      jq -nc --arg id "$2" --arg repo "$AGENT_REPO" '{id: $id, repo: $repo}' > "$dir/$2.item.json" || return
+      # ItemFact is positional and AwJson requires every constructor parameter, so the item names its spec too (#1134).
+      jq -nc --arg id "$2" --arg repo "$AGENT_REPO" --arg spec "Fixture spec for $3" '{id: $id, repo: $repo, spec: $spec}' > "$dir/$2.item.json" || return
       printf '%s\n%s\n' --fact "fact:item=$dir/$2.item.json" ;;
     *desk-round-trip)
       printf 'Fixture request for %s\n' "$3" > "$dir/$2.request.txt" || return
@@ -715,7 +716,9 @@ agent_files() {
     "${g[@]}" init -q -b main && "${g[@]}" config core.hooksPath "$repo/.no-hooks" && "${g[@]}" add -A \
       && "${g[@]}" commit -q --no-gpg-sign -m "Agent fixture" || die "agent-run: can't build the repo in $repo"
   fi
-  printf '#!/bin/sh\nexec sleep 86400\n' > "$dir/stub-agent" && chmod 755 "$dir/stub-agent"
+  # Named claude: the argv hash keeps only bin's base name, so a stub with another name is not a bin-only override (#1134).
+  mkdir -p "$dir/stub-bin" || return
+  printf '#!/bin/sh\nexec sleep 86400\n' > "$dir/stub-bin/claude" && chmod 755 "$dir/stub-bin/claude"
 }
 
 # The live profile gets the repo and workflow.agent.target (a workflow: block after user: when there is none).
@@ -741,7 +744,7 @@ agent_run() {
   need jq
   need git
   sessions_need_copy
-  local dir profile launcher recipe item n out
+  local dir profile launcher recipe item out
   dir="$(agent_dir)"
   profile="$(profile_path)"
   launcher="$(sessions_dir)/launcher.json"
@@ -750,7 +753,7 @@ agent_run() {
   agent_profile_add "$profile" "$dir/repo" || die "agent-run: can't edit $profile"
   if needs_approval; then approve >&2 || return; fi
   # A bin-only override of the built-in claude-code needs no stepArgvHash; the stub ignores the --settings and the other flags a Step adds.
-  jq --arg bin "$dir/stub-agent" '.agents["claude-code"] = {override: true, bin: $bin}' "$launcher" > "$launcher.new" && mv -f "$launcher.new" "$launcher" \
+  jq --arg bin "$dir/stub-bin/claude" '.agents["claude-code"] = {override: true, bin: $bin}' "$launcher" > "$launcher.new" && mv -f "$launcher.new" "$launcher" \
     || die "agent-run: can't update $launcher"
   unset TMUX   # the control plane starts its own tmux server on its own socket; it must not inherit the caller's
   sessions_restart >&2 || return
@@ -760,7 +763,8 @@ agent_run() {
   item="$(FIXTURE_REPO="$AGENT_REPO" start_on_new_item "$AGENT_RECIPE" "Fixture agent run")" || return
   local wait="${FIXTURE_AGENT_WAIT:-120}"
   [[ "$wait" =~ ^[0-9]+$ ]] || die "agent-run: FIXTURE_AGENT_WAIT '$wait' is not a number of seconds"
-  for n in $(seq 1 "$wait"); do
+  local deadline=$((SECONDS + wait))
+  while [ "$SECONDS" -lt "$deadline" ]; do
     if "$PROVE" human ledger --item "$item" --max 1000 2>&1 | tr -d '\r' | grep -q 'launch.started'; then
       printf '%s\n' "$item"
       return 0
