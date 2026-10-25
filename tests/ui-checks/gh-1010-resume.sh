@@ -88,7 +88,7 @@ before="$("$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\
 sent=0
 for _ in $(seq 1 10); do
   after="$("$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r')"
-  if printf '%s' "$after" | grep -q 'answer-resume' && printf '%s' "$after" | grep -q 'human:ui'; then sent=1; break; fi
+  if "$PROVE" human ledger --item "$item" --max 1000 2>&1 | tr -d '\r' | grep 'answer-resume' | grep -q 'human:ui'; then sent=1; break; fi   # one line: answer-resume by human:ui
   sleep 0.5
 done
 "$DRIVER" screenshot --out "$OUT/after-click.png" >/dev/null 2>&1

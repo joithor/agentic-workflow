@@ -96,7 +96,7 @@ before="$("$PROVE" human ledger --json --max 2000 2>&1 | tr -d '\r')"
 sent=0
 for _ in $(seq 1 10); do
   after="$("$PROVE" human ledger --json --max 2000 2>&1 | tr -d '\r')"
-  if printf '%s' "$after" | grep -q 'CompleteStep' && printf '%s' "$after" | grep -q 'human:ui'; then sent=1; break; fi
+  if "$PROVE" human ledger --max 2000 2>&1 | tr -d '\r' | grep 'CompleteStep' | grep -q 'human:ui'; then sent=1; break; fi   # one line: CompleteStep by human:ui
   sleep 0.5
 done
 "$DRIVER" screenshot --out "$OUT/after-click.png" >/dev/null 2>&1
