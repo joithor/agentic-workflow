@@ -69,7 +69,7 @@ internal sealed class ConceptLayerViewModel : ObservableObject
         var tiles = (view.Concepts ?? []).Select(c => new ConceptTileViewModel(c.Id, c.Name, c.Summary, c.Size, string.Equals(c.Source, "override", StringComparison.Ordinal), _open)).ToList();
         if (view.Other is { } other && other.Size.Total > 0)
         {
-            tiles.Add(new ConceptTileViewModel(other.Id, other.Name.Length > 0 ? other.Name : Labels.ContextConceptOtherName, string.Empty, other.Size, setByPerson: false, _open));
+            tiles.Add(new ConceptTileViewModel(other.Id, other.Name.Length > 0 ? other.Name : Labels.ContextWholeBandOther, string.Empty, other.Size, setByPerson: false, _open));
         }
 
         if (tiles.Count == 0)
