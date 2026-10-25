@@ -1,6 +1,6 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
-using Aw.Kernel.Testing;
 
 namespace Aw.Sindri.Tests.Scoping.GapSearch;
 

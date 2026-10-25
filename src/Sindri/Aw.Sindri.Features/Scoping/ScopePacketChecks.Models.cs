@@ -138,7 +138,7 @@ internal static partial class ScopePacketChecks
             }
             else
             {
-                s.Warn(step, $"the {role} ran on {model}, the drafter's model; no model was requested for one of them", "Set workflow.scoping.models.* in the profile so each agent runs on its own model.");
+                s.Warn(step, $"the {role} ran on {model}, the drafter's model; no model was requested for one of them (set workflow.scoping.models.*)", "Set workflow.scoping.models.* in the profile so each agent runs on its own model.");
             }
         }
     }
