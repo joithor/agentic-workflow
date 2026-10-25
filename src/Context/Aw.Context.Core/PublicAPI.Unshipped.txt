@@ -7494,3 +7494,102 @@ Aw.Context.Core.Concepts.ConceptReader.Read(Aw.Context.Core.Engine.ContextScope!
 Aw.Context.Core.Engine.RepoAddressing
 static Aw.Context.Core.Engine.RepoAddressing.Addressed(Aw.Context.Core.Engine.ContextSettings! settings, Aw.Context.Core.Engine.ContextScope! scope, string? asked) -> Aw.Kernel.Result<Aw.Context.Core.Engine.RepoChoice!>!
 static Aw.Context.Core.Engine.ConceptPin.Of(Aw.Context.Core.Engine.ConceptId? id, string? name, string? summary, System.Collections.Generic.IEnumerable<string!>? features, System.Collections.Generic.IEnumerable<string!>? paths) -> Aw.Context.Core.Engine.ConceptPin!
+Aw.Context.Core.Glossary.SymbolVector
+Aw.Context.Core.Glossary.SymbolVector.<Clone>$() -> Aw.Context.Core.Glossary.SymbolVector!
+Aw.Context.Core.Glossary.SymbolVector.SymbolVector(string! Name, System.ReadOnlyMemory<float> Vector) -> void
+Aw.Context.Core.Glossary.SymbolVector.Deconstruct(out string! Name, out System.ReadOnlyMemory<float> Vector) -> void
+Aw.Context.Core.Glossary.SymbolVector.Equals(Aw.Context.Core.Glossary.SymbolVector? other) -> bool
+Aw.Context.Core.Glossary.SymbolVector.Name.get -> string!
+Aw.Context.Core.Glossary.SymbolVector.Name.init -> void
+Aw.Context.Core.Glossary.SymbolVector.Vector.get -> System.ReadOnlyMemory<float>
+Aw.Context.Core.Glossary.SymbolVector.Vector.init -> void
+override Aw.Context.Core.Glossary.SymbolVector.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.SymbolVector.GetHashCode() -> int
+override Aw.Context.Core.Glossary.SymbolVector.ToString() -> string!
+static Aw.Context.Core.Glossary.SymbolVector.operator !=(Aw.Context.Core.Glossary.SymbolVector? left, Aw.Context.Core.Glossary.SymbolVector? right) -> bool
+static Aw.Context.Core.Glossary.SymbolVector.operator ==(Aw.Context.Core.Glossary.SymbolVector? left, Aw.Context.Core.Glossary.SymbolVector? right) -> bool
+Aw.Context.Core.Glossary.FeatureVectors
+Aw.Context.Core.Glossary.FeatureVectors.<Clone>$() -> Aw.Context.Core.Glossary.FeatureVectors!
+Aw.Context.Core.Glossary.FeatureVectors.FeatureVectors(Aw.Context.Core.Graph.NodeKey Feature, string! Label, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.SymbolVector!>! Symbols) -> void
+Aw.Context.Core.Glossary.FeatureVectors.Deconstruct(out Aw.Context.Core.Graph.NodeKey Feature, out string! Label, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.SymbolVector!>! Symbols) -> void
+Aw.Context.Core.Glossary.FeatureVectors.Equals(Aw.Context.Core.Glossary.FeatureVectors? other) -> bool
+Aw.Context.Core.Glossary.FeatureVectors.Feature.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Glossary.FeatureVectors.Feature.init -> void
+Aw.Context.Core.Glossary.FeatureVectors.Label.get -> string!
+Aw.Context.Core.Glossary.FeatureVectors.Label.init -> void
+Aw.Context.Core.Glossary.FeatureVectors.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.SymbolVector!>!
+Aw.Context.Core.Glossary.FeatureVectors.Symbols.init -> void
+override Aw.Context.Core.Glossary.FeatureVectors.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.FeatureVectors.GetHashCode() -> int
+override Aw.Context.Core.Glossary.FeatureVectors.ToString() -> string!
+static Aw.Context.Core.Glossary.FeatureVectors.operator !=(Aw.Context.Core.Glossary.FeatureVectors? left, Aw.Context.Core.Glossary.FeatureVectors? right) -> bool
+static Aw.Context.Core.Glossary.FeatureVectors.operator ==(Aw.Context.Core.Glossary.FeatureVectors? left, Aw.Context.Core.Glossary.FeatureVectors? right) -> bool
+Aw.Context.Core.Glossary.GlossaryTerm
+Aw.Context.Core.Glossary.GlossaryTerm.<Clone>$() -> Aw.Context.Core.Glossary.GlossaryTerm!
+Aw.Context.Core.Glossary.GlossaryTerm.GlossaryTerm(string! Term, double Weight, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features) -> void
+Aw.Context.Core.Glossary.GlossaryTerm.Deconstruct(out string! Term, out double Weight, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features) -> void
+Aw.Context.Core.Glossary.GlossaryTerm.Equals(Aw.Context.Core.Glossary.GlossaryTerm? other) -> bool
+Aw.Context.Core.Glossary.GlossaryTerm.Term.get -> string!
+Aw.Context.Core.Glossary.GlossaryTerm.Term.init -> void
+Aw.Context.Core.Glossary.GlossaryTerm.Weight.get -> double
+Aw.Context.Core.Glossary.GlossaryTerm.Weight.init -> void
+Aw.Context.Core.Glossary.GlossaryTerm.Features.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Glossary.GlossaryTerm.Features.init -> void
+override Aw.Context.Core.Glossary.GlossaryTerm.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.GlossaryTerm.GetHashCode() -> int
+override Aw.Context.Core.Glossary.GlossaryTerm.ToString() -> string!
+static Aw.Context.Core.Glossary.GlossaryTerm.operator !=(Aw.Context.Core.Glossary.GlossaryTerm? left, Aw.Context.Core.Glossary.GlossaryTerm? right) -> bool
+static Aw.Context.Core.Glossary.GlossaryTerm.operator ==(Aw.Context.Core.Glossary.GlossaryTerm? left, Aw.Context.Core.Glossary.GlossaryTerm? right) -> bool
+Aw.Context.Core.Glossary.GlossaryCluster
+Aw.Context.Core.Glossary.GlossaryCluster.<Clone>$() -> Aw.Context.Core.Glossary.GlossaryCluster!
+Aw.Context.Core.Glossary.GlossaryCluster.GlossaryCluster(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features, System.Collections.Generic.IReadOnlyList<string!>! Terms) -> void
+Aw.Context.Core.Glossary.GlossaryCluster.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Features, out System.Collections.Generic.IReadOnlyList<string!>! Terms) -> void
+Aw.Context.Core.Glossary.GlossaryCluster.Equals(Aw.Context.Core.Glossary.GlossaryCluster? other) -> bool
+Aw.Context.Core.Glossary.GlossaryCluster.Features.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Glossary.GlossaryCluster.Features.init -> void
+Aw.Context.Core.Glossary.GlossaryCluster.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Glossary.GlossaryCluster.Terms.init -> void
+override Aw.Context.Core.Glossary.GlossaryCluster.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.GlossaryCluster.GetHashCode() -> int
+override Aw.Context.Core.Glossary.GlossaryCluster.ToString() -> string!
+static Aw.Context.Core.Glossary.GlossaryCluster.operator !=(Aw.Context.Core.Glossary.GlossaryCluster? left, Aw.Context.Core.Glossary.GlossaryCluster? right) -> bool
+static Aw.Context.Core.Glossary.GlossaryCluster.operator ==(Aw.Context.Core.Glossary.GlossaryCluster? left, Aw.Context.Core.Glossary.GlossaryCluster? right) -> bool
+Aw.Context.Core.Glossary.MapGlossary
+Aw.Context.Core.Glossary.MapGlossary.<Clone>$() -> Aw.Context.Core.Glossary.MapGlossary!
+Aw.Context.Core.Glossary.MapGlossary.MapGlossary(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryTerm!>! Terms, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryCluster!>! Clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Unvectored, bool Truncated = false) -> void
+Aw.Context.Core.Glossary.MapGlossary.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryTerm!>! Terms, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryCluster!>! Clusters, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Unvectored, out bool Truncated) -> void
+Aw.Context.Core.Glossary.MapGlossary.Equals(Aw.Context.Core.Glossary.MapGlossary? other) -> bool
+Aw.Context.Core.Glossary.MapGlossary.Terms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryTerm!>!
+Aw.Context.Core.Glossary.MapGlossary.Terms.init -> void
+Aw.Context.Core.Glossary.MapGlossary.Clusters.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.GlossaryCluster!>!
+Aw.Context.Core.Glossary.MapGlossary.Clusters.init -> void
+Aw.Context.Core.Glossary.MapGlossary.Unvectored.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Glossary.MapGlossary.Unvectored.init -> void
+Aw.Context.Core.Glossary.MapGlossary.Truncated.get -> bool
+Aw.Context.Core.Glossary.MapGlossary.Truncated.init -> void
+override Aw.Context.Core.Glossary.MapGlossary.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.MapGlossary.GetHashCode() -> int
+override Aw.Context.Core.Glossary.MapGlossary.ToString() -> string!
+static Aw.Context.Core.Glossary.MapGlossary.operator !=(Aw.Context.Core.Glossary.MapGlossary? left, Aw.Context.Core.Glossary.MapGlossary? right) -> bool
+static Aw.Context.Core.Glossary.MapGlossary.operator ==(Aw.Context.Core.Glossary.MapGlossary? left, Aw.Context.Core.Glossary.MapGlossary? right) -> bool
+Aw.Context.Core.Glossary.GlossaryRules
+Aw.Context.Core.Glossary.GlossaryRules.<Clone>$() -> Aw.Context.Core.Glossary.GlossaryRules!
+Aw.Context.Core.Glossary.GlossaryRules.Equals(Aw.Context.Core.Glossary.GlossaryRules? other) -> bool
+Aw.Context.Core.Glossary.GlossaryRules.GlossaryRules() -> void
+Aw.Context.Core.Glossary.GlossaryRules.MaxFeatures.get -> int
+Aw.Context.Core.Glossary.GlossaryRules.MaxFeatures.init -> void
+Aw.Context.Core.Glossary.GlossaryRules.Similarity.get -> double
+Aw.Context.Core.Glossary.GlossaryRules.Similarity.init -> void
+Aw.Context.Core.Glossary.GlossaryRules.Stop.get -> System.Collections.Generic.IReadOnlySet<string!>!
+Aw.Context.Core.Glossary.GlossaryRules.Stop.init -> void
+Aw.Context.Core.Glossary.GlossaryRules.TermsPerCluster.get -> int
+Aw.Context.Core.Glossary.GlossaryRules.TermsPerCluster.init -> void
+override Aw.Context.Core.Glossary.GlossaryRules.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.GlossaryRules.GetHashCode() -> int
+override Aw.Context.Core.Glossary.GlossaryRules.ToString() -> string!
+static Aw.Context.Core.Glossary.GlossaryRules.operator !=(Aw.Context.Core.Glossary.GlossaryRules? left, Aw.Context.Core.Glossary.GlossaryRules? right) -> bool
+static Aw.Context.Core.Glossary.GlossaryRules.operator ==(Aw.Context.Core.Glossary.GlossaryRules? left, Aw.Context.Core.Glossary.GlossaryRules? right) -> bool
+Aw.Context.Core.Glossary.GlossaryBuilder
+static Aw.Context.Core.Glossary.GlossaryBuilder.Build(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.FeatureVectors!>! features, Aw.Context.Core.Glossary.GlossaryRules! rules) -> Aw.Context.Core.Glossary.MapGlossary!
+Aw.Context.Core.Glossary.GlossaryAffinity
+static Aw.Context.Core.Glossary.GlossaryAffinity.Between(Aw.Context.Core.Glossary.MapGlossary! glossary, Aw.Context.Core.Graph.NodeKey a, Aw.Context.Core.Graph.NodeKey b) -> double
