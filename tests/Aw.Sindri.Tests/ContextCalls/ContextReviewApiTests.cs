@@ -147,7 +147,7 @@ public sealed class ContextReviewApiTests : IDisposable
         var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. ids]), App(host)));
         var both = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: ids[0], overrides: [ids[1]]), App(host)));
         var empty = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: []), App(host)));
-        var tooMany = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 1001)]), App(host)));
+        var tooMany = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 10_001)]), App(host)));
         var history = Json((await host.Http.Ask(Get("/sindri/context/map/review/history", Terminal(host)))).Body).GetProperty("entries");
 
         Assert.Equal(HttpStatusCode.OK, undone.Status);
@@ -169,7 +169,7 @@ public sealed class ContextReviewApiTests : IDisposable
         var full = Json((await host.Http.Ask(Get("/sindri/context/map/review", Terminal(host)))).Body);
         var capped = Json((await host.Http.Ask(Get("/sindri/context/map/review?limit=1", Terminal(host)))).Body);
         var zero = await host.Http.Ask(Get("/sindri/context/map/review?limit=0", Terminal(host)));
-        var huge = await host.Http.Ask(Get("/sindri/context/map/review?limit=1001", Terminal(host)));
+        var huge = await host.Http.Ask(Get("/sindri/context/map/review?limit=10001", Terminal(host)));
         var historyZero = await host.Http.Ask(Get("/sindri/context/map/review/history?limit=0", Terminal(host)));
         var history = Json((await host.Http.Ask(Get("/sindri/context/map/review/history?limit=1", Terminal(host)))).Body);
 
@@ -299,7 +299,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_busy_heavy_job_lock_is_040_naming_the_holder_and_nothing_is_written()
+    public async Task A_full_heavy_job_lock_does_not_stop_a_map_rebuild()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: false, wait: TimeSpan.Zero);
@@ -314,9 +314,9 @@ public sealed class ContextReviewApiTests : IDisposable
             var built = await Run(host, "context-rebuild");
             var queue = await host.Http.Ask(Get("/sindri/context/map/review", Terminal(host)));
 
-            Assert.Equal("SND-CONTEXT-040", built.Error.Code);
-            Assert.Contains("slot 1/2", built.Error.Message, StringComparison.Ordinal);
-            Assert.Equal("SND-CONTEXT-044", queue.Code);
+            Assert.True(built.IsSuccess, built.IsError ? built.Error.Message : string.Empty);   // a map build takes no heavy-job slot
+            Assert.Equal(HttpStatusCode.OK, queue.Status);
+            Assert.Contains("surface:command/", queue.Body, StringComparison.Ordinal);
         }
         finally
         {

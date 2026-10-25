@@ -14,7 +14,7 @@ public sealed class LostAuditRowTests : IAsyncDisposable
 
     private readonly ChainHarness _c = new();
 
-    private static CallerContext Session => A.Caller().Session().Client(ClientLabel.Cli).Build();
+    private static CallerContext Refused => A.Caller().Service("heartbeat").Build();   // a service the row does not grant: the table still refuses it
 
     private static CallerContext Human => A.Caller().AtTerminal().Client(ClientLabel.Cli).Build();
 
@@ -23,7 +23,7 @@ public sealed class LostAuditRowTests : IAsyncDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_refusal_whose_row_is_lost_names_SND_LEDGER_002_once_without_restart_advice_and_logs_the_lost_row()
     {
-        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);   // no lease held: no grant to write the row with
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Refused);   // no lease held: no grant to write the row with
 
         Assert.Equal(LedgerCode, refused.Error.Code);
         Assert.DoesNotContain(LedgerCode, refused.Error.Message, StringComparison.Ordinal);   // the code is the error's, not repeated inside it

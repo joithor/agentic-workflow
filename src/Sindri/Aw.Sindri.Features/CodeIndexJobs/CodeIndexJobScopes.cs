@@ -15,8 +15,9 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// answers the same not-found as one never built and the status lists nothing else (spec §7.3).
 /// </summary>
 /// <param name="approvals">The approved profiles.</param>
+/// <param name="live">The live profile file: its repos the approved profile doesn't name are indexed too (owner q102, CIX-L59).</param>
 /// <param name="callers">The current caller.</param>
-internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, ICallerContextAccessor callers)
+internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, IProfileSource live, ICallerContextAccessor callers)
 {
     /// <summary>The scope of the call running now.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -29,27 +30,29 @@ internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, ICallerCont
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is indexed (fix: sindri profile approve)");
         }
 
-        return For(loaded.Profile, callers.Current);
+        var file = await live.Load(cancellationToken).ConfigureAwait(false);
+        return For(loaded.Profile, file.IsError ? null : file.Value.Profile, callers.Current);   // a live file that is missing or invalid adds nothing: the approved repos stay indexed
     }
 
-    /// <summary>The scope a profile and a caller make.</summary>
-    /// <param name="profile">The approved profile.</param>
+    /// <summary>The scope an approved profile, the live profile and a caller make (owner q102, CIX-L59): the approved repos, then every live repo the approved profile doesn't name.</summary>
+    /// <param name="approved">The approved profile: the only source of the top-level 'index:' section (deny globs, embeddings address).</param>
+    /// <param name="live">The live profile, or null when there is none.</param>
     /// <param name="caller">The Sindri caller, or null for an in-process service.</param>
     /// <returns>The scope; SND-CODEIDX-001 when a repo's settings are invalid.</returns>
-    internal static Result<CodeIndexScope> For(SindriProfile profile, CallerContext? caller)
+    internal static Result<CodeIndexScope> For(SindriProfile approved, SindriProfile? live, CallerContext? caller)
     {
-        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(approved);
         var kind = Kind(caller);
         var sessionRepo = SessionRepo(kind, caller);
         var repos = new List<CodeIndexRepo>();
-        foreach (var entry in profile.Repos ?? [])
+        foreach (var (entry, isLive) in Entries(approved, live))
         {
             if (!RepoName.TryFrom(entry.Name, out var repoName) || (kind == CallerKind.Session && sessionRepo != repoName))
             {
                 continue;
             }
 
-            var repo = Repo(profile, entry, repoName);
+            var repo = Repo(approved, isLive ? LiveOnly(entry) : entry, repoName);
             if (repo.IsError)
             {
                 return repo.Error;
@@ -60,6 +63,35 @@ internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, ICallerCont
 
         return new CodeIndexScope(repos, new CodeIndexCaller(kind, sessionRepo));
     }
+
+    /// <summary>The scope a profile and a caller make.</summary>
+    /// <param name="profile">The approved profile.</param>
+    /// <param name="caller">The Sindri caller, or null for an in-process service.</param>
+    /// <returns>The scope; SND-CODEIDX-001 when a repo's settings are invalid.</returns>
+    internal static Result<CodeIndexScope> For(SindriProfile profile, CallerContext? caller) => For(profile, live: null, caller);
+
+    /// <summary>The approved repos, then each live repo the approved profile names neither by name nor by folder.</summary>
+    private static IEnumerable<(RepoEntry Entry, bool IsLive)> Entries(SindriProfile approved, SindriProfile? live)
+    {
+        var named = (approved.Repos ?? []).ToList();
+        foreach (var entry in named)
+        {
+            yield return (entry, false);
+        }
+
+        foreach (var entry in live?.Repos ?? [])
+        {
+            if (!named.Exists(n => string.Equals(n.Name, entry.Name, StringComparison.OrdinalIgnoreCase) || string.Equals(n.Path.TrimEnd('/'), entry.Path.TrimEnd('/'), StringComparison.Ordinal)))
+            {
+                yield return (entry, true);
+            }
+        }
+    }
+
+    /// <summary>A live-only repo's entry as the scope may trust it: its deny globs only add to the approved ones, and it never names an embeddings address or model (it may only turn the layer off).</summary>
+    private static RepoEntry LiveOnly(RepoEntry entry) => entry.Index is { Embeddings: { } embeddings } own
+        ? entry with { Index = own with { Embeddings = embeddings with { Url = null, Model = null } } }
+        : entry;
 
     private static RepoName? SessionRepo(CallerKind kind, CallerContext? caller)
         => kind == CallerKind.Session && caller?.Repo is { } repo && RepoName.TryFrom(repo.Value, out var name) ? name : null;

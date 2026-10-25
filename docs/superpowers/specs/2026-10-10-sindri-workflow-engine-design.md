@@ -223,7 +223,7 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 
 ### 3.1 Reading
 
-- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, more than 256 KiB,
+- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, more than 4 MiB (owner q93, 2026-10-23; was 256 KiB),
   or nesting deeper than 32.
 - **Scalars:** the YAML 1.2 core schema, so `on` stays a string.
 - **Errors:** every node keeps its line and column, and every schema error is reported, not just the first.
@@ -740,7 +740,7 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   resume runs its gates afresh. `answer --text` on a `no-progress` park works every time (owner q93, 2026-10-23; was once per loop, §13).
 - **A park that arrives while parked or taken over** is recorded as `pendingPark` and takes effect when the current
   suspension pops. A revoke's `spec-conflict` park replaces the suspension, ending any takeover. A drift wake on a
-  parked instance is recorded on the suspension and refused (`SND-RECIPE-006`) until re-approved.
+  parked instance is recorded on the suspension and refused (`SND-RECIPE-006`) until re-approved. Owner q93, 2026-10-23: when only a pinned block's version moved and its interface (parameters, inputs, outputs, outcomes, capabilities) is unchanged, the approval is renewed against the build and logged (`recipe.approved` with `drift`, actor `service:pin-drift`) instead of parking; any interface change still parks.
 - **Revoke and drift wakes** are signals the registry sends to every live instance of the recipe (or of a parent
   pinning the child) on `recipe.revoked` and on startup when the build's descriptor hashes differ from an approval's
   pins. A drift approval signals the instances it lists to resume and re-sends their refused commands (§4.1).

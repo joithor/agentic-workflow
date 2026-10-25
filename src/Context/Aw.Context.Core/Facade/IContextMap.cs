@@ -51,23 +51,23 @@ public interface IContextMap : IScopeProposals
     /// <returns>The check.</returns>
     public ValueTask<Result<MapHealth>> CheckRetention(CancellationToken cancellationToken);
 
-    /// <summary>The 'context-purge' service's work: deletes expired exports and retained versions beyond the newest 20.</summary>
+    /// <summary>The 'context-purge' service's work: deletes expired exports and retained versions beyond the newest 100.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>What was removed.</returns>
     public ValueTask<Result<PurgeReport>> PurgeExpired(CancellationToken cancellationToken);
 
     /// <summary>
     /// Proposes the map from the repo (spec Phase 4): deterministic anchors with file-level 'implements', graphify clusters as
-    /// candidate features, an optional labeling pass; writes a draft and re-applies every override. Takes the heavy-job lock.
+    /// candidate features, an optional labeling pass; writes a draft and re-applies every override. One build at a time per host; a second waits.
     /// </summary>
     /// <param name="progress">Told one line per step ('extracting n/N files'), or null.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the build; nothing becomes a draft then.</param>
-    /// <returns>The report, or SND-CONTEXT-001/004/005/040/042/048.</returns>
+    /// <returns>The report, or SND-CONTEXT-001/004/005/042/048.</returns>
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>What is left to decide in the latest draft.</summary>
-    /// <param name="limit">The most entries per group (1 to 1000), or null for 100.</param>
+    /// <param name="limit">The most entries per group (1 to 10000), or null for 100.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The queue, or SND-CONTEXT-001/004/044.</returns>
@@ -81,7 +81,7 @@ public interface IContextMap : IScopeProposals
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The override log, newest first, with what each undo cancelled: the ids "map review --undo" takes.</summary>
-    /// <param name="limit">The most entries (1 to 1000), or null for 200.</param>
+    /// <param name="limit">The most entries (1 to 10000), or null for 200.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The history, or SND-CONTEXT-001/004/020.</returns>

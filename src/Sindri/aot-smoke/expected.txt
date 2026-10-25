@@ -6,7 +6,7 @@ fail  profile           not approved (fix: sindri profile approve)
 fail  api               unreachable: no control plane is recorded (fix: sindri)
 fail  temporal          not running: no dev server on this home's temporal.db (fix: sindri)
 warn  context:map       no map yet (fix: sindri context map import <file>)
-ok    context:retention no expired exports; retained map versions are within the newest 20 and the 90-day eval window
+ok    context:retention no expired exports; retained map versions are within the newest 100 and the 90-day eval window
 ok    context:publish   no approved profile, so no map to publish
 ok    context:onyx      not configured (no profile is approved)
 ok    context:linear    not configured (no profile is approved)
@@ -17,7 +17,6 @@ ok    context:mcp-scope no user-wide 'sindri' MCP entry for Claude Code, Codex o
 ok    launcher:adoption no opens in the last 30 days
 ok    pr-watch          the watcher has not run yet
 warn  setup             not finished: profile (needs-you), recipes (todo), mcp (todo), map (todo) (fix: sindri profile approve <hash>)
-warn  setup:repo-hook   No secret-check hook yet: add it when the installer ships (fix: add a pre-commit hook that refuses secret-shaped text to each repo by hand)
 ok    forge:credential  no forge configured
 warn  codex:read-only   pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:read-only > tests/Aw.Sindri.Tests/Golden/Probe/codex-read-only.json; docs/csharp/sindri.md, 'The harness probe')
 warn  codex:workspace-write pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:workspace-write > tests/Aw.Sindri.Tests/Golden/Probe/codex-workspace-write.json; docs/csharp/sindri.md, 'The harness probe')
@@ -157,8 +156,8 @@ true
 ## GET /sindri/events/catalog | jq (public types, their invalidates)
 {"commandHandled":false,"itemCreated":["queue","items","item","timeline"]}
 ## QUERY /sindri/context/subgraph with a JSON body on the published host (the HTTP QUERY method; POST is not a route)
-{"title":"SND-CONTEXT-020","status":403}
-"http=403"
+{"title":"SND-CONTEXT-030","status":404}
+"http=404"
 post http=405
 ## sindri services --json | jq (name, every, paused, job)
 [{"name":"code-index-embed","every":"1m","paused":false,"job":null},{"name":"code-index-main-move","every":"1m","paused":false,"job":null},{"name":"context-map-refresh","every":"1m","paused":false,"job":null},{"name":"context-sync-gaps","every":"1m","paused":false,"job":null},{"name":"heartbeat","every":"5s","paused":false,"job":null},{"name":"pr-watch","every":"5s","paused":false,"job":null},{"name":"router-stub","every":"5s","paused":false,"job":null},{"name":"setup","every":"1m","paused":false,"job":null},{"name":"workflow-events","every":"5s","paused":false,"job":null}]
@@ -220,7 +219,7 @@ ok    profile           approved, hash HASH6
 fail  api               unreachable: no control plane is recorded (fix: sindri)
 fail  temporal          not running: no dev server on this home's temporal.db (fix: sindri)
 warn  context:map       no map yet (fix: sindri context map import <file>)
-ok    context:retention no expired exports; retained map versions are within the newest 20 and the 90-day eval window
+ok    context:retention no expired exports; retained map versions are within the newest 100 and the 90-day eval window
 ok    context:publish   no map yet, so nothing to publish
 ok    context:onyx      not configured (the approved profile names no context.sources.onyx)
 ok    context:linear    not configured (the approved profile names no context.sources.linear.token)
@@ -233,7 +232,7 @@ ok    context:mcp-scope no user-wide 'sindri' MCP entry for Claude Code, Codex o
 ok    launcher:adoption no opens in the last 30 days
 ok    pr-watch          the watcher's last run was ok
 warn  setup             not finished: recipes (needs-you), mcp (todo), map (todo) (fix: sindri recipe approve-all)
-warn  setup:repo-hook   No secret-check hook yet: add it when the installer ships (fix: add a pre-commit hook that refuses secret-shaped text to each repo by hand)
+warn  pre-commit:smoke  no pre-commit hook, so staged secrets are not scanned (fix: sindri scrub --install-pre-commit --repo WORK/repo)
 ok    forge:credential  no forge configured
 warn  codex:read-only   pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:read-only > tests/Aw.Sindri.Tests/Golden/Probe/codex-read-only.json; docs/csharp/sindri.md, 'The harness probe')
 warn  codex:workspace-write pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:workspace-write > tests/Aw.Sindri.Tests/Golden/Probe/codex-workspace-write.json; docs/csharp/sindri.md, 'The harness probe')

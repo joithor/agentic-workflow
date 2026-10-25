@@ -23,10 +23,10 @@ public static class CodeLensMerge
         return view with
         {
             Files = files,
-            Tests = [.. tests.Take(CodeRules.MaxListed)],
+            Tests = tests,
             Data = view.Data with { Files = listedSchema },
             Counts = view.Counts with { Tests = total, SchemaFiles = schemaTotal, FilesWithoutTest = withoutTest, Unlocated = findings.Unlocated },
-            Truncated = view.Truncated with { Tests = total > CodeRules.MaxListed || findings.TestsTruncated, SchemaFiles = schemaCut || findings.SchemaTruncated, SearchedFiles = findings.SearchedFilesCapped },
+            Truncated = view.Truncated with { Tests = findings.TestsTruncated, SchemaFiles = schemaCut || findings.SchemaTruncated, SearchedFiles = findings.SearchedFilesCapped },
             Lexical = findings.Searched,
             Searched = Searched(view, findings, tests.Count > 0, listedSchema.Count > 0),
             Degraded = [.. view.Degraded.Concat(Degraded(findings))],
@@ -70,7 +70,7 @@ public static class CodeLensMerge
             }
 
             var anchors = view.Anchors.Select(a => a.Key).Where(a => named.Exists(n => known[n].Anchors.Any(k => k.Value == a.Value))).ToList();
-            added.Add(new CodeTest(group.Key, group.Key, NodeKind.Code, group.Min(t => t.Basis), [], named, Confirmed: false, Suggested: true, LinkId: null, Results.Trust.Trusted, anchors));
+            added.Add(new CodeTest(group.Key, group.Key, NodeKind.Code, group.Min(t => t.Basis), [], named, Confirmed: false, Suggested: true, LinkId: null, Results.Trust.Trusted, anchors) { Repo = named.Select(n => known[n].Repo).FirstOrDefault(r => r is not null) });
         }
 
         return (existing, added);
@@ -93,9 +93,9 @@ public static class CodeLensMerge
             all.AddRange(own.Select(f => new CodeDataFile(f.Path, f.Path, NodeKind.Code, thing.Key, f.Matched, Results.Trust.Trusted, thing.Anchors)));
         }
 
-        return ([.. ListedPerThing(all)], all.Count, cut || all.Count > CodeRules.MaxListed);
+        return ([.. ListedPerThing(all)], all.Count, cut);
     }
 
     private static IEnumerable<CodeDataFile> ListedPerThing(List<CodeDataFile> all) =>
-        all.GroupBy(f => f.Thing.Value, StringComparer.Ordinal).SelectMany(g => g.Take(CodeRules.MaxFilesPerThing)).Take(CodeRules.MaxListed);
+        all.GroupBy(f => f.Thing.Value, StringComparer.Ordinal).SelectMany(g => g.Take(CodeRules.MaxFilesPerThing));
 }

@@ -52,7 +52,7 @@ internal static class ContextApiScenarios
         ("context-lenses", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&draft=true", ct)),
         ("context-lenses", "set-two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Atabs.tab-groups", ct)),
         ("context-lenses", "set-missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Anope.x", ct)),
-        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=9", ct)),
+        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=-1", ct)),
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
@@ -88,6 +88,13 @@ internal static class ContextApiScenarios
         ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
         ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
+        ("context-lenses", "query-set-two-anchors", async (s, ct) => await s.Query("/sindri/context/lenses", """{"anchors":["feature:tabs.tab-manager","feature:tabs.tab-groups"]}""", ct)),
+        ("context-lenses", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/lenses", """{"anchors":[]}""", ct)),
+        ("context-lenses", "query-session-set-other-repo", async (s, ct) => await s.QueryAsSession("/sindri/context/lenses", """{"anchors":["feature:tabs.tab-manager","feature:other.thing"]}""", ct)),
+        ("context-code", "query-two-anchors", async (s, ct) => await s.Query("/sindri/context/code", """{"anchors":["feature:sharing","feature:nope"]}""", ct)),
+        ("context-code", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/code", """{"anchors":[]}""", ct)),
+        ("context-history", "query-two-anchors", async (s, ct) => await s.Query("/sindri/context/history", """{"anchors":["feature:layout.split-pane","feature:tabs.tab-manager"]}""", ct)),
+        ("context-history", "query-no-anchor-006", async (s, ct) => await s.Query("/sindri/context/history", """{"anchors":[]}""", ct)),
         ("context-whole", "nodes-small", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "areas-over-budget", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "area-open", async (s, ct) => await s.Fetch(WholeRoute("area=feature%3Atabs.tab-groups"), ct)),
@@ -120,7 +127,7 @@ internal static class ContextApiScenarios
         ("context-query", "hops-component-node", async (s, ct) => await s.Fetch("/sindri/context/query?node=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-node", "tab-manager", async (s, ct) => await s.Fetch($"/sindri/context/node?key={Anchor}", ct)),
         ("context-map-review", "no-draft-044", async (s, ct) => await s.Fetch("/sindri/context/map/review", ct)),
-        ("context-map-review", "session-auth-002", async (s, ct) => await s.SessionReview(ct)),
+        ("context-map-review", "session-accept", async (s, ct) => await s.SessionReview(ct)),
         ("context-map-review", "map-tabs-draft", async (s, ct) => await s.MapTabsDraft(ct)),
         ("context-map-review", "post-accept-link", async (s, ct) => await s.PostAcceptLink(ct)),
         ("context-map-review", "post-undo-list", async (s, ct) => await s.PostUndoList(ct)),
@@ -285,7 +292,7 @@ internal static class ContextApiScenarios
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
         };
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 51; i++)
         {
             var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
             nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));

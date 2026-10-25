@@ -37,7 +37,7 @@ public sealed class ContextLensStackTests
     }
 
     [Fact]
-    public async Task A_draft_read_has_only_the_tag_on_its_head_and_the_map_version_is_on_the_live_choice()
+    public async Task A_draft_read_has_only_the_tag_on_its_head()
     {
         var golden = Golden("map-tabs");
         golden["draft"] = true;
@@ -45,13 +45,11 @@ public sealed class ContextLensStackTests
         var api = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.OK, golden.ToJsonString()) };
         var page = Page(api);
         page.AnchorText = (string)golden["anchor"]!["key"]!;
-        Assert.Null(page.AsOfLiveHint);
 
         await page.Submit(Token);
 
         Assert.Equal(Labels.ContextHead(1), page.Head);
         Assert.True(page.IsDraft);
-        Assert.Equal("Map v1 @ abc1234", page.AsOfLiveHint);
     }
 
     [Fact]
@@ -150,18 +148,5 @@ public sealed class ContextLensStackTests
         await page.Submit(Token);
 
         Assert.Equal([1, 50], sent);
-    }
-
-    [Fact]
-    public async Task A_request_line_the_server_refuses_as_too_long_says_so_in_plain_words()
-    {
-        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.RequestUriTooLong, string.Empty) };
-        var page = Page(server);
-        page.AnchorText = string.Join(' ', Enumerable.Range(0, 400).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"a:{i}")));
-
-        await page.Submit(Token);
-
-        Assert.Equal(Labels.ContextTooLongForOneRead, page.Problem);
-        Assert.False(page.HasStack);
     }
 }

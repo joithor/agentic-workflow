@@ -125,5 +125,5 @@ These are marked here so the first real run checks them, not assumes them:
 - `sindri-ui` takes the home from `AW_SINDRI_HOME` and the port from `AW_SINDRI_PORT` in its environment, and a bare
   start shows the last page; there is no flag for the Context page, only the deep link `context?item=<ITM-id>`.
 - The first `sindri services run code-index-main-move` is assumed to start a build when the repo's checkout is contained in `main`
-  and has no index; if the service says it deferred (no heavy-job slot), the wait loop keeps polling until the timeout.
+  and has no index; if the build fails, the service retries it with backoff and the wait loop keeps polling until the timeout.
 - `workflow.scoping`'s `scopeInput` is the `brief` shape; the brief path is relative to the repo.

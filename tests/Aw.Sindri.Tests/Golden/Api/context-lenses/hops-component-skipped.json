@@ -29,7 +29,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
@@ -57,7 +58,8 @@
           "linkId": null,
           "label": "src/util/format.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {
@@ -171,7 +173,7 @@
   "skippedComponents": [
     {
       "unit": "code:src/util/format.ts",
-      "features": 6
+      "features": 51
     }
   ]
 }

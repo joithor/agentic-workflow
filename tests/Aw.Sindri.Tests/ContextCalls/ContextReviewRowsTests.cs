@@ -41,7 +41,7 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Promote_is_a_desk_row_a_session_may_run_and_proposing_is_a_job_a_session_may_not()
+    public void Promote_is_a_desk_row_and_proposing_is_a_job_and_a_session_may_run_both()
     {
         var promote = Row("PromoteContextMap");
         var propose = Row("ProposeContextMap");
@@ -52,7 +52,7 @@ public sealed class ContextReviewRowsTests
         Assert.True(Table.Decide(propose.Class, A.Caller().AtTerminal().Build(), propose).Allowed);
         Assert.True(Table.Decide(propose.Class, A.Caller().Human().Build(), propose).Allowed);
         Assert.True(Table.Decide(propose.Class, A.Caller().Service("engine").Build(), propose).Allowed);
-        Assert.False(Table.Decide(propose.Class, A.Caller().Session().Build(), propose).Allowed);
+        Assert.True(Table.Decide(propose.Class, A.Caller().Session().Build(), propose).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -87,9 +87,9 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Build_refresh_and_backtest_are_allowed_to_a_session_and_sync_sources_is_not()
+    public void Build_refresh_backtest_and_sync_sources_are_allowed_to_a_session()
     {
-        foreach (var (row, session) in new[] { (Row("BuildContextMap"), true), (Row("RefreshContextMap"), true), (Row(ContextRows.BacktestAction), true), (Row("SyncSources"), false) })
+        foreach (var (row, session) in new[] { (Row("BuildContextMap"), true), (Row("RefreshContextMap"), true), (Row(ContextRows.BacktestAction), true), (Row("SyncSources"), true) })
         {
             Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Build(), row).Allowed);
             Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
@@ -154,14 +154,14 @@ public sealed class ContextReviewRowsTests
         var list = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: ["ovr_0123456789abcdef", "ovr_fedcba9876543210"]));
         var both = ReviewInput.Read(new ReviewContextMapRequest("undo", Override: "ovr_0123456789abcdef", Overrides: ["ovr_fedcba9876543210"]));
         var empty = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: []));
-        var tooMany = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 1001)]));
-        var thousand = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 1000)]));
+        var tooMany = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 10_001)]));
+        var tenThousand = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: [.. Enumerable.Repeat("ovr_0123456789abcdef", 10_000)]));
         var bad = ReviewInput.Read(new ReviewContextMapRequest("undo", Overrides: ["ovr_0123456789abcdef", "nonsense"]));
         var wrongVerb = ReviewInput.Read(new ReviewContextMapRequest("drop", Overrides: ["ovr_0123456789abcdef"]));
 
         Assert.Equal(["ovr_0123456789abcdef", "ovr_fedcba9876543210"], list.Value.Decision!.UndoesAll!.Select(i => i.Value), StringComparer.Ordinal);
         Assert.Null(list.Value.Decision.Undoes);
-        Assert.Equal(1000, thousand.Value.Decision!.UndoesAll!.Count);
+        Assert.Equal(10_000, tenThousand.Value.Decision!.UndoesAll!.Count);
         Assert.All([both, empty, tooMany, bad, wrongVerb], r => Assert.Equal(SindriErrors.InvalidInput.Code, r.Error.Code));
         Assert.Contains("overrides", both.Error.Message, StringComparison.Ordinal);
         Assert.Contains("overrides[1]", bad.Error.Message, StringComparison.Ordinal);

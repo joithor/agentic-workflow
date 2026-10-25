@@ -129,12 +129,12 @@ public sealed class RegisterRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_cannot_register()
+    public async Task A_service_cannot_register()
     {
         await using var r = new RegistryHarness();
         _ = await r.H.HoldLease();
 
-        var refused = await r.RegisterText(ShippedRecipes.Read("sindri/workflow.step.yaml"), "workflow.step.yaml", A.Caller().Session().Build());
+        var refused = await r.RegisterText(ShippedRecipes.Read("sindri/workflow.step.yaml"), "workflow.step.yaml", A.Caller().Service("heartbeat").Build());
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Empty((await r.Recipes.All(Token)).Value);

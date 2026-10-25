@@ -12,9 +12,9 @@ namespace Aw.Sindri.Features.CodeIndexReads;
 /// layer's progress as a percent. Counts and words only.
 /// </summary>
 /// <param name="Repo">The repo.</param>
-/// <param name="State">missing, damaged, ok, stale (the head moved past the index), building (a build job runs) or waiting (a deferred or failed build holds the next one).</param>
+/// <param name="State">missing, damaged, ok, stale (the head moved past the index), building (a build job runs) or waiting (a failed build holds the next one).</param>
 /// <param name="EmbeddingsPercent">The share of embeddable symbols that have a vector, or null when the layer states no count.</param>
-/// <param name="Waiting">'waiting for a free build slot' or 'retrying in N min' while the state is waiting, else null.</param>
+/// <param name="Waiting">'retrying in N min' while the state is waiting, else null.</param>
 public sealed record RepoHealth(string Repo, string State, int? EmbeddingsPercent, string? Waiting)
 {
     /// <summary>Lays the heads and jobs over one repo's status.</summary>

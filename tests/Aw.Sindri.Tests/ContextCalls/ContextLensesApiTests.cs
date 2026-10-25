@@ -285,7 +285,7 @@ public sealed class ContextLensesApiTests : IDisposable
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Lenses_depth_is_0_to_4_and_anything_else_is_006_over_http()
+    public async Task Lenses_depth_is_0_or_more_deeper_than_8_is_read_as_8_and_negative_is_006_over_http()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -294,11 +294,13 @@ public sealed class ContextLensesApiTests : IDisposable
         var zero = await host.Http.Ask(Get(route + "&depth=0", Terminal(host)));
         var four = await host.Http.Ask(Get(route + "&depth=4", Terminal(host)));
         var five = await host.Http.Ask(Get(route + "&depth=5", Terminal(host)));
+        var deep = await host.Http.Ask(Get(route + "&depth=99", Terminal(host)));
         var negative = await host.Http.Ask(Get(route + "&depth=-1", Terminal(host)));
 
         Assert.Equal((HttpStatusCode.OK, 0), (zero.Status, Json(zero.Body).GetProperty("depth").GetInt32()));
         Assert.Equal((HttpStatusCode.OK, 4), (four.Status, Json(four.Body).GetProperty("depth").GetInt32()));
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (five.Status, five.Code));
+        Assert.Equal((HttpStatusCode.OK, 5), (five.Status, Json(five.Body).GetProperty("depth").GetInt32()));   // the old cap of 4 was raised to 8 (owner q93, 2026-10-23)
+        Assert.Equal(HttpStatusCode.OK, deep.Status);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (negative.Status, negative.Code));
     }
 
@@ -374,7 +376,8 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
+        Assert.True(session.Status == HttpStatusCode.OK, session.Body);   // a session proposes too (owner q93), and its re-run adds nothing
+        Assert.Equal(0, Json(session.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
         Assert.Equal(HttpStatusCode.OK, reject.Status);
         Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);

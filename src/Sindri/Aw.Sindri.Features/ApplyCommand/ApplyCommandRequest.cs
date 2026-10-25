@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="Amount">The rounds of '--grant n' or the tokens of '--grant-tokens n'.</param>
 /// <param name="Verb">The recipe verb, for a command.</param>
 /// <param name="Nonce">The command's nonce; null to have one issued.</param>
-/// <param name="Challenge">The challenge and its typed text, for a protected answer (grant, grant-tokens, accept).</param>
+/// <param name="Challenge">Accepted and ignored, so an older client still works (owner decision q93).</param>
 public sealed record ApplyCommandRequest(
     string Instance,
     ApplyCommandKind Kind,

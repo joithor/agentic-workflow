@@ -19,6 +19,9 @@ public class RefreshEngineProxy : DispatchProxy
     /// <summary>What <see cref="IContextMap.BuildMap"/> answers.</summary>
     public Result<MapBuildReport> Built { get; set; } = new MapBuildReport(Version(2, MapVersionStatus.Draft), [], [], [new MapHead(ContextRepoName.From("app"), "abc123", OnDefault: true)]);
 
+    /// <summary>What <see cref="IContextMap.BuildMap"/> answers first, one per call, before it falls back to <see cref="Built"/>.</summary>
+    public Queue<Result<MapBuildReport>> BuiltFirst { get; } = new();
+
     /// <summary>What <see cref="IContextMap.ReviewQueue"/> answers.</summary>
     public Result<ReviewQueueView> Queue { get; set; } = new ReviewQueueView("v2@abc123", ReviewVersion.None, [], 0, 0, new QueueCounts(3, 0, 0), new Dictionary<string, int>(StringComparer.Ordinal), ReviewTruncated.None);
 
@@ -78,7 +81,7 @@ public class RefreshEngineProxy : DispatchProxy
         return name switch
         {
             nameof(IContextEngine.MapHeads) => new ValueTask<Result<IReadOnlyList<RepoHead>>>(Heads),
-            nameof(IContextEngine.BuildMap) => new ValueTask<Result<MapBuildReport>>(Built),
+            nameof(IContextEngine.BuildMap) => new ValueTask<Result<MapBuildReport>>(BuiltFirst.Count > 0 ? BuiltFirst.Dequeue() : Built),
             nameof(IContextEngine.ReviewQueue) => new ValueTask<Result<ReviewQueueView>>(Queue),
             nameof(IContextEngine.CleanDraft) => new ValueTask<Result<CleanupReport>>(Expect(args, Cleaned)),
             nameof(IContextEngine.Promote) => new ValueTask<Result<MapPromoted>>(Expect(args, Promoted)),
