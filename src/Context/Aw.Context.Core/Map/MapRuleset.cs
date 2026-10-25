@@ -34,6 +34,12 @@ public static class MapRuleset
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', lines))));
     }
 
+    /// <summary>The hash of the rules <paramref name="scope"/> would build under now, from its settings and repos.</summary>
+    /// <param name="scope">The scope, or null.</param>
+    /// <returns>The hash, or null when there is no scope or its settings can't be read (nothing to compare then).</returns>
+    public static string? Running(ContextScope? scope) =>
+        scope is not null && SettingsReader.Read(scope.Settings) is { IsSuccess: true } settings ? Of(ScopeRules.Mapped(settings.Value, scope.Repos)) : null;
+
     private static string Pin(ConceptPin pin) =>
         $"{pin.Id?.Value}{Unit}{pin.Name}{Unit}{pin.Summary}{Unit}{Sorted(pin.Features)}{Unit}{Sorted(pin.Paths)}";
 

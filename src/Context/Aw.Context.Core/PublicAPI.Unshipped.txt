@@ -7505,3 +7505,4 @@ Aw.Context.Core.Map.MapImport.Ruleset.get -> string?
 Aw.Context.Core.Map.MapImport.Ruleset.init -> void
 Aw.Context.Core.Map.MapStatusView.RulesOlder.get -> bool
 Aw.Context.Core.Map.MapStatusView.RulesOlder.init -> void
+static Aw.Context.Core.Map.MapRuleset.Running(Aw.Context.Core.Engine.ContextScope? scope) -> string?

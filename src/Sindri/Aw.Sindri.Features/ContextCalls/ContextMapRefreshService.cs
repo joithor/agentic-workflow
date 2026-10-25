@@ -194,7 +194,7 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
 
     // The rules the build would run under now; null when the settings can't be read (the move check then goes by the heads alone).
     private static string? RulesOf(ContextScope scope) =>
-        SettingsReader.Read(scope.Settings) is { IsSuccess: true } settings ? MapRuleset.Of(ScopeRules.Mapped(settings.Value, scope.Repos)) : null;
+        MapRuleset.Running(scope);
 
     // A map stored under other rules (or none recorded) is rebuilt; a held draft is on its way to replace it, so it waits for that publish instead of starting another build every tick.
     private static bool RulesChanged(Tick tick) =>

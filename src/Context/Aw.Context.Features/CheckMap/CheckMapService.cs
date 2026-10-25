@@ -63,8 +63,7 @@ internal sealed class CheckMapService(IGraphStore store) : IService<CheckMapRequ
 
     // The map's recorded rules against the ones the scope would build under now (issue 1041); a map built before they were recorded counts as older. Without a scope there is nothing to compare.
     private static bool OlderRules(MapVersion version, ContextScope? scope) =>
-        scope is not null && SettingsReader.Read(scope.Settings) is { IsSuccess: true } settings
-        && !string.Equals(version.Ruleset, MapRuleset.Of(ScopeRules.Mapped(settings.Value, scope.Repos)), StringComparison.Ordinal);
+        MapRuleset.Running(scope) is { } running && !string.Equals(version.Ruleset, running, StringComparison.Ordinal);
 
     private static MapHealth Fail(Error error) =>
         new(Name, MapHealthState.Fail, $"{error.Code}: {error.Message}", "check $AW_SINDRI_HOME/context permissions; never delete context.db");

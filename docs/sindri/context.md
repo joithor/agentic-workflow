@@ -385,6 +385,7 @@ imports.
 $SINDRI context map status [--anchor <key>] [--json]
 # map v2 current · aw-split-panes · created 2026-10-12T17:02:11.0000000+00:00
 # 20 nodes, 21 edges, 1 aliases, 1 decisions, 2 overrides; 0 orphaned overrides; 1 retained versions
+# built under older map rules; a refresh will rebuild it (sindri context map refresh)   <- only when the map recorded its rules and they differ from the running ones
 $SINDRI context map export [<name-or-path>] [--json]
 # Exported map v2 to $AW_SINDRI_HOME/context/exports/map-v2-20261012T170400Z.json: 20 nodes, …
 ```
@@ -396,6 +397,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 - An export is **not scrubbed**: map text is written as imported (answers clean it on the way out), and the file is owner-readable
   only (0600). Exports older than 14 days are purged by the `context-purge` service, and only when it is enabled under
   `services:` (`doctor` warns on `context:retention` otherwise).
+- `map status` also says when the current map was built under older map rules than the profile runs under now (`rulesOlder: true` in `--json`, left out otherwise). A map that recorded no rules (built before issue 1041, or imported) says nothing there; `doctor`'s `context:map` warns for it and the refresh service rebuilds it.
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
   `implements` edges whose file evidence is `repo:<their X-Sindri-Repo>/…`, and the edges between those nodes, plus
