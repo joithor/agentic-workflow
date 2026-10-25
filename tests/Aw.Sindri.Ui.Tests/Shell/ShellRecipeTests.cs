@@ -63,7 +63,7 @@ public sealed class ShellRecipeTests
         var shell = await Shell();
         shell.Navigate(Link("recipe/" + Id));
 
-        Assert.NotEqual(Id, shell.Recipe.Title);
+        Assert.NotEqual(Id, shell.Recipe.Title, StringComparer.Ordinal);
         Assert.Equal(shell.Recipe.Title, shell.SheetHeading);
         Assert.Equal("Reopen recipe " + shell.Recipe.Title, shell.EdgeTabName);
         shell.Navigate(Link("item/ITM-1"));

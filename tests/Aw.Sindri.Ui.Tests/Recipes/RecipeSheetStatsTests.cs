@@ -93,7 +93,7 @@ public sealed class RecipeSheetStatsTests
 
         var sheet = await Opened();
 
-        Assert.Equal([("Finished", "67%"), ("Still open", "2")], sheet.StatLines.Where(l => l.Label is "Finished" or "Still open").Select(l => (l.Label, l.Value)));
+        Assert.Equal([("Finished", "67%"), ("Still open", "2")], sheet.StatLines.Where(l => string.Equals(l.Label, "Finished", StringComparison.Ordinal) || string.Equals(l.Label, "Still open", StringComparison.Ordinal)).Select(l => (l.Label, l.Value)));
     }
 
     [Fact]
