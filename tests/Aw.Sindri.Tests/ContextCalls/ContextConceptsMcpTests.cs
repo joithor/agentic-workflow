@@ -18,7 +18,7 @@ public sealed class ContextConceptsMcpTests : IDisposable
 
     private async Task<GoldenHost> Host(bool sessions = true)
     {
-        var host = await ContextHosts.Approved(_repo.Path, sessions, TestContext.Current.CancellationToken, null, MapTabsRepo.Repo);
+        var host = await ContextHosts.Approved(_repo.Path, sessions, TestContext.Current.CancellationToken, extra: null, MapTabsRepo.Repo);
         await ContextMapApiTests.Import(host, ConceptMapFile.Write(host.Home));
         return host;
     }
@@ -34,7 +34,7 @@ public sealed class ContextConceptsMcpTests : IDisposable
 
         Assert.NotEqual(true, result.IsError);
         var view = result.StructuredContent!.Value;
-        Assert.Equal([Concept], view.GetProperty("concepts").EnumerateArray().Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal([Concept], view.GetProperty("concepts").EnumerateArray().Select(c => c.GetProperty("id").GetString()), StringComparer.Ordinal);
         Assert.Equal("ok", view.GetProperty("state").GetString());
         var summary = Text(result);
         Assert.Contains(Concept, summary, StringComparison.Ordinal);
