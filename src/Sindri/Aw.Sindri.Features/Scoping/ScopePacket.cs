@@ -131,7 +131,7 @@ internal static class ScopePacket
         foreach (var lens in ScopeRules.Lenses)
         {
             var entry = ScopeJson.Obj(lenses, lens);
-            file[lens] = new JsonObject
+            var held = new JsonObject
             {
                 ["anchors"] = ScopeJson.ToArray(ScopeJson.Strings(entry, "anchors")),
                 ["depth"] = ScopeJson.Int(entry, "depth") ?? 0,
@@ -143,6 +143,12 @@ internal static class ScopePacket
                 ["items"] = Untrusted(ScopeJson.Items(entry, "items")),
                 ["truncated"] = ScopeJson.ToArray(ScopeJson.Strings(entry, "truncated")),
             };
+            if (ScopeJson.Int(entry, "edgesOutOfScope") is > 0 and var dropped)
+            {
+                held["edgesOutOfScope"] = dropped;
+            }
+
+            file[lens] = held;
         }
 
         return file;

@@ -17,7 +17,7 @@ internal static class ScopeFixLines
         new("not-synced", "history", "unavailable", "not-synced", "never synced", "Sindri starts the source's sync itself; rescope once it has run"),
         new("not-configured", Lens: null, "not-configured", "not-configured", "not-configured", "Name the source in the profile, then regather"),
         new("anchor-missing", Lens: null, "missing", "anchor-missing", "anchor not in the map", "Check the anchor's key (the view's suggested anchors name close ones), then regather"),
-        new("edges-out-of-scope", Lens: null, "unavailable", "edges-out-of-scope", "edges outside the lens", "Nothing to fix: the lens left out edges ending outside its found nodes and anchors"),
+        new("edges-out-of-scope", Lens: null, "counted", "edges-out-of-scope", "edges outside the lens", "edges to nodes outside this lens's found nodes and anchors were left out; they are out of scope by definition"),
     ];
 
     /// <summary>The limit a source of <paramref name="lens"/> with this state and reason is, or null when it matches none (a degraded source never does).</summary>
@@ -25,6 +25,9 @@ internal static class ScopeFixLines
         All.FirstOrDefault(l => string.Equals(l.State, state, StringComparison.Ordinal)
             && string.Equals(l.Reason, reason, StringComparison.Ordinal)
             && (l.Lens is null || string.Equals(l.Lens, lens, StringComparison.Ordinal)));
+
+    /// <summary>True for a limit no source carries: the gather writes it from what it found (an asked anchor the view couldn't find, a count of edges left out), so a limits[] entry of it needs no matching source.</summary>
+    internal static bool IsSourceFree(string? name) => name is "anchor-missing" or "edges-out-of-scope";
 
     /// <summary>The limit with this name, or null.</summary>
     internal static RecordedLimit? ByName(string? name) => All.FirstOrDefault(l => string.Equals(l.Name, name, StringComparison.Ordinal));

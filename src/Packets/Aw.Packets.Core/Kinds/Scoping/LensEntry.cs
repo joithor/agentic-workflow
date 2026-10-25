@@ -12,6 +12,7 @@ namespace Aw.Packets.Core.Kinds.Scoping;
 /// <param name="Edges">The edges among the found nodes and the anchors.</param>
 /// <param name="Items">The found items with no graph key.</param>
 /// <param name="Truncated">The bands the context engine cut at its 100-item cap.</param>
+/// <param name="EdgesOutOfScope">How many edges the lens left out because an end was outside its found nodes and anchors; 0 (and absent from the file) when none.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record LensEntry(
     IReadOnlyList<string> Anchors,
@@ -22,4 +23,5 @@ public sealed record LensEntry(
     IReadOnlyList<LensNode> Nodes,
     IReadOnlyList<LensEdge> Edges,
     IReadOnlyList<LensFound> Items,
-    IReadOnlyList<LensBand> Truncated);
+    IReadOnlyList<LensBand> Truncated,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int EdgesOutOfScope = 0);
