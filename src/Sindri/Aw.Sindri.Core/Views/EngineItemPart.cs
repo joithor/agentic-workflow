@@ -17,6 +17,10 @@ namespace Aw.Sindri.Core.Views;
 /// <param name="Cancelled">Whether it ended by a cancel.</param>
 public sealed record EngineItemPart(string Address, string State, bool RunOpen, StepRuntime? Runtime, SuspensionKind? Suspension, bool Ended, bool Cancelled)
 {
+    /// <summary>Why the instance is parked, when <see cref="Suspension"/> is a park; the health count of unavailable parks reads it. Not written when there is none.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ParkReason? Reason { get; init; }
+
     /// <summary>
     /// The item's other root instances that are still live (a second recipe started on the item), each as this record without its own
     /// <see cref="Earlier"/>. The item's state follows this part, the latest root; these keep their own needs-you rows settling and keep

@@ -109,6 +109,7 @@ internal static partial class Labels
             "launch" => "The agent couldn't start",
             "lost" => "The agent session was lost",
             "exit" => "The agent exited",
+            "idle" => "The agent stopped without reporting",
             "limit" => "The agent hit its limit",
             _ => "The agent's step failed",
         };
