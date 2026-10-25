@@ -30,14 +30,10 @@ public sealed class HeavyLockSettingsCapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Without_a_cap_file_AW_HEAVY_SLOTS_sets_the_slots()
-    {
+    public void Without_a_cap_file_AW_HEAVY_SLOTS_sets_the_slots() =>
         Assert.Equal(3, HeavyLockSettings.Read(Env("3"), _root).Slots);
-    }
 
     [Fact, Trait("Lane", "unit")]
-    public void With_neither_the_slots_are_one()
-    {
+    public void With_neither_the_slots_are_one() =>
         Assert.Equal(1, HeavyLockSettings.Read(Env(slots: null), _root).Slots);
-    }
 }
