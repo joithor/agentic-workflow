@@ -13,21 +13,17 @@ public sealed class MapRulesetTests
         var one = MapRuleset.Of([Repo("a", "x/**", "y/**"), Repo("b", "z/**")]);
         var other = MapRuleset.Of([Repo("b", "z/**"), Repo("a", "y/**", "x/**")]);
 
-        Assert.Equal(one, other);
+        Assert.Equal(one, other, StringComparer.Ordinal);
         Assert.Equal(64, one.Length);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_changed_deny_glob_changes_the_hash()
-    {
-        Assert.NotEqual(MapRuleset.Of([Repo("a", "x/**")]), MapRuleset.Of([Repo("a", "x/**", "y/**")]));
-    }
+    public void A_changed_deny_glob_changes_the_hash() =>
+        Assert.NotEqual(MapRuleset.Of([Repo("a", "x/**")]), MapRuleset.Of([Repo("a", "x/**", "y/**")]), StringComparer.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
-    public void The_same_glob_in_another_repo_changes_the_hash()
-    {
-        Assert.NotEqual(MapRuleset.Of([Repo("a", "x/**"), Repo("b")]), MapRuleset.Of([Repo("a"), Repo("b", "x/**")]));
-    }
+    public void The_same_glob_in_another_repo_changes_the_hash() =>
+        Assert.NotEqual(MapRuleset.Of([Repo("a", "x/**"), Repo("b")]), MapRuleset.Of([Repo("a"), Repo("b", "x/**")]), StringComparer.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public void A_changed_concept_pin_changes_the_hash()
@@ -36,7 +32,7 @@ public sealed class MapRulesetTests
         var pinned = plain with { Concepts = [ConceptPin.Of(id: null, "Scheduling", summary: null, ["feature:shifts"], paths: null)] };
         var renamed = plain with { Concepts = [ConceptPin.Of(id: null, "Rota", summary: null, ["feature:shifts"], paths: null)] };
 
-        Assert.NotEqual(MapRuleset.Of([plain]), MapRuleset.Of([pinned]));
-        Assert.NotEqual(MapRuleset.Of([pinned]), MapRuleset.Of([renamed]));
+        Assert.NotEqual(MapRuleset.Of([plain]), MapRuleset.Of([pinned]), StringComparer.Ordinal);
+        Assert.NotEqual(MapRuleset.Of([pinned]), MapRuleset.Of([renamed]), StringComparer.Ordinal);
     }
 }

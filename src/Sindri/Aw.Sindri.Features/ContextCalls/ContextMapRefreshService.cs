@@ -43,9 +43,18 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
     /// <summary>The registered service: the same, with the rules computed from the scope each tick.</summary>
     /// <param name="services">The container.</param>
     /// <returns>The service.</returns>
-    internal static ContextMapRefreshService Registered(IServiceProvider services) => new(
-        services.GetRequiredService<ContextScopes>(), services.GetRequiredService<IContextEngine>(), services.GetRequiredService<IJobViews>(), services.GetRequiredService<IIndexOutlooks>(),
-        services.GetRequiredService<MapJobStarts>(), services.GetRequiredService<TimeProvider>(), services.GetRequiredService<ILogger<ContextMapRefreshService>>()) { RulesFromScope = true };
+    internal static ContextMapRefreshService Registered(IServiceProvider services) =>
+        new(
+            services.GetRequiredService<ContextScopes>(),
+            services.GetRequiredService<IContextEngine>(),
+            services.GetRequiredService<IJobViews>(),
+            services.GetRequiredService<IIndexOutlooks>(),
+            services.GetRequiredService<MapJobStarts>(),
+            services.GetRequiredService<TimeProvider>(),
+            services.GetRequiredService<ILogger<ContextMapRefreshService>>())
+        {
+            RulesFromScope = true,
+        };
 
     internal static JobKind RefreshKind { get; } = JobKind.From("RefreshContextMap");
 
