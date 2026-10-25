@@ -43,7 +43,7 @@ public static class SubgraphBuilder
         var reached = Widen(graph, nodes, given, depth);
         var order = reached.OrderBy(r => r.Value.Depth).ThenBy(r => r.Value.Origin).ThenBy(r => r.Key, StringComparer.Ordinal).Select(r => r.Key).ToList();
         var all = reached.Keys.ToHashSet(StringComparer.Ordinal);
-        var bands = new LensBands(Intent(graph, nodes, order, reached, all), Product(graph, nodes, order, reached), Code(graph, nodes, order, reached, all));
+        var bands = LensRepos.Stamp(new LensBands(Intent(graph, nodes, order, reached, all), Product(graph, nodes, order, reached), Code(graph, nodes, order, reached, all)), graph, basis.MapRepo);
         var givenProduct = given.Where(k => IsProduct(k.Kind)).ToList();
         var ownSet = givenProduct.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
         var coverage = LensCoverageBuilder.Of(graph, nodes, givenProduct) with { Map = MapCoverageBuilder.Of(graph, ownSet, basis, all.Where(k => nodes[k].Key.Kind == NodeKind.Code)) };

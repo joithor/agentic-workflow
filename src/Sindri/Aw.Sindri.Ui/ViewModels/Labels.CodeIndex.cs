@@ -36,7 +36,7 @@ internal static partial class Labels
         "damaged" => "damaged, rebuilding on the next check",
         "stale" => "behind main",
         "building" => "building",
-        "waiting" => "waiting for a free build slot",
+        "waiting" => "waiting to retry",
         _ => state,
     };
 

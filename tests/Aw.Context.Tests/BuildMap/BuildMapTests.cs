@@ -196,29 +196,37 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_busy_heavy_job_lock_is_SND_CONTEXT_040_naming_the_holder_and_nothing_is_written()
+    public async Task A_build_runs_while_every_heavy_slot_is_held_and_takes_none()
     {
         _world.HeavyLock.BusyHolder = "pid 4242 (bash-tests)";
-        var progress = new SyncProgress();
 
-        var report = await _world.Map.BuildMap(progress, Scope, MapWorld.None);
+        var report = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
 
-        Assert.Equal(ContextErrors.HeavyLockBusy.Code, report.Error.Code);
-        Assert.Contains("pid 4242", report.Error.Message, StringComparison.Ordinal);
-        Assert.Contains(progress.Lines, l => l.StartsWith("waiting for heavy-job lock", StringComparison.Ordinal));
-        Assert.Empty(await Versions());
+        Assert.True(report.IsSuccess, report.IsError ? report.Error.Code : null);
+        Assert.Equal(0, _world.HeavyLock.Taken);
+        _ = Assert.Single(await Versions());
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task The_slot_is_released_when_the_build_ends_and_when_it_fails()
+    [Fact(Timeout = 30_000), Trait("Lane", "unit")]
+    public async Task Two_builds_of_one_map_never_run_at_once_the_second_waits_for_the_first()
     {
-        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
-        Assert.Equal((1, 0), (_world.HeavyLock.Taken, _world.HeavyLock.Held));
+        var release = new TaskCompletionSource();
+        _world.Clusters.Hold = release.Task;
 
-        var failed = await _world.Map.BuildMap(progress: null, MapWorld.Human, MapWorld.None);   // the fake repo reader knows only one of the two repos
+        var first = _world.Map.BuildMap(progress: null, Scope, MapWorld.None).AsTask();
+        var second = _world.Map.BuildMap(progress: null, Scope, MapWorld.None).AsTask();
+        while (_world.Clusters.Asked.Count == 0)
+        {
+            await Task.Delay(1, TestContext.Current.CancellationToken);
+        }
 
-        Assert.True(failed.IsError);
-        Assert.Equal((2, 0), (_world.HeavyLock.Taken, _world.HeavyLock.Held));
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // long enough for a second build to have got inside, were it allowed
+        Assert.Equal(1, _world.Clusters.Active);
+        release.SetResult();
+        var both = await Task.WhenAll(first, second);
+
+        Assert.All(both, r => Assert.True(r.IsSuccess, r.IsError ? r.Error.Code : null));
+        Assert.Equal(1, _world.Clusters.MostActive);
     }
 
     [Fact, Trait("Lane", "unit")]

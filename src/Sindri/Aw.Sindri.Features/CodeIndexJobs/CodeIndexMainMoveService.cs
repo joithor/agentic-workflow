@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <summary>
 /// The 'code-index-main-move' background service (code index spec §6.1): when a registered repo's checkout moved along its default branch past the commit its index describes, it starts a 'BuildCodeIndex'
 /// job of key 'index:&lt;repo&gt;' as itself, through the command chain. Each repo is decided on its own by <see cref="MainMoveDecision"/> (a running build first, then nothing when the index is at the head, then the
-/// backoff after failures in a row). A build deferred because the heavy slot was busy holds the repo's next start for ten minutes, and a layer that became buildable
+/// backoff after failures in a row). A layer that became buildable
 /// (found by the facade's probe) starts a layers-only build at the same commit. Embeddings are not this service's: the 'code-index-embed' service finishes them (spec §6.3). A repo on a feature branch starts nothing and is named in the summary.
 /// Three failed builds in a row for a repo that still needs one fail the run (needs-you 'failure:service:code-index-main-move'). A tick reads the heads, the stored index heads and the jobs once.
 /// </summary>
@@ -33,7 +33,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes
 {
     private const int RecentRuns = 8;
 
-    // the wait after a build that was deferred, and between layers-only builds
+    // the wait between layers-only builds
     private static readonly TimeSpan _hold = TimeSpan.FromMinutes(10);
 
     // graphify, the sandbox or the model pin are missing: setup can fix them (spec §6.3)
@@ -136,16 +136,14 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes
         return new RepoStep(Started: true, Failing: failing);
     }
 
-    // The repo's own decision: the stored index against the head, the key's running and ended builds, and the deferred hold on top.
+    // The repo's own decision: the stored index against the head, the key's running and ended builds.
     private (MainMoveAction Action, bool Failing) Decide(string repo, CommitSha commit, CommitSha? stored, List<JobRow> mine, bool layerBuildable)
     {
         var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToList();
         var now = clock.GetUtcNow();
         var onDefault = new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = commit.Value };
         var attempts = finished.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
-        var action = finished.Count > 0 && IndexJobs.Deferred(finished[0]) && now < finished[0].EndedAt + _hold
-            ? MainMoveAction.BackoffNotDue
-            : MainMoveDecision.Decide(onDefault, Recorded(repo, stored, withheld: Recovers(layerBuildable, stored, commit, finished, now)), mine.Exists(static j => j.State == JobState.Running), attempts, now);
+        var action = MainMoveDecision.Decide(onDefault, Recorded(repo, stored, withheld: Recovers(layerBuildable, stored, commit, finished, now)), mine.Exists(static j => j.State == JobState.Running), attempts, now);
         return (action, action != MainMoveAction.Nothing && MainMoveDecision.FailedInARow(attempts) >= IndexOutlookRules.FailuresToBroken);
     }
 
