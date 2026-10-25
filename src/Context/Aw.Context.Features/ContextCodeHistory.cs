@@ -1,9 +1,11 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.ScopeGraph;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.GetCode;
@@ -21,7 +23,8 @@ internal sealed class ContextCodeHistory(
     IService<GetHistoryRequest, HistoryView> history,
     IService<GetSubgraphRequest, SubgraphView> subgraph,
     IService<GetWholeMapRequest, WholeMapView> wholeMap,
-    ContextScopeGraph scopeGraphs) : IContextCode, IContextHistory
+    ContextMapReads mapReads,
+    ContextScopeGraph scopeGraphs) : IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         scopeGraphs.Build(query, scope, cancellationToken);
@@ -46,4 +49,13 @@ internal sealed class ContextCodeHistory(
 
     public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         wholeMap.Handle(new GetWholeMapRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        mapReads.Search(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        mapReads.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        mapReads.ConceptMembers(query, scope, cancellationToken);
 }

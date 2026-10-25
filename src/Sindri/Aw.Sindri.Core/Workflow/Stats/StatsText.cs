@@ -14,6 +14,7 @@ internal static class StatsText
         ParkReason.Timeout => "timeout",
         ParkReason.SpecConflict => "spec-conflict",
         ParkReason.NoRuntime => "SND-WF-010",
+        ParkReason.Unavailable => "unavailable",
         _ => "unknown",
     };
 

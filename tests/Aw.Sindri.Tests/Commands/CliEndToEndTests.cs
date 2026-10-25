@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
@@ -40,7 +41,7 @@ public sealed class CliEndToEndTests : IDisposable
         var hash = (await app.Services.GetRequiredService<IProfileSource>().Load(ct)).Value.Hash;
         var stale = SliceHarness.Profile("9s").Hash;
         await using var scope = app.Services.CreateAsyncScope();
-        using var client = Client(app, new AgentSession(Signal: null, Terminal: true, Prover: false));
+        using var client = Client(app, human: true);
         var verbs = Verbs(app, client, scope.ServiceProvider);
 
         var staleCode = await verbs.Approve(stale.Value, ct);
@@ -75,9 +76,9 @@ public sealed class CliEndToEndTests : IDisposable
     }
 
     /// <summary>The CLI's client with the headers CommandTable gives it: the real token store, no repo.</summary>
-    private static ControlPlaneClient Client(WebApplication app, AgentSession session) =>
+    private static ControlPlaneClient Client(WebApplication app, bool human) =>
         new(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
-            CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), human ? app.Services.GetRequiredService<IHumanTokenStore>() : new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
 
     private Verbs Verbs(WebApplication app, ControlPlaneClient client, IServiceProvider scope) =>
         new(client, app.Services.GetRequiredService<IControlPlaneProbe>(), new Output(_out, _error, SliceHarness.Json), scope);

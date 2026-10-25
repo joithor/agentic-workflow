@@ -13,7 +13,7 @@ public sealed class GraphCitationShapeTests
     {
         var lenses = JsonNode.Parse("""{"code":{"mapVersion":"v1","depth":2,"hops":[],"nodes":[],"edges":[],"items":[{"lensItem":"L-code-2","kind":"commit","label":"fix b","citations":["git:abc123"]}]},"product":{"nodes":[],"edges":[],"items":[]},"related":{"nodes":[],"edges":[],"items":[]},"history":{"nodes":[],"edges":[],"items":[]}}""")!.AsObject();
 
-        var graph = GraphGather.Assemble(null, lenses, []);
+        var graph = GraphGather.Assemble(graphView: null, lenses, anchors: []);
 
         var citation = Assert.Single(ScopeJson.Items(Assert.Single(ScopeJson.Items(graph, "nodes")), "citations"));
         Assert.Equal("git:abc123", ScopeJson.Str(citation, "key"));
@@ -24,7 +24,7 @@ public sealed class GraphCitationShapeTests
     {
         var view = JsonNode.Parse("""{"mapVersion":"v1","anchors":["concept:sharing"],"depth":1,"hops":[],"nodes":[{"id":"concept:sharing","kind":"concept","summary":"How notes are shared","rank":1,"lens":"product","lensItem":"L-product-1","citations":[{"key":"repo:web/docs/sharing.md","span":"L1-L9"}]}],"edges":[],"limits":[]}""")!.AsObject();
 
-        var graph = GraphGather.Assemble(view, new System.Text.Json.Nodes.JsonObject(), []);
+        var graph = GraphGather.Assemble(view, [], anchors: []);
 
         var node = Assert.Single(ScopeJson.Items(graph, "nodes"));
         Assert.Equal("concept", ScopeJson.Str(node, "kind"));

@@ -154,7 +154,7 @@ public abstract class ScopeRunRecordsContract
         var read = await records.Of(_scoping, Token);
 
         var record = Expect.Only(read.Value);
-        Expect.Equal<string?>(expected: null, record.Requested);
+        Expect.Equal(expected: null, record.Requested);
         Expect.Equal("openai", record.Vendor);
     }
 

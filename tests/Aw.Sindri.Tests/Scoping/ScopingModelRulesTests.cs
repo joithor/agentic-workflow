@@ -75,7 +75,7 @@ public sealed class ScopingModelRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_run_at_the_desk_warns_that_the_model_is_self_reported()
     {
-        var response = Run(WithRuns(Record("step.scope.draft", "m-1"), Record("step.scope.challenge", null, via: "desk")));
+        var response = Run(WithRuns(Record("step.scope.draft", "m-1"), Record("step.scope.challenge", model: null, via: "desk")));
 
         Assert.Equal(ScopeRuleStatus.Warn, Status(response, "SCP-CHAL-002"));
         Assert.Contains(response.Warnings, w => w.Rule == "SCP-CHAL-002" && w.Message.Contains("desk", StringComparison.Ordinal));
@@ -116,7 +116,7 @@ public sealed class ScopingModelRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_self_reported_model_that_differs_from_the_recorded_one_warns_and_the_record_wins()
     {
-        var facts = WithRuns(Record("step.scope.draft", "m-1", "m-1"), Record("step.scope.gap-search", "m-2", "m-2"))
+        var facts = WithRuns(Record("step.scope.draft", "m-1", "m-1"), Record("step.scope.challenge", "m-3", "m-3"), Record("step.scope.gap-search", "m-2", "m-2"))
             .Edit("gapSearch", n => n["rounds"]![0]!["agent"]!["reportedModel"] = "m-9");
 
         var response = Run(facts);

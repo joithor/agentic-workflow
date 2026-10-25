@@ -32,6 +32,18 @@ public sealed class StepPolicyFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_stop_hook_touches_the_turn_file_and_a_new_prompt_deletes_it()
+    {
+        var text = Encoding.UTF8.GetString(StepPolicyFile.Render(new StepPolicy(["Read"], StepPermissionMode.Default, "/work/wt")));
+
+        Assert.Contains("\"Stop\"", text, StringComparison.Ordinal);
+        Assert.Contains("touch \\\"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\\\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"UserPromptSubmit\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"PreToolUse\"", text, StringComparison.Ordinal);   // an agent woken without a prompt is working again
+        Assert.Contains("rm -f \\\"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\\\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Without_a_writable_path_no_write_rule_is_added()
     {
         var text = Encoding.UTF8.GetString(StepPolicyFile.Render(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null)));

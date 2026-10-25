@@ -24,7 +24,7 @@ public sealed class OnyxOfferTests : IDisposable
             .BuildServiceProvider();
     }
 
-    private static AgentSession Human { get; } = new(Signal: null, Terminal: true, Prover: false);
+    private static AgentSession Human { get; } = new(Terminal: true, Prover: false);
 
     public void Dispose() => _services.Dispose();
 
@@ -80,9 +80,9 @@ public sealed class OnyxOfferTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_is_never_offered_anything()
+    public async Task A_box_without_a_terminal_is_never_offered_anything()
     {
-        await Run(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false), "y");
+        await Run(new AgentSession(Terminal: false, Prover: false), "y");
 
         Assert.Equal(0, _asked);
         Assert.Equal(0, _ups);
@@ -91,7 +91,7 @@ public sealed class OnyxOfferTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_box_where_onyx_is_set_up_is_not_asked()
     {
-        _rig.Workspace.State = new OnyxSetupState(3000, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Start] = "x" });
+        _rig.Workspace.State = new OnyxSetupState(3189, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Start] = "x" });
 
         await Run(Human, "y");
 

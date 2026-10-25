@@ -11,7 +11,9 @@ internal sealed class CallerHeaders
     private readonly AgentSession? _session;
     private readonly IHumanTokenStore? _tokens;
     private readonly Func<CancellationToken, ValueTask<RepoName?>> _repo;
+    private HumanToken? _token;
     private (bool Found, RepoName? Repo) _located;
+    private string? _reason = NoToken;
 
     private CallerHeaders(AgentSession? session, IHumanTokenStore? tokens, Func<CancellationToken, ValueTask<RepoName?>> repo)
     {
@@ -23,12 +25,38 @@ internal sealed class CallerHeaders
     /// <summary>No headers at all (what S1's client sent): the API reads it as a session.</summary>
     internal static CallerHeaders None { get; } = new(session: null, tokens: null, static _ => ValueTask.FromResult<RepoName?>(null));
 
-    /// <summary>Why this CLI calls as a session, or null for a human (or for <see cref="None"/>).</summary>
-    internal string? SessionReason => _session?.SessionReason;
+    private const string NoToken = "the per-start human token isn't readable";
+
+    /// <summary>Why this CLI calls as a session, or null for a human (or for <see cref="None"/>); as of the last <see cref="Resolve"/> (each call makes one).</summary>
+    internal string? SessionReason => _session is null ? null : _reason;
+
+    /// <summary>
+    /// Reads the per-start token: a readable one makes this CLI a human caller (whatever the terminal or the agent around it),
+    /// an unreadable one a session.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the token read.</param>
+    /// <returns>Why the CLI calls as a session, or null for a human.</returns>
+    internal async ValueTask<string?> Resolve(CancellationToken cancellationToken)
+    {
+        _token = await ReadToken(cancellationToken).ConfigureAwait(false);
+        _reason = _session is null || _token is not null ? null : NoToken;
+        return _reason;
+    }
+
+    private async ValueTask<HumanToken?> ReadToken(CancellationToken cancellationToken)
+    {
+        if (_tokens is null)
+        {
+            return null;
+        }
+
+        var read = await _tokens.Read(cancellationToken).ConfigureAwait(false);
+        return read.IsSuccess ? read.Value : null;
+    }
 
     /// <summary>The headers for <paramref name="session"/>.</summary>
     /// <param name="session">How the CLI classed itself.</param>
-    /// <param name="tokens">Where the human token is read from, at each call (only for a human); none: no token is sent.</param>
+    /// <param name="tokens">Where the per-start token is read from, at each call; readable: the call is a human's and carries it; none or unreadable: a session's, with no token.</param>
     /// <param name="repo">The X-Sindri-Repo value, found once at the first call.</param>
     /// <returns>The headers.</returns>
     internal static CallerHeaders For(AgentSession session, IHumanTokenStore? tokens, Func<CancellationToken, ValueTask<RepoName?>> repo) =>
@@ -45,16 +73,18 @@ internal sealed class CallerHeaders
             return;
         }
 
+        var reason = await Resolve(cancellationToken).ConfigureAwait(false);
         var headers = request.Headers;
-        headers.Add(SindriHeaders.Caller, session.Human ? "human" : "session");
-        headers.Add(SindriHeaders.Client, session.Human && session.Prover ? "prover" : "cli");
-        if (session.Human)
+        headers.Add(SindriHeaders.Caller, reason is null ? "human" : "session");
+        headers.Add(SindriHeaders.Client, reason is null && session.Prover ? "prover" : "cli");
+        if (_token is { } token)
         {
-            headers.Add(SindriHeaders.Terminal, "1");
-            if (_tokens is not null && await _tokens.Read(cancellationToken).ConfigureAwait(false) is { IsSuccess: true, Value: { } token })
+            if (session.Terminal)
             {
-                headers.Add(SindriHeaders.Token, token.Value);   // a missing or unreadable token is sent as none: the API answers SND-AUTH-001
+                headers.Add(SindriHeaders.Terminal, "1");   // informational: it no longer decides authority
             }
+
+            headers.Add(SindriHeaders.Token, token.Value);
         }
 
         if (await Repo(cancellationToken).ConfigureAwait(false) is { } repo)

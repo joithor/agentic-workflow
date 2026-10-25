@@ -189,7 +189,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
 
     private async Task<int> Run(WebApplication app, CancellationToken ct, params string[] args)
     {
-        var session = new AgentSession(Signal: null, Terminal: true, Prover: false);
+        var session = new AgentSession(Terminal: true, Prover: false);
         using var client = new ControlPlaneClient(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
             CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
         var desk = new RecipeDesk(client, new StringReader(string.Empty), static _ => Task.FromResult<Error?>(null));

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// The JSON Schema subset the scoping schemas use (schemas/scoping, draft 2020-12): type, const, enum, the string, number, array and
-/// object keywords, $ref into $defs, allOf, anyOf, oneOf and if/then/else, contains with minContains and maxContains. It reports every
+/// object keywords, $ref into $defs, allOf, anyOf, oneOf, not and if/then/else, contains with minContains and maxContains. It reports every
 /// place a value breaks the schema; it is not a general validator, and a keyword it does not know is ignored.
 /// </summary>
 internal sealed class JsonSchemaLite(JsonNode root)
@@ -204,6 +204,7 @@ internal sealed class JsonSchemaLite(JsonNode root)
             errors.Add(new SchemaError(path, "does not match exactly one of the allowed shapes"));
         }
 
+        CheckNot(value, rules, path, errors);
         if (rules["if"] is { } condition)
         {
             var branch = Validate(value, condition).Count == 0 ? rules["then"] : rules["else"];
@@ -211,6 +212,15 @@ internal sealed class JsonSchemaLite(JsonNode root)
             {
                 Check(value, branch, path, errors);
             }
+        }
+    }
+
+    // 'not': the value must break the subschema, so '"not": {}' forbids a property that is present.
+    private void CheckNot(JsonNode? value, JsonObject rules, string path, List<SchemaError> errors)
+    {
+        if (rules["not"] is { } forbidden && Validate(value, forbidden).Count == 0)
+        {
+            errors.Add(new SchemaError(path, "is not allowed here"));
         }
     }
 

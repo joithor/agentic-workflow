@@ -62,10 +62,8 @@ public sealed class AgentModelPlumbingTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_blank_literal_asks_for_none()
-    {
+    public void A_blank_literal_asks_for_none() =>
         Assert.Equal(new ModelAsk(Literal: null, Profile: null), AgentModels.Ask(Step(("model", new WithValue(JsonSerializer.SerializeToElement("  "), Fact: null, Profile: null)))));
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_refusal_of_a_profile_key_names_it_and_says_what_to_write_instead()

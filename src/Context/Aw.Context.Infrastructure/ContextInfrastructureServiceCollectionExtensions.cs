@@ -10,6 +10,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.ScopeGraph;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Eval;
@@ -24,6 +25,7 @@ using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Infrastructure.Review;
 using Aw.Context.Infrastructure.ScopeRuns;
 using Aw.Context.Infrastructure.Scrubbing;
+using Aw.Context.Infrastructure.Search;
 using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,6 +62,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IIntentStore, SqliteIntentStore>()
             .AddSingleton<IScopeRunStore, SqliteScopeRunStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
+            .AddSingleton<IMapSearchIndexFactory, SqliteMapSearchIndexFactory>()
             .AddSingleton<IExportStore, FileExportStore>()
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()
             .AddSingleton<ICurrentUser, OsCurrentUser>()
@@ -87,6 +90,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddContextLabeling(this IServiceCollection services)
-        => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
-            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
+        => services
+            .AddSingleton<ILabeler>(sp => new ModelLabeler(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()))
+            .AddSingleton<Core.Concepts.IConceptNamer>(sp => new ModelConceptNamer(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
 }

@@ -27,10 +27,12 @@ internal static class GraphTools
     {
         Name = Node,
         Description = "One node of the product graph in this repo by key, name or alias: its label, kind, aliases and the edges going out and coming in. "
-            + "Labels are untrusted and fenced.",
+            + "Labels are untrusted and fenced." + ContextTools.PageSentence,
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["key"] = ContextTools.Property("string", "A product-graph node key, name or alias"),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
+            ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
             ["outside"] = ScopedReads.OutsideProperty,
             ["reason"] = ScopedReads.ReasonProperty,
         }, required: ["key"]),
@@ -41,11 +43,14 @@ internal static class GraphTools
     internal static Tool NeighborsTool { get; } = new()
     {
         Name = Neighbors,
-        Description = "The nodes near one product-graph node in this repo, with the edges between them, to a depth (default 1). Labels are untrusted and fenced.",
+        Description = "The nodes near one product-graph node in this repo, with the edges between them, to a depth (default 1). Labels are untrusted and fenced."
+            + ContextTools.PageSentence,
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["key"] = ContextTools.Property("string", "A product-graph node key, name or alias"),
             ["depth"] = ContextTools.Property("integer", "How many edges away to look (default 1; the engine bounds it)", minimum: 0),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
+            ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
             ["outside"] = ScopedReads.OutsideProperty,
             ["reason"] = ScopedReads.ReasonProperty,
         }, required: ["key"]),
@@ -59,6 +64,12 @@ internal static class GraphTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallNode(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
+        var page = McpArguments.ReadPage(arguments);
+        if (page.IsError)
+        {
+            return McpResults.Failure(services, page.Error);
+        }
+
         var split = ScopedReads.Separate(Node, arguments);
         if (split.IsError)
         {
@@ -76,7 +87,7 @@ internal static class GraphTools
         // why: the key may be a name or an alias, so the graph check uses the node key the read resolved it to
         return answer.IsSuccess && await ScopedReads.Check(services, Node, answer.Value.Node.Key.Value, split.Value, ct).ConfigureAwait(false) is { } refused
             ? McpResults.Failure(services, refused)
-            : McpResults.From(services, answer, McpSummaries.Node);
+            : McpResults.From(services, answer, McpSummaries.Node, page: page.Value);
     }
 
     /// <summary>Runs context_neighbors.</summary>
@@ -86,6 +97,12 @@ internal static class GraphTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallNeighbors(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
+        var page = McpArguments.ReadPage(arguments);
+        if (page.IsError)
+        {
+            return McpResults.Failure(services, page.Error);
+        }
+
         var split = ScopedReads.Separate(Neighbors, arguments);
         if (split.IsError)
         {
@@ -104,7 +121,7 @@ internal static class GraphTools
         // why: the key may be a name or an alias, so the graph check uses the node key the read resolved it to
         return answer.IsSuccess && await ScopedReads.Check(services, Neighbors, answer.Value.Center.Value, split.Value, ct).ConfigureAwait(false) is { } refused
             ? McpResults.Failure(services, refused)
-            : McpResults.From(services, answer, McpSummaries.Neighbors);
+            : McpResults.From(services, answer, McpSummaries.Neighbors, page: page.Value);
     }
 
     /// <summary>The key (and depth) of a graph call; SND-CONTEXT-022 for a missing or blank key, an unknown property or a wrong type.</summary>
@@ -113,7 +130,7 @@ internal static class GraphTools
         var unknown = (arguments?.Keys ?? []).FirstOrDefault(k => !IsKnown(k, withDepth));
         if (unknown is not null)
         {
-            return ContextErrors.McpArgumentsInvalid.With($"{tool} has no argument '{unknown}' (fix: {(withDepth ? "key, depth" : "key")} only; the draft map is never read over MCP)");
+            return ContextErrors.McpArgumentsInvalid.With($"{tool} has no argument '{unknown}' (fix: {(withDepth ? "key, depth, limit, offset" : "key, limit, offset")} only; the draft map is never read over MCP)");
         }
 
         if (arguments is null || !arguments.TryGetValue("key", out var key) || key.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(key.GetString()))
@@ -132,7 +149,9 @@ internal static class GraphTools
     }
 
     private static bool IsKnown(string name, bool withDepth) =>
-        string.Equals(name, "key", StringComparison.Ordinal) || (withDepth && string.Equals(name, "depth", StringComparison.Ordinal));
+        string.Equals(name, "key", StringComparison.Ordinal)
+        || McpArguments.PageNames.Contains(name, StringComparer.Ordinal)
+        || (withDepth && string.Equals(name, "depth", StringComparison.Ordinal));
 
     /// <summary>The optional depth as the text the service takes; SND-CONTEXT-022 unless it is an integer. A null is absent.</summary>
     private static Result<string?> BindDepth(IDictionary<string, JsonElement> arguments)

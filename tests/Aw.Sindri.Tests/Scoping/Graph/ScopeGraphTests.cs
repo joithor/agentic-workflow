@@ -1,11 +1,12 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Scoping.Graph;
 
@@ -30,7 +31,7 @@ public sealed class ScopeGraphTests
             ["hops"] = new JsonArray(),
             ["nodes"] = new JsonArray([.. keys.Select(static (k, i) => (JsonNode?)new JsonObject
             {
-                ["id"] = k, ["kind"] = "feature", ["summary"] = k, ["rank"] = i + 1, ["lens"] = "product", ["lensItem"] = "L-product-" + (i + 1), ["band"] = "product", ["citations"] = new JsonArray(),
+                ["id"] = k, ["kind"] = "feature", ["summary"] = k, ["rank"] = i + 1, ["lens"] = "product", ["lensItem"] = "L-product-" + (i + 1).ToString(CultureInfo.InvariantCulture), ["band"] = "product", ["citations"] = new JsonArray(),
             })]),
             ["edges"] = new JsonArray(),
             ["limits"] = new JsonArray(),

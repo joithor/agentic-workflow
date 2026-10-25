@@ -78,7 +78,7 @@ internal sealed partial class ShellWindow
     private static bool IsInRow(Visual focused, string? rowId) =>
         focused.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().Any(r => string.Equals(r.RowId, rowId, StringComparison.Ordinal));
 
-    // The Undo offer ends (pressed, or ten seconds): a focus on its button moves on.
+    // The Undo offer ends (pressed, or the undo window ends): a focus on its button moves on.
     private void OnSeenChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (string.Equals(e.PropertyName, nameof(NeedsYouSeenViewModel.UndoOffered), StringComparison.Ordinal) && Shell?.NeedsYou.Seen.UndoOffered == false)

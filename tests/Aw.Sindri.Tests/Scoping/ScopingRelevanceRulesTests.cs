@@ -29,7 +29,7 @@ public sealed class ScopingRelevanceRulesTests
 
         var rule = response.Rules.Single(r => r.Rule == Rel);
         Assert.Equal(ScopeRuleStatus.NotRun, rule.Status);
-        Assert.Contains("relevance", rule.Missing);
+        Assert.Contains("relevance", rule.Missing, StringComparer.Ordinal);
         Assert.Equal(ScopeOutcome.Incomplete, response.Outcome);
     }
 

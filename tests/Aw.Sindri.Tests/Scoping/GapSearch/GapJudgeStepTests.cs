@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
@@ -14,6 +15,8 @@ namespace Aw.Sindri.Tests.Scoping.GapSearch;
 [Lane(TestLane.Unit)]
 public sealed class GapJudgeStepTests
 {
+    private static readonly string[] _providerList = ["jev", "rules"];
+
     private const string Why = "WHY-the-job-matters-9f3";
     private const string Query = "QUERY-expiresAt-7c1";
     private const string Anchor = "ANCHOR-code:src/jobs/purge-4d2";
@@ -95,7 +98,7 @@ public sealed class GapJudgeStepTests
 
         _ = await new GapJudgeStep(judge, new PassThroughScrubber()).Run(Context(Candidates(Candidate("C1", "Purge job"))), Token);
 
-        Assert.Equal(["real-gap", "already-covered", "not-in-scope"], Assert.Single(judge.Requests).Choices.Select(static c => c.Name).ToArray());
+        Assert.Equal(["real-gap", "already-covered", "not-in-scope"], Assert.Single(judge.Requests).Choices.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -107,8 +110,8 @@ public sealed class GapJudgeStepTests
 
         Assert.Equal("ruled", result.Result!.Outcome.Value);
         var rulings = Out(result)["rulings"]!.AsArray();
-        Assert.Equal(["C1", "C2", "C3"], rulings.Select(static r => r!["id"]!.GetValue<string>()).ToArray());
-        Assert.Equal(["real-gap", "not-in-scope", "real-gap"], rulings.Select(static r => r!["ruling"]!.GetValue<string>()).ToArray());
+        Assert.Equal(["C1", "C2", "C3"], rulings.Select(static r => r!["id"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["real-gap", "not-in-scope", "real-gap"], rulings.Select(static r => r!["ruling"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal("jev", rulings[0]!["provider"]!.GetValue<string>());
         Assert.Equal("JD-1", rulings[0]!["decisionId"]!.GetValue<string>());
         Assert.Equal("model", rulings[0]!["reasonCode"]!.GetValue<string>());
@@ -119,7 +122,7 @@ public sealed class GapJudgeStepTests
     public async Task The_calls_run_at_most_parallel_at_a_time()
     {
         var judge = new ScriptedJudge(static _ => Decided("real-gap"), delay: TimeSpan.FromMilliseconds(30));
-        var items = Enumerable.Range(1, 8).Select(static i => Candidate("C" + i, "Job " + i)).ToArray();
+        var items = Enumerable.Range(1, 8).Select(static i => Candidate("C" + i.ToString(CultureInfo.InvariantCulture), "Job " + i.ToString(CultureInfo.InvariantCulture))).ToArray();
 
         var result = await new GapJudgeStep(judge, new PassThroughScrubber()).Run(Context(Candidates(items), Args(("parallel", 2))), Token);
 
@@ -187,7 +190,7 @@ public sealed class GapJudgeStepTests
 
         Assert.Null(result.Result);
         Assert.Contains("did not finish", result.Failure, StringComparison.Ordinal);
-        Assert.Single(judge.Requests);
+        _ = Assert.Single(judge.Requests);
     }
 
     [Fact]
@@ -220,12 +223,12 @@ public sealed class GapJudgeStepTests
     {
         var judge = new ScriptedJudge(static _ => Decided("real-gap"));
 
-        var result = await new GapJudgeStep(judge, new PassThroughScrubber()).Run(Context(Candidates(Candidate("C1", "Purge job")), Args(("providers", new[] { "jev", "rules" }), ("threshold", 0.75))), Token);
+        var result = await new GapJudgeStep(judge, new PassThroughScrubber()).Run(Context(Candidates(Candidate("C1", "Purge job")), Args(("providers", _providerList), ("threshold", 0.75))), Token);
 
         var request = Assert.Single(judge.Requests);
-        Assert.Equal(["jev", "rules"], request.Providers.ToArray());
+        Assert.Equal(["jev", "rules"], request.Providers, StringComparer.Ordinal);
         Assert.Equal(0.75, request.Threshold);
-        Assert.Equal(["jev", "rules"], Out(result)["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()).ToArray());
+        Assert.Equal(["jev", "rules"], Out(result)["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(0.75, Out(result)["judge"]!["threshold"]!.GetValue<double>());
     }
 

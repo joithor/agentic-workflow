@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.Scoping.Relevance;
 using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Scoping.Graph;
 

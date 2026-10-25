@@ -12,6 +12,7 @@ using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.ScopeGraph;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Trust;
@@ -97,6 +98,7 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddSingleton(wholeMapRules ?? WholeMapRules.Default)
             .AddSingleton<IScopeRunStore>(new FakeScopeRunStore())
+            .AddSingleton<IMapSearchIndexFactory>(new Aw.Context.Infrastructure.Search.SqliteMapSearchIndexFactory())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
@@ -126,6 +128,9 @@ internal sealed class MapWorld : IDisposable
 
     /// <summary>How many whole-map answers were built rather than served from the cache.</summary>
     internal int WholeMapBuilds => _scope.ServiceProvider.GetRequiredService<Features.GetWholeMap.WholeMapCache>().Builds;
+
+    /// <summary>How many search indexes were built rather than served from the cache.</summary>
+    internal int SearchBuilds => _scope.ServiceProvider.GetRequiredService<Features.SearchMap.MapSearchCache>().Builds;
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 

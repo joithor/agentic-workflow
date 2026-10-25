@@ -2,8 +2,7 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
-using Aw.Sindri.Features.Scoping.Relevance;
-using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -17,12 +16,12 @@ public sealed class ScopeRelevanceApplyStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => RelevanceSteps.Apply;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:b303685f9caf31ee0f8bd45220ca255a3af3a0b4e653f0f7116a2e50ec3c3daa";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new RelevanceApplyStep().Run(ScopingStepContexts.Of("step.scope.relevance-apply", new ScopingFacts()), cancellationToken);
+        _ = await new RelevanceApplyStep().Run(ScopingStepContexts.Of("step.scope.relevance-apply", []), cancellationToken);
 }
