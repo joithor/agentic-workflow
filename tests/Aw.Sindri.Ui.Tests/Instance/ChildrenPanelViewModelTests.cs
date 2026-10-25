@@ -250,10 +250,7 @@ public sealed class ChildrenPanelViewModelTests
     {
         var parked = Rows("project-build").Single(r => r.MirroredPark is not null);
         var served = Catalog(_ => { });
-        var reclassified = Catalog(rows =>
-        {
-            Edit(rows, "ApplyCommand:answer-grant", "class", "desk");
-        });
+        var reclassified = Catalog(rows => Edit(rows, "ApplyCommand:answer-grant", "class", "desk"));
 
         var before = new ChildRowViewModel(parked, _clipboard, _clock, served);
         var after = new ChildRowViewModel(parked, _clipboard, _clock, reclassified);
