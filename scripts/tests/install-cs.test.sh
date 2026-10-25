@@ -46,6 +46,7 @@ case "$FAKE_NAME" in
           if [ "${EVAL_FAIL:-}" = 1 ]; then echo "workflow.a@1: happy fail"; exit 1; fi
           echo "{\"recipes\":[$(seq -s, 1 $((FAKE_RECIPES + ${EVAL_COUNT_DELTA:-0})))]}"
         fi ;;
+      agents) if [ -n "${FAKE_OPEN_RUNS:-}" ]; then echo '{"sessions":[{"ref":"claude/abc","state":"running","launch":{"instance":"ITM-1/line/3/scoping.1","state":"challenge","attempt":1}}]}'; else echo '{"sessions":[]}'; fi ;;
       env) echo "judge=$AW_SINDRI_JUDGE packets=$AW_PACKETS_BIN evidence=$AW_UI_EVIDENCE_BIN dir=$(cd "$(dirname "$FAKE_SELF")" && pwd -P) droot=$DOTNET_ROOT" ;;
     esac ;;
   judge) echo "judge health ok" ;;
@@ -97,7 +98,7 @@ export PATH="$WORK/fakebin:$PATH"
 REPO="$WORK/repo"
 mkdir -p "$REPO/scripts/lib" "$REPO/src/Sindri/Aw.Sindri.Host" "$REPO/src/Judge" "$REPO/recipes/sindri"
 cp "$DIR/install-cs.sh" "$REPO/scripts/"
-cp "$DIR/lib/sindri-build-inputs.sh" "$REPO/scripts/lib/"
+cp "$DIR/lib/sindri-build-inputs.sh" "$DIR/lib/sindri-open-runs.sh" "$REPO/scripts/lib/"
 printf '{"sdk":{"version":"%s"}}\n' "$FAKE_SDK" > "$REPO/global.json"
 echo a > "$REPO/src/Sindri/Aw.Sindri.Host/a.cs"; echo b > "$REPO/src/Judge/b.cs"
 echo "name: one" > "$REPO/recipes/sindri/one.yaml"; echo "name: two" > "$REPO/recipes/sindri/two.yaml"
@@ -230,6 +231,16 @@ check "--rebuild of the running build exits 0" "$rc" "0"
 has "tells the owner to stop sindri" "$out" "run sindri stop, then re-run"
 check "and publishes nothing" "$(wc -l < "$FAKE_LOG" | tr -d ' ')" "0"
 check "the running build is untouched" "$(cat "$B/$S5/build-info")" "$before"
+# --- open agent runs under a running serve (#1000): no terminal stops the publish, AW_SINDRI_STOP_OK=1 goes on ---
+bump open-runs; : > "$FAKE_LOG"
+out="$(FAKE_OPEN_RUNS=1 bash "$INSTALL" --publish 2>&1 < /dev/null)"; rc=$?
+check "open agent runs with no terminal stop the publish" "$rc" "1"
+has "lists the open run" "$out" "claude/abc  ITM-1/line/3/scoping.1 · challenge  running"
+has "names the override" "$out" "AW_SINDRI_STOP_OK=1"
+check "and publishes nothing" "$(wc -l < "$FAKE_LOG" | tr -d ' ')" "0"
+out="$(FAKE_OPEN_RUNS=1 AW_SINDRI_STOP_OK=1 bash "$INSTALL" --publish 2>&1 < /dev/null)"; rc=$?
+check "AW_SINDRI_STOP_OK=1 publishes anyway" "$rc" "0"
+has "and says so" "$out" "AW_SINDRI_STOP_OK=1: going on"
 kill "$serve_pid" 2> /dev/null; serve_pid=""
 sleep 0.3
 bash "$INSTALL" --publish --rebuild > /dev/null 2>&1; check "--rebuild with no serve exits 0" "$?" "0"
@@ -284,7 +295,7 @@ check "archive failure: nothing is published" "$(wc -l < "$FAKE_LOG" | tr -d ' '
 
 # A tree that is not a git checkout cannot be published.
 NG="$WORK/nogit"; mkdir -p "$NG/scripts/lib" "$NG/src/Sindri/Aw.Sindri.Host"
-cp "$DIR/install-cs.sh" "$NG/scripts/"; cp "$DIR/lib/sindri-build-inputs.sh" "$NG/scripts/lib/"; cp "$REPO/global.json" "$NG/"
+cp "$DIR/install-cs.sh" "$NG/scripts/"; cp "$DIR/lib/sindri-build-inputs.sh" "$DIR/lib/sindri-open-runs.sh" "$NG/scripts/lib/"; cp "$REPO/global.json" "$NG/"
 out="$(cd "$WORK" && GIT_CEILING_DIRECTORIES="$WORK" bash "$NG/scripts/install-cs.sh" --publish 2>&1)"; rc=$?
 check "not a git checkout: exit 1" "$rc" "1"
 has "not a git checkout: the sentence" "$out" "can only be published from a git checkout"
