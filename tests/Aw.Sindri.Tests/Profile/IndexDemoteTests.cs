@@ -24,7 +24,7 @@ public sealed class IndexDemoteTests
 
         var deny = RepoDenyGlobs.For(profile, profile.Repos![0]);
 
-        Assert.Equal(["**/*.generated.ts", "**/*cron*"], deny);
+        Assert.Equal(["**/*cron*", "**/*.generated.ts"], deny);   // why: roles come in name order
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -32,7 +32,7 @@ public sealed class IndexDemoteTests
     {
         var profile = With(new IndexSettings(Roles: _roles));
 
-        Assert.Equal(["**/*.generated.ts", "**/*cron*", "demo/**", "**/*.test.ts"], RepoDenyGlobs.For(profile, profile.Repos![0]));
+        Assert.Equal(["**/*cron*", "demo/**", "**/*.generated.ts", "**/*.test.ts"], RepoDenyGlobs.For(profile, profile.Repos![0]));
         Assert.Null(RepoDemoteGlobs.For(profile, profile.Repos[0]));
     }
 
