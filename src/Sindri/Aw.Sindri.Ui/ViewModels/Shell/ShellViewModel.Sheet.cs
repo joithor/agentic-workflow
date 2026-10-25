@@ -21,7 +21,9 @@ internal sealed partial class ShellViewModel
     {
         DeepLinkKind.Recipe => Recipe.Title,
         DeepLinkKind.Decision => Decision.Heading,
-        _ => string.Empty,
+        null or DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Service or DeepLinkKind.Job or DeepLinkKind.Workflow
+            or DeepLinkKind.Node or DeepLinkKind.ContextItem or DeepLinkKind.Session or DeepLinkKind.System or DeepLinkKind.Setup => string.Empty,
+        _ => throw new InvalidOperationException("a sheet link of an unknown kind"),
     };
 
     private void OnDecisionChanged(object? sender, PropertyChangedEventArgs e)

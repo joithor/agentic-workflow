@@ -7,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// sent once and never retried; a refusal (decided elsewhere, voided, not found) shows as served, inline. When the row clears
 /// while the sheet is open the form is disabled and keeps its text.
 /// </summary>
-internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender, Platform.IClipboard? clipboard = null) : ObservableObject
+internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender, Platform.IClipboard? clipboard = null) : ObservableObject
 {
     private const string Conflict = "SND-ITEM-409";
     private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
@@ -70,44 +70,8 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>The id of the decision shown.</summary>
     internal string DecisionId { get; private set; } = "";
 
-    /// <summary>The note field's caption and name: it says the note is sent with the choice.</summary>
-#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
-    internal string NoteLabel => Labels.DecisionNoteLabel;
-#pragma warning restore CA1822, MA0041
-
-    /// <summary>The note sent with the choice.</summary>
-    internal string Note
-    {
-        get;
-        set => Set(ref field, value);
-    } = "";
-
-    /// <summary>The served refusal's detail; empty for none.</summary>
-    internal string Refusal { get; private set => Set(ref field, value); } = "";
-
-    /// <summary>The served refusal's code; empty for none.</summary>
-    internal string RefusalCode { get; private set => Set(ref field, value); } = "";
-
-    /// <summary>What was decided, once Decide was accepted; empty before.</summary>
-    internal string Outcome { get; private set => Set(ref field, value); } = "";
-
     /// <summary>True while a Decide is in flight.</summary>
     internal bool IsSending => sender.IsInFlight(DecisionId);
-
-    /// <summary>True when the row left the list while the sheet was open.</summary>
-    internal bool IsCleared { get; private set => Set(ref field, value); }
-
-    /// <summary>The cleared line, once the row is gone.</summary>
-    internal string ClearedLine => !IsCleared || DecidedLine.Length > 0 || IsRefusedAsDecided ? "" : ServedCleared.Length > 0 ? ServedCleared : Labels.Cleared(DecisionId);
-
-    // A stale Decide's refusal already says the decision was answered; the cleared line would say it a second time.
-    private bool IsRefusedAsDecided => Refusal.Length > 0 && string.Equals(RefusalCode, Conflict, StringComparison.Ordinal);
-
-    /// <summary>The polite live region: set true before the text, spoken once.</summary>
-    internal bool IsAnnouncing { get; private set => Set(ref field, value); }
-
-    /// <summary>The live region's text.</summary>
-    internal string Announcement { get; private set => Set(ref field, value); } = Labels.Sindri;
 
     /// <summary>The last send; completes when Decide was answered.</summary>
     internal Task Settled { get; private set; } = Task.CompletedTask;
