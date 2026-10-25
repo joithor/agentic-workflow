@@ -31,6 +31,26 @@ public sealed class ShowNodeTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task ShowNode_names_the_repo_of_a_node_in_a_multi_repo_map_and_none_for_a_feature_of_several()
+    {
+        _ = await _world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:web\", label: \"Web\"}", "  - {key: \"feature:shared\", label: \"Shared\"}",
+            "  - {key: \"code:w.ts\", label: \"w.ts\"}", "  - {key: \"code:a.ts\", label: \"a.ts\"}",
+            "edges:",
+            "  - {from: \"code:w.ts\", to: \"feature:web\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/w.ts\"}]}",
+            "  - {from: \"code:w.ts\", to: \"feature:shared\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/w.ts\"}]}",
+            "  - {from: \"code:a.ts\", to: \"feature:shared\", type: implements, provenance: deterministic, evidence: [{key: \"repo:other/a.ts\"}]}"));
+
+        var file = (await _world.Engine.ShowNode("code:a.ts", MapWorld.Human, MapWorld.None)).Value;
+        var web = (await _world.Engine.ShowNode("feature:web", MapWorld.Human, MapWorld.None)).Value;
+        var shared = (await _world.Engine.ShowNode("feature:shared", MapWorld.Human, MapWorld.None)).Value;
+
+        Assert.Equal(("other", "aw-split-panes", null), (file.Node.Repo, web.Node.Repo, shared.Node.Repo));
+        Assert.Equal("other", file.Node.ToFact().Repo);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Overrides_apply_a_renamed_node_shows_its_new_label_and_a_rejected_one_is_unknown()
     {
         _ = await _world.ImportFixture();

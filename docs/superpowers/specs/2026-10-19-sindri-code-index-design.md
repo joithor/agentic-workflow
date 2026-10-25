@@ -93,7 +93,7 @@ rest of Sindri reads it.
 
 ## 3. Terms
 
-- **Registered repo:** a repo in the approved profile, with its main checkout path (`repos[*].path`).
+- **Registered repo:** a repo in the approved profile, or in the live profile file when the approved one doesn't name it (owner q102, CIX-L59: a repo the owner adds with `sindri repo add` or an agent proposes is indexed at once), with its main checkout path (`repos[*].path`). The typed approval stays the consent for `index.denyPaths` and the embeddings server address only: both always come from the approved profile, an approved repo keeps its approved entry (a live edit to it takes effect on approval), and a live-only repo's own `denyPaths` only add to the approved ones and its entry never changes the embeddings address or model (it may only turn the layer off). Health and doctor rows list live-only repos too. With no approved profile nothing is indexed (SND-PROFILE-005).
 - **Head:** the commit `HEAD` of that checkout names. **Default branch:** the first of `origin/HEAD`'s target, `main`,
   `master` that exists as a local ref (no fetch). A head is **on main** when it is the default branch's tip or one of its ancestors.
 - **The shared trigger:** CI2 and §6.
