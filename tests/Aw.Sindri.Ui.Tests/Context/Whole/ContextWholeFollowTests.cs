@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
@@ -25,7 +26,7 @@ public sealed class ContextWholeFollowTests
     }
 
     private static RouteAnswer StatusAt(int number) =>
-        new(HttpStatusCode.OK, GoldenFiles.Api("context-map", "map-tabs-anchor").Replace("\"number\": 1", $"\"number\": {number}", StringComparison.Ordinal));
+        new(HttpStatusCode.OK, GoldenFiles.Api("context-map", "map-tabs-anchor").Replace("\"number\": 1", $"\"number\": {number.ToString(CultureInfo.InvariantCulture)}", StringComparison.Ordinal));
 
     [Fact]
     public async Task A_newer_map_version_is_read_on_the_next_event()

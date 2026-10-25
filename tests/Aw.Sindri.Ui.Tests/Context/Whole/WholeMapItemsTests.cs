@@ -26,7 +26,7 @@ public sealed class WholeMapItemsTests
     {
         var map = Nodes();
 
-        Assert.Equal(map.Geometry!.Nodes.Select(n => n.Key), map.Items.Select(i => i.Key));
+        Assert.Equal(map.Geometry!.Nodes.Select(n => n.Key), map.Items.Select(i => i.Key), StringComparer.Ordinal);
         Assert.All(map.Items, i => Assert.Contains(i.Label, i.Name, StringComparison.Ordinal));
     }
 
