@@ -34,7 +34,7 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
         }
 
         var (shown, applied, layer) = (visible.Value.Graph, visible.Value.Applied, visible.Value.Overrides);
-        var coverage = request.Anchor is { } name ? Coverage(applied, name) : Results.Success<LensCoverage?>(value: null);
+        var coverage = request.Anchor is { } name ? Coverage(applied, name, request.Scope.Repos) : Results.Success<LensCoverage?>(value: null);
         if (coverage.IsError)
         {
             return coverage.Error;
@@ -47,9 +47,9 @@ internal sealed class ShowMapStatusService(IGraphStore store) : IService<ShowMap
     private static ContextRepoName? ScopedTo(ContextCaller caller) => caller.Kind == ContextCallerKind.Session ? caller.Repo : null;
 
     // The coverage of the anchor's own scope over the map as a caller reads it (overrides applied, a pending proposal not part of the current map): the lenses' record.
-    private static Result<LensCoverage?> Coverage(GraphSnapshot applied, string anchor)
+    private static Result<LensCoverage?> Coverage(GraphSnapshot applied, string anchor, IReadOnlyList<ContextRepo> repos)
     {
-        var node = AnchorMatch.Resolve(applied, anchor);
+        var node = AnchorMatch.Resolve(applied, anchor, repos);
         return node.IsError ? node.Error : Results.Success<LensCoverage?>(LensCoverageBuilder.ForAnchor(applied, node.Value.Key));
     }
 }

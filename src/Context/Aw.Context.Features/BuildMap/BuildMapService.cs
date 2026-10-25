@@ -138,7 +138,7 @@ internal sealed class BuildMapService(
         }
 
         // A model that couldn't answer leaves the clusters their file-derived names.
-        var features = ClusterFeatures.Propose(repo.Name, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
+        var features = ClusterFeatures.Propose(repo, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
         return new RepoExtraction(extracted.Plus(features), commit, Degraded(clusters, labels, timedOut));
     }
 
