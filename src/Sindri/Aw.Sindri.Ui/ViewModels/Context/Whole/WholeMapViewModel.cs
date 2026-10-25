@@ -159,8 +159,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
         ForgetHighlight();
         Head = Labels.ContextWholeHead(answer.MapVersion);
         SizeText = Labels.ContextWholeSize(answer.Counts.Nodes, answer.Counts.Edges, TimeZoneInfo.ConvertTime(answer.AsOf, _zone()));
-        var byKey = answer.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
-        Areas = [.. Geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
+        Areas = HomedAreas.Tiles(answer.Areas, answer.Nodes ?? [], Geometry.Order, OpenArea);
         (IsReady, IsLoading, IsFailed) = (true, false, false);
         Changed();
     }
