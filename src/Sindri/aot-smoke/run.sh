@@ -8,20 +8,20 @@
 # (DOTNET_ROOT set from the 'dotnet' on PATH when unset) through the S1 and API P1 journeys against a temp home (serve
 # brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
-# the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
-# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
-# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), QUERY /context/subgraph with a JSON body on the published host (POST is 405), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the approve preview, a session's approve and the human's approve (no typed challenge, owner decision q93), status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
+# the views rebuild requested by a session and by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), QUERY /context/subgraph with a JSON body on the published host (POST is 405), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run, jobs show and the jobs list, pause and resume with a session's pause, and the services list after each), a session's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1), then Onyx P2: onyx status --json with no docker on PATH (state not-set-up, the docker row fail
-# SND-ONYX-001) and onyx up and down refused to a session and to a CLI with no terminal (SND-AUTH-002). The normalized output (pids, ports, hashes, times, the host name and the temp path
+# SND-ONYX-001). The normalized output (pids, ports, hashes, times, the host name and the temp path
 # masked) must equal expected.txt.
 # The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
 # under 'dotnet sindri.dll' is the dotnet muxer.
-# Callers (API spec §6): the run unsets the agent variables (the pinned probe's markers, as sindri-prove.sh human does:
-# CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH, CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
-# and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
-# (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
+# Callers (API spec §6): a CLI that reads the per-start token calls as a human, whatever its terminal or environment; the run
+# unsets the agent variables (as sindri-prove.sh human does: CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH,
+# CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT) and sets AW_SINDRI_PROVER=1 (the 'prover' label);
+# a "(human, terminal)" step runs under a pty (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr
+# merged), a "(session)" step moves the token file aside for the call (without_token), with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
 # The publish runs on a copy of the files it needs, in a temp dir under $TMPDIR that is deleted on exit, so the
 # checkout's lock files and build output are never touched.
@@ -44,7 +44,7 @@ bin="$out/bin/sindri"
 scratch=""
 work=""
 # On any exit, a server this run started is stopped before its home is deleted: only once this run's home is exported
-# (never the owner's default home), as the human at a terminal (a session's stop is refused, SND-AUTH-002), and, should
+# (never the owner's default home), as the human at a terminal, and, should
 # that fail, by signalling the pid control.json still names, then waiting (bounded) for it to exit. The scratch tree is
 # deleted on any exit, so the trap is set before it is made.
 cleanup() {
@@ -129,10 +129,17 @@ human_run_service() { # $1 = service: `human services run`, retried while a sche
   [ -z "$out" ] || printf '%s\n' "$out"
   exit_line "$rc"
 }
-session() { # an agent session (CLAUDECODE set), no terminal
+without_token() { # runs a command while the per-start token file is out of the way: the CLI can't read it, so it calls as a session
+  local file="$AW_SINDRI_HOME/auth/human.token" rc=0
+  mv "$file" "$file.aside"
+  "$@" || rc=$?
+  mv "$file.aside" "$file"
+  return "$rc"
+}
+session() { # a CLI that can't read the token (an agent's environment changes nothing now), no terminal
   echo "## sindri $* (session)"
   local rc=0
-  CLAUDECODE=1 bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
+  without_token bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
   exit_line "$rc"
 }
 doctor() { # doctor reads the providers' user-wide MCP files: point it at an empty scratch home, never the real one
@@ -163,10 +170,10 @@ items_in() { # $1 = state, $2 = count: the items view lists that many in that st
   done
   echo "## items_in: the items view didn't list $2 '$1' item(s) after 60 s"
 }
-session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
+session_tty() { # a CLI that can't read the token, at a terminal (the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
-  with_tty env CLAUDECODE=1 "${alarm[@]}" "$bin" "$@" || rc=$?
+  without_token with_tty "${alarm[@]}" "$bin" "$@" || rc=$?
   exit_line "$rc"
 }
 {
@@ -199,7 +206,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   items_in new 1
   run queue
   run items --state new
-  session item add "Refused by the desk"
+  session item add "Filed by a session"
   item="$(bounded "$bin" items --json </dev/null | jq -r '.items[0].id')"
   human item close "$item" </dev/null
   items_in done 1
@@ -210,14 +217,13 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run needs-you
   decision="$(bounded "$bin" needs-you --json </dev/null | jq -r '[.rows[] | select(.title == "Smoke request")][0].subject.id')"
   session decide "$decision" accept
-  human decide "$decision" accept </dev/null
   settle
   run needs-you
   run requests --state accepted
   echo "## sindri ledger --json --after 0 | jq (human: command.handled is listed)"
   with_tty "${alarm[@]}" "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --json --after 0 | jq (session: public types only)"
-  CLAUDECODE=1 bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
+  without_token bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --item <closed item> --json | jq (the item's events)"
   with_tty "${alarm[@]}" "$bin" ledger --item "$item" --type 'item.*' --json </dev/null | jq -c '[.events[].type]'
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
@@ -244,7 +250,6 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   settle
   run services
   session stop
-  human stop </dev/null
   run status
   doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
@@ -252,15 +257,12 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run recipe validate "$root/recipes/sindri/workflow.review-loop.yaml"
   run recipe validate "$root/recipes/sindri/workflow.evidence.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
-  # Onyx P2: status with no docker on PATH (a scratch dir holding only perl, which the alarm wrapper needs), only its deterministic rows; up and down are the human's.
+  # Onyx P2: status with no docker on PATH (a scratch dir holding only perl, which the alarm wrapper needs), only its deterministic rows (up and down run Docker, so they are not driven here).
   mkdir -p "$work/nodocker"
   ln -s "$(command -v perl)" "$work/nodocker/perl"
   echo "## sindri onyx status --json | jq '{state, docker}' (no docker on PATH; a check's state 2 is fail)"
   json="$({ PATH="$work/nodocker" bounded "$bin" onyx status --json </dev/null 2>&1 || true; })"
   jq -c '{state, docker: (.checks[] | select(.name == "docker") | {failed: (.state == 2), code: .problem.code})}' <<<"$json" 2>/dev/null || printf '%s\n' "$json"
-  session onyx up
-  run onyx up
-  session onyx down
 } >"$out/actual.raw"
 
 bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"

@@ -9,6 +9,7 @@ using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
@@ -156,9 +157,9 @@ public sealed class RecipeApproveCliTests : IDisposable
 
     private RecipeDeskCommands Commands(WebApplication app, bool human, string typed)
     {
-        var session = new AgentSession(human ? null : "CLAUDECODE is set", Terminal: true, Prover: false);
+        var session = new AgentSession(Terminal: true, Prover: false);
         var client = new ControlPlaneClient(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
-            CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
+            CallerHeaders.For(session, human ? app.Services.GetRequiredService<IHumanTokenStore>() : new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
         var desk = new RecipeDesk(client, new StringReader(typed + "\n"), static _ => Task.FromResult<Error?>(null));
         return new RecipeDeskCommands(desk, app.Services.CreateScope().ServiceProvider, new Output(_out, _error, SliceHarness.Json));
     }

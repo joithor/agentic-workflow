@@ -79,6 +79,7 @@ public sealed class EvidenceParentFactsTests
     [InlineData("ui", "evidence-ui")]
     [InlineData("api", "evidence-api")]
     [InlineData("db", "evidence-db")]
+    [InlineData("desktop", "evidence-desktop")]
     [InlineData("all", "evidence-all")]
     [InlineData("other", "evidence-other")]
     public void Evidence_routes_every_leaf_choice_and_reconverges_on_the_summary(string choice, string state)

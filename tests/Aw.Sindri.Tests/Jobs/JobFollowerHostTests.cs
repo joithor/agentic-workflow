@@ -26,7 +26,7 @@ public sealed class JobFollowerHostTests
             var probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri(host.App.Urls.First()), 42, 3), new Ping(42, 3));
             var tokens = new HostToken(host.Token);
             using var client = new ControlPlaneClient(probe, SliceHarness.Json,
-                CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult((RepoName?)null)));
+                CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult((RepoName?)null)));
             using var stdout = new SignalWriter("echo");   // the first line arrived: the follower is on the stream
             using var stderr = new StringWriter();
             var follow = Task.Run(() => new JobFollower(client, new Output(stdout, stderr, SliceHarness.Json), TimeProvider.System).Follow(started, json: false, default, default), ct);

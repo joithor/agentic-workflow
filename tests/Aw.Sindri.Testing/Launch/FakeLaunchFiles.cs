@@ -12,6 +12,7 @@ public sealed class FakeLaunchFiles : ILaunchFiles
     public const string DefaultProof = "launch-proof-for-tests";
 
     private readonly Dictionary<LaunchId, string> _open = [];
+    private readonly Dictionary<LaunchId, DateTimeOffset> _turns = [];
     private readonly List<LaunchId> _forgotten = [];
     private readonly List<LaunchId> _swept = [];
 
@@ -26,6 +27,18 @@ public sealed class FakeLaunchFiles : ILaunchFiles
     /// <param name="proof">The proof it accepts.</param>
     public void Open(LaunchId launch, string proof = DefaultProof) => _open[launch] = proof;
 
+    /// <summary>Says <paramref name="launch"/>'s turn ended at <paramref name="at"/> (the Stop hook touched its file).</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="at">When.</param>
+    public void EndTurn(LaunchId launch, DateTimeOffset at) => _turns[launch] = at;
+
+    /// <summary>Says a new turn started on <paramref name="launch"/> (the prompt hook deleted the file).</summary>
+    /// <param name="launch">The launch.</param>
+    public void StartTurn(LaunchId launch) => _ = _turns.Remove(launch);
+
+    /// <inheritdoc/>
+    public DateTimeOffset? TurnEndedAt(LaunchId launch) => _turns.TryGetValue(launch, out var at) ? at : null;
+
     /// <inheritdoc/>
     public Result<Unit> Verify(LaunchId launch, LaunchSecret secret) =>
         _open.TryGetValue(launch, out var proof) && string.Equals(proof, secret.Value, StringComparison.Ordinal)
@@ -36,6 +49,7 @@ public sealed class FakeLaunchFiles : ILaunchFiles
     public void Forget(LaunchId launch)
     {
         _ = _open.Remove(launch);
+        _ = _turns.Remove(launch);
         _forgotten.Add(launch);
     }
 
