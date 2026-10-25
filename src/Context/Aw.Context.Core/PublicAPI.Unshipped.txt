@@ -7033,7 +7033,7 @@ static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator !=(Aw.Context.Core.Sco
 static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphView? left, Aw.Context.Core.ScopeGraph.ScopeGraphView? right) -> bool
 Aw.Context.Core.ScopeGraph.ScopeGraphNode
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphNode!
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.Deconstruct(out string! Id, out string! Kind, out string? Path, out string? Symbol, out string! Summary, out int Rank, out string! Lens, out string! LensItem, out string? Band, out System.Collections.Generic.IReadOnlyList<string!>! Citations) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Deconstruct(out string! Id, out string! Kind, out string? Path, out string? Symbol, out string! Summary, out int Rank, out string! Lens, out string! LensItem, out string? Band, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphNode? other) -> bool
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.get -> string!
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.init -> void
@@ -7053,9 +7053,9 @@ Aw.Context.Core.ScopeGraph.ScopeGraphNode.LensItem.get -> string!
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.LensItem.init -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.get -> string?
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.init -> void
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>!
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.init -> void
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.ScopeGraphNode(string! Id, string! Kind, string? Path, string? Symbol, string! Summary, int Rank, string! Lens, string! LensItem, string? Band, System.Collections.Generic.IReadOnlyList<string!>! Citations) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.ScopeGraphNode(string! Id, string! Kind, string? Path, string? Symbol, string! Summary, int Rank, string! Lens, string! LensItem, string? Band, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(object? obj) -> bool
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.GetHashCode() -> int
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.ToString() -> string!
@@ -7114,3 +7114,17 @@ static Aw.Context.Core.ScopeGraph.GraphRead.operator ==(Aw.Context.Core.ScopeGra
 static readonly Aw.Context.Core.ContextErrors.ScopeGraphUnavailable -> Aw.Kernel.ErrorDefinition!
 Aw.Context.Core.Facade.IContextLenses.ScopeGraph(Aw.Context.Core.ScopeGraph.ScopeGraphQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.ScopeGraph.ScopeGraphView!>!>
 Aw.Context.Core.Facade.IContextEngine.GraphReads(string! instanceAddress, string! runToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.GraphRead!>!>!>
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphCitation!
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Deconstruct(out string! Key, out string? Span) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphCitation? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Key.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Key.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Span.get -> string?
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Span.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphCitation.ScopeGraphCitation(string! Key, string? Span = null) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphCitation.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphCitation.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphCitation.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphCitation.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphCitation? left, Aw.Context.Core.ScopeGraph.ScopeGraphCitation? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphCitation.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphCitation? left, Aw.Context.Core.ScopeGraph.ScopeGraphCitation? right) -> bool
