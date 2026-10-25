@@ -91,6 +91,9 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             .Where(x => data.Hit(x.e.Symbol) is not null)
             .Select(x => new Neighbor(data.Hit(x.e.Symbol)!, x.Score))]);
 
+    public ValueTask<Result<IReadOnlyList<SymbolVector>>> SymbolVectors(IReadOnlyList<string> paths, string model, CancellationToken cancellationToken)
+        => throw new NotSupportedException();
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     // Callers of a base or interface member also include the callers of its implementations, when asked.

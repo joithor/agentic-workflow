@@ -9,7 +9,7 @@ namespace Aw.CodeIndex.Testing;
 /// <summary>
 /// A scripted <see cref="ICodeIndex"/> for the surfaces that read it (Sindri's CLI and HTTP routes): repos with a status, symbols and call edges set up by the test. Each edge carries its own coverage; the answer's comes from <see cref="CallCoverage.Of"/> with the symbol's language read from its file extension (.cs full, else partial).
 /// It keeps the facade's scope rule: a repo outside the call's <see cref="CodeIndexScope"/>, or one with no index, answers the same SND-CODEIDX-013 (SND-CODEIDX-011 for a
-/// ref that names no symbol), and <see cref="Status"/> lists only the scope's repos. Build, FileSymbols, Similar and Neighbors answer 013 (Embed is scripted by <see cref="WithEmbeddings"/>): no reader scripts them yet.
+/// ref that names no symbol), and <see cref="Status"/> lists only the scope's repos. Build, FileSymbols, Similar, Neighbors and SymbolVectors answer 013 (Embed is scripted by <see cref="WithEmbeddings"/>): no reader scripts them yet.
 /// </summary>
 public sealed class FakeCodeIndex : ICodeIndex
 {
@@ -182,6 +182,9 @@ public sealed class FakeCodeIndex : ICodeIndex
 
     public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken)
         => Fail<NeighborsAnswer>(scope, CodeIndexErrors.IndexNotBuilt);
+
+    public ValueTask<Result<SymbolVectorsView>> SymbolVectors(CodeIndexScope scope, RepoName repo, SymbolVectorsQuery query, CancellationToken cancellationToken)
+        => Fail<SymbolVectorsView>(scope, CodeIndexErrors.IndexNotBuilt);
 
     private ValueTask<Result<CallsAnswer>> Calls(CodeIndexScope scope, SymbolRef symbol, CallDirection direction)
     {
