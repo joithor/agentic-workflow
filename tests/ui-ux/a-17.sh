@@ -27,10 +27,15 @@ card_before="$(bounds_of --type Border --name "Create item")"
 cancel_before="$(bounds_of --name Cancel)"
 body_before="$(bounds_of --name Body)"
 
-# The Create control is a CommandControl wrapper; its Button is the first child.
+# The Create control is a CommandControl wrapper; its Button is a descendant.
 create_id="$(dt search --type CommandControl | jq -r '[.matches[] | select(.visible != false)] | last | .id // empty')"
 [ -n "$create_id" ] || uxu_die "no Create control in the dialog"
-dt click --node-id "$create_id/0" >/dev/null || uxu_die "the Create control's button did not click"
+btn_id="$(dt search --type Button --limit 200 | jq -r --arg p "$create_id/" '[.matches[] | select(.visible != false and (.id | startswith($p)))] | first | .id // empty')"
+if [ -z "$btn_id" ]; then
+  dt search --type Button --limit 200 | jq -r '.matches[] | select(.visible != false) | "\(.id)\t\(.name)"' >&2
+  uxu_die "no Button under the Create control $create_id"
+fi
+dt click --node-id "$btn_id" >/dev/null || uxu_die "the Create control's button $btn_id did not click"
 dt wait-for --contains "required" --state visible --wait-ms 15000 >/dev/null || uxu_die "the blank-title error never showed"
 sleep 1
 
