@@ -1,7 +1,7 @@
 ---
 name: verify-app
-description: "Detect web vs iOS automatically and delegate to /verify-web (Playwright) or /verify-ios (XcodeBuildMCP). Pass any arguments through unchanged."
-argument-hint: "[--journey <path>] [--lenses <csv>] [--baseline] [--yes] [--base-url <url>] [--visual] [criteria or 'auto']"
+description: "Detect web vs iOS vs desktop automatically and delegate to /verify-web (Playwright), /verify-ios (XcodeBuildMCP) or /verify-desktop (the real desktop app on seeded data, checked against its mockups). Pass any arguments through unchanged."
+argument-hint: "[--journey <path>] [--lenses <csv>] [--baseline] [--yes] [--base-url <url>] [--screens <csv>] [--visual] [criteria or 'auto']"
 allowed-tools: Bash(git *), Bash(ls *), Bash(mkdir *), Bash(SHARED_DIR=*), Bash(source *), Glob, Read, AskUserQuestion, Skill, mcp__prism-mcp__session_load_context, mcp__prism-mcp__session_save_ledger, mcp__prism-mcp__session_save_handoff
 ---
 <!-- MEMORY: SKIP -->
@@ -13,9 +13,9 @@ allowed-tools: Bash(git *), Bash(ls *), Bash(mkdir *), Bash(SHARED_DIR=*), Bash(
 
 # Verify App — Platform Dispatcher
 
-Detects whether this is a web or iOS project and delegates to the appropriate verification skill. Contains no verification logic — all execution lives in the sub-skills.
+Detects whether this is a web, iOS or desktop project and delegates to the appropriate verification skill. Contains no verification logic — all execution lives in the sub-skills.
 
-> **Tip:** If you already know the platform, invoke directly: `/verify-web` or `/verify-ios`
+> **Tip:** If you already know the platform, invoke directly: `/verify-web`, `/verify-ios` or `/verify-desktop`
 
 ## Platform Detection & Dispatch
 
@@ -26,7 +26,7 @@ SHARED_DIR="$HOME/.agentic-workflow/toolkit/skills/_shared"
 ls "$SHARED_DIR/platform-detection.md"
 ```
 
-If resolution or `ls` fails, stop and report — do not guess the platform. Otherwise read the file and apply it: iOS → `verify-ios`, web → `verify-web`, both/neither → **Ask the user**. Echo `dispatch: <sub-skill> args=<args>` before dispatching, then dispatch literally: **Invoke skill `<sub-skill>`** with args `"<original args verbatim>"`.
+If resolution or `ls` fails, stop and report — do not guess the platform. Otherwise read the file and apply it: iOS → `verify-ios`, web → `verify-web`, desktop → `verify-desktop`, several/none → **Ask the user**. Echo `dispatch: <sub-skill> args=<args>` before dispatching, then dispatch literally: **Invoke skill `<sub-skill>`** with args `"<original args verbatim>"`.
 
 ## Argument Spec (pass-through)
 
@@ -39,6 +39,7 @@ All arguments are forwarded to the sub-skill **unchanged** — never drop or rew
 | `--baseline` | Require visual diffing against `screens.json` baselines — the visual lens fails if none exist |
 | `--yes` | Non-interactive: the sub-skill auto-approves its plan |
 | `--base-url <url>` | Override app-URL detection (web only; still forwarded verbatim) |
+| `--screens <csv>` | Desktop only: screen names from the repo's screens manifest to verify (ignored with a note on web and iOS) |
 | `--visual` | Include the visual lens |
 | `auto` / criteria | Diff-inference mode / explicit verification criteria |
 

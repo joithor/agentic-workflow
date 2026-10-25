@@ -64,6 +64,19 @@ public abstract class AgentSessionsContract
         Expect.True(lost.IsSuccess && lost.Value is { IsLive: false, EndedAs: AgentSessionEnd.Lost, ExitCode: null });
     }
 
+    /// <summary>An idle end says idle: the turn ended with no report.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_idle_end_says_idle()
+    {
+        var sessions = await Create();
+        await End(sessions, A.FirstLaunchId, SessionEndReason.Idle, exitCode: null);
+
+        var idle = await sessions.Watch(A.FirstLaunchId, Token);
+
+        Expect.True(idle.IsSuccess && idle.Value is { IsLive: false, EndedAs: AgentSessionEnd.Idle, ExitCode: null });
+    }
+
     /// <summary>Spend is the latest sample, and another launch's samples don't count.</summary>
     /// <returns>The test.</returns>
     [Fact]

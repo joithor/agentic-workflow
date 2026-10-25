@@ -36,7 +36,7 @@ and the `code:` anchors; SCP-ACC-004 checks uniqueness only; the vendor half of 
 with the missing keys and never fails; at `evidence` it makes the outcome `incomplete`.
 
 Coverage: a source that is `degraded`, or `unavailable`/`not-configured` without matching a row of the Recorded limits table on (lens, state, reason), fails
-SCP-COV-002 (outcome `regather` when it is the only failing rule). The one fix-line map is `ScopeFixLines`; the view reads `not searched: <limit> — <fix line>`.
+SCP-COV-002 (outcome `regather` when it is the only failing rule: a stale lens that a re-embed plus another gather can fix). `SCP-LENS-001` is never a regather: it is a fault in the lens itself (edges ending outside its found nodes and anchors, a lens that disagrees with its coverage row), and gather reproduces it. The lens-shape checks are one function (`LensShape`) that the rule and gather share: gather runs it over its own output and fails the Step with `SCP-GATHER-001` (one message per lens, with counts and at most three example edges), and a check or evidence Step that still sees `SCP-LENS-001` fails with the finding named. A failed Step with no `step.failed` transition parks `needs-answer`, which the person sees (eval `evidence-lens-regather`). The rule reports one finding per kind per lens, never one per edge. The one fix-line map is `ScopeFixLines`; the view reads `not searched: <limit> — <fix line>`.
 A `not-synced` source reads by its `sync` pair (`null`, queued, running, finished, failed with optional `retryAt` or `failures`).
 
 ## Desk helper
@@ -77,6 +77,7 @@ Deferred from the SC-K1 review (runs 1 and 2) to SC-K2 or later:
 - `brief.md` in the packet uses its own backtick fence; API9 wraps a `.md` file in the pack fence (`UntrustedFence`), and the packet moves to it.
 - `--draft` with an address is checked against the runs root, not that instance's run area, and skips the worktree check; resolve the instance first and share one `AW_SINDRI_HOME` resolution.
 - `SCP-ACC-003` reads `openQuestions` and `questions` without `Need`-ing them, so a Step directory without them fails instead of `not-run`.
+- `SND-SCOPING-009`: gather's lenses were unavailable (`input.context.lenses` gave no typed result). It is infrastructure, not a question: the Step is retried, then parks `unavailable` with this code (see "A dependency that is down" in sindri-workflow.md).
 - `PacketsCli` reports a tool failure as `InvalidInput` (the services report SND-SCOPING-008); it now shares the services' invocation, which kills the child on timeout or Ctrl-C.
 - The `noBehaviourChange` marker needs a spec amendment (§8.2 ACC-002 and ACC-005, A.1 and the SC-E seeds); it also means "covered through another surface" for some surfaces (owner decision, in the PR).
 - `ScopeSchemas` caches parsed `JsonNode` documents in a static field; materialize them under the lock before `serve` shares the view (API2).

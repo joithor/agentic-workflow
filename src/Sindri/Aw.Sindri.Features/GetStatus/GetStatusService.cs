@@ -54,7 +54,8 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
         var problems = await healthRows.CodeIndexProblems(approved, cancellationToken).ConfigureAwait(false);
         var standing = profile.ChangedSinceApproval ? ProfileApproval.Changed : profile.NeedsApproval ? ProfileApproval.NeedsApproval : ProfileApproval.Approved;
         var health = HealthSummary.For(running, views, rows, standing, problems);
-        return HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
+        var stuck = HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
+        return HealthSummary.WithUnavailable(stuck, await healthRows.Unavailable(cancellationToken).ConfigureAwait(false));   // a Step whose dependency is down parks asking no one: health shows it
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

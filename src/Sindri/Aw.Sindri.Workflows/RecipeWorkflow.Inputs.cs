@@ -31,6 +31,7 @@ internal sealed partial class RecipeWorkflow
         _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
         _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
         _uncapsPlan = Workflow.Patched("step-inputs-no-plan-cap-v1");   // new runs keep no cap (a big map's view is a long text, not a failure); a history without this marker keeps the cap it ran under
+        _unavailable = Workflow.Patched("step-unavailable-v1");   // a Step failure no transition takes is retried, then parks as unavailable; a history without the marker parks needs-answer at once as it did
     }
 
     private bool _fillsInputs;
@@ -38,6 +39,7 @@ internal sealed partial class RecipeWorkflow
     private bool _dropsTexts;
     private bool _capsPlan;
     private bool _uncapsPlan;
+    private bool _unavailable;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
@@ -81,7 +83,7 @@ internal sealed partial class RecipeWorkflow
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
-                return await InputsFailed(instance, open, InputFillPolicy.Reason(request.Input.Value, e.InnerException)).ConfigureAwait(true);   // a code, never the message: it could carry text
+                return await InputFailed(instance, open, request.Input, e).ConfigureAwait(true);
             }
 
             if (_capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
@@ -97,11 +99,21 @@ internal sealed partial class RecipeWorkflow
         return default;
     }
 
-    /// <summary>The Step failure an input's failure becomes: its texts dropped, the reason never carrying text.</summary>
-    private async Task<Filling> InputsFailed(WorkflowInstance instance, OpenRun open, string reason)
+    // The reason is a code, never the message (it could carry text); a typed SND- code also becomes the park's.
+    private Task<Filling> InputFailed(WorkflowInstance instance, OpenRun open, BlockId input, ActivityFailureException failure)
+    {
+        var code = failure.InnerException is ApplicationFailureException { ErrorType: { } type } && type.StartsWith("SND-", StringComparison.Ordinal) ? type : null;
+        return InputsFailed(instance, open, InputFillPolicy.Reason(input.Value, failure.InnerException), input.Value, code);
+    }
+
+    /// <summary>
+    /// The Step failure an input's failure becomes: its texts dropped, the reason never carrying text. The input is the dependency that was down, so a failure no
+    /// transition takes is retried and then parks as unavailable, naming it (owner decision q93).
+    /// </summary>
+    private async Task<Filling> InputsFailed(WorkflowInstance instance, OpenRun open, string reason, string? dependency = null, string? code = null)
     {
         await DropTexts(instance.Address.Value).ConfigureAwait(true);
-        return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))), Parked: null);
+        return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))) { Dependency = dependency, Code = code }, Parked: null);
     }
 
     /// <summary>

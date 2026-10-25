@@ -39,7 +39,7 @@ Read `screens.json` (CD4 schema in `$SHARED_DIR/design-artifact-paths.md`). The 
 
 ## Step 2: Platform Detection & Dispatch
 
-Follow `$SHARED_DIR/platform-detection.md` exactly: recursive iOS globs (`**/Package.swift`, `**/*.xcodeproj`, `**/*.xcworkspace`, ignoring `node_modules/`, `.build/`, `Pods/`, `vendor/`, `external-skills/`); web = `package.json` deps include `next`/`react`/`vite`/`vue`/`@angular/core`; both/neither → **Ask the user** per the resolution table.
+Follow `$SHARED_DIR/platform-detection.md` exactly (desktop is detected there too, but has no implement sub-skill: for a desktop project implement the screen directly against its mockup, keep it read-only for the config, then go to Step 3): recursive iOS globs (`**/Package.swift`, `**/*.xcodeproj`, `**/*.xcworkspace`, ignoring `node_modules/`, `.build/`, `Pods/`, `vendor/`, `external-skills/`); web = `package.json` deps include `next`/`react`/`vite`/`vue`/`@angular/core`; both/neither → **Ask the user** per the resolution table.
 
 Dispatch contract (from the shared file):
 
@@ -54,7 +54,7 @@ Dispatch contract (from the shared file):
 When the sub-skill completes without printing `[BLOCKED]`:
 
 - If its report already includes a `verify_run_id` (the sub-skill ran its own verify gate), do not re-run — surface that verdict.
-- Otherwise run **Invoke skill `design-verify`** with args `"<screen-name>"` now. Verification is not a suggestion — this dispatcher is done only when a verify run reports PASS or WARN (CD11 thresholds in `$SHARED_DIR/design-artifact-paths.md`).
+- Otherwise run **Invoke skill `design-verify`** with args `"<screen-name>"` now. Verification is not a suggestion — this dispatcher is done only when a verify run reports PASS or WARN (CD11 thresholds in `$SHARED_DIR/design-artifact-paths.md`). For a desktop UI change `design-verify` dispatches to `design-verify-desktop`, which runs the real app on seeded data against the mockups; the implementation is done only when it reports PASS (any unexpected mismatch fails).
 
 ## Next steps
 

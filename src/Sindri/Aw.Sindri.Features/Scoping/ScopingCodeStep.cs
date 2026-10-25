@@ -26,23 +26,23 @@ internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
         var extra = await Extra(context, cancellationToken).ConfigureAwait(false);
         if (extra.IsError)
         {
-            return BlockStepResult.Failed(extra.Error.Message);
+            return Failed(extra.Error);
         }
 
         var ran = DeskBlocks.Run(step.Value, new ScopeFacts(Texts(context, extra.Value)), context.LoopCaps.GetValueOrDefault(ScopeRules.ChallengeLoop, ScopeRules.DefaultChallengeRounds));
         if (ran.IsError)
         {
-            return BlockStepResult.Failed(ran.Error.Message);
+            return Failed(ran.Error);
         }
 
         var kept = await Keep(context, ran.Value, cancellationToken).ConfigureAwait(false);
         if (kept.IsError)
         {
-            return BlockStepResult.Failed(kept.Error.Message);
+            return Failed(kept.Error);
         }
 
         var more = await MoreOutputs(context, ran.Value, cancellationToken).ConfigureAwait(false);
-        return more.IsError ? BlockStepResult.Failed(more.Error.Message) : Completed(ran.Value, more.Value);
+        return more.IsError ? Failed(more.Error) : Completed(ran.Value, more.Value);
     }
 
     /// <summary>Facts the Step records beyond the code's outputs, such as the hash of a packet it just kept: none by default.</summary>
@@ -154,6 +154,9 @@ internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
     /// <param name="value">The element.</param>
     /// <returns>The text.</returns>
     protected static string Text(JsonElement value) => value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.GetRawText();
+
+    // An error of kind Unavailable (the lenses, the packet tool) is infrastructure: the engine retries the Step, then parks it as unavailable, never as a question for a person.
+    private BlockStepResult Failed(Error error) => error.Kind == ErrorKind.Unavailable ? BlockStepResult.Unavailable(step.Value, error.Message, error.Code) : BlockStepResult.Failed(error.Message);
 
     private static BlockStepResult Completed(ScopingDeskResponse response, IReadOnlyDictionary<string, string> more)
     {

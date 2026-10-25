@@ -35,6 +35,7 @@ public sealed class LaunchEventGoldenTests
         "launch.session-reported",
         "session.ended-exit-with-tokens",
         "session.ended-lost",
+        "session.ended-idle",
         "session.usage",
         "launch.probed",
         "launch.started-public",
@@ -73,6 +74,7 @@ public sealed class LaunchEventGoldenTests
         "launch.session-reported" => Of(h, EventTypes.LaunchSessionReported, new LaunchSessionReported(A.FirstLaunchId, _session)),
         "session.ended-exit-with-tokens" => Of(h, EventTypes.SessionEnded, new SessionEnded(A.FirstLaunchId, SessionEndReason.Exit, 0, InputTokens: 1200, OutputTokens: 340)),
         "session.ended-lost" => Of(h, EventTypes.SessionEnded, new SessionEnded(A.FirstLaunchId, SessionEndReason.Lost, ExitCode: null)),
+        "session.ended-idle" => Of(h, EventTypes.SessionEnded, new SessionEnded(A.FirstLaunchId, SessionEndReason.Idle, ExitCode: null)),
         "session.usage" => Of(h, EventTypes.SessionUsage, new SessionUsage(A.FirstLaunchId, Sample: 3, InputTokens: 1200, OutputTokens: 340, _codex, Model: "gpt-5-codex")),
         "launch.probed" => Of(h, EventTypes.LaunchProbed, new LaunchProbed(
             new TerminalFacts("warp", "Warp", Present: true, "detected", ConfigPath: null, Problem: null, Detail: null),

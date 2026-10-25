@@ -68,6 +68,15 @@ public sealed class EngineNoticesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void An_unavailable_park_notifies_no_one_because_it_asks_nothing_of_a_human()
+    {
+        var open = At(Step, "produce");
+        var parked = Suspensions.Suspend(open, Park(ParkReason.Unavailable, "step.produce is unavailable after 2 retries; the last error: exit"));
+
+        Assert.Empty(EngineNotices.For(open, parked, version: 4, deskTaskNotified: true));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_resume_into_the_same_desk_run_sends_nothing()
     {
         var open = At(Step, "produce");
