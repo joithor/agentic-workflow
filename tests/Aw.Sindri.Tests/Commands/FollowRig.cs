@@ -37,7 +37,7 @@ internal sealed class FollowRig : IDisposable
     public Task<int> Start(FollowApi api, bool json)
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
-            CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
         var verbs = new FollowVerbs(client, _probe, new Output(Out, Error, SliceHarness.Json), Clock);
         return Task.Run(() => verbs.Run(json, _interrupt.Token));
     }

@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Commands.Probe;
 
 namespace Aw.Sindri.Tests.Commands.Probe;
@@ -33,7 +32,7 @@ public sealed class HarnessProbeGoldenTests
             Assert.Equal((pinned.Harness, pinned.Version), (report.Harness, report.Version));
             if (pinned.Human)
             {
-                Assert.Empty(AgentSession.Variables.Intersect(report.Variables, StringComparer.Ordinal));
+                Assert.Empty(AgentVariables.Intersect(report.Variables, StringComparer.Ordinal));
                 Assert.DoesNotContain(report.Ancestry, a => PinnedProbe.Processes.Any(p => p.Matches(a)));
                 continue;
             }
@@ -46,13 +45,6 @@ public sealed class HarnessProbeGoldenTests
             Assert.All(pinned.Processes, p => Assert.Contains(report.Ancestry, p.Matches));
             Assert.All(humans, h => Assert.DoesNotContain(h.Ancestry, a => pinned.Processes.Any(p => p.Matches(a))));
         }
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void The_cli_reads_the_pinned_lists()
-    {
-        Assert.Equal([.. PinnedProbe.Variables, AgentSession.SindriChild], AgentSession.Variables);
-        Assert.Equal(PinnedProbe.Processes, AgentSession.Harnesses);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -70,7 +62,7 @@ public sealed class HarnessProbeGoldenTests
         var script = File.ReadAllText(Path.Combine(RepoRoot(), "scripts", "sindri-prove.sh"));
         var line = script.Split('\n').Single(l => l.Contains("AW_SINDRI_PROVER=1 \\", StringComparison.Ordinal));
 
-        Assert.All(AgentSession.Variables, v => Assert.Contains($"-u {v} ", line, StringComparison.Ordinal));
+        Assert.All(AgentVariables, v => Assert.Contains($"-u {v} ", line, StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -79,8 +71,11 @@ public sealed class HarnessProbeGoldenTests
         var script = File.ReadAllText(Path.Combine(RepoRoot(), "src", "Sindri", "aot-smoke", "run.sh"));
         var unset = script.Split('\n').Single(l => l.StartsWith("unset ", StringComparison.Ordinal)).Split(' ').Skip(1).ToHashSet(StringComparer.Ordinal);
 
-        Assert.All(AgentSession.Variables, v => Assert.Contains(v, unset));
+        Assert.All(AgentVariables, v => Assert.Contains(v, unset));
     }
+
+    /// <summary>The variables the proof scripts unset: the pinned probe's markers, then Sindri's own recursion guard.</summary>
+    private static IReadOnlyList<string> AgentVariables { get; } = [.. PinnedProbe.Variables, "AW_SINDRI_CHILD"];
 
     private static string Text(PinnedHarness pinned) =>
         File.ReadAllText(Golden.SourcePath(typeof(HarnessProbeGoldenTests).Assembly, $"{Directory}/{pinned.GoldenFile}"));

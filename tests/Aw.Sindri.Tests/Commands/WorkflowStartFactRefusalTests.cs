@@ -29,7 +29,7 @@ public sealed class WorkflowStartFactRefusalTests : IDisposable
         var refusal = """{"type":"about:blank","title":"SND-CLI-003","status":400,"detail":"fact:scopeInput (scope.json) is not valid for workflow.scoping: /repo: required (fix: write fact:scopeInput as one of the shapes in schemas/scoping/scope-input.json)"}""";
         var api = new RoutedApi().OnRaw("/sindri/workflow/instances", HttpStatusCode.BadRequest, refusal);
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
-            CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
         var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Kernel.Error?>(null));
         await using var services = new ServiceCollection().AddSingleton(TimeProvider.System).BuildServiceProvider();
 
