@@ -43,13 +43,7 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         {
             var key = draft ? "draft" : "current";
             var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
-            if (_snapshots.Get(key, stamp) is { } held)
-            {
-                return held;
-            }
-
-            var snapshot = await SnapshotIn(session, v => v.Status == (draft ? MapVersionStatus.Draft : MapVersionStatus.Current), cancellationToken).ConfigureAwait(false);
-            _snapshots.Put(key, stamp, snapshot.IsSuccess ? snapshot.Value : null);
+            var snapshot = await _snapshots.GetOrLoad(key, stamp, () => SnapshotIn(session, v => v.Status == (draft ? MapVersionStatus.Draft : MapVersionStatus.Current), cancellationToken).AsTask(), cancellationToken).ConfigureAwait(false);
             return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
         }
     }
@@ -66,13 +60,7 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         {
             var key = "v" + version.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
-            if (_snapshots.Get(key, stamp) is { } held)
-            {
-                return held;
-            }
-
-            var snapshot = await SnapshotIn(session, v => v.Number == version && v.Status is MapVersionStatus.Current or MapVersionStatus.Retained, cancellationToken).ConfigureAwait(false);
-            _snapshots.Put(key, stamp, snapshot.IsSuccess ? snapshot.Value : null);
+            var snapshot = await _snapshots.GetOrLoad(key, stamp, () => SnapshotIn(session, v => v.Number == version && v.Status is MapVersionStatus.Current or MapVersionStatus.Retained, cancellationToken).AsTask(), cancellationToken).ConfigureAwait(false);
             return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
         }
     }
