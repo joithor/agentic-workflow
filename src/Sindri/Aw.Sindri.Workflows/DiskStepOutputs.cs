@@ -12,7 +12,7 @@ internal sealed class DiskStepOutputs : IStepOutputs
         var folder = Path.Combine(runDirectory, AgentRecovery.OutputFolder);
         try
         {
-            IReadOnlyList<string> names = Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder).Where(f => since is not { } from || File.GetLastWriteTimeUtc(f) >= from).Select(static f => Path.GetFileName(f)).Order(StringComparer.Ordinal)] : [];
+            IReadOnlyList<string> names = Directory.Exists(folder) ? [.. Directory.EnumerateFiles(folder).Where(f => since is not { } from || new DateTimeOffset(File.GetLastWriteTimeUtc(f)) >= from).Select(static f => Path.GetFileName(f)).Order(StringComparer.Ordinal)] : [];
             return ValueTask.FromResult(Results.Success(names));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -36,7 +36,8 @@ internal sealed class DiskStepOutputs : IStepOutputs
                 return SindriErrors.InvalidInput.With($"{file} is larger than 1 MiB (fix: report a smaller file; outputs travel as content, at most 1 MiB each)");
             }
 
-            return await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false);
+            var bytes = await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false);
+            return new ReadOnlyMemory<byte>(bytes);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

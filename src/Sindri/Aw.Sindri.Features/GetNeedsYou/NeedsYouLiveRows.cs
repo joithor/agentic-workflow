@@ -1,8 +1,8 @@
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Features.SweepLostSessions;
 
 namespace Aw.Sindri.Features.GetNeedsYou;
 
@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// <param name="clock">Stamps the rows.</param>
 /// <param name="stalled">The agent runs idle past their launch's idle time (issue #1000); none when this build has no launcher.</param>
 /// <param name="views">The items view, for the title of a stalled run's item.</param>
-internal sealed class NeedsYouLiveRows(IOnyxNotices onyx, SetupNotices setup, ITextScrubber scrubber, TimeProvider clock, StalledAgentRuns? stalled = null, IViewReader? views = null)
+internal sealed class NeedsYouLiveRows(IOnyxNotices onyx, SetupNotices setup, ITextScrubber scrubber, TimeProvider clock, IStalledAgentRuns? stalled = null, IViewReader? views = null)
 {
     /// <summary>The Onyx row, the setup rows and the stalled agent runs, in that order.</summary>
     /// <param name="cancellationToken">Cancels the reads.</param>

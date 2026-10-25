@@ -42,9 +42,15 @@ internal sealed class AgentRecovering(BlockCatalog catalog, IStepOutputs outputs
             return AgentRecovered.Nothing with { Reason = decision.Reason };
         }
 
+        return await Stored(run, outcome.Value, decision.Files, folder, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Stores each file as the report's output and digests the report; a file that can't be read parks the run, a store that can't take one retries the activity.
+    private async Task<AgentRecovered> Stored(AgentRecoverRun run, string outcome, IReadOnlyDictionary<FactKey, string> files, string folder, CancellationToken cancellationToken)
+    {
         var stored = new Dictionary<FactKey, FactValue>();
-        var report = new StringBuilder().Append(CultureInfo.InvariantCulture, $"recovered run {run.Run}\noutcome {outcome.Value}\n");
-        foreach (var (fact, name) in decision.Files.OrderBy(static f => f.Key.Value, StringComparer.Ordinal))
+        var report = new StringBuilder().Append(CultureInfo.InvariantCulture, $"recovered run {run.Run}\noutcome {outcome}\n");
+        foreach (var (fact, name) in files.OrderBy(static f => f.Key.Value, StringComparer.Ordinal))
         {
             var content = await outputs.Read(run.Worktree, name, cancellationToken).ConfigureAwait(false);
             if (content.IsError)
@@ -62,6 +68,6 @@ internal sealed class AgentRecovering(BlockCatalog catalog, IStepOutputs outputs
             _ = report.Append(CultureInfo.InvariantCulture, $"output {fact.Value} {Convert.ToHexStringLower(SHA256.HashData(content.Value.Span))}\n");
         }
 
-        return new AgentRecovered(outcome.Value, stored, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(report.ToString()))), Reason: null);
+        return new AgentRecovered(outcome, stored, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(report.ToString()))), Reason: null);
     }
 }

@@ -27,9 +27,7 @@ internal sealed partial class RecipeWorkflow
 {
     private static readonly AgentCall _launchCall = new("agent-launch", TimeSpan.FromMinutes(2), Heartbeat: null, new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumAttempts = 3 });
     private static readonly AgentCall _watchCall = new("agent-watch", TimeSpan.FromDays(7), TimeSpan.FromSeconds(10), new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumInterval = TimeSpan.FromSeconds(10) });   // a heartbeat timeout or a restarted worker retries the watch, which attaches to the same session
-    private static readonly AgentCall _recoverCall = new("agent-recover", TimeSpan.FromMinutes(2), Heartbeat: null, new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumAttempts = 3 });
     private static readonly AgentCall _closeCall = new("agent-close", TimeSpan.FromMinutes(2), Heartbeat: null, new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumAttempts = 3 });
-    private DateTimeOffset? _launchedAt;   // when the open run's session was asked for: an output older than this is an earlier Step's
     private AgentRunning? _held;   // the launched run whose session is still live, so the interpreter loop can stop it when the instance ends or the run is replaced while it is parked or taken over (D11)
     private (string Token, AgentLaunched Launched)? _agent;   // the open run's launch, kept across a park or a takeover so the watch resumes without a second launch
 
@@ -37,8 +35,6 @@ internal sealed partial class RecipeWorkflow
     private static readonly FactKey _workspaceKey = FactKey.From("fact:workspace");
     private bool? _agentWorkspace;
     private bool AgentWorkspace => _agentWorkspace ??= Workflow.Patched("ci-fix-agent-workspace");   // read only for ci-fix, after every other marker
-    private bool? _recoverStranded;
-    private bool RecoverStranded => _recoverStranded ??= Workflow.Patched("recover-stranded-agent-result");   // issue #1000: a history without it fails an ended session's Step without reading its output folder
     private bool? _phaseWorkspace;
     private bool PhaseWorkspaceLaunch => _phaseWorkspace ??= Workflow.Patched("ln-wf2-phase-workspace-launch");   // LN-WF2: read for every other agent Step; a history without it launched them in their own worktrees
 
@@ -96,7 +92,7 @@ internal sealed partial class RecipeWorkflow
         var run = AgentRunOf(instance, open, step);
         var item = instance.Facts.TryGetValue(FactKey.From("fact:item"), out var fact) ? fact : null;
         var workspace = (step.Use == _ciFix ? AgentWorkspace : PhaseWorkspaceLaunch) && instance.Facts.TryGetValue(_workspaceKey, out var held) ? held : null;   // LN-WF2: an instance that holds a workspace (the phase's worktree, or docs sync's own) runs its agent Steps there
-        _launchedAt = Workflow.UtcNow;
+        _launchedAt = new DateTimeOffset(Workflow.UtcNow);
         var launching = Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.LaunchAsync(Launch(run, item, step, instance, workspace)), AgentOptions(_launchCall, open, state, cancel.Token));
         var (applied, end) = await AwaitAgent(instance, open, new Awaited(launching, cancel, Reports: false), context).ConfigureAwait(true);
         if (end == AgentEnd.Over)
@@ -107,7 +103,7 @@ internal sealed partial class RecipeWorkflow
         var launched = await Launching(launching).ConfigureAwait(true);
         if (launched.Failure is { } failure)
         {
-            return (await Decided(applied, open, AgentFailed(open, step, StepFailed.LaunchReason, tokens: 0, $"{failure.Code}: {failure.Message}"), reportId: null, context).ConfigureAwait(true), true);
+            return (await Decided(applied, open, AgentFailed(open, step, StepFailed.LaunchReason, tokens: 0, $"{failure.Code}: {failure.Message}") with { Dependency = "the agent launcher", Code = failure.Code }, reportId: null, context).ConfigureAwait(true), true);
         }
 
         _agent = (open.Token.Value, launched);
@@ -170,26 +166,6 @@ internal sealed partial class RecipeWorkflow
 
         var reason = AgentEndReasons.Of(ended.EndedAs);
         return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, recovery?.Reason ?? ended.Detail), reportId: null, context).ConfigureAwait(true);
-    }
-
-    // Issue #1000: a session that ended with no report may have left its result in the output folder (its 'workflow complete' got no answer while the control plane restarted).
-    // The run completes from it when the folder proves one outcome; null (the Step fails with the session's own end) when the build predates this, the launch had no run directory,
-    // the folder is empty, or the read failed.
-    private async Task<AgentRecovered?> Recover(AgentRunning running)
-    {
-        if (!RecoverStranded || running.Launched?.Worktree is not { } worktree)
-        {
-            return null;
-        }
-
-        try
-        {
-            return await Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.RecoverAsync(new AgentRecoverRun(worktree, running.Run.Step.Block, running.Open.Token.Value, _launchedAt)), AgentOptions(_recoverCall, running.Open, running.State, CancellationToken.None)).ConfigureAwait(true);
-        }
-        catch (ActivityFailureException)
-        {
-            return null;   // boundary: a folder that can't be read must not wedge the instance; the Step fails with the session's own end
-        }
     }
 
     // The session's own report: closes the run (usage, diff signal, stop), then decides it like a desk report and answers the Update that carried it.

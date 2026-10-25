@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -33,11 +34,19 @@ internal static class AgentRecovery
         var provable = new List<(OutcomeName Outcome, Dictionary<FactKey, string> Files)>();
         foreach (var outcome in descriptor.Outcomes)
         {
-            var needed = descriptor.Outputs.Where(o => StepOutputs.CallerWritesOn(o, outcome)).Select(static o => o.Fact).ToList();
-            var found = needed.ToDictionary(static f => f, f => files.FirstOrDefault(n => string.Equals(n, NameOf(f), StringComparison.Ordinal)));
-            if (needed.Count > 0 && found.Values.All(static n => n is not null))
+            var needed = AgentStepBrief.Needed(descriptor, outcome).Distinct().ToList();
+            var found = new Dictionary<FactKey, string>();
+            foreach (var fact in needed)
             {
-                provable.Add((outcome, found.ToDictionary(static p => p.Key, static p => p.Value!)));
+                if (files.FirstOrDefault(n => string.Equals(n, NameOf(fact), StringComparison.Ordinal)) is { } name)
+                {
+                    found[fact] = name;
+                }
+            }
+
+            if (needed.Count > 0 && found.Count == needed.Count)
+            {
+                provable.Add((outcome, found));
             }
         }
 

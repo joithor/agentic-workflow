@@ -13,11 +13,8 @@ namespace Aw.Sindri.Features.SweepLostSessions;
 /// <param name="files">The per-launch files: the turn-ended file.</param>
 /// <param name="views">The 'launches' view: the instance a launch belongs to.</param>
 /// <param name="instances">Reads the instance, to see whether a person took it over.</param>
-internal sealed class StalledAgentRuns(LaunchLiveness liveness, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IInstanceReader instances)
+internal sealed class StalledAgentRuns(LaunchLiveness liveness, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IInstanceReader instances) : IStalledAgentRuns
 {
-    /// <summary>The stalled runs now.</summary>
-    /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>The runs, in no set order.</returns>
     public async ValueTask<IReadOnlyList<StalledAgentRun>> Find(CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();

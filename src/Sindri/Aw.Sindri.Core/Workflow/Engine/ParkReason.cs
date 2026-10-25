@@ -33,4 +33,8 @@ public enum ParkReason
     /// <summary>A Step or resource with no runtime in this build (W5); answered by '--resume' in a build that has it.</summary>
     [JsonStringEnumMemberName("SND-WF-010")]
     NoRuntime = 7,
+
+    /// <summary>A Step's dependency (a launch, a block's service, an input's source) stayed down through the bounded retry (kind step); never a question for a human. Not in the needs-you list; answered by '--resume', which runs the Step again.</summary>
+    [JsonStringEnumMemberName("unavailable")]
+    Unavailable = 8,
 }
