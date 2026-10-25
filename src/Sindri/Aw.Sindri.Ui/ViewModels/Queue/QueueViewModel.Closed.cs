@@ -13,6 +13,9 @@ internal sealed partial class QueueViewModel
     /// <summary>True while the fold is open.</summary>
     public bool IsClosedOpen { get; private set => Set(ref field, value); }
 
+    /// <summary>The Closed header's fold arrow: down while open, right while folded.</summary>
+    public string ClosedGlyph => Labels.FoldFolded;
+
     /// <summary>"Closed" before the first read, then "Closed (3)".</summary>
     public string ClosedHeader { get; private set => Set(ref field, value); } = Labels.ClosedHeader(count: null);
 
