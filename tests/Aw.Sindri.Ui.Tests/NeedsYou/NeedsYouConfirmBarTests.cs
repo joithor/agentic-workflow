@@ -149,7 +149,7 @@ public sealed class NeedsYouConfirmBarTests
 
         var bar = await Bar(NeedsYouRows.Recipe());
 
-        Assert.Equal("approve workflow.step 4", Assert.Single(_server.Challenges).Action);
+        Assert.Equal("approve workflow.step 5", Assert.Single(_server.Challenges).Action);
         Assert.Equal((true, false, false, "approve workflow.step 3"), (bar.ShowsTyped, bar.ShowsHold, bar.ShowsTerminal, bar.TypedBox!.Phrase));
         Assert.Empty(_server.RecipeApprovals);   // showing the box approves nothing
     }
