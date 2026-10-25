@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Roles;
 
@@ -9,8 +10,8 @@ public sealed class RoleCounterTests
     private static ContextRepo Repo(string name, params RepoRole[] roles) =>
         new(ContextRepoName.From(name), "/work/" + name) { Roles = roles, DemotePaths = [.. roles.Where(r => r.Demoted).SelectMany(r => r.Globs)], DenyPaths = [.. PathDenylist.Defaults, .. roles.Where(r => !r.Demoted).SelectMany(r => r.Globs)] };
 
-    private static IReadOnlyDictionary<string, IReadOnlyList<string>> Paths(string repo, params string[] paths) =>
-        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal) { [repo] = paths };
+    private static Dictionary<string, IReadOnlyList<string>> Paths(string repo, params string[] paths) =>
+        new(StringComparer.Ordinal) { [repo] = paths };
 
     [Fact, Trait("Lane", "unit")]
     public void Files_are_counted_per_role_in_name_order()
@@ -41,6 +42,7 @@ public sealed class RoleCounterTests
 
         var counted = RoleCounter.Of([web], Paths("web-app", "src/__tests__/b.ts", "src/__tests__/a.ts", "src/a.spec.ts", "demo/a.test.ts", "src/main.ts")).Single();
 
+        // why: the role-like files above are outside every glob, so Unassigned is set
         Assert.Equal(3, counted.Unassigned!.Count);
         Assert.Equal(["src/__tests__/a.ts", "src/__tests__/b.ts", "src/a.spec.ts"], counted.Unassigned.Examples);
     }
@@ -49,19 +51,18 @@ public sealed class RoleCounterTests
     public void Unassigned_examples_stop_at_five_but_the_count_does_not()
     {
         var web = Repo("web-app");
-        var paths = Enumerable.Range(0, 8).Select(i => $"src/__tests__/t{i}.ts").ToArray();
+        var paths = Enumerable.Range(0, 8).Select(i => string.Create(CultureInfo.InvariantCulture, $"src/__tests__/t{i}.ts")).ToArray();
 
         var counted = RoleCounter.Of([web], Paths("web-app", paths)).Single();
 
+        // why: the role-like files above are outside every glob, so Unassigned is set
         Assert.Equal(8, counted.Unassigned!.Count);
         Assert.Equal(5, counted.Unassigned.Examples.Count);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_repo_with_no_role_and_no_role_like_file_is_left_out()
-    {
-        Assert.Empty(RoleCounter.Of([Repo("web-app")], Paths("web-app", "src/a.ts")));
-    }
+        => Assert.Empty(RoleCounter.Of([Repo("web-app")], Paths("web-app", "src/a.ts")));
 
     [Fact, Trait("Lane", "unit")]
     public void A_file_denied_by_an_ignore_glob_is_not_unassigned()

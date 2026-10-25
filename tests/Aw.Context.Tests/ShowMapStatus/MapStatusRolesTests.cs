@@ -22,6 +22,7 @@ public sealed class MapStatusRolesTests : IDisposable
 
         var status = (await _world.Map.MapStatus(anchor: null, Scope(new RepoRole("layout", Demoted: true, ["src/layout/**"])), MapWorld.None)).Value;
 
+        // why: the demoted role is configured, so Roles is set
         var repo = Assert.Single(status.Roles!);
         Assert.Equal(FixtureMap.Repo, repo.Repo);
         Assert.Equal([new RoleCount("layout", Demoted: true, 2)], repo.Roles);

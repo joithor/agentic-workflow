@@ -124,6 +124,7 @@ public sealed class IndexDemoteTests
     {
         var profile = With(new IndexSettings(Roles: _roles, Ignore: ["generated"], Demote: ["test", "demo"]));
 
+        // why: the profile names roles, so the sets are not null
         var sets = RepoRoleSets.For(profile, profile.Repos![0])!;
 
         Assert.Equal(["cron", "demo", "generated", "test"], sets.Select(r => r.Name));

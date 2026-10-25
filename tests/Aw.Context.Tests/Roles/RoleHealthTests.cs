@@ -17,9 +17,7 @@ public sealed class RoleHealthTests
 
     [Fact, Trait("Lane", "unit")]
     public void It_is_ok_with_nothing_to_count()
-    {
-        Assert.Equal(MapHealthState.Ok, RoleHealth.Check([]).State);
-    }
+        => Assert.Equal(MapHealthState.Ok, RoleHealth.Check([]).State);
 
     [Fact, Trait("Lane", "unit")]
     public void It_warns_per_repo_with_the_count_and_an_example_and_the_fix()
