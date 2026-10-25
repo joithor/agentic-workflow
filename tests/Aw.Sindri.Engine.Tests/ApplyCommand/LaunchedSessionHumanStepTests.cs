@@ -98,5 +98,5 @@ public sealed class LaunchedSessionHumanStepTests
     private static CallerContext Session() => Testing.A.Caller().Session().Build();
 
     private static DeskTask DeskTaskOpen() =>
-        new(RunToken.For(1, 1), "desk", BlockId.From("desk"), [], [], new Dictionary<FactKey, InputFact>(), TimeoutAt: null);
+        new(RunToken.For(1, 1), "desk", BlockId.From("step.desk.answer"), [], [], new Dictionary<FactKey, InputFact>(), TimeoutAt: null);
 }
