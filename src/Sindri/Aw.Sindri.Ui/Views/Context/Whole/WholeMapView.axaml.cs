@@ -95,6 +95,11 @@ internal sealed partial class WholeMapView : UserControl
             Arrange();
         }
 
+        if (string.Equals(e.PropertyName, nameof(WholeMapViewModel.Shown), StringComparison.Ordinal))
+        {
+            Arrange();   // a search filtered the map, or ended: the minimap and the zoom floor follow the set that is drawn
+        }
+
         WholeWorld.InvalidateVisual();   // the answer's nodes standing out is not a property the canvas watches
     }
 
@@ -127,10 +132,11 @@ internal sealed partial class WholeMapView : UserControl
             return;
         }
 
-        var world = new Rect(geometry.World.X, geometry.World.Y, geometry.World.Width, geometry.World.Height);
+        var box = _map.FitBox ?? geometry.World;
+        var world = new Rect(box.X, box.Y, box.Width, box.Height);
         WholeCanvas.WorldBounds = world;
         WholeMiniMap.World = world;
-        WholeMiniMap.Nodes = [.. MiniMapRects(geometry).Select(card => new MiniMapNode(card.Rect, Brush(card.Colour), Selected: false))];
+        WholeMiniMap.Nodes = [.. MiniMapRects(_map.Shown ?? geometry).Select(card => new MiniMapNode(card.Rect, Brush(card.Colour), Selected: false))];
         WholeWorld.InvalidateMeasure();
         var stage = WholeCanvas.FitStage;   // less the strip the mini-map floats over, so no card opens or fits under it
         if (stage.Width <= 0 || stage.Height <= 0 || world.Width <= 0 || world.Height <= 0)
