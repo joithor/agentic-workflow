@@ -320,7 +320,10 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var http = await seed.Http(route, repo, ct);
 
         Assert.NotEqual(true, result.IsError);
-        Assert.Equal(ApiGolden.Reindent(http), ApiGolden.Reindent(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText()));
+        // why: the MCP answer carries the window it was cut with ('page'); the HTTP body has none
+        var unfenced = System.Text.Json.Nodes.JsonNode.Parse(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText())!.AsObject();
+        Assert.True(unfenced.Remove("page"));
+        Assert.Equal(ApiGolden.Reindent(http), ApiGolden.Reindent(unfenced.ToJsonString()));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]

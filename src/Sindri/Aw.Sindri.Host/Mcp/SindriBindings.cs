@@ -13,7 +13,7 @@ internal static class SindriBindings
 {
     internal static Result<FileRequestRequest> Request(IDictionary<string, JsonElement>? arguments, JsonTypeInfo<RequestKind> kinds)
     {
-        if (McpArguments.Only(SindriTools.Request, arguments, ["kind", "text", "itemId", .. McpArguments.PageNames]) is { } refused)
+        if (McpArguments.Only(SindriTools.Request, arguments, ["kind", "text", "itemId"]) is { } refused)
         {
             return refused;
         }

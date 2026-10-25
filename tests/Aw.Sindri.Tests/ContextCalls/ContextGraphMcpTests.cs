@@ -91,7 +91,7 @@ public sealed class ContextGraphMcpTests : IDisposable
         var http = await Http(host, "/sindri/context/node?key=" + Uri.EscapeDataString(InRecord));
 
         Assert.NotEqual(true, result.IsError);
-        Assert.True(JsonNode.DeepEquals(http, JsonNode.Parse(result.StructuredContent!.Value.GetRawText())));
+        Assert.True(JsonNode.DeepEquals(http, WithoutPage(result)));
         Assert.Equal("<untrusted source=\"map\">Mentions in</untrusted>", result.StructuredContent.Value.GetProperty("node").GetProperty("label").GetString());
         var outs = http["out"]!.AsArray().Count;
         var ins = http["in"]!.AsArray().Count;
@@ -114,8 +114,8 @@ public sealed class ContextGraphMcpTests : IDisposable
         var httpDefault = await Http(host, "/sindri/context/neighbors?key=" + Uri.EscapeDataString(Key));
 
         Assert.NotEqual(true, result.IsError);
-        Assert.True(JsonNode.DeepEquals(http, JsonNode.Parse(result.StructuredContent!.Value.GetRawText())));
-        Assert.True(JsonNode.DeepEquals(httpDefault, JsonNode.Parse(defaulted.StructuredContent!.Value.GetRawText())));
+        Assert.True(JsonNode.DeepEquals(http, WithoutPage(result)));
+        Assert.True(JsonNode.DeepEquals(httpDefault, WithoutPage(defaulted)));
         var summary = Text(result);
         Assert.Contains(Key, summary, StringComparison.Ordinal);
         Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"{http["nodes"]!.AsArray().Count} nodes and {http["edges"]!.AsArray().Count} edges"), summary, StringComparison.Ordinal);
@@ -176,4 +176,12 @@ public sealed class ContextGraphMcpTests : IDisposable
 
     private static string? Code(CallToolResult result) =>
         result.StructuredContent is { } s && s.TryGetProperty("code", out var code) ? code.GetString() : null;
+
+    // why: the MCP answer carries the window it was cut with ('page'); the HTTP body has none
+    private static JsonNode? WithoutPage(CallToolResult result)
+    {
+        var body = JsonNode.Parse(result.StructuredContent!.Value.GetRawText())!.AsObject();
+        _ = body.Remove("page");
+        return body;
+    }
 }

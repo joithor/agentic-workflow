@@ -46,12 +46,6 @@ internal static partial class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var page = ReadPage(arguments);
-        if (page.IsError)
-        {
-            return McpResults.Failure(services, page.Error);
-        }
-
         var bound = SindriBindings.Request(arguments, (JsonTypeInfo<RequestKind>)services.GetRequiredService<JsonSerializerOptions>().GetTypeInfo(typeof(RequestKind)));
         if (bound.IsError)
         {
@@ -73,6 +67,6 @@ internal static partial class SindriTools
 
         // why: X-Sindri-After isn't honoured on this endpoint, so the tool reads its own write before it answers; a timeout is not a failure
         var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, WaitForViews, ct).ConfigureAwait(false);
-        return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError), page: page.Value);
+        return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError));
     }
 }
