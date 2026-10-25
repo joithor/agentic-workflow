@@ -536,7 +536,7 @@ Aw.Context.Core.Engine.ProfileRecognizer.Pattern.get -> string!
 Aw.Context.Core.Engine.ProfileRecognizer.ProfileRecognizer(string! kind, string! glob, string! pattern, string! keyFrom) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry
 Aw.Context.Core.Engine.ProfileRepoEntry.<Clone>$() -> Aw.Context.Core.Engine.ProfileRepoEntry!
-Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>? Concepts) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Equals(Aw.Context.Core.Engine.ProfileRepoEntry? other) -> bool
@@ -544,7 +544,7 @@ Aw.Context.Core.Engine.ProfileRepoEntry.Name.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Name.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.init -> void
-Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>? Concepts = null) -> void
 Aw.Context.Core.Engine.PublishSettings
 Aw.Context.Core.Engine.PublishSettings.<Clone>$() -> Aw.Context.Core.Engine.PublishSettings!
 Aw.Context.Core.Engine.PublishSettings.Equals(Aw.Context.Core.Engine.PublishSettings? other) -> bool
@@ -6987,3 +6987,27 @@ Aw.Context.Core.Graph.NodeKind.Concept = 8 -> Aw.Context.Core.Graph.NodeKind
 Aw.Context.Core.Graph.EdgeType.BelongsTo = 13 -> Aw.Context.Core.Graph.EdgeType
 Aw.Context.Core.Graph.ConceptKeys
 const Aw.Context.Core.Graph.ConceptKeys.Other = "concept:other" -> string!
+Aw.Context.Core.Concepts.ConceptPin
+Aw.Context.Core.Concepts.ConceptPin.<Clone>$() -> Aw.Context.Core.Concepts.ConceptPin!
+Aw.Context.Core.Concepts.ConceptPin.ConceptPin(string? Id, string! Name, string? Summary, System.Collections.Generic.IReadOnlyList<string!>! Features, System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Context.Core.Concepts.ConceptPin.Deconstruct(out string? Id, out string! Name, out string? Summary, out System.Collections.Generic.IReadOnlyList<string!>! Features, out System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Context.Core.Concepts.ConceptPin.Equals(Aw.Context.Core.Concepts.ConceptPin? other) -> bool
+Aw.Context.Core.Concepts.ConceptPin.Features.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptPin.Features.init -> void
+Aw.Context.Core.Concepts.ConceptPin.Id.get -> string?
+Aw.Context.Core.Concepts.ConceptPin.Id.init -> void
+Aw.Context.Core.Concepts.ConceptPin.Name.get -> string!
+Aw.Context.Core.Concepts.ConceptPin.Name.init -> void
+Aw.Context.Core.Concepts.ConceptPin.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptPin.Paths.init -> void
+Aw.Context.Core.Concepts.ConceptPin.Summary.get -> string?
+Aw.Context.Core.Concepts.ConceptPin.Summary.init -> void
+override Aw.Context.Core.Concepts.ConceptPin.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptPin.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptPin.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptPin.operator !=(Aw.Context.Core.Concepts.ConceptPin? left, Aw.Context.Core.Concepts.ConceptPin? right) -> bool
+static Aw.Context.Core.Concepts.ConceptPin.operator ==(Aw.Context.Core.Concepts.ConceptPin? left, Aw.Context.Core.Concepts.ConceptPin? right) -> bool
+Aw.Context.Core.Engine.ContextRepo.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>!
+Aw.Context.Core.Engine.ContextRepo.Concepts.init -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>?
+Aw.Context.Core.Engine.ProfileRepoEntry.Concepts.init -> void

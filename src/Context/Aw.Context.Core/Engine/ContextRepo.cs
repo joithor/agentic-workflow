@@ -1,3 +1,5 @@
+using Aw.Context.Core.Concepts;
+
 namespace Aw.Context.Core.Engine;
 
 /// <summary>A repo the profile names.</summary>
@@ -7,6 +9,9 @@ public sealed record ContextRepo(ContextRepoName Name, string Path)
 {
     /// <summary>The globs of the paths extraction never reads: the built-in secret globs and the profile's 'denyPaths' for this repo.</summary>
     public IReadOnlyList<string> DenyPaths { get; init; } = PathDenylist.Defaults;
+
+    /// <summary>The concepts the profile's 'index.concepts' pins for this repo (its own added to the profile's); none by default.</summary>
+    public IReadOnlyList<ConceptPin> Concepts { get; init; } = [];
 
     /// <summary>Whether extraction must leave a path alone.</summary>
     /// <param name="path">The repo-relative path.</param>
