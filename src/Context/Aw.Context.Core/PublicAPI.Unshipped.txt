@@ -7498,3 +7498,8 @@ Aw.Context.Core.Engine.ContextRepo.DemotePaths.get -> System.Collections.Generic
 Aw.Context.Core.Engine.ContextRepo.DemotePaths.init -> void
 Aw.Context.Core.Engine.ContextRepo.Demotes(string! path) -> bool
 static Aw.Context.Core.Extract.ClusterFeatures.Propose(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Extract.ClusterSet! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! labels, Aw.Context.Core.Extract.ExtractedMap! extracted) -> Aw.Context.Core.Extract.ExtractedMap!
+static Aw.Context.Core.Lenses.DemotedFiles.IsDemoted(Aw.Context.Core.Graph.NodeKey key, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> bool
+static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.CodeBand! band, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.CodeBand!
+static Aw.Context.Core.Lenses.DemotedFiles.Last<T>(System.Collections.Generic.IReadOnlyList<T>! items, System.Func<T, bool>! demoted) -> System.Collections.Generic.IReadOnlyList<T>!
+Aw.Context.Core.Lenses.DemotedFiles
+static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensBands!
