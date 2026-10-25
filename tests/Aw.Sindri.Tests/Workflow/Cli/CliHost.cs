@@ -32,6 +32,18 @@ internal static class CliHost
         app.Services.GetRequiredService<HeldHumanToken>().Hold((await app.Services.GetRequiredService<IHumanTokenStore>().Mint(ct)).Value);
         await app.StartAsync(ct);
         _ = await app.Services.GetRequiredService<IEndpointFile>().Write(new ControlEndpoint(new Uri(app.Urls.First()), grant.Holder.Pid, grant.Epoch), ct);
+        await WarmUp(app, ct);
         return app;
+    }
+
+    /// <summary>
+    /// Answers the first request here, with a generous budget: Kestrel builds an endpoint lazily on its first request, which takes longer than the CLI's
+    /// 2 s ping budget on a loaded box. The CLI's budget is product behaviour; the host is answering before a test calls it (#1053).
+    /// </summary>
+    private static async Task WarmUp(WebApplication app, CancellationToken ct)
+    {
+        using var http = new HttpClient(new SocketsHttpHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(30) };
+        using var response = await http.GetAsync(new Uri(new Uri(app.Urls.First()), "/sindri/ping"), ct);
+        _ = response.EnsureSuccessStatusCode();
     }
 }
