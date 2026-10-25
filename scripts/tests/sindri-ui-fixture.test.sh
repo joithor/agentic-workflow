@@ -399,6 +399,13 @@ AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions up 1 >/dev/null 2>&1; check "sessio
 AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 211 >/dev/null 2>&1; check "sessions end before up exits 2" "$?" "2"
 AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask x >/dev/null 2>&1; check "sessions ask refuses a non-pid (exit 2)" "$?" "2"
 
+# agent-run (issue #1004): the usage and the refusals that need no control plane.
+contains "the usage lists agent-run" "$(bash "$FIXTURE" --help 2>&1)" "sindri-ui-fixture.sh agent-run"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" agent-run extra >/dev/null 2>&1; check "agent-run takes no argument (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" agent-run >/dev/null 2>&1; check "agent-run refuses an unguarded home" "$?" "2"
+out="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" agent-run 2>&1)"; check "agent-run before sessions up exits 2" "$?" "2"
+contains "agent-run names the missing sessions copy" "$out" "run 'sessions up' first"
+
 own="$(jq -r '.ownUid' "$ROOT/tests/fixtures/sessions/manifest.json")"
 if [ "$(id -u)" != "$own" ]; then
   out="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions up 2>&1)"; check "sessions up refuses another uid" "$?" "2"

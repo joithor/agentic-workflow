@@ -71,7 +71,11 @@ APP_WRAPPER_PID=$!
   || setup_fail "no Watch the agent control on the instance (see $OUT/app.log)"
 "$DRIVER" screenshot --out "$OUT/before-click.png" >/dev/null 2>&1
 before="$("$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r')"
-"$DRIVER" click --type Button --text "Take over" >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
+# Take over is a MenuItem in the chevron's flyout (AttachButton.axaml), which joins the tree only once the menu is open.
+"$DRIVER" click --type Button --text "▾" --index 0 >/dev/null 2>&1 || setup_fail "the chevron click was not accepted by the driver"
+"$DRIVER" wait-for --type MenuItem --text "Take over" --state visible --wait-ms 5000 >/dev/null 2>&1 \
+  || setup_fail "the chevron menu shows no Take over (see $OUT/app.log)"
+"$DRIVER" click --type MenuItem --text "Take over" >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
 
 # 5. Within 5 s: the ledger records the takeover from the UI, and the app shows the viewer's outcome.
 sent=0
