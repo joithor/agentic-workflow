@@ -51,7 +51,7 @@ public sealed class RelevanceApplyTests
 
         var applied = Apply(verdicts, rulings);
 
-        Assert.DoesNotContain(Export, Ids(applied.Lenses["code"]!));
+        Assert.DoesNotContain(Export, Ids(applied.Lenses["code"]!), StringComparer.Ordinal);
         var entry = EntryOf(applied, Export);
         Assert.Equal("noise", entry["result"]!.GetValue<string>());
         Assert.False(entry["disputed"]!.GetValue<bool>());
@@ -98,7 +98,7 @@ public sealed class RelevanceApplyTests
 
         var applied = Apply(verdicts, rulings);
 
-        Assert.Contains(Export, Ids(applied.Lenses["code"]!));
+        Assert.Contains(Export, Ids(applied.Lenses["code"]!), StringComparer.Ordinal);
         Assert.Equal("in", EntryOf(applied, Export)["result"]!.GetValue<string>());
         Assert.True(EntryOf(applied, Export)["disputed"]!.GetValue<bool>());
         Assert.Empty(applied.MapFixes["fixes"]!.AsArray());
@@ -120,7 +120,7 @@ public sealed class RelevanceApplyTests
         var entry = EntryOf(applied, Export);
         Assert.Equal("in", entry["result"]!.GetValue<string>());
         Assert.True(entry["disputed"]!.GetValue<bool>());
-        Assert.Contains(Export, Ids(applied.Lenses["code"]!));
+        Assert.Contains(Export, Ids(applied.Lenses["code"]!), StringComparer.Ordinal);
         Assert.Equal(1, applied.Relevance["counts"]!["disputed"]!.GetValue<int>());
         Assert.Empty(applied.MapFixes["fixes"]!.AsArray());
     }
@@ -135,7 +135,7 @@ public sealed class RelevanceApplyTests
 
         Assert.True(EntryOf(applied, Export)["disputed"]!.GetValue<bool>());
         Assert.Null(EntryOf(applied, Export)["agent"]);
-        Assert.Contains(Export, Ids(applied.Lenses["code"]!));
+        Assert.Contains(Export, Ids(applied.Lenses["code"]!), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -193,10 +193,10 @@ public sealed class RelevanceApplyTests
 
         var code = applied.Lenses["code"]!;
         var edges = code["edges"]!.AsArray().Select(static e => $"{e!["from"]}>{e["to"]}").ToArray();
-        Assert.Equal(["code:src/invites/expiry.ts>surface:screen/invite-dialog", "code:src/billing/export.ts>code:src/invites/expiry.ts"], edges);
+        Assert.Equal(["code:src/invites/expiry.ts>surface:screen/invite-dialog", "code:src/billing/export.ts>code:src/invites/expiry.ts"], edges, StringComparer.Ordinal);
         Assert.Equal(2, code["foundCount"]!.GetValue<int>());
         Assert.Equal("v1", code["mapVersion"]!.GetValue<string>());
-        Assert.Equal(["surface:screen/invite-dialog"], code["anchors"]!.AsArray().Select(static a => a!.GetValue<string>()));
+        Assert.Equal(["surface:screen/invite-dialog"], code["anchors"]!.AsArray().Select(static a => a!.GetValue<string>()), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public sealed class RelevanceApplyTests
         var row = applied.Coverage["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
         Assert.Equal("found", row["state"]!.GetValue<string>());
         Assert.Equal(2, row["found"]!["count"]!.GetValue<int>());
-        Assert.Equal(["L-code-2", "L-code-3"], row["found"]!["ids"]!.AsArray().Select(static i => i!.GetValue<string>()));
+        Assert.Equal(["L-code-2", "L-code-3"], row["found"]!["ids"]!.AsArray().Select(static i => i!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(2, row["mapCoverage"]!["mapped"]!.GetValue<int>());
         Assert.Equal(0, row["mapCoverage"]!["new"]!.GetValue<int>());
     }
@@ -264,8 +264,8 @@ public sealed class RelevanceApplyTests
         var applied = Apply(verdicts, rulings, lenses, coverage);
 
         Assert.Equal(149, applied.Lenses["code"]!["foundCount"]!.GetValue<int>());
-        Assert.Equal(["code"], applied.Lenses["code"]!["truncated"]!.AsArray().Select(static t => t!.GetValue<string>()));
-        Assert.Equal(["code"], applied.Relevance["truncated"]!.AsArray().Select(static t => t!.GetValue<string>()));
+        Assert.Equal(["code"], applied.Lenses["code"]!["truncated"]!.AsArray().Select(static t => t!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["code"], applied.Relevance["truncated"]!.AsArray().Select(static t => t!.GetValue<string>()), StringComparer.Ordinal);
         var row = applied.Coverage["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
         Assert.Equal(149, row["found"]!["count"]!.GetValue<int>());
     }
@@ -279,7 +279,7 @@ public sealed class RelevanceApplyTests
 
         var relevance = applied.Relevance;
         Assert.Equal(ModelMarker, relevance["agent"]!["reportedModel"]!.GetValue<string>());
-        Assert.Equal(["jev"], relevance["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()));
+        Assert.Equal(["jev"], relevance["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(AllIds.Length, relevance["counts"]!["reviewed"]!.GetValue<int>());
         Assert.Equal(AllIds.Length - 1, relevance["counts"]!["in"]!.GetValue<int>());
         Assert.Equal(1, relevance["counts"]!["noise"]!.GetValue<int>());

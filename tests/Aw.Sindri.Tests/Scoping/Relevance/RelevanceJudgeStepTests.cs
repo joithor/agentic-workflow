@@ -106,7 +106,7 @@ public sealed class RelevanceJudgeStepTests
         Assert.DoesNotContain("code:src/invites/expiry.ts", text, StringComparison.Ordinal);   // an edge's other end is a neighbour
         Assert.DoesNotContain("billing", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("trust", text, StringComparison.Ordinal);                          // the brief's refs are left out
-        Assert.Equal(["in", "out", "noise"], request.Choices.Select(static c => c.Name));
+        Assert.Equal(["in", "out", "noise"], request.Choices.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class RelevanceJudgeStepTests
         _ = await Step(given).Run(Context(Facts(), Args(threshold: 0.8, providers: ["jev"])), TestContext.Current.CancellationToken);
         var first = given.Requests[0];
         Assert.Equal(0.8, first.Threshold);
-        Assert.Equal(["jev"], first.Providers);
+        Assert.Equal(["jev"], first.Providers, StringComparer.Ordinal);
 
         var defaults = new ScriptedJudge(static _ => Decided("in"));
         _ = await Step(defaults).Run(Context(Facts()), TestContext.Current.CancellationToken);
@@ -148,7 +148,7 @@ public sealed class RelevanceJudgeStepTests
         Assert.Equal("jev", ruling["provider"]!.GetValue<string>());
         Assert.Equal("JD-0001", ruling["decisionId"]!.GetValue<string>());
         Assert.Equal("model", ruling["reasonCode"]!.GetValue<string>());
-        Assert.Equal(["jev"], Rulings(result)["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()));
+        Assert.Equal(["jev"], Rulings(result)["judge"]!["providers"]!.AsArray().Select(static p => p!.GetValue<string>()), StringComparer.Ordinal);
     }
 
     [Fact]

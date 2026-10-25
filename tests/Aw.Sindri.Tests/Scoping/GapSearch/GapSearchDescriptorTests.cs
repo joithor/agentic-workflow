@@ -19,7 +19,7 @@ public sealed class GapSearchDescriptorTests
     {
         var reads = Reads(GapSearchSteps.GapSearch);
 
-        Assert.Equal(["fact:brief", "fact:acceptance", "fact:answerLog"], reads);
+        Assert.Equal(["fact:brief", "fact:acceptance", "fact:answerLog"], reads, StringComparer.Ordinal);
         Assert.Empty(reads.Intersect(_hidden, StringComparer.Ordinal));
     }
 
@@ -30,8 +30,8 @@ public sealed class GapSearchDescriptorTests
 
         Assert.Equal(BlockRuntime.Agent, step.Runtime);
         Assert.Equal(Capability.Tools, step.Capabilities);
-        Assert.Equal(["searched"], step.Outcomes.Select(static o => o.Value).ToArray());
-        Assert.Equal(["fact:gapCandidates=searched"], Writes(step));
+        Assert.Equal(["searched"], step.Outcomes.Select(static o => o.Value), StringComparer.Ordinal);
+        Assert.Equal(["fact:gapCandidates=searched"], Writes(step), StringComparer.Ordinal);
         var model = Assert.Single(step.Parameters);
         Assert.Equal(("model", ParameterType.Text, false), (model.Name, model.Type, model.Required));
     }
@@ -44,10 +44,10 @@ public sealed class GapSearchDescriptorTests
         Assert.Equal(BlockRuntime.Block, step.Runtime);
         Assert.Equal(Capability.None, step.Capabilities);
         Assert.Equal(TimeSpan.FromMinutes(90), step.MaxDuration);
-        Assert.Equal(["fact:brief", "fact:acceptance", "fact:scopeMap", "fact:lenses", "fact:gapCandidates"], Reads(step));
-        Assert.Equal(["ruled"], step.Outcomes.Select(static o => o.Value).ToArray());
-        Assert.Equal(["fact:gapRulings=ruled"], Writes(step));
-        Assert.Equal(["parallel", "threshold", "providers"], step.Parameters.Select(static p => p.Name).ToArray());
+        Assert.Equal(["fact:brief", "fact:acceptance", "fact:scopeMap", "fact:lenses", "fact:gapCandidates"], Reads(step), StringComparer.Ordinal);
+        Assert.Equal(["ruled"], step.Outcomes.Select(static o => o.Value), StringComparer.Ordinal);
+        Assert.Equal(["fact:gapRulings=ruled"], Writes(step), StringComparer.Ordinal);
+        Assert.Equal(["parallel", "threshold", "providers"], step.Parameters.Select(static p => p.Name), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -56,16 +56,14 @@ public sealed class GapSearchDescriptorTests
         var step = GapSearchSteps.GapLog;
 
         Assert.Equal(BlockRuntime.Block, step.Runtime);
-        Assert.Equal(["fact:gapSearch", "fact:gapCandidates", "fact:gapRulings", "fact:findings"], Reads(step));
-        Assert.Equal(["clear", "confirmed"], step.Outcomes.Select(static o => o.Value).ToArray());
-        Assert.Equal(["fact:gapSearch=clear,confirmed", "fact:gapAnchors=clear,confirmed", "fact:findings=confirmed", "fact:gapSearchClosed=clear"], Writes(step));
+        Assert.Equal(["fact:gapSearch", "fact:gapCandidates", "fact:gapRulings", "fact:findings"], Reads(step), StringComparer.Ordinal);
+        Assert.Equal(["clear", "confirmed"], step.Outcomes.Select(static o => o.Value), StringComparer.Ordinal);
+        Assert.Equal(["fact:gapSearch=clear,confirmed", "fact:gapAnchors=clear,confirmed", "fact:findings=confirmed", "fact:gapSearchClosed=clear"], Writes(step), StringComparer.Ordinal);
     }
 
     [Fact]
-    public void Reanchor_also_reads_the_gap_anchors()
-    {
-        Assert.Contains("fact:gapAnchors", Reads(ScopingSteps.Reanchor));
-    }
+    public void Reanchor_also_reads_the_gap_anchors() =>
+        Assert.Contains("fact:gapAnchors", Reads(ScopingSteps.Reanchor), StringComparer.Ordinal);
 
     [Theory]
     [InlineData("draft")]

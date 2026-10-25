@@ -27,7 +27,7 @@ public sealed class ReanchorGapAnchorsTests
             ["gapAnchors"] = """["code:src/jobs/purge.ts","feature:billing"]""",
         };
 
-        Assert.Equal(["code:src/held.ts", "code:src/jobs/purge.ts", "feature:billing", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts));
+        Assert.Equal(["code:src/held.ts", "code:src/jobs/purge.ts", "feature:billing", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class ReanchorGapAnchorsTests
     {
         var facts = new Dictionary<string, string>(StringComparer.Ordinal) { ["scopeMap"] = Map, ["anchors"] = """["code:src/held.ts","feature:old"]""" };
 
-        Assert.Equal(["code:src/held.ts", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts));
+        Assert.Equal(["code:src/held.ts", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class ReanchorGapAnchorsTests
     {
         var facts = new Dictionary<string, string>(StringComparer.Ordinal) { ["scopeMap"] = Map, ["anchors"] = """["code:src/held.ts"]""", ["gapAnchors"] = "[]" };
 
-        Assert.Equal(["code:src/held.ts", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts));
+        Assert.Equal(["code:src/held.ts", "feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -51,6 +51,6 @@ public sealed class ReanchorGapAnchorsTests
     {
         var facts = new Dictionary<string, string>(StringComparer.Ordinal) { ["scopeMap"] = Map, ["anchors"] = "[]", ["gapAnchors"] = """["feature:links"]""" };
 
-        Assert.Equal(["feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts));
+        Assert.Equal(["feature:links", "surface:route/open", "code:src/map.ts"], Anchors(facts), StringComparer.Ordinal);
     }
 }

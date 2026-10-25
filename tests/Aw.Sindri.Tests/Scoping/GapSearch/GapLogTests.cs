@@ -11,6 +11,8 @@ namespace Aw.Sindri.Tests.Scoping.GapSearch;
 [Lane(TestLane.Unit)]
 public sealed class GapLogTests
 {
+    private static readonly string[] _countNames = ["found", "confirmed", "alreadyCovered", "notInScope", "uncertain"];
+
     private const string NoRounds = """{"rounds":[]}""";
 
     private static string Candidate(string id, string anchor, string title = "A nightly job") =>
@@ -47,7 +49,7 @@ public sealed class GapLogTests
         var round = result.Value;
         Assert.Equal("confirmed", round.Outcome);
         Assert.Null(round.Closed);
-        Assert.Equal(["code:src/a.ts"], round.GapAnchors.Select(static a => a!.GetValue<string>()).ToArray());
+        Assert.Equal(["code:src/a.ts"], round.GapAnchors.Select(static a => a!.GetValue<string>()), StringComparer.Ordinal);
         var finding = Assert.Single(round.Findings!)!;
         Assert.Equal("SCP-GAP-001", finding["rule"]!.GetValue<string>());
         Assert.Equal("Purge job", finding["item"]!.GetValue<string>());
@@ -64,8 +66,8 @@ public sealed class GapLogTests
 
         var second = GapLog.Apply(first.GapSearch, Candidates(Candidate("C1", "src/c.ts")), Rulings(Ruling("C1", "already-covered")), None).Value;
 
-        Assert.Equal(["G1.1", "G1.2"], Ids(first.GapSearch, 0));
-        Assert.Equal(["G2.1"], Ids(second.GapSearch, 1));
+        Assert.Equal(["G1.1", "G1.2"], Ids(first.GapSearch, 0), StringComparer.Ordinal);
+        Assert.Equal(["G2.1"], Ids(second.GapSearch, 1), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -95,7 +97,7 @@ public sealed class GapLogTests
         Assert.Equal("jev", round["judge"]!["providers"]![0]!.GetValue<string>());
         Assert.Equal("expiry", round["searches"]![0]!["query"]!.GetValue<string>());
         var counts = round["counts"]!;
-        Assert.Equal([4, 1, 1, 1, 1], new[] { "found", "confirmed", "alreadyCovered", "notInScope", "uncertain" }.Select(n => counts[n]!.GetValue<int>()).ToArray());
+        Assert.Equal([4, 1, 1, 1, 1], _countNames.Select(n => counts[n]!.GetValue<int>()));
         var first = round["candidates"]![0]!;
         Assert.Equal("real-gap", first["ruling"]!.GetValue<string>());
         Assert.Equal("JD-C1", first["decisionId"]!.GetValue<string>());
@@ -108,7 +110,7 @@ public sealed class GapLogTests
         var result = GapLog.Apply(Empty, Candidates(Candidate("C1", "src/a.ts"), Candidate("C2", "src/a.ts"), Candidate("C3", "src/b.ts"), Candidate("C4", "src/c.ts")),
             Rulings(Ruling("C1", "real-gap"), Ruling("C2", "real-gap"), Ruling("C3", "not-in-scope"), Ruling("C4", "uncertain")), None).Value;
 
-        Assert.Equal(["code:src/a.ts"], result.GapAnchors.Select(static a => a!.GetValue<string>()).ToArray());
+        Assert.Equal(["code:src/a.ts"], result.GapAnchors.Select(static a => a!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(2, result.Findings!.Count);
     }
 
@@ -138,7 +140,7 @@ public sealed class GapLogTests
 
         var result = GapLog.Apply(Empty, Candidates(Candidate("C1", "src/a.ts", "New")), Rulings(Ruling("C1", "real-gap")), held).Value;
 
-        Assert.Equal(["SCP-COV-001", "SCP-GAP-001"], result.Findings!.Select(static f => f!["rule"]!.GetValue<string>()).ToArray());
+        Assert.Equal(["SCP-COV-001", "SCP-GAP-001"], result.Findings!.Select(static f => f!["rule"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal("New", result.Findings![1]!["item"]!.GetValue<string>());
     }
 
