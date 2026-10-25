@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Aw.Sindri.Core.Jobs;
 
 namespace Aw.Sindri.Core.Scheduling;
@@ -19,7 +18,7 @@ public static class IndexBuildWords
         return job.Kind.Value == BuildKind && job.Key.Value == "index:" + repo.ToLowerInvariant();
     }
 
-    /// <summary>'waiting for a free build slot' after a deferred build, 'retrying in N min' after failures in a row still inside their backoff; null when neither holds.</summary>
+    /// <summary>'retrying in N min' after failures in a row still inside their backoff; null otherwise.</summary>
     /// <param name="finishedNewestFirst">The repo's ended build jobs, newest first.</param>
     /// <param name="now">The time.</param>
     /// <returns>The words, or null.</returns>
@@ -31,18 +30,8 @@ public static class IndexBuildWords
             return null;
         }
 
-        if (newest.State == JobState.Succeeded && OutcomeIs(newest, "deferred"))
-        {
-            return "waiting for a free build slot";
-        }
-
         var failures = finishedNewestFirst.TakeWhile(static j => j.State == JobState.Failed).Count();
         var due = ended + SyncGapDecision.Wait(failures);
         return failures > 0 && now < due ? string.Create(CultureInfo.InvariantCulture, $"retrying in {Math.Ceiling((due - now).TotalMinutes)} min") : null;
     }
-
-    private static bool OutcomeIs(JobRow job, string word) =>
-        job.Result is { ValueKind: JsonValueKind.Object } result
-        && result.EnumerateObject().FirstOrDefault(static p => string.Equals(p.Name, "outcome", StringComparison.OrdinalIgnoreCase)) is { Value.ValueKind: JsonValueKind.String } outcome
-        && outcome.Value.GetString() == word;
 }

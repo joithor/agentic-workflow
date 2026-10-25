@@ -110,10 +110,6 @@ public sealed class CodeIndexProblemsTests
         => Assert.Null(Problem(Built(), Moved(), Job(JobState.Running, TimeSpan.Zero)));
 
     [Fact, Trait("Lane", "unit")]
-    public void Waiting_for_a_free_build_slot_is_no_problem()
-        => Assert.Null(Problem(Built(), Moved(), Job(JobState.Succeeded, TimeSpan.FromSeconds(30), outcome: "deferred")));
-
-    [Fact, Trait("Lane", "unit")]
     public void A_current_healthy_index_is_no_problem()
         => Assert.Null(Problem(Built(), Current()));
 }
