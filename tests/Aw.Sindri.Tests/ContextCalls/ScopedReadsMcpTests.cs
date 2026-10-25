@@ -27,7 +27,7 @@ public sealed class ScopedReadsMcpTests : IDisposable
 
     private static (string Name, string Value)[] RunHeaders() => [(SindriHeaders.Instance, Instance), (SindriHeaders.Run, Run)];
 
-    // A map of two unconnected features; the run's graph holds only 'feature:in'.
+    // A map of two unconnected features, each implemented by a file of the repo so a session can see it; the run's graph holds only 'feature:in'.
     private async Task<GoldenHost> Host()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -37,6 +37,11 @@ public sealed class ScopedReadsMcpTests : IDisposable
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             $"  - {{key: \"{InGraph}\", label: \"In scope\"}}",
             $"  - {{key: \"{NotInGraph}\", label: \"Out of scope\"}}",
+            "  - {key: \"code:src/in.ts\", label: \"in.ts\", provenance: deterministic}",
+            "  - {key: \"code:src/out.ts\", label: \"out.ts\", provenance: deterministic}",
+            "edges:",
+            $"  - {{from: \"code:src/in.ts\", to: \"{InGraph}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:aw-split-panes/src/in.ts\"}}]}}",
+            $"  - {{from: \"code:src/out.ts\", to: \"{NotInGraph}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:aw-split-panes/src/out.ts\"}}]}}",
             "aliases:",
             $"  - {{alias: \"feature:old.in\", target: \"{InGraph}\"}}",
             $"  - {{alias: \"feature:old.out\", target: \"{NotInGraph}\"}}") + "\n", ct);
