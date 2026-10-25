@@ -90,6 +90,34 @@ public abstract class ScopeRunRecordsContract
         Expect.Equal(new ScopeRunRecord("step.scope.draft", "draft", 1, "agent", Model: null, "claude-sonnet-5-5", Vendor: null, 0, launch.Launch.Value), record);
     }
 
+    /// <summary>A launch names the run id its session passes as --run, so the context call log (keyed by instance and run id) can be read for it (issue 1005).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_launch_carries_the_run_id_its_launch_id_was_made_from()
+    {
+        var records = await Create();
+        var run = Aw.Sindri.Core.Workflow.Engine.RunToken.For(entry: 4, number: 2);
+        var id = Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Ids.WorkflowInstanceId.Of(_scoping), run);
+        await Launched(records, new ScopeLaunch(_scoping, "draft", "step.scope.draft", "claude-sonnet-5-5", 2, id));
+
+        var read = await records.Of(_scoping, Token);
+
+        Expect.Equal("4.2", Expect.Only(read.Value).RunToken);
+    }
+
+    /// <summary>A completion at the desk carries the run id the ledger row names.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_completion_at_the_desk_carries_its_run_id()
+    {
+        var records = await Create();
+        await CompletedAtTheDesk(records, _scoping, "draft", 3);
+
+        var read = await records.Of(_scoping, Token);
+
+        Expect.Equal("1.3", Expect.Only(read.Value).RunToken);
+    }
+
     /// <summary>The latest sample is the run's model and tokens (samples are cumulative).</summary>
     /// <returns>The test.</returns>
     [Fact]

@@ -1,3 +1,4 @@
+using Aw.Context.Core.Facade;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core.Packets;
@@ -19,7 +20,8 @@ namespace Aw.Sindri.Features.Scoping;
 /// <param name="diff">Names the checkout's head, the scope map's baseSha.</param>
 /// <param name="packets">Hashes the assembled packet, which 'complete' records as fact:scopePacket for the owner's approval and the freeze.</param>
 /// <param name="runs">The instance's agent runs from the ledger, which the model checks compare and 'complete' records as fact:runs.</param>
-internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets, IRepoCheckouts checkouts, IRunDiff diff, IScopeRunRecords runs) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
+/// <param name="context">The context engine, for the graph calls each agent run made (issue 1005); none leaves them out of fact:runs.</param>
+internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets, IRepoCheckouts checkouts, IRunDiff diff, IScopeRunRecords runs, IContextEngine? context = null) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.evidence");
