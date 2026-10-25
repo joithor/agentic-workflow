@@ -34,8 +34,7 @@ internal sealed class ContextEngine(
     IContextMap map,
     ContextGraph graph,
     ContextEval eval,
-    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads,
-    ContextScopeGraph scopeGraphs) : IContextEngine
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -154,14 +153,14 @@ internal sealed class ContextEngine(
         graph.FileMap(query, scope, cancellationToken);
 
     public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
-        scopeGraphs.Build(query1, scope, cancellationToken);
+        graph.ScopeGraph(query1, scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
-        scopeGraphs.Reads(instanceAddress, runToken, cancellationToken);
+        graph.ScopeRuns.Reads(instanceAddress, runToken, cancellationToken);
 
     public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken) =>
-        scopeGraphs.Remember(instanceAddress, graph, cancellationToken);
+        graph.ScopeRuns.Remember(instanceAddress, graph, cancellationToken);
 
     public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
-        scopeGraphs.Read(instanceAddress, runToken, read, cancellationToken);
+        graph.ScopeRuns.Read(instanceAddress, runToken, read, cancellationToken);
 }

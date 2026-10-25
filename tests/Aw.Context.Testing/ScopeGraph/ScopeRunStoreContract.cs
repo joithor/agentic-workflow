@@ -70,7 +70,7 @@ public abstract class ScopeRunStoreContract
         var first = Expect.Ok(await store.Reads(Instance, "1.1", None), test);
         var none = Expect.Ok(await store.Reads(Instance, "9.9", None), test);
 
-        Expect.That(first.Select(r => r.Node).SequenceEqual(["feature:a", "feature:z"]), test, "the run's reads aren't in logged order");
+        Expect.That(first.Select(r => r.Node).SequenceEqual(["feature:a", "feature:z"], StringComparer.Ordinal), test, "the run's reads aren't in logged order");
         Expect.That(first[1].Outside && first[1].Reason == "why", test, "the outside flag or the reason was lost");
         Expect.That(none.Count == 0, test, "reads for a run that made none");
     }

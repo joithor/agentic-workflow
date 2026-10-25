@@ -19,8 +19,12 @@ internal sealed class ContextCodeHistory(
     IService<GetCodeRequest, CodeView> code,
     IService<GetHistoryRequest, HistoryView> history,
     IService<GetSubgraphRequest, SubgraphView> subgraph,
-    IService<GetWholeMapRequest, WholeMapView> wholeMap) : IContextCode, IContextHistory
+    IService<GetWholeMapRequest, WholeMapView> wholeMap,
+    ContextScopeGraph scopeGraphs) : IContextCode, IContextHistory
 {
+    /// <summary>The scoping graph and its run store (issue 1005): one owner for ScopeGraph, RememberScopeGraph, ReadInScopeGraph and GraphReads.</summary>
+    internal ContextScopeGraph ScopeGraphs => scopeGraphs;
+
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);
 
