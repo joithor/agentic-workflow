@@ -41,7 +41,7 @@ public sealed class ContextOpenForItemNoteTests
 
         Assert.Equal(Labels.ContextItemUnscoped(Item, ItemRepo), page.ItemNote);
         Assert.True(page.HasItemNote);
-        Assert.Equal(ItemRepo, api.WholeMapAsked.Last().Repo);
+        Assert.Equal(ItemRepo, api.WholeMapAsked[^1].Repo);
         Assert.Equal(ItemRepo, page.SelectedRepo);
     }
 
@@ -95,7 +95,7 @@ public sealed class ContextOpenForItemNoteTests
         await page.OpenForItem(Item, Token);
 
         Assert.True(page.IsItemFailed);
-        Assert.Equal(ItemRepo, api.WholeMapAsked.Last().Repo);
+        Assert.Equal(ItemRepo, api.WholeMapAsked[^1].Repo);
     }
 
     [Fact]
