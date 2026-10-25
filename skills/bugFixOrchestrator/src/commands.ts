@@ -395,13 +395,14 @@ export const DIFF_FIELD_CAP = 200_000;
 const DIFF_EXCLUDES = [":(exclude)package-lock.json", ":(exclude)**/dist/**"];
 
 /**
- * The paths the candidate's own commits touched since the baseline. Merges are
- * left out, so what a merged-in main brought along is not counted; empty when
- * git fails or the candidate made no commits of its own.
+ * The paths the candidate's own commits touched since the baseline, following
+ * its first-parent line. Merge commits are left out and so are the commits a
+ * merge brought in from main, which are not the candidate's; empty when git
+ * fails or the candidate made no commits of its own.
  */
 function ownPaths(deps: Deps, cwd: string, base: string, commit: string): string[] {
   try {
-    const names = deps.git(cwd, ["log", "--no-merges", "--format=", "--name-only", `${base}..${commit}`]);
+    const names = deps.git(cwd, ["log", "--first-parent", "--no-merges", "--format=", "--name-only", `${base}..${commit}`]);
     return [...new Set(names.split("\n").filter((n) => n !== ""))];
   } catch {
     return [];
