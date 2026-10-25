@@ -4,7 +4,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Features.BuildMap;
 
-/// <summary>The lock a host that registered no <see cref="IHeavyJobLock"/> gets: it never grants a slot, so a build never runs without the box-wide lock (SND-CONTEXT-040).</summary>
+/// <summary>The lock a host that registered no <see cref="IHeavyJobLock"/> gets: it never grants a slot, so a backtest never runs without the box-wide lock (SND-CONTEXT-040).</summary>
 internal sealed class UnconfiguredHeavyJobLock : IHeavyJobLock
 {
     public ValueTask<Result<IAsyncDisposable>> Take(IProgress<string>? waiting, CancellationToken cancellationToken) =>

@@ -612,7 +612,8 @@ job (the engine's step lines are the job's progress), and exits 0, 1 or 2 as `so
 time): it builds a draft, runs the cleanup agent over the review queue (strong and agent-approved proposals are kept, weak ones removed), promotes the
 draft through the engine and records `context.map.built`, `context.map.promoted` and `context.map.refreshed` (repo, version, the heads it mapped, and the
 cleanup's counts). It does not go through `map promote` or its typed confirmation: the owner decided on 2026-10-19 that this job promotes as its caller. A
-terminal, the app or the `context-map-refresh` service may start it; a session may not. Any step's error fails the job (nothing is promoted; a built draft
+terminal, the app or the `context-map-refresh` service may start it; a session may not. A transient error (a store, git, model or Onyx that is unavailable, a timeout, a rate limit) does not fail it yet: the job runs again after 30 seconds, 2 minutes and 10 minutes
+(four attempts), its progress says `retrying (attempt N of 4) in …`, and only the last attempt's error fails it. Any other step error fails the job at once (nothing is promoted; a built draft
 stays). The summary reads `map v<N>: <kept> kept, <removed> removed`, plus `, cleanup unavailable` when no model answered.
 
 **Holding a map for the code index.** After the cleanup the refresh asks the publish decision (code index spec 6.4) whether the draft goes ahead.
@@ -626,9 +627,9 @@ many repos were stale, how long it waited), or drops the hold with `context.map.
 then 60 minutes. The move check compares the checkouts with the held draft's heads (else the current version's), starts no refresh while a publish runs,
 and three failed refreshes or publishes in a row raise the one service row.
 
-A build takes a slot of the box-wide heavy-job lock (`$AW_STATE_DIR/locks/heavy-job.lock`, `.2` for the second slot,
-`AW_HEAVY_SLOTS`; the same directory the shell tools and `ui-evidence` use). If every slot stays held for 12 hours (it queues with progress; the 60-second wait was removed per owner q93, 2026-10-23)
-it answers `SND-CONTEXT-040` (exit 75) naming the holder, and writes nothing. A second build keeps every decision you made
+A build takes no heavy-job slot: it is mostly git reads and one model call, so a busy box never fails it. One build runs at a time (a second, from the
+refresh, the build job or the `context-rebuild` service, waits for the first), so two builds never write over each other. The backtest still takes a slot
+(`SND-CONTEXT-040`, exit 75, after 12 hours). A second build keeps every decision you made
 (rejected nodes are not proposed again, accepted ones stay accepted) and re-applies pending proposals.
 
 When it ends, the CLI prints `draft N for <repo> · M proposed` and one `degraded: <part>` line for each part the build did without; the same lines are the job's

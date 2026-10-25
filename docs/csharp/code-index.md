@@ -6,14 +6,14 @@
 
 | Project | Holds |
 |---|---|
-| `Aw.CodeIndex.Core` | The facade `ICodeIndex`, the records, the ports (`IRepoSnapshot`, `IIndexStore`, `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`), `CodeIndexSettings`, `CodeIndexErrors`, `CodeIndexRules` |
+| `Aw.CodeIndex.Core` | The facade `ICodeIndex`, the records, the ports (`IRepoSnapshot`, `IIndexStore`, `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IBodyScrubber`), `CodeIndexSettings`, `CodeIndexErrors`, `CodeIndexRules` |
 | `Aw.CodeIndex.Features` | The `BuildCodeIndex` slice (CI-6) and the `EmbedCodeIndex` slice (no heavy slot; `ICodeIndex.Embed`) |
 | `Aw.CodeIndex.Infrastructure` | The adapters (CI-2 to CI-8) |
 | `Aw.CodeIndex.Testing` | The fakes, the temp-repo builder (`GitRepoBuilder`) and the contract bases |
 
 ## Sindri services and jobs
 
-- `code-index-main-move` (built-in, every 1 minute) starts the `BuildCodeIndex` job (key `index:<repo>`, heavy slot) when a repo's trunk moved.
+- `code-index-main-move` (built-in, every 1 minute) starts the `BuildCodeIndex` job (key `index:<repo>`, **no heavy slot**: the build takes the repo's index lock only, `IRepoIndexLock`, so two builds of one repo never overlap; owner 2026-10-24) when a repo's trunk moved.
 - `code-index-embed` (built-in, every 1 minute) starts the `EmbedCodeIndex` job (key `embed:<repo>`, **no heavy slot**) for each repo whose embeddings layer is `pending`, and again after each job until the layer is `ok`, so a repo is fully embedded without a HEAD move. `EmbedDecision` (`Aw.Sindri.Core/Scheduling`) decides per repo: a running job, then a layer that is not pending, then the wait after the newest ended job (failures in a row: 5, 10, 20, 40, 60 minutes; a busy or unbuilt index, `SND-CODEIDX-016` or `013`: 2 minutes, not a failure; a pending layer with no more vectors than the job before: 10 minutes).
 
 ## Errors
@@ -25,7 +25,7 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 017 to 029 are re
 | `SND-CODEIDX-001` | Invalid | the `index:` section has a bad key or value (the message starts with the key path), or a repo name is not file-safe |
 | `SND-CODEIDX-002` | NotFound | the repo path is not a git repo, git refuses it as unsafe, or the commit is not in it |
 | `SND-CODEIDX-003` | Invalid | the tracked code input is over `index.maxTotalMB` |
-| `SND-CODEIDX-004` | Unavailable | every heavy-job slot stayed busy past the wait (a job result code only; the job ends deferred) |
+| `SND-CODEIDX-004` | retired | was: every heavy-job slot stayed busy (a build takes no heavy-job slot now) |
 | `SND-CODEIDX-005` | Invalid | the embedding URL is not loopback, or the model is a cloud model |
 | `SND-CODEIDX-006` | Unavailable | the embedding server failed or answered in an unexpected shape (a layer code) |
 | `SND-CODEIDX-007` | Unavailable | no network sandbox for graphify (a layer code) |
@@ -40,9 +40,9 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 017 to 029 are re
 
 - Typed values: `RepoName` (file-safe, at most 64 characters), `CommitSha` (40 lower-case hex, never an abbreviated SHA: an adapter resolves and passes full SHAs), `SymbolRef` (`<repo>:<path>#<qualified name>`).
 - Every Callers/Callees row carries `coverage` (`full` for C#, `partial` for a graphify language, `unavailable` for an unmeasured one), and the answer carries one too (`CallCoverage.Of`): any partial row, or a partial language, marks the whole answer partial, and an empty partial answer reads "none found", never "none".
-- Ports, each documented with what an implementation must guarantee: `IRepoSnapshot` (+ `IBlobReader`), `IIndexStore` (+ `IIndexReader`, `IIndexBuild`), `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`.
+- Ports, each documented with what an implementation must guarantee: `IRepoSnapshot` (+ `IBlobReader`), `IIndexStore` (+ `IIndexReader`, `IIndexBuild`), `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IBodyScrubber`.
 - The facade `ICodeIndex`: `Build`, `Status`, `Heads`, `ProbeLayers`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`, `Similar`, `Neighbors`; every call takes a `CodeIndexScope` (the caller's repos, each with its effective settings, and the caller).
-- `Aw.CodeIndex.Testing`: `GitRepoBuilder` / `TempGitRepo` (git init, commits, symlinks, a submodule entry, a path swapped after the commit, a promisor clone), `FakeRepoSnapshot`, `FakeIndexStore`, `FakeRepoHeads`, `FakeHeavyJobLock`, `FakeBodyScrubber`, `FakeSymbolParser`. The contract bases come with the adapters (CI-2, CI-3, ...).
+- `Aw.CodeIndex.Testing`: `GitRepoBuilder` / `TempGitRepo` (git init, commits, symlinks, a submodule entry, a path swapped after the commit, a promisor clone), `FakeRepoSnapshot`, `FakeIndexStore`, `FakeRepoHeads`, `FakeBodyScrubber`, `FakeSymbolParser`. The contract bases come with the adapters (CI-2, CI-3, ...).
 - `Aw.CodeIndex.Infrastructure` is `AwAotCompatible=false`: the C# parser (CI-4) uses Roslyn, which is not trim or NativeAOT safe.
 
 ## Read surfaces (CI-10a)
