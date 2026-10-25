@@ -11,7 +11,7 @@ public sealed class ContextSearchTextTests
     private static MapSearchView View() => new("v3", Total: 12, Hits:
     [
         new MapSearchHit(NodeKey.From("feature:tabs.tab-manager"), NodeKind.Feature, "Tab manager", "aw-split-panes", "feature:tabs.tab-manager", 3.2, "title", "Tab manager", Trust.Trusted),
-        new MapSearchHit(NodeKey.From("record:linear:issue/1"), NodeKind.Record, "Tab manager spec", null, "feature:tabs.tab-manager", 1.1, "text", "the spec of the tab manager", Trust.Untrusted),
+        new MapSearchHit(NodeKey.From("record:linear:issue/1"), NodeKind.Record, "Tab manager spec", Repo: null, "feature:tabs.tab-manager", 1.1, "text", "the spec of the tab manager", Trust.Untrusted),
     ]);
 
     [Fact, Trait("Lane", "unit")]
