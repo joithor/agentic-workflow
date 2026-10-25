@@ -23,6 +23,9 @@ internal sealed class JobProbeService(IJobContextAccessor jobs, TimeProvider clo
 
     public static readonly ServiceName ServiceId = ServiceName.From("job-probe");
 
+    /// <summary>What the service does, as GET /sindri/services says it.</summary>
+    public const string Description = "Runs a short job so the job panel can be tried.";
+
     public ServiceName Identity() => ServiceId;
 
     public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)

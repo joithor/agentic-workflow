@@ -4,6 +4,8 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.JobProbe;
+using Aw.Sindri.Features.RecordHeartbeat;
 
 namespace Aw.Sindri.Features.ListServices;
 
@@ -41,21 +43,39 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         var named = approved.Value?.Profile.Services ?? SindriProfile.NoServices;
         var own = builtIns.Where(b => BuiltInService.Is(b.Name, named.ContainsKey(b.Name.Value), builtIns)).ToDictionary(b => b.Name.Value, b => b.Cadence.ToString(), StringComparer.Ordinal);   // a profile entry of the same name sets the cadence instead
         var runs = rows.Value.Where(r => named.ContainsKey(r.Name.Value) || own.ContainsKey(r.Name.Value)).ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
+        var described = Descriptions(builtIns);
         IReadOnlyList<ServiceView> services = [.. named.Select(s => (Name: s.Key, s.Value.Every)).Concat(own.Select(s => (Name: s.Key, Every: s.Value)))
             .OrderBy(s => s.Name, StringComparer.Ordinal)
-            .Select(s => View(s.Name, s.Every, runs.GetValueOrDefault(s.Name), running.Value.FirstOrDefault(j => j.Service?.Value == s.Name)?.Id, named.ContainsKey(s.Name)))];
+            .Select(s => View(s.Name, s.Every, described.GetValueOrDefault(s.Name), runs.GetValueOrDefault(s.Name), running.Value.FirstOrDefault(j => j.Service?.Value == s.Name)?.Id, named.ContainsKey(s.Name)))];
         return new ListServicesResponse(services, EmptyText.For(current, services.Count == 0, EmptyText.Services), asOf);
+    }
+
+    /// <summary>What each service the build knows does: the built-ins carry their own sentence, a profile service of the build (the profile has no field for one) is named here.</summary>
+    private static Dictionary<string, string> Descriptions(IEnumerable<BuiltInService> builtIns)
+    {
+        var described = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [HeartbeatService.ServiceId.Value] = HeartbeatService.Description,
+            [JobProbeService.ServiceId.Value] = JobProbeService.Description,
+        };
+        foreach (var builtIn in builtIns.Where(b => b.Description is not null))
+        {
+            described[builtIn.Name.Value] = builtIn.Description!;
+        }
+
+        return described;
     }
 
     /// <summary>
     /// One service; the approved profile was checked, so its cadence parses (an unparseable one shows no next slot). The next slot is the scheduler's last
     /// slot plus the cadence, so a manual run does not move it, and there is none while the service is paused.
     /// </summary>
-    private static ServiceView View(string name, string every, ServiceRow? row, JobId? job, bool namedByProfile)
+    private static ServiceView View(string name, string every, string? description, ServiceRow? row, JobId? job, bool namedByProfile)
     {
         var cadence = Cadence.Parse(every);
         var paused = row?.Paused == true;
         DateTimeOffset? next = !paused && row?.ScheduledSlot is { } slot && cadence.IsSuccess ? slot + cadence.Value.Interval : null;
-        return new ServiceView(ServiceName.From(name), every, paused, row?.LastRun, next, job, ServiceActions.Allowed(namedByProfile, builtIn: !namedByProfile, paused, job is not null));
+        return new ServiceView(ServiceName.From(name), every, paused, row?.LastRun, next, job, ServiceActions.Allowed(namedByProfile, builtIn: !namedByProfile, paused, job is not null),
+            description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null);
     }
 }

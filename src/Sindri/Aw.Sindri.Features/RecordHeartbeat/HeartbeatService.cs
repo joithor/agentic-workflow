@@ -10,6 +10,9 @@ internal sealed class HeartbeatService(IService<RecordHeartbeatRequest, RecordHe
 {
     public static readonly ServiceName ServiceId = ServiceName.From("heartbeat");
 
+    /// <summary>What the service does, as GET /sindri/services says it.</summary>
+    public const string Description = "Records that Sindri is alive.";
+
     public ServiceName Identity() => ServiceId;
 
     public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken) =>
