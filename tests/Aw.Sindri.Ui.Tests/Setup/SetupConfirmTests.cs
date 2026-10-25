@@ -72,7 +72,7 @@ public sealed class SetupConfirmTests
 
         await profile.Approve();
 
-        Assert.Equal([LiveHash, "b" + LiveHash[1..]], _f.Server.ProfileApprovals.Select(a => a.Hash));
+        Assert.Equal([LiveHash, "b" + LiveHash[1..]], _f.Server.ProfileApprovals.Select(a => a.Hash), StringComparer.Ordinal);
     }
 
     [Fact]
