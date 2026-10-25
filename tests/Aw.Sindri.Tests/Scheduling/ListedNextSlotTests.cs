@@ -14,6 +14,7 @@ using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
@@ -71,6 +72,11 @@ public sealed class ListedNextSlotTests : IDisposable
         {
             _ = services.Replace(ServiceDescriptor.Singleton<IIdGenerator>(new SequentialIdGenerator()));
             _ = services.Replace(ServiceDescriptor.Singleton<IProcessProbe>(new FakeProcessProbe()));
+            foreach (var own in services.Where(d => d.ServiceType == typeof(IScheduledService) && d.ImplementationType == typeof(PrWatchService)).ToList())
+            {
+                _ = services.Remove(own);   // the host's own pr-watch would run in place of the idle one (same name)
+            }
+
             _ = services.AddSingleton<IScheduledService>(_service);
             NoTemporal.Use(services);
         });
