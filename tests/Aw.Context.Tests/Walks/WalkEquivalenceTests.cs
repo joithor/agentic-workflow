@@ -7,7 +7,9 @@ using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.History;
 using Aw.Context.Tests.GetCode;
+using Aw.Context.Tests.GetHistory;
 using Aw.Context.Tests.Map;
+using Aw.Context.Tests.QueryContext;
 using Aw.Kernel;
 
 namespace Aw.Context.Tests.Walks;
@@ -27,7 +29,12 @@ public sealed class WalkEquivalenceTests
 
     private static string Sha(int i) => i.ToString("x40", CultureInfo.InvariantCulture);
 
-    private static string Yaml()
+    private const string Other = "other";
+
+    // With two repos, the odd features' files live in 'other' (the evidence names the repo) and the even ones in the map's own repo.
+    private static string RepoOf(int feature, bool twoRepos) => twoRepos && feature % 2 == 1 ? Other : "aw-split-panes";
+
+    private static string Yaml(bool twoRepos = false)
     {
         var nodes = new List<string>();
         var edges = new List<string>();
@@ -51,8 +58,8 @@ public sealed class WalkEquivalenceTests
                 $"  - {{from: \"action:area.f{n}.go\", to: \"thing:t{n}\", type: writes}}",
                 $"  - {{from: \"action:area.f{n}.go\", to: \"thing:t{Num((i + Features - 1) % Features)}\", type: reads}}",
                 $"  - {{from: \"feature:area.f{n}\", to: \"feature:area.f{Num((i + 1) % Features)}\", type: depends-on}}",
-                $"  - {{from: \"code:src/area/f{n}.ts\", to: \"feature:area.f{n}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:aw-split-panes/src/area/f{n}.ts\"}}]}}",
-                $"  - {{from: \"code:src/area/f{n}b.ts\", to: \"feature:area.f{n}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:aw-split-panes/src/area/f{n}b.ts\"}}]}}",
+                $"  - {{from: \"code:src/area/f{n}.ts\", to: \"feature:area.f{n}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:{RepoOf(i, twoRepos)}/src/area/f{n}.ts\"}}]}}",
+                $"  - {{from: \"code:src/area/f{n}b.ts\", to: \"feature:area.f{n}\", type: implements, provenance: deterministic, evidence: [{{key: \"repo:{RepoOf(i, twoRepos)}/src/area/f{n}b.ts\"}}]}}",
             ]);
             if (i % 2 == 0)
             {
@@ -77,17 +84,41 @@ public sealed class WalkEquivalenceTests
         return files;
     }
 
-    private static HistoryWorld Log() => new(MapWorld.Head, [.. Enumerable.Range(0, Features * 2).Select(i => new FileChange(Sha(i + 1), new DateTimeOffset(2026, 7, 1, 10, 0, 0, TimeSpan.Zero).AddDays(i),
+    private static HistoryWorld Log(Func<int, bool>? featureKept = null) => new(MapWorld.Head, [.. Enumerable.Range(0, Features * 2).Where(i => featureKept?.Invoke(i / 2) ?? true).Select(i => new FileChange(Sha(i + 1), new DateTimeOffset(2026, 7, 1, 10, 0, 0, TimeSpan.Zero).AddDays(i),
         i % 2 == 0 ? $"Merge pull request #{Num(i)} from fixture-labs/nts-{Num(100 + i)}-f{Num(i / 2)}" : $"Tidy f{Num(i / 2)} (#{Num(i)})", Parents: i % 2 == 0 ? 2 : 1,
         [$"src/area/f{Num(i / 2)}.ts", $"src/area/f{Num(i / 2)}b.ts"]))]);
 
-    private static async Task<MapWorld> World(int degree)
+    private static async Task<MapWorld> World(int degree, IFileHistory? history = null, bool twoRepos = false)
     {
         var files = Files();
         var world = new MapWorld(new FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files), codeSearch: new FakeCodeSearch(MapWorld.Repos[0], MapWorld.Head, files),
-            history: new FakeFileHistory(MapWorld.Repos[0], Log()), walk: WalkOptions.Of(degree));
-        _ = await world.ImportYaml(Yaml());
+            history: history ?? new FakeFileHistory(MapWorld.Repos[0], Log()), walk: WalkOptions.Of(degree));
+        _ = await world.ImportYaml(Yaml(twoRepos));
         return world;
+    }
+
+    // Two repos' histories; the repo named by hangOn never answers, so its read ends only at the deadline.
+    private static ScriptedHistory TwoRepoHistory(string? hangOn)
+    {
+        var own = new FakeFileHistory(MapWorld.Repos[0], Log(feature => feature % 2 == 0));
+        var other = new FakeFileHistory(MapWorld.Repos[1], Log(feature => feature % 2 == 1));
+        return new ScriptedHistory(own, async (repo, query, token) =>
+        {
+            if (string.Equals(repo.Name.Value, hangOn, StringComparison.Ordinal))
+            {
+                await Task.Delay(Timeout.Infinite, token);
+            }
+
+            return await (string.Equals(repo.Name.Value, Other, StringComparison.Ordinal) ? other : own).Changes(repo, query, token);
+        });
+    }
+
+    private static async Task<string> FillTwoRepoHistory(int degree, string? hangOn)
+    {
+        using var world = await World(degree, TwoRepoHistory(hangOn), twoRepos: true);
+        var scope = hangOn is null ? MapWorld.Human : MapWorld.HumanWith("""{"deadline":"100ms"}""");
+        var window = HistoryWindow.Of(since: null, before: null).Value;
+        return Json(await Engines.Advancing(world.Clock, () => world.Engine.History(_anchors, window, MapRead.Current, scope, MapWorld.None).AsTask()));
     }
 
     private static string Json<T>(Result<T> answer)
@@ -141,6 +172,26 @@ public sealed class WalkEquivalenceTests
         var parallel = await FillHistory(degree: 8);
 
         Assert.Contains("nts-", serial, StringComparison.Ordinal);
+        Assert.Equal(serial, parallel);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_history_over_two_repos_is_the_same_bytes_at_degree_1_and_8()
+    {
+        var serial = await FillTwoRepoHistory(degree: 1, hangOn: null);
+        var parallel = await FillTwoRepoHistory(degree: 8, hangOn: null);
+
+        Assert.Contains("\"other\"", serial, StringComparison.Ordinal);
+        Assert.Equal(serial, parallel);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_history_is_the_same_bytes_when_the_first_repo_hits_the_deadline_and_the_second_does_not()
+    {
+        var serial = await FillTwoRepoHistory(degree: 1, hangOn: "aw-split-panes");
+        var parallel = await FillTwoRepoHistory(degree: 8, hangOn: "aw-split-panes");
+
+        Assert.Contains("SND-CONTEXT-160", serial, StringComparison.Ordinal);
         Assert.Equal(serial, parallel);
     }
 }
