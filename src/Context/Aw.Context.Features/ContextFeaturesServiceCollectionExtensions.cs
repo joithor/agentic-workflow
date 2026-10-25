@@ -157,6 +157,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetWholeMapRequest, WholeMapView>, GetWholeMapService>()
         .AddScoped<IService<GetConceptsRequest, ConceptsView>, GetConceptsService>()
         .AddScoped<IService<GetConceptMembersRequest, ConceptMembersView>, GetConceptMembersService>()
+        .AddScoped<ConceptReader>()
         .AddScoped<ContextConcepts>()
         .AddScoped<IContextConcepts>(static sp => sp.GetRequiredService<ContextConcepts>())
         .AddSingleton<WholeMapCache>()
