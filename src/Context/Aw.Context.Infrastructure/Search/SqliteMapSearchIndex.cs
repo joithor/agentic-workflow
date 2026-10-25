@@ -38,11 +38,11 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         try
         {
             db.Open();
-            Exec(db, "CREATE VIRTUAL TABLE doc USING fts5(title, path, text, area UNINDEXED, tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')");
-            Exec(db, "CREATE VIRTUAL TABLE tri USING fts5(title, path, area UNINDEXED, tokenize = 'trigram')");
+            Exec(db, "CREATE VIRTUAL TABLE doc USING fts5(title, path, text, area UNINDEXED, doc UNINDEXED, tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')");
+            Exec(db, "CREATE VIRTUAL TABLE tri USING fts5(title, path, area UNINDEXED, doc UNINDEXED, tokenize = 'trigram')");
             using var transaction = db.BeginTransaction();
-            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area) VALUES ($id, $title, $path, $text, $area)", text: "$text");
-            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area) VALUES ($id, $title, $path, $area)", text: null);
+            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area, doc) VALUES ($id, $title, $path, $text, $area, $id)", text: "$text");
+            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area, doc) VALUES ($id, $title, $path, $area, $id)", text: null);
             foreach (var doc in docs)
             {
                 Fill(words, doc);
@@ -93,10 +93,10 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
     }
 
     // Ranked by bm25 rounded to 4 places (on a small map nearly every word is in more than half the documents, bm25 clamps those to ~0 and differences below that are noise), then the shorter title,
-    // then the document id (key order): the same graph and question always give the same order.
+    // then the document id (key order); the id is stored in its own column and read back from it, so a hit never depends on the rowid: the same graph and question always give the same order.
     private MapSearchPage Run(string table, string match, string? area, int limit)
     {
-        var weights = table == Words ? "10.0, 5.0, 1.0, 0.0" : "10.0, 5.0, 0.0";
+        var weights = table == Words ? "10.0, 5.0, 1.0, 0.0, 0.0" : "10.0, 5.0, 0.0, 0.0";
         var filter = area is null ? string.Empty : " AND area = $area";
         using var count = _db.CreateCommand();
         count.CommandText = $"SELECT count(*) FROM {table} WHERE {table} MATCH $match{filter}";
@@ -108,7 +108,7 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         }
 
         using var ask = _db.CreateCommand();
-        ask.CommandText = $"SELECT rowid, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY round(bm25({table}, {weights}), 4), length(title), rowid LIMIT $limit";
+        ask.CommandText = $"SELECT doc, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY round(bm25({table}, {weights}), 4), length(title), doc LIMIT $limit";
         Bind(ask, match, area);
         _ = ask.Parameters.AddWithValue("$limit", limit);
         var matches = new List<MapSearchMatch>();

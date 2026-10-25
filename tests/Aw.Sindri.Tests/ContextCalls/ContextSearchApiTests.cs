@@ -104,7 +104,7 @@ public sealed class ContextSearchApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Search_a_session_of_the_mapped_repo_finds_hits_and_a_session_of_another_repo_finds_none()
+    public async Task Search_a_session_of_the_mapped_repo_finds_hits_and_a_session_of_an_unmapped_repo_is_003()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -116,7 +116,7 @@ public sealed class ContextSearchApiTests : IDisposable
 
         Assert.True(mine.Status == HttpStatusCode.OK, "own repo: " + mine.Body);
         Assert.True(Json(mine.Body).GetProperty("total").GetInt32() > 0, "own repo: " + mine.Body);
-        Assert.True(theirs.Status == HttpStatusCode.OK, "other repo: " + theirs.Body);
-        Assert.True(Json(theirs.Body).GetProperty("total").GetInt32() == 0, "other repo: " + theirs.Body);
+        // Like every context read, a session of a repo the profile doesn't map is SND-CONTEXT-003 (404), not an empty answer.
+        Assert.True((theirs.Status, theirs.Code) == (HttpStatusCode.NotFound, "SND-CONTEXT-003"), "other repo: " + theirs.Body);
     }
 }
