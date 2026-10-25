@@ -286,6 +286,7 @@ has "eval: names both counts" "$out" "embeds 4 recipes but recipes/sindri has 3"
 check "eval: a count failure records no digest" "$([ "$(cat "$DG")" = "$D_BEFORE" ] && echo same)" "same"
 
 # A profile approval this build can't read (#1143) or that isn't there: --link says the one command and still exits 0.
+bash "$INSTALL" --publish > /dev/null 2>&1   # the count failure above left this source unbuilt; --link needs a build to link
 out="$(FAKE_PROFILE_RC=2 FAKE_PROFILE_OUT="SND-PROFILE-005 x/profile.json doesn't match its approval hash" bash "$INSTALL" --link 2>&1)"; rc=$?
 check "an unreadable approval: --link still exits 0" "$rc" "0"
 has "an unreadable approval: the hint names the command" "$out" "run \`sindri profile approve\` to see the live hash"
