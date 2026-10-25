@@ -19,7 +19,7 @@ internal sealed class FactRowViewModel : ObservableObject
     private readonly FactViewerRegistry _registry;
     private readonly FactViewerContext _context;
 
-    internal FactRowViewModel(FactRow row, string address, IReadOnlyList<StateCell> states, StatusCommand? complete, FactViewerRegistry registry, FactViewerContext context)
+    internal FactRowViewModel(FactRow row, string address, IReadOnlyList<StateCell> states, StatusCommand? complete, FactViewerRegistry registry, FactViewerContext context, Func<string, string>? nameOf = null)
     {
         (_row, _registry, _context) = (row, registry, context);
         (Key, Label, Address) = (row.Key, FactText.Scrub(row.Label), address);
@@ -29,7 +29,7 @@ internal sealed class FactRowViewModel : ObservableObject
         By = row.By is null ? string.Empty : row.By.StartsWith(HumanPrefix, StringComparison.Ordinal) ? Labels.ByYou : FactText.Scrub(row.By);
         At = row.At is { } at ? Local(at, context.Clock) : string.Empty;
         ProgressText = row.Progress is { } progress ? Labels.ProgressOf(progress) : string.Empty;
-        (From, FromMark) = row.From is { } from ? (Labels.FromState(from), Mark(states, from)) : (string.Empty, string.Empty);
+        (From, FromMark) = Origin(row.From, states, nameOf);
         CanView = row.Status != FactStatus.Pending;
         IsAwaiting = row.Status == FactStatus.Pending && row.Pending is not null;
         PendingChip = IsAwaiting ? Labels.AvailableWithU8b : string.Empty;
@@ -117,7 +117,7 @@ internal sealed class FactRowViewModel : ObservableObject
     public string ViewName => Labels.ViewFactName(IsViewing, Label, Address);
 
     /// <summary>The row's accessible name: label, key, status in words and summary.</summary>
-    public string Name => $"{Label} ({Key}), {StatusWords}, {Summary}";
+    public string Name => $"{Label}, {StatusWords}, {Summary}";
 
     /// <summary>What the row draws, so a re-read of the same keeps it.</summary>
     internal string Signature => string.Join('|', Key, Label, Glyph, Summary, Meta, ProgressText, PendingCli);
@@ -149,6 +149,10 @@ internal sealed class FactRowViewModel : ObservableObject
     // The desk's complete command names the outputs it takes; this row's is the one that names its key.
     private static string CompletingCli(FactRow row, StatusCommand? complete) =>
         complete is { } c && c.Cli.Contains(row.Key, StringComparison.Ordinal) && ControlViewModel.Safe(c.Cli) ? c.Cli : string.Empty;
+
+    // "from <state>" in the recipe's words, and the band's mark for that state; both empty for an input.
+    private static (string From, string Mark) Origin(string? from, IReadOnlyList<StateCell> states, Func<string, string>? nameOf) =>
+        from is null ? (string.Empty, string.Empty) : (Labels.FromState(nameOf?.Invoke(from) ?? from), Mark(states, from));
 
     private static string Mark(IReadOnlyList<StateCell> states, string state) =>
         states.FirstOrDefault(s => string.Equals(s.State, state, StringComparison.Ordinal)) is { } cell ? new StageCellViewModel(cell, isCurrent: false, isBlocked: false).Glyph : string.Empty;

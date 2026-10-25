@@ -1,8 +1,11 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Symbols;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -13,7 +16,7 @@ namespace Aw.Context.Features.GetFileMap;
 /// map the caller may read, built by FileMapBuilder. A repo outside the profile, outside 'context.repos' or outside a
 /// session's scope is SND-CONTEXT-045 with one answer for every reason, so a scope never reveals what is outside it.
 /// </summary>
-internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : IService<GetFileMapRequest, FileMapView>
+internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICodeSymbolSource symbols, RepoTreeCache trees) : IService<GetFileMapRequest, FileMapView>
 {
     public async ValueTask<Result<FileMapView>> Handle(GetFileMapRequest request, CancellationToken cancellationToken)
     {
@@ -26,7 +29,16 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
             return repo.IsError ? repo.Error : map.IsError ? map.Error : tree.Error;
         }
 
-        return FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Files, map.Value.Graph);
+        var built = FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Tree, map.Value.Graph);
+        return built.IsError ? built.Error : built.Value with { Symbols = await Symbols(repo.Value, map.Value.Snapshot.Version, built.Value, cancellationToken).ConfigureAwait(false) };
+    }
+
+    // The symbols column (S-9a, links in Phase 9): what the code index says about the files this listing shows, as of the map version's commit. A directory row has none.
+    private ValueTask<LensSymbols> Symbols(ContextRepo repo, MapVersion version, FileMapView view, CancellationToken cancellationToken)
+    {
+        var files = view.Entries.Where(e => e.Type == FileEntryType.File).ToList();
+        var links = files.Select(e => (e.Path, (IReadOnlyList<NodeKey>)[.. e.Features.Where(f => f.Edge == EdgeType.Implements).Select(f => f.Key)])).Where(l => l.Item2.Count > 0).ToList();
+        return SymbolColumn.Read(new TrailingCodeSymbolSource(symbols, repos, repo), new SymbolColumnReading(repo, version, [.. files.Select(e => e.Path)], links), cancellationToken);
     }
 
     private static Result<ContextRepo> Addressed(ContextScope scope, ContextRepoName name)
@@ -43,11 +55,29 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
             : repo;
     }
 
-    /// <summary>The repo's tracked files at HEAD (never a denied path) and the first seven characters of that commit.</summary>
-    private async ValueTask<Result<(string Sha, IReadOnlyList<string> Files)>> Tree(ContextRepo repo, CancellationToken cancellationToken)
+    /// <summary>The repo's tracked files at HEAD (never a denied path), from the cache when HEAD hasn't moved, and the first seven characters of that commit.</summary>
+    private async ValueTask<Result<(string Sha, RepoTree Tree)>> Tree(ContextRepo repo, CancellationToken cancellationToken)
     {
         var head = await repos.Head(repo, cancellationToken).ConfigureAwait(false);
-        var listed = head.IsError ? head.Error : await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
-        return listed.IsError ? listed.Error : (head.Value[..Math.Min(7, head.Value.Length)], [.. listed.Value.Where(p => !repo.Denies(p))]);
+        if (head.IsError)
+        {
+            return head.Error;
+        }
+
+        var sha = head.Value[..Math.Min(7, head.Value.Length)];
+        if (trees.Find(repo, head.Value) is { } kept)
+        {
+            return (sha, kept);
+        }
+
+        var listed = await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
+        if (listed.IsError)
+        {
+            return listed.Error;
+        }
+
+        var tree = new RepoTree(listed.Value.Where(p => !repo.Denies(p)));
+        trees.Keep(repo, head.Value, tree);
+        return (sha, tree);
     }
 }

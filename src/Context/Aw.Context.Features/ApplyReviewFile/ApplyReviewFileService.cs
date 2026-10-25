@@ -1,6 +1,5 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Review;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -16,7 +15,7 @@ internal sealed class ApplyReviewFileService(IGraphStore store, IReviewFileStore
 {
     public async ValueTask<Result<ReviewResult>> Handle(ApplyReviewFileRequest request, CancellationToken cancellationToken)
     {
-        if (ReviewDrafts.Gate(request.Scope, "applying a review file") is { } refused)
+        if (MapAccess.Gate(request.Scope) is { } refused)
         {
             return refused;
         }
@@ -34,8 +33,12 @@ internal sealed class ApplyReviewFileService(IGraphStore store, IReviewFileStore
             return prepared.Error;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();   // a Ctrl-C ends the request: stop before planning, not after it
         var (basis, matched) = prepared.Value;
-        var (rows, skipped) = Plan(matched, basis, (ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow()));
+        var (planned, skippedLater) = ReviewPlanner.PlanAll(matched.Decisions, basis, ReviewDrafts.Who(request.Scope.Caller, user), clock.GetUtcNow(), cancellationToken);
+        var rows = planned.ToList();
+        var skipped = matched.Skipped.Concat(skippedLater).ToList();
+        cancellationToken.ThrowIfCancellationRequested();
         var added = await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
         return added.IsError
             ? added.Error
@@ -50,26 +53,5 @@ internal sealed class ApplyReviewFileService(IGraphStore store, IReviewFileStore
         return seen.IsError || matched.IsError
             ? (seen.IsError ? seen.Error : matched.Error)
             : (new ReviewBasis(seen.Value.View.Graph, seen.Value.View.Overrides), matched.Value);
-    }
-
-    // Each decision is planned on top of the ones before it, so two entries of one file can't both claim the same item.
-    private static (List<MapOverride> Rows, List<string> Skipped) Plan(ReviewFileMatch matched, ReviewBasis basis, (string Who, DateTimeOffset At) by)
-    {
-        var rows = new List<MapOverride>();
-        var skipped = new List<string>(matched.Skipped);
-        foreach (var decision in matched.Decisions)
-        {
-            var planned = ReviewPlanner.Plan(decision, basis with { Overrides = [.. basis.Overrides, .. rows] }, by.Who, by.At);
-            if (planned.IsSuccess)
-            {
-                rows.AddRange(planned.Value);
-            }
-            else
-            {
-                skipped.Add(planned.Error.Message);
-            }
-        }
-
-        return (rows, skipped);
     }
 }

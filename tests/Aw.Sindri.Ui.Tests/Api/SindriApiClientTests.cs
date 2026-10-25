@@ -253,22 +253,22 @@ public sealed class SindriApiClientTests
         Assert.DoesNotContain(A.HumanToken, entry.Message, StringComparison.Ordinal);
     }
 
-    // SND-UI-002's 2 s rule runs on the app's clock, like every other timing rule: a call that hangs is unreachable
-    // once the clock passes 2 s, with no real wait.
+    // SND-UI-002's 120 s rule runs on the app's clock, like every other timing rule: a call that hangs is unreachable
+    // once the clock passes 120 s, with no real wait; a slow answer (a context read of a large map) is not.
     [Fact]
-    public async Task A_call_that_doesnt_answer_within_2_s_on_the_apps_clock_is_unreachable()
+    public async Task A_call_that_doesnt_answer_within_120_s_on_the_apps_clock_is_unreachable()
     {
         var clock = new FakeTimeProvider(A.Noon);
         using var http = new HttpClient(new SilentHandler());
         var ping = new SindriApiClient(http, _token, clock).Ping(_api, Token);
 
-        clock.Advance(TimeSpan.FromSeconds(2) - TimeSpan.FromTicks(1));
+        clock.Advance(TimeSpan.FromSeconds(120) - TimeSpan.FromTicks(1));
         Assert.False(ping.IsCompleted);
         clock.Advance(TimeSpan.FromTicks(1));
         var result = await ping.WaitAsync(TimeSpan.FromSeconds(1), TimeProvider.System, Token);
 
         Assert.Equal("SND-UI-002", result.Error.Code);
-        Assert.Contains("didn't answer within 2 s", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("didn't answer within 120 s", result.Error.Message, StringComparison.Ordinal);
     }
 
     // A server that accepts the request and never answers.

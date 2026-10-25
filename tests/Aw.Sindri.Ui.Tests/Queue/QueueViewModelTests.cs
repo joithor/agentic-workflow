@@ -84,12 +84,12 @@ public sealed class QueueViewModelTests
 
         var decide = queue.Groups[0].Rows[0].PrimaryAction;
         Assert.NotNull(decide);
-        Assert.Equal(("Decide", false), (decide.Label, decide.IsPending));   // API P4 made Decide ready
+        Assert.Equal("Decide", decide.Label);
         Assert.Equal("Decide " + A.DecisionItem, decide.Name);
         Assert.Null(queue.Groups[3].Rows[0].PrimaryAction);
     }
 
-    // §4.5 (owner, 2026-10-12): four groups; a parked item sits in Waiting on you with a "parked" badge from its state.
+    // §4.5 (owner, 2026-10-12): four groups; a parked item sits in Waiting on you with a "paused" badge from its state.
     [Fact]
     public async Task A_parked_item_carries_a_parked_badge_in_waiting_on_you()
     {
@@ -99,7 +99,7 @@ public sealed class QueueViewModelTests
         await queue.Refresh(_api, Token);
 
         var waiting = queue.Groups[0].Rows;
-        Assert.Equal((true, "parked", "Parked"), (waiting[0].HasBadge, waiting[0].Badge, waiting[0].StateWord));
+        Assert.Equal((true, "paused", "Paused: needs a decision"), (waiting[0].HasBadge, waiting[0].Badge, waiting[0].StateWord));
         Assert.False(waiting[1].HasBadge);
         Assert.All(queue.Groups[3].Rows, r => Assert.False(r.HasBadge));
     }

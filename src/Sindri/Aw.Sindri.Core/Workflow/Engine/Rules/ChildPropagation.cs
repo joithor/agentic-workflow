@@ -17,7 +17,7 @@ internal static class ChildPropagation
     /// <summary>
     /// The child a 'waitFor: { child }' creates (spec §5.8): the child recipe as <paramref name="pinned"/> resolves it,
     /// under the parent's pinned hash; its own pins (its child waits' recipes, as <paramref name="pinned"/> resolves
-    /// them), so a child that waits on a grandchild creates it the same way (RCP-CHILD-003 allows depth 4); its inputs
+    /// them), so a child that waits on a grandchild creates it the same way (RCP-CHILD-003 allows depth 5); its inputs
     /// from the wait's '{ fact }' and literals; its address '{parent}/{recipe name}.{parent entry}', which is its
     /// workflow id, and its id derived from that address (§5.1); and the parent trigger's actor. A resolved child whose hash isn't the
     /// one the parent pinned is refused (§4.1: a child is created from the hash its parent pinned).
@@ -180,7 +180,12 @@ internal static class ChildPropagation
 
     private static ParentEffect Effect(ParentEffectKind kind) => new(kind, Suspend: null);
 
+    // The mirror's own ParkKind and Escalation stay as the root's rules read them (none; Child); the child's are carried beside them.
     private static Suspension Mirror(ChildChanged change, SuspensionKind kind, EscalationKind? escalation) => new(
         kind, kind == SuspensionKind.Park ? change.Reason : null, ParkKind: null, escalation, change.Question ?? string.Empty, change.Actor, change.Child,
-        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effects: []));
+        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effects: []))
+    {
+        MirroredParkKind = kind == SuspensionKind.Park ? change.ParkKind : null,
+        MirroredEscalation = kind == SuspensionKind.Escalation ? change.Escalation : null,
+    };
 }

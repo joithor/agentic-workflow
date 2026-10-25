@@ -1,0 +1,185 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             x:Class="Aw.Sindri.Ui.Views.Context.ContextPage"
+             xmlns:rv="using:Aw.Sindri.Ui.Views.Context.Review"
+             xmlns:fv="using:Aw.Sindri.Ui.Views.Context.FileMap"
+             xmlns:nv="using:Aw.Sindri.Ui.Views.Context.Node"
+             xmlns:sv="using:Aw.Sindri.Ui.Views.Context.Sources"
+             xmlns:cv="using:Aw.Sindri.Ui.Views.Context.Code"
+             xmlns:mv="using:Aw.Sindri.Ui.Views.Context.Map"
+             xmlns:wv="using:Aw.Sindri.Ui.Views.Context.Whole"
+             xmlns:wvm="using:Aw.Sindri.Ui.ViewModels.Context.Whole"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:DataType="ctx:ContextPageViewModel">
+
+  <UserControl.Resources>
+    <DataTemplate x:Key="LineTemplate" x:DataType="ctx:ContextLine">
+      <Border AutomationProperties.Name="{Binding Text}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <!-- The segmented choices of the control row: a Surface2 track, the chosen segment on Surface3, 30 px high. -->
+    <Style Selector="RadioButton.segment">
+      <Setter Property="Height" Value="{StaticResource Size.Control}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter x:Name="PART_ContentPresenter" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"
+                            Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    </Style>
+    <!-- The refusal banner and the two overlays (F3 spec 1 §3): a refusal draws an Attention outline with its glyph and words, never colour alone. -->
+    <Style Selector="Border.refusal">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Attention}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Border.overlay">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+      <Setter Property="Padding" Value="24" />
+    </Style>
+    <Style Selector="Border.skeleton">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+      <Setter Property="Height" Value="56" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The Context page (F3 spec 1 §2): the head, a control row (the search box, Map or Files, coverage), and the stage, which
+       is the pannable map. The hosts below are the seams the later stages fill: the lens stack is the stage, the node card and the
+       sources are the inspector, the review and the file map are the Files view. -->
+  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="{StaticResource Size.PanelGap}">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock x:Name="ContextTitle" Classes="page-title" Text="{Binding Title}" />
+        <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" IsVisible="{Binding HasHead}" VerticalAlignment="Center" />
+      </StackPanel>
+      <Border x:Name="ContextDraftTag" Grid.Column="2" IsVisible="{Binding IsDraft}" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.Pill}" Padding="10,2" VerticalAlignment="Center"
+              AutomationProperties.Name="{Binding DraftTag}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption" Text="{Binding DraftTag}" />
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" MinHeight="{StaticResource Size.TopBar}">
+      <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+          <TextBlock Classes="eyebrow" Text="{Binding StartsAtLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+          <TextBox x:Name="AnchorBox" KeyDown="OnAnchorKey" MinWidth="220" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
+                   AutomationProperties.Name="{Binding AnchorLabel}" />
+          <Button x:Name="AnchorClear" IsVisible="False" Click="OnClearSearch" VerticalAlignment="Center" Content="{Binding SearchClearText}" AutomationProperties.Name="{Binding SearchClearText}" />
+          <TextBlock x:Name="SearchNoteText" Classes="caption subtle" Text="{Binding SearchNote}" IsVisible="{Binding HasSearchNote}" VerticalAlignment="Center"
+                     AutomationProperties.Name="{Binding SearchNote}" />
+        </StackPanel>
+        <ComboBox x:Name="ContextRepo" ItemsSource="{Binding Repos}" SelectedItem="{Binding SelectedRepo, Mode=TwoWay}" IsVisible="{Binding HasRepoPicker}" MinWidth="140" Height="28" Margin="0,0,16,8"
+                  VerticalAlignment="Center" AutomationProperties.Name="{Binding RepoName}" />
+        <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
+                AutomationProperties.Name="{Binding ViewName}">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="ViewMapButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowMap, Mode=TwoWay}" Content="{Binding ViewMapWord}" AutomationProperties.Name="{Binding ViewMapWord}" />
+            <RadioButton x:Name="ViewFilesButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowFiles, Mode=TwoWay}" Content="{Binding ViewFilesWord}" AutomationProperties.Name="{Binding ViewFilesWord}" />
+          </StackPanel>
+        </Border>
+      </WrapPanel>
+      <ctl:CoverageStrip x:Name="ContextCoverageStrip" Grid.Column="1" IsVisible="{Binding HasStack}" VerticalAlignment="Center" Margin="0,0,0,8" />
+    </Grid>
+
+    <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8">
+      <StackPanel Spacing="8">
+        <Border x:Name="ContextProblem" Classes="refusal" IsVisible="{Binding HasProblem}" AutomationProperties.Name="{Binding Problem}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <icons:StateIcon Glyph="Down" VerticalAlignment="Top" Margin="0,2,0,0" />
+            <TextBlock Classes="body" Text="{Binding Problem}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <StackPanel x:Name="ContextChoices" IsVisible="{Binding HasChoices}">
+          <Border AutomationProperties.Name="{Binding ChoicesName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption subtle" Text="{Binding ChoicesName}" />
+          </Border>
+          <ItemsControl ItemsSource="{Binding Choices}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Content="{Binding}" Click="OnPick" AutomationProperties.Name="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <ItemsControl x:Name="ContextMissing" ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource LineTemplate}" />
+      </StackPanel>
+
+      <!-- The stage: the page scrolls, so the stage is given the height the window leaves (ContextPage.axaml.cs). -->
+      <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420">
+        <!-- The page's first state: the whole map, read when the page opens (whole-map spec §3.1); a query's neighbourhood replaces it for now. -->
+        <Panel x:Name="WholeMapHost" IsVisible="{Binding ShowWhole}">
+          <wv:WholeMapView x:Name="WholeMap" DataContext="{Binding Whole}" />
+        </Panel>
+        <!-- A quiet row while the map is read, and Retry when it could not be (whatever was drawn stays). -->
+        <Border x:Name="WholeStatus" IsVisible="{Binding ShowWholeStatus}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,16,0,0" Padding="14,8"
+                Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.MD}">
+          <StackPanel Orientation="Horizontal" Spacing="10" DataContext="{Binding Whole}" x:DataType="wvm:WholeMapViewModel">
+            <TextBlock x:Name="WholeLoadingText" Classes="body subtle" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" />
+            <TextBlock x:Name="WholeFailedText" Classes="body" Text="{Binding FailedText}" IsVisible="{Binding IsFailed}" />
+            <Button x:Name="WholeRetry" Content="{Binding RetryText}" IsVisible="{Binding IsFailed}" Click="OnRetryWhole" AutomationProperties.Name="{Binding RetryText}" />
+          </StackPanel>
+        </Border>
+        <Panel x:Name="LensStackHost" IsVisible="{Binding MapVisible}">
+          <mv:ContextMapView x:Name="ContextStack" />
+        </Panel>
+        <!-- The Building and No map overlays cover the map view only; the Files view has its own states. -->
+        <Panel x:Name="ContextOverlays" IsVisible="{Binding ShowMap}">
+          <Border x:Name="ContextBuilding" Classes="overlay" IsVisible="{Binding ShowBuilding}" AutomationProperties.Name="{Binding BuildingTitle}" AutomationProperties.AccessibilityView="Control">
+            <StackPanel Spacing="16" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+              <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                <icons:StateIcon Icon="Spinner" Spins="True" VerticalAlignment="Center" />
+                <TextBlock x:Name="ContextBuildingTitle" Classes="detail-title" Text="{Binding BuildingTitle}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock x:Name="ContextBuildingBody" Classes="body subtle" Text="{Binding BuildingBody}" IsVisible="{Binding HasBuildingBody}" TextWrapping="Wrap" TextAlignment="Center" />
+              <Button x:Name="ContextBuildingJob" Classes="row-title" HorizontalAlignment="Center" IsVisible="{Binding HasBuildJob}" Content="{Binding BuildJobText}" Click="OnViewBuildJob"
+                      AutomationProperties.Name="{Binding BuildJobText}" />
+              <StackPanel Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                <Border Classes="skeleton" />
+                <Border Classes="skeleton" />
+                <Border Classes="skeleton" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <Border x:Name="ContextEmpty" Classes="overlay" IsVisible="{Binding ShowEmpty}" AutomationProperties.Name="{Binding EmptyTitle}" AutomationProperties.AccessibilityView="Control">
+            <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+              <TextBlock x:Name="ContextEmptyTitle" Classes="detail-title" Text="{Binding EmptyTitle}" TextAlignment="Center" />
+              <TextBlock x:Name="ContextEmptyBody" Classes="body subtle" Text="{Binding EmptyBody}" TextWrapping="Wrap" TextAlignment="Center" />
+              <Panel IsVisible="{Binding BuildControl, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <ctl:CommandControl x:Name="ContextBuild" DataContext="{Binding BuildControl}" HorizontalAlignment="Center" />
+              </Panel>
+            </StackPanel>
+          </Border>
+        </Panel>
+        <Border x:Name="ContextFilesPanel" IsVisible="{Binding ShowFiles}" Background="{DynamicResource Brush.Surface1}" CornerRadius="{StaticResource Radius.MD}" Padding="16">
+          <fv:FileMapTree x:Name="FileMapHost" DataContext="{Binding FileMap}" />
+        </Border>
+        <Border x:Name="ContextInspector" IsVisible="{Binding InspectorOpen}" ClipToBounds="True" HorizontalAlignment="Right" Width="480" Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1,0,0,0">
+          <!-- No ScrollViewer here: while the inspector is hidden its template is never applied, so the hosts would not be in the visual tree. -->
+          <StackPanel Spacing="{StaticResource Size.PanelGap}">
+            <rv:MapReviewPanel x:Name="ReviewHost" DataContext="{Binding Review}" />
+            <nv:NodeCard x:Name="NodeHost" DataContext="{Binding Node}" />
+            <sv:SourcesPanel x:Name="SourcesHost" DataContext="{Binding Sources}" />
+            <cv:CodeCallsPanel x:Name="CodeHost" DataContext="{Binding Code}" />
+          </StackPanel>
+        </Border>
+      </Panel>
+    </Grid>
+  </Grid>
+</UserControl>

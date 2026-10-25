@@ -18,6 +18,9 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Budget">The state's token budget.</param>
 /// <param name="Next">What the human reads next, with recipe variables (spec §3.7).</param>
 /// <param name="Outcome">A terminal state's outcome: resolved, unresolved, alreadySatisfied or failed.</param>
+/// <param name="Why">Optional plain words (at most 200 characters, no ids or code names; RCP-DISPLAY-002) on why this state is in the recipe; written into the hashed form only when set.</param>
+/// <param name="DisplayName">Optional plain name (at most 60 characters; RCP-DISPLAY-003) the app shows for this step instead of the state id; written into the hashed form only when set.</param>
+/// <param name="OnOutcome">Optional plain words for each outcome of a desk state, by outcome name ('approve: "Moves on to planning"'); each key is an outcome of the state's Step and each text plain words (RCP-DISPLAY-002); written into the hashed form only when set.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeState(
     StateKind Kind,
@@ -27,4 +30,7 @@ public sealed record RecipeState(
     string? Loop,
     BudgetSpec? Budget,
     string? Next,
-    OutcomeName? Outcome);
+    OutcomeName? Outcome,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Why = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? OnOutcome = null);

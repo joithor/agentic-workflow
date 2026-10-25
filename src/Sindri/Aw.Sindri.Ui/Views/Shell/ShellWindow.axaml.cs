@@ -50,6 +50,22 @@ internal sealed partial class ShellWindow : Window
     private Border PagePanel => this.Get<Border>("Page");
 
     /// <inheritdoc />
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        // A relaunch restores the last page before the window exists, so no page change lands focus on its region: do it once the window is open.
+        Dispatcher.UIThread.Post(() =>
+        {
+            // A sheet a deep link opened meanwhile (IsSheetOpen: the shell is not connected yet, so IsSheetShown is still false) has its own focus rule (FocusOpenedSheet).
+            if (!HasRealFocus && Shell is not { IsSheetOpen: true })
+            {
+                LandOnPage();
+            }
+        }, DispatcherPriority.Loaded);
+    }
+
+    /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
         Listen(_shell, on: false);
@@ -109,48 +125,6 @@ internal sealed partial class ShellWindow : Window
         (e.KeyModifiers == KeyModifiers.None && ChordKey(e.Key) is not null)
         || e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LWin or Key.RWin;
 
-    // Esc closes the sheet when it shows, or Settings over the Not running card (focus then goes from its hidden control
-    // to the page region); otherwise it does nothing here. A sheet hidden while Sindri isn't running stays open, so the
-    // keypress isn't spent on what the user can't see and the sheet is back when Sindri is.
-    private bool Escape()
-    {
-        if (Shell is not { } shell)
-        {
-            return false;
-        }
-
-        if (shell.Palette.IsOpen)
-        {
-            shell.Palette.Close();
-            return true;
-        }
-
-        if (shell.Shortcuts.IsOpen)
-        {
-            shell.Shortcuts.Close();
-            return true;
-        }
-
-        if (EscapeItemLayer(shell))
-        {
-            return true;
-        }
-
-        if (shell.IsSheetShown)
-        {
-            shell.CloseSheet();
-            return true;
-        }
-
-        if (!shell.LeaveSettings())
-        {
-            return false;
-        }
-
-        Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
-        return true;
-    }
-
     // Below Size.SheetCoversBelow the sheet covers the page, with a back affordance; otherwise it keeps its width. When
     // an open sheet starts or stops covering (the window narrowed or widened), focus left on the page it now disables
     // moves on (review run 4, accessibility-tester-1).
@@ -201,14 +175,10 @@ internal sealed partial class ShellWindow : Window
                 Dispatcher.UIThread.Post(Shell is { IsVersionMismatch: true } ? FocusMismatchCard : KeepFocus, DispatcherPriority.Loaded);
                 break;
             case nameof(ShellViewModel.CurrentPage):
-                // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
-                // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
-                if (!_openingSettings)
-                {
-                    Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
-                    _navArrowing = false;
-                }
-
+                OnPageChanged();
+                break;
+            case nameof(ShellViewModel.IsNeedsYouInbox):
+                FollowInbox();
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
@@ -219,22 +189,24 @@ internal sealed partial class ShellWindow : Window
         }
     }
 
-    // Opening the sheet over the page (below 1100 px) moves focus to its heading (§11.2). Beside the page focus stays
-    // where it is, unless what had it hid as the sheet opened (the edge tab at 1100 px and wider; review run 4,
-    // accessibility-tester-0): then the heading gets it too, never a hidden control.
-    private void FocusOpenedSheet()
+    // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
+    // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
+    private void OnPageChanged()
     {
-        if (Shell is { IsSheetShown: true } shell && (Covering || !HasUsableFocus))
+        if (_openingSettings)
         {
-            _ = this.Get<Border>("SheetTitle").Focus(Method());
-            if (NoOpener(shell))
-            {
-                EnterOpenedFrame(shell);   // a link with no row behind it goes on to the frame; a row's open stays on the heading (§11.2)
-            }
+            return;
         }
-        else if (Shell is { IsSheetShown: true, IsInstanceSheet: true } opened && NoOpener(opened))
+
+        var arrowing = _navArrowing;
+        _navArrowing = false;
+        if (arrowing)
         {
-            EnterOpenedFrame(opened);   // a link with no row behind it (a deep link, a pointer): nothing on the page to stay on
+            Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);   // arrows keep focus on the tab (Y1)
+        }
+        else
+        {
+            LandOnPage();   // the page was opened (click, chord, link, relaunch), not arrowed onto
         }
     }
 
@@ -248,8 +220,6 @@ internal sealed partial class ShellWindow : Window
             _ = this.Get<TextBlock>("VersionMismatchText").Focus(Method());
         }
     }
-
-    private bool HasUsableFocus => FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true };
 
     // A keyboard user's focus moves with its ring (Tab); a pointer user's without.
     private NavigationMethod Method() => _lastMethod == NavigationMethod.Pointer ? NavigationMethod.Pointer : NavigationMethod.Tab;

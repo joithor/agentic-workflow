@@ -16,7 +16,7 @@ internal static partial class Labels
     internal const string Ready = "ready";
 
     /// <summary>A ready row the app has no sender for: shown, never run (K8).</summary>
-    internal const string NotInApp = "not in the app yet";
+    internal const string NotInApp = "coming soon";
 
     /// <summary>A ready item action that lives on the item's sheet (it needs the version the sheet shows): shown, never run from the palette.</summary>
     internal const string OnItemSheet = "on the item's sheet";
@@ -25,10 +25,10 @@ internal static partial class Labels
     internal const string NoMatches = "Nothing matches";
 
     /// <summary>The views banner's live text while the views rebuild (the sentence on screen carries a moving cursor).</summary>
-    internal const string ViewsRebuilding = "Rebuilding views";
+    internal const string ViewsRebuilding = "Refreshing the lists";
 
     /// <summary>The live text when the stalled or rebuilding banner goes away.</summary>
-    internal const string ViewsRecovered = "Views are up to date";
+    internal const string ViewsRecovered = "Lists are up to date";
 
     /// <summary>The shortcuts sheet's title and accessible name.</summary>
     internal const string Shortcuts = "Keyboard shortcuts";
@@ -45,19 +45,20 @@ internal static partial class Labels
     internal static IReadOnlyList<(string Keys, string Action)> FixedKeys { get; } =
     [
         ("⌘K / Ctrl+K", Palette),
-        ("G then H N D W Q R C A . S", "Go to Home (H, N), Home's Decisions (D), Workflows, Work (the queue), Recipes, Context, Agents, System (., S)"),
+        ("G then H N D W Q R C A . S", "Go to a page: H Home, W Workflows, Q Work, R Workflow types, C Context, A Agents, . System"),
         ("J / K", "Next / previous row"),
-        ("Enter / Esc", "Open the detail sheet / close the topmost layer"),
-        ("O", "Open with the resolved target; Shift+O opens the target menu"),
+        ("Enter / Esc", "Open the details panel / close the top layer"),
+        ("O", "Open the linked page"),
         ("A", "The row's primary action"),
-        ("Shift+A", "Mark all seen"),
-        ("X / Shift+X", "Reject or decline / cancel the instance"),
+        ("Shift+A", "Mark all as seen"),
+        ("X / Shift+X", "Decline / cancel the run"),
         ("T / B", "Take over / hand back"),
-        ("Y", "Copy the selected row's CLI"),
-        ("C / R", "Create item / file a request"),
-        ("/", "Filter the current list"),
+        ("Y", "Copy the row's command"),
+        ("C / R", "New item / send a request"),
+        ("N / ⌘N / Ctrl+N", "Start a workflow (N on Workflows, the chord from any page)"),
+        ("/", "Filter this list"),
         ("?", "Shortcuts sheet"),
         ("⌘, / Ctrl+,", Settings),
-        ("F6 / Shift+F6", "Next / previous region"),
+        ("F6 / Shift+F6", "Next / previous area"),
     ];
 }

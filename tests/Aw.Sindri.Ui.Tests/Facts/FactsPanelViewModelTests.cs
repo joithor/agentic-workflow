@@ -49,6 +49,27 @@ public sealed class FactsPanelViewModelTests
     }
 
     [Fact]
+    public void The_panel_leads_with_what_this_run_collected_and_says_why_it_is_there()
+    {
+        var panel = Panel("project-build");
+
+        Assert.Equal(("What this run collected", "Each stage adds what it found; later stages and agents read it."), (panel.Heading, panel.Hint));
+    }
+
+    [Fact]
+    public void The_panel_is_closed_until_an_output_waits_on_the_person_and_keeps_the_choice()
+    {
+        var detail = FixtureInstances.Details.First(d => d.Detail.Facts.Any(f => f.Status == FactStatus.Pending && f.Pending is not null)).Detail;
+        var context = new FactViewerContext(_server, _clipboard, _clock, () => FactFixtures.Api, detail.Id, _ => { });
+        var waiting = new FactsPanelViewModel(detail, FactViewerRegistry.CreateDefault(), context);
+        var quiet = Panel("done");
+
+        Assert.Equal((true, false, false), (waiting.IsOpen, quiet.Rows.Any(r => r.IsAwaiting), quiet.IsOpen));
+        quiet.IsOpen = true;
+        Assert.True(quiet.IsOpen);
+    }
+
+    [Fact]
     public void By_human_reads_you()
     {
         var human = FixtureInstances.Detail("project-build").Facts.First(f => f.By?.StartsWith("human:", StringComparison.Ordinal) == true);

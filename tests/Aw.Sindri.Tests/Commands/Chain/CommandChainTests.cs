@@ -15,21 +15,22 @@ public sealed class CommandChainTests : IAsyncDisposable
 
     private static CallerContext Human => A.Caller().AtTerminal().Client(ClientLabel.Cli).Build();
 
-    private static CallerContext Session => A.Caller().Session().Client(ClientLabel.Cli).Build();
+    /// <summary>A caller the table still refuses on a desk row: a service the row does not grant (a session is let through since owner decision q93).</summary>
+    private static CallerContext Refused => A.Caller().Service("heartbeat").Build();
 
     [Fact, Trait("Lane", "unit")]
     public async Task Refused_command_writes_only_command_handled_refused()
     {
         _ = await _c.H.HoldLease();
 
-        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Refused);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Equal(0, _c.Latch.Started);
         var only = Assert.Single(_c.Events);
         Assert.Equal(EventTypes.CommandHandled, only.Envelope.Type);
         var handled = Assert.Single(_c.Handled);
-        Assert.Equal((CommandOutcome.Refused, "SND-AUTH-002", "session:cli", ActionClass.Desk), (handled.Outcome, handled.Code, handled.Caller, handled.Class));
+        Assert.Equal((CommandOutcome.Refused, "SND-AUTH-002", "service:heartbeat", ActionClass.Desk), (handled.Outcome, handled.Code, handled.Caller, handled.Class));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -121,7 +122,7 @@ public sealed class CommandChainTests : IAsyncDisposable
     {
         _ = await _c.H.HoldLease();
 
-        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Session);
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Refused);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Equal((CommandOutcome.Refused, "StopProcess"), (Assert.Single(_c.Handled).Outcome, _c.Handled[0].Command.Value));
@@ -156,6 +157,39 @@ public sealed class CommandChainTests : IAsyncDisposable
 
         Assert.Equal(SindriErrors.CommandBusy.Code, busy.Error.Code);
         Assert.Equal(1, _c.Latch.Started);
+    }
+
+    // A stop must get through whatever holds the gate (the owner's stop met SND-API-009 behind a long apply): it skips the gate and cancels the holder.
+    [Fact, Trait("Lane", "unit")]
+    public async Task Stop_gets_past_a_command_holding_the_gate_and_cancels_it()
+    {
+        _ = await _c.H.HoldLease();
+        var held = _c.Start(new FixtureCommand("block"), Human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);   // the holder is inside the handler
+
+        var stopped = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Human)
+            .WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        var ended = await Task.WhenAny(held, Task.Delay(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken));
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Same(held, ended);
+        Assert.Equal(SindriErrors.CommandBusy.Code, (await held).Error.Code);   // a refusal, not a handler failure (a 500)
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_refused_stop_cancels_nothing()
+    {
+        _ = await _c.H.HoldLease();
+        var held = _c.Start(new FixtureCommand("block"), Human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Refused)
+            .WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.False(held.IsCompleted);
+        _c.Latch.Release.SetResult();
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.True((await held.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -197,7 +231,7 @@ public sealed class CommandChainTests : IAsyncDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Audit_failure_on_a_refusal_is_SND_LEDGER_002()
     {
-        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Session);   // no lease held: no grant to write the row with
+        var refused = await _c.Run<FixtureCommand, CommandAccepted>(new FixtureCommand("accept"), Refused);   // no lease held: no grant to write the row with
 
         Assert.Equal(SindriErrors.LedgerUnavailable.Code, refused.Error.Code);
         Assert.StartsWith(SindriErrors.AuthRefused.Code + " ", refused.Error.Message, StringComparison.Ordinal);   // why: the refusal's own reason comes first
@@ -228,22 +262,22 @@ public sealed class CommandChainTests : IAsyncDisposable
     {
         _ = await _c.H.HoldLease();
 
-        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Session);
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Refused);
 
-        Assert.Equal("StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop", refused.Error.Message);
+        Assert.Equal("StopProcess is not available to this caller: sindri stop", refused.Error.Message);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_can_not_approve_a_profile_and_nothing_but_the_audit_is_written()
+    public async Task A_service_can_not_approve_a_profile_and_nothing_but_the_audit_is_written()
     {
         _c.H.Profiles.Live = SliceHarness.Profile();
         _ = await _c.H.HoldLease();
 
         var refused = await _c.Run<Features.ApproveProfile.ApproveProfileRequest, Features.ApproveProfile.ApproveProfileResponse>(
-            new(_c.H.Profiles.Live.Value.Hash, _c.H.Confirm(_c.H.Profiles.Live.Value.Hash)), Session);
+            new(_c.H.Profiles.Live.Value.Hash, _c.H.Confirm(_c.H.Profiles.Live.Value.Hash)), Refused);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Equal("ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>]", refused.Error.Message);
+        Assert.Equal("ApproveProfile is not available to this caller: sindri profile approve [<hash>]", refused.Error.Message);
         Assert.Equal(EventTypes.CommandHandled, Assert.Single(_c.Events).Envelope.Type);
         Assert.Null((await _c.H.Profiles.Latest(TestContext.Current.CancellationToken)).Value);
     }

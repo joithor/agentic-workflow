@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 
 namespace Aw.Sindri.Features.PauseService;
 
@@ -18,7 +19,9 @@ namespace Aw.Sindri.Features.PauseService;
 /// <param name="held">The lease this process holds.</param>
 /// <param name="events">Builds the entry.</param>
 /// <param name="callers">The caller: the command id.</param>
-internal sealed class PauseServiceService(IApprovedProfile approvals, ILedgerStore ledger, HeldLease held, EventFactory events, ICallerContextAccessor callers)
+/// <param name="builtIns">The build's built-in services, which the profile need not name and no one can pause or resume.</param>
+internal sealed class PauseServiceService(IApprovedProfile approvals, ILedgerStore ledger, HeldLease held, EventFactory events, ICallerContextAccessor callers,
+    IEnumerable<BuiltInService> builtIns)
     : IService<PauseServiceRequest, CommandAccepted>
 {
     public async ValueTask<Result<CommandAccepted>> Handle(PauseServiceRequest request, CancellationToken cancellationToken)
@@ -40,9 +43,11 @@ internal sealed class PauseServiceService(IApprovedProfile approvals, ILedgerSto
             return approved.Error;
         }
 
-        if (approved.Value?.Profile.Services?.ContainsKey(request.Name.Value) != true)
+        if (!ServiceActions.CanPauseOrResume(approved.Value?.Profile.Services?.ContainsKey(request.Name.Value) == true))
         {
-            return SindriErrors.ServiceNotFound.With($"The approved profile has no service '{request.Name.Value}' (fix: sindri services)");
+            return SindriErrors.ServiceNotFound.With(BuiltInService.Is(request.Name, namedByProfile: false, builtIns)
+                ? $"{request.Name.Value} is a built-in service and can't be paused or resumed."
+                : $"The approved profile has no service '{request.Name.Value}' (fix: sindri services)");
         }
 
         var entry = events.Entry(EventTypes.ServicePaused, new ServicePaused(caller.CommandId, request.Name), $"{EventTypes.ServicePaused}:{request.Name.Value}:{caller.CommandId.Value}");

@@ -47,7 +47,7 @@ public sealed class ContextJobVerbsTests : IDisposable
     [Theory, Trait("Lane", "unit")]
     [InlineData("sources", "sync")]
     [InlineData("map", "build")]
-    public async Task A_Ctrl_C_during_the_start_does_not_cancel_the_POST_so_the_job_is_never_lost(params string[] args)
+    public async Task A_Ctrl_C_during_the_start_cancels_the_POST_so_a_hung_start_can_be_left(params string[] args)
     {
         var api = new ScriptedApi((HttpStatusCode.OK, Started));
         using var interrupted = new CancellationTokenSource();
@@ -55,10 +55,7 @@ public sealed class ContextJobVerbsTests : IDisposable
 
         _interrupt = interrupted.Token;
 
-        var exit = await Run(api, [.. args, "--detach"]);
-
-        Assert.True(exit == 0, _error.ToString());
-        _ = Assert.Single(api.Calls);
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Run(api, [.. args, "--detach"]));
     }
 
     [Fact, Trait("Lane", "unit")]

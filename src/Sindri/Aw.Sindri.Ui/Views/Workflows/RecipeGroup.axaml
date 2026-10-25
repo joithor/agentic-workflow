@@ -4,15 +4,16 @@
              xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
              x:Class="Aw.Sindri.Ui.Views.Workflows.RecipeGroup"
              x:DataType="wf:RecipeGroupViewModel">
-  <!-- One recipe's group (screens spec §4.2): a header with the recipe and its count, which collapses the rows ("show all" brings them
-       back), then the column heads (the recipe's states in the served order) and the rows. -->
+  <!-- One workflow's group (screens spec §4.2): a header with the workflow's name and its run count, which collapses the rows ("show all" brings them
+       back), then the rows. -->
   <StackPanel>
+    <Border Classes="group-row">
     <Grid ColumnDefinitions="*,Auto">
       <Button x:Name="WorkflowGroupToggle" Classes="group-toggle" Click="OnToggle" AutomationProperties.Name="{Binding ToggleName}">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Classes="body-strong" Text="{Binding Recipe}" AutomationProperties.AccessibilityView="Raw" />
-            <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Classes="body-strong" Text="{Binding Name}" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Classes="caption subtle" Text="{Binding CountText}" AutomationProperties.AccessibilityView="Raw" />
           </StackPanel>
           <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding ShowAllText}" AutomationProperties.AccessibilityView="Raw" />
         </Grid>
@@ -21,31 +22,13 @@
       <Button x:Name="WorkflowGroupRecipe" Grid.Column="1" Content="{Binding RecipeLinkText}" Click="OnRecipe" VerticalAlignment="Center" Margin="8,0,0,0"
               AutomationProperties.Name="{Binding RecipeLinkName}" />
     </Grid>
-    <StackPanel IsVisible="{Binding IsExpanded}">
-      <Border x:Name="WorkflowColumnHeads" Classes="column-heads">
-        <Grid ColumnDefinitions="220,150,*,180">
-          <TextBlock Classes="eyebrow" Text="SUBJECT" />
-          <TextBlock Grid.Column="1" Classes="eyebrow" Text="INPUTS" />
-          <ItemsControl x:Name="WorkflowGroupColumns" Grid.Column="2" ItemsSource="{Binding Columns}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="x:String">
-                <TextBlock Classes="eyebrow" Text="{Binding}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Grid.Column="3" Classes="eyebrow" Text="NOW" />
-        </Grid>
-      </Border>
-      <ItemsControl x:Name="WorkflowGroupRows" ItemsSource="{Binding Rows}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="wf:InstanceRowViewModel">
-            <wfv:InstanceRow />
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </StackPanel>
+    </Border>
+    <ItemsControl x:Name="WorkflowGroupRows" ItemsSource="{Binding Rows}" IsVisible="{Binding IsExpanded}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="wf:InstanceRowViewModel">
+          <wfv:InstanceRow />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
   </StackPanel>
 </UserControl>

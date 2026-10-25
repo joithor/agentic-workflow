@@ -1,16 +1,22 @@
 using System.Text.Json;
 using Aw.Context.Core;
+using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
+using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Engine;
@@ -53,6 +59,10 @@ public sealed class FakeContextEngine : IContextEngine
         ValueTask.FromResult<Result<SourcesView>>(Down());
 
     /// <inheritdoc />
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<bool>>(Down());
+
+    /// <inheritdoc />
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<RefreshReport>>(Down());
 
@@ -92,9 +102,7 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <summary>The fake keeps no eval files.</summary>
     public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<EvalPurgeReport>>(request.Scope.Caller.Kind == ContextCallerKind.Session
-            ? ContextErrors.SessionsDisabled.With("purging eval files is a human or service call: a session can't")
-            : new EvalPurgeReport(0, 0, 0));
+        ValueTask.FromResult<Result<EvalPurgeReport>>(new EvalPurgeReport(0, 0, 0));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
@@ -127,16 +135,36 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewFilePreview>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapPromoted>();
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<MapPromoted>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposeResult>();
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<CleanupReport>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success(new MapPublishState(Hold: null, LatestDraft: null, Current: null, CurrentHeads: [])));   // no map, so nothing is held
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<MapHold>>(ContextErrors.DraftChanged.With("this test engine has no draft to hold"));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success(Unit.Value));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success(new MapPublishView(Repos: [], Hold: null, LatestDraft: null, Current: null, CurrentHeads: [])));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<IReadOnlyList<RepoHead>>>(Array.Empty<RepoHead>());
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
+        proposal.Surfaces.Count == 0 ? ValueTask.FromResult(Results.Success(new ProposeResult(Draft: null, Added: 0, Existing: 0, Rejected: 0))) : NoMap<ProposeResult>();   // like the engine: with no map a withdrawal has nothing to take back
 
     /// <inheritdoc/>
     public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposalsView>();
-
-    /// <inheritdoc/>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
@@ -145,7 +173,32 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesSetView>();
 
     /// <inheritdoc/>
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<SubgraphView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) => NoMap<CodeView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) => NoMap<HistoryView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesSetView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<WholeMapView>();
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapSearchView>();
+
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<ConceptsView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<ConceptMembersView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) =>

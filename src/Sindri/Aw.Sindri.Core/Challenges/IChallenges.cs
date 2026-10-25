@@ -15,6 +15,17 @@ public interface IChallenges
     public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject);
 
     /// <summary>
+    /// Issues a one-time challenge for <paramref name="action"/> on <paramref name="subject"/> that is confirmed in <paramref name="mode"/> on
+    /// <paramref name="channel"/>. It replaces an open challenge for the same action on the same channel (an open terminal challenge survives an app one).
+    /// </summary>
+    /// <param name="action">The action text.</param>
+    /// <param name="subject">What it binds.</param>
+    /// <param name="mode">Typed, or held (typing stays accepted).</param>
+    /// <param name="channel">Where it is answered.</param>
+    /// <returns>The challenge.</returns>
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject, ChallengeMode mode, ChallengeChannel channel);
+
+    /// <summary>
     /// Redeems <paramref name="answer"/> for a request whose own action is <paramref name="expected"/> and whose subject is
     /// now <paramref name="current"/>. Any attempt uses the challenge up.
     /// </summary>
@@ -22,6 +33,9 @@ public interface IChallenges
     /// <param name="expected">The action text the request's verb and arguments make.</param>
     /// <param name="current">The subject as it is now.</param>
     /// <param name="stale">The refusal: SND-RECIPE-009 for recipe challenges, SND-WF-013 for workflow ones.</param>
-    /// <returns>The redeemed challenge; or <paramref name="stale"/> when it is unknown, used, expired, for another action, typed differently, or its subject changed.</returns>
+    /// <returns>
+    /// The redeemed challenge; or <paramref name="stale"/> when it is unknown, used, expired, for another action, typed differently, or its subject changed;
+    /// or SND-SETUP-003 (and the challenge stays open) when an app answer is the wrong kind, comes under 2 seconds after issue, or holds under the minimum.
+    /// </returns>
     public Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction expected, ChallengeSubject current, ErrorDefinition stale);
 }

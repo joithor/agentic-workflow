@@ -34,21 +34,21 @@ public sealed partial class CommandPaletteViewModelTests
         }
     }
 
-    // A ready row the app has no sender for is not "ready": it says so, and Enter skips it.
+    // A row the app has no sender for is not "ready": it is a command to copy, and Enter copies it.
     [Fact]
-    public void A_ready_row_without_a_sender_is_not_called_ready()
+    public void A_row_without_a_sender_is_a_command_to_copy_not_called_ready()
     {
         _palette.Open();
 
         var challenge = Entry("IssueChallenge");
 
-        Assert.Equal((false, "not in the app yet"), (challenge.IsEnabled, challenge.Status));
+        Assert.Equal((true, Labels.CopyCli(_catalog.Rows.Single(r => r.Action == "IssueChallenge").Cli)), (challenge.IsEnabled, challenge.Status));
         Assert.Equal("ready", Entry("RebuildViews").Status);
         Assert.Equal("ready", Entry("StopProcess").Status);   // it goes to Health, where its confirm lives
     }
 
     // arch-0: U2 ships Create item, so the palette runs it (closing itself and opening the form); the item sheet's close
-    // actions need the version the sheet shows, so the palette says where they live. Nothing U2 ships reads "not in the app yet".
+    // actions need the version the sheet shows, so the palette says where they live. Nothing U2 ships reads "coming soon".
     [Fact]
     public async Task Create_item_opens_the_form_and_the_close_actions_point_at_the_sheet()
     {

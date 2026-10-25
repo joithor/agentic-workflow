@@ -1,12 +1,14 @@
 using System.Text.Json.Serialization;
 using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Design;
+using Aw.Evidence.Core.Desktop;
 using Aw.Evidence.Core.Publishing;
 using Aw.Evidence.Core.Runs;
 using Aw.Evidence.Core.Scripts;
 using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Features.Doctor;
+using Aw.Evidence.Features.GhPublish;
 using Aw.Evidence.Features.InstallBrowser;
 using Aw.Evidence.Features.ParityPlan;
 using Aw.Kernel;
@@ -22,6 +24,8 @@ namespace Aw.Evidence.Host;
 [JsonSerializable(typeof(DbSummary))]
 [JsonSerializable(typeof(TargetsFile))]
 [JsonSerializable(typeof(DesignManifest))]
+[JsonSerializable(typeof(DesktopManifest))]
+[JsonSerializable(typeof(DesktopSummary))]
 [JsonSerializable(typeof(RunSummary))]
 [JsonSerializable(typeof(ParitySummary))]
 [JsonSerializable(typeof(VerdictCache))]
@@ -34,4 +38,5 @@ namespace Aw.Evidence.Host;
 [JsonSerializable(typeof(DoctorResponse))]
 [JsonSerializable(typeof(CheckProvenanceResponse))]
 [JsonSerializable(typeof(InstallBrowserResponse))]
+[JsonSerializable(typeof(GhPublishResponse))]
 internal sealed partial class EvidenceJsonContext : JsonSerializerContext;

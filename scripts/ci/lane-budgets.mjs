@@ -8,8 +8,8 @@
 // budgeted lane, it times
 //   dotnet test --project <test project> --no-build --configuration <C> --filter-trait "Lane=<lane>" --ignore-exit-code 8
 // sums the wall clock per package (the deps.yaml package whose projectPrefix starts the project's name,
-// longest wins; a test assembly no package owns, such as Aw.Architecture.Tests, is its own row) and fails a
-// package at or over its lane's budget. Budgets: unit 10 s, integration 60 s (SindriUi: integration 90 s, owner 2026-10-16); heavy has none and isn't run.
+// longest wins; a test assembly no package owns, such as Aw.Architecture.Tests, is its own row, and so is a project listed in
+// PROJECT_BUDGETS) and fails a row at or over its lane's budget. Budgets: unit 10 s, integration 60 s (SindriUi: integration 90 s, owner 2026-10-16); heavy has none and isn't run.
 //
 // The wall clock is the test run only: run it after the solution is built (CI's `dotnet build` step), so
 // --no-build keeps compile time out of the budget. It includes each test host's start-up, which is part
@@ -30,6 +30,11 @@ const BUDGETS = { unit: 10, integration: 60 };
 // cannot run in 60 s on CI (owner, 2026-10-16). Sindri's integration lane is wait-bound on real Temporal servers: 120 s
 // (owner, 2026-10-16: 63.7 s in CI after fail-fast + 8 threads). An explicit --budget for a lane overrides this table too.
 const PACKAGE_BUDGETS = { SindriUi: { integration: 90 }, Sindri: { integration: 120 } };
+// Per-test-project rows: a test project named here is measured as a row of its own (the row is the project's name) and kept out
+// of its package's sum, with its own limits. For a package whose slow suites cannot fit one project's budget: Aw.Sindri.Engine.Tests
+// holds the Temporal-bound suites split out of Aw.Sindri.Tests so that package's integration lane fits 120 s (owner, 2026-10-18).
+// An explicit --budget for a lane overrides this table too.
+const PROJECT_BUDGETS = { "Aw.Sindri.Engine.Tests": { integration: 120 } };
 const SOLUTION = "AgenticWorkflow.slnx";
 
 class ToolError extends Error {}
@@ -81,6 +86,7 @@ function packagesOf(root) {
 
 // The package a project belongs to: the longest projectPrefix that starts its name (check-deps' rule).
 function ownerOf(name, packages) {
+  if (Object.hasOwn(PROJECT_BUDGETS, name)) return name;
   let best = null;
   for (const p of packages) {
     const pre = p.projectPrefix;
@@ -105,7 +111,7 @@ function time(opts, project, lane) {
 }
 
 // A package's limit for a lane: --budget, else the package's own exception, else the lane's budget.
-const limitFor = (opts, pkg, lane) => (opts.explicit.has(lane) ? undefined : PACKAGE_BUDGETS[pkg]?.[lane]) ?? opts.budgets[lane];
+const limitFor = (opts, pkg, lane) => (opts.explicit.has(lane) ? undefined : (PROJECT_BUDGETS[pkg] ?? PACKAGE_BUDGETS[pkg])?.[lane]) ?? opts.budgets[lane];
 
 // Truncated, never rounded up, so a passing row just under its limit never prints the limit itself.
 const fmt = (s) => {

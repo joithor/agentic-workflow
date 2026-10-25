@@ -28,7 +28,7 @@ public sealed partial class InstanceSummaryRowTests
         Assert.Equal(view.Address, row.Address);
         Assert.Equal(view.Id, row.Id);
         Assert.Equal(view.ItemId, row.ItemId);
-        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency), row.Recipe);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, DisplayName: null), row.Recipe);
         Assert.Equal(view.State, row.State);
         Assert.Equal(new StateChip("DECISION", ChipTone.Attn), row.Chip);
         Assert.Equal(view.Since, row.Since);
@@ -42,14 +42,23 @@ public sealed partial class InstanceSummaryRowTests
     }
 
     [Fact]
-    public void The_actions_of_a_row_are_the_action_ids_of_the_status_commands_for_every_case()
+    public void The_actions_of_a_row_are_the_action_ids_of_the_status_commands_and_the_rerun_for_every_case()
     {
         foreach (var name in StatusCases.Names)
         {
             var view = StatusCases.View(name);
 
-            Assert.Equal(InstanceViews.Status(view, StatusCases.Now).Commands.Select(static c => c.ActionId), InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now)).Actions);
+            Assert.Equal(InstanceViews.Status(view, StatusCases.Now).Commands.Select(static c => c.ActionId).Concat(Reruns.Of(view)), InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now)).Actions);   // the rerun is the one action the status does not list
         }
+    }
+
+    [Fact]
+    public void An_unavailable_park_waits_on_the_engine_not_on_you_and_says_so()
+    {
+        var row = InstanceSummaries.Of(StatusCases.View("parked-unavailable-step"), new InstanceSummaryContext(StatusCases.Now));
+
+        Assert.Equal(("waiting on a dependency that is down", WaitingOn.Engine), (row.Now, row.WaitingOn));
+        Assert.Equal(AnswerKind.Resume, row.Answer?.Kind);   // the resume is still there to run
     }
 
     [Fact]
@@ -132,8 +141,12 @@ public sealed partial class InstanceSummaryRowTests
     [InlineData("desk-task")]
     [InlineData("taken-over")]
     [InlineData("parked-needs-answer-step")]
+    [InlineData("parked-unavailable-step")]
     [InlineData("escalated-gate")]
     [InlineData("done")]
+    [InlineData("failed")]
+    [InlineData("unresolved")]
+    [InlineData("cancelled")]
     [InlineData("escalated-child")]
     [InlineData("parked-mirrored-budget")]
     public void The_built_row_serializes_to_its_golden_file(string name)

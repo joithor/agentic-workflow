@@ -26,7 +26,7 @@ public sealed class ContextErrorExtensionsApiTests
         var humanKeys = Strings(human.Body, "suggestedAnchors");
         var sessionKeys = Strings(scoped.Body, "suggestedAnchors");
         Assert.Contains(humanKeys, h => string.Equals(h, Hidden, StringComparison.Ordinal));
-        Assert.Equal(["action:tab-manager.restore-layout", "feature:tabs.tab-manager"], sessionKeys);
+        Assert.Equal(["action:tab-manager.restore-layout", "feature:tabs.tab-manager", "surface:command/switch-tab"], sessionKeys);
         Assert.Contains("(fix: try " + string.Join(", ", humanKeys) + ")", JsonDocument.Parse(human.Body).RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
     }
 

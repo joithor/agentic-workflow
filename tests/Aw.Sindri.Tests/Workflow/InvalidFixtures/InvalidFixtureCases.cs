@@ -36,13 +36,13 @@ internal static class InvalidFixtureCases
             ]),
         ["RCP-CAP-003"] = new(
             FixtureSetup.CapabilityWithUnapprovedBase,
-            "RCP-CAP-003: base workflow.cap-base@b8f01b2b6c69 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@b8f01b2b6c69), or generate the recipe from an approved base",
+            "RCP-CAP-003: base workflow.cap-base@16d368e1cdf8 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@16d368e1cdf8), or generate the recipe from an approved base",
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@b8f01b2b6c69 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@16d368e1cdf8 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -72,7 +72,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-CHILD-003"] = new(
             FixtureSetup.Shipped,
-            "RCP-CHILD-003: child recipes nest 5 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5), more than 4 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 4 deep",
+            "RCP-CHILD-003: child recipes nest 11 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5 -> workflow.depth-6 -> workflow.depth-7 -> workflow.depth-8 -> workflow.depth-9 -> workflow.depth-10 -> workflow.depth-11), more than 10 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 10 deep",
             []),
         ["RCP-DUR-001"] = new(
             FixtureSetup.Shipped,
@@ -82,9 +82,25 @@ internal static class InvalidFixtureCases
             FixtureSetup.EffectAllowlist,
             "RCP-EFFECT-001: effect 'effect.notify.desk' isn't on the profile's effect allowlist at RCP-EFFECT-001.yaml:16:83 (transitions[0].effects[0].use); add it to workflow.effects and approve the profile, or remove it",
             []),
+        ["RCP-HUMAN-001"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[0] (ask -> done on step.completed) isn't a human's act at RCP-HUMAN-001.yaml:17:83 (transitions[0].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-fact"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[1] (hold -> done on wait.satisfied) isn't a human's act at RCP-HUMAN-001-fact.yaml:23:101 (transitions[1].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-input"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[3] (tidy -> done on step.completed) isn't a human's act at RCP-HUMAN-001-input.yaml:30:135 (transitions[3].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-step"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[4] (tidy -> done on step.completed) isn't a human's act at RCP-HUMAN-001-step.yaml:37:135 (transitions[4].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
         ["RCP-EVENT-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-EVENT-001: event 'item.rooted' isn't registered at RCP-EVENT-001.yaml:8:16 (states.triaged.waitFor.event); wait for a registered event: claim.created, item.routed, notify.delivered",
+            "RCP-EVENT-001: event 'item.rooted' isn't registered at RCP-EVENT-001.yaml:8:16 (states.triaged.waitFor.event); wait for a registered event: claim.created, item.routed, line.phaseChanged, notify.delivered, pr.changed, pr.docsMerged, pr.mergeResult, pr.opened, pr.pushed, pr.restacked, pr.stacked",
             []),
         ["RCP-EVID-001"] = new(
             FixtureSetup.Shipped,
@@ -96,7 +112,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is 03150aee83c3 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:03150aee83c31f5bf016922aabae8ebcc1dbc41a43c36387af0fdbf1d98757c9, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -132,11 +148,11 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-RES-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-RES-001: resource 'heavy' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock [Information]",
+            "RCP-RES-001: resource 'slot' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7) [Information]",
             []),
         ["RCP-SCHEMA-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome",
+            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome, why, displayName, onOutcome",
             []),
         ["RCP-SCHEMA-002"] = new(
             FixtureSetup.Shipped,
@@ -188,7 +204,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is a993db8e5966 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is e5295ba7894c at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,
@@ -229,6 +245,22 @@ internal static class InvalidFixtureCases
         ["RCP-SCHEMA-001-produces"] = new(
             FixtureSetup.Shipped,
             "RCP-SCHEMA-001: a produces entry has no 'from' at RCP-SCHEMA-001-produces.yaml:15:88 (transitions[0].produces[0].from); add 'from': the child's output key, or write the bare key",
+            []),
+        ["RCP-DISPLAY-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-001: displayName 'build one phase': it doesn't start with a capital letter (sentence case) at RCP-DISPLAY-001.yaml:4:1 (displayName); write a name in sentence case, at most 60 characters, that says what the recipe does, with no id",
+            []),
+        ["RCP-DISPLAY-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-002: the why of state 'produce': 'step.produce' is an id or code name, not plain words at RCP-DISPLAY-002.yaml:12:5 (states.produce.why); write one plain sentence of at most 200 characters, with no id or code name",
+            []),
+        ["RCP-DISPLAY-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-003: the displayName of state 'produce': it doesn't start with a capital letter (sentence case) at RCP-DISPLAY-003.yaml:12:5 (states.produce.displayName); write a name in sentence case, at most 60 characters, with no id",
+            []),
+        ["RCP-DISPLAY-003-label"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-003: the label of the transition to 'done': 'step.verify' is an id or code name, not plain words at RCP-DISPLAY-003-label.yaml:16:77 (transitions[0].label); write plain words of at most 60 characters ('gaps found: draft again'), with no id or code name",
             []),
         ["RCP-URG-001"] = new(
             FixtureSetup.Shipped,

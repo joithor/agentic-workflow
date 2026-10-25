@@ -23,6 +23,8 @@ internal sealed class WorldPull
 
     public bool Draft { get; set; }
 
+    public List<string> Labels { get; set; } = [];
+
     public string BaseRef { get; set; } = string.Empty;
 
     public string BaseSha { get; set; } = string.Empty;
@@ -44,6 +46,10 @@ internal sealed class WorldPull
     public string ChecksSha { get; set; } = string.Empty;
 
     public List<string> Failing { get; set; } = [];
+
+    public int PassedChecks { get; set; }
+
+    public int PendingChecks { get; set; }
 
     public Dictionary<string, string> Logs { get; set; } = [];
 

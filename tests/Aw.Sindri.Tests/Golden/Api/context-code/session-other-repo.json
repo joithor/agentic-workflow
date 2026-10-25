@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "anchors": [
+    {
+      "key": "feature:sharing",
+      "label": "Sharing",
+      "kind": "feature",
+      "trust": "trusted"
+    }
+  ],
+  "missingAnchors": [
+    "feature:other.thing"
+  ],
+  "mapVersion": "v1",
+  "draft": false,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "files": [
+    {
+      "path": "src/sharing/links.ts",
+      "label": "src/sharing/links.ts",
+      "kind": "code",
+      "implements": [
+        "feature:sharing"
+      ],
+      "tests": [],
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": true,
+      "suggested": false,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "testedBy": [
+        "tests/edge.test.ts",
+        "tests/links.test.ts"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "src/sharing/routes.ts",
+      "label": "src/sharing/routes.ts",
+      "kind": "code",
+      "implements": [
+        "feature:sharing"
+      ],
+      "tests": [],
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": true,
+      "suggested": false,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "testedBy": [
+        "tests/routes.test.ts"
+      ],
+      "repo": "aw-split-panes"
+    }
+  ],
+  "tests": [
+    {
+      "path": "tests/edge.test.ts",
+      "label": "tests/edge.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/links.test.ts",
+      "label": "tests/links.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/routes.test.ts",
+      "label": "tests/routes.test.ts",
+      "kind": "code",
+      "basis": "sibling",
+      "tests": [],
+      "named": [
+        "src/sharing/routes.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    }
+  ],
+  "data": {
+    "things": [],
+    "files": []
+  },
+  "callers": {
+    "state": "unavailable",
+    "reason": "index-not-built",
+    "items": [],
+    "code": "SND-CODEIDX-013"
+  },
+  "callees": {
+    "state": "unavailable",
+    "reason": "index-not-built",
+    "items": [],
+    "code": "SND-CODEIDX-013"
+  },
+  "counts": {
+    "files": 2,
+    "tests": 3,
+    "things": 0,
+    "schemaFiles": 0,
+    "filesWithoutTest": 0,
+    "unlocated": 0
+  },
+  "truncated": {
+    "files": false,
+    "tests": false,
+    "things": false,
+    "schemaFiles": false,
+    "searchedFiles": false
+  },
+  "lexical": [
+    {
+      "repo": "aw-split-panes",
+      "commit": "7c7ef95",
+      "searchedFiles": 2,
+      "candidates": 2,
+      "read": 2
+    }
+  ],
+  "edges": [
+    {
+      "from": "code:src/sharing/links.ts",
+      "to": "feature:sharing",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:f39c103f72567cb1",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:src/sharing/routes.ts",
+      "to": "feature:sharing",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:d7e7042b110f6413",
+      "confirmed": true,
+      "confidence": 1
+    }
+  ],
+  "coverage": {
+    "scope": 2,
+    "intent": {
+      "covered": 0,
+      "of": 2
+    },
+    "product": {
+      "confirmed": 2,
+      "of": 2
+    },
+    "code": {
+      "implemented": 1,
+      "of": 2,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "feature:sharing",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "surface:screen/share",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/sharing/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    },
+    "byAnchor": {
+      "feature:sharing": {
+        "scope": 2,
+        "intent": {
+          "covered": 0,
+          "of": 2
+        },
+        "product": {
+          "confirmed": 2,
+          "of": 2
+        },
+        "code": {
+          "implemented": 1,
+          "of": 2,
+          "level": "file",
+          "suggested": 0
+        },
+        "gaps": [
+          {
+            "node": "feature:sharing",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "surface:screen/share",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      }
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:sharing"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": "SND-CODEIDX-013",
+        "asOf": null
+      },
+      {
+        "id": "lexical-tests",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "lexical-schema",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

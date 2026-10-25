@@ -4,12 +4,15 @@
 # Usage:
 #   ./setup.sh [--providers claude,codex,cursor] [--dry-run]
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
-#   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in)
+#   ./setup.sh [--providers ...] --with-sindri   # also stand the pinned Onyx up (the C# Sindri itself is always installed)
+#   ./setup.sh [--providers ...] --with-sindri --no-onyx   # ... without the Onyx step (run `sindri onyx up` later)
 #   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
+#   ./setup.sh [--providers ...] --with-fleet    # also install the aw:fleet session-state hook for Sindri's session collector (opt-in)
+#   ./setup.sh [--providers ...] --no-tldraw     # skip the tldraw offline app (the canvas agents draw diagrams on)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
-# (`claude`, `codex`, `cursor-agent`/`cursor`). Shared steps (scorer/judge,
+# (`claude`, `codex`, `cursor-agent`/`cursor`). Shared steps (C# binaries,
 # Serena image, external pack clone, rtk) run once;
 # per-provider steps live in providers/<name>/install.sh.
 #
@@ -25,7 +28,7 @@ CLAUDE_DIR="$HOME/.claude"
 ALL_PROVIDERS="claude codex cursor"
 
 usage() {
-  sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # System packages are installed when missing (config/lib/sys-pkg.sh: Homebrew on macOS, sudo + the distro's package
@@ -136,14 +139,20 @@ PROVIDERS_ARG=""
 AW_DRY_RUN=0
 WITH_SINDRI=0
 WITH_META=0
+WITH_ONYX=1
+WITH_FLEET=0
+WITH_TLDRAW=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
     --providers=*) PROVIDERS_ARG="${1#--providers=}"; shift ;;
     --install-agents) MODE="agents"; shift ;;
     --dry-run) AW_DRY_RUN=1; shift ;;
-    --with-sindri) WITH_SINDRI=1; shift ;;
+    --with-sindri) WITH_SINDRI=1; echo "--with-sindri: the C# Sindri is always installed (this flag now only stands the pinned Onyx up)"; shift ;;
     --with-meta) WITH_META=1; shift ;;
+    --no-onyx) WITH_ONYX=0; shift ;;
+    --with-fleet) WITH_FLEET=1; shift ;;
+    --no-tldraw) WITH_TLDRAW=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -197,33 +206,17 @@ if [ "$MODE" = "agents" ]; then
   exit 0
 fi
 
-# Native build tools (required by better-sqlite3 when no prebuilt binary exists). On macOS Homebrew brought the
-# Command Line Tools; on Linux build-essential (or the distro's equivalent) is installed.
-if ! command -v make &>/dev/null || ! command -v g++ &>/dev/null; then
-  if [ "$(uname)" = "Darwin" ]; then
-    if aw_dry; then echo "  [dry-run] would run: xcode-select --install"; else
-      echo "FATAL: make/g++ are missing: the Xcode Command Line Tools are not installed. Run: xcode-select --install"; exit 1
-    fi
-  else
-    echo "Installing build tools (make, g++) for native Node addons..."
-    aw_sys_install build-tools || { echo "FATAL: build tools could not be installed (see above)."; exit 1; }
-    if ! aw_dry && { ! command -v make &>/dev/null || ! command -v g++ &>/dev/null; }; then
-      echo "FATAL: make/g++ still missing after the install."; exit 1
-    fi
-  fi
-fi
-
 # Canonical list of skills managed by this toolkit.
 # Note: skills/_shared/ is intentionally excluded from MANAGED_SKILLS. It is not
 # linked into any provider's skills dir — skills read it through the stable path
 # $HOME/.agentic-workflow/toolkit/skills/_shared (toolkit symlink created below).
-MANAGED_SKILLS=(review postReview addressReview enhancePrompt rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios verify-app verify-web verify-ios autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator reflect correct new-package new-slice meta)
+MANAGED_SKILLS=(review postReview addressReview enhancePrompt rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios design-verify-desktop verify-app verify-web verify-ios verify-desktop autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator new-package new-slice meta)
 
 # Stale standalone copies of impeccable skills from an older setup.sh that
 # copied (cp -r) individual skills. Canonical pbakaus/impeccable v3.1.1+ is a
 # single umbrella skill, fetched via the External Skill Packs section.
 # Removed from every provider skills dir on each run (idempotent).
-DEPRECATED_SKILLS=(bolder critique audit polish animate distill colorize typeset arrange quieter harden onboard delight clarify normalize extract adapt optimize overdrive teach-impeccable)
+DEPRECATED_SKILLS=(reflect correct bolder critique audit polish animate distill colorize typeset arrange quieter harden onboard delight clarify normalize extract adapt optimize overdrive teach-impeccable)
 
 echo "=== Agentic Workflow Setup ==="
 echo "  providers: $PROVIDERS"
@@ -242,46 +235,35 @@ aw_run mkdir -p "$AW_STATE_ROOT"
 echo "  $AW_STATE_ROOT/: output + state directory"
 aw_link_toolkit
 
-# --- Scorer + judge (shared CLIs) ---
-if aw_dry; then
-  echo "  [dry-run] would run scripts/install-scorer.sh and scripts/install-judge.sh --build-only"
-else
-  "$SCRIPT_DIR/scripts/install-scorer.sh"
-  bash "$SCRIPT_DIR/scripts/install-judge.sh" --build-only
-fi
-
-# --- Sindri (opt-in: ./setup.sh --with-sindri) ---
-if [ "$WITH_SINDRI" = "1" ]; then
-  if aw_dry; then
-    echo "  [dry-run] would run scripts/install-sindri.sh"
-  else
-    bash "$SCRIPT_DIR/scripts/install-sindri.sh"
-  fi
-  # uv installs graphify (the code index graph layer) at its pin: sindri index setup
-  if aw_dry; then
-    echo "  [dry-run] would install uv (brew) if missing"
-  elif command -v uv &>/dev/null; then
-    echo "  uv: already installed ($(uv --version 2>/dev/null || echo 'unknown version'))"
-  elif command -v brew &>/dev/null; then
-    echo "Installing uv (required for the sindri index graph layer)..."
-    brew install uv || echo "  WARN: uv install failed; the sindri index graph layer stays unavailable. Install uv (https://docs.astral.sh/uv/getting-started/installation/), then run: sindri index setup"
-  else
-    echo "WARN: 'uv' not found and Homebrew is not available; the sindri index graph layer stays unavailable."
-    echo "      Install uv, then run: sindri index setup"
-    echo "        https://docs.astral.sh/uv/getting-started/installation/"
-  fi
-fi
-
-# --- External tools: uv, graphify (pinned), Temporal binaries, system packages ---
+# --- External tools: uv, graphify (pinned), Temporal binaries, system packages, the NativeAOT toolchain ---
 # User-level installs happen here; missing system packages are installed through config/lib/sys-pkg.sh (sudo on Linux).
+# Before the C# install: its publish needs the toolchain this installs.
 echo ""
 bash "$SCRIPT_DIR/scripts/install-deps.sh" || { echo "FATAL: external tools missing (see above). Fix, then re-run setup.sh."; exit 1; }
 
-
-# --- Skill packages (TypeScript helpers run by SKILL.md) ---
+# --- The C# toolkit (cutover spec 7.1, 8): publish, drop the TypeScript install, link, check ---
+# install-cs.sh --publish changes nothing on PATH (a failure stops here with the box untouched); cutover-clean-ts.sh
+# --pre-link removes the TS state the C# judge would refuse; install-cs.sh --link switches the wrappers; cutover-clean-ts.sh
+# --post-link finishes and checks `judge health`. The lever installers run after, because they need `judge` on PATH.
+# cutover-clean-ts.sh exits 1 (refused, nothing changed) or 3 (stopped partway): setup stops and no lever installer runs.
 echo ""
-echo "Building skill packages..."
-aw_build_skill_packages "$SCRIPT_DIR"
+echo "=== The C# toolkit ==="
+bash "$SCRIPT_DIR/scripts/install-cs.sh" --publish $(aw_dry && echo --dry-run) || { echo "FATAL: the C# publish failed (see above); nothing on PATH changed. Fix, then re-run setup.sh."; exit 1; }
+aw_cutover() { # <--pre-link|--post-link>
+  local flag="$1" rc=0
+  if [ ! -f "$SCRIPT_DIR/scripts/cutover-clean-ts.sh" ] && aw_dry; then
+    echo "  [dry-run] would run scripts/cutover-clean-ts.sh $flag"
+    return 0
+  fi
+  bash "$SCRIPT_DIR/scripts/cutover-clean-ts.sh" "$flag" $(aw_dry && echo --dry-run) || rc=$?
+  if [ "$rc" != "0" ]; then
+    echo "FATAL: cutover-clean-ts.sh $flag exited $rc (see above; the log path is printed above). No lever installer ran. Re-run ./setup.sh." >&2
+    exit 1
+  fi
+}
+aw_cutover --pre-link
+bash "$SCRIPT_DIR/scripts/install-cs.sh" --link $(aw_dry && echo --dry-run) || { echo "FATAL: linking the C# wrappers failed (see above). Re-run ./setup.sh."; exit 1; }
+aw_cutover --post-link
 
 # --- Serena MCP (Docker image + wrapper) ---
 echo ""
@@ -569,7 +551,7 @@ AW_MCP_SERVERS="$(jq -nc \
 export AW_MCP_SERVERS
 # Servers the toolkit no longer ships: each provider removes them from an existing install (agentic-bridge, the MCP
 # bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs; headroom, the content
-# compression server, retired 2026-10-18: about 4.2 GB of RAM per Claude session).
+# compression MCP server, retired 2026-10-18: about 4.2 GB of RAM per Claude session; it returns only as the proxy wrapper below).
 AW_MCP_RETIRED="agentic-bridge headroom"
 export AW_MCP_RETIRED
 # The bridge package itself: after the pull only its ignored output (dist, node_modules, bridge.db) is left.
@@ -610,6 +592,57 @@ if [ "$WITH_META" = "1" ]; then
   fi
 fi
 
+# --- Onyx (with --with-sindri unless --no-onyx; owner decision 2026-10-18): the pinned Onyx, stood up by the C# Sindri's
+# `onyx up` (scripts/install-onyx.sh). It needs Docker, which the Serena step above installs and starts, and the human at
+# a terminal; without them it warns with the command to run later and setup goes on (exit 3). A failed `onyx up` is
+# reported at the very end, after everything else has been installed (set -e must not end setup here) ---
+ONYX_RC=0
+if [ "$WITH_SINDRI" = "1" ] && [ "$WITH_ONYX" = "1" ]; then
+  echo ""
+  if aw_dry; then
+    bash "$SCRIPT_DIR/scripts/install-onyx.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-onyx.sh" || ONYX_RC=$?
+  fi
+fi
+
+# --- Session state hook (opt-in: ./setup.sh --with-fleet): the aw:fleet hook writes one small state file per session
+# (running, asking, idle, ended; never a prompt or tool input) for Sindri's session collector. Per provider, after the provider
+# install, since its entries merge into the settings that install copies from the template. ---
+if [ "$WITH_FLEET" = "1" ]; then
+  for _p in $PROVIDERS; do
+    if aw_dry; then
+      echo "  [dry-run] would run scripts/install-fleet.sh --provider $_p"
+    else
+      bash "$SCRIPT_DIR/scripts/install-fleet.sh" --provider "$_p"
+    fi
+  done
+fi
+
+# --- headroom, as a proxy wrapper only (no MCP server; it stays in AW_MCP_RETIRED above): installs the CLI when missing and the
+# `aw-headroom claude|codex` launcher, which chains a loopback headroom proxy in front of the upstream the tool already uses
+# (e.g. EasyCLIProxyAPI). Per provider, after the provider installs; Cursor gets a skip line. Fail-open: a failure warns and
+# setup goes on. ---
+echo ""
+echo "=== headroom proxy wrapper ==="
+for _p in $PROVIDERS; do
+  if aw_dry; then
+    bash "$SCRIPT_DIR/scripts/install-headroom.sh" --provider "$_p" --dry-run || echo "  WARN: headroom: install-headroom.sh --provider $_p failed (non-fatal)"
+  else
+    bash "$SCRIPT_DIR/scripts/install-headroom.sh" --provider "$_p" || echo "  WARN: headroom: install-headroom.sh --provider $_p failed (non-fatal)"
+  fi
+done
+
+# --- tldraw offline (skip: --no-tldraw): the desktop whiteboard agents drive to draw diagrams. Installs the app (brew cask on
+# macOS, the pinned AppImage on Linux) and reports whether the app's own agent skills are in place; those come only from the
+# app's Develop → Install Agent Skills, which the script prints as the next step. Once, not per provider: the app installs
+# for every provider at once. Fail-open: a failure warns and setup goes on. ---
+if [ "$WITH_TLDRAW" = "1" ]; then
+  echo ""
+  echo "=== tldraw offline ==="
+  bash "$SCRIPT_DIR/scripts/install-tldraw.sh" || echo "  WARN: tldraw: install-tldraw.sh failed (non-fatal)"
+fi
+
 # --- Provider registry (read by the skill preamble) ---
 echo ""
 echo "Writing provider registry..."
@@ -631,7 +664,7 @@ echo "  Security:         cso"
 echo "  Design:           design-analyze [web|ios], design-language, design-evolve [web|ios],"
 echo "                    design-mockup [web|ios], design-shotgun, design-implement [web|ios],"
 echo "                    design-refine, design-verify [web|ios]"
-echo "  Verification:     verify-app, verify-web, verify-ios, ui-evidence"
+echo "  Verification:     verify-app, verify-web, verify-ios, verify-desktop, ui-evidence"
 echo "  Memory/Status:    prismStatus"
 echo "  C# scaffolds:     new-package, new-slice"
 echo "  Utilities:        enhancePrompt, judge, bootstrap"
@@ -650,3 +683,9 @@ esac
 echo "Custom agents:      run ./setup.sh --install-agents to install lean agent types"
 # The meta step's failure (if any) comes last, after everything else has been installed.
 if [ "$WITH_META" = "1" ]; then aw_setup_meta_finish "$META_RC" || exit "$?"; fi
+# The Onyx step's failure (if any) comes last too. 3 is a skip with its warning already printed, not a failure.
+if [ "$WITH_SINDRI" = "1" ] && [ "$WITH_ONYX" = "1" ]; then
+  # shellcheck source=config/lib/setup-onyx-step.sh
+  source "$SCRIPT_DIR/config/lib/setup-onyx-step.sh"
+  aw_setup_onyx_finish "$ONYX_RC" "sindri onyx up" || exit "$?"
+fi

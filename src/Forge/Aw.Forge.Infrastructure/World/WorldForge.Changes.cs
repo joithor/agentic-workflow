@@ -58,6 +58,7 @@ internal partial class WorldForge
             {
                 p.Checks = ChecksState.Pending;
                 p.Failing = [];
+                p.PendingChecks += rerun;
                 p.Reruns += rerun;
             }
 
@@ -86,6 +87,7 @@ internal partial class WorldForge
             Body = request.Body,
             Author = actingLogin,
             Draft = request.Draft,
+            Labels = [.. request.Labels ?? []],
             BaseRef = request.Base,
             HeadRef = request.Head,
             HeadSha = request.HeadSha,
@@ -162,6 +164,8 @@ internal partial class WorldForge
             p.Checks = ChecksState.None;
             p.ChecksSha = request.Sha;
             p.Failing = [];
+            p.PassedChecks = 0;
+            p.PendingChecks = 0;
             p.Stamp++;
         }
     }

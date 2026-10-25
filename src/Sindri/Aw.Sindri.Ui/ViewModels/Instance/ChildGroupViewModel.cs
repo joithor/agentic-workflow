@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -9,14 +10,15 @@ internal sealed class ChildGroupViewModel
     {
         State = group.State;
         Recipe = group.Recipe;
-        Header = $"{group.State} · {group.Recipe}";
+        var name = WorkflowNames.Of(group.Recipe, group.DisplayName);
+        Header = $"{group.State} · {name}";
         Counts = Labels.ChildrenDone(group.Done, group.Total);
         Total = group.Total;
         Streams = [.. group.Workstreams.Select(w => new ChildStreamViewModel(w, make))];
         Rows = [.. group.Rows.Select(make)];
         More = group.More;
         MoreText = Labels.MoreChildren(group.More);
-        OpenAllName = Labels.OpenAllInWorkName(group.Recipe, address);
+        OpenAllName = Labels.OpenAllInWorkName(name, address);
     }
 
     /// <summary>Raised when the group asks to list every child in Work.</summary>
@@ -28,7 +30,7 @@ internal sealed class ChildGroupViewModel
     /// <summary>The children's recipe.</summary>
     public string Recipe { get; }
 
-    /// <summary>"build · workflow.step".</summary>
+    /// <summary>"build · Step".</summary>
     public string Header { get; }
 
     /// <summary>"4 of 9 done".</summary>

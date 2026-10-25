@@ -14,7 +14,9 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.ListInstances;
+using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
@@ -79,8 +81,8 @@ internal sealed class ReadApi : HttpMessageHandler
         _ = services
             .AddSingleton<IInstanceDirectory>(instances)
             .AddSingleton<IInstanceReader>(instances)
-            .AddSingleton<IService<GetInstanceRequest, InstanceDetail>>(new GetInstanceService(instances, instances, new DetailViews(), new FixedRepos(), new ListInstances.FixedCaller(_human), clock))
-            .AddSingleton<IService<ListInstancesRequest, InstanceList>>(new ListInstancesService(instances, new NoRows(), new EndedInstanceViews(instances), new ListInstances.FixedItemViews(), new FixedRepos(), new ListInstances.FixedCaller(current: null), clock));
+            .AddSingleton<IService<GetInstanceRequest, InstanceDetail>>(new GetInstanceService(instances, instances, new DetailViews(), new ListInstances.FixedCaller(_human), new DetailContexts(clock), new StepRunReader(new StepRunEvents(), new StepRunRecipes())))
+            .AddSingleton<IService<ListInstancesRequest, InstanceList>>(new ListInstancesService(instances, new NoRows(), new EndedInstanceViews(instances), new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), new InstanceRows(clock)));
         configure?.Invoke(services);
     }, running: true);
 
@@ -118,6 +120,8 @@ internal sealed class ReadApi : HttpMessageHandler
             [var id] => Answer(await _services.GetRequiredService<IService<GetInstanceRequest, InstanceDetail>>().Handle(new GetInstanceRequest(id), cancellationToken).ConfigureAwait(false), json),
             [var id, "events"] => Answer(await _services.GetRequiredService<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>()
                 .Handle(new GetInstanceEventsRequest(id, long.Parse(query["after"] ?? "0", System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false), json),
+            [var id, "injection"] => Answer(await _services.GetRequiredService<IService<ReadInjectionRequest, InjectionView>>()
+                .Handle(new ReadInjectionRequest(WorkflowInstanceId.From(InstanceRoute.Id(id)), query["section"]), cancellationToken).ConfigureAwait(false), json),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         };
     }

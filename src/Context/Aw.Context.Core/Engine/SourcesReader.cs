@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Aw.Context.Core.Linear;
 using Aw.Context.Core.Onyx;
 using Aw.Kernel;
 
@@ -7,14 +8,14 @@ namespace Aw.Context.Core.Engine;
 
 /// <summary>
 /// Reads 'context.sources' for <see cref="SettingsReader"/> (spec §8.8): 'onyx' through <see cref="OnyxSettings.Create"/>
-/// (SND-CONTEXT-055 or 002 with the key path) and 'linear.teams'. The shape (a map, known keys only) is SND-CONTEXT-001
-/// naming the full key path. Linear's own token and url arrive with its native adapter (stage S-6).
+/// (SND-CONTEXT-055 or 002 with the key path) and 'linear' (its teams, and with a token the native adapter's settings through <see cref="LinearSettings.Create"/>). The shape (a map, known keys only) is SND-CONTEXT-001
+/// naming the full key path.
 /// </summary>
 internal static partial class SourcesReader
 {
     private static readonly string[] _sources = ["onyx", "linear"];
-    private static readonly string[] _onyx = ["url", "token", "version"];
-    private static readonly string[] _linear = ["teams"];
+    private static readonly string[] _onyx = ["url", "token", "version", "managed"];
+    private static readonly string[] _linear = ["teams", "url", "token"];
 
     /// <summary>The first problem with the shape of <paramref name="context"/>'s 'sources' map, or null.</summary>
     /// <param name="context">The whole 'context:' section (a map).</param>
@@ -39,22 +40,52 @@ internal static partial class SourcesReader
     /// <summary>The checked onyx settings (or null) and Linear teams of a well-shaped 'sources' map.</summary>
     /// <param name="section">The section as read, or null.</param>
     /// <returns>The values, or SND-CONTEXT-001, 002 or 055 naming the key path.</returns>
-    internal static Result<(OnyxSettings? Onyx, IReadOnlyList<string> Teams)> Check(SourcesSection? section)
+    internal static Result<(OnyxSettings? Onyx, LinearSettings? Linear, IReadOnlyList<string> Teams)> Check(SourcesSection? section)
     {
-        var teams = section?.Linear?.Teams ?? [];
-        if (teams.FirstOrDefault(t => !TeamKey.IsMatch(t)) is { } bad)
+        var linear = section?.Linear;
+        var teams = linear?.Teams ?? [];
+        if (BadTeam(teams) is { } problem)
         {
-            return SettingsReader.Invalid("context.sources.linear.teams",
-                $"'{SettingsReader.Printable(bad)}' isn't a Linear team key (a capital letter, then one or more capitals or digits, e.g. ENG)");
+            return problem;
         }
 
-        if (section?.Onyx is not { } onyx)
+        var native = NativeLinear(linear, teams);
+        var onyx = CheckedOnyx(section?.Onyx);
+        return (native, onyx) switch
         {
-            return (null, teams);
+            ({ IsError: true }, _) => native.Error,
+            (_, { IsError: true }) => onyx.Error,
+            _ => (onyx.Value, native.Value, teams),
+        };
+    }
+
+    private static Result<OnyxSettings?> CheckedOnyx(OnyxSection? onyx)
+    {
+        if (onyx is null)
+        {
+            return Kernel.Results.Success<OnyxSettings?>(value: null);
         }
 
-        var created = OnyxSettings.Create(onyx.Url, onyx.Token, onyx.Version);
-        return created.IsError ? created.Error : (created.Value, teams);
+        var created = OnyxSettings.Create(onyx.Url, onyx.Token, onyx.Version, onyx.Managed ?? false);
+        return created.IsError ? created.Error : Kernel.Results.Success<OnyxSettings?>(created.Value);
+    }
+
+    private static Error? BadTeam(IReadOnlyList<string> teams) =>
+        teams.FirstOrDefault(t => !TeamKey.IsMatch(t)) is { } bad
+            ? SettingsReader.Invalid("context.sources.linear.teams",
+                $"'{SettingsReader.Printable(bad)}' isn't a Linear team key (a capital letter, then one or more capitals or digits, e.g. ENG)")
+            : null;
+
+    /// <summary>The native adapter's settings when the entry names a token or a url; null for teams alone.</summary>
+    private static Result<LinearSettings?> NativeLinear(LinearSection? linear, IReadOnlyList<string> teams)
+    {
+        if (linear is not ({ Token: not null } or { Url: not null }))
+        {
+            return Kernel.Results.Success<LinearSettings?>(value: null);
+        }
+
+        var created = LinearSettings.Create(linear.Url, linear.Token, teams);
+        return created.IsError ? created.Error : Kernel.Results.Success<LinearSettings?>(created.Value);
     }
 
     private static Error? Entry(JsonElement sources, string name, string[] known)

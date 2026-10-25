@@ -136,14 +136,14 @@ public sealed class WorkflowsStripViewModelTests
     }
 
     [Fact]
-    public void Not_served_yet_shows_arrives_with_API_P11_when_the_route_is_absent()
+    public void Not_served_yet_says_so_in_plain_words_when_the_route_is_absent()
     {
         var strip = Strip();
 
         strip.MarkNotServed();
 
         Assert.Equal((true, Labels.ArrivesWorkflowStrip, 0), (strip.IsNotServed, strip.NotServedText, strip.Rows.Count));
-        Assert.Contains("API P11", strip.NotServedText, StringComparison.Ordinal);
+        Assert.Equal("The workflow list isn't available from this Sindri yet.", strip.NotServedText);
     }
 
     [Fact]

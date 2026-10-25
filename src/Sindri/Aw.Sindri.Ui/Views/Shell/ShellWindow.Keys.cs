@@ -46,7 +46,7 @@ internal sealed partial class ShellWindow
 
     private static bool KeysBlocked(ViewModels.Shell.ShellViewModel shell, KeyEventArgs e) =>
         shell is not { IsChromeVisible: true, IsNavigationEnabled: true } || e.Source is TextBox
-        || shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen
+        || shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen || shell.ApproveAll.IsOpen
         || (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None;
 
     // §11.2: with the sheet beside the page and open on the selected row's item (the row drawn on this page), Enter again moves into its first action
@@ -98,7 +98,7 @@ internal sealed partial class ShellWindow
     private static bool IsLastStopOf(Border frame, Visual focused) =>
         frame.GetVisualDescendants().OfType<InputElement>().LastOrDefault(c => c.Focusable && c.IsTabStop && c.IsEffectivelyVisible && c.IsEffectivelyEnabled) is not { } last || ReferenceEquals(last, focused);
 
-    private static bool AnyLayerOpen(ViewModels.Shell.ShellViewModel shell) => shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen;
+    private static bool AnyLayerOpen(ViewModels.Shell.ShellViewModel shell) => shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen || shell.ApproveAll.IsOpen;
 
     // The frame of the row that the focused control is in, when that row is the one the sheet shows.
     private Border? OpenRowFrame(Visual focused) =>
@@ -150,12 +150,35 @@ internal sealed partial class ShellWindow
         return e.Key is >= Key.A and <= Key.Z && e.KeyModifiers == KeyModifiers.None ? e.Key.ToString() : null;
     }
 
-    // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the create form, then a destructive control's question.
+    // The forms and dialogs over the shell: the approve-all dialog, the Start form, then the create form.
+    private static bool EscapeForm(ViewModels.Shell.ShellViewModel shell)
+    {
+        if (shell.ApproveAll.IsOpen)
+        {
+            shell.ApproveAll.Close();
+            return true;
+        }
+
+        if (shell.Start.IsOpen)
+        {
+            shell.Start.Close();
+            return true;
+        }
+
+        if (!shell.Create.IsOpen)
+        {
+            return false;
+        }
+
+        shell.Create.Close();
+        return true;
+    }
+
+    // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the Start form, the create form, then a destructive control's question.
     private bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
     {
-        if (shell.Create.IsOpen)
+        if (EscapeForm(shell))
         {
-            shell.Create.Close();
             return true;
         }
 

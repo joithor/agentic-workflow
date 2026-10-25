@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:phasePacket":{"hash":"sha256:aa","dir":"packets/p1"},"fact:workspace":"/work/p1","fact:buildNotes":{},"fact:lineContext":{}}}}
+{"trigger":{"kind":"deadline"},"expect":{"state":"parked","park":"timeout"}}

@@ -4,8 +4,8 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Step;
 
 /// <summary>
-/// The decision-tree Steps (DT spec §3.1, §3.3): descriptors only, desk-capable, with no IStep runtime until the block
-/// runtime (DT-J), so each runs on the desk and a human picks. Their outcomes and inputs come from their parameters
+/// The decision-tree Steps (DT spec §3.1, §3.3): desk-capable. 'step.judge.choose' runs on the block runtime (JudgeChooseStep); 'step.desk.choose'
+/// is human-only and has no runtime, so it runs on the desk and a human picks. Their outcomes and inputs come from their parameters
 /// (<see cref="BlockDescriptor.OutcomesFrom"/>, <see cref="BlockDescriptor.InputsFrom"/>), so the recipe's approved
 /// text fixes the branches.
 /// </summary>
@@ -32,7 +32,7 @@ internal static class ChoiceSteps
         DeskCapable: true,
         OutcomesFrom: "choices",
         InputsFrom: "facts",
-        Runtime: BlockRuntime.Block,   // human-only on the desk (DT spec §8.5) until a build registers its runtime (DT-J)
+        Runtime: BlockRuntime.Block,   // the judge asks (JudgeChooseStep); on the desk any caller may answer (owner q93, 2026-10-23)
         MaxDuration: TimeSpan.FromMinutes(2));
 
     /// <summary>'step.desk.choose': the desk twin of a route state ('from'); outcomes are that state's choices, without 'uncertain'.</summary>
@@ -47,7 +47,6 @@ internal static class ChoiceSteps
         DeskCapable: true,
         OutcomesFrom: "from.choices",
         InputsFrom: "from.facts",
-        HumanOnly: true,
         Runtime: BlockRuntime.Desk);
 
     private static OutputSpec Decision => new(FactKey.From("fact:decision"), RequiredOn: [], Every: true, EngineFilled: true);

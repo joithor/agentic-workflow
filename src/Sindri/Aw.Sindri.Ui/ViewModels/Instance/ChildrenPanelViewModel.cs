@@ -31,6 +31,9 @@ internal sealed class ChildrenPanelViewModel : ObservableObject
         EmptyText = detail.States.Any(s => s.Child) ? Labels.NoChildrenYet : Labels.NoChildren;
     }
 
+    /// <summary>True while the disclosure is open; closed by default. The frame opens it when a key wants focus on a child.</summary>
+    public bool IsOpen { get; set => Set(ref field, value); }
+
     /// <summary>Raised when a row asks to open its child's frame.</summary>
     internal event EventHandler<FrameOpenEventArgs>? Opened;
 

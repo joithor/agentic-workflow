@@ -1,0 +1,2 @@
+# Two branches that each add public symbols append lines at the same spot; union keeps both sides instead of conflicting.
+**/PublicAPI.Unshipped.txt merge=union

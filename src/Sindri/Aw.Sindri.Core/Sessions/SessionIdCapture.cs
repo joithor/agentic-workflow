@@ -1,60 +1,80 @@
 using System.Text.RegularExpressions;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launch.Argv;
 
 namespace Aw.Sindri.Core.Sessions;
 
 /// <summary>The fallback that finds a session id from the files the CLI wrote (launcher spec §4, 'Fallback'). Pure; 'session wrap' lists the files.</summary>
 public static class SessionIdCapture
 {
-    private static readonly TimeSpan _timeout = TimeSpan.FromMilliseconds(100);
-
     /// <summary>Picks the one id among the candidate files.</summary>
     /// <param name="rule">The launch's capture rule.</param>
     /// <param name="paths">The candidate files: created after the start, within the wait.</param>
     /// <param name="claimed">Ids another launch already holds; they are not candidates.</param>
     /// <returns>The id when exactly one candidate remains; Ambiguous for more than one; None otherwise.</returns>
-    public static SessionIdScan Choose(CaptureRule rule, IReadOnlyList<string> paths, IReadOnlySet<string> claimed)
+    public static SessionIdScan Choose(CaptureRule rule, IReadOnlyList<string> paths, IReadOnlySet<string> claimed) =>
+        Choose(rule, paths, claimed, SessionIdRules.DefaultTimeout);
+
+    internal static SessionIdScan Choose(CaptureRule rule, IReadOnlyList<string> paths, IReadOnlySet<string> claimed, TimeSpan timeout)
     {
         ArgumentNullException.ThrowIfNull(rule);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(claimed);
-        if (Compile(rule.Capture) is not { } capture)
+        if (Compile(rule.Capture, timeout) is not { } capture)
         {
             return SessionIdScan.None;
         }
 
+        var timedOut = false;
         var candidates = new List<SessionId>();
         foreach (var path in paths)
         {
-            if (Capture(capture, path) is { } id && !claimed.Contains(id.Value) && Accepts(rule.SessionIdPattern, id) && !candidates.Contains(id))
+            var (captured, captureTimedOut) = Capture(capture, path);
+            timedOut |= captureTimedOut;
+            if (captured is not { } id || claimed.Contains(id.Value) || candidates.Contains(id))
             {
-                candidates.Add(id);
+                continue;
+            }
+
+            switch (Check(rule.SessionIdPattern, id, timeout))
+            {
+                case PatternOutcome.Matched:
+                    candidates.Add(id);
+                    break;
+                case PatternOutcome.TimedOut:
+                    timedOut = true;
+                    break;
+                case PatternOutcome.NoMatch:
+                default:
+                    break;
             }
         }
 
         return candidates.Count switch
         {
-            0 => SessionIdScan.None,
-            1 => new SessionIdScan(candidates[0], Ambiguous: false),
-            _ => new SessionIdScan(Id: null, Ambiguous: true),
+            0 => new SessionIdScan(Id: null, Ambiguous: false, timedOut),
+            1 => new SessionIdScan(candidates[0], Ambiguous: false, timedOut),
+            _ => new SessionIdScan(Id: null, Ambiguous: true, timedOut),
         };
     }
 
     /// <summary>Whether an entry's session id pattern accepts <paramref name="id"/> (no pattern accepts any).</summary>
     /// <param name="pattern">The entry's pattern, or null.</param>
     /// <param name="id">The id.</param>
-    /// <returns>True when it matches (run non-backtracking with a 100 ms timeout); a pattern that doesn't compile accepts nothing.</returns>
-    public static bool Accepts(string? pattern, SessionId id)
-    {
-        if (pattern is null)
-        {
-            return true;
-        }
+    /// <returns>True when it matches (run non-backtracking with a 2 s timeout); a pattern that doesn't compile or times out accepts nothing, and <see cref="Check(string, SessionId)"/> tells the two apart.</returns>
+    public static bool Accepts(string? pattern, SessionId id) => Check(pattern, id) == PatternOutcome.Matched;
 
-        return Compile(pattern) is { } regex && Matches(regex, id.Value);
-    }
+    /// <summary>How an entry's session id pattern judges <paramref name="id"/> (no pattern matches any).</summary>
+    /// <param name="pattern">The entry's pattern, or null.</param>
+    /// <param name="id">The id.</param>
+    /// <returns>Matched, NoMatch or TimedOut.</returns>
+    public static PatternOutcome Check(string? pattern, SessionId id) => Check(pattern, id, SessionIdRules.DefaultTimeout);
 
-    private static Regex? Compile(string? pattern)
+    internal static PatternOutcome Check(string? pattern, SessionId id, TimeSpan timeout) =>
+        pattern is null ? PatternOutcome.Matched : SessionIdRules.Test(pattern, id.Value, timeout);
+
+    private static Regex? Compile(string? pattern, TimeSpan timeout)
     {
         if (pattern is null)
         {
@@ -63,7 +83,7 @@ public static class SessionIdCapture
 
         try
         {
-            return new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, _timeout);
+            return new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, timeout);
         }
         catch (ArgumentException)
         {
@@ -71,28 +91,16 @@ public static class SessionIdCapture
         }
     }
 
-    private static bool Matches(Regex regex, string text)
-    {
-        try
-        {
-            return regex.IsMatch(text);
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            return false;
-        }
-    }
-
-    private static SessionId? Capture(Regex capture, string path)
+    private static (SessionId? Id, bool TimedOut) Capture(Regex capture, string path)
     {
         try
         {
             var match = capture.Match(path);
-            return match.Success && match.Groups.Count > 1 && SessionId.TryFrom(match.Groups[1].Value, out var id) ? id : null;
+            return (match.Success && match.Groups.Count > 1 && SessionId.TryFrom(match.Groups[1].Value, out var id) ? id : null, TimedOut: false);
         }
         catch (RegexMatchTimeoutException)
         {
-            return null;
+            return (Id: null, TimedOut: true);
         }
     }
 }

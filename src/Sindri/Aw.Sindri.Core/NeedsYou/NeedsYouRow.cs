@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.NeedsYou;
@@ -24,7 +25,11 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <param name="PrimaryAction">A catalog action id (never 'copy:'), a member of <paramref name="Actions"/>, or null when the row has no one-step action (a failure of a service this build lacks).</param>
 /// <param name="Actions">The action ids that apply; ready, pending or cli-only is the catalog's say.</param>
 /// <param name="Cli">The command line that does it, built through CliForm.Fill with typed ids.</param>
+/// <param name="Open">The one place the human acts on this row (q65): always present.</param>
 /// <param name="Via">"child" when the cli is a pointer to a child that decides the answer, not an answer form; null (omitted) otherwise.</param>
+/// <param name="Child">The address of the child a pointer row ("child" in <paramref name="Via"/>) points at; null (omitted) otherwise.</param>
+/// <param name="Stop">On a 'desk:' row, which desk state of the instance's recipe it waits in ("Approval n of of"); a read-time join, so null (omitted) when the recipe can't be read, and in the stored view.</param>
+/// <param name="Timeout">On a 'desk:' or 'park:' row, the timeout the instance status serves for the same instance, InSeconds measured at the response; a read-time join, null (omitted) when there is none or the instance can't be read.</param>
 public sealed record NeedsYouRow(
     NeedsYouRowId Id,
     NeedsYouKind Kind,
@@ -42,4 +47,8 @@ public sealed record NeedsYouRow(
     ActionId? PrimaryAction,
     IReadOnlyList<ActionId> Actions,
     string Cli,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null);
+    NeedsYouOpen Open,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Child = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NeedsYouStop? Stop = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] StatusTimeout? Timeout = null);

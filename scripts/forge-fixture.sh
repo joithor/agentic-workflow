@@ -12,7 +12,7 @@
 #                                  that points aw-forge-fake and the file adapter at the world. A repeat up replaces the variant.
 #                                  Variants: comments ciRed ciFlaky conflict stacked noDocs sourceFix foreignPush secret
 #   forge-fixture.sh up --github <owner/repo> <variant> [--dry-run]
-#                                  OWNER ONLY, on a scratch repository you do not mind writing to: pushes the variant's branches as
+#                                  On a scratch repository you do not mind writing to: pushes the variant's branches as
 #                                  fixture/<variant>/* and opens its pull request(s) through the github adapter. Threads, checks and
 #                                  flags cannot be seeded on GitHub: the thread list is printed to paste by hand from a second
 #                                  account. Needs AW_FORGE_TOKEN (contents and pull-request write) and
@@ -199,16 +199,16 @@ up_variant() { # <variant>
   number="$(open_fake "$repo" "$BRANCH" "$base" "$head" "feat: print results as JSON with --json")"
   link="https://$HOST/$OWNER/$repo/pull/$number"
   proven="$head"
-  forge seed checks "$link" --state passing >/dev/null
+  forge seed checks "$link" --state passing --passed 7 >/dev/null   # counts the UI shows beside the PR: 7 passed
 
   case "$v" in
     comments)
       threads="$(seed_threads "$repo" "$number")" ;;
     ciRed)
-      forge seed checks "$link" --state failing --failing unit >/dev/null
+      forge seed checks "$link" --state failing --failing unit --passed 5 >/dev/null
       patch_pull "$repo" "$number" '.logs = {unit: $log}' --arg log $'not ok 2 - prints json\n  expected: [{"file":"a","count":7}]\n  actual:   [{"file":"a","count":"7"}]\n  at test/format.test.js:7:3\n# fail 1' ;;
     ciFlaky)
-      forge seed checks "$link" --state failing --failing integration >/dev/null
+      forge seed checks "$link" --state failing --failing integration --passed 6 --pending 1 >/dev/null
       patch_pull "$repo" "$number" '.logs = {integration: $log}' --arg log $'Error: connect ETIMEDOUT 10.0.0.7:5432\n    at TCPConnectWrap.afterConnect (node:net:1611:16)\nrunner: shared-pool-4, retry 0 of 0\n# fail 1 (no test under test/ reads the network)'
       flaky=true ;;
     conflict)
@@ -229,7 +229,7 @@ up_variant() { # <variant>
       git_fx "$w" reviewer-kai add -A
       git_fx "$w" reviewer-kai commit -q -m "tweak: pretty-print the json output"
       forge seed advance "$link" --sha "$(git -C "$w" rev-parse "$BRANCH")" >/dev/null
-      forge seed checks "$link" --state passing >/dev/null ;;
+      forge seed checks "$link" --state passing --passed 7 >/dev/null ;;
     secret)
       local out key token; out="$(forge seed thread "$link" --author maintainer-ines --association OWNER --kind thread --path src/cli.js \
         --body "Please read the API endpoint and its credential from a config file, so the tool can post the counts.")"
@@ -277,7 +277,7 @@ print_env() {
   echo "forge-env: AW_STATE_DIR=$HOME_DIR/state AW_FORGE_ADAPTER=file AW_FORGE_HOSTS=$HOST"
 }
 
-# --- up --github (owner only) --------------------------------------------------------------------------------------------
+# --- up --github (scratch repo only) --------------------------------------------------------------------------------------------
 up_github() { # <owner/repo> <variant> [--dry-run]
   local slug="$1" v="$2" dry="${3:-}" repo dir w url token_header
   [[ "$slug" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "--github needs <owner/repo>, got '$slug'"

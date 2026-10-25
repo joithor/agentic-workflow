@@ -97,8 +97,7 @@
         "records": 1,
         "decisions": 2,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -114,6 +113,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -127,6 +127,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -141,6 +142,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -155,6 +157,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -169,6 +172,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -183,6 +187,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -190,7 +195,9 @@
       "affects": [],
       "counts": {
         "own": 6,
-        "affects": 0
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 5
       },
       "edges": [
         {
@@ -238,8 +245,7 @@
           "confirmed": true,
           "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [
@@ -261,6 +267,7 @@
             "feature:tabs.tab-manager",
             "feature:tabs.tab-groups"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -281,6 +288,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -293,8 +301,7 @@
         "files": 2,
         "symbols": 0,
         "featuresWithNoCode": 1
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [

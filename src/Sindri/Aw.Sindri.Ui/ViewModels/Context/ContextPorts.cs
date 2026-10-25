@@ -1,0 +1,18 @@
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Controls;
+
+namespace Aw.Sindri.Ui.ViewModels.Context;
+
+/// <summary>
+/// What the Context page and its stage view models read through, passed once so a later stage takes what it needs without
+/// editing the shell or the page's constructor.
+/// </summary>
+/// <param name="Api">Sindri's API.</param>
+/// <param name="ApiUrl">The control plane's API address now, or null when none is known.</param>
+/// <param name="Clipboard">Where Copy puts a CLI.</param>
+/// <param name="Clock">The clock for every timing rule.</param>
+/// <param name="Catalog">The command catalog, for the desk rows and the lock buttons' CLI.</param>
+/// <param name="Follow">Registers a view to re-read on connect and after every event (the shell's Health.Follow), so a stage registers its own refresh from its own view model.</param>
+/// <param name="Launcher">Hands a link to the system; null when the host has none.</param>
+internal sealed record ContextPorts(ISindriApi Api, Func<Uri?> ApiUrl, IClipboard Clipboard, TimeProvider Clock, CatalogViewModel Catalog, Action<Func<Uri, CancellationToken, Task>> Follow, ILauncher? Launcher = null);

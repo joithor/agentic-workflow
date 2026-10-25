@@ -108,9 +108,7 @@ public sealed class ServeLauncherContractTests : ControlPlaneLauncherContract, I
     private string Stub(string body)
     {
         var path = Path.Combine(_home.Path, "stub-" + Path.GetRandomFileName());
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        File.SetUnixFileMode(path, OwnerFile | UnixFileMode.UserExecute);
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 
     private static string Ps(string field, int pid)

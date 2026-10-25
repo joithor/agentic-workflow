@@ -6,7 +6,7 @@
 # to lib/): the current hook with lib/failopen.sh, and the baseline copy of the
 # same hook from before the logging was added (fixtures/failopen-baseline/,
 # origin/main at 2004bdc). Logging is the only allowed difference, so:
-#   - stdout, stderr (stage path and bash's "line N:" normalized) and the exit
+#   - stdout, stderr (stage path and bash's "line N:" normalized, "write error: Broken pipe" lines dropped) and the exit
 #     code must be byte-identical between the two runs;
 #   - every run is bounded (10 s): a hang counts as exit 142 and fails;
 #   - the run with the lib appends exactly the expected HOOK-FAILOPEN lines
@@ -19,7 +19,8 @@ HOOKS="$ROOT/config/hooks"
 LIBDIR="$ROOT/config/lib"
 fail=0
 # The cases set a lane's variables themselves ($LANE); the suite must not inherit another lane's or a Sindri launch's.
-unset TMUX TMUX_PANE AW_META_CONFIG AW_META_TEAM AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_SINDRI_HOME AW_LAUNCHER_CONFIG AW_JUDGE_CHILD
+# AW_META_DIR too: it would move the lane reply marker out of each case's AW_STATE_DIR into one shared dir, so a run (or a parallel run) that records a reply makes the next skip lane-reply.
+unset TMUX TMUX_PANE AW_META_DIR AW_META_CONFIG AW_META_TEAM AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_SINDRI_HOME AW_LAUNCHER_CONFIG AW_JUDGE_CHILD
 SECRET="SENTINEL-PAYLOAD-7f3a"
 
 BASELINE="$HOOKS/tests/fixtures/failopen-baseline"
@@ -125,8 +126,11 @@ $INJECT
   # shellcheck disable=SC2086
   bounded "$t/2" "$t/in" env ${envs[@]+"${envs[@]}"} PATH="${CASE_PATH:-$FAKE_BIN:$BASE_PATH}" "$@" bash "$base/$hook" ${HOOK_ARGS:-}
   r1="$(cat "$t/1.r")"; r2="$(cat "$t/2.r")"
-  sed -e "s#$cur#<stage>#g" -e 's#line [0-9]*:#line N:#g' "$t/1.e" > "$t/1.en"
-  sed -e "s#$base#<stage>#g" -e 's#line [0-9]*:#line N:#g' "$t/2.e" > "$t/2.en"
+  # A reader that exits without reading stdin (a missing judge, a hook that exits 3) races the writer's printf: on a loaded
+  # box bash adds "printf: write error: Broken pipe" to stderr in one run and not the other. That is harness timing, not
+  # hook behavior, so those lines are dropped from the comparison; rc and stdout still must match.
+  sed -e "s#$cur#<stage>#g" -e 's#line [0-9]*:#line N:#g' -e '/write error: Broken pipe$/d' "$t/1.e" > "$t/1.en"
+  sed -e "s#$base#<stage>#g" -e 's#line [0-9]*:#line N:#g' -e '/write error: Broken pipe$/d' "$t/2.e" > "$t/2.en"
   if ! cmp -s "$t/1.o" "$t/2.o" || ! cmp -s "$t/1.en" "$t/2.en" || [ "$r1" != "$r2" ]; then
     echo "FAIL: $name — differs from the baseline (origin/main) hook"
     echo "  current:  rc=$r1 out=$(cat "$t/1.o") err=$(cat "$t/1.en")"

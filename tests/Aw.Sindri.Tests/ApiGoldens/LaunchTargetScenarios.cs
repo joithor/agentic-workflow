@@ -24,7 +24,7 @@ internal static class LaunchTargetScenarios
         ("launch-targets", "detected"), ("launch-targets", "file-exec-template"), ("launch-targets", "print"), ("launch-targets", "config-invalid"),
         ("launch-targets", "no-gui"), ("launch-targets", "budget-hard"), ("launch-targets", "budget-soft"), ("launch-targets", "no-usage-reader"),
         ("launch-targets", "override"), ("launch-targets", "not-probed"),
-        ("launch-targets-probe", "started"), ("launch-targets-probe", "refused-session"),
+        ("launch-targets-probe", "started"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -67,14 +67,14 @@ internal static class LaunchTargetScenarios
         return (await host.Http.Ask(Get("/sindri/launch/targets", human))).Body;
     }
 
-    private static LaunchProbed Probed(string scenario) => new(Terminal(scenario), new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), Targets(scenario),
+    internal static LaunchProbed Probed(string scenario) => new(Terminal(scenario), new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), Targets(scenario),
         [new RepoFacts(RepoName.From("demo"), Present: true), new RepoFacts(RepoName.From("other"), Present: false)]);
 
     private static TerminalFacts Terminal(string scenario) => scenario switch
     {
         "file-exec-template" => new("exec-template", "kitty", Present: true, "file", "/home/demo/.agentic-workflow/launcher.json", Problem: null, Detail: null),
         "print" => new("print", "Print", Present: true, "detected", "/home/demo/.agentic-workflow/launcher.json", Problem: null, Detail: null),
-        "config-invalid" => new("print", "Print", Present: false, "detected", "/home/demo/.agentic-workflow/launcher.json", "config-invalid", "line 4: viewer.argv must contain {attach}"),
+        "config-invalid" => new("print", "Print", Present: false, "detected", "/home/demo/.agentic-workflow/launcher.json", "config-invalid", new TerminalDetail(4, "viewer.argv must contain {attach}")),
         "no-gui" => new("exec-template", "xterm", Present: false, "detected", "/home/demo/.agentic-workflow/launcher.json", "no-gui-session", Detail: null),
         _ => new("exec-template", "xterm", Present: true, "detected", "/home/demo/.agentic-workflow/launcher.json", Problem: null, Detail: null),
     };

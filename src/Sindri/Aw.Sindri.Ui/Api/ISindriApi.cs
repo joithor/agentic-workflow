@@ -1,10 +1,13 @@
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Jobs;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Api;
 
 /// <summary>Sindri's HTTP API as the app uses it (docs/csharp/sindri.md). Every call names the base URL from control.json.</summary>
-internal interface ISindriApi
+internal partial interface ISindriApi
 {
     /// <summary>GET /sindri/ping.</summary>
     /// <param name="api">The base URL.</param>
@@ -24,6 +27,17 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Ends the stream.</param>
     /// <returns>The events, in order.</returns>
     public IAsyncEnumerable<EventView> Events(Uri api, long after, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// GET /sindri/events?types=workflow.instance-changed[&amp;instance=ADDRESS]: the frames that say an instance's view changed. The first item says the
+    /// stream is open; it opens at the ledger head, so a change while the app was away is lost and the caller re-reads what it shows once it is open.
+    /// The frames carry no id: they never move the cursor of <see cref="Events"/>. Ends when the connection does.
+    /// </summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="instance">One instance's address, or null for every instance.</param>
+    /// <param name="cancellationToken">Ends the stream.</param>
+    /// <returns>The open signal, then the changes.</returns>
+    public IAsyncEnumerable<InstanceStreamItem> InstanceChanges(Uri api, string? instance, CancellationToken cancellationToken);
 
     /// <summary>GET /sindri/commands: the command catalog (read on connect and on a new epoch, UI spec §9.1).</summary>
     /// <param name="api">The base URL.</param>
@@ -48,6 +62,9 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/items?state= (API P3): the items in one state; the API's refusal, or SND-UI-002/003.</summary>
+    public Task<Result<ItemListView>> ListItems(Uri api, string state, CancellationToken cancellationToken);
 
     /// <summary>GET /sindri/items/{itemId} (API P3).</summary>
     /// <param name="api">The base URL.</param>
@@ -147,4 +164,136 @@ internal interface ISindriApi
 
     // LANE ANCHOR U3': the Needs you, decision and request reads and the Decide and FileRequest sends, one method each (the client's are in SindriApiClient.NeedsYou.cs). Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: the command sends (nonce, commands, complete), once API P11 serves their shapes (Q-API-7/8); none is declared before. Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/workflow/recipes (API §3.8): every registered recipe with its standing. The Start form uses it only to pick one.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<RecipeList>> Recipes(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/workflow/instances (StartInstance, desk, engine P6): sent once, never retried by the app, and it takes no nonce.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The recipe, the item and the input facts.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The started (or existing) instance, the API's refusal (SND-WF-012, SND-WF-014, SND-RECIPE-001/005/006, SND-CLI-003) as served, or SND-UI-002/003.</returns>
+    public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U9: the context reads and the review send, one method each (the client's are in SindriApiClient.Context.cs, the routes in ContextRoutes); U9e adds Subgraph. Insert immediately below this marker, never between the markers.
+
+    /// <summary>QUERY /sindri/context/lenses (context spec §8; the anchors are the JSON body): the three bands around an anchor or a set of them. A read of the context database, so it never waits on the views.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">The anchors, depth, draft flag and pinned map version.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The lenses, the API's refusal (SND-CONTEXT-003, -006, -037, -044, -120), or SND-UI-002/003.</returns>
+    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/filemap: one directory of a repo with its status marks.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">The repo, the directory and the flags.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The directory, the API's refusal (SND-CONTEXT-044, -045), or SND-UI-002/003.</returns>
+    public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map/review: the draft's undecided entries.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="limit">How many entries at most, or null for the API's default.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The queue, SND-CONTEXT-044 when there is no draft, or SND-UI-002/003.</returns>
+    public Task<Result<ReviewQueueView>> ReviewQueue(Uri api, int? limit, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/context/map/review (a desk verb): sent once, never retried by the app. The protected verbs are never sent.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The verb and what it acts on.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>What was written, the API's refusal (SND-CONTEXT-047 for a stale row, SND-AUTH-002), or SND-UI-002/003.</returns>
+    public Task<Result<ReviewDecisionResponse>> ReviewDecision(Uri api, ReviewDecisionRequest request, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map/review/history: the overrides written, newest first.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="limit">How many entries at most, or null for the API's default.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The history, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<ReviewHistoryView>> ReviewHistory(Uri api, int? limit, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map: the map's version, counts and coverage.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="anchor">An anchor to scope the coverage to, or null.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The status, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/node?key=: one node with its aliases and edges.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="key">The node's key (a query value, never a path).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The node, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/sources: each source's state (no golden yet).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The sources, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U11a: the Agents page's reads, one method each (the client's are in SindriApiClient.Sessions.cs); the Focus send (U11a-f) is declared once CO-4a serves its goldens. Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/sessions (collector spec CA-1): the live agent sessions, the recently ended ones, the collector's problems and the head counts. A session problem (SND-SESSION-002) is a refusal, not a transport failure.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">What to ask for; none of it when the page filters in the app.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/sessions/{provider}/{id} (collector spec CA-2): one live session with its cwd, socket and state history.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="provider">The provider's id as served ("claude-code").</param>
+    /// <param name="id">The session id as served.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The session, SND-SESSION-404 when it is unknown or ended, another refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken);
+
+    // LANE ANCHOR L1: the agent run's reads and the Attach send (the client's are in SindriApiClient.Launch.cs). Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/launches/{id} (API P10a): one launch with its state, viewer and attach command.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="launch">The launch id (LCH-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The launch, the API's refusal (SND-LAUNCH-404, SND-CLI-003), or SND-UI-002/003.</returns>
+    public Task<Result<LaunchView>> Launch(Uri api, string launch, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/items/{itemId}/open (OpenItem, desk, API P10a): sent once, never retried by the app. The server opens the viewer; the app execs nothing.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="itemId">The item.</param>
+    /// <param name="request">The mode and the version the app read.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted command with its launch, the API's refusal (SND-LAUNCH-001/002/006/008/009, SND-ITEM-409, SND-AUTH-002), or SND-UI-002/003.</returns>
+    public Task<Result<OpenAcceptedView>> OpenItem(Uri api, string itemId, OpenItemRequest request, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/workflow/instances/{id}/events?after=N: the instance's events, oldest first.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="id">The instance id (WFI-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The events, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<InstanceEventsView>> InstanceEvents(Uri api, string id, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/jobs?state=&amp;kind= (API P6): the jobs, newest first. A view read: it waits on the views.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">What to ask for; none of it when the page filters in the app.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal (SND-CLI-003 for an unknown kind or state), or SND-UI-002/003.</returns>
+    public Task<Result<JobList>> Jobs(Uri api, JobQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/jobs/{id} (API P6): one job with its progress and result.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="id">The job (JOB-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The job, SND-JOB-404, another refusal, or SND-UI-002/003.</returns>
+    public Task<Result<JobView>> Job(Uri api, string id, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/jobs/{id}/cancel (CancelJob, job class, API P6): sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="id">The job (JOB-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted command, SND-JOB-404/409 or SND-AUTH-002 as served, or SND-UI-002/003.</returns>
+    public Task<Result<CommandAcceptedView>> CancelJob(Uri api, string id, CancellationToken cancellationToken);
 }

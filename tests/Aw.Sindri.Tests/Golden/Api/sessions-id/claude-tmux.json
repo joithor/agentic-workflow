@@ -34,6 +34,7 @@
       "why": "not-built"
     },
     "title": "private title",
+    "launch": null,
     "pid": 111
   },
   "cwd": "/work/api/.claude/worktrees/ideas",

@@ -22,11 +22,27 @@ internal static class StatusRecords
         view.ChildPark,
         view.DriftNote,
         [.. view.Task?.Inputs.Select(static i => new StatusInput(i.Key.Value, i.Value.Name, Hash: StatusText.Prefixed(i.Value.Value.Sha256))) ?? []],
-        view.Task?.TimeoutAt is { } at ? new StatusTimeout(TimeoutKind.Parks, Seconds(at - now), view.Task.State) : null,
-        view is { Task: not null, Budget: { } budget } ? new StatusBudget("state", budget.State, budget.StateCap, new BudgetFigures(budget.Instance, budget.InstanceCap)) : null,
+        Timeout(view, now),
+        Budget(view),
         view.Paused is { } left ? new StatusPaused(Seconds(left)) : null,
         Commands(view),
-        StatusLayout.Render(view, now));
+        StatusLayout.Render(view, now),
+        Injection(view))
+    {
+        Run = view.AgentRun is { } agent ? new StatusRun("agent", agent.Launch) : null,
+        ReasonCode = view.Question?.Code,
+        TakenOverAt = view.EngineOwned is { Kind: EngineOwnedKind.TakenOver } ? view.Since : null,   // a takeover enters the 'taken-over' state, so Since is the takeover's time
+        TakenOverBy = view.EngineOwned is { Kind: EngineOwnedKind.TakenOver } ? view.TakenOverBy : null,
+    };
+
+    private static StatusTimeout? Timeout(InstanceView view, DateTimeOffset now) =>
+        view.Task?.TimeoutAt is { } at ? new StatusTimeout(TimeoutKind.Parks, Seconds(at - now), view.Task.State) : null;
+
+    private static StatusBudget? Budget(InstanceView view) =>
+        view is { Task: not null, Budget: { } budget } ? new StatusBudget("state", budget.State, budget.StateCap, new BudgetFigures(budget.Instance, budget.InstanceCap)) : null;
+
+    private static List<StatusInjection> Injection(InstanceView view) =>
+        [.. view.Task?.Injection.Select(static i => new StatusInjection(i.Section, i.Input.Value, i.Bytes, StatusText.Prefixed(i.Sha256), i.Replaced?.Value)) ?? []];
 
     private static StatusHeader Header(InstanceView view, DateTimeOffset now) => new(
         view.Address,
@@ -46,10 +62,13 @@ internal static class StatusRecords
     /// <returns>One action id per command.</returns>
     public static IReadOnlyList<ActionId> ActionIds(InstanceView view) => [.. Commands(view).Select(static c => c.ActionId)];
 
-    /// <summary>The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog.</summary>
+    /// <summary>
+    /// The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog. The status verbs are a closed set,
+    /// so a recipe verb (an entry with a <see cref="AllowedCommand.Verb"/>, API18) is not a row here: it is in the view's 'allowedCommands'.
+    /// </summary>
     private static List<StatusCommand> Commands(InstanceView view)
     {
-        var rows = view.AllowedCommands.Select(c => Row(c, view)).ToList();
+        var rows = view.AllowedCommands.Where(static c => c.Verb is null).Select(c => Row(c, view)).ToList();
         if (view.ApproveRow is { } approve)
         {
             rows.Add(approve);

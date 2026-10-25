@@ -6,8 +6,8 @@ using Aw.Kernel.Services;
 
 namespace Aw.Sindri.Features.ContextCalls;
 
-/// <summary>The lenses of several anchors, read from one map snapshot, through the engine.</summary>
-internal sealed class GetContextLensesSetService(ContextScopes scopes, IContextEngine engine) : IService<GetContextLensesSetRequest, LensesSetView>
+/// <summary>The lenses of several anchors, read from one map snapshot, through the engine; a not-synced source row also names the sync job that is filling it.</summary>
+internal sealed class GetContextLensesSetService(ContextScopes scopes, IContextEngine engine, SyncGaps gaps) : IService<GetContextLensesSetRequest, LensesSetView>
 {
     public async ValueTask<Result<LensesSetView>> Handle(GetContextLensesSetRequest request, CancellationToken cancellationToken)
     {
@@ -18,6 +18,12 @@ internal sealed class GetContextLensesSetService(ContextScopes scopes, IContextE
         }
 
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
-        return scope.IsError ? scope.Error : await engine.LensesOf(request.Anchors, read.Value, request.Depth, scope.Value, cancellationToken).ConfigureAwait(false);
+        if (scope.IsError)
+        {
+            return scope.Error;
+        }
+
+        var view = await engine.LensesOf(request.Anchors, read.Value, new LensRange(request.Depth, request.Hops), scope.Value, cancellationToken).ConfigureAwait(false);
+        return view.IsError ? view.Error : view.Value with { Searched = await gaps.Mark(view.Value.Searched, cancellationToken).ConfigureAwait(false) };
     }
 }

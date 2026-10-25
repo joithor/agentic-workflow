@@ -25,12 +25,24 @@ internal static class WorkflowStartCommand
             return await output.Error(request.Error).ConfigureAwait(false);
         }
 
+        return await Start(request.Value, json, (desk, services, output), ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Starts the instance through the running control plane and prints it: the status header, or with <paramref name="json"/> the raw answer.</summary>
+    /// <param name="request">The start.</param>
+    /// <param name="json">Whether to print the raw answer.</param>
+    /// <param name="wire">The desk, the services and the output the verb runs with.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <returns>The exit code: 0 started or found, 1 not running, 2 refused or error.</returns>
+    internal static async Task<int> Start(StartInstanceRequest request, bool json, (RecipeDesk Desk, IServiceProvider Services, Output Output) wire, CancellationToken ct)
+    {
+        var (desk, services, output) = wire;
         if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
         {
             return await output.Error(down).ConfigureAwait(false);
         }
 
-        var started = await desk.Client.Post<StartInstanceRequest, StartInstanceResponse>("/sindri/workflow/instances", request.Value, ct).ConfigureAwait(false);
+        var started = await desk.Client.Post<StartInstanceRequest, StartInstanceResponse>("/sindri/workflow/instances", request, ct).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);

@@ -29,5 +29,5 @@ public sealed class FixtureInstancesTests
 
     [Fact]
     public void The_finished_line_prints_the_served_done_figure() =>
-        Assert.Equal($"{Number(FixtureInstances.Counts.Done)} done today", InstanceHeads.DoneLine(FixtureInstances.Counts.Done));
+        Assert.Equal($"{Number(FixtureInstances.Counts.Done)} finished", InstanceHeads.DoneLine(FixtureInstances.Counts.Done));
 }

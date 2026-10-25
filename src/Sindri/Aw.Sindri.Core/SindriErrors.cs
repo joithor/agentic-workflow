@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core;
 
 /// <summary>The Sindri error catalogue (codes SND-AREA-NNN, docs/csharp/sindri.md).</summary>
-public static class SindriErrors
+public static partial class SindriErrors
 {
     /// <summary>SND-LEASE-001: another live process holds the host lease.</summary>
     public static readonly ErrorDefinition LeaseHeld = new("SND-LEASE-001", ErrorKind.Conflict, "The host lease is held by another process");
@@ -23,9 +23,6 @@ public static class SindriErrors
     /// <summary>SND-PROFILE-003: the hash to approve isn't the live profile's hash.</summary>
     public static readonly ErrorDefinition ProfileHashMismatch = new("SND-PROFILE-003", ErrorKind.Conflict, "The hash doesn't match the profile");
 
-    /// <summary>SND-PROFILE-004: approving needs a typed confirmation at an interactive terminal.</summary>
-    public static readonly ErrorDefinition ProfileNeedsTerminal = new("SND-PROFILE-004", ErrorKind.Forbidden, "Approving a profile needs an interactive terminal");
-
     /// <summary>SND-PROFILE-005: no profile has been approved yet.</summary>
     public static readonly ErrorDefinition ProfileNotApproved = new("SND-PROFILE-005", ErrorKind.NotFound, "No profile is approved");
 
@@ -41,7 +38,7 @@ public static class SindriErrors
     /// <summary>SND-API-001: the control-plane process isn't running.</summary>
     public static readonly ErrorDefinition NotRunning = new("SND-API-001", ErrorKind.Unavailable, "Sindri is not running");
 
-    /// <summary>SND-API-002: the control-plane process didn't answer in time (the ping within 2 s, or the call itself within 10 s).</summary>
+    /// <summary>SND-API-002: the control-plane process didn't answer in time (the ping within 2 s, connecting within 5 s, or the call itself within AW_SINDRI_CLI_TIMEOUT when that is set).</summary>
     public static readonly ErrorDefinition ApiTimeout = new("SND-API-002", ErrorKind.Timeout, "Sindri didn't answer in time");
 
     /// <summary>SND-API-003: serve can't listen on the API port: another program has it, it is refused, or the host failed to start listening.</summary>
@@ -89,15 +86,6 @@ public static class SindriErrors
     /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
     public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
 
-    /// <summary>SND-API-010: a command that reads views was refused while the views rebuild; it wasn't run.</summary>
-    public static readonly ErrorDefinition ViewsRebuilding = new("SND-API-010", ErrorKind.Unavailable, "Views are rebuilding; the command wasn't run, retry");
-
-    /// <summary>SND-API-011: the views didn't reach the sequence a caller waits for (X-Sindri-After, or a command's head) in time.</summary>
-    public static readonly ErrorDefinition ViewsBehind = new("SND-API-011", ErrorKind.Unavailable, "The views didn't reach the sequence in time");
-
-    /// <summary>SND-API-012: every event stream a caller may open is open (16, 4 held for the human; API spec §5.4).</summary>
-    public static readonly ErrorDefinition StreamsFull = new("SND-API-012", ErrorKind.RateLimited, "Too many event streams are open; re-query every 5 s");
-
     /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
 
@@ -107,10 +95,10 @@ public static class SindriErrors
     /// <summary>SND-ITEM-409: the item changed since the caller looked, or it is already closed (API spec §2.1).</summary>
     public static readonly ErrorDefinition ItemConflict = new("SND-ITEM-409", ErrorKind.Conflict, "The item changed since you looked");
 
-    /// <summary>SND-REQ-001: a request has an unknown kind, no text, or more than 2,000 characters (API spec §9).</summary>
+    /// <summary>SND-REQ-001: a request has an unknown kind, no text, or more than 65,536 characters (API spec §9).</summary>
     public static readonly ErrorDefinition RequestInvalid = new("SND-REQ-001", ErrorKind.Invalid, "The request isn't valid");
 
-    /// <summary>SND-REQ-002: too many open requests in the repo (20) or in all (50) (API spec §4.2).</summary>
+    /// <summary>SND-REQ-002: too many open requests in the repo (200) or in all (500) (API spec §4.2).</summary>
     public static readonly ErrorDefinition RequestsRateLimited = new("SND-REQ-002", ErrorKind.RateLimited, "Too many open requests");
 
     /// <summary>SND-DEC-404: no decision has that id, or a session caller may not see it.</summary>
@@ -131,7 +119,7 @@ public static class SindriErrors
     /// <summary>SND-JOB-002: the most jobs are running (8); start again when one ends.</summary>
     public static readonly ErrorDefinition JobsRateLimited = new("SND-JOB-002", ErrorKind.RateLimited, "Too many jobs are running");
 
-    /// <summary>SND-SVC-404: no service of the approved profile has that name (API spec §9).</summary>
+    /// <summary>SND-SVC-404: no service of the approved profile, and no built-in, has that name (API spec §9).</summary>
     public static readonly ErrorDefinition ServiceNotFound = new("SND-SVC-404", ErrorKind.NotFound, "No such service in the approved profile");
 
     /// <summary>SND-LAUNCH-001: the terminal viewer didn't open the launch; on a tmux host the session keeps running (API P10a, UI E-5).</summary>
@@ -167,32 +155,32 @@ public static class SindriErrors
     /// <summary>SND-LAUNCH-012: the agent entry isn't approved for unattended Steps (detail 'not-approved' or 'hash-changed'; launcher SL8).</summary>
     public static readonly ErrorDefinition LaunchNotApproved = new("SND-LAUNCH-012", ErrorKind.Forbidden, "This agent entry isn't approved for unattended Steps");
 
+    /// <summary>SND-LAUNCH-028: the agent entry's session id pattern timed out on an id, so the id was refused unjudged (not as a mismatch). -014 to -021 are the sandbox spec's.</summary>
+    public static readonly ErrorDefinition LaunchSessionIdTimedOut = new("SND-LAUNCH-028", ErrorKind.Unavailable, "The session id pattern timed out");
+
+    /// <summary>SND-LAUNCH-022: a Step's worktree already has a pre-push hook that isn't Sindri's; the launch is refused rather than overwrite it (line spec LN-LCH1).</summary>
+    public static readonly ErrorDefinition LaunchPrePushForeign = new("SND-LAUNCH-022", ErrorKind.Conflict, "The Step's worktree has a pre-push hook of its own");
+
+    /// <summary>SND-LAUNCH-023: printed by the pre-push hook Sindri installs when an agent Step tries to push; the push is refused (line spec LN-LCH1).</summary>
+    public static readonly ErrorDefinition LaunchPushRefused = new("SND-LAUNCH-023", ErrorKind.Forbidden, "Agent Steps can't push; Sindri pushes");
+
+    /// <summary>SND-LAUNCH-025: a fact a Step reads would be written over a file git tracks in the Step's worktree; the launch is refused and the file is left as it is.</summary>
+    public static readonly ErrorDefinition LaunchFactFileTracked = new("SND-LAUNCH-025", ErrorKind.Conflict, "A Step's fact file would overwrite a tracked file");
+
+    /// <summary>SND-LAUNCH-024: the agent CLI's trust file can't be updated for the Step's worktree (unparseable, locked or not writable); the file is left untouched and the launch is refused.</summary>
+    public static readonly ErrorDefinition LaunchTrustUnavailable = new("SND-LAUNCH-024", ErrorKind.Unavailable, "The agent CLI's trust file couldn't be updated");
+
+    /// <summary>SND-LAUNCH-025: the launcher's host is T3 and T3 Code can't be reached (not running, its 't3' CLI missing, or a tool call failed); nothing starts.</summary>
+    public static readonly ErrorDefinition LaunchT3Unavailable = new("SND-LAUNCH-025", ErrorKind.Unavailable, "T3 Code can't be reached");
+
+    /// <summary>SND-LAUNCH-026: the launcher's host is T3 and no T3 Code project contains the repo; nothing starts (fix: 't3 project add &lt;repo&gt;').</summary>
+    public static readonly ErrorDefinition LaunchT3NoProject = new("SND-LAUNCH-026", ErrorKind.Invalid, "The repo isn't a T3 Code project");
+
+    /// <summary>SND-LAUNCH-027: the launcher's host is T3 and T3 has no enabled provider for the launch's agent (claude-code, codex, cursor); nothing starts.</summary>
+    public static readonly ErrorDefinition LaunchT3NoProvider = new("SND-LAUNCH-027", ErrorKind.Invalid, "T3 Code can't run that agent");
+
     /// <summary>SND-LAUNCH-013: a Step asked for a model or a policy, and the entry's matching form is 'none'; nothing launches (launcher L-17).</summary>
     public static readonly ErrorDefinition LaunchFormUnsupported = new("SND-LAUNCH-013", ErrorKind.Invalid, "The agent entry can't express the Step's model or policy");
-
-    /// <summary>SND-LAUNCH-014: the sandbox isn't available on this box (sandbox spec §6; kind no-runtime); detail 'reason' is no-bwrap, no-user-namespace, no-user-manager, no-cgroup-controllers, no-forwarder or unsupported-platform.</summary>
-    public static readonly ErrorDefinition LaunchSandboxUnavailable = new("SND-LAUNCH-014", ErrorKind.Unavailable, "The sandbox isn't available on this machine");
-
-    /// <summary>SND-LAUNCH-015: the target or its form can't be confined to this policy (kind launch-park; Resume starts a new run).</summary>
-    public static readonly ErrorDefinition LaunchUnconfinable = new("SND-LAUNCH-015", ErrorKind.Conflict, "The agent can't be confined to this Step's policy");
-
-    /// <summary>SND-LAUNCH-016: the sandbox self-check failed; 'reason' names the canary (kind launch-park).</summary>
-    public static readonly ErrorDefinition LaunchSelfCheckFailed = new("SND-LAUNCH-016", ErrorKind.Conflict, "The sandbox self-check failed");
-
-    /// <summary>SND-LAUNCH-017: the target's model login isn't available from the chosen credential source (kind no-runtime); 'reason' is no-login, expired or source-unsupported, with the 'source'.</summary>
-    public static readonly ErrorDefinition LaunchLoginUnavailable = new("SND-LAUNCH-017", ErrorKind.Conflict, "The agent's sign-in isn't available for Steps");
-
-    /// <summary>SND-LAUNCH-018: the agent GitHub App token couldn't be minted (kind step-failure; 'agent-app' only).</summary>
-    public static readonly ErrorDefinition LaunchGitHubTokenFailed = new("SND-LAUNCH-018", ErrorKind.Unavailable, "The agent GitHub token couldn't be minted");
-
-    /// <summary>SND-LAUNCH-019: a sandbox limit ended the session (kind step-failure). Catalogue only: it rides on session.ended and step.failed and is never an HTTP response.</summary>
-    public static readonly ErrorDefinition LaunchLimitHit = new("SND-LAUNCH-019", ErrorKind.Unavailable, "A sandbox limit ended the session");
-
-    /// <summary>SND-LAUNCH-020: the cap on concurrent sandboxed sessions is reached (kind resource-wait: the launch activity retries, an attended open is refused).</summary>
-    public static readonly ErrorDefinition LaunchSessionWait = new("SND-LAUNCH-020", ErrorKind.Unavailable, "No free session slot");
-
-    /// <summary>SND-LAUNCH-021: the host-side prepare of the repo's packages failed (kind step-failure); 'reason' is install-failed, lockfile-missing or timeout.</summary>
-    public static readonly ErrorDefinition LaunchPrepareFailed = new("SND-LAUNCH-021", ErrorKind.Unavailable, "The repo's packages couldn't be prepared for the Step");
 
     /// <summary>SND-AUTH-003: the launch secret doesn't match an open launch, or the run was taken over (API spec §8.1).</summary>
     public static readonly ErrorDefinition AuthLaunchSecret = new("SND-AUTH-003", ErrorKind.Forbidden, "The launch secret doesn't match an open launch");
@@ -212,16 +200,75 @@ public static class SindriErrors
     /// <summary>SND-SESSION-404: no live session has that ref, or it is outside a session caller's repo (collector spec CA-5).</summary>
     public static readonly ErrorDefinition SessionNotFound = new("SND-SESSION-404", ErrorKind.NotFound, "No such live session");
 
+    /// <summary>SND-SESSION-409: the session at that ref is a different process than the caller looked at (collector spec CA-4, CA-5, CA-9).</summary>
+    public static readonly ErrorDefinition SessionConflict = new("SND-SESSION-409", ErrorKind.Conflict, "The session at that ref is a different process");
+
+    /// <summary>SND-WT-001: a worktree request is not valid: the base is not a full 40-hex sha, the repo or path is not absolute, the branch is not usable, or the path is inside another worktree.</summary>
+    public static readonly ErrorDefinition WorktreeInvalid = new("SND-WT-001", ErrorKind.Invalid, "The worktree request is not valid");
+
+    /// <summary>SND-WT-002: the worktree path (or its branch) already exists at a different base or branch; nothing is reset, so the engine parks.</summary>
+    public static readonly ErrorDefinition WorktreeConflict = new("SND-WT-002", ErrorKind.Conflict, "The worktree path or branch is already in use at a different base");
+
+    /// <summary>SND-WT-003: git failed: the command failed, the repo is missing, or the commit is unknown.</summary>
+    public static readonly ErrorDefinition WorktreeGitFailed = new("SND-WT-003", ErrorKind.Unavailable, "git could not create or remove the worktree");
+
+    /// <summary>SND-WT-004: the worktree has uncommitted or untracked files; it is left as it is, never discarded.</summary>
+    public static readonly ErrorDefinition WorktreeDirty = new("SND-WT-004", ErrorKind.Conflict, "The worktree has uncommitted changes");
+
+    /// <summary>SND-SETUP-001: the folder to add is missing, is not a git checkout, is unreadable, is inside the Sindri home, is '/', is the home folder, or contains the Sindri home (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition SetupFolderInvalid = new("SND-SETUP-001", ErrorKind.Invalid, "That folder can't be added as a repo (fix: pick the repo's top folder)");
+
+    /// <summary>SND-SETUP-002: the repo is already in the profile, or its name collides with another repo's.</summary>
+    public static readonly ErrorDefinition SetupRepoExists = new("SND-SETUP-002", ErrorKind.Conflict, "That repo is already in the profile, or its name is taken (fix: pick another folder, or give a different name)");
+
+    /// <summary>SND-SETUP-003: the app's confirmation was not given: a hold that was too short, an answer less than 2 seconds after the challenge, or the wrong kind of answer.</summary>
+    public static readonly ErrorDefinition SetupConfirmationRefused = new("SND-SETUP-003", ErrorKind.Forbidden, "The confirmation was not given (fix: for a held one, hold the button for the full time or type the text; for a typed one, type the text exactly)");
+
+    /// <summary>SND-SETUP-004: RegisterMcp for a repo the approved profile does not name.</summary>
+    public static readonly ErrorDefinition SetupRepoNotInProfile = new("SND-SETUP-004", ErrorKind.Conflict, "The approved profile does not name that repo (fix: add the repo, approve the profile, then try again)");
+
+    /// <summary>SND-SETUP-005: ConnectOnyx without the Onyx admin email and password.</summary>
+    public static readonly ErrorDefinition SetupOnyxCredentialsMissing = new("SND-SETUP-005", ErrorKind.Invalid, "The Onyx admin email and password are both needed (fix: enter both; sign up in Onyx first if you have no account)");
+
+    /// <summary>SND-SETUP-006: ConnectOnyx while no Onyx setup is waiting for the login, or the 30-minute wait ran out.</summary>
+    public static readonly ErrorDefinition SetupOnyxNotWaiting = new("SND-SETUP-006", ErrorKind.Conflict, "No Onyx setup is waiting for the login (fix: press Set up Onyx first)");
+
+    /// <summary>SND-SETUP-007: the approve-all plan, or its challenge, was asked for before a profile is approved (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition SetupProfileNotApproved = new("SND-SETUP-007", ErrorKind.Conflict, "No profile is approved yet (fix: approve the profile first)");
+
+    /// <summary>SND-FORGE-001: a pull-request call while the approved profile names no forge ('workflow.forge.adapter' is absent).</summary>
+    public static readonly ErrorDefinition NoForge = new("SND-FORGE-001", ErrorKind.Conflict, "No forge is configured (fix: set workflow.forge.adapter in the profile and approve it)");
+
+    /// <summary>SND-FORGE-002: the forge port refused the call: a host outside 'workflow.forge.hosts', a missing or rejected credential, input the forge doesn't accept.</summary>
+    public static readonly ErrorDefinition ForgeRefused = new("SND-FORGE-002", ErrorKind.Forbidden, "The forge refused the call");
+
+    /// <summary>SND-FORGE-003: the forge has no such pull request.</summary>
+    public static readonly ErrorDefinition ForgeNotFound = new("SND-FORGE-003", ErrorKind.NotFound, "The forge has no such pull request");
+
+    /// <summary>SND-FORGE-004: the forge can't be reached, is rate limiting, or a push failed.</summary>
+    public static readonly ErrorDefinition ForgeUnavailable = new("SND-FORGE-004", ErrorKind.Unavailable, "The forge is unavailable");
+
+    /// <summary>SND-ENGINE-001: the Temporal server, or the SDK call to it, didn't answer (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineUnavailable = new("SND-ENGINE-001", ErrorKind.Unavailable, "The Temporal server didn't answer (fix: sindri doctor; sindri serve starts the dev server)");
+
+    /// <summary>SND-ENGINE-404: Temporal has no execution for that address, a retention edge (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineNotFound = new("SND-ENGINE-404", ErrorKind.NotFound, "Temporal has no execution for that address");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } =
+    public static IReadOnlyList<ErrorDefinition> All => field ??= Every();
+
+    // A method, not a static initializer: the codes live in several partial files, whose static initializers run in file order.
+    private static ErrorDefinition[] Every() =>
     [
-        LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
+        LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
-        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported,
-        LaunchSandboxUnavailable, LaunchUnconfinable, LaunchSelfCheckFailed, LaunchLoginUnavailable, LaunchGitHubTokenFailed, LaunchLimitHit, LaunchSessionWait, LaunchPrepareFailed,
-        AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound,
+        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchFactFileTracked,
+        LaunchSandboxUnavailable, LaunchUnconfinable, LaunchSelfCheckFailed, LaunchLoginUnavailable, LaunchGitHubTokenFailed, LaunchLimitHit, LaunchSessionWait, LaunchPrepareFailed, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
+        WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
+        NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable, EngineUnavailable, EngineNotFound,
+        ScrubStagedSecrets, ScrubForeignHook, ScrubNotARepo, ScrubGitFailed,
     ];
 }

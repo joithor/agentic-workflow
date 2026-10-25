@@ -29,7 +29,7 @@
     {
       "file": "claude-code/notification-auth.json",
       "schema": "valid",
-      "note": "asking auth"
+      "note": "asking auth: a schema example only, no Claude event writes it today (the hook writes no Notification approval or auth state; rev 2.7)"
     },
     {
       "file": "claude-code/notification-idle.json",

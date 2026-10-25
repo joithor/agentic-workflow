@@ -32,7 +32,7 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
         try
         {
             var done = pending.Request.Mode == LaunchMode.Attach
-                ? await attach.Run(request.Grant, pending, cancellationToken).ConfigureAwait(false)
+                ? await Attach(request.Grant, pending, cancellationToken).ConfigureAwait(false)
                 : await Open(request.Grant, pending, cancellationToken).ConfigureAwait(false);
             return done.IsError ? done.Error : new ProcessLaunchResponse(done.Value);
         }
@@ -41,6 +41,11 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
             work.Release(launch);   // handed out once, never again; if it ended with no outcome (the views weren't ready) the sweep gives it one
         }
     }
+
+    private async ValueTask<Result<bool>> Attach(LeaseGrant grant, PendingLaunch pending, CancellationToken cancellationToken) =>
+        work.TryClaim(pending, timings)   // claimed like a start: the 5 s expiry must not fail a request whose viewer is opening
+            ? await attach.Run(grant, pending, cancellationToken).ConfigureAwait(false)
+            : false;
 
     private async ValueTask<Result<bool>> Open(LeaseGrant grant, PendingLaunch pending, CancellationToken cancellationToken)
     {
@@ -62,11 +67,11 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
         }
 
         return work.TryClaim(pending, timings)
-            ? await Launch(grant, pending, plan.Value, cancellationToken).ConfigureAwait(false)
+            ? await Launch(grant, plan.Value, cancellationToken).ConfigureAwait(false)
             : false;   // too little of the deadline is left, or the sweep already failed it
     }
 
-    private async ValueTask<Result<bool>> Launch(LeaseGrant grant, PendingLaunch pending, LaunchRequest plan, CancellationToken cancellationToken)
+    private async ValueTask<Result<bool>> Launch(LeaseGrant grant, LaunchRequest plan, CancellationToken cancellationToken)
     {
         using var bound = new CancellationTokenSource(timings.LaunchLimit, timings.Clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
@@ -75,15 +80,28 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
         {
             result = await launcher.Launch(plan, linked.Token).AsTask().WaitAsync(linked.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            _ = await launcher.Stop(plan.Launch, CancellationToken.None).ConfigureAwait(false);   // a launch that finishes late must leave no session
-            return await Fail(grant, pending, SindriErrors.LaunchTimedOut.With("the launcher did not answer within its limit (a tab may have opened: run `tmux -L sindri-launch ls`)"), stage: null, CancellationToken.None).ConfigureAwait(false);
+            _ = await launcher.Stop(plan.Launch, CancellationToken.None).ConfigureAwait(false);   // a launch that finishes late, or one a shutdown cut short, must leave no session
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;   // shutting down: the next start's sweep gives the request its outcome
+            }
+
+            return await Fail(grant, plan, new FailedLaunch(SindriErrors.LaunchTimedOut.With("the launcher did not answer within its limit (a tab may have opened: run `tmux -L sindri-launch ls`)"), LaunchStage.Backstop), CancellationToken.None).ConfigureAwait(false);
         }
 
         return result is StartedLaunch started
             ? await Record(grant, plan, started, cancellationToken).ConfigureAwait(false)
-            : await Fail(grant, pending, ((FailedLaunch)result).Error, ((FailedLaunch)result).Stage, cancellationToken).ConfigureAwait(false);
+            : await Fail(grant, plan, (FailedLaunch)result, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The launcher refused or lost the start: the failure says which instance, Step and attempt the plan was for.</summary>
+    private async ValueTask<Result<bool>> Fail(LeaseGrant grant, LaunchRequest plan, FailedLaunch failed, CancellationToken cancellationToken)
+    {
+        work.ProbeSoon();
+        var appended = await outcomes.Failed(grant, plan, failed.Error, failed.Stage, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : false;
     }
 
     private async ValueTask<Result<bool>> Record(LeaseGrant grant, LaunchRequest plan, StartedLaunch started, CancellationToken cancellationToken)
@@ -106,7 +124,8 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
     private async ValueTask<Result<bool>> Fail(LeaseGrant grant, PendingLaunch pending, Error error, LaunchStage? stage, CancellationToken cancellationToken)
     {
         work.ProbeSoon();   // what a launch could not do may be what the box lost: the next tick checks the targets again (E-3)
-        var failed = new LaunchFailed(pending.Request.Launch, pending.Request.Item, error.Code, error.Message, stage, SandboxRefusal.ReasonOf(error), SandboxRefusal.SourceTextOf(error));
+        var failed = new LaunchFailed(pending.Request.Launch, pending.Request.Item, error.Code, error.Message, LaunchFailureDetail.Of(error, stage),
+            Reason: SandboxRefusal.ReasonOf(error), Source: SandboxRefusal.SourceTextOf(error));
         var appended = await outcomes.Failed(grant, failed, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : false;
     }

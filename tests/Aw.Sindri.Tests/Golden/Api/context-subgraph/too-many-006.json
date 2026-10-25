@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CONTEXT-006",
+  "status": 400,
+  "detail": "a subgraph GET takes at most 20 keys, not 21 (fix: send the keys in a QUERY body)",
+  "traceId": "<trace>"
+}

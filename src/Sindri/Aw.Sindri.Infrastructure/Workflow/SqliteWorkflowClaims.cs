@@ -50,6 +50,13 @@ internal sealed class SqliteWorkflowClaims(LedgerDatabase database, TimeProvider
         }, cancellationToken);
     }
 
+    public ValueTask<Result<bool>> Release(ItemKey item, InstanceAddress owner, CancellationToken cancellationToken) =>
+        RecipeSessions.Write(database, async ValueTask<Result<bool>> (session, token) =>
+        {
+            var freed = await RecipeSessions.Execute(session, new SqlStatement(ClaimSql.ReleaseClaim, c => c.Bind("$item", item.Value).Bind("$owner", owner.Value), $"claim on {item.Value}"), token).ConfigureAwait(false);
+            return freed.IsError ? freed.Error : freed.Value > 0;   // only the owner's row goes: a claim another instance took over stays
+        }, cancellationToken);
+
     private static SqlStatement ByItem(ItemKey item) => new(ClaimSql.SelectClaim, c => c.Bind("$item", item.Value));
 
     private SqlStatement Insert(WorkflowClaim claim) => new(ClaimSql.InsertClaim, c => Bound(c, claim), $"claim on {claim.Item.Value}");

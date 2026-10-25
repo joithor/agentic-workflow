@@ -122,7 +122,7 @@ public sealed class QueueFramesTests : IDisposable
         Settle(window);
 
         var page = Named<Control>(window, "QueuePage");
-        var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Classes.Contains("group-head") && t.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
+        var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Classes.Contains("group-head") && t.IsEffectivelyVisible && t.Name != "QueueClosedToggle").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Queued 4"], headers, StringComparer.Ordinal);
         var rows = page.GetVisualDescendants().OfType<Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
         Assert.Equal(4, rows.Count);
@@ -159,6 +159,21 @@ public sealed class QueueFramesTests : IDisposable
         Frame(window, "queue-loading");
     });
 
+    // F3 spec work §1 Q2: the title leads each row; the id is a small grey string beside it, never a column or a header.
+    [Fact]
+    public Task The_queue_leads_with_the_title_and_draws_the_id_beside_it_not_as_a_column() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+
+        var page = Named<Control>(window, "QueuePage");
+        Assert.Contains(page.GetVisualDescendants().OfType<Control>(), c => c.Name == "IdText");
+        var header = page.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "QueueHeader");
+        Assert.Equal(["Title", "Repo", "Status", "Stage", "Age"], header.Children.OfType<TextBlock>().Select(t => t.Text), StringComparer.Ordinal);
+        Assert.Equal(0, Grid.GetColumn(header.Children.OfType<TextBlock>().First()));
+    });
+
     // §3.2: Running and With you (With you first, at most five, then Show all) beside Queued.
     [Fact]
     public Task Homes_queue_panels_cap_their_rows() => OnUi(async () =>
@@ -178,7 +193,15 @@ public sealed class QueueFramesTests : IDisposable
     {
         var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
 
-        Assert.Equal(("Try the queue", "version 1"), (Named<TextBlock>(window, "ItemTitle").Text, Named<TextBlock>(window, "ItemVersion").Text));
+        Assert.Equal("Try the queue", Named<TextBlock>(window, "ItemTitle").Text);
+        Assert.False(Visible(window, "ItemIdText"));   // 456-3: the raw id waits behind Details too, with Copy
+        Assert.False(Visible(window, "ItemVersion"));   // F3: who made it, the version and the run's address wait behind Details
+        shell.Item.DetailsOpen = true;
+        await Until(window, () => Visible(window, "ItemVersion"));
+        Assert.Equal("1", Named<TextBlock>(window, "ItemVersion").Text);
+        Assert.Equal(A.NewItem, Named<TextBlock>(window, "ItemIdText").Text);
+        Assert.True(Visible(window, "ItemCopyId"));
+        Assert.Equal("New for 5m", Named<TextBlock>(window, "ItemStatusLine").Text);
         var actions = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RunButton").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Close item " + A.NewItem, "Close as cancelled " + A.NewItem], actions, StringComparer.Ordinal);
         Assert.True(Visible(window, "LoadMoreButton"));
@@ -303,13 +326,22 @@ public sealed class QueueFramesTests : IDisposable
         _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
 
         var close = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton");
-        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        PressAndConfirm(window, close);
         await Until(window, () => shell.Item.HasProblem);
 
         Assert.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (Named<TextBlock>(window, "ProblemCodeText").Text, Named<TextBlock>(window, "ProblemDetailText").Text));
-        Assert.Equal("Done", Named<TextBlock>(window, "ItemState").Text);
+        Assert.StartsWith("Done", Named<TextBlock>(window, "ItemStatusLine").Text, StringComparison.Ordinal);
         Frame(window, "item-409");
     });
+
+    // Close item asks first (ux-A-3): a press opens Confirm and Keep, and Confirm sends.
+    private static void PressAndConfirm(Window window, Button run)
+    {
+        run.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        var control = run.FindAncestorOfType<Ui.Views.Controls.CommandControl>() ?? throw new InvalidOperationException("the run button is not in a CommandControl");
+        Named<Button>(control, "ConfirmButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    }
 
     private static IInputElement? Focused(Window window) => window.FocusManager?.GetFocusedElement();
 
@@ -326,7 +358,7 @@ public sealed class QueueFramesTests : IDisposable
         var close = FirstRunButton(window);
         Assert.True(close.Focus(NavigationMethod.Tab));
 
-        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        PressAndConfirm(window, close);
         await Until(window, () => shell.Item.HasProblem && shell.Item.Actions.Count == 0);
 
         Assert.Same(Named<Control>(window, "SheetTitle"), Focused(window));
@@ -341,7 +373,7 @@ public sealed class QueueFramesTests : IDisposable
         var close = FirstRunButton(window);
         Assert.True(close.Focus(NavigationMethod.Tab));
 
-        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        PressAndConfirm(window, close);
         _server.Push(A.Event(58, "item.state-changed"));
         await Until(window, () => shell.Item.StateWord == "Done");
 
@@ -385,7 +417,7 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", shell.Create.CreatedId);
     });
 
-    // §4.5 (owner, 2026-10-12): a parked item shows in Waiting on you with a "parked" badge, from its state.
+    // §4.5 (owner, 2026-10-12): a parked item shows in Waiting on you with a "paused" badge, from its state.
     [Fact]
     public Task A_parked_item_shows_its_badge_in_waiting_on_you() => OnUi(async () =>
     {
@@ -396,7 +428,7 @@ public sealed class QueueFramesTests : IDisposable
 
         var badges = Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Name == "BadgeText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["parked"], badges, StringComparer.Ordinal);
+        Assert.Equal(["paused"], badges, StringComparer.Ordinal);
         Frame(window, "queue-parked");
     });
 

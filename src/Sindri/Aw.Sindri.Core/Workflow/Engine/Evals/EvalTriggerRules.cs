@@ -12,7 +12,7 @@ internal static class EvalTriggerRules
     ];
 
     /// <summary>What is wrong with <paramref name="line"/>, with its fix; null when it keeps the rules.</summary>
-    public static string? Unfit(EvalTrigger line) => Kind(line) ?? Park(line) ?? Reason(line) ?? Variant(line) ?? Amount(line);
+    public static string? Unfit(EvalTrigger line) => Kind(line) ?? Park(line) ?? Reason(line) ?? Code(line) ?? Tokens(line) ?? Variant(line) ?? Amount(line);
 
     /// <summary>The answer option a variant gives.</summary>
     public static AnswerVariant Answer(EvalVariant variant) => variant switch
@@ -72,6 +72,22 @@ internal static class EvalTriggerRules
         null => null,
         _ when line.Kind != TriggerNames.StepFailed => "'reason' belongs on a step.failed line only (fix: remove it, or use kind step.failed)",
         { Length: 0 } => "'reason' is empty (fix: say what failed, or leave 'reason' out for the default)",
+        _ => null,
+    };
+
+    private static string? Code(EvalTrigger line) => line.Code switch
+    {
+        null => null,
+        _ when line.Kind != TriggerNames.StepFailed => "'code' belongs on a step.failed line only (fix: remove it, or use kind step.failed)",
+        { Length: 0 } => "'code' is empty (fix: the SND code of the unavailable dependency, or leave 'code' out)",
+        _ => null,
+    };
+
+    private static string? Tokens(EvalTrigger line) => line.Tokens switch
+    {
+        null => null,
+        _ when line.Kind is not (TriggerNames.StepCompleted or TriggerNames.StepFailed) => "'tokens' belongs on a step.completed or step.failed line only (fix: remove it, or use one of those kinds)",
+        < 0 => "'tokens' must be 0 or more (fix: the tokens the run reported)",
         _ => null,
     };
 

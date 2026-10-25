@@ -22,9 +22,9 @@ public sealed class ApproveRecipeStepInputTests
         await using var r = await Started(static s => s.AddBlockDescriptor(FakeStepInput.Descriptor));
         var recipe = await WithInput(r);
 
-        var issue = await r.Issue("approve workflow.step 3");
+        var issue = await r.Issue("approve workflow.step 5");
         var approve = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
-            new ApproveRecipeRequest(recipe.Id, recipe.Hash, new ChallengeAnswer(r.Challenges.Issue(ChallengeAction.Approve(recipe.Id, 3), ChallengeSubject.ForRecipe(recipe.Hash, 3, pinsDigest: null)).Id, "approve workflow.step 3")),
+            new ApproveRecipeRequest(recipe.Id, recipe.Hash, new ChallengeAnswer(r.Challenges.Issue(ChallengeAction.Approve(recipe.Id, 5), ChallengeSubject.ForRecipe(recipe.Hash, 5, pinsDigest: null)).Id, "approve workflow.step 5")),
             RegistryHarness.Human);
 
         foreach (var refused in new[] { issue.Error, approve.Error })
@@ -72,6 +72,6 @@ public sealed class ApproveRecipeStepInputTests
     private static async Task<RegisteredRecipe> WithInput(RegistryHarness r)
     {
         var shipped = RegistryHarness.Parse(await r.Shipped("sindri/workflow.step.yaml"));
-        return await r.Register(ARecipe.WithStepInputs(shipped with { Version = 3 }, FakeStepInput.Id));
+        return await r.Register(ARecipe.WithStepInputs(shipped with { Version = 5 }, FakeStepInput.Id));
     }
 }

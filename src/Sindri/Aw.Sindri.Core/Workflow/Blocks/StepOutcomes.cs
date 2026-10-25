@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>
 /// The one resolver of a Step's outcomes (DT spec §8.1): every read of <see cref="BlockDescriptor.Outcomes"/> for a Step in a recipe goes through it.
-/// The validator, the report validation and the eval read through it. The desk's views (the open tasks and their forms) still read the descriptor and move onto it in DT-V2.
+/// The validator, the report validation, the eval and the desk's views (the open tasks and their forms) read through it.
 /// </summary>
 internal static class StepOutcomes
 {

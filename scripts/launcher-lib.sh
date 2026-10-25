@@ -13,7 +13,7 @@
 #   launcher_load <state_dir>       resolve and validate the file, build the merged catalog; 1 on a refusal
 #   launcher_validate <file>        print the first refusal, return 1; return 0 when the reader accepts the file
 #   launcher_viewer_kind            warp | exec-template | print (warp with no file)
-#   launcher_lane_agent <lane> <meta-lane>   the lane's agent id (the meta lane is always claude-code)
+#   launcher_lane_agent <lane> <meta-lane>   the lane's agent id (the meta lane's is meta.lanes.<meta-lane>, else claude-code: lanesAgent never reaches it)
 #   launcher_agent_ok <id>          0 when the catalog has a usable entry, else prints SND-LAUNCH-003/-011 and returns 1
 #   launcher_agent_field <id> <f>   one catalog field as text (empty for null/absent); arrays and objects as JSON
 #   launcher_expand <json-array> <cwd> <title> <name> <seed> <sessionId> <bin> [<cmd words...>]
@@ -148,7 +148,10 @@ launcher_load() {
 launcher_viewer_kind() { jq -r '.viewer.kind // "warp"' <<< "$LAUNCHER_DOC"; }
 
 launcher_lane_agent() { # lane meta-lane
-  if [ "$1" = "$2" ]; then echo claude-code; return; fi   # the meta's own pane stays Claude Code (spec section 9)
+  # The meta's own pane stays Claude Code unless meta.lanes names it (spec section 9): lanesAgent is the lanes' default, never the
+  # meta's, so a launcher.json written for Codex lanes under a Claude meta is refused by meta-launch.sh (one agent per team), not
+  # silently turned into a Codex meta.
+  if [ "$1" = "$2" ]; then jq -r --arg l "$1" '.meta.lanes[$l] // "claude-code"' <<< "$LAUNCHER_DOC"; return; fi
   jq -r --arg l "$1" '.meta.lanes[$l] // .meta.lanesAgent // "claude-code"' <<< "$LAUNCHER_DOC"
 }
 

@@ -43,17 +43,36 @@ internal sealed partial class ItemSheet : UserControl
     }
 
     // L8: a control that holds the focus is about to go (its action is no longer allowed): focus moves to the sheet's title
-    // first, so it is never left on nothing.
+    // first, so it is never left on nothing. A confirmed control may already hold none (its Confirm row hid while the send was
+    // out and the run button could not take focus back): that goes to the title too.
     private void OnControlsLeaving(object? sender, ControlsLeavingEventArgs leaving)
     {
-        if (TopLevel.GetTopLevel(this) is not Window window || window.FocusManager?.GetFocusedElement() is not Visual focused)
+        if (TopLevel.GetTopLevel(this) is not Window window)
         {
+            return;
+        }
+
+        if (window.FocusManager?.GetFocusedElement() is not Visual { IsEffectivelyVisible: true } focused)
+        {
+            _ = window.FindControl<Control>("SheetTitle")?.Focus(NavigationMethod.Tab);
             return;
         }
 
         if (focused.FindAncestorOfType<CommandControl>(includeSelf: true)?.DataContext is ControlViewModel owner && leaving.Controls.Contains(owner))
         {
             _ = window.FindControl<Control>("SheetTitle")?.Focus(NavigationMethod.Tab);
+        }
+    }
+
+    // The decision is answered in Needs you (F3 spec work §1 Q8): the link goes to that page.
+    private void OnOpenNeedsYou(object? sender, RoutedEventArgs e) =>
+        (TopLevel.GetTopLevel(this)?.DataContext as ViewModels.Shell.ShellViewModel)?.Navigate(Navigation.DeepLink.HomeNeedsYou);
+
+    private void OnCopyId(object? sender, RoutedEventArgs e)
+    {
+        if (_sheet is { } sheet)
+        {
+            _ = sheet.CopyId();
         }
     }
 

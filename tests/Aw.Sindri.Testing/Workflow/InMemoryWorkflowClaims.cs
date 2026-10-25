@@ -16,6 +16,16 @@ public sealed class InMemoryWorkflowClaims : IWorkflowClaims
         ValueTask.FromResult<Result<WorkflowClaim?>>(_claims.GetValueOrDefault(item));
 
     /// <inheritdoc/>
+    public ValueTask<Result<bool>> Release(ItemKey item, InstanceAddress owner, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            var held = _claims.TryGetValue(item, out var holder) && holder.Owner == owner;
+            return ValueTask.FromResult<Result<bool>>(held && _claims.TryRemove(item, out _));
+        }
+    }
+
+    /// <inheritdoc/>
     public ValueTask<Result<WorkflowClaim>> Take(WorkflowClaim claim, InstanceAddress? ended, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(claim);

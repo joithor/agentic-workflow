@@ -15,4 +15,10 @@ internal sealed record WorkflowsHome(string Home)
 
     /// <summary>The event bridge's cursor: the last ledger sequence it delivered (engine P4 unit (d)).</summary>
     public string EventsCursorFile => Path.Combine(Home, "workflow", "events.cursor");
+
+    /// <summary>The router stub's cursor: the last ledger sequence it handled (engine P7 plan D8).</summary>
+    public string RouterCursorFile => Path.Combine(Home, "workflow", "router.cursor");
+
+    /// <summary>The PR watcher's last digests and back-offs ('pr-watch.json', PR babysitter spec §6.2).</summary>
+    public string PrWatchFile => Path.Combine(Home, "workflow", "pr-watch.json");
 }

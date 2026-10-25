@@ -25,6 +25,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Instances;
 /// <param name="Facts">The facts, as stored references.</param>
 /// <param name="Outcome">The terminal outcome, once the instance ended (a recipe terminal's, or 'cancelled').</param>
 /// <param name="LaterParks">The parks queued behind <see cref="PendingPark"/>, in order; null when there are none (the queue is PendingPark then these).</param>
+/// <param name="Visited">The states the instance has entered, in first-entry order, the active one included; null on an instance that recorded none (one begun before this field), whose state band falls back to path order.</param>
 public sealed record WorkflowInstance(
     WorkflowInstanceId Id,
     InstanceAddress Address,
@@ -41,7 +42,8 @@ public sealed record WorkflowInstance(
     TokenSpend Spent,
     IReadOnlyDictionary<FactKey, FactValue> Facts,
     OutcomeName? Outcome,
-    IReadOnlyList<Suspension>? LaterParks = null)
+    IReadOnlyList<Suspension>? LaterParks = null,
+    IReadOnlyList<string>? Visited = null)
 {
     /// <summary>The state status shows: the suspension's engine-owned state, else the frame's.</summary>
     [JsonIgnore]

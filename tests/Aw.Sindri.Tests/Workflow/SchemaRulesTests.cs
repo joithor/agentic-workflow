@@ -13,7 +13,7 @@ public sealed class SchemaRulesTests
     {
         {
             "RCP-SCHEMA-001",
-            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome"
+            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome, why, displayName, onOutcome"
         },
         {
             "RCP-SCHEMA-002",
@@ -41,7 +41,7 @@ public sealed class SchemaRulesTests
         },
         {
             "RCP-HASH-001",
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it"
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is 03150aee83c3 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:03150aee83c31f5bf016922aabae8ebcc1dbc41a43c36387af0fdbf1d98757c9, or remove it"
         },
     };
 
@@ -159,7 +159,7 @@ public sealed class SchemaRulesTests
 
         Assert.Equal(
             ["RCP-OUTCOME-001: terminal state 'done' ends with outcome 'cancelled', which isn't a recipe outcome at test.yaml:13:5 (states.done.outcome); use resolved, unresolved, alreadySatisfied or failed"],
-            RecipeValidator.Validate(document, context).Select(f => f.ToLine()),
+            RecipeValidator.Validate(document, context).Where(f => f.Rule != "RCP-DISPLAY-001").Select(f => f.ToLine()),   // the name is DisplayRulesTests' concern
             StringComparer.Ordinal);
     }
 

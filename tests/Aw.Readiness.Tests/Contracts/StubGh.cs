@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Kernel.Testing;
 using Aw.Readiness.Testing;
 
 namespace Aw.Readiness.Tests.Contracts;
@@ -26,7 +27,6 @@ internal static class StubGh
         var rules = Rules(scenario);
         string[] script =
         [
-            "#!/bin/sh",
             "case \"$*\" in",
             "  \"repo view --json nameWithOwner,defaultBranchRef\") echo '{\"defaultBranchRef\":{\"name\":\"main\"},\"nameWithOwner\":\"owner/repo\"}' ;;",
             "  \"api repos/owner/repo/branches/main/protection\") " + protection + " ;;",
@@ -38,12 +38,7 @@ internal static class StubGh
             "esac",
         ];
         var path = Path.Combine(directory, "gh");
-        File.WriteAllText(path, string.Join('\n', script) + "\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-        return path;
+        return ExecutableScript.Write(path, string.Join('\n', script) + "\n");
     }
 
     private static string Protection(HostScenario scenario) => scenario switch

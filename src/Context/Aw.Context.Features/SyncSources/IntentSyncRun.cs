@@ -131,7 +131,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
     /// <summary>Searches one node, then fetches, commits and extracts its new hits one record at a time; a code when the run must stop.</summary>
     private async ValueTask<string?> Node(IReadOnlyList<string> terms, int index, ((int Version, Dictionary<string, string> Stored, Dictionary<string, IntentRecord> Known) Seen, HashSet<string> Fetched) walk, CancellationToken ct)
     {
-        var hits = await Within(t => source.Search(new SourceQuery(terms, AsOf: null, Limit: 50, context.Settings.Deadline), t), ct).ConfigureAwait(false);
+        var hits = await Within(t => source.Search(new SourceQuery(terms, AsOf: null, Limit: SourceQuery.DefaultLimit, context.Settings.Deadline), t), ct).ConfigureAwait(false);
         if (hits.IsError)
         {
             return hits.Error.Code;
@@ -208,7 +208,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
     {
         var title = context.Scrubbers.Ingest.Clean(fetched.Title, singleLine: true);
         var aliases = hit.Aliases.Select(a => context.Scrubbers.Ingest.Clean(a, singleLine: true)).Where(a => !a.Blocked).Select(a => a.Text).ToList();
-        return new IntentRecord(hit.Ref.Canonical, _id, hit.Ref.Version.Value, title.Blocked ? "(withheld by the scrubber)" : title.Text, aliases);
+        return new IntentRecord(hit.Ref.Canonical, _id, hit.Ref.Version.Value, title.Blocked ? "(withheld by the scrubber)" : title.Text, aliases) { CreatedAt = fetched.CreatedAt };
     }
 
     private string Text(SourceRecord fetched) => fetched.Blocked ? string.Empty : context.Scrubbers.Ingest.Clean(fetched.Text, singleLine: false) is { Blocked: false } clean ? clean.Text : string.Empty;

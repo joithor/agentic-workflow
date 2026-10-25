@@ -36,7 +36,7 @@ public sealed class ExtractDecisionsTests
     internal static ContextScope Scope(bool labeling = true, int? perSync = null)
     {
         var cap = perSync is { } n ? ",\"maxTokensPerSync\":" + n.ToString(CultureInfo.InvariantCulture) : string.Empty;
-        var section = labeling ? ",\"labeling\":{\"enabled\":true" + cap + "}" : string.Empty;
+        var section = labeling ? ",\"labeling\":{\"enabled\":true" + cap + "}" : ",\"labeling\":{\"enabled\":false}";
         return MapWorld.HumanWith("{\"sources\":{\"linear\":{\"teams\":[\"SPL\"]}}" + section + "}");
     }
 
@@ -55,7 +55,7 @@ public sealed class ExtractDecisionsTests
         ModelPurpose.DecisionExtraction when request.Prompt.Contains(R105, StringComparison.Ordinal) =>
             "{\"decisions\":[" + Decisions(QOld, Resize, "Ten columns.") + "," + Decisions(QNew, Resize, "Twenty columns.", QOld) + "]}",
         ModelPurpose.Adjudication => "{\"verdict\":\"" + verdict + "\"}",
-        ModelPurpose.DecisionExtraction or ModelPurpose.Labeling or ModelPurpose.Rerank => "{\"decisions\":[]}",
+        ModelPurpose.DecisionExtraction or ModelPurpose.Labeling or ModelPurpose.Rerank or ModelPurpose.Cleanup or ModelPurpose.Concepts => "{\"decisions\":[]}",
         _ => "{\"decisions\":[]}",
     };
 

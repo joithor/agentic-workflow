@@ -24,6 +24,12 @@ public interface ISessionHost
     /// <returns>Success, or an error when the host could not be asked.</returns>
     public ValueTask<Result<Unit>> Stop(HostRef host, CancellationToken cancellationToken);
 
+    /// <summary>Whether a session of this name exists now (a relaunch of a live launch answers it instead of starting a second).</summary>
+    /// <param name="host">The session.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>True when it exists; false when it is gone, or the host could not be asked.</returns>
+    public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken);
+
     /// <summary>The number of clients attached to the session now.</summary>
     /// <param name="host">The session.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

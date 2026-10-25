@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fixtures;
@@ -18,7 +19,7 @@ public sealed class SourcesStatusTests
         var row = view.Value.Sources[0];
         Assert.Equal(("repo-docs", "split-panes", SourceState.Degraded), (row.Source.Value, row.Repo?.Value, row.State));
         Assert.Contains("context-docs-refresh", row.Detail, StringComparison.Ordinal);
-        Assert.False(view.Value.SessionsEnabled);
+        Assert.True(view.Value.SessionsEnabled);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -72,6 +73,41 @@ public sealed class SourcesStatusTests
         var session = await engine.Sources(Engines.Session("split-panes"), CancellationToken.None);
 
         Assert.Equal((SourceState.Unavailable, "SND-CONTEXT-010"), (view.Value.Sources[^1].State, view.Value.Sources[^1].Code));
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
+        Assert.True(session.IsSuccess);
+    }
+
+    // Health is not content: doctor already shows a session the onyx row and points it at `sources status` as the fix, so the status lists it too.
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_sees_the_onyx_row_with_its_probe()
+    {
+        var (session, _) = await OnyxRows();
+
+        Assert.Equal((SourceState.Unavailable, "SND-CONTEXT-010"), (session.State, session.Code));
+    }
+
+    // A session searches the intent sources like a human (owner q93, 2026-10-23), so its row carries the sync counts too.
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_sessions_onyx_row_says_nothing_of_a_refusal_and_carries_the_sync_counts()
+    {
+        var (session, human) = await OnyxRows();
+
+        Assert.DoesNotContain("sessions don't search it", session.Detail, StringComparison.Ordinal);
+        Assert.NotNull(session.Sync);
+        Assert.NotNull(human.Sync);
+    }
+
+    private static async Task<(SourceStatusRow Session, SourceStatusRow Human)> OnyxRows()
+    {
+        const string on = """{"sessions":{"enabled":true}}""";
+        var onyx = new FakeContextSource(new SourceDescriptor(SourceId.From("onyx"), SourceKind.Intent, SourceFreshness.Live, SupportsAsOf: false), [])
+        {
+            Failure = ContextErrors.SourceUnavailable.With("down"),
+        };
+        var engine = Engines.Over(new FixedSourceCatalog(onyx));
+
+        var session = await engine.Sources(Engines.Session("split-panes", on), CancellationToken.None);
+        var human = await engine.Sources(Engines.Human(on), CancellationToken.None);
+
+        return (Assert.Single(session.Value.Sources, static r => r.Source.Value == "onyx"), Assert.Single(human.Value.Sources, static r => r.Source.Value == "onyx"));
     }
 }

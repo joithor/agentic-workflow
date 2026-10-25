@@ -17,6 +17,8 @@ namespace Aw.Sindri.Core.Launch;
 /// <param name="Worktree">The engine-computed worktree '&lt;repo&gt;/.claude/worktrees/sindri-&lt;instance&gt;-&lt;run&gt;' (created by the launcher when missing), or null.</param>
 /// <param name="Step">The Step's arguments; non-null only when <paramref name="Attended"/> is false.</param>
 /// <param name="Run">The Step run's token, or null.</param>
+/// <param name="Resume">For a Resume: the session id to resume (the item's newest resumable launch), else null.</param>
+/// <param name="Evaluator">Non-null for the holdout evaluator (LN-LCH2): the launcher runs it in its own scratch checkout instead of <paramref name="Worktree"/>.</param>
 public sealed record LaunchRequest(
     LaunchId Launch,
     ItemId Item,
@@ -27,4 +29,6 @@ public sealed record LaunchRequest(
     InstanceAddress? Instance,
     string? Worktree,
     StepArgs? Step,
-    RunToken? Run);
+    RunToken? Run,
+    SessionId? Resume = null,
+    EvaluatorLaunch? Evaluator = null);

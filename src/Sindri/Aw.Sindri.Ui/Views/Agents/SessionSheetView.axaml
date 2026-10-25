@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ag="using:Aw.Sindri.Ui.ViewModels.Agents"
+             x:Class="Aw.Sindri.Ui.Views.Agents.SessionSheetView"
+             x:DataType="ag:SessionSheetViewModel">
+  <!-- The session sheet (collector spec CU-3), read-only, inside the shell's sheet: the heading and state, the Open the run action, then a closed Details disclosure
+       with the fields, where it runs, the history (oldest first) and the pending Watch the agent with its CLI and Copy. A session that has ended says so and the sheet stays open. Every named
+       line is a Border the screen reader reads as one text; the TextBlocks inside are Raw (a TextBlock's peer reads its Text and ignores a Name). -->
+  <StackPanel x:Name="SessionSheet" Spacing="{StaticResource Space.MD}">
+    <TextBlock x:Name="SessionLoading" Classes="body muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" AutomationProperties.Name="{Binding LoadingText}" />
+    <TextBlock x:Name="SessionProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding IsProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
+    <Border x:Name="SessionEnded" IsVisible="{Binding IsEnded}" ToolTip.Tip="{Binding EndedDetail}"
+            AutomationProperties.Name="{Binding EndedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body-strong" Text="{Binding EndedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+    <Border x:Name="SessionEndedResume" IsVisible="{Binding EndedResumeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            AutomationProperties.Name="{Binding EndedResumeText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body muted" Text="{Binding EndedResumeText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+    <Border x:Name="SessionNote" IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            AutomationProperties.Name="{Binding Note}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body muted" Text="{Binding Note}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+
+    <StackPanel x:Name="SessionBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
+      <StackPanel Spacing="4">
+        <Border x:Name="SessionHeading" AutomationProperties.Name="{Binding Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body-strong" Text="{Binding Heading}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SessionState" AutomationProperties.Name="{Binding StateLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body mono" Text="{Binding StateLine}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SessionInStatus" IsVisible="{Binding InStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding InStatusText}"
+                AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption subtle" Text="{Binding InStatusText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Button x:Name="SessionRefCopy" Classes="copy" Click="OnCopyRef" HorizontalAlignment="Left" IsVisible="{Binding RefCopy, Converter={x:Static ObjectConverters.IsNotNull}}"
+                AutomationProperties.Name="{Binding RefCopy.Announcement}">
+          <TextBlock Classes="caption mono" Text="{Binding RefCopy.Label}" AutomationProperties.AccessibilityView="Raw" />
+        </Button>
+      </StackPanel>
+
+      <Border x:Name="SessionAskingCallout" Classes="callout attn" IsVisible="{Binding IsAsking}" AutomationProperties.Name="{Binding CalloutText}"
+              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="body" Text="{Binding CalloutText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+
+      <Button x:Name="SessionOpenStep" Content="{Binding OpenFrameLabel}" Click="OnOpenFrame" IsVisible="{Binding HasStep}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding OpenFrameName}" />
+
+      <!-- The technical detail (F3): closed by default. The fields, the host, the history and Watch the agent are for the person who needs them. -->
+      <Expander x:Name="SessionDetails" Header="{Binding DetailsLabel}" IsExpanded="False" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding DetailsLabel}">
+        <StackPanel Spacing="{StaticResource Space.MD}">
+          <!-- The fields in captioned groups (agents spec §2): a caps caption, then rows with the label in a 150 px column. -->
+          <ItemsControl x:Name="SessionFields" ItemsSource="{Binding Sections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="ag:SessionSectionViewModel">
+                <StackPanel Spacing="4" Margin="0,0,0,8">
+                  <TextBlock Classes="eyebrow" Text="{Binding Heading}" AutomationProperties.AccessibilityView="Raw" />
+                  <ItemsControl ItemsSource="{Binding Fields}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="ag:SessionFieldViewModel">
+                        <Border Name="SessionField" Margin="0,0,0,6" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                          <Grid ColumnDefinitions="150,*" AutomationProperties.AccessibilityView="Raw">
+                            <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Grid.Column="1" Classes="body mono" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock x:Name="SessionHostHeading" Classes="eyebrow" Text="{Binding HostHeading}" IsVisible="{Binding HostFields.Count}" AutomationProperties.AccessibilityView="Raw" />
+
+          <ItemsControl x:Name="SessionHostFields" ItemsSource="{Binding HostFields}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="ag:SessionFieldViewModel">
+                <Border Name="SessionHostField" Margin="0,0,0,6" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <Grid ColumnDefinitions="150,*" AutomationProperties.AccessibilityView="Raw">
+                    <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Grid.Column="1" Classes="body mono" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <StackPanel x:Name="SessionHistory" Spacing="6" IsVisible="{Binding HasHistory}">
+            <TextBlock Classes="eyebrow" Text="{Binding HistoryHeading}" AutomationProperties.AccessibilityView="Raw" />
+            <ItemsControl x:Name="SessionHistoryList" ItemsSource="{Binding History}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ag:StateHistoryEntryViewModel">
+                  <Border Name="SessionHistoryEntry" Margin="0,0,0,4" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                      <TextBlock Classes="body-strong" Text="{Binding Chip.Text}" AutomationProperties.AccessibilityView="Raw" />
+                      <TextBlock Classes="caption mono subtle" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Focus is the catalog's pending control (the send is U11a-f): a disabled button, then the phase and the CLI on a line with Copy. -->
+          <StackPanel x:Name="SessionFocusRow" Spacing="6" IsVisible="{Binding HasFocusLine}">
+            <Button x:Name="SessionFocus" Content="{Binding FocusLabel}" IsEnabled="{Binding IsFocusEnabled}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding FocusName}" />
+            <Border x:Name="SessionFocusLine" AutomationProperties.Name="{Binding FocusLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+              <TextBlock Classes="caption mono" Text="{Binding FocusLine}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+            </Border>
+            <Button x:Name="SessionFocusCopy" Content="{Binding CopyLabel}" Click="OnCopyFocus" HorizontalAlignment="Left" AutomationProperties.Name="{Binding CopyName}" />
+          </StackPanel>
+        </StackPanel>
+      </Expander>
+    </StackPanel>
+
+    <!-- CO-7c, CU-8: the host for the live preview's disclosure button and panel. Hidden and empty until CO-7c; the preview lives in this sheet only. -->
+    <ContentControl x:Name="LivePreviewHost" IsVisible="False" Content="{Binding Preview}" />
+  </StackPanel>
+</UserControl>

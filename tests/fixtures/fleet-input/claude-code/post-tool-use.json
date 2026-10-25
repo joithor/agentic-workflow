@@ -1,0 +1,25 @@
+{
+  "session_id": "3970893f-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+  "transcript_path": "/home/dev/.claude/projects/-home-dev-repo/3970893f-1c2d-4e5f-8a9b-0c1d2e3f4a5b.jsonl",
+  "cwd": "/home/dev/repo",
+  "prompt_id": "c542ce4c-1a32-4503-99a1-6501f37c096b",
+  "permission_mode": "default",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls",
+    "description": "List files"
+  },
+  "tool_response": {
+    "stdout": "README.md",
+    "stderr": "",
+    "interrupted": false,
+    "isImage": false,
+    "noOutputExpected": true
+  },
+  "tool_use_id": "toolu_01DRNBmv4V9AqBApKvuz315B",
+  "duration_ms": 45
+}

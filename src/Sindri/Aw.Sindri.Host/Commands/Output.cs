@@ -9,7 +9,14 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>Where a command writes: text or JSON on stdout, errors as 'CODE message' on stderr. No colour, so state is always a word.</summary>
 internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerializerOptions options)
 {
+    /// <summary>The shell's exit code for a command ended by SIGINT.</summary>
+    internal const int InterruptedExit = 130;
+
     public TextWriter Out { get; } = stdout;
+
+    /// <summary>The same output with standard output bound to standard error: text a --json run may print without breaking its one document.</summary>
+    /// <returns>An output whose text and prompts go to standard error.</returns>
+    public Output OnStandardError() => new(stderr, stderr, options);
 
     /// <summary>Reads a UTF-8 JSON document the way the API's bodies are read (camelCase names, strict).</summary>
     /// <param name="utf8Json">The document.</param>
@@ -41,7 +48,7 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
 
     /// <summary>
     /// Prints the error; exit 1 for 'not running' (attention), 2 for everything else. 'Not running' gets the fix
-    /// 'sindri' unless it names one already, or asks for the human (an agent session never starts it).
+    /// 'sindri' unless it names one already.
     /// </summary>
     public async Task<int> Error(Error error)
     {

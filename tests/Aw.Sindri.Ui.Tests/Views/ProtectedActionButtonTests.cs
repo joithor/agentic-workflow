@@ -88,7 +88,7 @@ public sealed class ProtectedActionButtonTests
         Assert.Equal("Copy", copy);
         Assert.Equal($"Copy: {Cli}", copyName);
         Assert.True(agent);
-        Assert.Equal($"Open in an agent: {Subject}, available with API P10a", agentName);
+        Assert.Equal($"Open in an agent: {Subject}, not available in the app yet", agentName);
         Assert.True(pending);
     }
 

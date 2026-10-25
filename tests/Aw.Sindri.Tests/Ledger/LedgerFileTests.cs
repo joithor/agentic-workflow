@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel.Data;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Infrastructure;
@@ -31,10 +32,10 @@ public sealed class LedgerFileTests : IDisposable
         }
 
         // S1-D9 (engine spec §7.2): S1's two files, then the outbox at 3, then Sindri's own files from 4 up.
-        Assert.Equal(["1 events", "2 lease", "3 outbox_commands", "4 recipes", "5 temporal_event_id", "6 workflow_claims"],
+        Assert.Equal(["1 events", "2 lease", "3 outbox_commands", "4 recipes", "5 temporal_event_id", "6 workflow_claims", "7 pr_comment_marks"],
             LedgerDatabase.Migrations.Select(m => string.Create(CultureInfo.InvariantCulture, $"{m.Version} {m.Name}")), StringComparer.Ordinal);
         Assert.Equal(SqliteOutboxSchema.CreateMigration(3).Checksum, LedgerDatabase.Migrations[2].Checksum);
-        Assert.Equal(["events", "lease", "outbox_commands", "recipe_approvals", "recipes", "workflow_claims"], Tables(path));
+        Assert.Equal(["events", "lease", "outbox_commands", "pr_comment_marks", "recipe_approvals", "recipes", "workflow_claims"], Tables(path));
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -101,6 +102,31 @@ public sealed class LedgerFileTests : IDisposable
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(home));
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Path.Combine(home, "ledger.db")));
         Assert.True((await stores.Ledger.Schema(TestContext.Current.CancellationToken)).Value.IsCurrent);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_instance_scan_walks_the_idempotency_key_index_not_the_event_log()
+    {
+        var path = Path.Combine(_home.Path, "plan.db");
+        var runner = new MigrationRunner(new SqliteConnectionFactory(new SqliteOptions(path)), new FakeTimeProvider(), backupBeforeUpgrade: false);
+        Assert.True((await runner.Migrate(LedgerDatabase.Migrations, TestContext.Current.CancellationToken)).IsSuccess);
+        var statement = LedgerSql.ScanAfter(0, 500, new LedgerFilter(Types: null, Item: null, Instance: InstanceAddress.From("T-1/step/1")));
+
+        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "EXPLAIN QUERY PLAN " + statement.Sql;
+        statement.Bind?.Invoke(command);
+        using var reader = command.ExecuteReader();
+        var plan = new List<string>();
+        while (reader.Read())
+        {
+            plan.Add(reader.GetString(3));
+        }
+
+        Assert.True(
+            plan.Exists(static step => step.StartsWith("SEARCH events USING INDEX sqlite_autoindex_events", StringComparison.Ordinal) && step.Contains("idempotency_key", StringComparison.Ordinal)),
+            string.Join("; ", plan));
     }
 
     private static void Execute(string path, string sql)

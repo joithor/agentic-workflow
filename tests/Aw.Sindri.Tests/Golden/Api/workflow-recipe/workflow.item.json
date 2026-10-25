@@ -1,7 +1,7 @@
 {
   "id": "workflow.item",
-  "hash": "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45",
-  "version": 2,
+  "hash": "sha256:fbd360859893f44e3d8c2bd83de7ee8edd760fb66f5541c99f5edb0e89406176",
+  "version": 3,
   "name": null,
   "inputs": [
     {
@@ -48,5 +48,6 @@
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [],
+  "displayName": "Item"
 }

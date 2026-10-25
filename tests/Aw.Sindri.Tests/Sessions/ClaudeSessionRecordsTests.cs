@@ -111,4 +111,27 @@ public sealed class ClaudeSessionRecordsTests
             Directory.Delete(directory, recursive: true);
         }
     }
+
+    [Fact, Trait("Lane", "integration")]
+    [UnsupportedOSPlatform("windows")]
+    public void An_unreadable_directory_is_a_failed_source_SND_SESSION_001_not_an_empty_list()
+    {
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "root reads a mode-0 directory");
+        var directory = Directory.CreateTempSubdirectory("aw-records-denied").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "5.json"), """{ "pid": 5, "sessionId": "s5", "procStart": "50", "kind": "interactive" }""");
+            File.SetUnixFileMode(directory, UnixFileMode.None);
+
+            var result = new ClaudeSessionRecords(directory).Read(TestContext.Current.CancellationToken);
+
+            Assert.True(result.IsError);
+            Assert.Equal("SND-SESSION-001", result.Error.Code);
+        }
+        finally
+        {
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            Directory.Delete(directory, recursive: true);
+        }
+    }
 }

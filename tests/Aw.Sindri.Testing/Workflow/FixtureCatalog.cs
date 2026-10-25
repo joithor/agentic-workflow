@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks;
+using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Testing.Workflow;
@@ -9,13 +10,25 @@ public static class FixtureCatalog
 {
     /// <summary>The blocks and events this build ships (BlockRegistrations.AddRecipeBlocks).</summary>
     /// <returns>The catalog.</returns>
-    public static BlockCatalog Shipped() => From(new ServiceCollection().AddRecipeBlocks());
+    public static BlockCatalog Shipped() => From(ShippedServices());
+
+    /// <summary>The recipe blocks plus the context Step inputs, whose runtimes the Features composition registers (S-LB2).</summary>
+    private static ServiceCollection ShippedServices()
+    {
+        var services = new ServiceCollection();
+        _ = services.AddRecipeBlocks()
+            .AddBlockDescriptor(ContextLensesInput.Descriptor)
+            .AddBlockDescriptor(ContextHistoryInput.Descriptor)
+            .AddBlockDescriptor(ContextCodeInput.Descriptor)
+            .AddBlockDescriptor(ContextRetrieveInput.Descriptor);
+        return services;
+    }
 
     /// <summary>The shipped catalog plus <see cref="FixtureBlocks"/>, for the validate-only fixtures under Recipes/valid.</summary>
     /// <returns>The catalog.</returns>
     public static BlockCatalog WithFixtures()
     {
-        var services = new ServiceCollection().AddRecipeBlocks();
+        var services = ShippedServices();
         foreach (var block in FixtureBlocks.Bugfix.Concat(FixtureBlocks.Direction))
         {
             _ = services.AddBlockDescriptor(block);

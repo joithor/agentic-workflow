@@ -1,0 +1,527 @@
+using System.Text.Json;
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Map;
+using Aw.Kernel;
+using Aw.Kernel.Ids;
+using Aw.Kernel.Services;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Testing;
+using Microsoft.Extensions.Logging;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+/// <summary>The 'context-map-refresh' service (owner F1): it starts a refresh when a mapped repo's trunk moved, over the jobs view in memory.</summary>
+public sealed class ContextMapRefreshServiceTests
+{
+    private static readonly DateTimeOffset _now = new(2026, 10, 19, 12, 0, 0, TimeSpan.Zero);
+    private static readonly JobKind _kind = JobKind.From("RefreshContextMap");
+    private static readonly JsonSerializerOptions _web = new(JsonSerializerDefaults.Web);
+    private readonly SliceHarness _h = new();
+    private readonly InMemoryJobViews _jobs = new();
+    private readonly Starter _start;
+    private readonly PublishStarter _publish;
+    private readonly ScriptedOutlooks _outlooks = new();
+    private readonly HeadsEngineProxy _engine = HeadsEngineProxy.Create();
+    private Core.Lease.LeaseGrant? _grant;
+    private int _next;
+
+    public ContextMapRefreshServiceTests()
+    {
+        _start = new Starter(_h);
+        _publish = new PublishStarter(_h);
+    }
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    private static RepoHead Head(string repo, string sha, bool onDefault = true) => new(ContextRepoName.From(repo), sha, onDefault);
+
+    private async Task<ContextMapRefreshService> Service(bool context = true)
+    {
+        _h.Clock.SetUtcNow(_now);
+        var loaded = SliceHarness.Profile("5s");
+        loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse("""{"docs":{"globs":["docs/**/*.md"]}}""").RootElement.Clone() : null } };
+        _ = await _h.Profiles.Save(loaded, Ct);
+        return new ContextMapRefreshService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _jobs, _outlooks, new MapJobStarts(_start, _publish), _h.Clock, new CapturingLogger());
+    }
+
+    private void Job(JobState state, TimeSpan endedAgo, params (string Repo, string Sha)[] heads)
+    {
+        _next++;
+        if (state == JobState.Succeeded && heads.Length > 0)
+        {
+            // the move check reads the map's stored heads, not job results: a succeeded refresh stands for the current version built at them
+            _engine.State = new MapPublishState(Hold: null, LatestDraft: null, Current: 1, [.. heads.Select(static h => new MapHead(ContextRepoName.From(h.Repo), h.Sha, OnDefault: true))]);
+        }
+
+        var result = state == JobState.Succeeded
+            ? JsonSerializer.SerializeToElement(new RefreshContextMapResult("r", 1, heads.ToDictionary(static h => h.Repo, static h => h.Sha, StringComparer.Ordinal), 0, 0, 0, "none", Held: false), _web)
+            : (JsonElement?)null;
+        _jobs.Put(new JobRow(JobId.New(_h.Ids), _kind, JobKey.From("refresh"), Item: null, Repo: null, Service: null, state,
+            "service:context-map-refresh", _now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : _now - endedAgo, [], Rounds: 0, Summary: null,
+            state == JobState.Failed ? "SND-CONTEXT-030" : null, result, CancelledBy: null, Sequence: _next));
+    }
+
+    private void PublishJob(JobState state, TimeSpan endedAgo, string? code = null, string? summary = null)
+    {
+        _next++;
+        _jobs.Put(new JobRow(JobId.New(_h.Ids), JobKind.From("PublishContextMap"), JobKey.From("map-publish:r"), Item: null, Repo: null, Service: null, state,
+            "service:context-map-refresh", _now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : _now - endedAgo, [], Rounds: 0, summary,
+            code ?? (state == JobState.Failed ? "SND-CONTEXT-046" : null), Result: null, CancelledBy: null, Sequence: _next));
+    }
+
+    private void Held(int version, TimeSpan since, int? latestDraft = null, int? current = 1, params (string Repo, string Sha)[] heads)
+    {
+        var mapped = heads.Length == 0 ? [("a", "1")] : heads;
+        _engine.State = new MapPublishState(new MapHold(version, _now - since, [.. mapped.Select(static h => new MapHead(ContextRepoName.From(h.Repo), h.Sha, OnDefault: true))]), latestDraft ?? version, current, CurrentHeads: []);
+    }
+
+    private async Task<Result<ScheduledResult>> Run(ContextMapRefreshService service)
+    {
+        _grant ??= await _h.HoldLease();
+        using var caller = _h.Callers.EnterService("context-map-refresh");
+        return await service.Run(new ScheduledRun(_grant, _now), Ct);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Moved_heads_start_one_refresh_as_the_service()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromHours(1), ("a", "1"));
+        _engine.Heads = [Head("a", "2")];
+
+        var result = await Run(await Service());
+
+        Assert.False(result.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+        Assert.Equal("service:context-map-refresh", _start.Actors.Single());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_first_ever_run_starts()
+    {
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.False(result.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_same_heads_as_the_last_success_are_quiet_with_no_start()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromHours(1), ("a", "1"), ("b", "2"));
+        _engine.Heads = [Head("b", "2"), Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_feature_branch_head_is_left_out_and_named_in_the_summary()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromHours(1), ("a", "1"));
+        _engine.Heads = [Head("a", "1"), Head("b", "9", onDefault: false)];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Contains("b", result.Value.Summary, StringComparison.Ordinal);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_moved_repo_starts_while_another_sits_on_a_feature_branch_and_the_summary_names_it()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromHours(1), ("a", "1"));
+        _engine.Heads = [Head("a", "2"), Head("b", "9", onDefault: false)];
+
+        var result = await Run(await Service());
+
+        Assert.False(result.Value.Idle);
+        Assert.Contains("b", result.Value.Summary, StringComparison.Ordinal);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_running_refresh_is_never_doubled()
+    {
+        Job(JobState.Running, TimeSpan.Zero);
+        _engine.Heads = [Head("a", "2")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_refresh_backs_off_and_starts_again_when_the_wait_is_over()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(3));   // the first wait is 5 minutes
+        _engine.Heads = [Head("a", "1")];
+        var service = await Service();
+        var waiting = await Run(service);
+        _h.Clock.Advance(TimeSpan.FromMinutes(3));
+        var elapsed = await Run(service);
+
+        Assert.True(waiting.Value.Idle);
+        Assert.False(elapsed.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Three_failed_refreshes_in_a_row_fail_the_run_naming_the_service_even_while_backing_off()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        Job(JobState.Failed, TimeSpan.FromMinutes(1));
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.IsError);
+        Assert.Contains("context-map-refresh", result.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Three_failed_refreshes_start_again_when_the_wait_is_over_and_the_run_stays_failed_until_one_succeeds()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(50));
+        Job(JobState.Failed, TimeSpan.FromMinutes(40));
+        Job(JobState.Failed, TimeSpan.FromMinutes(25));   // the third wait is 20 minutes
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        _ = Assert.Single(_start.Requests);
+        Assert.True(result.IsError);
+        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Contains("started", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Three_failures_are_quiet_once_the_heads_are_back_at_the_last_mapped_ones()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(60), ("a", "1"));
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        Job(JobState.Failed, TimeSpan.FromMinutes(1));
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Two_failures_are_not_yet_a_failed_run_and_a_success_after_failures_is_a_clean_run()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        _engine.Heads = [Head("a", "1")];
+        var twoFailures = await Run(await Service());
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(1), ("a", "1"));
+        var healed = await Run(await Service());
+
+        Assert.False(twoFailures.IsError);
+        Assert.True(healed.Value.Idle);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task No_context_section_no_approved_profile_and_no_repo_on_trunk_are_quiet()
+    {
+        _engine.Heads = [Head("a", "1")];
+        Assert.True((await Run(await Service(context: false))).Value.Idle);
+        _engine.Heads = [Head("a", "1", onDefault: false)];
+        Assert.True((await Run(await Service())).Value.Idle);
+        var unapproved = new ContextMapRefreshService(new ContextScopes(new SliceHarness().Profiles, _h.Callers), _engine.Proxy, _jobs, _outlooks, new MapJobStarts(_start, _publish), _h.Clock, new CapturingLogger());
+        Assert.True((await Run(unapproved)).Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_removed_repo_alone_does_not_start_a_refresh()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromHours(1), ("a", "1"), ("b", "2"));
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_same_refresh_already_running_is_quiet_and_any_other_refusal_fails()
+    {
+        _engine.Heads = [Head("a", "1")];
+        var service = await Service();
+        using var id = JsonDocument.Parse("\"JOB-0000000000000001\"");
+        _start.Answer = SindriErrors.JobConflict.With("running").WithExtension("runningJob", id.RootElement.Clone());
+        var same = await Run(service);
+        _start.Answer = SindriErrors.JobsRateLimited.With("too many jobs");
+        var refused = await Run(service);
+
+        Assert.True(same.Value.Idle);
+        Assert.Equal(SindriErrors.JobsRateLimited.Code, refused.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_hold_the_index_has_caught_up_with_starts_one_publish_as_the_service_and_no_refresh()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.False(result.Value.Idle);
+        Assert.Equal(["service:context-map-refresh"], _publish.Actors);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_hold_still_waiting_is_quiet_and_says_so()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Coming;
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Equal("map v14 held for the code index", result.Value.Summary);
+        Assert.Empty(_publish.Actors);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_hold_past_the_bound_starts_a_publish()
+    {
+        Held(14, TimeSpan.FromMinutes(20));
+        _outlooks.All = IndexOutlook.Coming;
+        _engine.Heads = [Head("a", "1")];
+
+        _ = await Run(await Service());
+
+        _ = Assert.Single(_publish.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_replaced_draft_starts_a_publish_that_drops_the_hold_unless_a_refresh_is_running()
+    {
+        Held(14, TimeSpan.FromMinutes(2), latestDraft: 15);
+        _engine.Heads = [Head("a", "1")];
+        var service = await Service();
+        _ = await Run(service);
+        Job(JobState.Running, TimeSpan.Zero);
+        _ = await Run(service);
+
+        _ = Assert.Single(_publish.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_publish_decision_starts_while_a_refresh_runs()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "1")];
+        Job(JobState.Running, TimeSpan.Zero);
+
+        _ = await Run(await Service());
+
+        _ = Assert.Single(_publish.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_running_publish_is_never_doubled_and_blocks_a_refresh_too()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "2")];
+        PublishJob(JobState.Running, TimeSpan.Zero);
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_publish.Actors);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_publish_backs_off_and_lets_the_move_check_run()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "2")];
+        PublishJob(JobState.Failed, TimeSpan.FromMinutes(1));   // the first wait is 5 minutes
+
+        var result = await Run(await Service());
+
+        Assert.Empty(_publish.Actors);
+        _ = Assert.Single(_start.Requests);
+        Assert.False(result.Value.Idle);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_publish_starts_again_when_its_wait_is_over()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "1")];
+        PublishJob(JobState.Failed, TimeSpan.FromMinutes(6));
+
+        _ = await Run(await Service());
+
+        _ = Assert.Single(_publish.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_move_check_compares_the_live_heads_with_the_held_drafts_not_the_current_versions()
+    {
+        Held(14, TimeSpan.FromMinutes(2), heads: ("a", "1"));
+        _outlooks.All = IndexOutlook.Coming;
+        _engine.Heads = [Head("a", "2")];
+
+        _ = await Run(await Service());
+
+        _ = Assert.Single(_start.Requests);
+        Assert.Empty(_publish.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_draft_that_is_not_held_does_not_count_as_mapped_heads()
+    {
+        _engine.State = new MapPublishState(Hold: null, LatestDraft: 5, Current: 4, [new MapHead(ContextRepoName.From("a"), "1", OnDefault: true)]);
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_version_with_no_recorded_heads_gets_one_refresh()
+    {
+        _engine.State = new MapPublishState(Hold: null, LatestDraft: null, Current: 4, CurrentHeads: []);
+        _engine.Heads = [Head("a", "1")];
+
+        _ = await Run(await Service());
+
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_alarm_counts_refreshes_and_publishes_together_and_names_the_newest_failures_code()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        PublishJob(JobState.Failed, TimeSpan.FromMinutes(1), "SND-CONTEXT-046");
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Contains("the last 3 map refreshes or publishes failed (SND-CONTEXT-046)", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_alarm_names_why_the_newest_failure_failed_not_only_its_code()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        PublishJob(JobState.Failed, TimeSpan.FromMinutes(1), "SND-CONTEXT-046", "the code index is not built for repo r");
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.Contains("(SND-CONTEXT-046: the code index is not built for repo r)", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_publish_refused_with_a_409_is_quiet()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.All = IndexOutlook.Built;
+        _engine.Heads = [Head("a", "1")];
+        _publish.Answer = SindriErrors.JobConflict.With("running");
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_outlooks_read_error_fails_the_run_after_the_move_check_has_run()
+    {
+        Held(14, TimeSpan.FromMinutes(2));
+        _outlooks.Failure = SindriErrors.ServiceFailed.With("index unreadable");
+        _engine.Heads = [Head("a", "2")];
+
+        var result = await Run(await Service());
+
+        _ = Assert.Single(_start.Requests);
+        Assert.Empty(_publish.Actors);
+        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_service_is_a_built_in_every_minute() =>
+        Assert.Equal(("context-map-refresh", TimeSpan.FromMinutes(1)), (ContextMapRefreshService.BuiltIn.Name.Value, ContextMapRefreshService.BuiltIn.Cadence.Interval));
+
+    private sealed class CapturingLogger : ILogger<ContextMapRefreshService>
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+        }
+    }
+
+    private sealed class PublishStarter(SliceHarness harness) : IService<PublishContextMapRequest, JobStartedResponse>
+    {
+        internal List<string> Actors { get; } = [];
+
+        internal Error? Answer { get; set; }
+
+        public ValueTask<Result<JobStartedResponse>> Handle(PublishContextMapRequest request, CancellationToken cancellationToken)
+        {
+            Actors.Add(harness.Callers.Current?.Actor ?? string.Empty);
+            return ValueTask.FromResult<Result<JobStartedResponse>>(Answer is { } error
+                ? error
+                : new JobStartedResponse(new CommandAccepted(harness.Ids.New<CommandId>(), 1), JobId.New(harness.Ids), new JobLinks("/j", "/c", "/e")));
+        }
+    }
+
+    private sealed class Starter(SliceHarness harness) : IService<RefreshContextMapRequest, JobStartedResponse>
+    {
+        internal List<RefreshContextMapRequest> Requests { get; } = [];
+
+        internal List<string> Actors { get; } = [];
+
+        internal Error? Answer { get; set; }
+
+        public ValueTask<Result<JobStartedResponse>> Handle(RefreshContextMapRequest request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            Actors.Add(harness.Callers.Current?.Actor ?? string.Empty);
+            return ValueTask.FromResult<Result<JobStartedResponse>>(Answer is { } error
+                ? error
+                : new JobStartedResponse(new CommandAccepted(harness.Ids.New<CommandId>(), 1), JobId.New(harness.Ids), new JobLinks("/j", "/c", "/e")));
+        }
+    }
+}

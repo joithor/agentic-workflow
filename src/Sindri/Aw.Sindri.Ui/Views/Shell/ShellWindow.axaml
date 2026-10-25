@@ -10,8 +10,14 @@
         xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
         xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
         xmlns:rv="using:Aw.Sindri.Ui.Views.Recipes"
+        xmlns:agv="using:Aw.Sindri.Ui.Views.Agents"
+        xmlns:jv="using:Aw.Sindri.Ui.Views.Jobs"
+        xmlns:ctxv="using:Aw.Sindri.Ui.Views.Context"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
+        xmlns:startv="using:Aw.Sindri.Ui.Views.Start"
+        xmlns:apv="using:Aw.Sindri.Ui.Views.Approvals"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
+        xmlns:runv="using:Aw.Sindri.Ui.Views.Run"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
         Title="{Binding WindowTitle}"
@@ -190,24 +196,39 @@
             </Border>
 
             <!-- The pages (§3.3), each shown by the view model's page flag. -->
-            <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
+            <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPagesShown}">
               <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
-                <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
+                <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHomeShown}" />
                 <Panel IsVisible="{Binding IsWorkflows}"><wfv:WorkflowsPage x:Name="WorkflowsPage" DataContext="{Binding Workflows}" /></Panel>
                 <queue:QueuePage x:Name="QueuePage" IsVisible="{Binding IsWork}" />
-                <views:PlaceholderPage x:Name="RecipesPage" Title="{Binding Text.Recipes}" Note="{Binding Text.ArrivesRecipes}" IsVisible="{Binding IsRecipes}" />
-                <views:PlaceholderPage x:Name="ContextPage" Title="{Binding Text.Context}" Note="{Binding Text.ArrivesContext}" IsVisible="{Binding IsContext}" />
-                <views:PlaceholderPage x:Name="AgentsPage" Title="{Binding Text.Agents}" Note="{Binding Text.ArrivesAgents}" IsVisible="{Binding IsAgents}" />
+                <Panel IsVisible="{Binding IsRecipes}"><rv:RecipesPage x:Name="RecipesPage" DataContext="{Binding RecipesPage}" /></Panel>
+                <Panel IsVisible="{Binding IsContext}"><ctxv:ContextPage x:Name="ContextPage" DataContext="{Binding Context}" /></Panel>
+                <Panel IsVisible="{Binding IsAgents}"><agv:AgentsPage x:Name="AgentsPage" DataContext="{Binding Agents}" /></Panel>
                 <!-- System hosts the control plane's health until U12 builds the rest (screens spec §4.6). -->
                 <Panel IsVisible="{Binding IsSystem}">
-                  <views:HealthPage x:Name="HealthPage" DataContext="{Binding Health}" />
+                  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+                    <views:HealthPage x:Name="HealthPage" DataContext="{Binding Health}" />
+                    <!-- Jobs is not a tab: System leads to it (G J and the palette too). -->
+                    <Button x:Name="JobsLink" Classes="row-title" Click="OnJobsLink" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Text.JobsLinkName}">
+                      <TextBlock Classes="body" Text="{Binding Text.JobsLink}" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                  </StackPanel>
                 </Panel>
+                <Panel IsVisible="{Binding IsJobs}"><jv:JobsPage x:Name="JobsPage" DataContext="{Binding Jobs}" /></Panel>
                 <!-- Settings (⌘,): SindriApp puts Settings' view here at start-up; the placeholder shows where nothing does (view tests). -->
                 <ContentControl x:Name="SettingsSlot" IsVisible="{Binding IsSettings}">
-                  <views:PlaceholderPage Title="{Binding Text.Settings}" />
+                  <views:PlaceholderPage x:Name="SettingsPlaceholder" Title="{Binding Text.Settings}" />
                 </ContentControl>
               </Panel>
             </ScrollViewer>
+            <!-- The Needs-you inbox (F3 needs-you spec §2): over Home's panels while Home stays the page; it scrolls its own list and card, so it sits beside the pages' scroller. -->
+            <Panel x:Name="NeedsYouInboxLayer" IsVisible="{Binding IsInboxShown}">
+              <ny:NeedsYouPage x:Name="NeedsYouInboxPage" DataContext="{Binding Inbox}" />
+            </Panel>
+            <!-- A line run (F3 run canvas): its canvas over the Workflows page, in place of the detail sheet. -->
+            <Panel x:Name="RunPageLayer" IsVisible="{Binding IsRunPageShown}">
+              <runv:RunPage x:Name="RunPageView" DataContext="{Binding RunPage}" />
+            </Panel>
           </Panel>
         </Border>
 
@@ -270,9 +291,17 @@
                 <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
                   <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
                 </ScrollViewer>
-                <!-- LANE ANCHOR U10: the sheet content for the kinds U10 claims (kinds: Recipe). Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U10: the sheet content for the kinds U10 claims (kinds: Recipe). System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
                 <ScrollViewer x:Name="RecipeSheetScroll" IsVisible="{Binding IsRecipeSheet}">
                   <rv:RecipeSheetView x:Name="RecipeSheetContent" DataContext="{Binding Recipe}" />
+                </ScrollViewer>
+                <!-- LANE ANCHOR U9: the sheet content for the kinds U9 claims (kinds: Node), the node card of the Context page. Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U11a: the sheet content for the kinds U11a claims (kinds: Session), the session sheet. Insert immediately below this marker, never between the markers. -->
+                <ScrollViewer x:Name="JobSheetScroll" IsVisible="{Binding IsJobSheet}">
+                  <jv:JobSheetView x:Name="JobSheetContent" DataContext="{Binding JobSheet}" />
+                </ScrollViewer>
+                <ScrollViewer x:Name="SessionSheetScroll" IsVisible="{Binding IsSessionSheet}">
+                  <agv:SessionSheetView x:Name="SessionSheetContent" DataContext="{Binding AgentSheet}" />
                 </ScrollViewer>
               </Panel>
             </DockPanel>
@@ -324,6 +353,12 @@
     </Panel>
     <Panel x:Name="CreateLayer" IsVisible="{Binding Create.IsOpen}">
       <item:CreateItemDialog x:Name="CreateItemDialog" DataContext="{Binding Create}" />
+    </Panel>
+    <Panel x:Name="StartLayer" IsVisible="{Binding Start.IsOpen}">
+      <startv:StartDialog x:Name="StartDialog" DataContext="{Binding Start}" />
+    </Panel>
+    <Panel x:Name="ApproveAllLayer" IsVisible="{Binding ApproveAll.IsOpen}">
+      <apv:ApproveAllDialog x:Name="ApproveAllDialog" DataContext="{Binding ApproveAll}" />
     </Panel>
     <Panel x:Name="ShortcutsLayer" IsVisible="{Binding Shortcuts.IsOpen}">
       <root:ShortcutsSheet x:Name="ShortcutsSheet" DataContext="{Binding Shortcuts}" />

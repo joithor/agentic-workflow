@@ -37,22 +37,23 @@ public sealed class InMemoryViewStore(JsonSerializerOptions options) : IViewStor
     {
         ArgumentNullException.ThrowIfNull(page);
         var (tables, state) = Snapshot();
+        var unreadable = new UnreadableRows();
         foreach (var recorded in page)
         {
             var before = InMemoryViewRows.Copy(tables);
-            var failure = await Fold(recorded, projections, new InMemoryViewRows(tables, options), cancellationToken).ConfigureAwait(false);
+            var failure = await Fold(recorded, projections, new InMemoryViewRows(tables, options, unreadable), cancellationToken).ConfigureAwait(false);
             if (failure is not null)
             {
                 var stalled = state with { StalledAt = recorded.Sequence, StalledType = recorded.Envelope.Type };
                 Commit(before, stalled);
-                return new PageApplied(stalled, new ViewStall(recorded.Sequence, recorded.Envelope.Type, failure.Code, failure.Message));
+                return new PageApplied(stalled, new ViewStall(recorded.Sequence, recorded.Envelope.Type, failure.Code, failure.Message), unreadable.Count);
             }
 
             state = state with { Cursor = recorded.Sequence, ProjectedAt = at, StalledAt = null, StalledType = null };
         }
 
         Commit(tables, state);
-        return new PageApplied(state, Stall: null);
+        return new PageApplied(state, Stall: null, unreadable.Count);
     }
 
     /// <inheritdoc/>

@@ -27,11 +27,12 @@ internal static class ContextHosts
     /// <param name="ct">Cancels the start.</param>
     /// <param name="extra">More service registrations, or null.</param>
     /// <param name="name">The repo's name in the profile.</param>
+    /// <param name="contextExtra">More lines under 'context:' (two-space indented, each ending in a newline), or null.</param>
     /// <returns>The started host.</returns>
-    internal static async Task<GoldenHost> Approved(string repoPath, bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null, string name = "split-panes")
+    internal static async Task<GoldenHost> Approved(string repoPath, bool sessions, CancellationToken ct, Action<IServiceCollection>? extra = null, string name = "split-panes", string? contextExtra = null)
     {
         var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {name}, path: \"{repoPath}\" }}\n"
-            + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n";
+            + $"context:\n  docs: {{ globs: [\"docs/**/*.md\"] }}\n  sessions: {{ enabled: {(sessions ? "true" : "false")} }}\n" + contextExtra;
         var host = await GoldenHost.Start(temporary: true, ct, yaml, extra: extra);
         var hash = (await host.LiveHash(ct)).Value;
         var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));

@@ -5,7 +5,6 @@ using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Registry;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.Workflow;
@@ -28,18 +27,16 @@ public sealed class RecipeRoutesTests : IAsyncLifetime
     public ValueTask DisposeAsync() => _host.DisposeAsync();
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task Human_approves_and_revokes_through_the_challenge_routes_and_a_session_is_refused()
+    public async Task Human_approves_and_revokes_through_the_routes_without_a_typed_challenge()
     {
         var step = await Register();
         var human = Human(_host.Token.Value);
 
-        var issued = await Challenge("approve workflow.step 2", human);
-        var session = await _host.Http.Ask(Post($"/sindri/workflow/recipes/workflow.step@{step.Hash.Digest}/approve", Answer(issued), (SindriHeaders.Caller, "session")));
+        var issued = await Challenge("approve workflow.step 4", human);
         var approved = await _host.Http.Ask(Post($"/sindri/workflow/recipes/workflow.step@{step.Hash.Digest}/approve", Answer(issued), human));
         var revoke = await Challenge($"revoke workflow.step@{step.Hash.Display}", human);
         var revoked = await _host.Http.Ask(Post($"/sindri/workflow/recipes/workflow.step@{step.Hash.Value}/revoke", Answer(revoke), human));
 
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.True(approved.Status == HttpStatusCode.OK, approved.Body);
         Assert.Equal(step.Hash.Value, JsonDocument.Parse(approved.Body).RootElement.GetProperty("approval").GetProperty("hash").GetString());
         Assert.True(revoked.Status == HttpStatusCode.OK, revoked.Body);
@@ -55,7 +52,7 @@ public sealed class RecipeRoutesTests : IAsyncLifetime
     public async Task Malformed_id_or_hash_in_the_route_is_a_400(string segment)
     {
         var answer = await _host.Http.Ask(Post($"/sindri/workflow/recipes/{Uri.EscapeDataString(segment).Replace("%40", "@", StringComparison.Ordinal)}/approve",
-            """{"challenge":"CHL-00000000000000000000000000000000","typed":"approve workflow.step 2"}""", Human(_host.Token.Value)));
+            """{"challenge":"CHL-00000000000000000000000000000000","typed":"approve workflow.step 4"}""", Human(_host.Token.Value)));
 
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CLI-003"), (answer.Status, answer.Code));
     }

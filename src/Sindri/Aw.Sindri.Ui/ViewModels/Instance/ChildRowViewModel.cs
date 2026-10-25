@@ -26,7 +26,7 @@ internal sealed class ChildRowViewModel : ObservableObject
         Glyph = StageCellViewModel.Mark(row.Glyph);
         RoundText = row.Round is { } round ? Labels.RoundOf(round) : string.Empty;
         Agent = FactText.Scrub(row.Agent ?? string.Empty);
-        _still = string.Join(" · ", new[] { row.State, RoundText, Agent }.Where(p => p.Length > 0));
+        _still = string.Join(" · ", new[] { Labels.ChildStateWords(row.State), RoundText, Agent }.Where(p => p.Length > 0));
         (Age, Meta) = (string.Empty, string.Empty);
         Update(row);
         (MirroredText, BadgeText) = Park(row);

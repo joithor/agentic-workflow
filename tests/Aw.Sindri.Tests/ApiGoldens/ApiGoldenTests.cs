@@ -8,29 +8,6 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// </summary>
 public sealed class ApiGoldenTests
 {
-    public static TheoryData<string, string> Rows()
-    {
-        var rows = new TheoryData<string, string>();
-        foreach (var (slug, scenario) in ApiScenarios.All)
-        {
-            rows.Add(slug, scenario);
-        }
-
-        return rows;
-    }
-
-    [Theory(Timeout = 30_000), Trait("Lane", "integration")]
-    [MemberData(nameof(Rows))]
-    public async Task Api_answer_matches_its_golden_file(string slug, string scenario)
-    {
-        var ct = TestContext.Current.CancellationToken;
-        await using var host = await ApiScenarios.Start(slug, scenario, ct);
-
-        var body = await ApiScenarios.Body(host, slug, scenario, ct);
-
-        ApiGolden.Match(body, host.Home, slug, scenario);
-    }
-
     [Fact, Trait("Lane", "integration")]
     public void Every_golden_file_has_a_scenario()
     {
@@ -41,6 +18,18 @@ public sealed class ApiGoldenTests
         var expected = ApiScenarios.All.Concat(WorkflowViewGoldenTests.All).Concat(ServedWorkflowRoutesTests.Goldens).Select(r => $"{r.Slug}/{r.Scenario}.json").Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, files);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_scenario_group_has_its_golden_test_class_and_every_class_its_group()
+    {
+        const string suffix = "ApiGoldenTests";
+        var classes = typeof(ApiGoldenTests).Assembly.GetTypes()
+            .Where(t => t.Namespace == typeof(ApiGoldenTests).Namespace && t.Name.EndsWith(suffix, StringComparison.Ordinal) && t != typeof(ApiGoldenTests))
+            .Select(t => t.Name[..^suffix.Length])
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(ApiScenarios.Groups.Keys.Order(StringComparer.Ordinal), classes);
     }
 
     [Theory, Trait("Lane", "unit")]

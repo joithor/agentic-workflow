@@ -4,6 +4,11 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.CodeIndex;
+using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Jobs;
+using Aw.Sindri.Ui.Api.Sessions;
+using Aw.Sindri.Ui.Api.Setup;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
@@ -37,27 +42,69 @@ public sealed class GoldenContractTests
         ["workflow-instances"] = As<InstanceList>,
         ["workflow-instance"] = As<InstanceDetail>,
         ["workflow-instance-fact"] = As<FactView>,
+        ["workflow-instance-events"] = As<InstanceEventsView>,   // GET /workflow/instances/{id}/events: the run canvas's "What went wrong" (spec-shaped until the engine has a golden)
         ["workflow-status"] = As<StatusFields>,
+        ["code-index-status"] = As<CodeIndexStatusView>,   // the Health card's Code index lines (CI-10b)
         ["workflow-recipe"] = As<RecipeView>,
+        ["workflow-recipes"] = As<RecipeList>,
+        ["workflow-recipes-id-stats"] = As<RecipeStatsView>,   // API P12: one recipe's stats, on the recipe sheet
+        ["workflow-instances-start"] = AsStart,   // POST /workflow/instances: the request golden, and the started answer (which also carries the engine's whole view)
         ["needs-you"] = As<NeedsYouList>,
         ["decisions"] = As<DecisionList>,
         ["decisions-id"] = As<CommandAcceptedView>,   // POST /decisions/{id}'s accepted goldens; the refusals are ProblemDetails
         ["requests"] = AsRequests,
+        ["sessions"] = As<SessionList>,   // GET /sessions (collector CO-3); the 503 SND-SESSION-002 bodies are ProblemDetails
+        ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
+        ["context-lenses"] = As<LensesView>,
+        ["context-whole"] = As<WholeMapView>,   // GET /context/map/whole (whole-map spec §2.1); the refusals (006, 030, 044, 045, 120, 200) are ProblemDetails
+        ["context-filemap"] = As<FileMapView>,
+        ["context-code"] = As<CodeView>,   // GET /sindri/context/code: the code lens' callers and callees (S-9)
+        ["context-map"] = As<MapStatusView>,
+        ["context-map-publish"] = As<MapPublishView>,
+        ["context-map-promote"] = As<PromotePreview>,
+        ["context-map-review"] = AsReview,
+        ["context-map-review-history"] = As<ReviewHistoryView>,
+        ["context-node"] = As<NodeView>,
+        ["items-id-open"] = As<OpenAcceptedView>,   // POST /items/{id}/open: the accepted answer (the refusals are ProblemDetails)
+        ["jobs"] = As<JobList>,   // GET /jobs: the Jobs page's list; the 400 SND-CLI-003 bodies are ProblemDetails
+        ["jobs-id"] = As<JobView>,   // GET /jobs/{id}: the job sheet; the 404 is ProblemDetails
+        ["jobs-id-cancel"] = As<CommandAcceptedView>,   // POST /jobs/{id}/cancel's accepted answer; the refusals are ProblemDetails
+        ["setup"] = As<SetupView>,   // GET /setup (setup-once spec §7, api #458): the Setup card and page; the "extra-" scenarios are the app's own (SpecShaped)
+        ["context-map-refresh"] = As<JobStarted>,   // POST /context/map/refresh's 202 (the setup map row's Retry); the 409 is ProblemDetails
+        ["setup-repos"] = As<JobStarted>,   // POST /setup/repos' 200 (api #528, AddRepo); the 400/409/403 bodies are ProblemDetails
+        ["setup-mcp"] = As<JobStarted>,   // POST /setup/mcp's 202 (RegisterMcp, spec-shaped)
+        ["onyx-setup"] = As<JobStarted>,   // POST /onyx/setup's 202 (SetupOnyx, spec-shaped)
+        ["onyx-account"] = As<JobStarted>,   // POST /onyx/account's 202 (ConnectOnyx, spec-shaped); the refusals are ProblemDetails
+        ["onyx-defer"] = As<OnyxDeferView>,   // POST /onyx/defer's 200 (DeferOnyx, spec-shaped)
+        ["launches-id"] = As<LaunchView>,   // GET /launches/{id}: the launch an Open started (Attach, the run line)
+        // The approve-all plan and result are the engine's real goldens (workflow-recipes-approve-all); the start, job and refusal bodies below stay SPEC-SHAPED (the engine has none).
+        ["workflow-recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused): the engine's real goldens
+        ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
+        ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
+        ["profile"] = As<ProfileRead>,   // GET /profile: the approval's plain-words summary is the part the Setup profile step reads (api #782)
+        ["profile-approve"] = As<ProfileApproved>,   // POST /profile/approve's approved and preview answers (needs-you slice 3: the typed approve on a drifted-profile row); the refusals are ProblemDetails
+        ["recipe-approve"] = As<RecipeApproved>,   // POST /workflow/recipes/{id}@{hash}/approve's accepted answer (needs-you slice 3b: the typed approve on a changed-workflow row; spec-shaped)
+        ["workflow-complete"] = As<CompleteStepAccepted>,   // POST /workflow/instances/{id}/runs/{run}/complete's accepted answer (spec-shaped; the engine has no golden for it)
     };
 
-    // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
-    // context routes are U9's (the context lens), read once U9 lands, until U9 (context records).
+    // Routes the app never calls yet: stop is Health's (U4), and the
+    // context routes U9 does not read (eval, proposals, query).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
-        "stop", "profile-approve", "profile",
-        "needs-you", "decisions", "decisions-id", "requests",   // API P4: the app reads them in U3
-        "context-eval", "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node", "context-query",   // until U9 (context records)
+        "stop",
+        "workflow-challenges-app",   // q93: the app asks for no challenge any more; the route stays served until api removes it
+        "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
+        "context-concepts", "context-concepts-id-members",   // the concept routes are read by the app after ui #1012
+        "context-eval", "context-map-proposals", "context-query", "context-history", "context-subgraph", "context-search",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
-        "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)
-        "items-id-open", "launches-id", "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): the app reads the open's answer and the launch in U6a (Open in the terminal); U10: the session wrap's own calls, never the app's
-        "workflow-recipes", "workflow-instances-start",   // the Start form's reads (U5'): the recipe list, and POST /workflow/instances' request and started answer (its refusals are ProblemDetails under workflow-instances); workflow-recipes/list pins the shape served before P12 (standing/via/stale/inputs), which differs from the spec's RecipeList (E-25), so U5' must not read inputs from it until that is decided (read GET /workflow/recipes/{id} instead)
-        "sessions", "sessions-id",   // collector CO-3: U11a (the Agents page) reads them
+        "services-name-run", "services-name-pause", "services-name-resume",   // API P6: the services calls are U4's (Services); the job calls are read below
+        "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): U10's session wrap's own calls and the launch-target reads, never the app's
+        "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
+        "workflow-instance-line",   // LN-API1 (LN-L): the line board of a workflow.line instance; the app reads it in LN-U (LN-UI1)
+        "workflow-instance-design-stop",   // LN-API2 (LN-K): stop 2's view of a workflow.plan instance; the app reads it in LN-U (LN-UI2)
+        "items-id-scope",   // an item's scope: the Context page reads it once it lands (UI lane, with the lenses routes)
+        "code-index-symbols", "code-index-callers", "code-index-callees",   // the code-index reads (CI-10a) are the CLI's; status is read below for the Health card (CI-10b)
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
@@ -117,6 +164,17 @@ public sealed class GoldenContractTests
         Assert.Equal(("heartbeat", "5s"), (approved.Services[0].Name, approved.Services[0].Every));
         Assert.Equal((null, true), (unapproved.Profile.Approved, unapproved.Profile.NeedsApproval));
         Assert.Empty(unapproved.Services);
+    }
+
+    [Fact]
+    public void The_code_index_status_golden_carries_each_repos_health()
+    {
+        var status = Read<CodeIndexStatusView>("code-index-status", "all-repos");
+
+        var health = status.Health ?? [];
+        Assert.NotEmpty(health);
+        Assert.Equal(status.Repos.Select(r => r.Repo), health.Select(h => h.Repo), StringComparer.Ordinal);
+        Assert.All(health, h => Assert.Equal(("ok", null, null), (h.State, h.EmbeddingsPercent, h.Waiting)));
     }
 
     [Fact]
@@ -214,7 +272,7 @@ public sealed class GoldenContractTests
         Assert.Equal(("desk", "ready", "sindri views rebuild", false, false), (rebuild.Class, rebuild.Ui, rebuild.Cli, rebuild.Destructive, rebuild.ReadsViews));
         var stop = Assert.Single(catalog.Rows, r => r.Action == "StopProcess");
         Assert.Equal(("ready", true), (stop.Ui, stop.Destructive));
-        Assert.Equal("cli-only:typed-confirmation", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
+        Assert.Equal("ready", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
     }
 
     // A refusal's ProblemDetails names its SND code in title; any other body has none.
@@ -238,6 +296,17 @@ public sealed class GoldenContractTests
     // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
     private static Result<object> AsRequests(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
+    // One slug for the plan and the job's result: the result has 'approved', the plan has 'recipes'.
+    private static Result<object> AsApproveAll(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("approved") ? As<ApproveAllResult>(body) : As<ApproveAllPlan>(body);
+
+    private static Result<object> AsStart(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("instance") ? As<StartedView>(body) : As<StartInstanceRequest>(body);
+
+    // One slug for GET and POST /context/map/review: the post-* scenarios are the decision's reply, the others the queue.
+    private static Result<object> AsReview(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("result") ? As<ReviewDecisionResponse>(body) : As<ReviewQueueView>(body);
 
     private static Result<object> AsEvents(byte[] body)
     {

@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:jb="using:Aw.Sindri.Ui.ViewModels.Jobs"
+             xmlns:jv="using:Aw.Sindri.Ui.Views.Jobs"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.Jobs.JobsPage"
+             x:DataType="jb:JobsPageViewModel">
+  <!-- The Jobs page (API P6): the title with the count, one line saying what jobs are, the rows newest first as the API orders them, and the API's own
+       sentence when there are none. Every named line is a Border wrapper (a TextBlock's peer ignores AutomationProperties.Name). -->
+  <StackPanel x:Name="JobsRoot" Spacing="{StaticResource Size.PanelGap}">
+    <StackPanel.Styles>
+      <Style Selector="StackPanel.dimmed"><Setter Property="Opacity" Value="0.5" /></Style>
+    </StackPanel.Styles>
+    <StackPanel x:Name="JobsHeadRegion" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <TextBlock Classes="page-title" Text="{Binding Title}" AutomationProperties.Name="{Binding Title}" />
+      <Border x:Name="JobsHeadName" AutomationProperties.Name="{Binding HeadName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text" VerticalAlignment="Center">
+        <TextBlock x:Name="JobsHead" Classes="caption subtle" Text="{Binding Head}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+    </StackPanel>
+    <Border x:Name="JobsPurposeName" AutomationProperties.Name="{Binding Purpose}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body muted" Text="{Binding Purpose}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+
+    <StackPanel x:Name="JobsToolbar" Orientation="Horizontal" Spacing="8">
+      <ComboBox x:Name="JobsStateFilter" ItemsSource="{Binding StateChoices}" SelectedItem="{Binding SelectedState}" MinWidth="140" AutomationProperties.Name="Status filter" />
+      <ComboBox x:Name="JobsKindFilter" ItemsSource="{Binding KindChoices}" SelectedItem="{Binding SelectedKind}" MinWidth="180" AutomationProperties.Name="Kind filter" />
+    </StackPanel>
+
+    <StackPanel x:Name="JobsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
+      <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+      <TextBlock Classes="caption subtle" Text="{Binding StaleText}" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <Border x:Name="JobsPanel" Classes="panel" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+      <StackPanel>
+        <Border x:Name="JobsReadingName" Margin="16,8" IsVisible="{Binding IsReading}" AutomationProperties.Name="{Binding ReadingText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding ReadingText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <ItemsControl x:Name="JobsSkeleton" ItemsSource="{Binding SkeletonRows}" IsVisible="{Binding IsReading}" Margin="16,4" AutomationProperties.AccessibilityView="Raw">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:Int32">
+              <Border Height="12" Margin="0,8" CornerRadius="4" Background="{DynamicResource Brush.Surface2}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border x:Name="JobsUnreadableName" Margin="16,8" IsVisible="{Binding IsUnreadable}" AutomationProperties.Name="{Binding UnreadableText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding UnreadableText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <StackPanel x:Name="JobsFailed" Margin="16,8" Spacing="8" IsVisible="{Binding ShowRetry}">
+          <Border x:Name="JobsFailedName" AutomationProperties.Name="{Binding FailedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption quiet" Text="{Binding FailedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <Button x:Name="JobsRetry" Content="{Binding RetryText}" Click="OnRetry" HorizontalAlignment="Left" AutomationProperties.Name="{Binding RetryText}" />
+        </StackPanel>
+        <Border x:Name="JobsEmptyName" Margin="16,8" IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding EmptyText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock x:Name="JobsEmpty" Classes="caption quiet" Text="{Binding EmptyText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Button x:Name="JobsServicesLink" Margin="16,0,16,8" Content="{Binding ServicesLinkText}" Click="OnServices" IsVisible="{Binding ShowServicesLink}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding ServicesLinkText}" />
+        <Border x:Name="JobsNoneRunningName" Margin="16,8" IsVisible="{Binding IsNoneRunning}" AutomationProperties.Name="{Binding NoneRunningText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding NoneRunningText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <StackPanel x:Name="JobsTable" Classes.dimmed="{Binding IsDimmed}">
+        <Grid x:Name="JobsHeader" ColumnDefinitions="1.6*,110,150,1.2*,130,56,120" Margin="16,6" AutomationProperties.AccessibilityView="Raw">
+          <TextBlock Grid.Column="0" Classes="caption subtle" Text="{Binding Columns[0]}" />
+          <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Columns[1]}" />
+          <TextBlock Grid.Column="2" Classes="caption subtle" Text="{Binding Columns[2]}" IsVisible="{Binding !IsCompact}" />
+          <TextBlock Grid.Column="3" Classes="caption subtle" Text="{Binding Columns[3]}" IsVisible="{Binding !IsCompact}" />
+          <TextBlock Grid.Column="4" Classes="caption subtle" Text="{Binding Columns[4]}" IsVisible="{Binding !IsCompact}" />
+          <TextBlock Grid.Column="5" Classes="caption subtle" Text="{Binding Columns[5]}" />
+        </Grid>
+        <ItemsControl x:Name="JobRows" ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="jb:JobRowViewModel">
+              <jv:JobRow />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

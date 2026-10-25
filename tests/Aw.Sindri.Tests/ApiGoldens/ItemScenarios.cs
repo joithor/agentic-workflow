@@ -30,19 +30,24 @@ internal static class ItemScenarios
     [
         ("queue", "fixture"), ("queue", "empty"), ("queue", "stalled"), ("queue", "large"), ("queue", "session-scoped"), ("queue", "rebuilding"),
         ("items", "list-empty"), ("items", "list-open"), ("items", "list-state-done"), ("items", "list-repo"), ("items", "list-session-other-repo"), ("items", "list-bad-state"),
-        ("items", "created"), ("items", "created-repo"), ("items", "created-link"), ("items", "invalid-title"), ("items", "unknown-repo"), ("items", "refused-session"), ("items", "refused-origin"),
+        ("items", "created"), ("items", "created-repo"), ("items", "created-link"), ("items", "invalid-title"), ("items", "unknown-repo"), ("items", "refused-origin"),
         ("items-id", "new"), ("items-id", "needs-decision"), ("items-id", "after-decide"), ("items-id", "after-close"), ("items-id", "not-found"), ("items-id", "cancelled"), ("items-id", "alias"), ("items-id", "with-body"), ("items-id", "session-other-repo"), ("items-id", "bad-id"),
         ("items-id-timeline", "fixture"), ("items-id-timeline", "page-2"), ("items-id-timeline", "closed"), ("items-id-timeline", "not-found"),
         ("items-id-close", "accepted"), ("items-id-close", "stale-version"), ("items-id-close", "accepted-cancelled"), ("items-id-close", "already-closed"), ("items-id-close", "not-found"),
-        ("items-id-close", "refused-session"), ("items-id-close", "while-stalled"), ("items-id-close", "while-rebuilding"), ("items-id-close", "refused-active-instance"),
+        ("items-id-close", "while-stalled"), ("items-id-close", "while-rebuilding"), ("items-id-close", "refused-active-instance"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
-    public static bool Handles(string slug, string scenario) => All.Contains((slug, scenario));
+    public static bool Handles(string slug, string scenario) => All.Contains((slug, scenario)) || ItemScopeScenarios.Handles(slug, scenario);
 
     /// <summary>Runs the scenario against <paramref name="host"/> (started on <see cref="ProfileYaml"/>) and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (ItemScopeScenarios.Handles(slug, scenario))
+        {
+            return await ItemScopeScenarios.Body(host, scenario, ct);
+        }
+
         await ViewScenarios.Approve(host, ct);
         return slug switch
         {
@@ -134,7 +139,6 @@ internal static class ItemScenarios
             "created-link" => await Send(host, Post("/sindri/items", """{"title":"Fix the login redirect","repo":"demo","link":"linear:issue/abc-123"}""", human)),
             "invalid-title" => await Send(host, Post("/sindri/items", """{"title":"   "}""", human)),
             "unknown-repo" => await Send(host, Post("/sindri/items", """{"title":"Try the queue","repo":"nowhere"}""", human)),
-            "refused-session" => await Send(host, Post("/sindri/items", """{"title":"Try the queue"}""", Session("demo"))),
             "refused-origin" => await Send(host, Post("/sindri/items", """{"title":"Try the queue"}""", [.. human, ("Origin", "http://localhost:3000")])),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such items scenario"),
         };
@@ -243,8 +247,6 @@ internal static class ItemScenarios
                 _ = await Close(host, id, "done", 1);
                 await ViewScenarios.CatchUp(host, ct);
                 return await Close(host, id, "done", 2);
-            case "refused-session":
-                return await Send(host, Post($"/sindri/items/{id}/close", """{"reason":"done","itemVersion":1}""", Session("demo")));
             case "refused-active-instance":
                 await AppendFor(host, id, EventTypes.WorkflowStarted, ActiveInstance(id), "workflow:golden:started", ct);   // a root instance's desk task is open
                 await ViewScenarios.CatchUp(host, ct);

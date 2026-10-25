@@ -13,7 +13,7 @@ namespace Aw.Context.Core.Facade;
 /// Core records only. Sindri passes the approved profile's 'context:' section, its repos and the caller on every call;
 /// the engine keeps no profile of its own.
 /// </summary>
-public interface IContextEngine : IContextMap, IContextGraph, IContextLenses
+public interface IContextEngine : IContextMap, IContextGraph, IContextLenses, IContextCode, IContextHistory, IContextConcepts
 {
     /// <summary>Validates a profile's 'context:' section against the profile's repos and applies its defaults.</summary>
     /// <param name="section">The section, or null when the profile has none.</param>
@@ -33,6 +33,20 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The sources view.</returns>
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether a configured intent source has never synced successfully (never run, or only failed runs), read from the stored sync state: no live source is probed, so a scheduler may ask every minute.
+    /// </summary>
+    /// <param name="scope">The profile's settings and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>True when a configured intent source has no successful sync; false when none is configured or all have synced.</returns>
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Each mapped repo's checkout HEAD and whether it is on the default branch, read from local refs (no fetch): what an automatic refresh compares with the heads it last mapped.</summary>
+    /// <param name="scope">The profile's settings and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>One head per mapped repo ('context.repos' within the profile's repos), or SND-CONTEXT-001/048.</returns>
+    public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>
     /// Runs a probe file (spec §9.2 item 3): reads and checks it, asks each question through <paramref name="ask"/> (Sindri's

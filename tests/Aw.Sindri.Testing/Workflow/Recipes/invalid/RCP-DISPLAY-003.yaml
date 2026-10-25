@@ -1,0 +1,18 @@
+schema: 1
+id: workflow.state-name-bad
+version: 1
+displayName: Produce and finish
+initial: produce
+states:
+  produce:
+    kind: active
+    step: step.produce
+    timeout: { after: 4h, then: park }
+    next: "Produce the Step output."
+    displayName: write the draft
+  done:
+    kind: terminal
+    outcome: resolved
+transitions:
+  - { from: produce, to: done, on: step.completed, when: { outcome: done } }
+inputs: [{ key: fact:item, type: item, kind: item }]

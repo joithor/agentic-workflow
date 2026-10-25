@@ -1,3 +1,5 @@
+using Aw.Kernel.Testing;
+
 namespace Aw.Judge.Tests.Processes;
 
 /// <summary>Two temporary PATH directories, deleted on dispose; the PATH value lists them with an empty entry between.</summary>
@@ -18,10 +20,16 @@ internal sealed class PathDirectories : IDisposable
     public static void AddFile(string directory, string name, bool executable)
     {
         var file = System.IO.Path.Combine(directory, name);
+        if (executable)
+        {
+            _ = ExecutableScript.Write(file, string.Empty);
+            return;
+        }
+
         File.WriteAllText(file, "#!/bin/sh\n");
         if (!OperatingSystem.IsWindows())
         {
-            File.SetUnixFileMode(file, executable ? UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute : UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
     }
 

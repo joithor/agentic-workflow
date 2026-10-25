@@ -93,7 +93,7 @@ public static partial class TransitionDecision
         }
 
         var spend = Spend(d, instance);
-        if (spend.Park is { } budget)
+        if (spend.Park is { } budget && !KeepsReport(d))
         {
             return d.Changed(d.Rules.Suspend(instance with { Spent = spend.Spent }, Caused(budget, d.Trigger, match.Transition)));
         }
@@ -101,6 +101,16 @@ public static partial class TransitionDecision
         var spent = instance with { Spent = spend.Spent };
         return match.Transition is { } index ? Transition(d, spent, index) : Unmatched(d, spent);
     }
+
+    /// <summary>
+    /// The park that stands in for any new run of the Step when its budget is already spent (a kept report spent it): null while the Step may start, or in a history from
+    /// before the fix. Its answer starts the Step without counting a round.
+    /// </summary>
+    private static Suspension? StartBlocked(Deciding d, WorkflowInstance instance) =>
+        !d.Context.LegacyBudgetPark && BudgetRules.Exhausted(instance, d.Recipe) is { } question ? BudgetRules.StartPark(question, d.Trigger.Actor) : null;
+
+    /// <summary>An accepted report is kept whatever it cost: its transition applies and the budget is checked where the next Step would start (BudgetRules.StartPark).</summary>
+    private static bool KeepsReport(Deciding d) => d.Trigger is StepCompleted && !d.Context.LegacyBudgetPark;
 
     /// <summary>
     /// A park a rule decided carries no actor and no withheld trigger (LoopRules, BudgetRules); the decision that took the
@@ -131,10 +141,34 @@ public static partial class TransitionDecision
         }
 
         var step = d.Recipe.States[instance.State].Step?.Use.Value ?? instance.State;
+        if (!d.Context.LegacyUnavailable)
+        {
+            return Unavailable(d, instance, failed, step);
+        }
+
         var park = new Suspension(
-            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, $"{step} failed: {failed.Reason}", failed.Actor, Mirrors: null,
+            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, failed.Detail is { } detail ? $"{step} failed: {failed.Reason}: {detail}" : $"{step} failed: {failed.Reason}", failed.Actor, Mirrors: null,
             new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
         return d.Changed(d.Rules.Suspend(instance, park));
+    }
+
+    /// <summary>
+    /// A Step failure no transition takes (owner decision q90, q93): the dependency is down, which no human can answer. The Step runs again, a new run in the same
+    /// entry, until <see cref="Unavailables.MaxRetries"/> reruns failed; then it parks as unavailable, whose answer is a rerun. A retry counts no loop round.
+    /// </summary>
+    private static Applied Unavailable(Deciding d, WorkflowInstance instance, StepFailed failed, string step)
+    {
+        var dependency = failed.Dependency ?? step;
+        var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
+        if (instance.Frame.Run is not { } run || d.Recipe.States[instance.State].Step is not { } use || run.Retries >= Unavailables.MaxRetries)
+        {
+            var park = Unavailables.Park(Unavailables.Question(dependency, instance.Frame.Run?.Retries ?? 0, error), failed.Actor, failed.Code);
+            return d.Changed(d.Rules.Suspend(instance, park));
+        }
+
+        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null, Retries = run.Retries + 1 };
+        var applied = d.Changed(instance with { Frame = instance.Frame with { Run = next } });
+        return applied with { FollowUps = [new FollowUp(FollowUpKind.StartRun, instance.Id, next.Token, use.Use, Answer: null)] };
     }
 
     /// <summary>One trigger being decided, with the rules it hands work to.</summary>

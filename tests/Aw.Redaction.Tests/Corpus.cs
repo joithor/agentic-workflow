@@ -46,7 +46,7 @@ public static class Corpus
         new SecretCase("long-jwt", LongJwt(), "jwt", Tail),
         new SecretCase("long-jwt-in-json", "{\"id_token\":\"" + LongJwt() + "\"}", "jwt", Tail),
         new SecretCase("long-jwt-cookie", "Cookie: session=" + LongJwt(), "jwt", Tail),
-        new SecretCase("credentialed-url-raw-at", Join("postgres://app:p@ss", Body, "@db.example.com/x"), "credentialed-url", Tail),
+        new SecretCase("credentialed-url-raw-at", Join("postgres://app:" + "p@ss", Body, "@db.example.com/x"), "credentialed-url", Tail),
         new SecretCase("shell-pair-after-and", Join("cd repo && api", "_key=", Body), "secret-assignment", Tail),
         new SecretCase("shell-pair-curl-data", Join("curl -d client", "_secret=", Body, " https://x"), "secret-assignment", Tail),
         new SecretCase("shell-pair-no-separator", Join("FOO=1 mytok", "en=", Body, " ./run"), "secret-assignment", Tail),

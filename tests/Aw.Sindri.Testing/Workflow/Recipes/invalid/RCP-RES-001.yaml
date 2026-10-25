@@ -5,12 +5,13 @@ initial: queued
 states:
   queued:
     kind: wait
-    waitFor: { resource: heavy }
+    waitFor: { resource: slot }
     timeout: { after: 1d, then: park }
-    next: "Waiting for a heavy-job slot."
+    next: "Waiting for a session slot."
   done:
     kind: terminal
     outcome: resolved
 transitions:
   - { from: queued, to: done, on: wait.satisfied }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

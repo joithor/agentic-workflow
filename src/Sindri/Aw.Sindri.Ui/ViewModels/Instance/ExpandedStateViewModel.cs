@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -9,15 +10,21 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// served field mapped to words, and the next sentence is shown whole. Nothing is sent from here yet (U8b): each command
 /// shows its CLI with a Copy, a protected one is the lock button, and Cancel asks first with Keep focused.
 /// </summary>
-internal sealed class ExpandedStateViewModel : ObservableObject
+internal sealed partial class ExpandedStateViewModel : ObservableObject
 {
     private CurrentState _current;
     private readonly string _address;
+    private readonly Func<string, string>? _nameOf;
     private readonly ExpandedCommandViewModel? _cancel;
 
-    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock)
+    /// <param name="current">The state the instance is in, as served.</param>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="clipboard">Where Copy puts text.</param>
+    /// <param name="clock">The clock for every timing rule.</param>
+    /// <param name="nameOf">A state id in the recipe's words; null reads the id as served.</param>
+    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock, Func<string, string>? nameOf = null)
     {
-        (_current, _address) = (current, address);
+        (_current, _address, _nameOf) = (current, address, nameOf);
         var status = current.Status;
         Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
@@ -30,8 +37,16 @@ internal sealed class ExpandedStateViewModel : ObservableObject
             Child.Opened += (_, e) => ChildRequested?.Invoke(this, e);
         }
 
-        HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
-        Name = Labels.ExpandedName(current.State, address);
+        if (InstanceRules.IsChildPointer(status.Answer))
+        {
+            AnswerChild = status.Answer;
+            AnswerInChildName = ServedChild(status) is { } childAddress ? Labels.AnswerInChildName(childAddress) : Labels.AnswerInChildPanelName;
+        }
+
+        AttachCommandCopy = new CopyAction(clipboard, clock, Labels.CopyAttachName(address));
+        CopyAttachName = Labels.CopyAttachName(address);
+        InitRun(current, address);
+        Name = Labels.ExpandedName(State, address);
         CopyStatusName = Labels.CopyStatusName(address);
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
     }
@@ -50,13 +65,21 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     internal event EventHandler<FrameOpenEventArgs>? ChildRequested;
 
     /// <summary>The state.</summary>
-    public string State => _current.State;
+    public string State => _nameOf?.Invoke(_current.State) ?? _current.State;
 
     /// <summary>The step line ("kind · ref · declaration"), or empty.</summary>
     public string StepLine { get; }
 
     /// <summary>True when the state has a step.</summary>
     public bool HasStep => StepLine.Length > 0;
+
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The heading of the stage's closed details.</summary>
+    public string DetailsHeading => Labels.StageDetailsHeading;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True when the stage has anything for its details: a step, gates, budget, timeout or an agent session.</summary>
+    public bool HasStageDetails => HasStep || HasGates || HasBudget || HasTimeout || HasRun;
 
     /// <summary>The exit gates, in served order.</summary>
     public IReadOnlyList<string> Gates { get; }
@@ -97,6 +120,44 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>The pointer to the child the instance waits on, or null.</summary>
     public ChildPointerViewModel? Child { get; }
 
+    /// <summary>True when the answer is a pointer to a child that decides it: the state shows "Answer in the child" and no answer form.</summary>
+    public bool AnswersInChild => AnswerChild is not null;
+
+    private StatusAnswer? AnswerChild { get; }
+
+#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
+    /// <summary>The "Answer in the child" words.</summary>
+    public string AnswerInChildText => Labels.AnswerInChild;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>The control's accessible name: the drawn words, then the instance.</summary>
+    public string AnswerInChildName { get; } = string.Empty;
+
+    /// <summary>Follows "Answer in the child": the child's frame when the served pointer is the answer's child, else focus moves to the Children panel of this frame.</summary>
+    public void AnswerInTheChild()
+    {
+        if (AnswerChild is null)
+        {
+            return;
+        }
+
+        if (Child is not null && ServedChild(_current.Status) is not null)
+        {
+            Child.Open();
+        }
+        else
+        {
+            ChildrenRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    // The served child pointer's address when it is the answer's child: "Answer in the child" opens that child, so its name says so; null when the Children panel is the target.
+    private static string? ServedChild(StatusFields status) =>
+        status.Child is { } child && string.Equals(child.Address, status.Answer?.Child, StringComparison.Ordinal) ? child.Address : null;
+
+    /// <summary>Raised when "Answer in the child" has no served child to open: this frame's Children panel is where the answer goes.</summary>
+    internal event EventHandler? ChildrenRequested;
+
     /// <summary>The commands in served order.</summary>
     public IReadOnlyList<ExpandedCommandViewModel> Commands { get; }
 
@@ -105,15 +166,6 @@ internal sealed class ExpandedStateViewModel : ObservableObject
 
     /// <summary>True when one of the commands is an answer.</summary>
     public bool HasAnswer => Commands.Any(c => c.Verb == StatusVerb.Answer);
-
-    /// <summary>True on a live agent step, which Attach joins once API P10a serves it.</summary>
-    public bool HasAttach { get; }
-
-    /// <summary>The chip that stands for Attach; empty without one.</summary>
-    public string AttachChip => HasAttach ? Labels.AvailableWithP10a : string.Empty;
-
-    /// <summary>The Attach chip's accessible name.</summary>
-    public string AttachName => HasAttach ? Labels.AttachPendingName(_address) : string.Empty;
 
     /// <summary>True while the Cancel confirm shows.</summary>
     public bool IsConfirmingCancel { get; private set => Set(ref field, value); }
@@ -157,7 +209,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
     /// The words that move with time (the status text, the timeout, the budget, the next sentence, the child pointer's state) are not: <see cref="Update"/> changes them in place.
     /// </summary>
-    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
+    internal string Signature => string.Join('|', State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift, HasAttach, _current.Status.Run?.Launch, _current.Status.ReasonCode, string.Join(',', (_current.Desk?.Reviews ?? []).Select(r => r.Fact + r.Path + r.Url)));
 
     /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
     /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>
@@ -185,16 +237,8 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>Keeps the instance: closes the confirm.</summary>
     public void Keep() => IsConfirmingCancel = false;
 
-    /// <summary>Goes ahead with the cancel the confirm asked about. The app sends nothing yet: it says so, and the Cancel command's CLI is above to copy.</summary>
-    public void ConfirmCancel()
-    {
-        if (IsConfirmingCancel)
-        {
-            IsConfirmingCancel = false;
-            PendingNote = Labels.SendingArrivesNote;
-            PendingVoice.Say(Labels.SendingArrivesNote);
-        }
-    }
+    /// <summary>Goes ahead with the cancel the confirm asked about: sends it when the frame can (see <see cref="ConfirmCancelAsync"/>), else says the send arrives later.</summary>
+    public void ConfirmCancel() => _ = ConfirmCancelAsync();
 
     /// <summary>Copies the engine's status text, whole.</summary>
     /// <param name="cancellationToken">Cancels the write.</param>

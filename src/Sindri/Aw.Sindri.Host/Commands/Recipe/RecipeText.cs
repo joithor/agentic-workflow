@@ -5,7 +5,7 @@ using Aw.Sindri.Features.ValidateRecipe;
 namespace Aw.Sindri.Host.Commands.Recipe;
 
 /// <summary>The 'recipe validate' and 'recipe eval' text output (spec §6.3). Pure: RecipeCommandTable writes it.</summary>
-internal static class RecipeText
+internal static partial class RecipeText
 {
     /// <summary>
     /// One line per finding (<see cref="RecipeFinding.ToLine"/>): errors first, then information and skipped findings,

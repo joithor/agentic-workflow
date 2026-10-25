@@ -22,7 +22,7 @@ public sealed class ContextGraphApiTests
         var query = await host.Http.Ask(Get("/sindri/context/query?node=feature%3Alayout.split-pane.orientation", Human(host.Token.Value)));
         var outOfScope = await host.Http.Ask(Get("/sindri/context/node?key=thing%3Apane-layout", session));
         var inScope = await host.Http.Ask(Get("/sindri/context/node?key=feature%3Atabs.tab-manager", session));
-        var deep = await host.Http.Ask(Get("/sindri/context/neighbors?key=thing%3Apane-layout&depth=9", Human(host.Token.Value)));
+        var deep = await host.Http.Ask(Get("/sindri/context/neighbors?key=thing%3Apane-layout&depth=-1", Human(host.Token.Value)));
         var word = await host.Http.Ask(Get("/sindri/context/neighbors?key=thing%3Apane-layout&depth=abc", Human(host.Token.Value)));
         var queryWord = await host.Http.Ask(Get("/sindri/context/query?node=feature%3Alayout.split-pane.orientation&depth=abc", Human(host.Token.Value)));
         var budgetWord = await host.Http.Ask(Get("/sindri/context/query?node=feature%3Alayout.split-pane.orientation&budget=abc", Human(host.Token.Value)));
@@ -41,8 +41,8 @@ public sealed class ContextGraphApiTests
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (deep.Status, deep.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (word.Status, word.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (queryWord.Status, queryWord.Code));
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (budgetWord.Status, budgetWord.Code));
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (budgetZero.Status, budgetZero.Code));
+        Assert.Equal(HttpStatusCode.OK, budgetWord.Status);   // why: there is no budget; the parameter is read and ignored, never validated
+        Assert.Equal(HttpStatusCode.OK, budgetZero.Status);
         Assert.Equal(HttpStatusCode.OK, budgetOk.Status);
         Assert.Equal(HttpStatusCode.Forbidden, origin.Status);
     }

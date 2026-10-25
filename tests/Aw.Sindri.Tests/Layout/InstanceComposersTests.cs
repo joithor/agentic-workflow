@@ -44,7 +44,7 @@ public sealed class InstanceComposersTests
 
         Assert.Equal(("A title", parent, counts, _asOf), (detail.Title, detail.Parent, detail.Counts, detail.AsOf));
         Assert.Equal((view.Address, view.Id, view.ItemId, view.State, view.Since), (detail.Address, detail.Id, detail.ItemId, detail.State, detail.Since));
-        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, 3, RecipeUrgency.Triage), detail.Recipe);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, 3, RecipeUrgency.Triage, DisplayName: null), detail.Recipe);
         Assert.Equal(JsonSerializer.Serialize(new CurrentState("produce", view.Step, [], Desk: null, InstanceViews.Status(view, _asOf)), _options), JsonSerializer.Serialize(detail.Current, _options));
         Assert.Equal([ActionId.From("ApplyCommand:cancel")], detail.Actions);
         Assert.Equal("item", detail.Subject.Kind);   // a recipe with no input is subject-less: the item stands in

@@ -12,7 +12,7 @@
 # `tmux attach` line per lane) and each lane's agent (meta.lanesAgent, meta.lanes.<lane>; Claude Code by default).
 # Before it creates anything it looks (read-only: has-session) for `<team>-<lane>` sessions of the lanes it would start on tmux's
 # DEFAULT socket, where a team started before the switch still runs, and refuses (exit 1) if any exist: starting them again
-# would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy (owner only) skips the check.
+# would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy skips the check (the meta session never passes it).
 #   meta-launch.sh [--team <name>] [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy]
 #   meta-launch.sh --init-launcher [--viewer warp|print|<terminal id>] [--force] [--stdout]   write launcher.json for this box
 #   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/teams/<team>/team.json, or the legacy $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
@@ -147,6 +147,16 @@ proc_of() { # lane: the process name a pane runs while the lane's agent is up
   printf '%s' "$pn"
 }
 for l in "${A[@]}" "${L[@]}"; do launcher_agent_ok "$(agent_of "$l")" || exit 1; done
+# A team runs one agent: every lane (not only the ones --lanes selects) resolves to the meta lane's agent. A Codex meta has no
+# Claude lane to deliver to and a Claude meta no Codex one (docs/csharp/meta.md "One agent per team"); refused before anything starts.
+meta_agent="$(agent_of "$meta_lane")"; odd=""
+for l in "${A[@]}"; do
+  [ "$l" != "$meta_lane" ] && [ "$(agent_of "$l")" != "$meta_agent" ] && odd="${odd:+$odd, }$l ($(agent_of "$l"))"
+done
+if [ -n "$odd" ]; then
+  echo "meta-launch: a team runs one agent: the meta lane '$meta_lane' runs $meta_agent, but $odd do not. Fix launcher.json: set meta.lanes.$meta_lane to the lanes' agent, or put the lanes back on $meta_agent (meta.lanesAgent and meta.lanes.<lane>)" >&2
+  exit 1
+fi
 if [ "$viewer" = exec-template ] && [ "$(jq -r '.viewer.argv | type' <<< "$LAUNCHER_DOC")" != array ]; then
   echo "meta-launch: SND-LAUNCH-011: viewer.argv is required for an exec-template viewer (in ${launcher_file:-launcher.json})" >&2; exit 1
 fi
@@ -160,6 +170,7 @@ fi
 for l in "${L[@]}"; do
   a="$(agent_of "$l")"
   [ "$a" = claude-code ] && continue
+  [ "$l" = "$meta_lane" ] && continue   # the meta is not a lane that gets messages: the note is about the lanes that take part
   # A CLI with a hook system (the catalog's reportedId.hook) takes part through the lane hooks scripts/install-meta.sh installs;
   # one without can only be launched.
   if [ "$(jq -r --arg id "$a" '(.[$id].reportedId.hook // false) == true' <<< "$LAUNCHER_CAT")" = true ]; then

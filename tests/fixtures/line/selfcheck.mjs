@@ -566,4 +566,5 @@ function main(argv) {
 
 // Real paths on both sides: on macOS a temp dir is reached through the /var -> /private/var symlink, and a plain
 // path compare there never runs main, so a copy of the fixture would "pass" by doing nothing.
-if (process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === fs.realpathSync(fileURLToPath(import.meta.url))) process.exit(main(process.argv.slice(2)));
+// exitCode, not process.exit(): exit drops stdout a small pipe has not taken yet (a loaded box gives new pipes 4 KB).
+if (process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === fs.realpathSync(fileURLToPath(import.meta.url))) process.exitCode = main(process.argv.slice(2));

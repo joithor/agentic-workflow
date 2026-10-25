@@ -1,12 +1,12 @@
 # Judge — `judge`
 
 `Aw.Judge` (`src/Judge`, tier 1, four projects) is the C# judge: the cheap-agent harness's decision CLI that the bash
-hooks call (send-gate, scope-gate, done-gate, done-gate-annotate, subagent-start-map, judge-health, prompt-sort)
+hooks call (send-gate, scope-gate, done-gate, done-gate-annotate, subagent-start-map, judge-health, prompt-sort, trait-check)
 and the statusline. It is a reimplementation,
 not a translation of the TS judge (`judge/src/**`): the TS package is a guide to what the judge does, never to how.
-Its contracts are the C# tests in `tests/Aw.Judge.Tests`, except the **hook contract** below, which stays frozen
-until the switch (spec §4a step 1, §4c). Before the switch nothing installs it (spec §4a: the installed toolkit stays
-TypeScript); the switch puts the NativeAOT `judge` binary where the hooks find `judge` on `PATH`.
+Its contracts are the C# tests in `tests/Aw.Judge.Tests`, except the **hook contract** below, which the bash hooks
+and the statusline read and which stays frozen (cutover spec §10). `./setup.sh` installs the NativeAOT `judge` binary
+where the hooks find `judge` on `PATH`; the TS judge is gone and the C# judge starts with fresh state (cutover spec §5.3).
 
 ## Package shape
 
@@ -16,8 +16,8 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 
 | Project | Holds |
 |---|---|
-| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the nine questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
-| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`; `AskQuestion` is decorated with `PruneAfterQuestion` (retention, below) |
+| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the prompt sorter's pure side (`PromptSort`: axes, tier-1 skip, keyword heuristics, the decisive-band blend, the scaffold plan) and the trait-check domain (`Traits`), the nine questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
+| `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`, `SortPrompt` (`prompt-sort`), `SetPromptSort` (`prompt-sort scaffold`, `config set prompt-sort`), `CheckTraits` (`trait-check`); `AskQuestion` is decorated with `PruneAfterQuestion` (retention, below) |
 | `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
 | `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table (which takes the providers allowlist out of argv first), `JudgeJsonContext` (the package's one source-generated JSON context) |
 
@@ -36,6 +36,10 @@ the root holds only `AddJudgeCore()`.
 | `IExecutableLocator` | `PathExecutableLocator` (`PATH` lookup for the agent CLIs) | `FakeExecutableLocator`, `ExecutableLocatorContract` |
 | `IModelProvider` | `ClaudeCliProvider`, `CodexCliProvider`, `CursorCliProvider`, `JevProvider` (Providers below); rules is the engine's own `RulesProvider` | `ScriptedProvider`, `ModelProviderContract` (all five adapters and the fake) |
 | `IProviderCatalog` | `ProviderCatalog` (the lineup from `config.json`, `AW_PROVIDER` and `PATH`) | `FakeProviderCatalog`, `ProviderCatalogContract` |
+| `IPromptSortStore` | `SqlitePromptSortStore` (`prompt_sort_axes`, `prompt_sort_runs`, migration 0003) | `InMemoryPromptSortStore`, `PromptSortStoreContract` |
+| `ISortSessionStore` | `FileSortSessionStore` (`sessions/<sid>.sort.json`) | `InMemorySortSessionStore`, `SortSessionStoreContract` |
+| `IBatchClassifier` | `JevBatchClassifier` (one batched Jev call; unavailable, never an error, when Jev is excluded or has no key) | `FakeBatchClassifier`, `BatchClassifierContract` |
+| `ITraitStore`, `ITraitFiles`, `ITraitJudge`, `ITraitCheckLog` | `FileTraitStore` (trait files), `FileTraitFiles` (the repo's text files), `JevTraitJudge`, `FileTraitCheckLog` (`trait-check/log.jsonl`) | the fakes in `tests/Aw.Judge.Tests/CheckTraits/` |
 | `IProcessRunner` | `SystemProcessRunner` (`System.Diagnostics.Process`) | `FakeProcessRunner` (runs `FakeProgram`s), `ProcessRunnerContract` |
 | `ISecretSource` | `KeychainSecretSource` (the variable, then the macOS keychain) | `FakeSecretSource`, `SecretSourceContract` |
 
@@ -74,8 +78,8 @@ fields (the decision plus the question's extra properties) are read as a `JsonOb
 **The providers allowlist** is a global flag, `--providers a,b`, accepted anywhere in argv (`judge --providers rules
 wake-gate` and `judge wake-gate --providers rules` are the same), else `AW_JUDGE_PROVIDERS` (hooks can't always add
 flags); the flag wins over the variable. The table takes the flag out of argv before anything else (`ProvidersFlag`,
-Host), so every command line accepts it, and a flag with no value is a usage error for any command. Only a question
-reads the list (`ProviderNames.ParseList`, Core): names are `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`,
+Host), so every command line accepts it, and a flag with no value is a usage error for any command. Only a question,
+`prompt-sort` and `trait-check` (which ask Jev) read the list (`ProviderNames.ParseList`, Core): names are `rules`, `jev`, `claude-cli`, `codex-cli`, `cursor-cli`,
 `rules` is always kept, and an empty list or an unknown name is a usage error there (64, AW-JUDGE-010). The other
 commands ignore the list, so a bad `AW_JUDGE_PROVIDERS` never stops `health` or the brief commands the hooks call
 (`ProvidersAllowlistCliTests`).
@@ -115,6 +119,10 @@ stderr; the hooks discard stderr except where the hook contract says. At the def
 | `config get` | — | the effective `JudgeConfig` (an invalid `config.json` prints the defaults and logs one warning) | store error → 1 |
 | `config set <question> enabled true\|false` | — | the saved `JudgeConfig` | usage → 64; a question the judge doesn't have: `unknown question: <name> (known: …)` → 1; an invalid `config.json`: `invalid config <file>: <reason>; fix or delete it, then set again` → 1 |
 | `config set <question> threshold <number>` | — | the saved `JudgeConfig` | not a number → 64; outside 0–1 → 1; an invalid `config.json` → 1 as above |
+| `config set prompt-sort enabled true\|false` | — | the saved `JudgeConfig` (`promptSort.enabled`; every other key kept) | anything but `enabled true\|false` → 64; an invalid `config.json` → 1 as above |
+| `prompt-sort` (the hook path) | stdin `{prompt, sessionId}` (`sessionId` empty or absent: `AW_SESSION_ID`) | nothing, or `{"context": "…"}` when a scaffold fires (all four ship off) | always exit 0 once the input parses (the sorter fails open); input that isn't the record → 1. Machine text, slash commands and confirmations are skipped without a decision row; otherwise one `prompt-sort` decision, its axes (`prompt_sort_axes`) and its run, and `sessions/<sid>.sort.json` |
+| `prompt-sort scaffold <brief\|bugfix\|ui-evidence\|plan-first> on\|off` | — | the saved `JudgeConfig` (`promptSort.scaffolds`) | wrong arguments → 64; an unknown scaffold, an invalid `config.json` → 1 |
+| `trait-check --edit --file <p>… \| --stop [--base <ref>] \| --scan [--path <p>…] [--trait <n>…]` (`--budget-ms`, `--min-p`, `--concurrency`) | the repo in the working directory; traits `<repo>/.agents/traits/*.yaml` overlaid by `<state>/traits/<repo-name>/*.yaml` | nothing (edit, stop: findings on stderr; scan: JSON lines on stdout) | **its own exits**: 0 nothing to report or skipped, **2 findings**, **3 Jev unavailable** (excluded, no key, unreachable, past the budget), 64 usage, 1 error. The judge's table reads 2 as "escalated"; here it is findings |
 | `<question>` | stdin: the question's input record (Questions below) | the decided envelope (exit 0) or the escalated one (exit 2) | an unknown question or any argument → 64 |
 
 Each output's exact JSON is pinned by a golden file (`Aw.Kernel.Testing`'s `Golden`, through `CliGolden`; decision ids
@@ -122,6 +130,21 @@ and timestamps normalized) next to the command's CLI tests: `GetHealth/Golden/` 
 (decided, escalated, decided with an extra field), `ExplainDecision/Golden/why.json`, `GetBrief/Golden/brief-get.json`,
 `GetConfig/Golden/` (defaults, a file's blocks) and `SetConfig/Golden/config-set.json`, all under `tests/Aw.Judge.Tests/`.
 A change to an output is a reviewed change to its golden file (`AW_GOLDEN_UPDATE=1` rewrites it locally).
+
+#### Not yet built
+
+These verbs of the TS judge are not in this build yet (cutover spec §5.2, Q9). Each prints `judge: <verb> is not in this build yet`
+on stderr, nothing on stdout, and exits 1; none validates an argument, opens a database, reads stdin, writes a file or calls a
+provider, and no hook calls one. `--providers` is stripped first (a flag with no value exits 64), so `--help` and `-h` are no special
+case. Pinned by `NotBuiltYetCliTests` and by the hook-surface check's stub cases.
+
+| Verbs (`<verb>` in the line) | Lands |
+|---|---|
+| `label` (any subcommand, or none: `label`), `adjudicate`, `eval` (`eval <question>`: `eval`; `eval import-turns`: `eval import-turns`) | unit 6.3, after the switch |
+| `prompt-sort why\|import\|outcomes\|adjudicate\|eval\|promote` (`prompt-sort <sub>`) | unit 6.4, after the switch |
+
+An unknown `prompt-sort <sub>` is `judge: unknown prompt-sort subcommand: <sub>` on stderr, exit 1. The PR that lands a verb
+deletes its row here, its stub test line and its skill marker.
 
 `DecisionOutput` is the decision row with the `decisions` table's column names: `id`, `ts`, `question`,
 `content_class`, `provider`, `decision`, `confidence`, `reason_code`, `latency_ms`, `input_digest`, `undone_at`,
@@ -351,7 +374,7 @@ by `PruneAfterQuestionTests`, `PruneAfterQuestionCliTests` and `SqlitePruneTests
 
 ## Hook contract
 
-What the hooks that keep running read, and nothing else. It stays frozen until the switch.
+What the hooks that keep running read, and nothing else. It stays frozen: a change here is a change to the hooks too, checked by the real-hook check below.
 
 | Hook | Calls | Reads | Pinned by |
 |---|---|---|---|
@@ -365,7 +388,9 @@ What the hooks that keep running read, and nothing else. It stays frozen until t
 | `subagent-start-map.sh` | `judge brief set-agent-id <toolUseId> <agentId>` | nothing (`\|\| true`) | `SetBriefAgentIdCliTests` |
 | `judge-health.sh` | `judge health` | `.status` (`ok`, `degraded`, `down`) and `.failures24h`; a non-zero exit is "health check failed" | `GetHealthCliTests` |
 | `config/statusline.sh` (`judge_health`, the background refresh) | `judge health` (on `PATH`, else `~/.local/bin`) | `.status` (`ok`, `degraded`; anything else, or a non-zero exit, is `down 0`) and `.failures24h` | `GetHealthCliTests` |
-| `prompt-sort.sh` | `judge prompt-sort` < `{prompt, sessionId}` | stdout (J2) | J2 |
+| `prompt-sort.sh` | `judge prompt-sort` < `{prompt, sessionId}` (`AW_SESSION_ID` set; the hook kills it after `AW_PROMPT_SORT_BUDGET_MS`, default 1500) | `.context` of stdout; the exit code is ignored | `SortPromptCliTests`, `SortPromptTests` |
+| `done-gate.sh` | none: reads `judge/sessions/<sid>.sort.json`, which `judge prompt-sort` writes | `.requirements.uiEvidence`; then rewrites the file with `jq 'del(.requirements.uiEvidence)'`. The file's shape is `{prompts, lastFired, requirements: {uiEvidence?}}` and stays frozen; the sorter keeps keys it doesn't know and replaces the file whole | `FileSortSessionStoreContractTests`, `FileSortSessionStoreTests`, and the real-hook `done-ui-*` cases |
+| `trait-check.sh` | `judge trait-check --edit --file <p>…` (PostToolUse) and `judge trait-check --stop` (Stop) | the exit code: 0 passes, **2** with stderr as the message to the agent, **3** is Jev unavailable (fails open, logging `jev-unavailable`), anything else fails open as `judge-exit-<n>` | `TraitCheckCliTests`, `CheckTraitsTests`, and the real-hook `tc-*` cases |
 
 The hooks set `AW_SESSION_ID` on the question calls; the Codex and Cursor adapters export `AW_PROVIDER` (unset under
 Claude Code); `AW_STATE_DIR` and `AW_JUDGE_PROVIDERS` come from the session's environment (below). The hooks also
@@ -381,16 +406,24 @@ fail-open log line; the one case that reaches a fail-open on purpose (a wake-gat
 `judge-exit-2`. A send-gate case has a stub `claude` answer `batch`, which queues the message in
 `judge/outbox/<sid>.jsonl`, and the next urgent send in the same state flushes and attaches it. The done-gate cases cover ask (a pre-rule), an escalation (asks), continue (a stub `claude` answering
 `continue`, which writes `judge/sessions/<sid>.json`), a claim that meets the saved brief in words the no-brief
-evidence check wouldn't accept, one that misses it (exit 2 naming the criteria), and no brief. The health cases cover
+evidence check wouldn't accept, one that misses it (exit 2 naming the criteria), and no brief. The prompt-sort cases cover a real prompt (exit 0, nothing printed, one `prompt-sort` decision row and
+`sessions/<sid>.sort.json` with `prompts: 1`) and a machine-text, a slash-command and a confirmation prompt (nothing recorded, no file).
+The sorter's file feeds the done-gate cases: with `requirements.uiEvidence` set by a `jq` edit of the C# writer's own file, a
+done claim with no UI evidence is blocked once (exit 2, the flag deleted, the rest kept), the same claim then passes, a claim that
+shows a screenshot passes, and the next `prompt-sort` still reads the rewritten file. The trait-check cases cover a repo with no
+traits (exit 0, silent) and a repo with a matching trait and no Jev (the CLI exits 3 and the hook fails open logging
+`jev-unavailable`). Every verb of the Not yet built table is checked for its exact line and exit 1. No real-hook case reaches a Jev: offline
+(`AW_JUDGE_PROVIDERS=rules`) the sorter runs on its keyword heuristics and trait-check is exit 3; a decisive axis and the findings
+path are the C# unit tests' (`SortPromptTests`, `CheckTraitsTests`, over `FakeBatchClassifier`). The health cases cover
 ok, degraded (a stub `claude` that exits 1 leaves one failure row) and a store that can't be opened. It builds
-`src/Judge/Aw.Judge.Host` in Release itself (or takes `AW_JUDGE_CS_BIN`, made absolute); when `judge/dist` is built it
-runs the same cases against the TS judge too and compares. CI runs it in the .NET job, which a hook, statusline or
+`src/Judge/Aw.Judge.Host` in Release itself when neither `AW_JUDGE_CS_BIN` (made absolute) nor an installed `judge` on `PATH`
+is there. CI runs it in the .NET job, which a hook, statusline or
 hook-library change selects (`scripts/ci/changed-areas.sh`), against the NativeAOT publish the AOT smoke step leaves at
 `artifacts/aot-judge-smoke/bin/judge` (spec §4a step 3, §4b.5), so the hook paths the smoke doesn't cover (brief-scope,
 the claude-cli provider, an unusable store) are checked natively too.
 
 ```bash
-bash config/lib/tests/judge-cs-hook-surface.test.sh   # needs dotnet 10; "All … passed (sides: cs ts)" with judge/dist
+bash config/lib/tests/judge-cs-hook-surface.test.sh   # "All judge-cs-hook-surface tests passed."; dotnet 10 only for the build fallback
 bash src/Judge/aot-smoke/run.sh && AW_JUDGE_CS_BIN=artifacts/aot-judge-smoke/bin/judge \
   bash config/lib/tests/judge-cs-hook-surface.test.sh   # as CI runs it: against the NativeAOT binary
 ```
@@ -402,8 +435,8 @@ tests run JIT. `src/Judge/aot-smoke/run.sh` publishes it for the host RID on a c
 files stay RID-free), fails on any IL2xxx/IL3xxx warning or a missing bundled `libe_sqlite3` beside the binary, then
 runs the native binary offline (bare `PATH`, `AW_JUDGE_PROVIDERS=rules`, `AW_LOG_LEVEL` unset) on a temp state
 directory: `health`, `brief save`/`get`/`map-by-name`, a missing brief, the wake-gate and ask-check pre-rules, a
-question nothing decides, `config get`, a usage error, a bad allowlist on a question and a bad `AW_JUDGE_PROVIDERS`
-under `health`. The output, with ids and times normalized,
+question nothing decides, `config get`, a usage error, a bad allowlist on a question, a bad `AW_JUDGE_PROVIDERS`
+under `health`, the offline `prompt-sort` hook path (prints nothing, writes `sessions/s1.sort.json`) and two Not yet built verbs. The output, with ids and times normalized,
 must equal `expected.txt`. CI's .NET job runs it with the other `src/*/aot-smoke/run.sh` scripts. The binary is about
 11 MB.
 
@@ -418,7 +451,9 @@ reads a TS-written file.
 
 | File | Holds |
 |---|---|
-| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `schema_version` |
+| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`, `0003_prompt_sort.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `prompt_sort_axes` and `prompt_sort_runs` (from 0003: one row per sorted axis of a `prompt-sort` decision, and one run row), `schema_version` |
+| `sessions/<sid>.sort.json` | The prompt sorter's per-session state (`{prompts, lastFired, requirements}`), read and rewritten by `done-gate.sh`; the hooks sweep `sessions/*.json` after 24 h |
+| `trait-check/log.jsonl` | One line per trait-check run (redacted) |
 | `config.json` | `JudgeConfig`, written by `config set` (a temporary file in the same directory renamed over it, so a question never reads a half-written file); absent means the defaults |
 
 ## Environment
@@ -429,9 +464,10 @@ reads a TS-written file.
 | `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/` unless `AW_JUDGE_STATE_DIR` is set. Default `~/.agentic-workflow` |
 | `AW_SESSION_ID` | the question commands (`Composition`, once) | The calling session, stored with the decision's detail row; a value past the session id's cap is ignored |
 | `AW_PROVIDER` | `ProviderCatalog` | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
-| `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; only a question reads it, and there an unreadable list is a usage error (64) |
+| `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; only a question, `prompt-sort` and `trait-check` read it, and there an unreadable list is a usage error (64) |
 | `PATH` | `PathExecutableLocator`, `SystemProcessRunner` | Where the agent CLIs (and `security`) are found |
 | `TYPESAFE_API_KEY` | `KeychainSecretSource` | Jev's API key; when unset or empty, the keychain entry `agentic-workflow-typesafe` / `TYPESAFE_API_KEY`; without either Jev is unavailable |
+| `AW_PROMPT_SORT_BUDGET_MS` | `config/hooks/prompt-sort.sh` | The hook's kill budget in milliseconds (default 1500); the judge doesn't read it: Jev's own budget is `promptSort.budgetMs` (200–1050, default 1000) |
 | `AW_LOG_LEVEL` | Aw.Kernel.Telemetry | The stderr log level (default information, at which a normal run logs nothing; the hooks discard stderr) |
 
 The judge sets `AW_JUDGE_CHILD=1` (and `MAX_THINKING_TOKENS=0` for claude) for the agent CLIs it starts; it doesn't

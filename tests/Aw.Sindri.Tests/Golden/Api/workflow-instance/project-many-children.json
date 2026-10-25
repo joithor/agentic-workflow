@@ -8,7 +8,8 @@
     "id": "workflow.project",
     "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
     "version": 12,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "Project"
   },
   "state": "build",
   "since": "2026-10-12T08:40:00.0000000Z",
@@ -171,7 +172,8 @@
           "confirm": "Cancel ITM-01JKG/project/1? 0 running steps stop; 18 children are cancelled."
         }
       ],
-      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done, 2 running, 16 not started.\n  timeout   escalates in 20h 14m (build)\n  budget    tokens 900k / 4M (state), 1.1M / 6M (instance)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JKG/project/1  workflow.project@a8c21e7f0000  v12  build  since 08:40 (3h 46m)\n  next      Waiting on 24 children: 6 done, 2 running, 16 not started.\n  timeout   escalates in 20h 14m (build)\n  budget    tokens 900k / 4M (state), 1.1M / 6M (instance)\n  commands  takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -710,7 +712,8 @@
           ]
         }
       ],
-      "more": 4
+      "more": 4,
+      "displayName": "Step"
     }
   ],
   "counts": {
@@ -723,5 +726,9 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null,
+  "allowedCommands": []
 }

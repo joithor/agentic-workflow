@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 
@@ -9,4 +10,15 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="ParkKind">The park's kind.</param>
 /// <param name="Escalation">The escalation's kind.</param>
 /// <param name="Mirrors">The child it mirrors.</param>
-public sealed record SuspensionSummary(SuspensionKind Kind, ParkReason? Reason, ParkKind? ParkKind, EscalationKind? Escalation, string? Mirrors);
+/// <param name="MirroredParkKind">For a mirror of a park: what the child's own park is about; omitted when none or not carried.</param>
+/// <param name="MirroredEscalation">For a mirror of an escalation: the child's own escalation kind; omitted when none or not carried.</param>
+/// <param name="MirrorsAddress">The mirrored child's address, which the interpreter knows and the id doesn't give back; omitted when none (engine P7: the needs-you row names the child).</param>
+public sealed record SuspensionSummary(
+    SuspensionKind Kind,
+    ParkReason? Reason,
+    ParkKind? ParkKind,
+    EscalationKind? Escalation,
+    string? Mirrors,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? MirrorsAddress = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ParkKind? MirroredParkKind = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] EscalationKind? MirroredEscalation = null);

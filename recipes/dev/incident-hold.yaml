@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-incident-hold
-version: 2
+version: 3
 description: "An incident held at the desk until it is answered: one desk Step with a seven day timeout that parks, and a file output (UI screens, E-21)."
+displayName: "Hold an incident until you answer"
 urgency: incident
 inputs:
   - { key: fact:incident, label: "Incident", type: text, kind: text, generate: "incident {start:date} {start:time}" }

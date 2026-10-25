@@ -32,7 +32,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return listed.Error;
         }
 
-        var extraction = await Cut(request, listed.Value, RecognizerSet.From(settings.Value.Recognizers), cancellationToken).ConfigureAwait(false);
+        var extraction = await Cut(request, listed.Value, new Rules(RecognizerSet.From(settings.Value.Recognizers), settings.Value.Graphify), cancellationToken).ConfigureAwait(false);
         if (extraction.IsError)
         {
             return extraction.Error;
@@ -50,9 +50,10 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered, RecognizersTimedOut: extraction.Value.TimedOut);
     }
 
-    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, RecognizerSet recognizers, CancellationToken cancellationToken)
+    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, Rules rules, CancellationToken cancellationToken)
     {
-        var looked = await Look(request, recognizers, cancellationToken).ConfigureAwait(false);
+        var recognizers = rules.Recognizers;
+        var looked = await Look(request, rules, cancellationToken).ConfigureAwait(false);
         if (looked.IsError || looked.Value.Hit is not null)
         {
             return looked.IsError ? looked.Error : looked.Value.Hit!;   // why: a non-null hit was just checked
@@ -65,10 +66,10 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return built.Error;
         }
 
-        // A map that lost a recognizer's matches to the timeout depends on the load of the day, so it is never cached under the permanent key; the next build extracts again.
-        if (built.Value.TimedOut)
+        // A map that lost a recognizer's matches to the timeout depends on the load of the day, and one whose cluster pass was partial (a truncated snapshot) is no complete map: neither is cached under the permanent key, and the next build extracts again.
+        if (built.Value.TimedOut || set is { Available: true, Reason: not null })
         {
-            return new Found(built.Value.Map, Cached: false, set.Available, TimedOut: true);
+            return new Found(built.Value.Map, Cached: false, set.Available, built.Value.TimedOut);
         }
 
         // A cache that can't be written costs the next run its time, not this one its map; only a refused store folder (005) stops the run.
@@ -79,17 +80,18 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
     }
 
     // A clustered extraction is cached under its own key and found without calling the cluster source; otherwise the source is asked, and the plain key is read only when it has no clusters.
-    private async ValueTask<Result<Probe>> Look(AsOfRequest request, RecognizerSet recognizers, CancellationToken cancellationToken)
+    private async ValueTask<Result<Probe>> Look(AsOfRequest request, Rules rules, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
-        var clustered = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: true, recognizers);
+        var recognizers = rules.Recognizers;
+        var clustered = AsOfMapCache.WithLimits(AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: true, recognizers), rules.Limits);
         var first = await Cached(clustered, clustered: true, cancellationToken).ConfigureAwait(false);
         if (first.IsError || first.Value is not null)
         {
             return first.IsError ? first.Error : new Probe(first.Value, clustered, new ClusterSet([], Available: true));
         }
 
-        var set = await Clusters(repo, sample.Cut, cancellationToken).ConfigureAwait(false);
+        var set = await Clusters(repo, sample.Cut, rules.Limits, cancellationToken).ConfigureAwait(false);
         var plain = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: false, recognizers);
         var second = set.Available ? Results.Success<Found?>(value: null) : await Cached(plain, clustered: false, cancellationToken).ConfigureAwait(false);
         return second.IsError ? second.Error : new Probe(second.Value, set.Available ? clustered : plain, set);
@@ -119,17 +121,20 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
 
         var extraction = MapExtractor.Extract(repo.Name, files, recognizers);
         var extracted = extraction.Map;
-        return new MapExtraction(extracted.Plus(ClusterFeatures.Propose(repo.Name, set, [], extracted)), extraction.TimedOut);
+        return new MapExtraction(extracted.Plus(ClusterFeatures.Propose(repo, set, [], extracted)), extraction.TimedOut);
     }
 
     // A cluster source that fails reads like one that is absent; a denied path never reaches the graph.
-    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
-        var set = await clusters.Clusters(repo, commit, cancellationToken).ConfigureAwait(false);
+        var set = await clusters.Clusters(repo, commit, limits, cancellationToken).ConfigureAwait(false);
         return set.IsError || !set.Value.Available
             ? new ClusterSet([], Available: false)
-            : new ClusterSet([.. set.Value.Clusters.Select(c => c with { Files = [.. c.Files.Where(f => !repo.Denies(f))] }).Where(c => c.Files.Count > 0)], Available: true);
+            : new ClusterSet([.. set.Value.Clusters.Select(c => c with { Files = [.. c.Files.Where(f => !repo.Denies(f))] }).Where(c => c.Files.Count > 0)], Available: true, set.Value.Reason);
     }
+
+    /// <summary>What one as-of build reads from the profile: the extra recognizers and the cluster pass's limits.</summary>
+    private sealed record Rules(RecognizerSet Recognizers, ClusterLimits Limits);
 
     private async ValueTask<Result<GraphSnapshot>> Authored(CorpusSample sample, HashSet<string> tree, CancellationToken cancellationToken)
     {

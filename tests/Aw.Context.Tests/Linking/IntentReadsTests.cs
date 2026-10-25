@@ -1,6 +1,7 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Tests.Map;
 using static Aw.Context.Tests.SyncSources.ExtractDecisionsTests;
@@ -23,7 +24,7 @@ public sealed class IntentReadsTests
         await using var rig = await Rig.Start();
         _ = await rig.Sync(Scope());
 
-        var view = (await rig.World.Engine.Lenses(Toggle, draft: false, depth: null, MapWorld.Human, Ct)).Value;
+        var view = (await rig.World.Engine.Lenses(Toggle, read: MapRead.Current, depth: null, MapWorld.Human, Ct)).Value;
 
         Assert.Contains(view.Bands.Intent.Records, r => r.Key.Value == "record:" + R103);
         Assert.Contains(view.Bands.Intent.Decisions, d => d.Node.Value == DecisionRow.KeyFor(RecordKey.From(R103), Q103).Value);
@@ -37,8 +38,8 @@ public sealed class IntentReadsTests
         _ = await contradicting.Sync(Scope());
         _ = await agreeing.Sync(Scope());
 
-        var bad = (await contradicting.World.Engine.Lenses(Toggle, draft: false, depth: null, MapWorld.Human, Ct)).Value;
-        var fine = (await agreeing.World.Engine.Lenses(Toggle, draft: false, depth: null, MapWorld.Human, Ct)).Value;
+        var bad = (await contradicting.World.Engine.Lenses(Toggle, read: MapRead.Current, depth: null, MapWorld.Human, Ct)).Value;
+        var fine = (await agreeing.World.Engine.Lenses(Toggle, read: MapRead.Current, depth: null, MapWorld.Human, Ct)).Value;
 
         var conflict = Assert.Single(bad.Conflicts, c => c.Kind == ConflictKind.Contradicts);
         Assert.Equal(Toggle, conflict.Node.Value);
@@ -52,7 +53,7 @@ public sealed class IntentReadsTests
         await using var rig = await Rig.Start();
         _ = await rig.Sync(Scope());
 
-        var view = (await rig.World.Engine.Lenses(Resize, draft: false, depth: null, MapWorld.Human, Ct)).Value;
+        var view = (await rig.World.Engine.Lenses(Resize, read: MapRead.Current, depth: null, MapWorld.Human, Ct)).Value;
 
         Assert.Contains(view.Conflicts, c => c.Kind == ConflictKind.Supersedes);
     }
@@ -69,7 +70,7 @@ public sealed class IntentReadsTests
             [new IntentRecord(secret, _onyx, "v1", "Secret plan", ["SEC-1"]), new IntentRecord(open, _onyx, "v1", "Open plan", ["OPN-1"])],
             [new IntentLink(secret, target, LinkRule.Identifier, 0.7, "aa"), new IntentLink(open, target, LinkRule.Identifier, 0.7, "bb")], Cursor: null, new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero)), Ct);
 
-        var view = (await world.Engine.Lenses(Orientation, draft: false, depth: null, MapWorld.Human, Ct)).Value;
+        var view = (await world.Engine.Lenses(Orientation, read: MapRead.Current, depth: null, MapWorld.Human, Ct)).Value;
 
         Assert.Contains(view.Bands.Intent.Records, r => r.Key.Value == "record:" + open.Value);
         Assert.DoesNotContain(view.Bands.Intent.Records, r => r.Key.Value == "record:" + secret.Value);   // a default deny glob (**/secrets/**) names it

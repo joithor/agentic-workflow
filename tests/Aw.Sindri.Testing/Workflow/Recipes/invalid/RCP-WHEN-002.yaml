@@ -14,3 +14,4 @@ states:
 transitions:
   - { from: produce, to: done, on: step.completed, when: { all: [{ outcome: done }, { loop: rounds, below: cap }] } }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

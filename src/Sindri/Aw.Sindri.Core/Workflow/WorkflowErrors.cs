@@ -77,6 +77,17 @@ public static class WorkflowErrors
     /// <summary>SND-WF-016: a Step input has no runtime in this build (missing, or a descriptor only); raised at approve and at start.</summary>
     public static readonly ErrorDefinition StepInputNoRuntime = new("SND-WF-016", ErrorKind.Unavailable, "A Step input has no runtime in this build");
 
+    /// <summary>SND-WF-017: the text a pull refilled differs from what the run recorded; nothing is served.</summary>
+    public static readonly ErrorDefinition InjectionChanged = new("SND-WF-017", ErrorKind.Conflict, "The input's text changed since the run filled it");
+
+    /// <summary>SND-WF-018: a Step input, re-run on a cache miss, filled differently from what the run recorded; the Step does not run on different data.</summary>
+    public static readonly ErrorDefinition InputChanged = new("SND-WF-018", ErrorKind.Conflict, "The input changed since it was recorded");
+
+    /// <summary>SND-WF-019: a filled plan is invalid: a bad section name, or (in a run that began before the caps were removed) a plan over 1 MiB.</summary>
+    public static readonly ErrorDefinition InjectionInvalid = new("SND-WF-019", ErrorKind.Invalid, "A Step input filled an invalid plan");
+    /// <summary>SND-WF-020: a Step input's fill timed out: it ran past its time limit, or stopped reporting progress; the Step fails and names which.</summary>
+    public static readonly ErrorDefinition StepInputTimedOut = new("SND-WF-020", ErrorKind.Unavailable, "A Step input timed out");
+
     /// <summary>SND-BLOCK-001: a fact a block Step reads can't be read; the run ends as step.failed with the message as its reason.</summary>
     public static readonly ErrorDefinition BlockFactUnreadable = new("SND-BLOCK-001", ErrorKind.Unavailable, "A fact a block Step reads can't be read");
 
@@ -86,14 +97,27 @@ public static class WorkflowErrors
     /// <summary>SND-BLOCK-003: the item's repo couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as step.failed 'repo-unreadable'.</summary>
     public static readonly ErrorDefinition BlockRepoUnreadable = new("SND-BLOCK-003", ErrorKind.Unavailable, "The item's repo couldn't be read for a block Step");
 
+    /// <summary>SND-BLOCK-004: a Step's run area file can't be written or read; the Step fails with the message, and a line is never dropped.</summary>
+    public static readonly ErrorDefinition BlockRunAreaUnavailable = new("SND-BLOCK-004", ErrorKind.Unavailable, "A Step's run area file can't be written or read");
+
+    /// <summary>SND-BLOCK-005: the phase has no hidden set in the holdout store (nothing was written or sealed for it); the Step fails with the message.</summary>
+    public static readonly ErrorDefinition HoldoutSetMissing = new("SND-BLOCK-005", ErrorKind.NotFound, "The phase has no hidden set in the holdout store");
+
+    /// <summary>SND-BLOCK-006: a file of the holdout store can't be read, parsed or written; the Step fails with the message, and the owner replaces the phase's hidden set.</summary>
+    public static readonly ErrorDefinition HoldoutStoreUnavailable = new("SND-BLOCK-006", ErrorKind.Unavailable, "The holdout store can't be read or written");
+
+    /// <summary>SND-RECIPE-011: a recipe is not one this build ships (its 'id@hash' is not in the embedded set); approve-all names it (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition RecipeNotShipped = new("SND-RECIPE-011", ErrorKind.Conflict, "The recipe is not one this build ships");
+
     /// <summary>Every live workflow error, for ErrorCatalogue.Validate (together with SindriErrors.All).</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         RecipeInvalid, RecipeNotFound, RecipeNotApproved, RecipeRevoked, RecipePinDrift, RecipeVersionTaken, RecipeEvalsFailing,
-        RecipeChallengeStale, RecipeUnreadable,
+        RecipeChallengeStale, RecipeUnreadable, RecipeNotShipped,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
-        StepInputNoRuntime, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable,
+        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, StepInputTimedOut, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,
+        HoldoutSetMissing, HoldoutStoreUnavailable,
     ];
 
     /// <summary>

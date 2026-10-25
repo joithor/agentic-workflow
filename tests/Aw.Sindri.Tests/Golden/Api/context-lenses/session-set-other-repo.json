@@ -91,11 +91,24 @@
         "records": 1,
         "decisions": 2,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
+        {
+          "node": "action:tab-manager.restore-layout",
+          "label": "Restore a tab's pane layout",
+          "kind": "action",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
         {
           "node": "feature:tabs.tab-groups",
           "label": "Tab groups",
@@ -107,6 +120,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -120,32 +134,45 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
-        }
-      ],
-      "neighbors": [
+        },
         {
-          "node": "action:tab-manager.restore-layout",
-          "label": "Restore a tab's pane layout",
-          "kind": "action",
+          "node": "surface:command/group-tabs",
+          "label": "Group tabs (command)",
+          "kind": "surface",
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
-          "depth": 2,
-          "path": [
-            "implements-by code:src/tabs/TabManager.ts",
-            "implements action:tab-manager.restore-layout"
-          ],
           "anchors": [
             "feature:tabs.tab-manager"
-          ]
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "surface:command/switch-tab",
+          "label": "Switch tab (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
         }
       ],
+      "neighbors": [],
       "affects": [],
       "counts": {
-        "own": 2,
-        "affects": 0
+        "own": 5,
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 4
       },
       "edges": [
         {
@@ -156,9 +183,35 @@
           "link": "edge:bfde89d5c565ec81",
           "confirmed": true,
           "confidence": 1
+        },
+        {
+          "from": "surface:command/group-tabs",
+          "to": "feature:tabs.tab-groups",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:2262bc3d8f1df276",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "surface:command/switch-tab",
+          "to": "feature:tabs.tab-manager",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:e77c6359aafbc814",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "action:tab-manager.restore-layout",
+          "to": "surface:command/switch-tab",
+          "type": "on",
+          "provenance": "human",
+          "link": "edge:9b9cd5139939b8bd",
+          "confirmed": true,
+          "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [
@@ -179,11 +232,13 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
           "path": "src/tabs/TabManager.ts",
           "implements": [
+            "action:tab-manager.restore-layout",
             "feature:tabs.tab-manager"
           ],
           "tests": [],
@@ -198,6 +253,7 @@
           "anchors": [
             "feature:tabs.tab-manager"
           ],
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -210,8 +266,7 @@
         "files": 2,
         "symbols": 0,
         "featuresWithNoCode": 1
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [
@@ -291,28 +346,51 @@
     }
   ],
   "coverage": {
-    "scope": 2,
+    "scope": 5,
     "intent": {
       "covered": 2,
-      "of": 2
+      "of": 5
     },
     "product": {
-      "confirmed": 2,
-      "of": 2
+      "confirmed": 5,
+      "of": 5
     },
     "code": {
-      "implemented": 1,
-      "of": 2,
+      "implemented": 2,
+      "of": 5,
       "level": "file",
       "suggested": 1
     },
     "gaps": [
+      {
+        "node": "action:tab-manager.restore-layout",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
       {
         "node": "feature:tabs.tab-groups",
         "missing": [
           "code"
         ],
         "note": "has intent; its only implements link is a suggestion"
+      },
+      {
+        "node": "surface:command/group-tabs",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:command/switch-tab",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
       }
     ],
     "map": {
@@ -328,28 +406,51 @@
     },
     "byAnchor": {
       "feature:tabs.tab-manager": {
-        "scope": 2,
+        "scope": 5,
         "intent": {
           "covered": 2,
-          "of": 2
+          "of": 5
         },
         "product": {
-          "confirmed": 2,
-          "of": 2
+          "confirmed": 5,
+          "of": 5
         },
         "code": {
-          "implemented": 1,
-          "of": 2,
+          "implemented": 2,
+          "of": 5,
           "level": "file",
           "suggested": 1
         },
         "gaps": [
+          {
+            "node": "action:tab-manager.restore-layout",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
           {
             "node": "feature:tabs.tab-groups",
             "missing": [
               "code"
             ],
             "note": "has intent; its only implements link is a suggestion"
+          },
+          {
+            "node": "surface:command/group-tabs",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:command/switch-tab",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
           }
         ]
       }

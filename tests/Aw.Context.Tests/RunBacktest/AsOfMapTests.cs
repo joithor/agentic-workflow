@@ -171,6 +171,45 @@ public sealed class AsOfMapTests
         Assert.DoesNotContain(clean.Degraded, d => d.StartsWith("recognizers timed out", StringComparison.Ordinal));
     }
 
+    private const string LimitSection = "\"extract\":{\"graphify\":{\"maxFileMB\":8}}";
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_with_clusters_is_cached_per_limits()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
+        world.Clusters.Set = new ClusterSet([], Available: true);
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
+        var ct = TestContext.Current.CancellationToken;
+
+        var first = (await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value;
+        var again = (await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value;
+        var other = (await builder.Build(new AsOfRequest(repo, sample, world.Human(LimitSection)), ct)).Value;
+
+        Assert.True(first.Clustered);
+        Assert.True(again.Cached);
+        Assert.False(other.Cached);   // other limits can cluster other files: the default limits' map is not served
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_whose_cluster_pass_was_truncated_is_never_cached_as_complete()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
+        world.Clusters.Set = new ClusterSet([], Available: true, "snapshot truncated at 2048 MB (3 files skipped)");
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
+        var ct = TestContext.Current.CancellationToken;
+
+        _ = await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct);
+        var second = (await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value;
+
+        Assert.False(second.Cached);
+        world.Clusters.Set = new ClusterSet([], Available: true);
+        Assert.False((await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value.Cached);   // nothing was written under the key a whole pass uses
+    }
+
     private sealed class WriteFailingCache(IEvalStore inner) : IEvalStore
     {
         public ValueTask<Result<string>> WriteReport<T>(EvalReportKind kind, T report, DateTimeOffset at, CancellationToken cancellationToken)

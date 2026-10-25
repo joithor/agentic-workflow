@@ -21,12 +21,30 @@ internal static class GraphRows
     public static readonly IRowMapper<DecisionRow> Decision = new DecisionMapper();
     public static readonly IRowMapper<MapOverride> Override = new OverrideMapper();
     public static readonly IRowMapper<ScopeProposal> Run = new RunMapper();
+    public static readonly IRowMapper<MapHead> Head = new HeadMapper();
+    public static readonly IRowMapper<string> Since = new TextMapper();
+    public static readonly IRowMapper<(int Version, string Since)> Hold = new HoldMapper();
 
     private static string? Text(SqliteDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
 
     private sealed class IdMapper : IRowMapper<long>
     {
         public long Map(SqliteDataReader reader) => reader.GetInt64(0);
+    }
+
+    private sealed class HeadMapper : IRowMapper<MapHead>
+    {
+        public MapHead Map(SqliteDataReader r) => new(Core.Engine.ContextRepoName.From(r.GetString(0)), r.GetString(1), r.GetInt64(2) == 1);
+    }
+
+    private sealed class TextMapper : IRowMapper<string>
+    {
+        public string Map(SqliteDataReader r) => r.GetString(0);
+    }
+
+    private sealed class HoldMapper : IRowMapper<(int, string)>
+    {
+        public (int, string) Map(SqliteDataReader r) => (r.GetInt32(0), r.GetString(1));
     }
 
     private sealed class RunMapper : IRowMapper<ScopeProposal>
@@ -36,8 +54,14 @@ internal static class GraphRows
 
     private sealed class VersionMapper : IRowMapper<MapVersion>
     {
-        public MapVersion Map(SqliteDataReader r) => new(r.GetInt32(0) is > 0 and var number ? number : throw new InvalidOperationException("map_version.id is not positive"), Core.Engine.ContextRepoName.From(r.GetString(1)), Text(r, 2), r.GetInt32(3),
-            GraphText.Time(r.GetString(4)) ?? default, GraphText.Status(r.GetString(5)));
+        public MapVersion Map(SqliteDataReader r)
+        {
+            var number = r.GetInt32(0) is > 0 and var id ? id : throw new InvalidOperationException("map_version.id is not positive");
+            return new MapVersion(number, Core.Engine.ContextRepoName.From(r.GetString(1)), Text(r, 2), r.GetInt32(3), GraphText.Time(r.GetString(4)) ?? default, GraphText.Status(r.GetString(5)))
+            {
+                Ruleset = Text(r, 6),
+            };
+        }
     }
 
     private sealed class NodeMapper : IRowMapper<GraphNode>

@@ -28,7 +28,7 @@ public sealed class WarpViewerTests : TerminalViewerContract, IDisposable
     protected override ViewerRequest Request() => _f.Request() with { Window = TimeSpan.Zero };
 
     private WarpViewer Viewer(string opener, Func<string, string?>? getEnv = null) =>
-        new(new WarpViewerOptions(_launchDir) { Opener = opener, GetEnv = getEnv }, _f.Host, _f.Clock);
+        new(new WarpViewerOptions(_launchDir) { Opener = opener, GetEnv = getEnv, IsMac = false, HasHandler = _ => ValueTask.FromResult(true), OnPath = (program, _) => ValueTask.FromResult(program == "sh") }, _f.Host, _f.Clock);
 
     private string LaunchFile => Path.Combine(_launchDir, "sindri-snd-one.yaml");
 
@@ -102,7 +102,7 @@ public sealed class WarpViewerTests : TerminalViewerContract, IDisposable
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task Per_launch_files_are_0600_and_swept()
+    public async Task Per_launch_files_are_swept_after_60_seconds()
     {
         await _f.StartSession();
         _ = await _f.Drive(Create().Open(_f.Request(), TestContext.Current.CancellationToken));

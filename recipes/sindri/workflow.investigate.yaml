@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.investigate
-version: 1
+version: 2
 description: "Block recipe: find the root cause of a reported bug, with a confirmed hypothesis; at most 2 rounds."
+displayName: "Find why a bug happens"
 inputs:
   - { key: fact:issue, label: "Issue", type: text, kind: text }
   - { key: fact:expected, label: "Expected", type: text, kind: text }
@@ -18,5 +19,5 @@ transitions:
   - { from: investigate, to: diagnosed,   on: step.completed, when: { outcome: diagnosed }, produces: [fact:rootCause] }
   - { from: investigate, to: investigate, on: step.completed, when: { all: [ { outcome: unfixed }, { loop: rounds, below: cap } ] }, produces: [fact:findings] }
   - { from: investigate, to: unfixed,     on: step.completed, when: { all: [ { outcome: unfixed }, { not: { loop: rounds, below: cap } } ] }, produces: [fact:findings] }
-loops: { rounds: { cap: 2 } }
+loops: { rounds: { cap: 4 } }
 evals: [evals/workflow.investigate/happy.jsonl, evals/workflow.investigate/unfixed-cap.jsonl]

@@ -118,7 +118,7 @@ internal static class EventsCommand
 
         if (t.Via is { } via)
         {
-            parts.Add(t.Decision is { } decision ? $"via {via} · decision {decision}" : $"via {via}");
+            parts.Add(t.Decision is { } decision ? $"via {via} · decision {decision}" : t.Tokens is { } tokens ? $"via {via} · tokens {tokens.ToString(CultureInfo.InvariantCulture)}" : $"via {via}");
         }
 
         parts.Add(e.Actor);

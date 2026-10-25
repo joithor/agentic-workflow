@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -53,15 +54,17 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _decide,
             [_decide],
-            cli.Value.Text);
+            cli.Value.Text,
+            new NeedsYouOpen("decision/" + decision.Id.Value, "Review and decide"));
     }
 
     /// <summary>The row for a service whose last run failed.</summary>
     /// <param name="service">The service's row.</param>
     /// <param name="since">When it started to fail.</param>
     /// <param name="scrubber">Scrubs the text.</param>
+    /// <param name="builtIn">True for a built-in service, which can't be paused: its row offers RunService only.</param>
     /// <returns>The row, or SND-CLI-003 when the service's last run didn't fail.</returns>
-    public static Result<NeedsYouRow> ForFailure(ServiceRow service, DateTimeOffset since, ITextScrubber scrubber)
+    public static Result<NeedsYouRow> ForFailure(ServiceRow service, DateTimeOffset since, ITextScrubber scrubber, bool builtIn = false)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(scrubber);
@@ -93,8 +96,9 @@ public static partial class NeedsYouRows
             Notice: null,
             AnswerKind: null,
             unknown ? null : _runService,
-            unknown ? [_pauseService] : [_runService, _pauseService],
-            cli.Value.Text);
+            unknown ? [_pauseService] : builtIn ? [_runService] : [_runService, _pauseService],   // a built-in can't be paused
+            cli.Value.Text,
+            new NeedsYouOpen("service/" + name, "Open the service"));
     }
 
     /// <summary>The row for a live profile that drifted from the approved one.</summary>
@@ -133,7 +137,8 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _approveProfile,
             [_approveProfile],
-            cli.Value.Text));
+            cli.Value.Text,
+            new NeedsYouOpen("needs-you/profile:drift", "Approve the profile")));
     }
 
     private static Result<CliForm> Cli<TId>(string form, string placeholder, TId id)

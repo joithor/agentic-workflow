@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Control;
 
@@ -26,14 +27,50 @@ internal sealed class GitRepoLocator : IRepoLocator
         return RepoScope.Longest(RealPath.Of(checkout) ?? checkout, [.. repos.Select(r => r with { Path = RealPath.Of(r.Path) ?? r.Path })]);   // a link loop: kept as written
     }
 
-    private static async Task<string?> CommonDir(string directory, CancellationToken cancellationToken)
+    public async ValueTask<RepoPlacement?> Place(string directory, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("git", ["-C", directory, "rev-parse", "--path-format=absolute", "--git-common-dir"])
+        if (await Git(directory, ["--show-toplevel", "--git-dir", "--git-common-dir"], cancellationToken).ConfigureAwait(false) is not { } answer
+            || answer.Split('\n') is not [var top, var gitDir, var common])
         {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+            return null;
+        }
+
+        var topReal = RealPath.Of(top) ?? top;
+        var main = MainCheckout(topReal, gitDir, common);
+        var name = repos
+            .Where(r => (RealPath.Of(r.Path) ?? r.Path) is var real && (Same(real, topReal) || (main is not null && Same(real, main))) && RepoName.TryFrom(r.Name, out _))
+            .Select(static r => (RepoName?)RepoName.From(r.Name))
+            .FirstOrDefault();
+        return new RepoPlacement(topReal, name);
+    }
+
+    private static bool Same(string a, string b) => string.Equals(a.TrimEnd('/'), b.TrimEnd('/'), StringComparison.Ordinal);
+
+    /// <summary>
+    /// The main checkout of the repository at <paramref name="top"/>. A main checkout's git dir is its common dir (a separate git dir or a submodule included). A linked worktree's main checkout
+    /// is the common dir's parent only when <c lang="text">.git</c> there is the common dir itself; a worktree of a bare repo, of a separate-git-dir checkout or of a submodule has none, so it is null.
+    /// </summary>
+    private static string? MainCheckout(string top, string gitDir, string common)
+    {
+        var commonReal = RealPath.Of(common) ?? common;
+        if (string.Equals(RealPath.Of(gitDir) ?? gitDir, commonReal, StringComparison.Ordinal))
+        {
+            return top;
+        }
+
+        var candidate = Path.GetDirectoryName(common.TrimEnd('/'));
+        return candidate is not null && string.Equals(RealPath.Of(Path.Combine(candidate, ".git")) ?? string.Empty, commonReal, StringComparison.Ordinal)
+            ? RealPath.Of(candidate) ?? candidate
+            : null;
+    }
+
+    private static Task<string?> CommonDir(string directory, CancellationToken cancellationToken) => Git(directory, ["--git-common-dir"], cancellationToken);
+
+    private static async Task<string?> Git(string directory, string[] queries, CancellationToken cancellationToken)
+    {
+        var start = ChildEnvironment.Start("git", ["-C", directory, "rev-parse", "--path-format=absolute", .. queries]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         Process? git;
         try
         {

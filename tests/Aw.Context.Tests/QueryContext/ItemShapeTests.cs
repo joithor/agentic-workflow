@@ -130,9 +130,11 @@ public sealed class ItemShapeTests
         var session = MapWorld.Session("aw-split-panes");
 
         var linked = await rig.World.Engine.Query(Item("SPL-103"), session, Ct);
-        var outside = await rig.World.Engine.Query(Item("SPL-104"), session, Ct);
+        var surface = await rig.World.Engine.Query(Item("SPL-104"), session, Ct);
+        var outside = await rig.World.Engine.Query(Item("SPL-106"), session, Ct);
 
         Assert.Contains("record:" + R103, linked.Value.Anchors, StringComparer.Ordinal);   // it mentions a node this repo implements
+        Assert.True(surface.IsSuccess);   // it mentions the tab-switch surface, part of the tab manager this repo implements
         Assert.Equal(ContextErrors.UnknownAnchor.Code, outside.Error.Code);   // it touches nothing in scope: not shown, and no fallback to Onyx
     }
 

@@ -4,6 +4,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ApiGoldens;
@@ -108,6 +109,22 @@ public sealed class JobEndpointTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_built_in_service_is_listed_and_runs_by_name()
+    {
+        await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
+        await ViewScenarios.Approve(host, TestContext.Current.CancellationToken);
+        await ViewScenarios.CatchUp(host, TestContext.Current.CancellationToken);
+        var builtIn = host.App.Services.GetServices<BuiltInService>().First().Name.Value;   // the profile does not name it
+
+        var list = Json(await JobHost.Read(host, "/sindri/services")).GetProperty("services").EnumerateArray().Select(static s => s.GetProperty("name").GetString());
+        var run = await Post(host, $"/sindri/services/{builtIn}/run");
+
+        Assert.Contains(builtIn, list, StringComparer.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, run.Status);
+        Assert.NotEqual("SND-SVC-404", run.Code, StringComparer.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task Cancel_ends_a_running_job_cancelled_then_a_second_cancel_is_409_and_an_unknown_job_404()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
@@ -158,7 +175,7 @@ public sealed class JobEndpointTests
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task A_session_sees_a_job_of_its_own_repo_and_not_one_of_another()
+    public async Task A_session_sees_a_job_of_any_repo()
     {
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken);
         await ViewScenarios.Approve(host, TestContext.Current.CancellationToken);
@@ -170,7 +187,7 @@ public sealed class JobEndpointTests
         var own = await host.Http.Ask(Get(path, (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "demo")));
         var other = await host.Http.Ask(Get(path, (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "other")));
 
-        Assert.Equal((HttpStatusCode.OK, HttpStatusCode.NotFound, "SND-JOB-404"), (own.Status, other.Status, other.Code));
+        Assert.Equal((HttpStatusCode.OK, HttpStatusCode.OK), (own.Status, other.Status));
     }
 
     [Fact(Timeout = 60_000)]

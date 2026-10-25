@@ -30,10 +30,10 @@ Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
 Aw.Meta.Core.Commands.ProgramPath
 Aw.Meta.Core.Config.BuildersConfig
 Aw.Meta.Core.Config.BuildersConfig.<Clone>$() -> Aw.Meta.Core.Config.BuildersConfig!
-Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int MaxPerLane = 4, int WorktreeGb = 4) -> void
-Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int MaxPerLane, out int WorktreeGb) -> void
+Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int? MaxPerLane = null, int WorktreeGb = 4) -> void
+Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int? MaxPerLane, out int WorktreeGb) -> void
 Aw.Meta.Core.Config.BuildersConfig.Equals(Aw.Meta.Core.Config.BuildersConfig? other) -> bool
-Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int?
 Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.init -> void
 Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.get -> int
 Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.init -> void
@@ -412,15 +412,15 @@ Aw.Meta.Core.Guard.GuardState.GuardState(string! Fingerprint, int Count) -> void
 Aw.Meta.Core.Guard.StopLoopGuard
 Aw.Meta.Core.Health.BuilderAdvice
 Aw.Meta.Core.Health.BuilderAdvice.<Clone>$() -> Aw.Meta.Core.Health.BuilderAdvice!
-Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
-Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int? MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int? MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
 Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.get -> long
 Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.Equals(Aw.Meta.Core.Health.BuilderAdvice? other) -> bool
 Aw.Meta.Core.Health.BuilderAdvice.Limit.get -> string?
 Aw.Meta.Core.Health.BuilderAdvice.Limit.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.Line() -> string!
-Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int?
 Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.init -> void
 Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.get -> long
 Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.init -> void
@@ -1940,7 +1940,6 @@ Aw.Meta.Core.Config.ContextConfig.RecycleAt.get -> int
 Aw.Meta.Core.Config.ContextConfig.RecycleAt.init -> void
 Aw.Meta.Core.Config.TeamConfig.Context.get -> Aw.Meta.Core.Config.ContextConfig!
 Aw.Meta.Core.Config.TeamConfig.Context.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null, Aw.Meta.Core.Config.ContextConfig? context = null) -> void
 Aw.Meta.Core.Coordination.LaneContextReader
 Aw.Meta.Core.Coordination.LaneContextReader.LaneContextReader(Aw.Meta.Core.Ports.ILaneFiles! files, Aw.Meta.Core.Ports.ILaneSessions! sessions, Aw.Meta.Core.Ports.IClaudeTranscripts! transcripts) -> void
 Aw.Meta.Core.Coordination.LaneContextReader.Read(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>!>!>
@@ -2039,3 +2038,86 @@ static readonly Aw.Meta.Core.Coordination.PaneSubmitter.Pause -> System.TimeSpan
 static readonly Aw.Meta.Core.MetaErrors.RecycleRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.RecycleTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Meta.Core.Coordination.LaneContextReader.ReadOrNull(Aw.Meta.Core.Config.TeamConfig? team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>?>
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null, Aw.Meta.Core.Config.ContextConfig? context = null, Aw.Meta.Core.Config.UsageConfig? usage = null) -> void
+Aw.Meta.Core.Config.TeamConfig.Usage.get -> Aw.Meta.Core.Config.UsageConfig!
+Aw.Meta.Core.Config.TeamConfig.Usage.init -> void
+Aw.Meta.Core.Config.UsageConfig
+Aw.Meta.Core.Config.UsageConfig.<Clone>$() -> Aw.Meta.Core.Config.UsageConfig!
+Aw.Meta.Core.Config.UsageConfig.AutoResume.get -> bool
+Aw.Meta.Core.Config.UsageConfig.AutoResume.init -> void
+Aw.Meta.Core.Config.UsageConfig.Deconstruct(out int ResumeMarginSeconds, out int ProbeMinutes, out bool AutoResume) -> void
+Aw.Meta.Core.Config.UsageConfig.Equals(Aw.Meta.Core.Config.UsageConfig? other) -> bool
+Aw.Meta.Core.Config.UsageConfig.ProbeMinutes.get -> int
+Aw.Meta.Core.Config.UsageConfig.ProbeMinutes.init -> void
+Aw.Meta.Core.Config.UsageConfig.ResumeMarginSeconds.get -> int
+Aw.Meta.Core.Config.UsageConfig.ResumeMarginSeconds.init -> void
+Aw.Meta.Core.Config.UsageConfig.UsageConfig(int ResumeMarginSeconds = 120, int ProbeMinutes = 15, bool AutoResume = true) -> void
+override Aw.Meta.Core.Config.UsageConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.UsageConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.UsageConfig.ToString() -> string!
+static Aw.Meta.Core.Config.UsageConfig.operator !=(Aw.Meta.Core.Config.UsageConfig? left, Aw.Meta.Core.Config.UsageConfig? right) -> bool
+static Aw.Meta.Core.Config.UsageConfig.operator ==(Aw.Meta.Core.Config.UsageConfig? left, Aw.Meta.Core.Config.UsageConfig? right) -> bool
+const Aw.Meta.Core.KvKeys.UsageWatch = "usage.watch" -> string!
+Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Other = 3 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Session = 1 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Weekly = 2 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageMonitor
+Aw.Meta.Core.Usage.UsageMonitor.Check(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>
+Aw.Meta.Core.Usage.UsageMonitor.UsageMonitor(Aw.Meta.Core.Usage.UsageReader! reader, Aw.Meta.Core.Usage.UsageWatcher! watcher) -> void
+Aw.Meta.Core.Usage.UsageReader
+Aw.Meta.Core.Usage.UsageReader.Read(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>!>!>
+Aw.Meta.Core.Usage.UsageReader.ReadOrNull(Aw.Meta.Core.Config.TeamConfig? team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>?>
+Aw.Meta.Core.Usage.UsageReader.UsageReader(Aw.Meta.Core.Ports.ILaneFiles! files, Aw.Meta.Core.Ports.ILaneSessions! sessions, Aw.Meta.Core.Ports.IClaudeTranscripts! transcripts, Aw.Meta.Core.Ports.ILanePane! pane, Aw.Meta.Core.Ports.IMessageStore! messages, System.TimeProvider! clock) -> void
+Aw.Meta.Core.Usage.UsageReading
+Aw.Meta.Core.Usage.UsageReading.<Clone>$() -> Aw.Meta.Core.Usage.UsageReading!
+Aw.Meta.Core.Usage.UsageReading.Deconstruct(out string! Subject, out Aw.Meta.Core.Usage.UsageState State, out Aw.Meta.Core.Usage.UsageStop? Stop, out bool Idle, out string? Reason, out string? Source) -> void
+Aw.Meta.Core.Usage.UsageReading.Equals(Aw.Meta.Core.Usage.UsageReading? other) -> bool
+Aw.Meta.Core.Usage.UsageReading.Idle.get -> bool
+Aw.Meta.Core.Usage.UsageReading.Idle.init -> void
+Aw.Meta.Core.Usage.UsageReading.Reason.get -> string?
+Aw.Meta.Core.Usage.UsageReading.Reason.init -> void
+Aw.Meta.Core.Usage.UsageReading.Source.get -> string?
+Aw.Meta.Core.Usage.UsageReading.Source.init -> void
+Aw.Meta.Core.Usage.UsageReading.State.get -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageReading.State.init -> void
+Aw.Meta.Core.Usage.UsageReading.Stop.get -> Aw.Meta.Core.Usage.UsageStop?
+Aw.Meta.Core.Usage.UsageReading.Stop.init -> void
+Aw.Meta.Core.Usage.UsageReading.Subject.get -> string!
+Aw.Meta.Core.Usage.UsageReading.Subject.init -> void
+Aw.Meta.Core.Usage.UsageReading.UsageReading(string! Subject, Aw.Meta.Core.Usage.UsageState State, Aw.Meta.Core.Usage.UsageStop? Stop, bool Idle, string? Reason = null, string? Source = null) -> void
+Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Limited = 2 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Ok = 1 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Unknown = 3 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageStop
+Aw.Meta.Core.Usage.UsageStop.<Clone>$() -> Aw.Meta.Core.Usage.UsageStop!
+Aw.Meta.Core.Usage.UsageStop.Deconstruct(out Aw.Meta.Core.Usage.UsageKind Kind, out System.DateTimeOffset? ResetsAt, out string! Text) -> void
+Aw.Meta.Core.Usage.UsageStop.Equals(Aw.Meta.Core.Usage.UsageStop? other) -> bool
+Aw.Meta.Core.Usage.UsageStop.Key.get -> string!
+Aw.Meta.Core.Usage.UsageStop.Kind.get -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageStop.Kind.init -> void
+Aw.Meta.Core.Usage.UsageStop.ResetText.get -> string!
+Aw.Meta.Core.Usage.UsageStop.ResetsAt.get -> System.DateTimeOffset?
+Aw.Meta.Core.Usage.UsageStop.ResetsAt.init -> void
+Aw.Meta.Core.Usage.UsageStop.Text.get -> string!
+Aw.Meta.Core.Usage.UsageStop.Text.init -> void
+Aw.Meta.Core.Usage.UsageStop.UsageStop(Aw.Meta.Core.Usage.UsageKind Kind, System.DateTimeOffset? ResetsAt, string! Text) -> void
+Aw.Meta.Core.Usage.UsageWatch
+Aw.Meta.Core.Usage.UsageWatcher
+Aw.Meta.Core.Usage.UsageWatcher.Tick(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>! readings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>
+Aw.Meta.Core.Usage.UsageWatcher.UsageWatcher(Aw.Meta.Core.Coordination.PaneSubmitter! pane, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IKeyValueStore! values, System.TimeProvider! clock) -> void
+const Aw.Meta.Core.Usage.UsageReader.TailBytes = 262144 -> int
+const Aw.Meta.Core.Usage.UsageWatch.Meta = "meta" -> string!
+const Aw.Meta.Core.Usage.UsageWatch.MetaWake = "USAGE OK meta: resume your subagents (SendMessage them) and re-arm the watch" -> string!
+const Aw.Meta.Core.Usage.UsageWatch.ResumeLine = "continue — the usage window has reset; resume where you stopped, including paused builders" -> string!
+override Aw.Meta.Core.Usage.UsageReading.Equals(object? obj) -> bool
+override Aw.Meta.Core.Usage.UsageReading.GetHashCode() -> int
+override Aw.Meta.Core.Usage.UsageReading.ToString() -> string!
+override Aw.Meta.Core.Usage.UsageStop.Equals(object? obj) -> bool
+override Aw.Meta.Core.Usage.UsageStop.GetHashCode() -> int
+override Aw.Meta.Core.Usage.UsageStop.ToString() -> string!
+static Aw.Meta.Core.Usage.UsageReading.operator !=(Aw.Meta.Core.Usage.UsageReading? left, Aw.Meta.Core.Usage.UsageReading? right) -> bool
+static Aw.Meta.Core.Usage.UsageReading.operator ==(Aw.Meta.Core.Usage.UsageReading? left, Aw.Meta.Core.Usage.UsageReading? right) -> bool
+static Aw.Meta.Core.Usage.UsageStop.operator !=(Aw.Meta.Core.Usage.UsageStop? left, Aw.Meta.Core.Usage.UsageStop? right) -> bool
+static Aw.Meta.Core.Usage.UsageStop.operator ==(Aw.Meta.Core.Usage.UsageStop? left, Aw.Meta.Core.Usage.UsageStop? right) -> bool

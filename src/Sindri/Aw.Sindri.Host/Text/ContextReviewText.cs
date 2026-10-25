@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
@@ -9,8 +10,15 @@ using Aw.Sindri.Features.ContextCalls;
 namespace Aw.Sindri.Host.Text;
 
 /// <summary>Plain text for the review verbs: words, never colour, so NO_COLOR and pipes read the same.</summary>
-internal static class ContextReviewText
+internal static partial class ContextReviewText
 {
+    // How many written override ids a result spells out (an apply-file or a multi-undo stays readable); a bulk accept past it gets a pointer instead.
+    private const int ListedIds = 50;
+
+    // How many skipped entries a result lists one per line; past it they're counted per reason, with this many ids as examples.
+    private const int ListedSkips = 10;
+    private const int SkipExamples = 5;
+
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     internal static string Queue(ReviewQueueView queue)
@@ -64,29 +72,58 @@ internal static class ContextReviewText
     internal static string Result(string verb, ReviewResult result)
     {
         var text = new StringBuilder(Invariant($"{verb}: {result.Written.Count} {(result.Written.Count == 1 ? "row" : "rows")} written, {result.Undecided} undecided\n"));
-        if (result.Written.Count > 0)
+        if (result.Written.Count is > 0 and <= ListedIds)
         {
             _ = text.Append("  ").AppendJoin(", ", result.Written.Select(w => w.Value)).AppendLine();
         }
-
-        foreach (var skipped in result.Skipped)
+        else if (result.Written.Count > ListedIds)
         {
-            _ = text.Append("  skipped: ").AppendLine(skipped);
+            // a bulk accept writes thousands: the count and the verb that lists them, not a line of ids
+            _ = text.AppendLine(Invariant($"  every row: sindri context map review --history; every id: add --json to this command"));
+        }
+
+        if (result.Skipped.Count <= ListedSkips)
+        {
+            foreach (var skipped in result.Skipped)
+            {
+                _ = text.Append("  skipped: ").AppendLine(skipped);
+            }
+        }
+        else
+        {
+            Summarize(text, result.Skipped);
         }
 
         return text.ToString();
     }
 
-    internal static string Review(ReviewContextMapResponse response) => response.Result is { } result
-        ? Result("review", result) + (response.Sequence is { } seq ? Invariant($"recorded as event {seq}\n") : string.Empty)
-        : (response.Summary ?? string.Empty) + "\n";
+    // A bulk apply skips thousands (links of a feature the same file rejected): one line per reason, the reason being the line with its
+    // ids blanked, counted, with the first few ids; a reason with one entry keeps its line. --json carries every entry.
+    private static void Summarize(StringBuilder text, IReadOnlyList<string> skipped)
+    {
+        foreach (var reason in skipped.GroupBy(static s => Ids.Replace(s, "…"), StringComparer.Ordinal).OrderByDescending(static g => g.Count()).ThenBy(static g => g.Key, StringComparer.Ordinal))
+        {
+            var count = reason.Count();
+            _ = count == 1
+                ? text.AppendLine(Invariant($"  skipped 1: {reason.First()}"))
+                : text.AppendLine(Invariant($"  skipped {count}: {reason.Key}; e.g. {string.Join(", ", reason.Take(SkipExamples).Select(static s => Ids.Match(s).Value.TrimEnd(':')))}"));
+        }
+
+        _ = text.AppendLine("  every skipped entry: add --json to this command");
+    }
+
+    // A node key or link id in a skipped line ('feature:tabs', 'edge:0123…'); 'fix: …' isn't one, a space follows its colon.
+    [GeneratedRegex(@"\b[a-z][a-z0-9-]*:[^\s,()']+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Ids { get; }
+
+    internal static string Review(ReviewContextMapResponse response) =>
+        Result("review", response.Result) + (response.Sequence is { } seq ? Invariant($"recorded as event {seq}\n") : string.Empty);
 
     internal static string Exported(ReviewExported exported) =>
         Invariant($"Exported the review queue ({exported.Entries} entries) to {exported.Path}\nedit the 'decision' of each entry, then: sindri context map review --apply {exported.Path}\n");
 
-    internal static string Promote(PromoteContextMapResponse response) => response.Promoted is { } promoted
-        ? Invariant($"Promoted {response.Draft} to current for {promoted.Version.Repo.Value} (v{promoted.Version.Number}){(promoted.Retained is { } old ? Invariant($"; v{old.Number} is retained") : string.Empty)}; recorded as event {response.Sequence}\n")
-        : $"draft {response.Draft} has nothing left to decide\n";
+    internal static string Promote(PromoteContextMapResponse response) =>
+        Invariant($"Promoted {response.Draft} to current for {response.Promoted.Version.Repo.Value} (v{response.Promoted.Version.Number}){(response.Promoted.Retained is { } old ? Invariant($"; v{old.Number} is retained") : string.Empty)}; recorded as event {response.Sequence}\n");
 
     internal static string Proposals(ProposalsView view, bool fence)
     {
@@ -99,9 +136,22 @@ internal static class ContextReviewText
         return text.ToString();
     }
 
+    private static string ProposedHeader(ProposeResult result, string recorded)
+    {
+        if (result.Draft is not { } draft)
+        {
+            return "No draft map: nothing to withdraw\n";
+        }
+
+        var lead = result.Withdrawn > 0 || result.Kept > 0 ? Invariant($"Withdrew {result.Withdrawn} undecided proposals ({result.Kept} a person decided stay) in draft") : "Proposed into draft";
+        return Invariant($"{lead} v{draft.Number}: {result.Added} added, {result.Existing} already mapped, {result.Rejected} rejected earlier{recorded}\n");
+    }
+
     internal static string Proposed(ProposeContextMapResponse response, bool fence)
     {
-        var text = new StringBuilder(Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n"));
+        var recorded = response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty;
+        var result = response.Result;
+        var text = new StringBuilder(ProposedHeader(result, recorded));
         foreach (var s in response.Surfaces)
         {
             _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {Fenced(s, fence)}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");

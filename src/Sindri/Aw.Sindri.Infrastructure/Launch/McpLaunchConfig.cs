@@ -9,11 +9,12 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <summary>
 /// What an agent is told at launch about Sindri's MCP endpoint (launcher spec section 3, the entry's 'mcp' form): Claude Code gets a 0600 file under
 /// <c lang="text">launch/</c> that is deleted with the launch, Codex gets typed '-c' overrides. Neither carries a token: the session reaches the
-/// loopback endpoint with the repo header alone. Not a Step's run header (the blocks-over-MCP spec, BA-1, adds that later).
+/// loopback endpoint with the repo header and its own launch id (X-Sindri-Launch, which tells the API a Sindri child from an owner-started session; q100). Not a Step's run header (the blocks-over-MCP spec, BA-1, adds that later).
 /// </summary>
 internal static class McpLaunchConfig
 {
     private const string RepoHeader = "X-Sindri-Repo";
+    private const string LaunchHeader = "X-Sindri-Launch";
 
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(LauncherJsonContext.Default, indented: true);
 
@@ -24,11 +25,12 @@ internal static class McpLaunchConfig
 
     /// <summary>The Claude Code config file's text.</summary>
     /// <param name="target">The endpoint and repo.</param>
+    /// <param name="launch">The launch the file is for.</param>
     /// <returns>The JSON.</returns>
-    internal static byte[] Render(McpTarget target)
+    internal static byte[] Render(McpTarget target, LaunchId launch)
     {
         ArgumentNullException.ThrowIfNull(target);
-        var server = new McpServerEntry("http", Url(target.Port), new Dictionary<string, string>(StringComparer.Ordinal) { [RepoHeader] = target.Repo });
+        var server = new McpServerEntry("http", Url(target.Port), new Dictionary<string, string>(StringComparer.Ordinal) { [RepoHeader] = target.Repo, [LaunchHeader] = launch.Value });
         var document = new McpConfigDocument(new Dictionary<string, McpServerEntry>(StringComparer.Ordinal) { [McpScope.ServerName] = server });
         return [.. AwJson.Serialize(document, _json), .. "\n"u8];
     }
@@ -48,14 +50,14 @@ internal static class McpLaunchConfig
     {
         OwnerOnly.EnsureDirectory(directory);
         var path = PathFor(directory, launch);
-        OwnerOnly.WriteAtomically(path, Render(target));
+        OwnerOnly.WriteAtomically(path, Render(target, launch));
         return path;
     }
 
     /// <summary>Deletes the launch's file; a missing one is fine.</summary>
     /// <param name="directory">The launcher's <c lang="text">launch/</c> directory.</param>
     /// <param name="launch">The launch.</param>
-    internal static void Delete(string directory, LaunchId launch) => File.Delete(PathFor(directory, launch));
+    internal static void Delete(string directory, LaunchId launch) => _ = OwnerOnly.TryDelete(PathFor(directory, launch));
 
     /// <summary>Deletes every config file older than <paramref name="olderThan"/> whose launch <paramref name="live"/> doesn't name (a crashed host leaves them).</summary>
     /// <param name="directory">The launcher's <c lang="text">launch/</c> directory.</param>
@@ -77,20 +79,44 @@ internal static class McpLaunchConfig
             var name = Path.GetFileNameWithoutExtension(file)["mcp-".Length..];
             if (LaunchId.TryParse(name, provider: null, out var launch) && now - new DateTimeOffset(File.GetLastWriteTimeUtc(file)) > olderThan && !live(launch))
             {
-                File.Delete(file);
-                removed++;
+                if (OwnerOnly.TryDelete(file))
+                {
+                    removed++;
+                }
             }
         }
 
         return removed;
     }
 
+    /// <summary>A TOML basic string: quoted, with the backslash and the quote escaped and control characters written as \uXXXX, so a value can't end the string or the table early.</summary>
+    /// <param name="value">The text.</param>
+    /// <returns>The quoted string.</returns>
+    internal static string Toml(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var text = new System.Text.StringBuilder("\"");
+        foreach (var c in value)
+        {
+            _ = c switch
+            {
+                '\\' => text.Append("\\\\"),
+                '"' => text.Append("\\\""),
+                < ' ' or '\u007f' => text.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}"),
+                _ => text.Append(c),
+            };
+        }
+
+        return text.Append('"').ToString();
+    }
+
     /// <summary>The arguments that give the agent its endpoint, after its expanded open or resume template.</summary>
     /// <param name="form">The entry's MCP form.</param>
     /// <param name="target">The endpoint and repo.</param>
+    /// <param name="launch">The launch the arguments are for.</param>
     /// <param name="configPath">The written config file, for the Claude form.</param>
     /// <returns>The arguments; none for <see cref="McpForm.None"/>.</returns>
-    internal static IReadOnlyList<string> Arguments(McpForm form, McpTarget target, string? configPath)
+    internal static IReadOnlyList<string> Arguments(McpForm form, McpTarget target, LaunchId launch, string? configPath)
     {
         ArgumentNullException.ThrowIfNull(target);
         return form switch
@@ -98,8 +124,8 @@ internal static class McpLaunchConfig
             McpForm.ClaudeConfigFile when configPath is not null => ["--mcp-config", configPath],
             McpForm.CodexOverrides =>
             [
-                "-c", $"mcp_servers.{McpScope.ServerName}.url=\"{Url(target.Port)}\"",
-                "-c", $"mcp_servers.{McpScope.ServerName}.http_headers={{ {RepoHeader} = \"{target.Repo}\" }}",
+                "-c", $"mcp_servers.{McpScope.ServerName}.url={Toml(Url(target.Port))}",
+                "-c", $"mcp_servers.{McpScope.ServerName}.http_headers={{ {RepoHeader} = {Toml(target.Repo)}, {LaunchHeader} = {Toml(launch.Value)} }}",
             ],
             McpForm.None or McpForm.ClaudeConfigFile => [],
             _ => [],
@@ -120,6 +146,6 @@ internal static class McpLaunchConfig
         }
 
         var path = form == McpForm.ClaudeConfigFile ? Write(directory, launch, target) : null;
-        return (path, Arguments(form, target, path));
+        return (path, Arguments(form, target, launch, path));
     }
 }

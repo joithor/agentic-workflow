@@ -41,4 +41,34 @@ public abstract class ClaimRefsContract
 
         Expect.True(other.IsSuccess && other.Value);
     }
+
+    /// <summary>An unmarked ref is gone, so the same name can be marked again.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_marked_ref_is_unmarked()
+    {
+        var (refs, repository) = await Create();
+        _ = await refs.Mark(repository, "refs/sindri/dev/T-3", Token);
+
+        var removed = await refs.Unmark(repository, "refs/sindri/dev/T-3", Token);
+        var again = await refs.Mark(repository, "refs/sindri/dev/T-3", Token);
+
+        Expect.True(removed.IsSuccess && removed.Value);
+        Expect.True(again.IsSuccess && again.Value);
+    }
+
+    /// <summary>Unmarking a ref that is not there is harmless, and leaves the others.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Unmarking_a_missing_ref_is_harmless()
+    {
+        var (refs, repository) = await Create();
+        _ = await refs.Mark(repository, "refs/sindri/dev/T-4", Token);
+
+        var missing = await refs.Unmark(repository, "refs/sindri/dev/T-3", Token);
+        var kept = await refs.Mark(repository, "refs/sindri/dev/T-4", Token);
+
+        Expect.True(missing.IsSuccess && !missing.Value);
+        Expect.True(kept.IsSuccess && !kept.Value);
+    }
 }

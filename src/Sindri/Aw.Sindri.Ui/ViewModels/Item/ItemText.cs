@@ -9,8 +9,17 @@ internal sealed class ItemText
     /// <summary>Create item, the button's label (the catalog's label for CreateItem).</summary>
     public string CreateItem { get; } = Labels.Action("CreateItem");
 
-    /// <summary><see cref="Labels.ColumnItem"/>.</summary>
-    public string ColumnItem { get; } = Labels.ColumnItem;
+    /// <summary><see cref="Labels.ItemIdLabel"/>.</summary>
+    public string ItemIdLabel { get; } = Labels.ItemIdLabel;
+
+    /// <summary><see cref="Labels.CopyItemId"/>.</summary>
+    public string CopyItemId { get; } = Labels.CopyItemId;
+
+    /// <summary>The callout's link to Needs you.</summary>
+    public string OpenNeedsYou { get; } = Labels.OpenNeedsYou;
+
+    /// <summary>The repo chip's accessible name.</summary>
+    public string RepoChip { get; } = Labels.RepoChipName;
 
     /// <summary><see cref="Labels.ColumnTitle"/>.</summary>
     public string ColumnTitle { get; } = Labels.ColumnTitle;
@@ -59,6 +68,12 @@ internal sealed class ItemText
 
     /// <summary><see cref="Labels.Instance"/> (the instance row).</summary>
     public string InstanceLabel { get; } = Labels.Instance;
+
+    /// <summary><see cref="Labels.SheetDetails"/>.</summary>
+    public string Details { get; } = Labels.SheetDetails;
+
+    /// <summary><see cref="Labels.SheetVersion"/>.</summary>
+    public string VersionLabel { get; } = Labels.SheetVersion;
 
     /// <summary><see cref="Labels.Confirm"/>.</summary>
     public string Confirm { get; } = Labels.Confirm;

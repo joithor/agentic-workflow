@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Paused">The paused line.</param>
 /// <param name="Commands">The instance's verbs.</param>
 /// <param name="Text">The CLI's text form.</param>
+/// <param name="Injection">The sections the open run's Step inputs filled, by metadata only; empty without inputs.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusFields(
     StatusHeader Header,
@@ -26,4 +27,25 @@ public sealed record StatusFields(
     StatusBudget? Budget,
     StatusPaused? Paused,
     IReadOnlyList<StatusCommand> Commands,
-    string Text);
+    string Text,
+    IReadOnlyList<StatusInjection>? Injection = null)
+{
+    /// <summary>The open agent run (P8); null (not written) for a desk run, a block run or none, so the other statuses read as before.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StatusRun? Run { get; init; }
+
+    /// <summary>The typed code of the park the instance is in ('SND-WF-010' for a refused dispatch or a missing runtime) where the engine knows one; null (not written) otherwise. Carried from where the park is made, never read from its text.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ReasonCode { get; init; }
+
+    /// <summary>When a person took the instance over (the time it entered 'taken-over'); null (not written) when it is not taken over.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? TakenOverAt { get; init; }
+
+    /// <summary>Who took the instance over (the takeover's actor, such as 'human:thor'); null (not written) when it is not taken over.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TakenOverBy { get; init; }
+
+    /// <summary>The open run's injection sections (metadata only), never null; empty without inputs.</summary>
+    public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
+}

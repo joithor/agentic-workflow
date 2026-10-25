@@ -15,7 +15,7 @@ public sealed class RecipeLineTextTests
     private static RecipeView View(IReadOnlyList<RecipeInputView> inputs, IReadOnlyList<RecipeOutputView> outputs, RecipeUrgency urgency = RecipeUrgency.Work, string? name = null) =>
         new(RecipeId.From("workflow.t"), _hash, 1, name, inputs, outputs, urgency, PathOrdering.Path,
             [new RecipeStateView("a", Order: 1, BranchOf: null), new RecipeStateView("b", Order: null, BranchOf: "a"), new RecipeStateView("done", Order: 2, BranchOf: null), new RecipeStateView("orphan", Order: null, BranchOf: null)],
-            [new RecipeLoopView("rounds", "a", "a", Cap: 3)]);
+            [new RecipeLoopView("rounds", "a", "a", Cap: 3)], "T");
 
     private static RecipeSummary Summary(IReadOnlyList<RecipeInput> inputs) =>
         new(RecipeId.From("workflow.t"), 1, _hash, RecipeStanding.Unapproved, Via: null, [], inputs, "work", [], "path", [], []);

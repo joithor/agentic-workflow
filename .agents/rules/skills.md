@@ -145,7 +145,7 @@ When writing the bootstrap AGENTS.md template, do not include Skills tables or K
 6. Update the skill count in the `AGENTS.md` tagline (line 3)
 7. Re-run `./setup.sh` so the skill is linked into every installed provider's skills dir
 
-A skill that ships a TypeScript helper (`skills/<name>/package.json`, run as `node .../dist/bin.js`) must also be added to `AW_SKILL_PACKAGES` in `providers/lib.sh`, so `setup.sh` builds it (`npm ci --ignore-scripts && npm run build`); `providers/tests/install.test.sh` fails if a `package.json` skill is missing from that list. Add its `typecheck` and `test` to the AGENTS.md merge gate.
+A skill that ships a helper binary adds it to `scripts/install-cs.sh` (the table of published binaries and its no-argument check), not to `setup.sh`; there is no per-skill Node build.
 
 ## Symlink Installation
 

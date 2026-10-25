@@ -102,4 +102,37 @@ public sealed class NoProgressTests
         Assert.Equal(ParkReason.NoProgress, verdict.Park?.Reason);
         Assert.Equal("round 3 of revisions made no progress over round 2 (the same failure twice)", verdict.Park?.Question);
     }
+
+    private static ProgressMark Keyed(params string[] keys) => new(Findings: "digest-" + string.Concat(keys), Failure: null, EmptyDiff: false, FindingKeys: keys);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_superset_of_last_rounds_findings_is_no_progress()
+    {
+        Assert.True(LoopRules.NoProgress(_all, Keyed("a", "b"), Keyed("a", "b", "c")));
+        Assert.True(LoopRules.NoProgress(_all, Keyed("a", "b"), Keyed("a", "b")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Fewer_findings_is_progress()
+    {
+        Assert.False(LoopRules.NoProgress(_all, Keyed("a", "b"), Keyed("a")));
+        Assert.False(LoopRules.NoProgress(_all, Keyed("a", "b"), Keyed("a", "c")));
+        Assert.False(LoopRules.NoProgress(_all, Keyed("a"), Keyed()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_empty_diff_parks_when_the_loop_names_it()
+    {
+        var verdict = LoopRules.Reenter(In("checks", new LoopState(1, 3, Keyed("a"))), StepRecipe, "produce", Keyed("z") with { EmptyDiff = true });
+
+        Assert.Equal(ParkReason.NoProgress, verdict.Park?.Reason);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Findings_without_keys_keep_the_digest_rule()
+    {
+        Assert.True(LoopRules.NoProgress(_all, Findings("A"), Findings("A")));
+        Assert.False(LoopRules.NoProgress(_all, Findings("A"), Keyed("a")));
+        Assert.True(LoopRules.NoProgress(_all, Keyed("a") with { FindingKeys = null }, Keyed("a") with { FindingKeys = null }));
+    }
 }

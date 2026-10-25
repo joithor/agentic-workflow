@@ -44,9 +44,12 @@ public sealed class ShellInstanceFocusTests : FrameHost
         var address = FixtureInstances.Detail(scenario).Address;
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: width, height: 1000);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         Settle(window);
         Assert.True(shell.Workflows.Select(address));
-        Press(window, Key.Enter);
+        Press(window, Key.Enter);   // the first Enter opens the run drawer
+        Assert.True(shell.Workflows.IsInspectorOpen);
+        Press(window, Key.Enter);   // Enter on the run the drawer shows opens the run's frame
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown && string.Equals(shell.Instance.Address, address, StringComparison.Ordinal));
         return (window, shell, address);
     }
@@ -114,6 +117,7 @@ public sealed class ShellInstanceFocusTests : FrameHost
     {
         var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
+        OpenDisclosures(window);   // the children wait behind a closed disclosure
         Click(Buttons(window, "ChildRowOpen")[0]);
         await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase != FramePhase.Loading);
         await Until(window, () => FocusedButton(window) is { } held && Named<Control>(window, "InstanceFrame").IsVisualAncestorOf(held), "focus is not in the child's frame");

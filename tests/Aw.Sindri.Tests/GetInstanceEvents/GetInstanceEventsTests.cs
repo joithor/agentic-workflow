@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Host.Commands;
@@ -40,6 +41,19 @@ public sealed class GetInstanceEventsTests
         Assert.Equal(
             $"2  {at}  workflow.started  -> produce  start  {actor}\n4  {at}  workflow.transition  produce -> checks  step.completed done  run 1.1  {actor}\n",
             EventsCommand.Lines(read.Events, empty: true));
+    }
+
+    [Fact]
+    public async Task Reading_an_instance_by_address_touches_only_its_rows()
+    {
+        var h = await Ledger();
+        var counting = new RecordingLedgerReader(h.Store);
+        var instances = Instances();
+
+        var read = (await new GetInstanceEventsService(counting, h.Events, instances, instances).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal([2L, 4L], read.Events.Select(static e => e.Sequence));
+        Assert.Equal((5L, 2), (read.Cursor, counting.RowsRead));
     }
 
     [Fact]
@@ -172,6 +186,40 @@ public sealed class GetInstanceEventsTests
         Assert.Equal(
             $"{block.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)}  {at}  workflow.transition  route-evidence -> evidence-ui  step.completed ui  run 1.1  via block · decision JD-7  {block.Actor}\n",
             EventsCommand.Lines([block], empty: false));
+    }
+
+    [Fact]
+    public async Task An_agent_report_reads_back_as_via_agent_and_its_tokens_and_prints_that_exact_line()
+    {
+        var h = await Ledger();
+        var payload = new WorkflowEventPayload(WorkflowInstanceId.Of(_address).Value, "produce", "checks", "step.completed", "done", "3.1") { Via = "agent", Tokens = 1_200 };
+        Assert.False((await h.Store.Append(h.Events.Entry("workflow.transition", payload, "workflow:T-1/step/1:run-a:10", "T-1"), h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+
+        var read = (await Service(h).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
+
+        var agent = read.Events[^1];
+        Assert.Equal(("agent", 1_200), (agent.Transition.Via, agent.Transition.Tokens));
+        var at = agent.OccurredAt.UtcDateTime.ToString("MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(
+            $"{agent.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)}  {at}  workflow.transition  produce -> checks  step.completed done  run 3.1  via agent · tokens 1200  {agent.Actor}\n",
+            EventsCommand.Lines([agent], empty: false));
+    }
+
+    [Fact]
+    public async Task A_failed_step_serves_its_reason_and_no_other_event_does()
+    {
+        var h = await Ledger();
+        var failed = new StepFailed("agent:session", RunToken.From("4.1"), "lost", Tokens: 0, new string('a', 64));
+        var detail = WorkflowEventDetail.Of(failed, WorkflowInstanceId.Of(_address), suspension: null) with { Reason = "lost" };
+        var payload = new WorkflowEventPayload(WorkflowInstanceId.Of(_address).Value, "write", "parked", "step.failed", Outcome: null, "4.1", detail);
+        Assert.False((await h.Store.Append(h.Events.Entry("workflow.transition", payload, "workflow:T-1/step/1:run-a:11", "T-1"), h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+
+        var read = (await Service(h).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal("lost", read.Events[^1].Transition.Reason);
+        Assert.All(read.Events.Take(read.Events.Count - 1), e => Assert.Null(e.Transition.Reason));
+        Assert.DoesNotContain("reason", System.Text.Json.JsonSerializer.Serialize(read.Events[1].Transition, SliceHarness.Json), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"reason\":\"lost\"", System.Text.Json.JsonSerializer.Serialize(read.Events[^1].Transition, SliceHarness.Json), StringComparison.Ordinal);
     }
 
     [Fact]

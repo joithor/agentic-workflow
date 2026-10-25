@@ -1,0 +1,1499 @@
+{
+  "comment": "Generated once and then maintained by hand; node verify.mjs checks it against the sources. dst lists every edge target in rank order (one edge row each); for ambiguous that is the ranked candidates, for certain and likely one symbol, for unresolved none (dst = NULL). candidates is the true candidate count.",
+  "conventions": {
+    "symbolKey": "file:startLine; unique per symbol",
+    "qualified": "namespace, enclosing types, then the name; local functions and named lambdas are under their enclosing member; an accessor is Property.get or Property.set; a constructor is named like its type",
+    "arity": "parameter count (without the this parameter of an extension method); type-parameter count for a type",
+    "receiver": "this (also an unqualified call), base, type:<Identifier> when the target is a bare identifier starting upper-case or a predefined type keyword, or an object creation, else other",
+    "methodGroupArity": "-1: a method group has no argument count, so any arity matches",
+    "ranking": "same file, then same namespace, then same project directory (this fixture has no manifest, so one directory), then ordinal path, then start line",
+    "noSymbol": "auto-properties, record primary-constructor members, fields and enum members are not symbols; a constructor initializer (Tile: base(side, side)) is not a call site",
+    "inherits": "one edge per base type or interface in the declaration, named by its identifier with receiver type:<Identifier> and arity 0 (type parameters not counted); one repo type of that name is certain, several (the parts of a partial type) are ambiguous, none (a library type such as IEquatable) is unresolved",
+    "dedupe": "two calls with the same src, name, kind, line and target are one edge (Rectangle.Equals line 14, Calculator.Sum line 7, Pipeline.Run line 14 Select)"
+  },
+  "symbols": [
+    {
+      "key": "src/Shapes/IShape.cs:3",
+      "file": "src/Shapes/IShape.cs",
+      "qualified": "Fixture.Shapes.IShape",
+      "name": "IShape",
+      "kind": "interface",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 8,
+      "exported": true,
+      "signature": "public interface IShape"
+    },
+    {
+      "key": "src/Shapes/IShape.cs:5",
+      "file": "src/Shapes/IShape.cs",
+      "qualified": "Fixture.Shapes.IShape.Area",
+      "name": "Area",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 5,
+      "endLine": 5,
+      "exported": true,
+      "signature": "double Area()"
+    },
+    {
+      "key": "src/Shapes/IShape.cs:7",
+      "file": "src/Shapes/IShape.cs",
+      "qualified": "Fixture.Shapes.IShape.Describe",
+      "name": "Describe",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 7,
+      "endLine": 7,
+      "exported": true,
+      "signature": "string Describe()"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:3",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle",
+      "name": "Circle",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 24,
+      "exported": true,
+      "signature": "public sealed class Circle : IShape"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:7",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Circle",
+      "name": "Circle",
+      "kind": "constructor",
+      "arity": 1,
+      "startLine": 7,
+      "endLine": 10,
+      "exported": true,
+      "signature": "public Circle(double radius)"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:12",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Area",
+      "name": "Area",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 12,
+      "endLine": 12,
+      "exported": true,
+      "signature": "public double Area()"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:14",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Describe",
+      "name": "Describe",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 14,
+      "endLine": 14,
+      "exported": true,
+      "signature": "public string Describe()"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:18",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Radius.get",
+      "name": "get",
+      "kind": "accessor",
+      "arity": 0,
+      "startLine": 18,
+      "endLine": 18,
+      "exported": true,
+      "signature": "get"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:21",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Square",
+      "name": "Square",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 21,
+      "endLine": 21,
+      "exported": false,
+      "signature": "private static double Square(double x)"
+    },
+    {
+      "key": "src/Shapes/Circle.cs:23",
+      "file": "src/Shapes/Circle.cs",
+      "qualified": "Fixture.Shapes.Circle.Normalize",
+      "name": "Normalize",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 23,
+      "endLine": 23,
+      "exported": false,
+      "signature": "private static double Normalize(double x)"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:3",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle",
+      "name": "Rectangle",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 30,
+      "exported": true,
+      "signature": "public partial class Rectangle : IShape, IEquatable<Rectangle>"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:7",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Rectangle",
+      "name": "Rectangle",
+      "kind": "constructor",
+      "arity": 2,
+      "startLine": 7,
+      "endLine": 10,
+      "exported": true,
+      "signature": "public Rectangle(double width, double height)"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:12",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Area",
+      "name": "Area",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 12,
+      "endLine": 12,
+      "exported": true,
+      "signature": "public double Area()"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:14",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Equals",
+      "name": "Equals",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 14,
+      "endLine": 14,
+      "exported": true,
+      "signature": "public bool Equals(Rectangle? other)"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:16",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Dimensions",
+      "name": "Dimensions",
+      "kind": "struct",
+      "arity": 0,
+      "startLine": 16,
+      "endLine": 29,
+      "exported": true,
+      "signature": "public readonly struct Dimensions"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:18",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Dimensions.Dimensions",
+      "name": "Dimensions",
+      "kind": "constructor",
+      "arity": 2,
+      "startLine": 18,
+      "endLine": 22,
+      "exported": true,
+      "signature": "public Dimensions(double width, double height)"
+    },
+    {
+      "key": "src/Shapes/Rectangle.cs:28",
+      "file": "src/Shapes/Rectangle.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Dimensions.Diagonal",
+      "name": "Diagonal",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 28,
+      "endLine": 28,
+      "exported": true,
+      "signature": "public double Diagonal()"
+    },
+    {
+      "key": "src/Shapes/Rectangle.Parts.cs:3",
+      "file": "src/Shapes/Rectangle.Parts.cs",
+      "qualified": "Fixture.Shapes.Rectangle",
+      "name": "Rectangle",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 8,
+      "exported": true,
+      "signature": "public partial class Rectangle"
+    },
+    {
+      "key": "src/Shapes/Rectangle.Parts.cs:5",
+      "file": "src/Shapes/Rectangle.Parts.cs",
+      "qualified": "Fixture.Shapes.Rectangle.Describe",
+      "name": "Describe",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 5,
+      "endLine": 5,
+      "exported": true,
+      "signature": "public string Describe()"
+    },
+    {
+      "key": "src/Shapes/Rectangle.Parts.cs:7",
+      "file": "src/Shapes/Rectangle.Parts.cs",
+      "qualified": "Fixture.Shapes.Rectangle.IsSquare",
+      "name": "IsSquare",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 7,
+      "endLine": 7,
+      "exported": true,
+      "signature": "public bool IsSquare()"
+    },
+    {
+      "key": "src/Shapes/Tile.cs:3",
+      "file": "src/Shapes/Tile.cs",
+      "qualified": "Fixture.Shapes.Tile",
+      "name": "Tile",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 10,
+      "exported": true,
+      "signature": "public class Tile : Rectangle"
+    },
+    {
+      "key": "src/Shapes/Tile.cs:5",
+      "file": "src/Shapes/Tile.cs",
+      "qualified": "Fixture.Shapes.Tile.Tile",
+      "name": "Tile",
+      "kind": "constructor",
+      "arity": 1,
+      "startLine": 5,
+      "endLine": 7,
+      "exported": true,
+      "signature": "public Tile(double side)"
+    },
+    {
+      "key": "src/Shapes/Tile.cs:9",
+      "file": "src/Shapes/Tile.cs",
+      "qualified": "Fixture.Shapes.Tile.Describe",
+      "name": "Describe",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 9,
+      "endLine": 9,
+      "exported": true,
+      "signature": "public new string Describe()"
+    },
+    {
+      "key": "src/Shapes/Labeler.cs:3",
+      "file": "src/Shapes/Labeler.cs",
+      "qualified": "Fixture.Shapes.Labeler",
+      "name": "Labeler",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 12,
+      "exported": true,
+      "signature": "public static class Labeler"
+    },
+    {
+      "key": "src/Shapes/Labeler.cs:5",
+      "file": "src/Shapes/Labeler.cs",
+      "qualified": "Fixture.Shapes.Labeler.Label",
+      "name": "Label",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 5,
+      "endLine": 5,
+      "exported": true,
+      "signature": "public static string Label(string name)"
+    },
+    {
+      "key": "src/Shapes/Labeler.cs:7",
+      "file": "src/Shapes/Labeler.cs",
+      "qualified": "Fixture.Shapes.Labeler.Label",
+      "name": "Label",
+      "kind": "method",
+      "arity": 2,
+      "startLine": 7,
+      "endLine": 7,
+      "exported": true,
+      "signature": "public static string Label(string name, double value)"
+    },
+    {
+      "key": "src/Shapes/Labeler.cs:9",
+      "file": "src/Shapes/Labeler.cs",
+      "qualified": "Fixture.Shapes.Labeler.Format",
+      "name": "Format",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 9,
+      "endLine": 9,
+      "exported": true,
+      "signature": "public static string Format(int value)"
+    },
+    {
+      "key": "src/Shapes/Labeler.cs:11",
+      "file": "src/Shapes/Labeler.cs",
+      "qualified": "Fixture.Shapes.Labeler.Format",
+      "name": "Format",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 11,
+      "endLine": 11,
+      "exported": true,
+      "signature": "public static string Format(double value)"
+    },
+    {
+      "key": "src/Shapes/ShapeExtensions.cs:3",
+      "file": "src/Shapes/ShapeExtensions.cs",
+      "qualified": "Fixture.Shapes.ShapeExtensions",
+      "name": "ShapeExtensions",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 19,
+      "exported": true,
+      "signature": "public static class ShapeExtensions"
+    },
+    {
+      "key": "src/Shapes/ShapeExtensions.cs:5",
+      "file": "src/Shapes/ShapeExtensions.cs",
+      "qualified": "Fixture.Shapes.ShapeExtensions.ToSummary",
+      "name": "ToSummary",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 5,
+      "endLine": 5,
+      "exported": true,
+      "signature": "public static string ToSummary(this IShape shape)",
+      "note": "extension method: arity counts the parameters without the this parameter"
+    },
+    {
+      "key": "src/Shapes/ShapeExtensions.cs:7",
+      "file": "src/Shapes/ShapeExtensions.cs",
+      "qualified": "Fixture.Shapes.ShapeExtensions.MapAll",
+      "name": "MapAll",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 7,
+      "endLine": 16,
+      "exported": true,
+      "signature": "public static IReadOnlyList<TOut> MapAll<TIn, TOut>(this IEnumerable<TIn> items, Func<TIn, TOut> map)",
+      "note": "extension method: arity counts the parameters without the this parameter"
+    },
+    {
+      "key": "src/Shapes/ShapeExtensions.cs:18",
+      "file": "src/Shapes/ShapeExtensions.cs",
+      "qualified": "Fixture.Shapes.ShapeExtensions.Banner",
+      "name": "Banner",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 18,
+      "endLine": 18,
+      "exported": true,
+      "signature": "public static string Banner(IShape shape)"
+    },
+    {
+      "key": "src/Shapes/Registry.cs:3",
+      "file": "src/Shapes/Registry.cs",
+      "qualified": "Fixture.Shapes.Registry",
+      "name": "Registry",
+      "kind": "class",
+      "arity": 1,
+      "startLine": 3,
+      "endLine": 30,
+      "exported": true,
+      "signature": "public sealed class Registry<T> where T : IShape"
+    },
+    {
+      "key": "src/Shapes/Registry.cs:7",
+      "file": "src/Shapes/Registry.cs",
+      "qualified": "Fixture.Shapes.Registry.Registry",
+      "name": "Registry",
+      "kind": "constructor",
+      "arity": 0,
+      "startLine": 7,
+      "endLine": 10,
+      "exported": true,
+      "signature": "public Registry()"
+    },
+    {
+      "key": "src/Shapes/Registry.cs:12",
+      "file": "src/Shapes/Registry.cs",
+      "qualified": "Fixture.Shapes.Registry.Register",
+      "name": "Register",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 12,
+      "endLine": 16,
+      "exported": true,
+      "signature": "public int Register(T item)"
+    },
+    {
+      "key": "src/Shapes/Registry.cs:18",
+      "file": "src/Shapes/Registry.cs",
+      "qualified": "Fixture.Shapes.Registry.TotalArea",
+      "name": "TotalArea",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 18,
+      "endLine": 27,
+      "exported": true,
+      "signature": "public double TotalArea()"
+    },
+    {
+      "key": "src/Shapes/Registry.cs:29",
+      "file": "src/Shapes/Registry.cs",
+      "qualified": "Fixture.Shapes.Registry.Select",
+      "name": "Select",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 29,
+      "endLine": 29,
+      "exported": true,
+      "signature": "public IReadOnlyList<TOut> Select<TOut>(Func<T, TOut> projection)"
+    },
+    {
+      "key": "src/Shapes/Models.cs:3",
+      "file": "src/Shapes/Models.cs",
+      "qualified": "Fixture.Shapes.ShapeKind",
+      "name": "ShapeKind",
+      "kind": "enum",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 7,
+      "exported": true,
+      "signature": "public enum ShapeKind"
+    },
+    {
+      "key": "src/Shapes/Models.cs:9",
+      "file": "src/Shapes/Models.cs",
+      "qualified": "Fixture.Shapes.ShapeInfo",
+      "name": "ShapeInfo",
+      "kind": "record",
+      "arity": 0,
+      "startLine": 9,
+      "endLine": 12,
+      "exported": true,
+      "signature": "public record ShapeInfo(string Name, double Area)"
+    },
+    {
+      "key": "src/Shapes/Models.cs:11",
+      "file": "src/Shapes/Models.cs",
+      "qualified": "Fixture.Shapes.ShapeInfo.Title",
+      "name": "Title",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 11,
+      "endLine": 11,
+      "exported": true,
+      "signature": "public string Title()"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:3",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator",
+      "name": "Calculator",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 3,
+      "endLine": 29,
+      "exported": true,
+      "signature": "public class Calculator"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:5",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Sum",
+      "name": "Sum",
+      "kind": "method",
+      "arity": 2,
+      "startLine": 5,
+      "endLine": 5,
+      "exported": true,
+      "signature": "public int Sum(int a, int b)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:7",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Sum",
+      "name": "Sum",
+      "kind": "method",
+      "arity": 3,
+      "startLine": 7,
+      "endLine": 7,
+      "exported": true,
+      "signature": "public int Sum(int a, int b, int c)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:9",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Product",
+      "name": "Product",
+      "kind": "method",
+      "arity": 2,
+      "startLine": 9,
+      "endLine": 9,
+      "exported": true,
+      "signature": "public int Product(int a, int b)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:11",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Total",
+      "name": "Total",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 11,
+      "endLine": 20,
+      "exported": true,
+      "signature": "public int Total(int[] values)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:22",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Scale",
+      "name": "Scale",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 22,
+      "endLine": 28,
+      "exported": false,
+      "signature": "private static int Scale(int value)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:24",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Scale.Doubled",
+      "name": "Doubled",
+      "kind": "local-function",
+      "arity": 1,
+      "startLine": 24,
+      "endLine": 24,
+      "exported": false,
+      "signature": "int Doubled(int x)"
+    },
+    {
+      "key": "src/Calc/Calculator.cs:26",
+      "file": "src/Calc/Calculator.cs",
+      "qualified": "Fixture.Calc.Calculator.Scale.twice",
+      "name": "twice",
+      "kind": "lambda",
+      "arity": 1,
+      "startLine": 26,
+      "endLine": 26,
+      "exported": false,
+      "signature": "Func<int, int> twice = x => Doubled(x)"
+    },
+    {
+      "key": "src/App/Program.cs:6",
+      "file": "src/App/Program.cs",
+      "qualified": "Fixture.App.Program",
+      "name": "Program",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 6,
+      "endLine": 26,
+      "exported": true,
+      "signature": "public static class Program"
+    },
+    {
+      "key": "src/App/Program.cs:8",
+      "file": "src/App/Program.cs",
+      "qualified": "Fixture.App.Program.Main",
+      "name": "Main",
+      "kind": "method",
+      "arity": 0,
+      "startLine": 8,
+      "endLine": 23,
+      "exported": true,
+      "signature": "public static int Main()"
+    },
+    {
+      "key": "src/App/Program.cs:25",
+      "file": "src/App/Program.cs",
+      "qualified": "Fixture.App.Program.Describe",
+      "name": "Describe",
+      "kind": "method",
+      "arity": 1,
+      "startLine": 25,
+      "endLine": 25,
+      "exported": false,
+      "signature": "private static string Describe(IShape? shape)"
+    },
+    {
+      "key": "src/App/Pipeline.cs:6",
+      "file": "src/App/Pipeline.cs",
+      "qualified": "Fixture.App.Pipeline",
+      "name": "Pipeline",
+      "kind": "class",
+      "arity": 0,
+      "startLine": 6,
+      "endLine": 17,
+      "exported": true,
+      "signature": "public static class Pipeline"
+    },
+    {
+      "key": "src/App/Pipeline.cs:8",
+      "file": "src/App/Pipeline.cs",
+      "qualified": "Fixture.App.Pipeline.Run",
+      "name": "Run",
+      "kind": "method",
+      "arity": 2,
+      "startLine": 8,
+      "endLine": 16,
+      "exported": true,
+      "signature": "public static string Run(IReadOnlyList<IShape> shapes, Calculator calculator)"
+    },
+    {
+      "key": "src/App/Pipeline.cs:10",
+      "file": "src/App/Pipeline.cs",
+      "qualified": "Fixture.App.Pipeline.Run.Line",
+      "name": "Line",
+      "kind": "local-function",
+      "arity": 1,
+      "startLine": 10,
+      "endLine": 10,
+      "exported": false,
+      "signature": "string Line(IShape shape)"
+    }
+  ],
+  "edges": [
+    {
+      "src": "src/Shapes/Circle.cs:3",
+      "kind": "inherits",
+      "name": "IShape",
+      "arity": 0,
+      "receiver": "type:IShape",
+      "line": 3,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/IShape.cs:3"
+      ]
+    },
+    {
+      "src": "src/Shapes/Circle.cs:12",
+      "kind": "calls",
+      "name": "Square",
+      "arity": 1,
+      "receiver": "this",
+      "line": 12,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Circle.cs:21"
+      ]
+    },
+    {
+      "src": "src/Shapes/Circle.cs:14",
+      "kind": "calls",
+      "name": "Label",
+      "arity": 2,
+      "receiver": "type:Labeler",
+      "line": 14,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Labeler.cs:7"
+      ]
+    },
+    {
+      "src": "src/Shapes/Circle.cs:14",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "this",
+      "line": 14,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5",
+        "src/Shapes/Rectangle.cs:12"
+      ]
+    },
+    {
+      "src": "src/Shapes/Circle.cs:18",
+      "kind": "calls",
+      "name": "Normalize",
+      "arity": 1,
+      "receiver": "this",
+      "line": 18,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Circle.cs:23"
+      ]
+    },
+    {
+      "src": "src/Shapes/Circle.cs:23",
+      "kind": "calls",
+      "name": "Abs",
+      "arity": 1,
+      "receiver": "type:Math",
+      "line": 23,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Rectangle.cs:3",
+      "kind": "inherits",
+      "name": "IShape",
+      "arity": 0,
+      "receiver": "type:IShape",
+      "line": 3,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/IShape.cs:3"
+      ]
+    },
+    {
+      "src": "src/Shapes/Rectangle.cs:3",
+      "kind": "inherits",
+      "name": "IEquatable",
+      "arity": 1,
+      "receiver": "type:IEquatable",
+      "line": 3,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Rectangle.cs:7",
+      "kind": "calls",
+      "name": "Dimensions",
+      "arity": 2,
+      "receiver": "type:Dimensions",
+      "line": 9,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Rectangle.cs:18"
+      ]
+    },
+    {
+      "src": "src/Shapes/Rectangle.cs:14",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "this",
+      "line": 14,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Rectangle.cs:12",
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5"
+      ]
+    },
+    {
+      "src": "src/Shapes/Rectangle.cs:28",
+      "kind": "calls",
+      "name": "Sqrt",
+      "arity": 1,
+      "receiver": "type:Math",
+      "line": 28,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Rectangle.Parts.cs:5",
+      "kind": "calls",
+      "name": "Label",
+      "arity": 2,
+      "receiver": "type:Labeler",
+      "line": 5,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Labeler.cs:7"
+      ]
+    },
+    {
+      "src": "src/Shapes/Rectangle.Parts.cs:5",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "this",
+      "line": 5,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5",
+        "src/Shapes/Rectangle.cs:12"
+      ]
+    },
+    {
+      "src": "src/Shapes/Rectangle.Parts.cs:7",
+      "kind": "calls",
+      "name": "Abs",
+      "arity": 1,
+      "receiver": "type:Math",
+      "line": 7,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Tile.cs:3",
+      "kind": "inherits",
+      "name": "Rectangle",
+      "arity": 0,
+      "receiver": "type:Rectangle",
+      "line": 3,
+      "confidence": "ambiguous",
+      "candidates": 2,
+      "dst": [
+        "src/Shapes/Rectangle.Parts.cs:3",
+        "src/Shapes/Rectangle.cs:3"
+      ]
+    },
+    {
+      "src": "src/Shapes/Tile.cs:9",
+      "kind": "calls",
+      "name": "Describe",
+      "arity": 0,
+      "receiver": "base",
+      "line": 9,
+      "confidence": "ambiguous",
+      "candidates": 4,
+      "dst": [
+        "src/Shapes/Tile.cs:9",
+        "src/Shapes/Circle.cs:14",
+        "src/Shapes/IShape.cs:7",
+        "src/Shapes/Rectangle.Parts.cs:5"
+      ],
+      "limitation": "receiver base: the nearest base-class member is the true target; the literal rule of spec 5.4 keeps every same-name candidate"
+    },
+    {
+      "src": "src/Shapes/Labeler.cs:5",
+      "kind": "calls",
+      "name": "Label",
+      "arity": 2,
+      "receiver": "this",
+      "line": 5,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Labeler.cs:7"
+      ]
+    },
+    {
+      "src": "src/Shapes/Labeler.cs:7",
+      "kind": "calls",
+      "name": "Format",
+      "arity": 1,
+      "receiver": "this",
+      "line": 7,
+      "confidence": "ambiguous",
+      "candidates": 2,
+      "dst": [
+        "src/Shapes/Labeler.cs:9",
+        "src/Shapes/Labeler.cs:11"
+      ]
+    },
+    {
+      "src": "src/Shapes/Labeler.cs:9",
+      "kind": "calls",
+      "name": "ToString",
+      "arity": 0,
+      "receiver": "other",
+      "line": 9,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Labeler.cs:11",
+      "kind": "calls",
+      "name": "ToString",
+      "arity": 1,
+      "receiver": "other",
+      "line": 11,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:5",
+      "kind": "calls",
+      "name": "Describe",
+      "arity": 0,
+      "receiver": "other",
+      "line": 5,
+      "confidence": "ambiguous",
+      "candidates": 4,
+      "dst": [
+        "src/Shapes/Circle.cs:14",
+        "src/Shapes/IShape.cs:7",
+        "src/Shapes/Rectangle.Parts.cs:5",
+        "src/Shapes/Tile.cs:9"
+      ]
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:5",
+      "kind": "calls",
+      "name": "Format",
+      "arity": 1,
+      "receiver": "type:Labeler",
+      "line": 5,
+      "confidence": "ambiguous",
+      "candidates": 2,
+      "dst": [
+        "src/Shapes/Labeler.cs:9",
+        "src/Shapes/Labeler.cs:11"
+      ]
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:5",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "other",
+      "line": 5,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5",
+        "src/Shapes/Rectangle.cs:12"
+      ]
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:7",
+      "kind": "calls",
+      "name": "List",
+      "arity": 0,
+      "receiver": "type:List",
+      "line": 9,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:7",
+      "kind": "calls",
+      "name": "Add",
+      "arity": 1,
+      "receiver": "other",
+      "line": 12,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:7",
+      "kind": "calls",
+      "name": "map",
+      "arity": 1,
+      "receiver": "this",
+      "line": 12,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:18",
+      "kind": "calls",
+      "name": "ToSummary",
+      "arity": 0,
+      "receiver": "other",
+      "line": 18,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/ShapeExtensions.cs:5"
+      ]
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:18",
+      "kind": "calls",
+      "name": "ToUpperInvariant",
+      "arity": 0,
+      "receiver": "other",
+      "line": 18,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/ShapeExtensions.cs:18",
+      "kind": "calls",
+      "name": "ToSummary",
+      "arity": 1,
+      "receiver": "this",
+      "line": 18,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": [],
+      "limitation": "an extension method called in static form has the this parameter in its argument count, so the arity without this does not match"
+    },
+    {
+      "src": "src/Shapes/Registry.cs:7",
+      "kind": "calls",
+      "name": "List",
+      "arity": 0,
+      "receiver": "type:List",
+      "line": 9,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Registry.cs:12",
+      "kind": "calls",
+      "name": "Add",
+      "arity": 1,
+      "receiver": "other",
+      "line": 14,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Shapes/Registry.cs:18",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "other",
+      "line": 23,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5",
+        "src/Shapes/Rectangle.cs:12"
+      ]
+    },
+    {
+      "src": "src/Shapes/Registry.cs:29",
+      "kind": "calls",
+      "name": "MapAll",
+      "arity": 1,
+      "receiver": "other",
+      "line": 29,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/ShapeExtensions.cs:7"
+      ]
+    },
+    {
+      "src": "src/Shapes/Models.cs:11",
+      "kind": "calls",
+      "name": "ToUpperInvariant",
+      "arity": 0,
+      "receiver": "other",
+      "line": 11,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/Calc/Calculator.cs:7",
+      "kind": "calls",
+      "name": "Sum",
+      "arity": 2,
+      "receiver": "this",
+      "line": 7,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:5"
+      ]
+    },
+    {
+      "src": "src/Calc/Calculator.cs:11",
+      "kind": "calls",
+      "name": "Sum",
+      "arity": 2,
+      "receiver": "this",
+      "line": 16,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:5"
+      ]
+    },
+    {
+      "src": "src/Calc/Calculator.cs:11",
+      "kind": "calls",
+      "name": "Scale",
+      "arity": 1,
+      "receiver": "this",
+      "line": 19,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:22"
+      ]
+    },
+    {
+      "src": "src/Calc/Calculator.cs:22",
+      "kind": "calls",
+      "name": "twice",
+      "arity": 1,
+      "receiver": "this",
+      "line": 27,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:26"
+      ]
+    },
+    {
+      "src": "src/Calc/Calculator.cs:26",
+      "kind": "calls",
+      "name": "Doubled",
+      "arity": 1,
+      "receiver": "this",
+      "line": 26,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:24"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "List",
+      "arity": 0,
+      "receiver": "type:List",
+      "line": 10,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Circle",
+      "arity": 1,
+      "receiver": "type:Circle",
+      "line": 10,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Circle.cs:7"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Rectangle",
+      "arity": 2,
+      "receiver": "type:Rectangle",
+      "line": 10,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Rectangle.cs:7"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Tile",
+      "arity": 1,
+      "receiver": "type:Tile",
+      "line": 10,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Tile.cs:5"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Registry",
+      "arity": 0,
+      "receiver": "type:Registry",
+      "line": 11,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Registry.cs:7"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Register",
+      "arity": 1,
+      "receiver": "other",
+      "line": 14,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Registry.cs:12"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "WriteLine",
+      "arity": 1,
+      "receiver": "type:Console",
+      "line": 15,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "ToSummary",
+      "arity": 0,
+      "receiver": "other",
+      "line": 15,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/ShapeExtensions.cs:5"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Calculator",
+      "arity": 0,
+      "receiver": "type:Calculator",
+      "line": 18,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": [],
+      "limitation": "a class with no declared constructor has no constructor symbol, so the creation finds no candidate"
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Sum",
+      "arity": 3,
+      "receiver": "other",
+      "line": 19,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:7"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Product",
+      "arity": 2,
+      "receiver": "other",
+      "line": 19,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:9"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "Run",
+      "arity": 2,
+      "receiver": "type:Pipeline",
+      "line": 20,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/App/Pipeline.cs:8"
+      ]
+    },
+    {
+      "src": "src/App/Program.cs:8",
+      "kind": "calls",
+      "name": "WriteLine",
+      "arity": 1,
+      "receiver": "type:Console",
+      "line": 21,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Program.cs:25",
+      "kind": "calls",
+      "name": "Describe",
+      "arity": 0,
+      "receiver": "other",
+      "line": 25,
+      "confidence": "ambiguous",
+      "candidates": 4,
+      "dst": [
+        "src/Shapes/Circle.cs:14",
+        "src/Shapes/IShape.cs:7",
+        "src/Shapes/Rectangle.Parts.cs:5",
+        "src/Shapes/Tile.cs:9"
+      ]
+    },
+    {
+      "src": "src/App/Pipeline.cs:10",
+      "kind": "calls",
+      "name": "Describe",
+      "arity": 0,
+      "receiver": "other",
+      "line": 10,
+      "confidence": "ambiguous",
+      "candidates": 4,
+      "dst": [
+        "src/Shapes/Circle.cs:14",
+        "src/Shapes/IShape.cs:7",
+        "src/Shapes/Rectangle.Parts.cs:5",
+        "src/Shapes/Tile.cs:9"
+      ]
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Select",
+      "arity": 1,
+      "receiver": "other",
+      "line": 12,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Registry.cs:29"
+      ],
+      "limitation": "the call is System.Linq Select; the only repo candidate of that name and arity is Registry.Select, so the syntax rule says likely"
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Area",
+      "arity": 0,
+      "receiver": "other",
+      "line": 12,
+      "confidence": "ambiguous",
+      "candidates": 3,
+      "dst": [
+        "src/Shapes/Circle.cs:12",
+        "src/Shapes/IShape.cs:5",
+        "src/Shapes/Rectangle.cs:12"
+      ]
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "ToArray",
+      "arity": 0,
+      "receiver": "other",
+      "line": 12,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Select",
+      "arity": 1,
+      "receiver": "other",
+      "line": 13,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Registry.cs:29"
+      ],
+      "limitation": "the call is System.Linq Select; the only repo candidate of that name and arity is Registry.Select, so the syntax rule says likely"
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Line",
+      "arity": -1,
+      "receiver": "this",
+      "line": 13,
+      "confidence": "certain",
+      "candidates": 1,
+      "dst": [
+        "src/App/Pipeline.cs:10"
+      ]
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "ToArray",
+      "arity": 0,
+      "receiver": "other",
+      "line": 13,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Total",
+      "arity": 1,
+      "receiver": "other",
+      "line": 14,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Calc/Calculator.cs:11"
+      ]
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Select",
+      "arity": 1,
+      "receiver": "other",
+      "line": 14,
+      "confidence": "likely",
+      "candidates": 1,
+      "dst": [
+        "src/Shapes/Registry.cs:29"
+      ],
+      "limitation": "the call is System.Linq Select; the only repo candidate of that name and arity is Registry.Select, so the syntax rule says likely"
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "ToArray",
+      "arity": 0,
+      "receiver": "other",
+      "line": 14,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    },
+    {
+      "src": "src/App/Pipeline.cs:8",
+      "kind": "calls",
+      "name": "Join",
+      "arity": 2,
+      "receiver": "type:string",
+      "line": 15,
+      "confidence": "unresolved",
+      "candidates": 0,
+      "dst": []
+    }
+  ],
+  "counts": {
+    "symbols": 54,
+    "edges": 64,
+    "byConfidence": {
+      "certain": 19,
+      "likely": 10,
+      "ambiguous": 13,
+      "unresolved": 22
+    }
+  }
+}

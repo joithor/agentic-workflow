@@ -1,0 +1,83 @@
+{
+  "id": "ITM-0000000000000000000000000000000f",
+  "title": "Try the queue",
+  "repo": "demo",
+  "state": "running",
+  "step": "triaged",
+  "since": "2026-01-01T00:00:00.0000000Z",
+  "primaryAction": null,
+  "actions": [],
+  "owner": null,
+  "version": 1,
+  "createdBy": "human:cli",
+  "waitingOn": null,
+  "instance": "ITM-0000000000000000000000000000000f/step/1",
+  "createdAt": "2026-01-01T00:00:00.0000000Z",
+  "updatedAt": "2026-01-01T00:00:00.0000000Z",
+  "body": null,
+  "link": null,
+  "launch": {
+    "modes": [
+      "open",
+      "attach",
+      "resume"
+    ],
+    "defaultTarget": "claude-code",
+    "chosenBy": "lastUsed",
+    "attach": {
+      "target": "claude-code",
+      "tabTitle": "sindri ITM-0000000000000000000000000000000f",
+      "since": "2026-01-01T00:00:00.0000000Z",
+      "argv": [
+        "tmux",
+        "-L",
+        "sindri-launch",
+        "attach",
+        "-t",
+        "=snd-LCH-00000000000000000000000000000003"
+      ]
+    },
+    "resumable": {
+      "target": "codex",
+      "sessionId": "0a1b2c3d-0000-4000-8000-000000000002"
+    },
+    "inFlight": null,
+    "lastStarted": {
+      "target": "claude-code",
+      "at": "2026-01-01T00:00:00.0000000Z",
+      "tabTitle": "sindri ITM-0000000000000000000000000000000f",
+      "viewer": {
+        "kind": "none",
+        "label": "none",
+        "outcome": "skipped",
+        "code": null
+      },
+      "late": false,
+      "attach": [
+        "tmux",
+        "-L",
+        "sindri-launch",
+        "attach",
+        "-t",
+        "=snd-LCH-00000000000000000000000000000003"
+      ]
+    },
+    "confirm": {
+      "reason": "A claude-code session for this item started 0 min ago. Open another one?"
+    },
+    "repoPath": "/work/demo",
+    "blockers": [
+      {
+        "code": "SND-LAUNCH-002",
+        "detail": "no terminal viewer is available here (fix: sindri launch init)"
+      }
+    ]
+  },
+  "asOf": {
+    "cursor": 12,
+    "ledgerHead": 12,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

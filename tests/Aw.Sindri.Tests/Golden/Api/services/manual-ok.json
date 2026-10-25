@@ -1,6 +1,50 @@
 {
   "services": [
     {
+      "name": "code-index-embed",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "code-index-main-move",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "context-map-refresh",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "context-sync-gaps",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
       "name": "heartbeat",
       "every": "5s",
       "paused": false,
@@ -11,7 +55,11 @@
         "ranAt": "2026-01-01T00:00:00.0000000Z"
       },
       "nextSlot": "2025-12-31T23:59:05.0000000Z",
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
     },
     {
       "name": "phantom",
@@ -19,7 +67,44 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
+    },
+    {
+      "name": "pr-watch",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "router-stub",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "setup",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "stuck",
@@ -27,13 +112,28 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
+    },
+    {
+      "name": "workflow-events",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
     }
   ],
   "empty": null,
   "asOf": {
-    "cursor": 11,
-    "ledgerHead": 11,
+    "cursor": 12,
+    "ledgerHead": 12,
     "projectedAt": "2026-01-01T00:00:00.0000000Z",
     "rebuilding": false,
     "stalled": false

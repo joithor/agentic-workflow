@@ -31,8 +31,6 @@ public sealed class CommandHarnessVersionsContractTests : HarnessVersionsContrac
     private string Script(string body)
     {
         var path = Path.Combine(_home.Path, string.Create(CultureInfo.InvariantCulture, $"tool-{++_next}"));
-        File.WriteAllText(path, $"#!/bin/sh\n{body}\n");
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 }

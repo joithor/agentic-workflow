@@ -13,6 +13,9 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     private readonly List<(MapVersion Version, GraphSnapshot Graph)> _versions = [];
     private readonly List<MapOverride> _overrides = [];
     private readonly Dictionary<string, ScopeProposal> _runs = new(StringComparer.Ordinal);
+    private readonly Dictionary<int, IReadOnlyList<MapHead>> _heads = [];
+    private int? _hold;
+    private DateTimeOffset? _chain;
     private int _last;   // version numbers are never reused, as with the SQLite store's AUTOINCREMENT
 
     /// <summary>Called after every snapshot read, with whether it was of the draft: a test's way to make another caller write between a service's read and its write.</summary>
@@ -29,6 +32,14 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
 
     /// <summary>When set, <see cref="Promote"/> fails with it and changes nothing.</summary>
     public Error? PromoteFailure { get; set; }
+
+    /// <summary>Records the map rules the current version was built under (issue 1041: the fake's stand-in for a build that stamps its ruleset).</summary>
+    /// <param name="ruleset">The hash.</param>
+    public void StampCurrentRuleset(string ruleset)
+    {
+        var at = _versions.FindIndex(v => v.Version.Status == MapVersionStatus.Current);
+        _versions[at] = _versions[at] with { Version = _versions[at].Version with { Ruleset = ruleset } };
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion?>> Current(CancellationToken cancellationToken) =>
@@ -69,6 +80,11 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     public ValueTask<Result<MapVersion>> SaveCurrent(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
     {
         ArgumentNullException.ThrowIfNull(map);
+        if (map.Heads is { } named && MapHead.Check(named) is { } refused)
+        {
+            return Results.Failure<MapVersion>(refused);
+        }
+
         for (var i = 0; i < _versions.Count; i++)
         {
             if (_versions[i].Version.Status == MapVersionStatus.Current)
@@ -77,15 +93,22 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
             }
         }
 
-        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Current);
+        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Current) { Ruleset = map.Ruleset };
         _versions.Add((version, map.Graph));
+        _heads[version.Number] = map.Heads ?? (MapHead.IsCommit(map.Commit) ? [new MapHead(map.Repo, map.Commit!, OnDefault: true)] : []);
+        (_hold, _chain) = (null, null);
         _ = Append(map.Overrides);
         return Results.Success(version);
     });
 
     /// <inheritdoc/>
     public ValueTask<Result<int>> Delete(IReadOnlyList<int> versions, CancellationToken cancellationToken) =>
-        Done(() => Results.Success(_versions.RemoveAll(v => versions.Contains(v.Version.Number) && v.Version.Status == MapVersionStatus.Retained)));
+        Done(() =>
+        {
+            var gone = _versions.Where(v => versions.Contains(v.Version.Number) && v.Version.Status == MapVersionStatus.Retained).Select(v => v.Version.Number).ToList();
+            gone.ForEach(n => _ = _heads.Remove(n));
+            return Results.Success(_versions.RemoveAll(v => gone.Contains(v.Version.Number)));
+        });
 
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion>> SaveDraft(MapImport map, DateTimeOffset created, CancellationToken cancellationToken) => Done(() =>
@@ -96,9 +119,15 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
             return Results.Failure<MapVersion>(failed);
         }
 
-        _ = _versions.RemoveAll(v => v.Version.Status == MapVersionStatus.Draft);
-        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
+        if (map.Heads is { } named && MapHead.Check(named) is { } refused)
+        {
+            return Results.Failure<MapVersion>(refused);
+        }
+
+        _ = DropDrafts(v => true);
+        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft) { Ruleset = map.Ruleset };
         _versions.Add((version, map.Graph));
+        _heads[version.Number] = map.Heads ?? [];
         _ = Append(map.Overrides);
         return Results.Success(version);
     });
@@ -112,13 +141,20 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
             return Results.Failure<MapVersion>(failed);
         }
 
-        if (_versions.RemoveAll(v => v.Version.Number == draft && v.Version.Status == MapVersionStatus.Draft) == 0)
+        if (map.Heads is { } named && MapHead.Check(named) is { } refused)
+        {
+            return Results.Failure<MapVersion>(refused);
+        }
+
+        var copied = _heads.GetValueOrDefault(draft) ?? [];
+        if (DropDrafts(v => v.Number == draft) == 0)
         {
             return Results.Failure<MapVersion>(ContextErrors.PromoteRefused.With("the draft is no longer the open draft; nothing was replaced"));
         }
 
-        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
+        var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft) { Ruleset = map.Ruleset };
         _versions.Add((version, map.Graph));
+        _heads[version.Number] = map.Heads ?? copied;
         _ = Append(map.Overrides);
         return Results.Success(version);
     });
@@ -138,6 +174,7 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
 
         var copy = current with { Number = ++_last, Created = created, Status = MapVersionStatus.Draft };
         _versions.Add((copy, source.Graph));
+        _heads[copy.Number] = _heads.GetValueOrDefault(current.Number) ?? [];
         return Results.Success(copy);
     });
 
@@ -164,13 +201,79 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
         }
 
         _versions[index] = _versions[index] with { Version = _versions[index].Version with { Status = MapVersionStatus.Current } };
+        (_hold, _chain) = (null, null);
         return Results.Success(_versions[index].Version);
     });
 
     /// <inheritdoc/>
-    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken) => Done(() =>
+    public ValueTask<Result<IReadOnlyList<MapHead>>> Heads(int version, CancellationToken cancellationToken) =>
+        Done(() => Results.Success(_heads.GetValueOrDefault(version) ?? []));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPublishState>> Held(CancellationToken cancellationToken) => Done(() =>
+    {
+        var draft = LatestDraft();
+        var current = _versions.Select(v => v.Version).FirstOrDefault(v => v.Status == MapVersionStatus.Current)?.Number;
+        var hold = _hold is { } held && _chain is { } since ? new MapHold(held, since, _heads.GetValueOrDefault(held) ?? []) : null;
+        return Results.Success(new MapPublishState(hold, draft, current, current is { } c ? _heads.GetValueOrDefault(c) ?? [] : []) { CurrentRuleset = _versions.Select(v => v.Version).FirstOrDefault(v => v.Status == MapVersionStatus.Current)?.Ruleset });
+    });
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, CancellationToken cancellationToken) => Done(() =>
+    {
+        ArgumentNullException.ThrowIfNull(hold);
+        if (MapHead.Check(hold.Heads) is { } refused)
+        {
+            return Results.Failure<MapHold>(refused);
+        }
+
+        var latest = LatestDraft();
+        if (latest != hold.Version)
+        {
+            return Results.Failure<MapHold>(ContextErrors.DraftChanged.With(Changed(hold.Version, latest)));
+        }
+
+        _chain = MapHold.NextSince(_chain, hold.Since);
+        _hold = hold.Version;
+        return Results.Success(new MapHold(hold.Version, _chain.Value, _heads.GetValueOrDefault(hold.Version) ?? []));
+    });
+
+    /// <inheritdoc/>
+    public ValueTask<Result<Unit>> Release(int version, CancellationToken cancellationToken) => Done(() =>
+    {
+        _hold = _hold == version ? null : _hold;
+        return Results.Success(Unit.Value);
+    });
+
+    /// <summary>The words of a 190, as the SQLite store words it.</summary>
+    internal static string Changed(int expected, int? latest) => string.Create(System.Globalization.CultureInfo.InvariantCulture,
+        $"draft {expected} was expected, {(latest is { } n ? $"the latest draft is {n}" : "there is no draft")} (a rebuild replaced it, or it was promoted)");
+
+    private int DropDrafts(Func<MapVersion, bool> which)
+    {
+        var gone = _versions.Where(v => v.Version.Status == MapVersionStatus.Draft && which(v.Version)).Select(v => v.Version.Number).ToList();
+        foreach (var n in gone)
+        {
+            _ = _heads.Remove(n);
+            _hold = _hold == n ? null : _hold;   // the hold goes with its draft; the chain stays
+        }
+
+        return _versions.RemoveAll(v => gone.Contains(v.Version.Number));
+    }
+
+    /// <inheritdoc/>
+    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken, int? expectedDraft = null) => Done(() =>
     {
         ArgumentNullException.ThrowIfNull(overrides);
+        if (expectedDraft is { } expected)
+        {
+            var latest = LatestDraft();
+            if (latest != expected)
+            {
+                return Results.Failure<int>(ContextErrors.DraftChanged.With(Changed(expected, latest)));
+            }
+        }
+
         return Results.Success(Append(overrides));
     });
 
@@ -199,7 +302,8 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     private int Append(IReadOnlyList<MapOverride> overrides)
     {
         var added = 0;
-        foreach (var o in overrides.Where(o => !_overrides.Exists(e => e.ToId() == o.ToId())))
+        var held = _overrides.Select(e => e.ToId().Value).ToHashSet(StringComparer.Ordinal);   // a set: a 50k-row append compared every pair
+        foreach (var o in overrides.Where(o => held.Add(o.ToId().Value)))
         {
             _overrides.Add(o);
             added++;
@@ -209,4 +313,6 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     }
 
     private ValueTask<Result<T>> Done<T>(Func<Result<T>> work) => ValueTask.FromResult(Failure is { } failure ? failure : work());
+
+    private int? LatestDraft() => _versions.Where(v => v.Version.Status == MapVersionStatus.Draft).Max(v => (int?)v.Version.Number);
 }

@@ -18,7 +18,7 @@ public static partial class TransitionDecision
 
     private static Decision Answer(Deciding d, WorkflowInstance instance, AnswerGiven answer)
     {
-        var fit = AnswerFit.Check(instance, d.Recipe, answer);
+        var fit = AnswerFit.Check(instance, answer);
         if (fit.IsError)
         {
             return new Rejected(d.Key, fit.Error);
@@ -145,13 +145,18 @@ public static partial class TransitionDecision
             return d.Changed(instance);
         }
 
+        if (StartBlocked(d, instance) is { } blocked)
+        {
+            return d.Changed(d.Rules.Suspend(instance, blocked));
+        }
+
         var countsRound = resume.Kind == ResumeKind.Rerun;
         if (countsRound && state.Loop is { } capped && d.Rules.AtCap(instance, d.Recipe, instance.State))
         {
             return d.Changed(d.Rules.Suspend(instance, AtCapPark(capped, step.Use, resume, d.Trigger.Actor)));
         }
 
-        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null };
+        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null, Retries = 0 };   // an answer starts the engine's retries again
         var loops = countsRound && state.Loop is { } name && instance.Loops.TryGetValue(name, out var loop)
             ? With(instance.Loops, name, loop with { Round = loop.Round + 1 })
             : instance.Loops;

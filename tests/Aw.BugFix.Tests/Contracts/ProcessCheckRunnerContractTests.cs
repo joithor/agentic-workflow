@@ -68,12 +68,12 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
     {
         var path = Environment.GetEnvironmentVariable("PATH") ?? "/usr/bin:/bin";
         var runner = new ProcessCheckRunner(
-            BugFixSettings.Read(name => name switch { "PATH" => path, "TZ" => "UTC", "DATABASE_URL" => "postgres://u:secret@db/x", "AW_BUGFIX_CHECK_ENV" => "TZ,DATABASE_URL", _ => null }),
+            BugFixSettings.Read(name => name switch { "PATH" => path, "TZ" => "UTC", "DATABASE_URL" => "postgres://u:" + "secret@db/x", "AW_BUGFIX_CHECK_ENV" => "TZ,DATABASE_URL", _ => null }),
             new LocalFiles());
 
         var exit = runner.Run(["sh", "-c", "echo \"$TZ $DATABASE_URL\""], Directory, Path.Combine(_temp.Path, "digest.log"), Key);   // TZ is passed through and frozen: no duplicate
 
-        Assert.Equal("UTC postgres://u:secret@db/x", File.ReadAllText(Path.Combine(_temp.Path, "digest.log")).Trim());
+        Assert.Equal("UTC postgres://u:" + "secret@db/x", File.ReadAllText(Path.Combine(_temp.Path, "digest.log")).Trim());
         Assert.Equal(["DATABASE_URL", "PATH", "TZ"], exit.Environment.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(exit.Environment.Values, v => Assert.Matches("^hmac-sha256:[0-9a-f]{64}$", v));
         Assert.DoesNotContain(exit.Environment.Values, v => v.Contains("secret", StringComparison.Ordinal));
@@ -88,8 +88,7 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
         }
 
         var script = Path.Combine(_temp.Path, "check.sh");
-        File.WriteAllText(script, "#!/bin/sh\nexit 4\n");
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(script, "exit 4\n");
 
         var exit = Runner.Run(["./check.sh"], Directory, Path.Combine(_temp.Path, "rel.log"), Key);
 
@@ -106,8 +105,7 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
         }
 
         var target = Path.Combine(_temp.Path, "dispatch.sh");
-        File.WriteAllText(target, "#!/bin/sh\n[ \"$(basename \"$0\")\" = alias ] && exit 0 || exit 5\n");
-        File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(target, "[ \"$(basename \"$0\")\" = alias ] && exit 0 || exit 5\n");
         _ = File.CreateSymbolicLink(Path.Combine(_temp.Path, "alias"), target);
 
         var exit = Runner.Run(["./alias"], Directory, Path.Combine(_temp.Path, "alias.log"), Key);

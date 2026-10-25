@@ -51,6 +51,30 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
     }
 
     [Fact]
+    public void TurnEndedAt_is_when_the_stop_hook_touched_its_file_and_null_without_it()
+    {
+        var files = Create();
+        Expect.True(files.TurnEndedAt(A.FirstLaunchId) is null);
+        _ = Seed(LaunchFiles.TurnEndedName(A.FirstLaunchId), KnownInstants.Epoch);
+
+        Expect.Equal((KnownInstants.Epoch, true), (files.TurnEndedAt(A.FirstLaunchId)!.Value, files.TurnEndedAt(Second) is null));
+    }
+
+    [Fact]
+    public void Forget_deletes_the_turn_file_and_the_startup_sweep_removes_a_stale_one()
+    {
+        var now = KnownInstants.Epoch.AddHours(1);
+        var files = Create();
+        var forgotten = Seed(LaunchFiles.TurnEndedName(A.FirstLaunchId), now);
+        var stale = Seed(LaunchFiles.TurnEndedName(Second), now.AddMinutes(-5));
+
+        files.Forget(A.FirstLaunchId);
+        var removed = files.SweepStale(now, TimeSpan.FromSeconds(60), static _ => false);
+
+        Expect.Equal((1, false, false), (removed, File.Exists(forgotten), File.Exists(stale)));
+    }
+
+    [Fact]
     public void Startup_sweep_removes_stale_per_launch_files()
     {
         var now = KnownInstants.Epoch.AddHours(1);
@@ -63,6 +87,21 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
         var removed = files.SweepStale(now, TimeSpan.FromSeconds(60), static _ => false);
 
         Expect.Equal((2, false, false, true, true), (removed, File.Exists(stale), File.Exists(staleId), File.Exists(fresh), File.Exists(stranger)));
+    }
+
+    [Fact]
+    public void Startup_sweep_removes_a_secret_file_no_wrap_ever_read_but_not_a_live_launchs()
+    {
+        var now = KnownInstants.Epoch.AddHours(1);
+        var files = Create();
+        LaunchSecrets.Write(Options.SecretsDirectory, A.FirstLaunchId, "never-read");
+        LaunchSecrets.Write(Options.SecretsDirectory, Second, "still-needed");
+        File.SetLastWriteTimeUtc(LaunchSecrets.SecretPathFor(Options.SecretsDirectory, A.FirstLaunchId), now.AddMinutes(-5).UtcDateTime);
+        File.SetLastWriteTimeUtc(LaunchSecrets.SecretPathFor(Options.SecretsDirectory, Second), now.AddMinutes(-5).UtcDateTime);
+
+        var removed = files.SweepStale(now, TimeSpan.FromSeconds(60), static launch => launch.Equals(Second));
+
+        Expect.Equal((1, false, true), (removed, File.Exists(LaunchSecrets.SecretPathFor(Options.SecretsDirectory, A.FirstLaunchId)), File.Exists(LaunchSecrets.SecretPathFor(Options.SecretsDirectory, Second))));
     }
 
     [Fact]

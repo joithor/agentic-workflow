@@ -10,6 +10,12 @@ namespace Aw.Sindri.Features.ValidateRecipe;
 /// <param name="File">The name findings show for <paramref name="Text"/>; null with <paramref name="Path"/>, whose file name findings show (spec P1 signal: 'at RCP-REACH-001.yaml:14:3').</param>
 public sealed record ValidateRecipeRequest(string? Path, string? Text, string? File)
 {
+    /// <summary>
+    /// A saved 'recipe manifest --json' output (setup-once spec §5.3): the recipe's id, version and hash are checked against it as if its recipes were registered, so a recipe whose
+    /// hash changed at the same version is RCP-VERSION-001 (a content change bumps the version). Null checks nothing.
+    /// </summary>
+    public string? Against { get; init; }
+
     /// <summary>Validate the file at <paramref name="path"/>.</summary>
     /// <param name="path">The recipe file, as the user gave it.</param>
     /// <returns>The request.</returns>

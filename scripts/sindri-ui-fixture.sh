@@ -43,6 +43,40 @@
 #                                  context.db through down, so the next draft's number depends on earlier runs); up and down
 #                                  approve whenever the profile is not approved
 #
+#   sindri-ui-fixture.sh context whole over|under
+#                                  the whole-map fixture (whole-map spec 8; run after 'context up'): over imports a generated map of 12
+#                                  features with 50 code nodes each (612 nodes, over the 500-node budget: the Context page opens by feature),
+#                                  under imports the tabs map again (10 nodes: the page draws every node). Each switch is a new map version
+#                                  and a repeat with the same map imports nothing
+#
+#   sindri-ui-fixture.sh context publish held|overdue|published|without-waiting|stale|by-hand|pause|resume
+#                                  the Health page's Context map card (F1P-c, code index spec 6.4; run after 'context up'): puts the
+#                                  map into one of the six publish states by writing the stored state the card reads, then prints the
+#                                  words 'sindri context map status' should give. held writes a draft (copied heads) with a hold whose
+#                                  wait just began into <home>/context/context.db and pauses the context-map-refresh service so no
+#                                  tick publishes it; overdue does the same with the wait started an hour ago; published, without-waiting
+#                                  (a 'context.map.published' FirstMap event), by-hand (a 'context.map.promoted' by human:fixture) and
+#                                  stale (the current version's recorded head changed to 1234567, a header-only code index file at
+#                                  abcdef0 under <home>/code-index so the real outlook reads it, and a TimedOut published event)
+#                                  drop the hold and resume the service first; every other state removes the index file again;
+#                                  pause and resume only toggle the service
+#
+#   sindri-ui-fixture.sh sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down
+#                                  the Agents page's data (U11a; run after 'up', and run 'sessions up' right after every 'up': a
+#                                  control plane started without it reads the real box). up copies tests/fixtures/sessions/
+#                                  (the /proc-shaped tree and the Claude records) to <home>/ui-fixture-sessions/ with cp -a,
+#                                  makes its fleet/ (0700, with the .aw-fleet marker), writes a bare launcher.json there and
+#                                  restarts the control plane (stop, then --headless) with AW_SESSIONS_PROC_ROOT,
+#                                  AW_SESSIONS_CLAUDE_DIR, AW_FLEET_DIR and AW_LAUNCHER_CONFIG pointing at the copy, so the
+#                                  collector never reads the real /proc, ~/.claude, fleet or launcher.json; it needs the
+#                                  fixture's ownUid (manifest.json; exit 2 otherwise). ask writes the fleet state file
+#                                  (asking, approval, tool Bash) of the Claude session with that pid, the pid and start ticks
+#                                  from its stat; end moves proc/<pid>/ to <copy>/ended/ and back moves it back (the row
+#                                  leaves to Recently ended after two passes); disable and enable set sessions.enabled in
+#                                  the copy's launcher.json and restart (SND-SESSION-002); down stops the control plane and
+#                                  removes the copy. Every restart re-exports the four variables while the copy exists, and
+#                                  down never restarts. Needs jq.
+#
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
@@ -74,9 +108,14 @@ need() { command -v "$1" >/dev/null 2>&1 || die "$1 is needed for '$verb'"; }
 use_cli() { [ "${SINDRI_UI_FIXTURE_SQL:-}" != python ] && command -v sqlite3 >/dev/null 2>&1; }
 need_sql() { use_cli || { command -v python3 >/dev/null 2>&1 && python3 -I -c 'import sqlite3' >/dev/null 2>&1; } || die "sqlite3 (or python3) is needed for '$verb'"; }
 
+# $1 db file, $2 statements.
+sql_on() {
+  if use_cli; then sqlite3 -bail "$1" "$2"; else python_sql "$1" "$2"; fi
+}
+
 ledger() {
   [ -f "$AW_SINDRI_HOME/ledger.db" ] || die "no ledger at $AW_SINDRI_HOME/ledger.db: run 'up' first"
-  if use_cli; then sqlite3 -bail "$AW_SINDRI_HOME/ledger.db" "$1"; else python_sql "$AW_SINDRI_HOME/ledger.db" "$1"; fi
+  sql_on "$AW_SINDRI_HOME/ledger.db" "$1"
 }
 
 python_sql() {
@@ -351,21 +390,47 @@ context_up() {
   if needs_approval; then approve >&2 || return; fi
   map="$(context_dir)/tabs-map.json"
   cp "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" "$map" || die "context up: can't copy the tabs map"
+  context_import "$map" || return
+  printf '%s\n' "$CONTEXT_REPO"
+}
+
+# Imports a map file as the owner, typing 'import map <hash6>'. Each import makes a new map version, so it runs only when the
+# last import was another file (the marker holds its hash) or the store has no map. Exit 2 when the import is refused.
+context_import() {
+  local map="$1" hash out marker
   hash="$(sha256sum "$map" 2>/dev/null | cut -d' ' -f1)"
   [ -n "$hash" ] || hash="$(shasum -a 256 "$map" | cut -d' ' -f1)"
-  [ -n "$hash" ] || die "context up: no sha256sum or shasum"
-  # Each import makes a new map version, so a repeat up imports only when the store has no map or the file changed.
+  [ -n "$hash" ] || die "context: no sha256sum or shasum"
   marker="$AW_SINDRI_HOME/ui-fixture-context-imported"
   if [ "$(cat "$marker" 2>/dev/null)" = "$hash" ] && "$PROVE" human context map status --json >/dev/null 2>&1; then
-    printf '%s\n' "$CONTEXT_REPO"
     return 0
   fi
   # The challenge is 'import map ' and the first six characters of the file's sha-256 (the content hash the CLI shows).
   if ! out="$(printf 'import map %s\n' "${hash:0:6}" | "$PROVE" human context map import "$map" 2>&1)"; then
-    die "context up: the map import was refused: $out"
+    die "context: the map import was refused: $out"
   fi
   printf '%s\n' "$hash" > "$marker"
-  printf '%s\n' "$CONTEXT_REPO"
+}
+
+# The whole-map fixture (whole-map spec 8): 'over' imports a generated map of 12 features with 50 code nodes each (612 nodes, over
+# the 500-node budget, so the whole map opens by feature); 'under' imports the tabs map (10 nodes, drawn node by node).
+context_whole() {
+  need jq
+  local dir map
+  dir="$(context_dir)"
+  [ -d "$dir/$CONTEXT_REPO/.git" ] || die "context whole: run 'context up' first"
+  case "$1" in
+    under) map="$dir/tabs-map.json"; cp "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" "$map" || die "context whole: can't copy the tabs map" ;;
+    over)
+      map="$dir/over-map.json"
+      jq -n --arg repo "$CONTEXT_REPO" '{schemaVersion: 1, kind: "authored", repo: $repo,
+        nodes: [(range(0; 12) as $a | {key: "feature:area\($a)", label: "Area \($a)"}), (range(0; 12) as $a | range(0; 50) as $c
+          | {key: "code:src/area\($a)/File\($c).ts", label: "File\($c).ts", provenance: "deterministic"})],
+        edges: [range(0; 12) as $a | range(0; 50) as $c
+          | {from: "code:src/area\($a)/File\($c).ts", to: "feature:area\($a)", type: "implements"}]}' > "$map" || die "context whole: can't write the over-budget map" ;;
+  esac
+  context_import "$map" || return
+  printf '%s\n' "$1"
 }
 
 context_draft() { "$PROVE" human context map build; }
@@ -377,6 +442,7 @@ context_down() {
   local dir profile
   dir="$(context_dir)"
   case "$dir" in */ui-fixture-context) [ ! -d "$dir" ] || rm -rf -- "$dir" ;; *) die "context down: refusing to delete $dir" ;; esac
+  index_clear
   profile="$(profile_path)"
   if [ -f "$profile" ] && grep -q "name: $CONTEXT_REPO" "$profile"; then
     grep -v "name: $CONTEXT_REPO" "$profile" | awk '{l[NR]=$0} END {for (i=1;i<=NR;i++) if (!(l[i]=="repos:" && (i==NR || l[i+1] !~ /^  /))) print l[i]}' > "$profile.new" \
@@ -389,8 +455,228 @@ context_down() {
   return 0
 }
 
+# --- context publish: the six states of the Health page's Context map card (F1P-c, code index spec 6.4) ---
+PUBLISH_SERVICE="context-map-refresh"
+
+context_db() { printf '%s\n' "$AW_SINDRI_HOME/context/context.db"; }
+
+# One ledger row of a registered map event for the current version, the same row every time (INSERT OR IGNORE on its key).
+# $1 key suffix, $2 type, $3 actor, $4 payload JSON. The id and correlation id are GUIDs and the time has seven fractional digits (see stall).
+publish_event() {
+  local key="sindri-ui-fixture:publish:$1:v$version" id corr
+  id="$(printf '%s' "$key" | cksum | awk '{printf "5c0f1e00-%04x-4d1e-9a55-3c2f6d8e1b04", $1 % 65536}')"
+  corr="${id%?}5"
+  ledger "INSERT OR IGNORE INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
+          VALUES ('$id', '$2', 1, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', '$3', 'local', 0, '$corr',
+                  COALESCE((SELECT MAX(epoch) FROM events), 0), '$key', '$4');" >/dev/null
+}
+
+# The stale state's code index (code index spec 6.4): a header-only index file (the meta and layers tables, user_version 1) and its 0600 pointer, in
+# the layout the real store reads ($AW_SINDRI_HOME/code-index/<repo>.<ulid>.db and <repo>.current), so the real outlook path reads the commit.
+# The ULID is this fixture's own, so clearing removes only what it wrote.
+INDEX_ULID="0123456789ABCDEFGHJKMNPQRS"
+INDEX_COMMIT="abcdef0000000000000000000000000000000000"
+index_dir() { printf '%s\n' "$AW_SINDRI_HOME/code-index"; }
+
+index_write() { # $1 repo
+  local dir db
+  dir="$(index_dir)"
+  db="$dir/$1.$INDEX_ULID.db"
+  mkdir -p -m 700 "$dir" && rm -f -- "$db" || return
+  sql_on "$db" "PRAGMA user_version = 1;
+    CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE layers (layer TEXT PRIMARY KEY, stamp TEXT NOT NULL, status TEXT NOT NULL, code TEXT NULL, detail TEXT NOT NULL, built_at TEXT NOT NULL);
+    INSERT INTO meta VALUES ('commit', '$INDEX_COMMIT'), ('default_branch', 'main'), ('built_at', strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+      ('schema', '1'), ('parser_id', 'fixture'), ('files', '0'), ('symbols', '0'), ('edges', '0');" >/dev/null || return
+  chmod 600 "$db" && (umask 077; printf '%s\n' "$INDEX_ULID" > "$dir/$1.current")
+}
+
+# Removes the index files index_write made, and a pointer only while it still names this fixture's file.
+index_clear() {
+  local dir f
+  dir="$(index_dir)"
+  [ -d "$dir" ] || return 0
+  for f in "$dir"/*."$INDEX_ULID".db; do [ ! -e "$f" ] || rm -f -- "$f"; done
+  for f in "$dir"/*.current; do
+    [ ! -f "$f" ] || [ "$(cat "$f")" != "$INDEX_ULID" ] || rm -f -- "$f"
+  done
+}
+
+# Removes the hold, its chain, the draft and the map events this fixture wrote; the current version stays. The events go too, so every state is
+# the only one current: the status reads the newest map event of the version, and a state that records none must not inherit an earlier one's.
+publish_clear() {
+  index_clear
+  ledger "DELETE FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:%';" >/dev/null || return
+  sql_on "$(context_db)" "DELETE FROM map_hold; DELETE FROM map_publish_chain; DELETE FROM map_version WHERE status = 'draft' AND commit_sha = 'fixture-hold'; DELETE FROM map_version_head WHERE version NOT IN (SELECT id FROM map_version);"
+}
+
+# A draft with the current version's heads, held, with the wait started $1 seconds ago.
+publish_hold() {
+  local ago="$1" db live
+  db="$(context_db)"
+  publish_clear || return
+  # The held map is for the repo's live head and the index is at another commit, so the repo is waiting (build queued), not "newer".
+  live="$(git -C "$AW_SINDRI_HOME/ui-fixture-context/$repo" rev-parse HEAD 2>/dev/null)" || live=""
+  [ -n "$live" ] || live="9999999999999999999999999999999999999999"
+  sql_on "$db" "INSERT INTO map_version (repo, commit_sha, key_version, created, status)
+                  SELECT repo, 'fixture-hold', key_version, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', 'draft' FROM map_version WHERE status = 'current';
+                INSERT INTO map_version_head (version, repo, commit_sha, on_default)
+                  SELECT d.id, h.repo, h.commit_sha, h.on_default FROM map_version d, map_version_head h, map_version c
+                  WHERE d.commit_sha = 'fixture-hold' AND c.status = 'current' AND h.version = c.id;
+                INSERT INTO map_hold (version) SELECT id FROM map_version WHERE commit_sha = 'fixture-hold';
+                INSERT OR REPLACE INTO map_publish_chain (id, since) VALUES (1, strftime('%Y-%m-%dT%H:%M:%S', 'now', '-$ago seconds') || '.0000000Z');
+                UPDATE map_version_head SET commit_sha = '$live', on_default = 1
+                  WHERE version = (SELECT id FROM map_version WHERE commit_sha = 'fixture-hold');" >/dev/null \
+    && index_write "$repo"
+}
+
+context_publish() {
+  need jq
+  local db state current repo
+  db="$(context_db)"
+  [ -f "$db" ] || die "no context store at $db: run 'context up' first"
+  current="$(sql_on "$db" "SELECT id || '|' || repo FROM map_version WHERE status = 'current'")"
+  [ -n "$current" ] || die "no current map: run 'context up' first"
+  version="${current%%|*}"; repo="${current#*|}"
+  # The current map's head for the repo (a map built without heads has none): the held draft copies it and the stale state moves it.
+  sql_on "$db" "INSERT OR IGNORE INTO map_version_head (version, repo, commit_sha, on_default) VALUES ($version, '$repo', '$INDEX_COMMIT', 1);" >/dev/null || return
+  case "$1" in
+    pause) "$PROVE" human services pause "$PUBLISH_SERVICE"; return ;;
+    resume) "$PROVE" human services resume "$PUBLISH_SERVICE"; return ;;
+    held) publish_hold 0 && "$PROVE" human services pause "$PUBLISH_SERVICE" >/dev/null && state="held" ;;
+    overdue) publish_hold 3600 && "$PROVE" human services pause "$PUBLISH_SERVICE" >/dev/null && state="overdue" ;;
+    *)
+      publish_clear || return
+      "$PROVE" human services resume "$PUBLISH_SERVICE" >/dev/null 2>&1 || true
+      case "$1" in
+        published) state="published" ;;
+        without-waiting)
+          publish_event firstmap context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"FirstMap\",\"via\":\"refresh\",\"repos\":1,\"staleRepos\":0,\"waitedSeconds\":0,\"heads\":{}}" \
+            && state="published-without-waiting" ;;
+        by-hand)
+          publish_event byhand context.map.promoted "human:fixture" "{\"version\":$version,\"repo\":\"$repo\",\"retained\":null}" && state="published-by-hand" ;;
+        stale)
+          sql_on "$db" "UPDATE map_version_head SET commit_sha = '1234567' WHERE version = $version AND repo = '$repo';" >/dev/null \
+            && index_write "$repo" \
+            && publish_event timedout context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"TimedOut\",\"via\":\"check\",\"repos\":1,\"staleRepos\":1,\"waitedSeconds\":900,\"heads\":{}}" \
+            && state="published-stale" ;;
+      esac ;;
+  esac || return
+  printf '%s\n' "$state"
+}
+
 context() {
-  case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; esac
+  case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; publish) context_publish "$2" ;; whole) context_whole "$2" ;; esac
+}
+
+SESSIONS_DIRNAME="ui-fixture-sessions"
+sessions_dir() { printf '%s\n' "$AW_SINDRI_HOME/$SESSIONS_DIRNAME"; }
+
+# The collector's overrides, pointed at the copy. AW_LAUNCHER_CONFIG keeps the owner's launcher.json (under $AW_STATE_DIR) out too.
+sessions_export() {
+  local d
+  d="$(sessions_dir)"
+  export AW_SESSIONS_PROC_ROOT="$d/proc" AW_SESSIONS_CLAUDE_DIR="$d/claude-sessions" AW_FLEET_DIR="$d/fleet" AW_LAUNCHER_CONFIG="$d/launcher.json"
+}
+
+sessions_restart() {
+  sessions_export
+  "$PROVE" human stop >/dev/null 2>&1 || true
+  "$PROVE" human --headless
+}
+
+sessions_need_copy() { [ -d "$(sessions_dir)/proc" ] || die "no fixture sessions at $(sessions_dir): run 'sessions up' first"; }
+
+sessions_pid() { [[ "$1" =~ ^[0-9]+$ ]] || die "sessions: '$1' is not a pid"; }
+
+# Removes the copy; the path must end in the fixture's folder name.
+sessions_remove() {
+  local d="$1"
+  case "$d" in */"$SESSIONS_DIRNAME") [ ! -e "$d" ] || rm -rf -- "$d" ;; *) die "sessions: refusing to delete $d" ;; esac
+}
+
+sessions_up() {
+  need jq
+  local src="$ROOT/tests/fixtures/sessions" d own
+  own="$(jq -r '.ownUid' "$src/manifest.json")"
+  [ "$(id -u)" = "$own" ] || die "sessions up: the fixture's processes belong to uid $own and this is uid $(id -u); the collector would find no session of its own"
+  [ -f "$(profile_path)" ] || die "no live profile at $(profile_path): run 'up' first"
+  d="$(sessions_dir)"
+  sessions_remove "$d" || return
+  mkdir -p "$d" || return
+  cp -a "$src/proc" "$d/proc" && cp -a "$src/claude-sessions" "$d/claude-sessions" || die "sessions up: can't copy the fixture tree"
+  mkdir -p "$d/ended" && mkdir -m 700 "$d/fleet" && : > "$d/fleet/.aw-fleet" || return
+  printf '{"schema":1}\n' > "$d/launcher.json"
+  sessions_restart
+}
+
+# $1 pid: a Claude session of the copy (its record names the session id).
+sessions_ask() {
+  sessions_pid "$1"
+  sessions_need_copy
+  need jq
+  local d rec id cwd ticks dir now tmp
+  d="$(sessions_dir)"
+  rec="$d/claude-sessions/$1.json"
+  [ -f "$rec" ] || die "sessions ask: no Claude record for pid $1 in the fixture"
+  [ -f "$d/proc/$1/stat" ] || die "sessions ask: pid $1 is not in the fixture's process tree (ended?)"
+  id="$(jq -r '.sessionId' "$rec")"; cwd="$(jq -r '.cwd' "$rec")"
+  # stat field 22 (start time): the comm in field 2 may hold spaces, so count from the last ')' (field 3 is the first token after it).
+  ticks="$(awk '{ sub(/^.*\) /, ""); print $20 }' "$d/proc/$1/stat")"
+  [[ "$ticks" =~ ^[0-9]+$ ]] || die "sessions ask: no start time in $d/proc/$1/stat"
+  dir="$d/fleet/claude-code"
+  mkdir -p "$dir" && chmod 700 "$dir" && : > "$dir/.aw-fleet" || return
+  now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+  tmp="$(mktemp "$dir/.ask.XXXXXX")" || return
+  jq -n --arg id "$id" --arg at "$now" --arg cwd "$cwd" --argjson pid "$1" --argjson ticks "$ticks" \
+    '{schema: 1, provider: "claude-code", sessionId: $id, event: "Notification", state: "asking", reason: "approval", tool: "Bash",
+      at: $at, cwd: $cwd, transcript: null, agentPid: $pid, agentStartTicks: $ticks, env: {}}' > "$tmp" \
+    && chmod 600 "$tmp" && mv -f "$tmp" "$dir/$id.json" || { rm -f -- "$tmp"; return 1; }
+  printf '%s\n' "$dir/$id.json"
+}
+
+sessions_end() {
+  sessions_pid "$1"
+  sessions_need_copy
+  local d
+  d="$(sessions_dir)"
+  [ -d "$d/proc/$1" ] || die "sessions end: pid $1 is not in the fixture's process tree"
+  mv -- "$d/proc/$1" "$d/ended/$1"
+}
+
+sessions_back() {
+  sessions_pid "$1"
+  sessions_need_copy
+  local d
+  d="$(sessions_dir)"
+  [ -d "$d/ended/$1" ] || die "sessions back: pid $1 was not ended by this fixture"
+  mv -- "$d/ended/$1" "$d/proc/$1"
+}
+
+# false writes sessions.enabled=false; true removes the key. launcher.json is read once at start, so both restart.
+sessions_toggle() {
+  need jq
+  sessions_need_copy
+  local f tmp
+  f="$(sessions_dir)/launcher.json"
+  tmp="$f.new"
+  if [ "$1" = false ]; then jq '.sessions.enabled = false' "$f" > "$tmp"
+  else jq 'del(.sessions.enabled) | if .sessions == {} then del(.sessions) else . end' "$f" > "$tmp"; fi \
+    && mv -f "$tmp" "$f" || die "sessions: can't update $f"
+  sessions_restart
+}
+
+# Stops the control plane and removes the copy. It does not restart: a later 'up' without 'sessions up' would read the real box.
+sessions_down() {
+  "$PROVE" human stop >/dev/null 2>&1 || true
+  sessions_remove "$(sessions_dir)"
+}
+
+sessions() {
+  case "$1" in
+    up) sessions_up ;; ask) sessions_ask "$2" ;; end) sessions_end "$2" ;; back) sessions_back "$2" ;;
+    disable) sessions_toggle false ;; enable) sessions_toggle true ;; down) sessions_down ;;
+  esac
 }
 
 verb="${1:-}"
@@ -404,7 +690,21 @@ case "$verb" in
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
-  context) { [ "$#" -eq 2 ] && { [ "$2" = up ] || [ "$2" = draft ] || [ "$2" = down ]; }; } || die "usage: context up|draft|down" ;;
+  context)
+    case "${2:-}" in
+      up | draft | down) [ "$#" -eq 2 ] || die "usage: context up|draft|down|publish <state>" ;;
+      publish)
+        [ "$#" -eq 3 ] || die "usage: context publish held|overdue|published|without-waiting|stale|by-hand|pause|resume"
+        case "$3" in held | overdue | published | without-waiting | stale | by-hand | pause | resume) ;; *) die "context publish: '$3' is not a state (held, overdue, published, without-waiting, stale, by-hand, pause, resume)" ;; esac ;;
+      whole) { [ "$#" -eq 3 ] && { [ "$3" = over ] || [ "$3" = under ]; }; } || die "usage: context whole over|under" ;;
+      *) die "usage: context up|draft|down|publish <state>|whole over|under" ;;
+    esac ;;
+  sessions)
+    case "${2:-}" in
+      up | disable | enable | down) [ "$#" -eq 2 ] || die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
+      ask | end | back) [ "$#" -eq 3 ] || die "usage: sessions $2 <pid>" ;;
+      *) die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
+    esac ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac

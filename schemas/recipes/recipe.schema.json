@@ -349,6 +349,30 @@
               "null"
             ],
             "pattern": "^[a-z][A-Za-z0-9]*$"
+          },
+          "why": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "onOutcome": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": null
           }
         },
         "required": [
@@ -660,6 +684,13 @@
                 }
               ]
             }
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
           }
         },
         "required": [
@@ -728,6 +759,20 @@
         "null"
       ],
       "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "why": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
     }
   },
   "required": [

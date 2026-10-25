@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "SND-PROFILE-002",
+  "status": 409,
+  "detail": "The profile changed while Sindri was writing it. Try again.",
+  "traceId": "<trace>"
+}

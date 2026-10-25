@@ -32,6 +32,9 @@ public sealed record SessionRow(
     /// <summary>The session's title, scrubbed and capped (human callers only).</summary>
     public string? Title { get; init; }
 
+    /// <summary>The workflow instance, Step and attempt of the Sindri launch this session belongs to; null when no launch of Sindri's is known for it.</summary>
+    public LaunchStep? Launch { get; init; }
+
     /// <summary>The agent's process id (human callers only).</summary>
     public int? Pid { get; init; }
 }

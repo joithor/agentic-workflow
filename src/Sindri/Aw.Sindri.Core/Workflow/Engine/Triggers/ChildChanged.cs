@@ -7,13 +7,17 @@ namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 /// <param name="Reason">The child's park reason, for <see cref="ChildChange.Parked"/>.</param>
 /// <param name="Question">The child's question or next text, which the parent's mirror shows ('{childNext}').</param>
 /// <param name="ChildEventKey">The key of the child's event.</param>
+/// <param name="ParkKind">What the child's park is about, for <see cref="ChildChange.Parked"/>; null in a signal recorded before the kind was carried.</param>
+/// <param name="Escalation">The child's escalation kind, for <see cref="ChildChange.Escalated"/>; null in a signal recorded before the kind was carried.</param>
 public sealed record ChildChanged(
     string Actor,
     WorkflowInstanceId Child,
     ChildChange Change,
     ParkReason? Reason,
     string? Question,
-    TriggerKey ChildEventKey) : Trigger(Actor)
+    TriggerKey ChildEventKey,
+    ParkKind? ParkKind = null,
+    EscalationKind? Escalation = null) : Trigger(Actor)
 {
     /// <inheritdoc/>
     public override string Name => Change switch

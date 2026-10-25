@@ -1,15 +1,18 @@
 using Aw.Evidence.Core.Browser;
 using Aw.Evidence.Core.Data;
+using Aw.Evidence.Core.Desktop;
 using Aw.Evidence.Core.Files;
 using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Images;
 using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Locks;
+using Aw.Evidence.Core.Publishing;
 using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Core.Visual;
 using Aw.Evidence.Infrastructure.Browser;
 using Aw.Evidence.Infrastructure.Databases;
+using Aw.Evidence.Infrastructure.Desktop;
 using Aw.Evidence.Infrastructure.Files;
 using Aw.Evidence.Infrastructure.Guard;
 using Aw.Evidence.Infrastructure.Http;
@@ -18,6 +21,7 @@ using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
 using Aw.Evidence.Infrastructure.Processes;
+using Aw.Evidence.Infrastructure.Publishing;
 using Aw.Evidence.Infrastructure.Redaction;
 using Aw.Evidence.Infrastructure.Settings;
 using Aw.Evidence.Infrastructure.Stack;
@@ -35,7 +39,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the Evidence adapters and their settings: directory locks, run files on disk, the PNG codec, the verdict-cache
     /// manifest, the stack probes (HTTP, docker, TCP), the psql provenance query, environment secrets and settings, the Playwright
-    /// browser and its installer, the unavailable judge, and random ids. The verdict-cache store reads the package's AwJson options,
+    /// browser and its installer, the judge CLI adapter (a stub until it is wired, answering unavailable), the gh runner (a stub until it is wired), and random ids. The verdict-cache store reads the package's AwJson options,
     /// which Composition registers.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -44,7 +48,9 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddEvidenceInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        var database = DatabaseSettings.Read(environment);
+        // The deployment's env files fill the UI_EVIDENCE_* settings the environment leaves unset; locks and secrets read the process environment only.
+        var layered = EnvFileLoader.Overlay(environment, EnvFileLoader.Files(environment, Directory.GetCurrentDirectory()), EnvFileLoader.ReadFile);
+        var database = DatabaseSettings.Read(layered);
         return services
             .AddSingleton(settings)
             .AddSingleton<IMachineLocks>(static sp => new DirectoryLocks(sp.GetRequiredService<EvidenceSettings>().Locks, sp.GetRequiredService<TimeProvider>(), Console.Error))
@@ -54,12 +60,17 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IStackProbe>(_ => new ProcessStackProbe("docker", database))
             .AddSingleton<IProvenanceQuery>(new DockerPsqlProvenance("docker", database))
             .AddSingleton<ISecretsSource>(new EnvironmentSecrets(environment))
-            .AddSingleton<IEvidenceSettings>(new EnvironmentEvidenceSettings(environment))
+            .AddSingleton<IEvidenceSettings>(new EnvironmentEvidenceSettings(layered))
             .AddSingleton<IBrowser, PlaywrightBrowser>()
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
-            .AddSingleton<IJudge, UnavailableJudge>()
+            .AddSingleton<IJudge, JudgeCliJudge>()
             .AddSingleton<IApiTransport>(static _ => new HttpApiTransport(TimeSpan.FromSeconds(30)))
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
+            .AddSingleton<IGhRunner, ProcessGhRunner>()
+            .AddSingleton<IDesktopCommands, ProcessDesktopCommands>()
+            .AddSingleton<IDesktopApps, ProcessDesktopApps>()
+            .AddSingleton<IScratchDirectories, TempScratchDirectories>()
+            .AddSingleton<IStaticSite, LoopbackStaticSite>()
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()
             .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
             .AddSingleton<SqliteDatabaseReader>()

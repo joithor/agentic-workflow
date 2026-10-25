@@ -21,3 +21,4 @@ transitions:
       - use: effect.repo.push
         with: { remote: { fact: fact:remote } }
     produces: [fact:output]
+displayName: Test recipe

@@ -1,6 +1,6 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.7 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its rounds 2 and 3, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Status:** design, revision 2.8, a sync to #388's recipes (§14.8; three /autoplan rounds; owner-approved 2026-10-20) (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its rounds 2 and 3, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
 **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
 `2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.6, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
@@ -343,7 +343,7 @@ intake ─► graph ─► check ─► exec-review ─► holdout ─► eviden
            ▲   (loop rounds)    │ objections                                  └─ none ─────────────────────► stop
            └─────── gaps ───────┴──────────────── incomplete                         settle: assumed ─► stop
                                                                                      settle: changed ─► redesign (unresolved)
-  stop (loop revisions): approve ─► freeze ─► approved     revise design ─► record ─► settle (changed) ─► redesign
+  stop (loop revisions): approve ─► freeze ─► planned      revise design ─► record ─► settle (changed) ─► redesign
         revise plan ─► record ─► settle (replan) ─► graph          drop ─► dropped (failed)
 ```
 
@@ -362,10 +362,10 @@ intake ─► graph ─► check ─► exec-review ─► holdout ─► eviden
 | `stop` | `step.plan.review` | desk, human-only, fixed form (W2) | Stop 2, part two: approve, revise design (notes), revise plan (notes), drop |
 | `freeze` | `step.plan.freeze` | block, I/O | Re-runs every check; freezes, in order, the design packet, the plan packet and each phase packet (`aw-packets freeze`); seals the holdout sets; writes `design.approved` and `plan.approved` ledger rows (ids and counts only); proposes the approved design's surfaces and stores stop 2's answers in the context map (LN-CTX1). A check that fails after the approve is `mismatch`: back to `evidence`, and stop 2's view opens on a "freeze refused" banner naming the rule (LN-UI2) |
 
-Terminals: `approved` (`resolved`: `fact:designPacket`, `fact:planPacket`, `fact:phasePackets`), `redesign`
+Terminals: `planned` (`resolved`: `fact:planPacket`, `fact:phasePackets`; the design packet is not an output: the parent holds it from the design child), `redesign`
 (`unresolved`: `fact:designRevision`, produced by `settle` on every path to it), `dropped` (`failed`). Loops: `rounds`
-5 (`graph`), `refreeze` 2, as in #258, and `revisions` 5 on `stop`, which caps the owner's revise cycle `stop → record →
-settle → stop` (a desk Step is no exemption from `RCP-LOOP-001`): the fifth entry parks, and the owner grants another.
+5 (`graph`), `refreeze` 2, as in #258, and `revisions` 5 on `stop`, which counts every entry to `stop`: the owner's revise cycles `stop → record →
+settle → stop`, and the returns after a `revisePlan` or a freeze `mismatch` (a desk Step is no exemption from `RCP-LOOP-001`): a loop with cap N allows N entries, so the sixth entry to `stop` parks, and the owner grants another.
 Every timeout parks; `decide` and `stop` park after 2 and 7 days.
 
 ### 6.2 The graph
@@ -1008,6 +1008,20 @@ Fixes to match what #308 built (`schemas/packets/*.schema.json`, `LineContext.cs
 | T5 | §3.2 intro (LC-3 walk), §12.4, LN-K | The intro no longer says `aw-packets verify` checks the design-to-scope link: `verify` checks a packet's own hash (LN-PKT2); a new row LN-PKT6 (owned by LN-K) has the line's reader step check that each `parents` hash resolves to a frozen packet |
 | T5-2 | Header, status line | Builds on the scoping spec's rev 3.6; revision 2.7; this table |
 
+### 14.8 Rev 2.8, sync to the shipped LN-Y1 recipes (#388)
+
+No design change: the text follows what #388 shipped and was reviewed against. The spec's recipe copies in Appendix C are
+not checked against the recipe files by any test; they match the recipes as shipped by #388 (merged in batch #389, main
+`f7ac779`), and the recipe files win where they differ.
+
+| Id | Where | What changed |
+|---|---|---|
+| Y1-1 | §6.1 plan walk and terminals, Appendix B.1, C.2 | The plan's resolved terminal is `planned`, not `approved` (`workflow.plan.yaml`), and it lists the recipe's outputs (`fact:planPacket`, `fact:phasePackets`); the design packet is not an output (the parent holds it from the design child). The ledger rows `design.approved` and `plan.approved` (§11) are unchanged and are still written by `step.plan.freeze` after the owner's `approve` at `stop`: they name the owner's act, the terminal names the recipe's end. The rows are written only on `freeze`'s `frozen` outcome (by the freeze runtime, not built yet: a forward contract), so a refused freeze (`mismatch`) leaves none. Proof that the owner approved is `stop` completing with `approve`, recorded by those rows; never a state name. The instance list's chip and row sentence show the outcome, not the terminal id; the instance header, the states band and the recipe sheet do name the state, so `planned` is visible there and means the plan is frozen, not that it awaits approval |
+| Y1-2 | Appendix B.1, C.1, C.2 | Eval case `happy-assumed` is `assumed-happy` (the shipped happy path of each recipe is named `*-happy`); added the shipped cases `design/evidence-incomplete`, `design/revise-after-caps`, `plan/evidence-incomplete`, `plan/no-questions`; the `evals:` lists name the same nine cases as each recipe file (B.1's order here; the recipe files sort them) |
+| Y1-2b | §6.1, Appendix B.1 | Cap counts: a loop with cap N allows N entries and parks the next one, so `revisions` parks on the sixth entry to `stop` (was "fifth"); B.1 names the loop and notes that evals record every cap park as `rounds`; `revise-after-caps` parks on the `lens` cap and continues on the owner's grant; `check-gaps-twice` parks no-progress; `freeze-mismatch` spells out its walk |
+| Y1-2c | Appendix C.1, C.2 | Inputs carry `kind:` as the shipped recipes do |
+| Y1-3 | Header, status line | Revision 2.8 (sync to #388); this table. Reviewed in three /autoplan rounds (#509) and approved by the owner on 2026-10-20 |
+
 ## 15. Open questions
 
 All reversible unless marked.
@@ -1180,22 +1194,30 @@ analysis (§10.2).
 
 ### B.1 Engine evals (`recipe eval`)
 
+"Parks `<loop>`" names the loop whose cap is reached; a loop with cap N allows N entries and parks the next one. The eval
+files record every cap park with the reason `rounds` (the engine's park reason, `recipes/sindri/README.md`), not the loop's
+name, and a park with no cap reached as `no-progress`.
+
 | Recipe | Case | Walks | Expects |
 |---|---|---|---|
 | design | `fresh-happy` | intake `fresh` → draft → check `pass` → round → lens ×5 (`next` ×4) → `clean` → evidence `complete` | `designed` |
-| design | `check-gaps-twice` | check `gaps` twice, identical findings | parks `rounds` no-progress |
+| design | `check-gaps-twice` | check `gaps` twice, identical findings | parks no-progress (no cap reached) |
 | design | `lens-findings-revise` | round 1 `findings` → revise → check → round 2 `clean` | `designed`, two rounds logged |
 | design | `lens-cap-accept` | four rounds with findings → lens-desk `accept` | evidence; accepted risks carried |
 | design | `lens-cap-drop` | lens-desk `drop` | `dropped` |
 | design | `revise-mode` | intake `revise` → apply → check → round (narrow) | `designed` |
 | design | `two-lens-pack` | the round queues two lenses | `next` once, then `clean` |
-| plan | `happy-assumed` | graph → check → exec-review → holdout → evidence → questions `asked` → decide → record → settle `assumed` → stop `approve` → freeze | `approved` |
+| design | `evidence-incomplete` | one clean round → evidence `incomplete` | back to draft |
+| design | `revise-after-caps` | four rounds with findings → lens-desk `revise` → revise → check `pass` | parks `lens` on the fifth entry to `round` (cap 4); the owner's grant of one returns to `round` |
+| plan | `assumed-happy` | graph → check → exec-review → holdout → evidence → questions `asked` → decide → record → settle `assumed` → stop `approve` → freeze | `planned` |
 | plan | `changed-decision` | settle `changed` | `redesign` with `fact:designRevision` |
 | plan | `objections` | exec-review `objections` → graph | back to check |
 | plan | `revise-plan` | stop `revisePlan` → record → settle `replan` → graph | back to stop |
-| plan | `freeze-mismatch` | as #258's | parks `refreeze` on the third entry |
+| plan | `freeze-mismatch` | stop `approve` → freeze `mismatch` → evidence → questions `none` → stop, twice | parks `refreeze` on the third entry to `freeze` (cap 2) |
 | plan | `drop` | stop `drop` | `dropped` (`failed`) |
-| plan | `revise-cap` | stop `reviseDesign` with no decision change (settle `assumed`) five times | parks `revisions` on the fifth entry to `stop` |
+| plan | `evidence-incomplete` | graph → check → exec-review → holdout → evidence `incomplete` | back to graph |
+| plan | `no-questions` | evidence `complete` → questions `none` → stop `approve` → freeze | `planned` |
+| plan | `revise-cap` | stop `reviseDesign` with no decision change (settle `assumed`) five times | parks `revisions` on the sixth entry to `stop` (cap 5) |
 | build | `happy` | prepare → slot → red → red-check `red` → green → checks `pass` | `built` |
 | build | `vacuous-red` | red-check `vacuous` → red | back to red-check |
 | build | `out-of-scope-allow` | checks `outOfScope` → scope-desk `allow` → amend → checks `pass` | `built`; `fact:activePacket` is the amended child packet |
@@ -1251,8 +1273,8 @@ version: 1
 description: "Station 2 of the line: one spec draft from a frozen scope packet, in the repo's style pack, reviewed by the repo's design lens pack on another model until no CRITICAL or HIGH finding is left; ends with a hashed candidate design packet."
 urgency: work
 inputs:
-  - { key: fact:scopePacket,    label: "Scope packet (frozen)", type: packet }
-  - { key: fact:designRevision, label: "Revision from stop 2",  type: payload }
+  - { key: fact:scopePacket,    label: "Scope packet (frozen)", type: packet, kind: packet }
+  - { key: fact:designRevision, label: "Revision from stop 2",  type: payload, kind: payload }
 outputs:
   - { key: fact:designPacket, label: "Design packet (candidate)", type: packet,  from: evidence }
   - { key: fact:design,       label: "Design",                    type: payload, from: evidence }
@@ -1313,10 +1335,11 @@ loops: { rounds: { cap: 5 }, lens: { cap: 4 }, lens-runs: { cap: 40 } }
 budget: { tokens: 1500k }
 evals: [evals/workflow.design/fresh-happy.jsonl, evals/workflow.design/check-gaps-twice.jsonl, evals/workflow.design/lens-findings-revise.jsonl,
         evals/workflow.design/lens-cap-accept.jsonl, evals/workflow.design/lens-cap-drop.jsonl, evals/workflow.design/revise-mode.jsonl,
-        evals/workflow.design/two-lens-pack.jsonl]
+        evals/workflow.design/two-lens-pack.jsonl, evals/workflow.design/evidence-incomplete.jsonl,
+        evals/workflow.design/revise-after-caps.jsonl]
 ```
 
-A `revise` from `lens-desk` re-enters `round` at its cap, which parks; the owner grants the round with `sindri workflow
+A `revise` from `lens-desk` goes through `revise` and `check` back to `round`, which is at its cap and parks; the owner grants the round with `sindri workflow
 answer <address> --grant` (#258's `revise-after-caps` pattern).
 
 ### C.2 `workflow.plan`
@@ -1328,8 +1351,8 @@ version: 1
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 urgency: work
 inputs:
-  - { key: fact:scopePacket,  label: "Scope packet (frozen)",     type: packet }
-  - { key: fact:designPacket, label: "Design packet (candidate)", type: packet }
+  - { key: fact:scopePacket,  label: "Scope packet (frozen)",     type: packet, kind: packet }
+  - { key: fact:designPacket, label: "Design packet (candidate)", type: packet, kind: packet }
 outputs:
   - { key: fact:planPacket,     label: "Plan graph",       type: packet,  from: freeze }
   - { key: fact:phasePackets,   label: "Phase packets",    type: payload, from: freeze }
@@ -1360,7 +1383,7 @@ states:
                  next: "Your stop: read {item}'s design and plan graph (`sindri plan show {instance}` or the stop view), then approve, revise the design, revise the plan, or drop." }
   freeze:      { kind: active, step: step.plan.freeze, loop: refreeze, timeout: { after: 1h, then: park },
                  next: "Re-check and freeze {item}'s design, plan and phase packets." }
-  approved:    { kind: terminal, outcome: resolved }
+  planned:     { kind: terminal, outcome: resolved }
   redesign:    { kind: terminal, outcome: unresolved }
   dropped:     { kind: terminal, outcome: failed }
 transitions:
@@ -1386,13 +1409,13 @@ transitions:
   - { from: stop, to: record,  on: step.completed, when: { outcome: reviseDesign }, produces: [fact:answers] }
   - { from: stop, to: record,  on: step.completed, when: { outcome: revisePlan },   produces: [fact:answers] }
   - { from: stop, to: dropped, on: step.completed, when: { outcome: drop } }
-  - { from: freeze, to: approved, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
+  - { from: freeze, to: planned,  on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
   - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
 budget: { tokens: 1000k }
-evals: [evals/workflow.plan/happy-assumed.jsonl, evals/workflow.plan/changed-decision.jsonl, evals/workflow.plan/objections.jsonl,
+evals: [evals/workflow.plan/assumed-happy.jsonl, evals/workflow.plan/changed-decision.jsonl, evals/workflow.plan/objections.jsonl,
         evals/workflow.plan/revise-plan.jsonl, evals/workflow.plan/freeze-mismatch.jsonl, evals/workflow.plan/drop.jsonl,
-        evals/workflow.plan/revise-cap.jsonl]
+        evals/workflow.plan/revise-cap.jsonl, evals/workflow.plan/evidence-incomplete.jsonl, evals/workflow.plan/no-questions.jsonl]
 ```
 
 "Done asking" at `decide` takes the recommended option for every question left, so `settle` reads it as `assumed`

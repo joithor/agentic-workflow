@@ -11,7 +11,7 @@ namespace Aw.Sindri.Tests.GetInstance;
 [Lane(TestLane.Unit)]
 public sealed class EveryOutputViewsTests
 {
-    private const string Complete = "sindri workflow complete T-3/step/1 --run 1.1 --outcome recorded --output fact:evidenceSummary=<file> --output fact:evidenceReason=<file>";
+    private const string Complete = "sindri workflow complete T-3/step/1 --run 1.1 --outcome <recorded|noneFound> --output fact:evidenceSummary=<file> --output fact:evidenceReason=<file>";
 
     [Fact]
     public void The_status_commands_and_next_line_name_every_output_a_desk_step_requires_on_every_outcome()

@@ -94,11 +94,11 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Labeling_is_off_unless_the_profile_turns_it_on_and_the_labeler_is_never_asked()
+    public async Task Labeling_is_off_when_the_profile_turns_it_off_and_the_labeler_is_never_asked()
     {
         _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
 
-        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
+        _ = await _world.Map.BuildMap(progress: null, MapWorld.HumanWith("""{"repos":["aw-split-panes"],"labeling":{"enabled":false}}"""), MapWorld.None);
 
         Assert.Empty(_world.Labeler.Shown);
     }
@@ -163,37 +163,70 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Labeling_turned_on_with_no_labeler_set_up_is_SND_CONTEXT_042()
+    public async Task Labeling_turned_on_with_no_labeler_set_up_passes_with_a_note_naming_the_fix()
     {
         var labels = await new DisabledLabeler().Label([Cluster("a.ts")], [], 400_000, MapWorld.None);
 
-        Assert.Equal(ContextErrors.LabelingUnavailable.Code, labels.Error.Code);
+        Assert.True(labels.IsSuccess);
+        Assert.Contains(LabelPass.NoModelFix, labels.Value.Unavailable, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_busy_heavy_job_lock_is_SND_CONTEXT_040_naming_the_holder_and_nothing_is_written()
+    public async Task With_labeling_on_and_no_model_the_build_succeeds_with_one_degraded_042_naming_the_fix()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+        _world.Labeler.Unavailable = "no agent CLI answered (fix: " + LabelPass.NoModelFix + ")";
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        var note = Assert.Single(report.Degraded);
+        Assert.StartsWith("labels: " + ContextErrors.LabelingUnavailable.Code + ": ", note, StringComparison.Ordinal);
+        Assert.Contains(LabelPass.NoModelFix, note, StringComparison.Ordinal);
+        _ = Assert.Single(await Versions());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_model_that_answers_leaves_no_degraded_note()
+    {
+        _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
+
+        var report = (await _world.Map.BuildMap(progress: null, Scope, MapWorld.None)).Value;
+
+        Assert.Empty(report.Degraded);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_runs_while_every_heavy_slot_is_held_and_takes_none()
     {
         _world.HeavyLock.BusyHolder = "pid 4242 (bash-tests)";
-        var progress = new SyncProgress();
 
-        var report = await _world.Map.BuildMap(progress, Scope, MapWorld.None);
+        var report = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
 
-        Assert.Equal(ContextErrors.HeavyLockBusy.Code, report.Error.Code);
-        Assert.Contains("pid 4242", report.Error.Message, StringComparison.Ordinal);
-        Assert.Contains(progress.Lines, l => l.StartsWith("waiting for heavy-job lock", StringComparison.Ordinal));
-        Assert.Empty(await Versions());
+        Assert.True(report.IsSuccess, report.IsError ? report.Error.Code : null);
+        Assert.Equal(0, _world.HeavyLock.Taken);
+        _ = Assert.Single(await Versions());
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task The_slot_is_released_when_the_build_ends_and_when_it_fails()
+    [Fact(Timeout = 30_000), Trait("Lane", "unit")]
+    public async Task Two_builds_of_one_map_never_run_at_once_the_second_waits_for_the_first()
     {
-        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
-        Assert.Equal((1, 0), (_world.HeavyLock.Taken, _world.HeavyLock.Held));
+        var release = new TaskCompletionSource();
+        _world.Clusters.Hold = release.Task;
 
-        var failed = await _world.Map.BuildMap(progress: null, MapWorld.Human, MapWorld.None);   // the fake repo reader knows only one of the two repos
+        var first = _world.Map.BuildMap(progress: null, Scope, MapWorld.None).AsTask();
+        var second = _world.Map.BuildMap(progress: null, Scope, MapWorld.None).AsTask();
+        while (_world.Clusters.Asked.Count == 0)
+        {
+            await Task.Delay(1, TestContext.Current.CancellationToken);
+        }
 
-        Assert.True(failed.IsError);
-        Assert.Equal((2, 0), (_world.HeavyLock.Taken, _world.HeavyLock.Held));
+        await Task.Delay(50, TestContext.Current.CancellationToken);   // long enough for a second build to have got inside, were it allowed
+        Assert.Equal(1, _world.Clusters.Active);
+        release.SetResult();
+        var both = await Task.WhenAll(first, second);
+
+        Assert.All(both, r => Assert.True(r.IsSuccess, r.IsError ? r.Error.Code : null));
+        Assert.Equal(1, _world.Clusters.MostActive);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -227,12 +260,12 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_cant_build()
+    public async Task A_session_may_build()
     {
         var report = await _world.Map.BuildMap(progress: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None);
 
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, report.Error.Code);
-        Assert.Empty(await Versions());
+        Assert.True(report.IsSuccess);
+        Assert.NotEmpty(await Versions());
     }
 
     [Fact, Trait("Lane", "unit")]

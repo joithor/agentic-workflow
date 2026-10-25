@@ -24,7 +24,8 @@ internal sealed class AuthorizingService<TRequest, TResponse>(IService<TRequest,
     public override ValueTask<Result<TResponse>> Handle(TRequest request, CancellationToken cancellationToken)
     {
         var row = ActionClassifier.Classify(catalog, request);
-        return Authorization.Decide(row.Class, callers.Current, row).Refusal is { } refusal
+        var refusal = Authorization.Decide(row.Class, callers.Current, row).Refusal;
+        return refusal is not null
             ? ValueTask.FromResult<Result<TResponse>>(Named(request, row, refusal))
             : Inner.Handle(request, cancellationToken);
     }
