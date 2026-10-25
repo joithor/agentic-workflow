@@ -200,7 +200,7 @@ public sealed class CodeIndexSymbolSourceTests
 
     // A checkout that holds both commits; 'mergeBase' is what git would say the merge base of the index's commit and the map's is.
     private static FakeRepoReader Git(string? mergeBase = Indexed, params string[] changed) =>
-        new FakeRepoReader(new ContextRepo(_repo, "/tmp/demo"), Other, new Dictionary<string, string>())
+        new FakeRepoReader(new ContextRepo(_repo, "/tmp/demo"), Other, new Dictionary<string, string>(StringComparer.Ordinal))
             .WithHistory([Indexed, Other], mergeBase is null ? [] : [new RepoChanges(Indexed, Other, mergeBase, [.. changed.Select(p => new RepoChange(p, ChangeKind.Modified))])]);
 
     private static FakeCodeIndex Index()

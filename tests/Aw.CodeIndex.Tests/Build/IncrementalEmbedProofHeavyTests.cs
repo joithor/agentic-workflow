@@ -8,7 +8,6 @@ using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Infrastructure.Embedding;
 using Aw.CodeIndex.Infrastructure.Graph;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
-using Aw.CodeIndex.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
 
@@ -38,7 +37,7 @@ public sealed class IncrementalEmbedProofHeavyTests(ITestOutputHelper output)
         Assert.Equal(0, first.Embed.Carried);
         Assert.True(second.Build.Incremental, "the second build is incremental");
         Assert.True(second.Embed.Carried > 0, "vectors are carried");
-        Assert.True(second.Embed.Made < first.Embed.Made / 4, $"the second embed made {second.Embed.Made} vectors, against {first.Embed.Made} for the whole repo");
+        Assert.True(second.Embed.Made < first.Embed.Made / 4, string.Create(CultureInfo.InvariantCulture, $"the second embed made {second.Embed.Made} vectors, against {first.Embed.Made} for the whole repo"));
         Assert.Equal(LayerState.Ok, second.Embed.Embeddings);
     }
 

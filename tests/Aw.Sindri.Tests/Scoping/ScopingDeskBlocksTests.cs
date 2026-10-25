@@ -239,7 +239,7 @@ public sealed class ScopingDeskBlocksTests
         var row = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
         var source = row["searched"]!["sources"]!.AsArray().Single(s => s!["id"]!.GetValue<string>() == "code-index")!;
         Assert.Contains(row["limits"]!.AsArray(), l => l!["why"]!.GetValue<string>() == "catching-up");
-        Assert.Equal(["src/Worker.cs", "src/New.cs"], source["catchingUp"]!["pending"]!.AsArray().Select(static p => p!.GetValue<string>()));
+        Assert.Equal(["src/Worker.cs", "src/New.cs"], source["catchingUp"]!["pending"]!.AsArray().Select(static p => p!.GetValue<string>()), StringComparer.Ordinal);
         var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
         Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
     }
