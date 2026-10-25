@@ -45,6 +45,7 @@ EOF
 echo "\$*" >> "$d/stubs/sindri.log"
 [ "\${1:-}" = scrub ] || exit 2
 while [ \$# -gt 0 ]; do case "\$1" in --repo) R="\$2"; shift ;; --bin) B="\$2"; shift ;; esac; shift; done
+if git -C "\$R" config --get core.hooksPath > /dev/null 2>&1; then echo "sindri: SND-SCRUB-003 A different pre-commit hook is already installed" >&2; exit 2; fi
 printf '#!/bin/sh\n# sindri-pre-commit v3\nSINDRI=%s\n' "\$B" > "\$R/.git/hooks/pre-commit"
 EOF
   chmod +x "$s/bin/cs/stamp1/judge" "$s/bin/cs/stamp1/sindri"
@@ -189,6 +190,16 @@ out="$(run "$D3" --pre-link)"; rc=$?
 check "failed log write exits 1" "$rc" 1
 has "failed log write says nothing was changed" "$out" "nothing was changed"
 check "failed log write changes nothing" "$(snap "$D3")" "$before"
+
+# ---------------------------------------------------------------------------------------------------------------------
+echo "# a repo with its own pre-commit hook (husky, core.hooksPath) is skipped with the manual line, not a failure (#1029)"
+DH="$WORK/husky"; seed "$DH"; use "$DH"
+git -C "$DH/repo" config core.hooksPath .husky/_
+out_h="$(run "$DH" --pre-link)"; rc=$?
+check "a foreign hook does not stop step 2" "$rc" 0
+has "the skip names the repo" "$out_h" "hook v3 skipped in app"
+has "the skip prints the manual line" "$out_h" "add 'sindri scrub --staged || exit 1' to it by hand"
+has "the log records the reason" "$(cat "$DH"/state/logs/cutover-*.log)" "hook skipped (SND-SCRUB-003) app"
 
 # ---------------------------------------------------------------------------------------------------------------------
 echo "# the full removal, pre-link then the link then post-link"
