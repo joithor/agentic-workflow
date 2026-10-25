@@ -59,10 +59,16 @@ internal sealed class ContextGraph(
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
 
     public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        codeHistory.ScopeGraphs.Build(query, scope, cancellationToken);
+        codeHistory.ScopeGraph(query, scope, cancellationToken);
 
-    /// <summary>The scoping graph's store and run-scoped reads (issue 1005), owned by <see cref="ContextScopeGraph"/>; the facade reaches them here.</summary>
-    internal ContextScopeGraph ScopeRuns => codeHistory.ScopeGraphs;
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView view, CancellationToken cancellationToken) =>
+        codeHistory.RememberScopeGraph(instanceAddress, view, cancellationToken);
+
+    public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
+        codeHistory.ReadInScopeGraph(instanceAddress, runToken, read, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
+        codeHistory.GraphReads(instanceAddress, runToken, cancellationToken);
 
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         codeHistory.Code(anchors, draft, mapVersion, scope, cancellationToken);

@@ -156,11 +156,11 @@ internal sealed class ContextEngine(
         graph.ScopeGraph(query1, scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
-        graph.ScopeRuns.Reads(instanceAddress, runToken, cancellationToken);
+        graph.GraphReads(instanceAddress, runToken, cancellationToken);
 
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken) =>
-        graph.ScopeRuns.Remember(instanceAddress, graph, cancellationToken);
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView view, CancellationToken cancellationToken) =>
+        graph.RememberScopeGraph(instanceAddress, view, cancellationToken);
 
     public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
-        graph.ScopeRuns.Read(instanceAddress, runToken, read, cancellationToken);
+        graph.ReadInScopeGraph(instanceAddress, runToken, read, cancellationToken);
 }

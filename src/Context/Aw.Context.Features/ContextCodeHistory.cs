@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.ScopeGraph;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.GetCode;
@@ -22,8 +23,17 @@ internal sealed class ContextCodeHistory(
     IService<GetWholeMapRequest, WholeMapView> wholeMap,
     ContextScopeGraph scopeGraphs) : IContextCode, IContextHistory
 {
-    /// <summary>The scoping graph and its run store (issue 1005): one owner for ScopeGraph, RememberScopeGraph, ReadInScopeGraph and GraphReads.</summary>
-    internal ContextScopeGraph ScopeGraphs => scopeGraphs;
+    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        scopeGraphs.Build(query, scope, cancellationToken);
+
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView view, CancellationToken cancellationToken) =>
+        scopeGraphs.Remember(instanceAddress, view, cancellationToken);
+
+    public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
+        scopeGraphs.Read(instanceAddress, runToken, read, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
+        scopeGraphs.Reads(instanceAddress, runToken, cancellationToken);
 
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);

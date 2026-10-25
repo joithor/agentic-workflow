@@ -233,9 +233,9 @@ public sealed class FakeContextEngine : IContextEngine
     public IList<(string Instance, ScopeGraphView Graph)> Remembered { get; } = [];
 
     /// <inheritdoc/>
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken)
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView view, CancellationToken cancellationToken)
     {
-        Remembered.Add((instanceAddress, graph));
+        Remembered.Add((instanceAddress, view));
         return ValueTask.FromResult(Results.Success(value: true));
     }
 

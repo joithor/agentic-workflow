@@ -103,10 +103,10 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses, IC
 
     /// <summary>Keeps the graph a scoping instance's agent Steps work from, so their context_* reads can be checked against it (issue 1005). A second call for the same instance replaces the first.</summary>
     /// <param name="instanceAddress">The workflow instance's address.</param>
-    /// <param name="graph">The graph the run was given.</param>
+    /// <param name="view">The graph the instance's agent Steps were given.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>True when stored, or an error.</returns>
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken);
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView view, CancellationToken cancellationToken);
 
     /// <summary>Checks one context_node, context_neighbors or context_query call of a scoping Step run against its graph and logs it (issue 1005).</summary>
     /// <param name="instanceAddress">The workflow instance's address.</param>
