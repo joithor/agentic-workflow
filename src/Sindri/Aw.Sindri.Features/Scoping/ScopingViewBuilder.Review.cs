@@ -1,5 +1,3 @@
-using System.Text.Json.Nodes;
-
 namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>The stop's rows for the relevance review and the gap search.</summary>

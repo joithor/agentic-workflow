@@ -75,11 +75,19 @@ internal sealed class RelevanceJudgeStep(IJudgeChoice judge, ITextScrubber scrub
     private static Arguments Settings(StepContext context)
     {
         var threshold = context.Arguments.TryGetValue("threshold", out var given) && given.ValueKind == JsonValueKind.Number ? given.GetDouble() : DefaultThreshold;
-        var providers = context.Arguments.TryGetValue("providers", out var listed) && listed.ValueKind == JsonValueKind.Array
-            ? listed.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).ToList()
-            : JudgeProviders.Default;
+        var providers = Providers(context);
         var parallel = context.Arguments.TryGetValue("parallel", out var width) && width.ValueKind == JsonValueKind.Number && width.TryGetInt32(out var asked) ? Math.Clamp(asked, 1, MaxParallel) : DefaultParallel;
         return new Arguments(threshold, providers, parallel);
+    }
+
+    private static IReadOnlyList<string> Providers(StepContext context)
+    {
+        if (context.Arguments.TryGetValue("providers", out var listed) && listed.ValueKind == JsonValueKind.Array)
+        {
+            return [.. listed.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty)];
+        }
+
+        return JudgeProviders.Default;
     }
 
     // The first call runs alone: a judge that did not finish on it is not available, so the rest would only repeat that. A Step whose every call failed fails too.
