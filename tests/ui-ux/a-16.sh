@@ -5,12 +5,12 @@
 source "$(dirname "$0")/lib.sh"
 uxu_start up recipes workflows
 
-# The strip row's open button is x:Name StripTitle (its accessible name is "<item title>, <recipe>"; a --name or --contains on
-# either misses it when the title differs), so find it in WorkflowsRows by automationId and click it by node id.
+# The strip row's open button is named "<subject>, <recipe>" (AutomationProperties.Name wins over x:Name) and sets no
+# automation id, so take the first Button under WorkflowsRows (the row-title button comes before the answer buttons) by node id.
 d click --type ListBoxItem --name Home >/dev/null || uxu_die "no Home tab"
 row=""
 for _ in $(seq 1 40); do
-  row="$(d tree --name WorkflowsRows --depth 14 2>/dev/null | jq -r '[.. | objects | select(.automationId == "StripTitle" or .name == "StripTitle") | .id][0] // empty')"
+  row="$(d tree --name WorkflowsRows --depth 14 2>/dev/null | jq -r '[.. | objects | select(.type == "Button") | .id][0] // empty')"
   [ -n "$row" ] && break
   sleep 1.5
 done
