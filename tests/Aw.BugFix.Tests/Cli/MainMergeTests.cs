@@ -46,7 +46,7 @@ public sealed class MainMergeTests : IDisposable
 
         var (exit, output, error) = _w.Run("record-candidate", "--state", _w.State, "--branch", Branch, "--cwd", worktree);
 
-        Assert.True(exit == 0, $"record-candidate without --allow-test-changes exited {exit}: {error}");
+        Assert.True(exit == 0, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"record-candidate without --allow-test-changes exited {exit}: {error}"));
         using var document = JsonDocument.Parse(output);
         Assert.Equal(["src/app.txt"], document.RootElement.GetProperty("changedFiles").EnumerateArray().Select(static p => p.GetString()).ToArray());
     }
@@ -76,7 +76,7 @@ public sealed class MainMergeTests : IDisposable
     private JsonElement Ok(params string[] args)
     {
         var (exit, output, error) = _w.Run(args);
-        Assert.True(exit == 0, $"{string.Join(' ', args)} exited {exit}: {error}");
+        Assert.True(exit == 0, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{string.Join(' ', args)} exited {exit}: {error}"));
         using var document = JsonDocument.Parse(output);
         return document.RootElement.Clone();
     }
