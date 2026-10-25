@@ -18666,3 +18666,21 @@ Aw.Sindri.Core.Scoping.ChallengeRoundShape
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Covers(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> bool
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.LogShape(System.Text.Json.Nodes.JsonObject! round) -> string?
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Violation(System.ReadOnlySpan<byte> content) -> string?
+Aw.Sindri.Core.Profile.RepoRoleSets
+static Aw.Sindri.Core.Profile.RepoRoleSets.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.ProfileRole!>?
+Aw.Sindri.Core.Profile.ProfileRole
+Aw.Sindri.Core.Profile.ProfileRole.<Clone>$() -> Aw.Sindri.Core.Profile.ProfileRole!
+Aw.Sindri.Core.Profile.ProfileRole.Deconstruct(out string! Name, out bool Demoted, out System.Collections.Generic.IReadOnlyList<string!>! Globs) -> void
+Aw.Sindri.Core.Profile.ProfileRole.Equals(Aw.Sindri.Core.Profile.ProfileRole? other) -> bool
+Aw.Sindri.Core.Profile.ProfileRole.ProfileRole(string! Name, bool Demoted, System.Collections.Generic.IReadOnlyList<string!>! Globs) -> void
+Aw.Sindri.Core.Profile.ProfileRole.Name.get -> string!
+Aw.Sindri.Core.Profile.ProfileRole.Name.init -> void
+Aw.Sindri.Core.Profile.ProfileRole.Demoted.get -> bool
+Aw.Sindri.Core.Profile.ProfileRole.Demoted.init -> void
+Aw.Sindri.Core.Profile.ProfileRole.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Profile.ProfileRole.Globs.init -> void
+override Aw.Sindri.Core.Profile.ProfileRole.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ProfileRole.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ProfileRole.ToString() -> string!
+static Aw.Sindri.Core.Profile.ProfileRole.operator !=(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
+static Aw.Sindri.Core.Profile.ProfileRole.operator ==(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
