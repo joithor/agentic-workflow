@@ -36,8 +36,8 @@ public sealed class ScopeEvidenceStepTests
     // The agent runs the gold facts' runs describe, as the ledger would hold them.
     private static readonly ScopeRunRecord[] _records =
     [
-        new("step.scope.draft", "draft", 1, "agent", "fixture-writer-model", null, "fixture", 41200, "LCH-1"),
-        new("step.scope.challenge", "challenge", 1, "agent", "fixture-challenger-model", null, "fixture", 18800, "LCH-2"),
+        new("step.scope.draft", "draft", 1, "agent", "fixture-writer-model", Requested: null, "fixture", 41200, "LCH-1"),
+        new("step.scope.challenge", "challenge", 1, "agent", "fixture-challenger-model", Requested: null, "fixture", 18800, "LCH-2"),
     ];
 
     private static FakeScopeRunRecords Records() => new FakeScopeRunRecords().With(ScopingStepContexts.Address, _records);

@@ -48,7 +48,7 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
 
     /// <summary>
     /// Prints the error; exit 1 for 'not running' (attention), 2 for everything else. 'Not running' gets the fix
-    /// 'sindri' unless it names one already, or asks for the human (an agent session never starts it).
+    /// 'sindri' unless it names one already.
     /// </summary>
     public async Task<int> Error(Error error)
     {

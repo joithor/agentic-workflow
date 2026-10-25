@@ -53,6 +53,31 @@ public sealed class EngineItemStatesTests
     }
 
     [Fact]
+    public void An_unavailable_park_reads_running_so_it_stays_out_of_the_waiting_on_you_group_and_keeps_its_reason()
+    {
+        var started = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Agent)));
+
+        var parked = EngineItemStates.Next(started, EventTypes.WorkflowTransition, Row("produce", suspension: new SuspensionSummary(SuspensionKind.Park, ParkReason.Unavailable, ParkKind.Step, Escalation: null, Mirrors: null)));
+        var later = EngineItemStates.Next(parked, EventTypes.WorkflowTransition, new WorkflowEventPayload(Address, "produce", "produce", "deadline", Outcome: null, Run: null, Detail: null));
+
+        Assert.Equal((ItemState.Running, ParkReason.Unavailable), (EngineItemStates.StateOf(parked!), parked!.Reason));
+        Assert.Equal(QueueGroup.Running, QueueGroups.GroupOf(EngineItemStates.StateOf(parked)));
+        Assert.Equal(ParkReason.Unavailable, later!.Reason);   // a row without detail keeps what came before
+    }
+
+    [Fact]
+    public void Live_unavailable_parks_are_counted_for_health_the_latest_root_and_an_earlier_one_each()
+    {
+        var unavailable = new SuspensionSummary(SuspensionKind.Park, ParkReason.Unavailable, ParkKind.Step, Escalation: null, Mirrors: null);
+        var started = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Agent)));
+        var parked = EngineItemStates.Next(started, EventTypes.WorkflowTransition, Row("produce", suspension: unavailable))!;
+        var other = parked with { Address = "ITM-11111111111111111111111111111111/review/1" };
+
+        Assert.Equal((0, 0, 1, 2), (EngineItemStates.Unavailable(part: null), EngineItemStates.Unavailable(started), EngineItemStates.Unavailable(parked), EngineItemStates.Unavailable(parked with { Earlier = [other] })));
+        Assert.Equal(0, EngineItemStates.Unavailable(parked with { Ended = true }));
+    }
+
+    [Fact]
     public void Takeover_reads_taken_over_and_handback_returns_to_the_frame_state()
     {
         var started = EngineItemStates.Next(prior: null, EventTypes.WorkflowStarted, Row("produce", frame: new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk)));

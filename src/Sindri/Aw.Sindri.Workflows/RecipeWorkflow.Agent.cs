@@ -102,7 +102,7 @@ internal sealed partial class RecipeWorkflow
         var launched = await Launching(launching).ConfigureAwait(true);
         if (launched.Failure is { } failure)
         {
-            return (await Decided(applied, open, AgentFailed(open, step, StepFailed.LaunchReason, tokens: 0, $"{failure.Code}: {failure.Message}"), reportId: null, context).ConfigureAwait(true), true);
+            return (await Decided(applied, open, AgentFailed(open, step, StepFailed.LaunchReason, tokens: 0, $"{failure.Code}: {failure.Message}") with { Dependency = "the agent launcher", Code = failure.Code }, reportId: null, context).ConfigureAwait(true), true);
         }
 
         _agent = (open.Token.Value, launched);
@@ -159,7 +159,7 @@ internal sealed partial class RecipeWorkflow
 
         var ended = await watching.ConfigureAwait(true);
         var closed = await Close(running, measure: true).ConfigureAwait(true);
-        var reason = ended.EndedAs == AgentSessionEnd.Lost ? "lost" : "exit";
+        var reason = AgentEndReasons.Of(ended.EndedAs);
         return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, ended.Detail), reportId: null, context).ConfigureAwait(true);
     }
 

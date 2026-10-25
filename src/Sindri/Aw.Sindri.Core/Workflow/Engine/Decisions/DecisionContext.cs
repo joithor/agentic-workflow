@@ -46,6 +46,12 @@ public sealed record DecisionContext(
     public bool LegacyLaunchRound { get; init; }
 
     /// <summary>
+    /// Whether a Step failure no transition takes parks with needs-answer at once (the behavior before the 'step-unavailable-v1' patch, which a history recorded without the
+    /// marker replays). Off: the engine runs the Step again until it has failed three times in a row, then parks it as unavailable, which asks no human.
+    /// </summary>
+    public bool LegacyUnavailable { get; init; }
+
+    /// <summary>
     /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
     /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
     /// </summary>

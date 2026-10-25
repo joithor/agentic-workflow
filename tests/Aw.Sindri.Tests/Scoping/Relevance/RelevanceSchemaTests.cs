@@ -8,31 +8,13 @@ namespace Aw.Sindri.Tests.Scoping.Relevance;
 [Lane(TestLane.Unit)]
 public sealed class RelevanceSchemaTests
 {
-    private const string Verdicts = """
-        {"model":"claude-sonnet-5-5","verdicts":[
-          {"id":"L-code-3","class":"noise","reason":"A shared admin shell that every feature imports.","citation":"L-code-3","fix":"ignore"},
-          {"id":"L-product-2","class":"out","reason":"Billing export, not invitations.","citation":"R1","fix":"relabel","relabelTo":"feature:billing-export"},
-          {"id":"L-code-1","class":"in","reason":"Writes the invitation expiry date.","citation":"L-code-1"}]}
-        """;
+    private const string Verdicts = """{"model":"claude-sonnet-5-5","verdicts":[{"id":"L-code-3","class":"noise","reason":"A shared admin shell that every feature imports.","citation":"L-code-3","fix":"ignore"},{"id":"L-product-2","class":"out","reason":"Billing export, not invitations.","citation":"R1","fix":"relabel","relabelTo":"feature:billing-export"},{"id":"L-code-1","class":"in","reason":"Writes the invitation expiry date.","citation":"L-code-1"}]}""";
 
-    private const string Rulings = """
-        {"judge":{"providers":["jev"],"threshold":0.6},"rulings":[
-          {"id":"L-code-3","class":"noise","confidence":0.91,"provider":"jev","decisionId":"JD-0001","reasonCode":"model"},
-          {"id":"L-code-1","class":"uncertain","confidence":null,"provider":null,"decisionId":"JD-0003","reasonCode":"below-threshold"}]}
-        """;
+    private const string Rulings = """{"judge":{"providers":["jev"],"threshold":0.6},"rulings":[{"id":"L-code-3","class":"noise","confidence":0.91,"provider":"jev","decisionId":"JD-0001","reasonCode":"model"},{"id":"L-code-1","class":"uncertain","confidence":null,"provider":null,"decisionId":"JD-0003","reasonCode":"below-threshold"}]}""";
 
-    private const string Relevance = """
-        {"agent":{"reportedModel":"claude-sonnet-5-5"},"judge":{"providers":["jev"]},
-         "counts":{"reviewed":87,"in":64,"out":14,"noise":9,"disputed":3},"truncated":["code"],
-         "entries":[{"id":"L-code-3","lens":"code","key":"code:src/admin/Shell.ts","kind":"code","label":"Shell.ts",
-           "agent":{"class":"noise","reason":"A shared admin shell.","citation":"L-code-3","fix":"ignore"},
-           "judge":{"class":"noise","confidence":0.91,"provider":"jev","decisionId":"JD-0001","reasonCode":"model"},
-           "result":"noise","disputed":false}]}
-        """;
+    private const string Relevance = """{"agent":{"reportedModel":"claude-sonnet-5-5"},"judge":{"providers":["jev"]},"counts":{"reviewed":87,"in":64,"out":14,"noise":9,"disputed":3},"truncated":["code"],"entries":[{"id":"L-code-3","lens":"code","key":"code:src/admin/Shell.ts","kind":"code","label":"Shell.ts","agent":{"class":"noise","reason":"A shared admin shell.","citation":"L-code-3","fix":"ignore"},"judge":{"class":"noise","confidence":0.91,"provider":"jev","decisionId":"JD-0001","reasonCode":"model"},"result":"noise","disputed":false}]}""";
 
-    private const string MapFixes = """
-        {"fixes":[{"id":"L-code-3","node":"code:src/admin/Shell.ts","action":"ignore","relabelTo":null,"reason":"A shared admin shell.","citation":"L-code-3","status":"proposed"}]}
-        """;
+    private const string MapFixes = """{"fixes":[{"id":"L-code-3","node":"code:src/admin/Shell.ts","action":"ignore","relabelTo":null,"reason":"A shared admin shell.","citation":"L-code-3","status":"proposed"}]}""";
 
     private static IReadOnlyList<SchemaError> Check(string schema, string json, bool packetFile = false) => ScopeSchemas.Errors(schema, JsonNode.Parse(json), packetFile);
 
@@ -74,10 +56,8 @@ public sealed class RelevanceSchemaTests
     }
 
     [Fact]
-    public void A_verdict_with_a_class_outside_in_out_noise_is_refused()
-    {
+    public void A_verdict_with_a_class_outside_in_out_noise_is_refused() =>
         Assert.NotEmpty(Check("relevance-verdicts", Edit(Verdicts, static n => n["verdicts"]![0]!["class"] = "maybe")));
-    }
 
     [Fact]
     public void A_verdict_that_leaves_the_map_needs_a_fix_and_one_that_stays_has_none()

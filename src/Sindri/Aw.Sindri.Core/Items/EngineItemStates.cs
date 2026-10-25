@@ -125,8 +125,15 @@ public static class EngineItemStates
             runtime,
             Suspension(payload.Detail, carried),
             ended,
-            ended && Cancels(payload.Trigger));
+            ended && Cancels(payload.Trigger))
+        {
+            Reason = Reason(payload.Detail, carried),
+        };
     }
+
+    // The reason of the park the row shows; a row without detail keeps the one before, and a row that leaves the park (or shows another suspension) has none.
+    private static ParkReason? Reason(WorkflowEventDetail? detail, EngineItemPart? carried) =>
+        detail is null ? carried?.Reason : detail.Delta.Suspension is { Kind: SuspensionKind.Park } park ? park.Reason : null;
 
     /// <summary>
     /// Whether the row ended the instance: its delta names an outcome, or (a row stored without its detail, as the scrub's fallback does) its
@@ -151,6 +158,15 @@ public static class EngineItemStates
         null => (carried?.RunOpen ?? false, carried?.Runtime),
     };
 
+    /// <summary>How many of an item's live root instances are parked as unavailable (a dependency of their Step is down): the latest root's, and any earlier live one's.</summary>
+    /// <param name="part">The item's engine part, or null before the engine touched the item.</param>
+    /// <returns>The count.</returns>
+    public static int Unavailable(EngineItemPart? part) =>
+        part is null ? 0 : (IsUnavailable(part) ? 1 : 0) + (part.Earlier?.Count(IsUnavailable) ?? 0);
+
+    private static bool IsUnavailable(EngineItemPart part) =>
+        part is { Ended: false, Suspension: SuspensionKind.Park, Reason: ParkReason.Unavailable };
+
     /// <summary>The item state a part reads as.</summary>
     /// <param name="part">The part.</param>
     /// <returns>The state.</returns>
@@ -162,6 +178,7 @@ public static class EngineItemStates
             { Ended: true, Cancelled: true } => ItemState.Cancelled,
             { Ended: true } => ItemState.Done,
             { Suspension: SuspensionKind.Takeover } => ItemState.TakenOver,
+            { Suspension: SuspensionKind.Park, Reason: ParkReason.Unavailable } => ItemState.Running,   // a dependency is down: nobody is asked, so the item is not waiting on you (health shows it)
             { Suspension: SuspensionKind.Park or SuspensionKind.Escalation } => ItemState.Parked,
             { RunOpen: true, Runtime: StepRuntime.Desk } => ItemState.NeedsAnswer,
             _ => ItemState.Running,

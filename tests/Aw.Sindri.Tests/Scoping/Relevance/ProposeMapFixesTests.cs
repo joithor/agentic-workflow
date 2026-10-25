@@ -33,7 +33,7 @@ public sealed class ProposeMapFixesTests
 
     private static async Task<BlockStepResult> Run(ScopingFacts facts, bool withRepo)
     {
-        var context = ScopingStepContexts.Of("step.scope.propose", facts) with { Address = "T-1/scoping/1", Repo = withRepo ? _repo : (RepoName?)null };
+        var context = ScopingStepContexts.Of("step.scope.propose", facts) with { Address = "T-1/scoping/1", Repo = withRepo ? _repo : null };
         return await new ScopeProposeStep(new InMemoryScopeRunProposals()).Run(context, TestContext.Current.CancellationToken);
     }
 
@@ -48,7 +48,7 @@ public sealed class ProposeMapFixesTests
         var fixes = Out(result, "mapFixes")["fixes"]!.AsArray();
         Assert.Equal(2, fixes.Count);
         Assert.All(fixes, static f => Assert.Equal("recorded", f!["status"]!.GetValue<string>()));
-        Assert.Equal(["L-code-3", "L-product-2"], fixes.Select(static f => f!["id"]!.GetValue<string>()));
+        Assert.Equal(["L-code-3", "L-product-2"], fixes.Select(static f => f!["id"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal("feature:billing", fixes[1]!["relabelTo"]!.GetValue<string>());
         Assert.Equal("code:src/admin/Shell.ts", fixes[0]!["node"]!.GetValue<string>());
     }

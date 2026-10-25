@@ -121,7 +121,7 @@ internal static class RelevanceFixtures
         ["lens"] = lens,
         ["state"] = state,
         ["searched"] = new JsonObject { ["anchors"] = new JsonArray("surface:screen/invite-dialog"), ["sources"] = new JsonArray(), ["mapVersion"] = "v1", ["depth"] = 0, ["hops"] = new JsonArray() },
-        ["limits"] = limited ? new JsonArray(new JsonObject { ["not"] = "tickets linked to the map", ["why"] = "history-unlinked" }) : new JsonArray(),
+        ["limits"] = limited ? new JsonArray(new JsonObject { ["not"] = "tickets linked to the map", ["why"] = "history-unlinked" }) : [],
         ["mapCoverage"] = new JsonObject { ["mapped"] = count, ["new"] = 0, ["unmapped"] = 0 },
         ["found"] = new JsonObject { ["count"] = count, ["ids"] = new JsonArray([.. ids.Select(static i => (JsonNode?)JsonValue.Create(i))]) },
     };

@@ -35,7 +35,7 @@ public sealed class CliViewsRebuildTests : IDisposable
     {
         var accepted = new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 7);
         var api = new CliStubApi(HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(accepted, SliceHarness.Json)));
-        using var client = Client(api, new AgentSession(Signal: null, Terminal: true, Prover: false));
+        using var client = Client(api, human: true);
 
         var code = await Verbs(client).RebuildViews(Token);
 
@@ -45,15 +45,15 @@ public sealed class CliViewsRebuildTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task An_agent_session_prints_the_refusal_and_its_signal()
+    public async Task A_session_prints_the_refusal_and_why_it_ran_as_one()
     {
         var problem = $$"""{"type":"about:blank","title":"SND-AUTH-002","status":403,"detail":"{{Refusal}}"}""";
-        using var client = Client(new CliStubApi(HttpStatusCode.Forbidden, problem), new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false));
+        using var client = Client(new CliStubApi(HttpStatusCode.Forbidden, problem), human: false);
 
         var code = await Verbs(client).RebuildViews(Token);
 
         Assert.Equal(2, code);
-        Assert.Equal($"SND-AUTH-002 {Refusal} (this CLI ran as a session: CLAUDECODE is set)\n", _error.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal($"SND-AUTH-002 {Refusal} (this CLI ran as a session: the per-start human token isn't readable)\n", _error.ToString().ReplaceLineEndings("\n"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -65,8 +65,8 @@ public sealed class CliViewsRebuildTests : IDisposable
         Assert.Contains("sindri views rebuild [--no-start]", Usage.Text, StringComparison.Ordinal);
     }
 
-    private static ControlPlaneClient Client(CliStubApi api, AgentSession session) =>
-        new(_probe, SliceHarness.Json, CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+    private static ControlPlaneClient Client(CliStubApi api, bool human) =>
+        new(_probe, SliceHarness.Json, CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), human ? InMemoryHumanTokenStore.WithToken() : new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
 
     private Verbs Verbs(ControlPlaneClient client) =>
         new(client, _probe, new Output(_out, _error, SliceHarness.Json), new ServiceCollection().BuildServiceProvider());
