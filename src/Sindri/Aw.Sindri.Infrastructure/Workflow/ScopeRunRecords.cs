@@ -28,6 +28,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     private const int Page = 500;
     private const string Agent = "agent";
     private const string Desk = "desk";
+    private const int MaxEntry = 500;
 
     public async ValueTask<Result<IReadOnlyList<ScopeRunRecord>>> Of(InstanceAddress run, CancellationToken cancellationToken)
     {
@@ -66,7 +67,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
         Dictionary<string, (long Tokens, string? Model)> spent,
         List<(long Sequence, WorkflowEventPayload Payload)> completed)
     {
-        var launched = launches.Select(l => (l.Sequence, Record: AgentRecord(l.Started, states[l.Started.State!], spent.GetValueOrDefault(l.Started.Launch.Value))));   // why: Launches keeps only the launches whose state the recipe has
+        var launched = launches.Select(l => (l.Sequence, Record: AgentRecord(run, l.Started, states[l.Started.State!], spent.GetValueOrDefault(l.Started.Launch.Value))));   // why: Launches keeps only the launches whose state the recipe has
         var launchIds = launches.Select(static l => l.Started.Launch).ToHashSet();
         var atTheDesk = completed
             .Where(c => states.TryGetValue(c.Payload.From, out var ask) && IsAgent(ask) && c.Payload.Run is { } token && !launchIds.Contains(AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(run), RunToken.From(token))))
@@ -74,11 +75,32 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
         return [.. launched.Concat(atTheDesk).OrderBy(static r => r.Sequence).Select(static r => r.Record)];
     }
 
-    private static ScopeRunRecord AgentRecord(LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
-        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value);   // why: Launches keeps only launches that name their state
+    private static ScopeRunRecord AgentRecord(InstanceAddress run, LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
+        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value, RunTokenOf(run, started));
+
+    // The launch id is a hash of the instance and the run token, and the event keeps only the token's number, so the entry is found by trying the entries a frame can hold.
+    private static string? RunTokenOf(InstanceAddress run, LaunchStarted started)
+    {
+        if (started.Attempt is not { } number)
+        {
+            return null;
+        }
+
+        var instance = WorkflowInstanceId.Of(run);
+        for (var entry = 1; entry <= MaxEntry; entry++)
+        {
+            var candidate = RunToken.For(entry, number);
+            if (AgentLaunches.LaunchIdFor(instance, candidate) == started.Launch)
+            {
+                return candidate.Value;
+            }
+        }
+
+        return null;
+    }   // why: Launches keeps only launches that name their state
 
     private static ScopeRunRecord DeskRecord(WorkflowEventPayload completed, StateAsk ask) => new(
-        ask.Step, completed.From, RunToken.From(completed.Run!).Number, Desk, Model: null, ask.Requested, Vendor: null, Tokens: 0, Launch: null);   // why: Of keeps only completions with a run token
+        ask.Step, completed.From, RunToken.From(completed.Run!).Number, Desk, Model: null, ask.Requested, Vendor: null, Tokens: 0, Launch: null, RunToken: completed.Run);   // why: Of keeps only completions with a run token
 
     // The vendor of a model by its id, null when it isn't a family this knows.
     private static string? VendorOf(string? model) => model switch
