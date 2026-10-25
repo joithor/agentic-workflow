@@ -8,7 +8,7 @@ internal sealed partial class ShellWindow
 {
     // Each kind of sheet has its own scroll viewer, which keeps its offset while it is hidden: a sheet that closes and reopens would
     // start where it was left. Every viewer goes home as the sheet opens, and again once the new content has laid out (its extent can
-    // change after the first pass). A child stacked on a frame, and Back, are subject changes of an open sheet and do not reset.
+    // change after the first pass). It also goes home when another row opens on the open sheet; a child pushed on a frame, and Back, keep their scroll.
     private void ResetSheetScroll()
     {
         ScrollSheetsHome();

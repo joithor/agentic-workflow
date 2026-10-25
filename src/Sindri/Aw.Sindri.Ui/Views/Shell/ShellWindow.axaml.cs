@@ -180,11 +180,14 @@ internal sealed partial class ShellWindow : Window
             case nameof(ShellViewModel.IsNeedsYouInbox):
                 FollowInbox();
                 break;
+            case nameof(ShellViewModel.SheetSubject) when Shell is { SheetChangeIsStacked: false }:
+                ResetSheetScroll();   // another row opened on the open sheet; a pushed child and Back keep their scroll
+                break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
-                if (Shell is { IsSheetShown: true })
+                if (Shell is { IsSheetShown: true, SheetChangeIsStacked: false })
                 {
-                    ResetSheetScroll();   // a sheet that opens starts at its top; stacking a child and Back change the subject only, so they do not reset
+                    ResetSheetScroll();   // a sheet that opens starts at its top; a pushed child and Back keep their scroll
                 }
 
                 Dispatcher.UIThread.Post(Shell is { IsSheetShown: true } ? FocusOpenedSheet : KeepFocus, DispatcherPriority.Loaded);
