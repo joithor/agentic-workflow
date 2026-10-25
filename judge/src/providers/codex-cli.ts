@@ -58,7 +58,8 @@ function parseEvents<O extends string>(stdout: string): ProviderResult<O> {
  *   codex exec --model gpt-6-luna -c model_reasoning_effort="low" --ephemeral
  *     --skip-git-repo-check --ignore-user-config --ignore-rules --disable <f>...
  *     --sandbox read-only -C <empty tmp> --output-schema <tmp>/schema.json
- *     --json [--image <abs>]... -- <prompt>
+ *     --json [--image <abs>]...            (text: the prompt on stdin)
+ *     --json [--image <abs>]... -- <prompt> (image: the prompt is short)
  *
  * Isolation: empty temp cwd (-C), --ignore-user-config (no user MCP servers,
  * profiles, or hooks config; auth still comes from CODEX_HOME), --ignore-rules,
@@ -88,13 +89,16 @@ export function makeCodexCliProvider(deps: {
       const schemaFile = path.join(cwd, "schema.json");
       const images: string[] = [];
       let prompt: string;
+      let stdin: string | undefined;
       if (question.contentClass === "image") {
         const img = input as ImageInput;
         images.push("--image", path.resolve(img.evidenceDir, img.afterScreenshot));
         if (img.baselineScreenshot !== null) images.push("--image", path.resolve(img.evidenceDir, img.baselineScreenshot));
         prompt = `${question.prompt}\n\nThe screenshots are attached to this message as images, in the order they are named above.`;
       } else {
-        prompt = `${question.prompt}\n\nInput:\n${JSON.stringify(input)}`;
+        // Passed on stdin (`codex exec` reads the prompt from there when none is given): a big input would overflow argv.
+        stdin = `${question.prompt}\n\nInput:\n${JSON.stringify(input)}`;
+        prompt = "";
       }
 
       let raw: SpawnResult;
@@ -114,9 +118,8 @@ export function makeCodexCliProvider(deps: {
           "--output-schema", schemaFile,
           "--json",
           ...images,
-          "--",
-          prompt,
-        ], { cwd, env: childEnv(), timeoutMs: budgetMs });
+          ...(stdin === undefined ? ["--", prompt] : []),
+        ], { cwd, env: childEnv(), timeoutMs: budgetMs, ...(stdin === undefined ? {} : { stdin }) });
       } catch {
         return { status: "error", reason_code: "spawn-failed" };
       }

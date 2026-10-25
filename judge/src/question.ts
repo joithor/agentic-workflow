@@ -11,12 +11,21 @@ export interface QuestionModule<I, O extends string> {
   contentClass: ContentClass;
   timeBudgetMs: number;
   preRules?: (input: I) => O | null;
+  // What the providers receive in place of the raw input: the same fields with
+  // their free text capped as the prompt caps it. The prompt, the input digest
+  // and the decision record still come from the raw input.
+  providerInput?: (input: I) => unknown;
   // Cheap rule-based answer used only when a model answered below threshold
   // (distinct from preRules, which run before any model).
   fallbackRules?: (input: I) => O | null;
   extraProperties?: Readonly<Record<string, JsonSchemaFragment>>;
   // What each output means, for the adjudicator (and, from Task 5, Jev).
   criteria?: Readonly<Record<O, string>>;
+}
+
+/** The input as providers see it: bounded when the question says how, else as given. */
+export function toProviderInput<I, O extends string>(q: QuestionModule<I, O>, input: I): unknown {
+  return q.providerInput?.(input) ?? input;
 }
 
 export function toRef<I, O extends string>(q: QuestionModule<I, O>, input: I): QuestionRef<O> {

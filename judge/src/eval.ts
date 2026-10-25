@@ -8,7 +8,7 @@ import path from "node:path";
 import { QUESTIONS } from "./commands.js";
 import { ALL_AXES, collapseLabel, sortQuestionName } from "./prompt-sort/axes.js";
 import { labeledItems, sharedLabels, type Db, type LabelSource } from "./db.js";
-import { toRef } from "./question.js";
+import { toProviderInput, toRef } from "./question.js";
 import type { Provider, ProviderResult } from "./types.js";
 
 export interface EvalResult { itemId: string; label: string; result: ProviderResult<string>; latencyMs: number; inputTokens?: number }
@@ -189,7 +189,7 @@ export async function runEval(
       const parsed = question.inputSchema.safeParse(variant(JSON.parse(item.input_json)));
       const start = Date.now();
       const result: ProviderResult<string> = parsed.success
-        ? await opts.provider.decide(toRef(question, parsed.data), parsed.data, question.timeBudgetMs)
+        ? await opts.provider.decide(toRef(question, parsed.data), toProviderInput(question, parsed.data), question.timeBudgetMs)
         : { status: "error", reason_code: "invalid-input" };
       const row: EvalResult = { itemId: item.id, label: item.label, result, latencyMs: Date.now() - start };
       results.push(row);

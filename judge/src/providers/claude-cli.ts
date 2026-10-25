@@ -50,10 +50,10 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
   // actually think, so neither the env cap nor alwaysThinkingEnabled:false apply.
   const fast = deps.effort === undefined || deps.effort === "low";
   const settings = fast ? '{"disableAllHooks":true,"alwaysThinkingEnabled":false}' : '{"disableAllHooks":true}';
-  const run = async <O extends string>(args: string[], cwd: string, budgetMs: number): Promise<ProviderResult<O>> => {
+  const run = async <O extends string>(args: string[], cwd: string, budgetMs: number, stdin?: string): Promise<ProviderResult<O>> => {
     let raw: SpawnResult;
     try {
-      raw = await deps.spawn(args, { cwd, env: childEnv(fast ? { MAX_THINKING_TOKENS: "0" } : {}), timeoutMs: budgetMs });
+      raw = await deps.spawn(args, { cwd, env: childEnv(fast ? { MAX_THINKING_TOKENS: "0" } : {}), timeoutMs: budgetMs, ...(stdin === undefined ? {} : { stdin }) });
     } catch {
       return { status: "error", reason_code: "spawn-failed" };
     }
@@ -105,8 +105,7 @@ export function makeClaudeCliProvider(deps: { spawn: Spawn; tmpDirFactory: () =>
         "--system-prompt", question.prompt,
         "--json-schema", JSON.stringify(laxSchema(question)),
         "--output-format", "json",
-        JSON.stringify(input),
-      ], deps.tmpDirFactory(), budgetMs);
+      ], deps.tmpDirFactory(), budgetMs, JSON.stringify(input)); // no prompt argument: `claude -p` reads it from stdin
     },
   };
 }
