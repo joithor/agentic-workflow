@@ -71,6 +71,7 @@ public sealed class ApproveWaitingShippedTests
     public async Task The_challenge_for_id_and_hash_and_for_id_and_version_registers_the_shipped_version_first()
     {
         await using var registry = Harness();
+        _ = await registry.H.HoldLease();   // registering records 'recipe.registered', which needs the ledger lease
 
         var byHash = await registry.Issue($"approve workflow.step@{ShippedHash.Value}");
         var byVersion = await registry.Issue("approve workflow.step 2");
@@ -83,6 +84,7 @@ public sealed class ApproveWaitingShippedTests
     public async Task A_hash_no_shipped_recipe_has_is_still_not_found()
     {
         await using var registry = Harness();
+        _ = await registry.H.HoldLease();   // registering records 'recipe.registered', which needs the ledger lease
 
         var issued = await registry.Issue("approve workflow.step@sha256:" + new string('0', 64));
 
