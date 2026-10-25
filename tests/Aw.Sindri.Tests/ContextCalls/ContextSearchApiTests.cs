@@ -39,10 +39,10 @@ public sealed class ContextSearchApiTests : IDisposable
 
         var answer = await host.Http.Ask(Get("/sindri/context/search?q=tab+manager&limit=3", Terminal(host)));
 
-        Assert.Equal(HttpStatusCode.OK, answer.Status);
+        Assert.True(answer.Status == HttpStatusCode.OK, answer.Body);
         var view = Json(answer.Body);
         var hits = view.GetProperty("hits").EnumerateArray().ToList();
-        Assert.Equal("feature:tabs.tab-manager", hits[0].GetProperty("key").GetString());
+        Assert.True(hits[0].GetProperty("key").GetString() == "feature:tabs.tab-manager", answer.Body);   // the body names every hit, score and matched field
         Assert.Equal("title", hits[0].GetProperty("matched").GetString());
         Assert.True(hits.Count <= 3);
         Assert.True(view.GetProperty("total").GetInt32() >= hits.Count);
@@ -114,8 +114,9 @@ public sealed class ContextSearchApiTests : IDisposable
         var mine = await host.Http.Ask(Get("/sindri/context/search?q=tab", own));
         var theirs = await host.Http.Ask(Get("/sindri/context/search?q=tab", other));
 
-        Assert.Equal(HttpStatusCode.OK, mine.Status);
-        Assert.True(Json(mine.Body).GetProperty("total").GetInt32() > 0);
-        Assert.Equal(0, Json(theirs.Body).GetProperty("total").GetInt32());
+        Assert.True(mine.Status == HttpStatusCode.OK, "own repo: " + mine.Body);
+        Assert.True(Json(mine.Body).GetProperty("total").GetInt32() > 0, "own repo: " + mine.Body);
+        Assert.True(theirs.Status == HttpStatusCode.OK, "other repo: " + theirs.Body);
+        Assert.True(Json(theirs.Body).GetProperty("total").GetInt32() == 0, "other repo: " + theirs.Body);
     }
 }
