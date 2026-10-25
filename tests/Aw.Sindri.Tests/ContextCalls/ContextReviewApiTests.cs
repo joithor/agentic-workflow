@@ -299,7 +299,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_busy_heavy_job_lock_is_040_naming_the_holder_and_nothing_is_written()
+    public async Task A_full_heavy_job_lock_does_not_stop_a_map_rebuild()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: false, wait: TimeSpan.Zero);
@@ -314,9 +314,9 @@ public sealed class ContextReviewApiTests : IDisposable
             var built = await Run(host, "context-rebuild");
             var queue = await host.Http.Ask(Get("/sindri/context/map/review", Terminal(host)));
 
-            Assert.Equal("SND-CONTEXT-040", built.Error.Code);
-            Assert.Contains("slot 1/2", built.Error.Message, StringComparison.Ordinal);
-            Assert.Equal("SND-CONTEXT-044", queue.Code);
+            Assert.True(built.IsSuccess, built.IsError ? built.Error.Message : string.Empty);   // a map build takes no heavy-job slot
+            Assert.Equal(HttpStatusCode.OK, queue.Status);
+            Assert.Contains("surface:command/", queue.Body, StringComparison.Ordinal);
         }
         finally
         {

@@ -54,14 +54,6 @@ public sealed class RepoHealthTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_stale_index_whose_last_build_was_deferred_is_waiting_for_a_slot()
-    {
-        var health = Of(Built(), new IndexRepoHead(_repo, _new, OnDefaultBranch: true), Job(JobState.Succeeded, TimeSpan.FromMinutes(2), "deferred"));
-
-        Assert.Equal(("waiting", "waiting for a free build slot"), (health.State, health.Waiting));
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public void A_failed_build_in_backoff_is_waiting_with_the_retry_words()
     {
         var health = Of(Built(), new IndexRepoHead(_repo, _new, OnDefaultBranch: true), Job(JobState.Failed, TimeSpan.FromSeconds(10)));
@@ -81,12 +73,4 @@ public sealed class RepoHealthTests
     [Fact, Trait("Lane", "unit")]
     public void A_detail_that_is_not_a_count_gives_no_percent() =>
         Assert.Null(Of(Built("unavailable", "SND-CODEIDX-006"), new IndexRepoHead(_repo, _old, OnDefaultBranch: true)).EmbeddingsPercent);
-
-    [Fact, Trait("Lane", "unit")]
-    public void A_deferred_continuation_at_the_same_commit_is_waiting()
-    {
-        var health = Of(Built("pending", "31 of 100 embedded"), new IndexRepoHead(_repo, _old, OnDefaultBranch: true), Job(JobState.Succeeded, TimeSpan.FromMinutes(2), "deferred"));
-
-        Assert.Equal(("waiting", "waiting for a free build slot", 31), (health.State, health.Waiting, health.EmbeddingsPercent));
-    }
 }

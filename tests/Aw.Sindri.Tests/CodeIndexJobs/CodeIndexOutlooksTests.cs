@@ -96,17 +96,6 @@ public sealed class CodeIndexOutlooksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_succeeded_job_that_ended_deferred_is_backoff_waiting_for_a_slot_not_a_failure()
-    {
-        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.Old);
-        _rig.Job("demo", JobState.Succeeded, _minute, outcome: "deferred");
-
-        var detail = await Read(Hold("demo", CodeIndexJobsRig.New));
-
-        Assert.Equal((IndexOutlook.Backoff, RepoWait.WaitingForSlot), (detail.Outlook, detail.Word));
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task A_published_job_with_no_readable_index_now_is_coming_damaged_not_never_built()
     {
         _rig.Job("demo", JobState.Succeeded, TimeSpan.FromHours(1), outcome: "published");

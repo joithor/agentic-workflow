@@ -7,7 +7,7 @@ new optional keys join version 1, renames and removals bump it. `node scripts/ch
 `SindriProfile` key is missing from this page.
 
 The profile is a YAML file, by default `$AW_SINDRI_HOME/profile/profile.yaml` (`AW_SINDRI_PROFILE`). A changed profile
-takes effect only after `sindri profile approve` (a human approval). The machine's terminal and extra agent entries are
+takes effect only after `sindri profile approve` (a human approval), with one exception (owner q102, CIX-L59): the code index also indexes every repo in the live file that the approved profile doesn't name, using the approved `index.denyPaths` and embeddings address (a live-only repo's own `denyPaths` only add to them), so a repo added with `sindri repo add` is indexed at once. The machine's terminal and extra agent entries are
 not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.md`).
 
 ## profile.yaml

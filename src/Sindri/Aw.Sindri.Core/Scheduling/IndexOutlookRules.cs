@@ -9,9 +9,6 @@ public static class IndexOutlookRules
     /// <summary>Failed jobs in a row after which the index counts as broken (the code index service's alarm uses the same number).</summary>
     public const int FailuresToBroken = 3;
 
-    /// <summary>How long a deferred (heavy-busy) job suppresses the next start (code index spec 6.3).</summary>
-    public static readonly TimeSpan DeferredSuppress = TimeSpan.FromMinutes(10);
-
     /// <summary>Classifies.</summary>
     /// <param name="input">What is known of the repo.</param>
     /// <param name="now">The time.</param>
@@ -40,7 +37,7 @@ public static class IndexOutlookRules
             : NotBuilt(input, failures, now);
     }
 
-    // Backoff while a failed or deferred job's retry is not due; otherwise Coming, worded by what is going on.
+    // Backoff while a failed job's retry is not due; otherwise Coming, worded by what is going on.
     private static IndexOutlookDetail NotBuilt(IndexOutlookInput input, int failures, DateTimeOffset now)
     {
         if (input.BuildRunning)
@@ -52,11 +49,6 @@ public static class IndexOutlookRules
         if (failures > 0)
         {
             return Backoff(RepoWait.Retrying, finished[0].EndedAt + SyncGapDecision.Wait(failures), now);
-        }
-
-        if (finished is [{ Deferred: true } deferred, ..])
-        {
-            return Backoff(RepoWait.WaitingForSlot, deferred.EndedAt + DeferredSuppress, now);
         }
 
         if (input.IndexCommit is null)

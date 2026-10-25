@@ -37,6 +37,12 @@ internal static partial class Labels
     /// <returns>"2 more features touched".</returns>
     internal static string ContextWholeMoreTouched(int more) => string.Create(CultureInfo.InvariantCulture, $"{more} more {(more == 1 ? "feature" : "features")} touched");
 
+    /// <summary>The clause on a band's label for what stays a tile and is not drawn as nodes.</summary>
+    /// <param name="more">How many items the tiles hold in that band.</param>
+    /// <param name="where">The feature, or "3 features".</param>
+    /// <returns>"168 more in Billing".</returns>
+    internal static string ContextWholeBandMore(int more, string where) => string.Create(CultureInfo.InvariantCulture, $"{more} more in {where}");
+
     /// <summary>The line over the stage while the map is read.</summary>
     internal const string ContextWholeLoading = "Reading the map…";
 

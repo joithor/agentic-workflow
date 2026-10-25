@@ -7,11 +7,9 @@ public sealed class IndexOutlookRulesTests
 {
     private static readonly DateTimeOffset _now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
 
-    private static IndexAttempt Failed(int minutesAgo) => new(Failed: true, Deferred: false, _now.AddMinutes(-minutesAgo));
+    private static IndexAttempt Failed(int minutesAgo) => new(Failed: true, _now.AddMinutes(-minutesAgo));
 
-    private static IndexAttempt Deferred(int minutesAgo) => new(Failed: false, Deferred: true, _now.AddMinutes(-minutesAgo));
-
-    private static IndexAttempt Ok(int minutesAgo) => new(Failed: false, Deferred: false, _now.AddMinutes(-minutesAgo));
+    private static IndexAttempt Ok(int minutesAgo) => new(Failed: false, _now.AddMinutes(-minutesAgo));
 
     private static IndexOutlookDetail Classify(
         string? index = "old0000",
@@ -67,13 +65,6 @@ public sealed class IndexOutlookRulesTests
         Assert.Equal(new IndexOutlookDetail(IndexOutlook.Coming, RepoWait.Queued, RetryAt: null), Classify(finished: Failed(6)));
 
     [Fact, Trait("Lane", "unit")]
-    public void A_deferred_job_is_Backoff_WaitingForSlot_for_ten_minutes_from_when_it_ended()
-    {
-        Assert.Equal(new IndexOutlookDetail(IndexOutlook.Backoff, RepoWait.WaitingForSlot, _now.AddMinutes(-3) + IndexOutlookRules.DeferredSuppress), Classify(finished: Deferred(3)));
-        Assert.Equal(IndexOutlook.Coming, Classify(finished: Deferred(11)).Outlook);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public void A_running_retry_is_Coming_not_Backoff() =>
         Assert.Equal(IndexOutlook.Coming, Classify(running: true, finished: Failed(1)).Outlook);
 
@@ -85,7 +76,7 @@ public sealed class IndexOutlookRulesTests
     public void A_success_between_failures_resets_the_count()
     {
         Assert.Equal(IndexOutlook.Backoff, Classify(finished: [Failed(1), Failed(2), Ok(3), Failed(4), Failed(5)]).Outlook);
-        Assert.Equal(IndexOutlook.Coming, Classify(finished: [Deferred(30), Failed(31), Failed(32), Failed(33)]).Outlook);
+        Assert.Equal(IndexOutlook.Coming, Classify(finished: [Ok(30), Failed(31), Failed(32), Failed(33)]).Outlook);
     }
 
     [Fact, Trait("Lane", "unit")]
