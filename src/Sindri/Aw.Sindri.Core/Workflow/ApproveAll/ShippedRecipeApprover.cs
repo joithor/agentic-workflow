@@ -41,7 +41,8 @@ public sealed class ShippedRecipeApprover(
         }
 
         var files = shipped.Files();
-        var hold = new ApprovalBatch(plan.Batch.ToString(), plan.Plan.Digest, plan.HeldMs);
+        // why: q93 removed the approve-all hold, so no hold time is recorded
+        var hold = new ApprovalBatch(plan.Batch.ToString(), plan.Plan.Digest, HeldMs: null);
         List<ApproveAllApproved> approved = [];
         List<ApproveAllRefused> refused = [];
         List<ApproveAllSkipped> skipped = [];

@@ -85,7 +85,7 @@ public sealed class NeedsYouConfirmBarTests
     public async Task A_refused_approval_shows_the_words_and_leaves_the_row_open()
     {
         ServeProfileChallenge();
-        _server.ApproveProfileAnswer = RouteAnswer.Problem("profile-approve", "refused-session");
+        _server.ApproveProfileAnswer = RouteAnswer.Refused();
         var bar = await Bar(NeedsYouRows.ProfileReady());
         bar.TypedBox!.Text = "approve profile 70e158";
 
@@ -186,7 +186,7 @@ public sealed class NeedsYouConfirmBarTests
     public async Task A_refused_workflow_approval_shows_the_words_and_leaves_the_row_open()
     {
         ServeRecipeChallenge();
-        _server.ApproveRecipeAnswer = RouteAnswer.Problem("profile-approve", "refused-session");
+        _server.ApproveRecipeAnswer = RouteAnswer.Refused();
         var bar = await Bar(NeedsYouRows.Recipe());
 
         await bar.SubmitTyped("approve workflow.step 3");

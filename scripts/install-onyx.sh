@@ -11,8 +11,8 @@
 #   AW_ONYX_FORCE_TERMINAL=1             treat this run as being at a terminal (tests)
 #
 # Exit: 0 Onyx is up (or was); 3 skipped with a warning and the command to run later (no Docker, Docker not answering,
-# no terminal); 1 `onyx up` failed (its message names the fix; rerun this script or `sindri onyx up`). An agent
-# session is refused by `onyx up` itself (SND-AUTH-002); this script never works around that.
+# no terminal); 1 `onyx up` failed (its message names the fix; rerun this script or `sindri onyx up`). `onyx up` runs for any caller
+# (owner decision q93).
 # Bash 3.2 compatible (macOS /bin/bash).
 set -euo pipefail
 

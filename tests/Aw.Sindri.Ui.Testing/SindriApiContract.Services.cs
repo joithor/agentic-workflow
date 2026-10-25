@@ -64,13 +64,11 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
-    public async Task PauseService_of_an_unknown_service_is_not_found_and_an_agent_session_is_refused()
+    public async Task PauseService_of_an_unknown_service_is_not_found()
     {
         var unknown = await Reach(new FakeSindriApi { PauseServiceAnswer = RouteAnswer.Problem("services-name-pause", "unknown-service") }).PauseService(_api, "ghost", Token);
-        var session = await Reach(new FakeSindriApi { PauseServiceAnswer = RouteAnswer.Problem("services-name-pause", "refused-session") }).PauseService(_api, "heartbeat", Token);
 
         Expect.Equal(("SND-SVC-404", ErrorKind.NotFound), (unknown.Error.Code, unknown.Error.Kind));
-        Expect.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (session.Error.Code, session.Error.Kind));
     }
 
     [Fact]
@@ -82,15 +80,5 @@ public abstract partial class SindriApiContract
 
         Expect.Equal((4242, 1L, 2L), (stopped.Pid, stopped.Epoch, stopped.Sequence));
         Expect.Equal(1, server.StopCalls);
-    }
-
-    [Fact]
-    public async Task StopSindri_is_refused_to_an_agent_session()
-    {
-        var server = new FakeSindriApi { StopAnswer = RouteAnswer.Problem("stop", "refused-session") };
-
-        var result = await Reach(server).StopSindri(_api, Token);
-
-        Expect.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (result.Error.Code, result.Error.Kind));
     }
 }

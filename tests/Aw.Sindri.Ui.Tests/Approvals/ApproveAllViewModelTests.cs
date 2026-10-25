@@ -98,7 +98,7 @@ public sealed class ApproveAllViewModelTests
     [Fact]
     public async Task An_agent_session_sees_the_plan_and_is_told_in_plain_words_that_only_the_person_can_approve()
     {
-        _f.Server.AppChallengeAnswer = ApproveAllFixture.Refusal("challenges-app", "refused-session");
+        _f.Server.AppChallengeAnswer = RouteAnswer.Refused();
 
         var dialog = await _f.Opened();
 

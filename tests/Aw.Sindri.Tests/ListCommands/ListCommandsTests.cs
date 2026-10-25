@@ -41,13 +41,13 @@ public sealed class ListCommandsTests
         var rows = (await service.Handle(new ListCommandsRequest(), TestContext.Current.CancellationToken)).Value.Rows
             .ToDictionary(row => row.Action.Value, StringComparer.Ordinal);
 
-        Assert.Equal(["human+terminal", "human", "service:host"], rows["StopProcess"].AllowedCallers);
+        Assert.Equal(["human+terminal", "human", "session", "service:host"], rows["StopProcess"].AllowedCallers);
         Assert.Equal(["human+terminal"], rows["ApproveProfile"].AllowedCallers);
         Assert.Empty(rows["RunDoctor"].AllowedCallers);
         Assert.Equal(["human+terminal", "human", "session", "service"], rows["FileRequest"].AllowedCallers);
-        Assert.Equal(["human+terminal", "human", "service"], rows["RunService"].AllowedCallers);
+        Assert.Equal(["human+terminal", "human", "session", "service"], rows["RunService"].AllowedCallers);
         Assert.Equal(["human+terminal", "human", "session", "service"], rows["PauseService"].AllowedCallers);
-        Assert.Equal(["human+terminal", "human"], rows["Decide"].AllowedCallers);
+        Assert.Equal(["human+terminal", "human", "session"], rows["Decide"].AllowedCallers);
         Assert.Equal(["session"], rows["ReportStep"].AllowedCallers);
         Assert.Equal(["human+terminal", "human", "session"], rows["IssueNonce"].AllowedCallers);
         Assert.Equal(["human+terminal"], rows["WipeItem"].AllowedCallers);   // a terminal-bound row narrows any class, grants too

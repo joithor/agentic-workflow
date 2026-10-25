@@ -382,7 +382,6 @@ help (the parent-process check still sees the agent), and the check is there on 
 | `SND-LEASE-001` | Another live process holds the host lease | One control plane per box: use the running one, or `sindri stop` |
 | `SND-CLI-002` | `serve` didn't come up, or Temporal didn't | `logs/serve.log`, `logs/temporal.log`; `scripts/binaries-lock.sh fetch temporal` |
 | `SND-PROFILE-003` | The hash you approved isn't the live profile's | Run `profile approve` without a hash and copy the new one |
-| `SND-PROFILE-004` | Approving needs a terminal and the typed confirmation | Run it in your own terminal and type the challenge exactly |
 | `SND-PROFILE-006` | The approved snapshots can't be read or written | Check the permissions and free disk under `~/.agentic-workflow/sindri-app/approved/` |
 | `SND-VIEW-001` | The views stalled | `sindri views rebuild` |
 | `SND-ONYX-001` | Docker isn't usable (not installed, not running, still starting) | Start Docker, then rerun |

@@ -59,7 +59,7 @@ public sealed class RepoStatusCommandTests : IDisposable
         var code = await Run("repo", "status", "/work/demo/src", "--nudge");
 
         Assert.Equal(0, code);
-        Assert.Equal("sindri: demo is not onboarded (no secret scan, shape signals or index); run: sindri repo onboard\n", _out.ToString());
+        Assert.Equal("sindri: demo is not onboarded (no secret scan or index); run: sindri repo onboard\n", _out.ToString());
     }
 
     [Fact, Trait("Lane", "integration")]

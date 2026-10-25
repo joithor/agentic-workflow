@@ -132,13 +132,13 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(field.Focus(NavigationMethod.Tab));
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
-        window.KeyTextInput("revoke recipe");
+        window.KeyTextInput("show line holdout");
         Settle(window);
 
-        Assert.Equal(["Revoke recipe, Copy: sindri recipe revoke <recipe>"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal(["Show hidden scenarios, Copy: sindri line holdout show <line> <phase>"], EntryNames(window), StringComparer.Ordinal);
         Press(window, Key.Enter, PhysicalKey.Enter);
-        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
-        Assert.Equal(["Revoke recipe, Copied"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal("sindri line holdout show <line> <phase>", _clipboard.Text);
+        Assert.Equal(["Show hidden scenarios, Copied"], EntryNames(window), StringComparer.Ordinal);
         Frame(window, "palette-filtered");
 
         Press(window, Key.Escape, PhysicalKey.Escape);
