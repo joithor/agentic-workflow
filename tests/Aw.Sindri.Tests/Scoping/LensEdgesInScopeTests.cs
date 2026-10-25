@@ -35,8 +35,7 @@ public sealed class LensEdgesInScopeTests
         var edges = result.Lenses["code"]!["edges"]!.AsArray();
         Assert.Single(edges);
         Assert.Equal("feature:a", edges[0]!["to"]!.GetValue<string>());
-        Assert.Contains(CodeRow(result)["limits"]!.AsArray(), static l => l!["why"]!.GetValue<string>() == "edges-out-of-scope" && l["count"]!.GetValue<int>() == 3);
-        Assert.Equal(3, result.Lenses["code"]!["edgesOutOfScope"]!.GetValue<int>());
+        Assert.Contains(CodeRow(result)["limits"]!.AsArray(), static l => l!["why"]!.GetValue<string>() == "edges-out-of-scope" && l["not"]!.GetValue<string>() == "3 edges outside the lens");
         Assert.NotNull(ScopeFixLines.ByName("edges-out-of-scope"));
     }
 
@@ -46,11 +45,9 @@ public sealed class LensEdgesInScopeTests
         var lenses = JsonNode.Parse("""{ "anchors": [ { "key": "feature:a" } ] }""");
         var code = JsonNode.Parse("""{ "files": [ { "path": "src/a.ts" } ], "edges": [ { "from": "code:src/a.ts", "to": "feature:a", "type": "implements" } ] }""");
 
-        var result = LensGather.Assemble(lenses, code, history: null, ["feature:a"]);
-        var row = CodeRow(result);
+        var row = CodeRow(LensGather.Assemble(lenses, code, history: null, ["feature:a"]));
 
         Assert.DoesNotContain(row["limits"]!.AsArray(), static l => l!["why"]!.GetValue<string>() == "edges-out-of-scope");
-        Assert.Null(result.Lenses["code"]!["edgesOutOfScope"]);
     }
 
     [Fact, Trait("Lane", "unit")]

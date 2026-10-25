@@ -48,10 +48,6 @@
           "type": "integer",
           "minimum": 0
         },
-        "edgesOutOfScope": {
-          "type": "integer",
-          "minimum": 0
-        },
         "nodes": {
           "type": "array",
           "items": {
@@ -219,10 +215,6 @@
           "type": "integer",
           "minimum": 0
         },
-        "edgesOutOfScope": {
-          "type": "integer",
-          "minimum": 0
-        },
         "nodes": {
           "$ref": "#/properties/code/properties/nodes"
         },
@@ -273,10 +265,6 @@
           "type": "integer",
           "minimum": 0
         },
-        "edgesOutOfScope": {
-          "type": "integer",
-          "minimum": 0
-        },
         "nodes": {
           "$ref": "#/properties/code/properties/nodes"
         },
@@ -324,10 +312,6 @@
           "minLength": 1
         },
         "foundCount": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "edgesOutOfScope": {
           "type": "integer",
           "minimum": 0
         },

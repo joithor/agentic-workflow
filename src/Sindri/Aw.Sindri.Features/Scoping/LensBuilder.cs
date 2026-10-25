@@ -142,8 +142,8 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
     /// <summary>The lens's entry in the lenses fact.</summary>
     internal JsonObject Entry(string mapVersion, int depth, IReadOnlyList<string> hops)
     {
-        var (edges, dropped) = InScope();
-        var entry = new JsonObject
+        var (edges, _) = InScope();
+        return new JsonObject
         {
             ["anchors"] = ScopeJson.ToArray(anchors),
             ["depth"] = depth,
@@ -155,12 +155,6 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
             ["items"] = new JsonArray([.. _items.Select(static i => i.DeepClone())]),
             ["truncated"] = new JsonArray(),
         };
-        if (dropped > 0)
-        {
-            entry["edgesOutOfScope"] = dropped;
-        }
-
-        return entry;
     }
 
     /// <summary>Records the asked anchors the view couldn't find: they leave the row's searched anchors and each is an anchor-missing limit.</summary>
@@ -171,7 +165,8 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
     {
         var limits = new JsonArray();
         var (_, dropped) = InScope();
-        foreach (var source in _sources)
+        List<JsonObject> sources = dropped > 0 ? [.. _sources, new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" }] : _sources;
+        foreach (var source in sources)
         {
             if (ScopeFixLines.Match(Lens, ScopeJson.Str(source, "state"), ScopeJson.Str(source, "reason")) is { } limit
                 && !ScopeJson.Items(limits).Any(l => string.Equals(ScopeJson.Str(l, "why"), limit.Name, StringComparison.Ordinal)))
@@ -185,11 +180,6 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
             ScopeJson.Append(limits, new JsonObject { ["not"] = missing, ["why"] = "anchor-missing" });
         }
 
-        if (dropped > 0)
-        {
-            ScopeJson.Append(limits, new JsonObject { ["why"] = "edges-out-of-scope", ["count"] = dropped });
-        }
-
         return new JsonObject
         {
             ["lens"] = Lens,
@@ -197,7 +187,7 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
             ["searched"] = new JsonObject
             {
                 ["anchors"] = ScopeJson.ToArray(anchors.Where(a => !_missing.Contains(a))),
-                ["sources"] = new JsonArray([.. _sources.Select(static s => s.DeepClone())]),
+                ["sources"] = new JsonArray([.. sources.Select(static s => s.DeepClone())]),
                 ["mapVersion"] = mapVersion,
                 ["depth"] = depth,
                 ["hops"] = ScopeJson.ToArray(hops),
@@ -212,8 +202,9 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
         };
     }
 
-    private static string Not(RecordedLimit limit, JsonObject source) => limit.Name switch
+    private string Not(RecordedLimit limit, JsonObject source) => limit.Name switch
     {
+        "edges-out-of-scope" => string.Create(CultureInfo.InvariantCulture, $"{InScope().Dropped} edges outside the lens"),
         "index-not-built" => "callers and callees",
         "history-unlinked" => "tickets linked to the map",
         "commit-not-held" => "the commit's files",

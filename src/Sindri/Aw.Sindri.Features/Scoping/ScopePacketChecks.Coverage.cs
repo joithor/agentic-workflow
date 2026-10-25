@@ -119,7 +119,7 @@ internal static partial class ScopePacketChecks
             s.Fail(lens, $"the {lens} row's sources record {name}, but its limits[] does not list it", "Write one limits[] entry for each source that matches a recorded limit.");
         }
 
-        foreach (var why in listed.Where(w => !ScopeFixLines.IsSourceFree(w) && !recorded.Contains(w, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal))
+        foreach (var why in listed.Where(w => !recorded.Contains(w, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal))
         {
             s.Fail(lens, ScopeFixLines.ByName(why) is null
                 ? $"the {lens} row's limits[] lists '{why}', which is no recorded limit"
