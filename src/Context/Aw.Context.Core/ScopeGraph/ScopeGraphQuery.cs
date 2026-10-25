@@ -4,7 +4,7 @@ using Aw.Context.Core.Map;
 namespace Aw.Context.Core.ScopeGraph;
 
 /// <summary>A scoping graph question (issue 1005): the prefiltered subgraph the scoping agent Steps work from, instead of the raw lens dump.</summary>
-/// <param name="Anchors">Node keys, aliases or labels; duplicates count once. A concept key (<c>concept:&lt;slug&gt;</c>) expands to its member features.</param>
+/// <param name="Anchors">Node keys, aliases or labels; duplicates count once. A concept key (<c lang="text">concept:&lt;slug&gt;</c>) expands to its member features.</param>
 /// <param name="Read">Which map to read.</param>
 /// <param name="Range">The depth and the cascade hops.</param>
 /// <param name="Brief">The brief's text, used only to rank nodes by relevance, or null to rank by structure alone.</param>
