@@ -23,4 +23,7 @@ public sealed record ContextRepo(ContextRepoName Name, string Path)
     /// <param name="path">The repo-relative path.</param>
     /// <returns>True when a demote glob matches it.</returns>
     public bool Demotes(string path) => PathDenylist.Matches(path, DemotePaths);
+
+    /// <summary>The roles the profile configures for this repo (<c xml:lang="en">index.ignore</c> and <c xml:lang="en">index.demote</c>), for counting; none by default.</summary>
+    public IReadOnlyList<RepoRole> Roles { get; init; } = [];
 }

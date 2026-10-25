@@ -22,4 +22,8 @@ public sealed record MapStatusView(
     /// <summary>True when the current version records the map rules it was built under and they differ from the ones the scope runs under now (issue 1041); false, and left out of the JSON, otherwise or when none were recorded.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool RulesOlder { get; init; }
+
+    /// <summary>Per repo, the indexed files each configured role matches and the role-like files no glob covers (issue 1105); left out when no repo in scope configures a role or has such a file.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<Aw.Context.Core.Roles.RepoRoles>? Roles { get; init; }
 }
