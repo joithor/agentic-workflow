@@ -123,7 +123,8 @@ test_providers_install_the_voice() {
 test_skills_and_agents_read_the_voice() {
   has "config/voice/joi.md" < "$ROOT/skills/_preamble.md" || fail "the preamble should read the voice"
   local a
-  for a in "$ROOT"/config/agents/*.md; do
+  # qa-runner is left out: its output is a Playwright plan a no-model runner executes, not a report.
+  for a in "$ROOT"/config/agents/lean-*.md; do
     has "config/voice/joi.md" < "$a" || fail "$(basename "$a") should read the voice"
   done
   echo "PASS: test_skills_and_agents_read_the_voice"

@@ -24,7 +24,7 @@ and most GitHub comments under Joi's name were agent-written and were not used.
 
 - Every Claude Code and Codex session answers Joi in the voice below, in skill runs and in plain chat.
 - Every skill run in any provider (Cursor included) gets it through the shared preamble.
-- The four toolkit agents (`config/agents/*.md`) write their reports to the orchestrator in the same plain,
+- The three `lean-*` toolkit agents (`config/agents/lean-*.md`) write their reports to the orchestrator in the same plain,
   concrete style, so their findings don't arrive pre-slopped.
 - One source file for the voice. `./setup.sh` installs it and keeps it in sync.
 
@@ -225,7 +225,8 @@ Made-up delivery app. Slop first, then how to say it. The rules are in `joi.md`.
    - Codex: `~/.codex/AGENTS.md` (`$CODEX_HOME/AGENTS.md`), created if missing.
    - Cursor: has no global instruction file (user rules live in the app's settings), so setup prints a one-line
      note to paste the file into Cursor > Settings > Rules > User Rules. Skill runs still get it via the preamble.
-4. **Agents:** each `config/agents/*.md` gets the same line as the preamble (follow the voice file in
+4. **Agents:** each `config/agents/lean-*.md` gets (not `qa-runner.md`: its output is a Playwright plan a
+   no-model runner executes, not a report) the same line as the preamble (follow the voice file in
    its report). Claude Code subagents also load
    `~/.claude/CLAUDE.md`, so they get the full block anyway; there is no separate "agents only get part of it"
    rule (my call: a casual, concrete report to the orchestrator costs nothing, and the voice file already excludes
