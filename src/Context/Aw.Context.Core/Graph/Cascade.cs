@@ -86,26 +86,16 @@ public static class Cascade
     {
         var seen = new HashSet<string>(StringComparer.Ordinal) { anchor.Value };
         var queue = new Queue<Descent>();
-        switch (anchor.Kind)
+        if (anchor.Kind == NodeKind.Feature)
         {
-            case NodeKind.Feature:
-                queue.Enqueue(root);
-                break;
-            case NodeKind.Concept:
-                foreach (var edge in index.In(anchor, EdgeType.BelongsTo).Where(e => e.From.Kind == NodeKind.Feature && seen.Add(e.From.Value)))
-                {
-                    queue.Enqueue(root.Down(edge.From, edge));
-                }
-
-                break;
-            case NodeKind.Surface:
-            case NodeKind.Action:
-            case NodeKind.Thing:
-            case NodeKind.Flow:
-            case NodeKind.Decision:
-            case NodeKind.Record:
-            case NodeKind.Code:
-                break;
+            queue.Enqueue(root);
+        }
+        else if (anchor.Kind == NodeKind.Concept)
+        {
+            foreach (var edge in index.In(anchor, EdgeType.BelongsTo).Where(e => e.From.Kind == NodeKind.Feature && seen.Add(e.From.Value)))
+            {
+                queue.Enqueue(root.Down(edge.From, edge));
+            }
         }
 
         var features = new List<Descent>();
