@@ -101,7 +101,11 @@ open_settings() {
 open_settings
 "$DRIVER" wait-for "${approve[@]}" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "no Approve settings button in Settings (see $OUT/app.log)"
-"$DRIVER" click "${approve[@]}" >/dev/null 2>&1 || setup_fail "the Approve settings click was not accepted by the driver"
+# The finding is about a keyboard user: a driver click invokes the button through its automation peer and never gives it focus, so the
+# button would not be removed with focus in it. Put focus ON the button, check it landed, and press Enter on it.
+"$DRIVER" action --do focus "${approve[@]}" >/dev/null 2>&1 || setup_fail "the Approve settings button could not take focus"
+"$DRIVER" key --chord LeftShift >/dev/null 2>&1 || setup_fail "no element has focus after focusing the Approve settings button"
+"$DRIVER" key --chord Enter >/dev/null 2>&1 || setup_fail "the Enter key was not accepted on the focused Approve settings button"
 approved=0
 for _ in $(seq 1 20); do
   ledger="$("$PROVE" human ledger --max 1000 2>&1 | tr -d "\r" | grep "profile.approved")"
