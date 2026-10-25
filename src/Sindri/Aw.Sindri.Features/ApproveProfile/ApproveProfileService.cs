@@ -101,6 +101,7 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         {
             StepArgv = checks.StepArgv(loaded.Profile, changes),
             Unreadable = latest.IsError ? latest.Error.Message : null,
+            UnlistedChange = previous is not null && changes.Count == 0 && previous.Hash != loaded.Hash,
         };
     }
 
