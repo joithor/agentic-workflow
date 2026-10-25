@@ -180,13 +180,15 @@ internal static partial class ScopePacketChecks
             {
                 var key = ScopeJson.Str(node, "key") ?? "?";
                 var item = ScopeJson.Str(node, "lensItem") ?? "?";
-                if (!keys.Contains(key) && !cited.Contains(item) && !excluded.Contains(key) && !excluded.Contains(item) && !ScopeGlob.MatchesAny(globs, key))
+                if (!Accounted(key, item, keys, cited) && !excluded.Contains(key) && !excluded.Contains(item) && !ScopeGlob.MatchesAny(globs, key))
                 {
                     s.Fail(key, $"{item} ({key}) is at depth 0 or 1 of the {lens} lens and is neither in the map nor excluded", "Add it to the map, or list it under excluded with a one-line reason (an item, or a glob over its path).");
                 }
             }
         }
     }
+
+    private static bool Accounted(string key, string item, HashSet<string> keys, HashSet<string> cited) => keys.Contains(key) || cited.Contains(item);
 
     /// <summary>The nodes of a lens at depth 0 or 1: the anchors, the nodes with an edge to or from an anchor (their own implementers at depth 0, the nodes one edge away at depth 1), and not a node the context engine demoted.</summary>
     private static IEnumerable<JsonNode> NearNodes(JsonObject? entry)

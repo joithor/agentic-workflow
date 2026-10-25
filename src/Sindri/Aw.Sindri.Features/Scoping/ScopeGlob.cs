@@ -24,33 +24,12 @@ internal static class ScopeGlob
     {
         while (g < glob.Length)
         {
-            var c = glob[g];
-            if (c == '*')
+            if (glob[g] == '*')
             {
-                var deep = g + 1 < glob.Length && glob[g + 1] == '*';
-                var next = g + (deep ? 2 : 1);
-                if (deep && next < glob.Length && glob[next] == '/')
-                {
-                    next++;   // '**/' also matches zero directories
-                }
-
-                for (var end = t; end <= text.Length; end++)
-                {
-                    if (Match(glob, next, text, end))
-                    {
-                        return true;
-                    }
-
-                    if (end < text.Length && !deep && text[end] == '/')
-                    {
-                        break;
-                    }
-                }
-
-                return false;
+                return MatchStar(glob, g, text, t);
             }
 
-            if (t >= text.Length || (c != '?' && c != text[t]) || (c == '?' && text[t] == '/'))
+            if (!MatchesOne(glob[g], text, t))
             {
                 return false;
             }
@@ -60,5 +39,34 @@ internal static class ScopeGlob
         }
 
         return t == text.Length;
+    }
+
+    private static bool MatchesOne(char c, string text, int t) =>
+        t < text.Length && (c == '?' ? text[t] != '/' : c == text[t]);
+
+    // '**' crosses directories ('**/' also matches zero of them); a single '*' stops at '/'.
+    private static bool MatchStar(string glob, int g, string text, int t)
+    {
+        var deep = g + 1 < glob.Length && glob[g + 1] == '*';
+        var next = g + (deep ? 2 : 1);
+        if (deep && next < glob.Length && glob[next] == '/')
+        {
+            next++;
+        }
+
+        for (var end = t; end <= text.Length; end++)
+        {
+            if (Match(glob, next, text, end))
+            {
+                return true;
+            }
+
+            if (!deep && end < text.Length && text[end] == '/')
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 }
