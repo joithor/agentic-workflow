@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Layout;
+using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Views.Queue;
 
@@ -60,7 +61,11 @@ internal sealed partial class QueuePage : UserControl
 
     private void OnClearFilter(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Queue.ClearFilter();
 
-    private void OnCreate(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Create.Open();
+    private void OnCreate(object? sender, RoutedEventArgs e)
+    {
+        ShellWindow.NoteInvokerFrom(this, sender);
+        (DataContext as ShellViewModel)?.Create.Open();
+    }
 
     private void OnShowHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Queue.ShowHeld(ViewModels.Queue.QueueScope.Page);
 

@@ -103,6 +103,17 @@ internal sealed partial class ShellWindow
     /// <param name="invoker">The button pressed.</param>
     internal void NoteInvoker(Control invoker) => _invoker = invoker;
 
+    /// <summary>Notes the pressed button of any page as the invoker, when the page sits in the shell window.</summary>
+    /// <param name="page">The page (or any control in it) whose button was pressed.</param>
+    /// <param name="sender">The button.</param>
+    internal static void NoteInvokerFrom(Control page, object? sender)
+    {
+        if (sender is Control button && TopLevel.GetTopLevel(page) is ShellWindow window)
+        {
+            window.NoteInvoker(button);
+        }
+    }
+
     private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen || shell.ApproveAll.IsOpen);
 
     // `?` is Shift+/ on most layouts; the key symbol says so on the rest.

@@ -22,6 +22,10 @@ public sealed class OverlayOpenerTests
         Assert.Equal("field", OverlayOpener.Choose("field", Page, "start"));
 
     [Fact]
+    public void A_second_opener_such_as_Create_item_is_chosen_the_same_way() =>
+        Assert.Equal("create-item", OverlayOpener.Choose(Page, Page, "create-item"));
+
+    [Fact]
     public void Without_an_invoker_the_focused_element_is_kept() =>
         Assert.Equal(Page, OverlayOpener.Choose(Page, Page, null));
 }

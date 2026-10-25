@@ -108,11 +108,7 @@ internal sealed partial class HomePage : UserControl
 
     private void OnStart(object? sender, RoutedEventArgs e)
     {
-        if (sender is Control button && TopLevel.GetTopLevel(this) is ShellWindow window)
-        {
-            window.NoteInvoker(button);
-        }
-
+        ShellWindow.NoteInvokerFrom(this, sender);
         (DataContext as ShellViewModel)?.OpenStart();
     }
 
