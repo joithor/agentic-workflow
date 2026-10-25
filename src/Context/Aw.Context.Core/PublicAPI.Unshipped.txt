@@ -7056,3 +7056,9 @@ override Aw.Context.Core.Concepts.ConceptGroup.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptGroup.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptGroup.ToString() -> string!
 static Aw.Context.Core.Concepts.ConceptNames.None.get -> Aw.Context.Core.Concepts.ConceptNames!
+static Aw.Context.Core.Concepts.ConceptNames.operator !=(Aw.Context.Core.Concepts.ConceptNames? left, Aw.Context.Core.Concepts.ConceptNames? right) -> bool
+static Aw.Context.Core.Concepts.ConceptNames.operator ==(Aw.Context.Core.Concepts.ConceptNames? left, Aw.Context.Core.Concepts.ConceptNames? right) -> bool
+static Aw.Context.Core.Concepts.ConceptName.operator !=(Aw.Context.Core.Concepts.ConceptName? left, Aw.Context.Core.Concepts.ConceptName? right) -> bool
+static Aw.Context.Core.Concepts.ConceptName.operator ==(Aw.Context.Core.Concepts.ConceptName? left, Aw.Context.Core.Concepts.ConceptName? right) -> bool
+static Aw.Context.Core.Concepts.ConceptGroup.operator !=(Aw.Context.Core.Concepts.ConceptGroup? left, Aw.Context.Core.Concepts.ConceptGroup? right) -> bool
+static Aw.Context.Core.Concepts.ConceptGroup.operator ==(Aw.Context.Core.Concepts.ConceptGroup? left, Aw.Context.Core.Concepts.ConceptGroup? right) -> bool

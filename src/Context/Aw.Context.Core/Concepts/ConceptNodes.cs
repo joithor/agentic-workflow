@@ -1,7 +1,9 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text.Json;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Concepts;
 
@@ -40,7 +42,7 @@ internal static class ConceptNodes
         {
             foreach (var feature in built.Plan.Features)
             {
-                byFeature.TryAdd(feature, []);
+                _ = byFeature.TryAdd(feature, []);
                 byFeature[feature].Add(built);
             }
         }
@@ -86,8 +88,8 @@ internal static class ConceptNodes
 
     private static JsonElement Attributes(string summary, string source, string seed)
     {
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
             writer.WriteString("summary", summary);
@@ -96,7 +98,7 @@ internal static class ConceptNodes
             writer.WriteEndObject();
         }
 
-        using var document = JsonDocument.Parse(stream.ToArray());
+        using var document = JsonDocument.Parse(buffer.WrittenMemory);
         return document.RootElement.Clone();
     }
 

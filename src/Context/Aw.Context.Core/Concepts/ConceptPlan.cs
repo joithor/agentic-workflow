@@ -4,13 +4,6 @@ using Aw.Context.Core.WholeMap;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>One concept before it is named: its slug, the feature it grew from and its member features.</summary>
-/// <param name="Slug">The id after 'concept:'.</param>
-/// <param name="Seed">The key of the seed feature (empty for a pin with no member).</param>
-/// <param name="Pin">The owner's pin, or null for a derived concept.</param>
-/// <param name="Features">The member feature keys, in key order.</param>
-internal sealed record PlannedConcept(string Slug, string Seed, ConceptPin? Pin, IReadOnlyList<string> Features);
-
 /// <summary>The grouping half of <see cref="ConceptDeriver"/>: pins first, then the area groups of what is left, merged down to at most 15.</summary>
 internal static class ConceptPlan
 {
@@ -25,11 +18,11 @@ internal static class ConceptPlan
         var pinned = pins.Select(p => new PlannedConcept(ConceptSlug.Unique(p.Id ?? p.Name, taken), "", p, Pinned(graph, features, p))).Select(WithSeed).ToList();
         var left = features.Except(pinned.SelectMany(p => p.Features), StringComparer.Ordinal).ToList();
         var groups = ConceptGrouping.Merge(graph, Groups(graph, left));
-        var derived = groups.OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => new PlannedConcept(ConceptSlug.Unique(g.Key["feature:".Length..], taken), g.Key, null, g.Value)).ToList();
+        var derived = groups.OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => new PlannedConcept(ConceptSlug.Unique(g.Key["feature:".Length..], taken), g.Key, Pin: null, g.Value)).ToList();
         return (pinned, derived);
     }
 
-    private static PlannedConcept WithSeed(PlannedConcept pin) => pin with { Seed = pin.Features.FirstOrDefault() ?? "" };
+    private static PlannedConcept WithSeed(PlannedConcept pin) => pin with { Seed = pin.Features.Count > 0 ? pin.Features[0] : "" };
 
     // The features a pin names by key or key glob, and those implemented by a code file under one of its path globs.
     private static List<string> Pinned(GraphSnapshot graph, List<string> features, ConceptPin pin)
