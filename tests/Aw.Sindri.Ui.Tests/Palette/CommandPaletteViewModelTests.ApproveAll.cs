@@ -32,3 +32,12 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal(["ApproveAllRecipes"], _history);
     }
 
+    [Fact]
+    public void Approve_all_without_a_dialog_to_open_is_not_runnable()
+    {
+        var palette = new CommandPaletteViewModel(CatalogWithApproveAll("extra-approve-all-ready"), _pages.Add, _history.Add);
+        palette.Open();
+
+        Assert.False(palette.Entries.Single(e => e.Id == "ApproveAllRecipes").IsEnabled);
+    }
+}

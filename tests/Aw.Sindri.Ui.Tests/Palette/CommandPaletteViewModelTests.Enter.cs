@@ -72,3 +72,14 @@ public sealed partial class CommandPaletteViewModelTests
     }
 
     // Without a form to open (no shell), Create item is not called ready.
+    [Fact]
+    public void Create_item_without_a_form_to_open_is_not_runnable()
+    {
+        var controls = new CatalogViewModel(_clipboard, _clock);
+        controls.Show(_api, _server, AwJson.Deserialize<CommandList>(Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", "catalog")), SindriApiClient.Json).Value);
+        var palette = new CommandPaletteViewModel(controls, _pages.Add, _history.Add);
+        palette.Open();
+
+        Assert.False(palette.Entries.Single(e => e.Id == "CreateItem").IsEnabled);
+    }
+}
