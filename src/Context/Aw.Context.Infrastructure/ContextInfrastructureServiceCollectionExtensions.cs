@@ -84,6 +84,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddContextLabeling(this IServiceCollection services)
-        => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
-            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
+        => services
+            .AddSingleton<ILabeler>(sp => new ModelLabeler(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()))
+            .AddSingleton<Core.Concepts.IConceptNamer>(sp => new ModelConceptNamer(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
 }
