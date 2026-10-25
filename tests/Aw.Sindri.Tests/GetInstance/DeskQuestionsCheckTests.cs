@@ -4,18 +4,14 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Json;
-using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceFact;
-using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Testing;
@@ -135,12 +131,11 @@ public sealed class DeskQuestionsCheckTests
     {
         var (exit, stdout) = await Status(TestContext.Current.CancellationToken, "T-3/step/1", "--json");
 
-        var questions = JsonNode.Parse(stdout)!.AsObject()["questions"]?.AsArray();
         Assert.Equal(0, exit);
-        Assert.Equal(("Q1", "Q1.a", "Q1.b"), (
-            (string?)questions?[0]?["id"],
-            (string?)questions?[0]?["options"]?[0]?["id"],
-            (string?)questions?[0]?["options"]?[1]?["id"]));
+        var questions = JsonNode.Parse(stdout)!.AsObject()["questions"];
+        Assert.NotNull(questions);
+        var options = questions[0]!["options"]!.AsArray();
+        Assert.Equal(("Q1", "Q1.a", "Q1.b"), ((string?)questions[0]!["id"], (string?)options[0]!["id"], (string?)options[1]!["id"]));
     }
 
     [Fact]
