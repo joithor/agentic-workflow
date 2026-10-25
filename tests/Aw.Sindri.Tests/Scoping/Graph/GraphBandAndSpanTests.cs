@@ -15,7 +15,7 @@ public sealed class GraphBandAndSpanTests
     [InlineData("decision")]
     public void The_lenses_fallback_puts_a_record_or_decision_node_in_the_intent_band(string kind)
     {
-        var lenses = JsonNode.Parse($$"""{"related":{"mapVersion":"v1","depth":2,"hops":[],"nodes":[],"edges":[],"items":[{"lensItem":"L-related-1","kind":"{{kind}}","label":"Expiry decision","citations":["R-9"]}]},"code":{"nodes":[],"edges":[],"items":[]},"product":{"nodes":[],"edges":[],"items":[]},"history":{"nodes":[],"edges":[],"items":[]}}""")!.AsObject();
+        var lenses = JsonNode.Parse($$$"""{"related":{"mapVersion":"v1","depth":2,"hops":[],"nodes":[],"edges":[],"items":[{"lensItem":"L-related-1","kind":"{{{kind}}}","label":"Expiry decision","citations":["R-9"]}]},"code":{"nodes":[],"edges":[],"items":[]},"product":{"nodes":[],"edges":[],"items":[]},"history":{"nodes":[],"edges":[],"items":[]}}""")!.AsObject();
 
         var graph = GraphGather.Assemble(null, lenses, []);
 
