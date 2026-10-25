@@ -255,7 +255,8 @@ public sealed class ScopingDeskBlocksTests
         check["coverage"] = response.Outputs["coverage"];
 
         var code = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
-        Assert.Equal(["commit-not-held", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        // the context golden's code view also has edges to nodes outside the lens, which the lens leaves out and records (#993)
+        Assert.Equal(["commit-not-held", "edges-out-of-scope", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
         Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
         Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-LENS-001", StringComparison.Ordinal)).Status);
