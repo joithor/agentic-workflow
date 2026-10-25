@@ -100,6 +100,7 @@ public sealed class ScopingCheckTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("code", "unavailable", "index-not-built", null)]
     [InlineData("history", "unavailable", "not-synced", "SND-CONTEXT-161")]
+    [InlineData("code", "ok", "catching-up", null)]
     public async Task A_found_row_may_carry_a_recorded_limit(string lens, string state, string reason, string? code)
     {
         var facts = Limited(lens, state, reason, code, rowState: "found", count: 3);
@@ -111,6 +112,8 @@ public sealed class ScopingCheckTests
     [InlineData("history", "degraded", "timeout", null)]
     [InlineData("history", "degraded", "not-synced", "SND-CONTEXT-161")]
     [InlineData("code", "degraded", "index-not-built", null)]
+    [InlineData("code", "degraded", "stale", null)]
+    [InlineData("code", "degraded", "catching-up", null)]
     [InlineData("code", "unavailable", "something-else", null)]
     public async Task A_degraded_or_unmatched_source_is_SCP_COV_002_and_a_regather(string lens, string state, string reason, string? code)
     {
@@ -128,6 +131,7 @@ public sealed class ScopingCheckTests
     [InlineData("code", "unavailable", "history-unlinked")]
     [InlineData("code", "unavailable", "not-synced")]
     [InlineData("related", "unavailable", "commit-not-held")]
+    [InlineData("history", "ok", "catching-up")]
     public async Task A_limits_reason_on_the_wrong_lens_is_SCP_COV_002(string lens, string state, string reason)
     {
         var facts = Limited(lens, state, reason, code: null, rowState: "found", count: 3);
@@ -331,6 +335,28 @@ public sealed class ScopingCheckTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_lens_or_dimension_no_round_walked_warns_once_the_second_opinion_is_spent_and_before_it_fails()
+    {
+        static void Spend(JsonNode n)
+        {
+            var rounds = n["rounds"]!.AsArray();
+            rounds.Add(rounds[1]!.DeepClone());
+            foreach (var round in rounds)
+            {
+                round!["walked"] = new JsonArray();
+            }
+        }
+
+        var spent = await Run(ScopingFacts.Expiry().Edit("challenge", Spend), ScopeStage.Evidence);
+        var notYet = await Run(ScopingFacts.Expiry().Edit("challenge", n => { foreach (var round in n["rounds"]!.AsArray()) { round!["walked"] = new JsonArray(); } }), ScopeStage.Evidence);
+
+        Assert.Equal(ScopeOutcome.Complete, spent.Outcome);
+        Assert.Equal(ScopeRuleStatus.Warn, spent.Rules.Single(r => r.Rule == "SCP-CHAL-001").Status);
+        Assert.Equal(ScopeOutcome.Incomplete, notYet.Outcome);
+        Assert.Equal(ScopeRuleStatus.Fail, notYet.Rules.Single(r => r.Rule == "SCP-CHAL-001").Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_dimension_any_round_walked_counts_as_walked()
     {
         var facts = ScopingFacts.Expiry().Edit("challenge", n =>
@@ -350,6 +376,35 @@ public sealed class ScopingCheckTests
         var facts = Limited("history", "degraded", "timeout", code: null, rowState: "found", count: 3);
 
         Assert.Equal(ScopeOutcome.Regather, (await Run(facts, ScopeStage.Evidence)).Outcome);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_evidence_stage_with_only_lens_findings_is_incomplete_never_a_regather()
+    {
+        var facts = ScopingFacts.Expiry().Edit("lenses", n => n["code"]!["anchors"] = new JsonArray("feature:other"));
+
+        var response = await Run(facts, ScopeStage.Evidence);
+
+        Names(response, "SCP-LENS-001", ScopeOutcome.Incomplete);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_challenger_on_the_drafters_model_warns_once_the_second_opinion_is_spent_and_before_it_fails()
+    {
+        static void SameModel(JsonNode n) => n["runs"]![1]!["model"] = n["runs"]![0]!["model"]!.DeepClone();
+        static void Spend(JsonNode n)
+        {
+            var rounds = n["rounds"]!.AsArray();
+            rounds.Add(rounds[1]!.DeepClone());
+        }
+
+        var spent = await Run(ScopingFacts.Expiry().Edit("runs", SameModel).Edit("challenge", Spend), ScopeStage.Evidence);
+        var notYet = await Run(ScopingFacts.Expiry().Edit("runs", SameModel), ScopeStage.Evidence);
+
+        Assert.Equal(ScopeOutcome.Complete, spent.Outcome);
+        Assert.Equal(ScopeRuleStatus.Warn, spent.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
+        Assert.Equal(ScopeOutcome.Incomplete, notYet.Outcome);
+        Assert.Equal(ScopeRuleStatus.Fail, notYet.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
     }
 
     /// <summary>The gold facts with one lens's coverage row turned into a limited one.</summary>

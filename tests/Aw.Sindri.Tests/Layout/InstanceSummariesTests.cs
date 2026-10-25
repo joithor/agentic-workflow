@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Tests.GetInstance;
 
@@ -47,6 +48,17 @@ public sealed class InstanceSummariesTests
     }
 
     [Fact]
+    public void The_row_says_who_the_instance_waits_on()
+    {
+        var context = new InstanceSummaryContext(StatusCases.Now);
+        var agent = StatusCases.View("desk-task") with { Task = null, AgentRun = new OpenRun(RunToken.For(1, 1), StepRuntime.Agent, "LCH-1", Task: null) };
+
+        Assert.Equal("you", InstanceSummaries.Of(StatusCases.View("desk-task"), context).WaitingOn);
+        Assert.Equal("agent", InstanceSummaries.Of(agent, context).WaitingOn);
+        Assert.Null(InstanceSummaries.Of(StatusCases.View("done"), context).WaitingOn);
+    }
+
+    [Fact]
     public void A_root_is_its_own_root_and_an_unrecorded_start_reads_null()
     {
         var row = InstanceSummaries.Of(StatusCases.View("taken-over") with { Address = InstanceAddress.From("ITM-7/step/1") }, new InstanceSummaryContext(StatusCases.Now));
@@ -55,5 +67,15 @@ public sealed class InstanceSummariesTests
         Assert.Null(row.StartedBy);
         Assert.Null(row.StartedAt);
         Assert.Null(row.LineStage);
+    }
+
+    [Fact]
+    public void A_taken_over_instance_row_names_who_took_it_over()
+    {
+        var taken = InstanceSummaries.Of(StatusCases.View("taken-over"), new InstanceSummaryContext(StatusCases.Now));
+        var desk = InstanceSummaries.Of(StatusCases.View("desk-task"), new InstanceSummaryContext(StatusCases.Now));
+
+        Assert.Equal("human:thor", taken.TakenOverBy);
+        Assert.Null(desk.TakenOverBy);
     }
 }

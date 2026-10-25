@@ -21,7 +21,10 @@ public sealed class OnyxUpStepsTests
     }
 
     private static OnyxUpService Service(OnyxUpRig rig, params IOnyxUpStep[] steps)
-        => new(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Pins, rig.Progress, steps: steps);
+    {
+        var facts = new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home));
+        return new(rig.Workspace, facts, rig.Pins, rig.Progress, new OnyxDockerWait(facts, rig.Progress, rig.Clock), steps: steps);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_steps_are_fetch_config_pull_start()
@@ -58,7 +61,7 @@ public sealed class OnyxUpStepsTests
             new OnyxPullStep(rig.Runtime, rig.Workspace, compose, rig.Progress),
             new OnyxStartStep(rig.Runtime, rig.Health, new OnyxReadiness(rig.Health, rig.Runtime, rig.Clock), rig.Progress, rig.Clock),
         ];
-        return (rig, new OnyxUpContext(rig.Pins.Pins, rig.Paths, 3000, "linux/arm64"), steps);
+        return (rig, new OnyxUpContext(rig.Pins.Pins, rig.Paths, 3189, "linux/arm64"), steps);
     }
 
     [Fact, Trait("Lane", "unit")]

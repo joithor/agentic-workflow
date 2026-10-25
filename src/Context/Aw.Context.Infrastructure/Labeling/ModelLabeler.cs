@@ -50,7 +50,15 @@ internal sealed class ModelLabeler(IModelPort model, IScrubberFactory scrubbers)
             if (answer.IsError)
             {
                 // The batches already answered are kept (and paid for): the pass is incomplete, and the build says 'degraded: labels'.
-                return labels.Count > 0 || spent > 0 ? new LabelPass(labels, Complete: false) : answer.Error;
+                if (labels.Count > 0 || spent > 0)
+                {
+                    return new LabelPass(labels, Complete: false);
+                }
+
+                // No model answered at all: the build goes on with file-derived names and says how to set one up (SND-CONTEXT-042).
+                return answer.Error.Code == ContextErrors.SourceUnavailable.Code || answer.Error.Code == ContextErrors.LabelingUnavailable.Code
+                    ? new LabelPass([], Complete: false, Unavailable: $"no model answered: {answer.Error.Message} (fix: {LabelPass.NoModelFix})")
+                    : answer.Error;
             }
 
             spent += answer.Value.InputTokens + answer.Value.OutputTokens;

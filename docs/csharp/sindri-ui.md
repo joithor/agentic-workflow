@@ -4,7 +4,7 @@ The Sindri app is an [Avalonia UI](https://avaloniaui.net/) desktop app (readine
 "The UI package"). Stage S1b ships its shell: one window that shows the control plane's status, the same status
 `sindri status` prints, kept live from the event stream, and that says "Not running" with the fix when the control plane
 is down. It is its own package, `SindriUi` (tier 4 in `deps.yaml`), and it holds no logic: every verdict comes from
-Sindri's handlers (factory addendum §17.27.1). Nothing installs it before the switch.
+Sindri's handlers (factory addendum §17.27.1). `scripts/install-cs.sh` publishes it beside `sindri` and links nothing for it: bare `sindri` finds it.
 
 ## Shape
 
@@ -618,6 +618,7 @@ message, which names the full path; the path shows shortened (`~/…`) on its ow
 | Profile fix | `profile.needsApproval` (Sindri's verdict; the app doesn't derive it) | `sindri profile approve` when set |
 | Services | `services[]` | `heartbeat · every 5s · last run 12:00:05Z` (`not run yet`) |
 | Last event | the newest stream event | `service.heartbeat · 12:00:05Z · #42` |
+| Code index (CI-10b) | `GET /sindri/code-index/status` (`repos[]`: `state`, `commit`, `builtAt`, `layers[]`) | One wrapped line per repo, read on connect and after each event: `repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%` (its accessible name starts "Code index: "), and a word at the heading, `ok` or `needs a look`. By state: `missing` "first build queued", `damaged` "damaged, rebuilding on the next check", `stale` "(behind main)", `building`, `waiting` "waiting for a free build slot"; a state the app doesn't know shows as served. A layer reads `ok`, `off`, `pending N%` (from "N of M embedded") or `unavailable (SND-CODEIDX-…)`; clones and deps show only when they need a look. A failed read says "The code index can't be read just now." |
 
 **The Context map card (F1P-c, code index spec 6.4).** Up front under the actions, above Details: the eyebrow `CONTEXT MAP`, the state as a glyph and a word at its right, and Sindri's sentences under it. It reads `GET /sindri/context/map/publish` (`ISindriApi.MapPublish`) with the other followed views, on connect and after every event, and shows nothing while the read is refused (no map yet, `SND-CONTEXT-030`).
 
@@ -656,15 +657,16 @@ Either way `sindri` is the binary in a publish directory (framework-dependent: a
 depends on nothing else about how `sindri` is built: it talks to the control plane only through the HTTP API and two files under its home, `control.json` and
 `auth/human.token`.
 
-**One command before the switch: `sindri-app`** (`scripts/sindri-app.sh`). It builds exactly that layout and runs it:
+**One command: `sindri`** (the wrapper `scripts/install-cs.sh --link` writes). `install-cs.sh` builds exactly that layout:
 when the source changed (a content hash of the files the host build reads, committed or not, with the pinned SDK and
 the platform), it publishes `sindri` framework-dependent and `sindri-ui` NativeAOT (through
-`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) the C# `judge` NativeAOT (the publish of `src/Judge/aot-smoke/run.sh`) and `aw-packets` NativeAOT (`src/Packets/aot-smoke/run.sh`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
-`exec`s that `sindri` with its arguments and `AW_SINDRI_JUDGE=<stamp dir>/judge` (unless the caller set it; `step.judge.choose` needs `judge choose`, which the TypeScript `judge` on the PATH lacks) and `AW_PACKETS_BIN=<stamp dir>/aw-packets` (unless the caller set it; `step.scope.evidence` runs `aw-packets hash`), so bare `sindri-app` starts the control plane and opens the app. It also
-installs the pinned SDK into `~/.dotnet` and fetches the pinned `temporal` when either is missing, and links
-`~/.local/bin/sindri-app` to itself (from the canonical checkout; `AW_SINDRI_APP_NO_LINK=1` skips). It is a side name:
-`sindri` stays the TypeScript CLI until the switch. A control plane already running from an earlier build keeps
-running it (bare `sindri` finds it); the script says so and `sindri-app stop` then `sindri-app` moves to the new build.
+`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) with the other binaries (`judge`, `aw-packets`, `bugfix-state`, `ui-evidence`,
+`aw-readiness`) into `$AW_STATE_DIR/bin/cs/<stamp>/`, keeping the build before it. The `sindri` wrapper `exec`s the real
+`sindri` with its arguments and `AW_SINDRI_JUDGE=<current>/judge` and `AW_PACKETS_BIN=<current>/aw-packets` (unless the
+caller set them), so bare `sindri` starts the control plane and opens the app. `install-cs.sh` also installs the pinned
+SDK into `~/.dotnet` and fetches the pinned `temporal` when either is missing. A control plane already running from an
+earlier build keeps running it (bare `sindri` finds it); the installer says so and `sindri stop` then `sindri` moves to
+the new build.
 
 **`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
 `opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`
@@ -677,6 +679,13 @@ see its exit code and standard error.
 `DEPS-CYCLE-001` exception that names that edge: the launch only spawns a separate process, shares no code or data,
 and Sindri's HTTP API (with `control.json` and `auth/human.token`) stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
 scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`).
+
+### Drivable for desktop evidence
+
+`Composition.Compose` ends with `.UseAwUiDriver(args)` (Aw.UiDriver.Avalonia, docs/csharp/ui-driver.md). It does nothing unless the run sets `AW_UI_DRIVER=1` or passes
+`--ui-driver`, so a normal launch opens no port and writes no file. Desktop UI evidence (docs/csharp/evidence.md "Desktop evidence") starts the published `sindri-ui`
+that way on the seeded fixture home and drives it through its tabs and rows with `aw-ui-driver`, taking each screen's picture with the driver's `screenshot` verb.
+The driver clicks through automation peers, so a control the evidence must press needs an `AutomationProperties.Name` (the tabs and rows already have one).
 
 ## Errors
 
@@ -882,4 +891,4 @@ The contract (T0): `GET /sindri/sessions` and `GET /sindri/sessions/{provider}/{
 
 ## Grant tokens (budget parks)
 
-A budget-parked instance's frame shows a Grant tokens panel in the header, under the stage line (UI spec W7; engine spec §3.7, §4.2). It is `GrantTokensViewModel` on the shared `HoldButton` and `TypedConfirmBox`, for the one catalog action `ApplyCommand:answer-grant-tokens` (`AppConfirm.GrantTokens`, the fourth action `AppConfirm.Require` accepts). The amount field starts at the amount of the served `--grant-tokens` command (the whole round budget), and a challenge is asked for that amount and instance (`POST /sindri/workflow/challenges/app` with `grant-tokens <n> <address>`), so changing the amount drops it. A complete hold or the exact typed text sends `POST /sindri/workflow/instances/{id}/commands` (`kind: answer`, `answer: grant-tokens`, `amount`, `challenge`); the server's refusal (amount outside the 4x bound, a stale challenge, an agent session) shows in its own words, and the frame re-reads once the grant applied. While the catalog's row is `cli-only:typed-confirmation` (it is, until the server opens the answer to the app) the panel is the lock button with the served command, as for every protected answer, and the answer's `atTerminal` stays true until then.
+A budget-parked instance's frame shows a Grant tokens panel in the header, under the stage line (UI spec W7; engine spec §3.7, §4.2). It is `GrantTokensViewModel` on the shared `HoldButton` and `TypedConfirmBox`, for the one catalog action `ApplyCommand:answer-grant-tokens` (`AppConfirm.GrantTokens`, the fourth action `AppConfirm.Require` accepts). The amount field starts at the amount of the served `--grant-tokens` command (the whole round budget), and a challenge is asked for that amount and instance (`POST /sindri/workflow/challenges/app` with `grant-tokens <n> <address>`), so changing the amount drops it. A complete hold or the exact typed text sends `POST /sindri/workflow/instances/{id}/commands` (`kind: answer`, `answer: grant-tokens`, `amount`, `challenge`); the server's refusal (an amount below 1 (the 4x upper bound is gone, owner q93, 2026-10-23), a stale challenge, an agent session) shows in its own words, and the frame re-reads once the grant applied. While the catalog's row is `cli-only:typed-confirmation` (it is, until the server opens the answer to the app) the panel is the lock button with the served command, as for every protected answer, and the answer's `atTerminal` stays true until then.

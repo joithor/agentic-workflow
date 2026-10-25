@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -63,8 +64,8 @@ public static partial class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task, words.GrantTokens()),
-            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
+            Allowed(instance, recipe, task, words.GrantTokens()),
+            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question, ParkCodes.Of(s)) : null,
             task,
             instance.Frame.Run?.Token,
             children,
@@ -81,7 +82,9 @@ public static partial class InstanceViews
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
             StartedAt = context.StartedAt,
             StartedBy = context.StartedBy,
+            Again = context.Again,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
+            TakenOverBy = instance.Suspension is { Kind: SuspensionKind.Takeover } taken ? taken.Actor : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
@@ -104,7 +107,7 @@ public static partial class InstanceViews
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var status = Status(view, context.AsOf);
+        var status = DetailParts.WithSession(Status(view, context.AsOf), context.Session);
         return new InstanceDetail(
             view.Address,
             view.Id,
@@ -118,15 +121,19 @@ public static partial class InstanceViews
             InstanceSummaries.SubjectOf(view, context.Title),
             view.OrderedBy,
             view.States,
-            new CurrentState(view.State, view.Step, view.Gates, view.Desk, status),
+            new CurrentState(view.State, view.Step, view.Gates, DetailParts.WithTargets(view.Desk, context.ReviewTargets), status),
             view.Facts,
             view.ChildGroups,
             context.Counts,
-            [.. status.Commands.Select(static c => c.ActionId)],
+            [.. status.Commands.Select(static c => c.ActionId), .. Reruns.Of(view)],
             context.StepRuns ?? [],
             context.AsOf,
             view.Steps,
-            view.StartedBy);
+            view.StartedBy)
+        {
+            Again = view.Again,
+            AllowedCommands = [.. view.AllowedCommands.Where(static c => c.Verb is not null)],
+        };
     }
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
@@ -168,7 +175,7 @@ public static partial class InstanceViews
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),
-            Desk = CurrentStates.Desk(from.Task, from.Recipe),
+            Desk = CurrentStates.Desk(from.Task, from.Recipe, context.Recommendation),
             AnswerLine = from.Words.AnswerLine(),
             ChildPark = from.Words.ChildPark(),
             DriftNote = from.Words.DriftNote(),
@@ -179,17 +186,19 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', 'handback',
+    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', the recipe's verbs, 'handback',
     /// 'takeover', 'cancel' (§6.4). An ended instance accepts none. A park whose only way out is an approval or a
     /// cancel (spec-conflict: revoked, child revoked, drift; §3.8) takes no answer.
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
+    /// <param name="recipe">The recipe it runs: each 'command.&lt;verb&gt;' transition out of the current state is a verb the instance accepts (API18). A taken-over instance accepts none; the human has it.</param>
     /// <param name="task">The open desk task, if any.</param>
     /// <param name="grantTokens">The token amount a budget park's grant offers (the one the status line prints).</param>
     /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, string grantTokens)
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, InterpretedRecipe recipe, DeskTask? task, string grantTokens)
     {
         ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
         if (instance.Ended)
         {
             return [];
@@ -207,6 +216,11 @@ public static partial class InstanceViews
             commands.Add(new("CompleteStep", CompleteCli(address, task)));
         }
 
+        if (instance.Suspension is not { Kind: SuspensionKind.Takeover })
+        {
+            commands.AddRange(VerbCommands(instance, recipe));
+        }
+
         if (instance.Suspension is { Kind: SuspensionKind.Takeover })
         {
             commands.Add(new("ApplyCommand:handback", $"sindri workflow handback {address}"));
@@ -219,6 +233,20 @@ public static partial class InstanceViews
         commands.Add(new("ApplyCommand:cancel", $"sindri workflow cancel {address}"));
         return commands;
     }
+
+    /// <summary>
+    /// The recipe's verbs out of the current state, one entry per distinct verb in recipe order, all the generic 'ApplyCommand:command' (one desk row serves every verb).
+    /// A verb whose transition carries a human-trigger effect (the babysitter's 'merge') is listed too, marked destructive: the server refuses an agent session's call. 'rework' carries no effect and is not.
+    /// </summary>
+    private static IEnumerable<AllowedCommand> VerbCommands(WorkflowInstance instance, InterpretedRecipe recipe) =>
+        recipe.Recipe.Transitions
+            .Where(t => t.On.StartsWith(TriggerNames.CommandPrefix, StringComparison.Ordinal) && t.From.Contains(instance.State, StringComparer.Ordinal))
+            .GroupBy(static t => t.On[TriggerNames.CommandPrefix.Length..], StringComparer.Ordinal)
+            .Select(verb => new AllowedCommand("ApplyCommand:command", $"sindri workflow command {instance.Address.Value} {verb.Key}")
+            {
+                Verb = verb.Key,
+                Destructive = verb.Any(t => t.Effects.Any(e => recipe.Catalog.Find(e.Use) is { Kind: BlockKind.Effect, HumanTrigger: true })) ? true : null,
+            });
 
     /// <summary>
     /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each

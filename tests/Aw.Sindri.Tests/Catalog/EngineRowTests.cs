@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.Catalog;
 /// <summary>
 /// The engine's catalog rows (engine spec §6.2, §6.3, §10 'Every_engine_variant_has_a_catalog_row'; UI spec §7, E-9,
 /// E-12): every engine command and variant is listed with its class and UI status, and protected rows are terminal-bound.
-/// Protected rows read 'pending:&lt;phase&gt;' until their endpoint is mapped, then 'cli-only:typed-confirmation'.
+/// Protected rows read 'pending:&lt;phase&gt;' until their endpoint is mapped, then 'ready'.
 /// </summary>
 public sealed class EngineRowTests
 {
@@ -18,7 +18,7 @@ public sealed class EngineRowTests
         Assert.All(_expected, e =>
         {
             Assert.True(rows.TryGetValue(e.Action, out var row), $"{e.Action} has no catalog row");
-            Assert.Equal((e.Action, e.Class, e.Ui, e.Class == ActionClass.Protected || e.Action == "IssueChallenge"), (e.Action, row.Class, row.Ui, row.NeedsTerminal));
+            Assert.Equal((e.Action, e.Class, e.Ui, false), (e.Action, row.Class, row.Ui, row.NeedsTerminal));
         });
     }
 
@@ -36,16 +36,17 @@ public sealed class EngineRowTests
     [
         ("RegisterRecipe", ActionClass.Desk, "ready"),
         ("ApproveRecipe", ActionClass.Protected, "ready"),
-        ("RevokeRecipe", ActionClass.Protected, "cli-only:typed-confirmation"),
+        ("RevokeRecipe", ActionClass.Protected, "ready"),
         ("IssueChallenge", ActionClass.Issue, "ready"),
         ("StartInstance", ActionClass.Desk, "ready"),
+        ("RerunInstance", ActionClass.Desk, "ready"),
         ("IssueNonce", ActionClass.Issue, "ready"),
         ("ApplyCommand:answer-text", ActionClass.Desk, "ready"),
         ("ApplyCommand:answer-resume", ActionClass.Desk, "ready"),
         ("ApplyCommand:answer-reject", ActionClass.Desk, "ready"),
-        ("ApplyCommand:answer-grant", ActionClass.Protected, "cli-only:typed-confirmation"),
-        ("ApplyCommand:answer-grant-tokens", ActionClass.Protected, "cli-only:typed-confirmation"),
-        ("ApplyCommand:answer-accept", ActionClass.Protected, "cli-only:typed-confirmation"),
+        ("ApplyCommand:answer-grant", ActionClass.Protected, "ready"),
+        ("ApplyCommand:answer-grant-tokens", ActionClass.Protected, "ready"),
+        ("ApplyCommand:answer-accept", ActionClass.Protected, "ready"),
         ("ApplyCommand:takeover", ActionClass.Pause, "ready"),
         ("ApplyCommand:handback", ActionClass.Desk, "ready"),
         ("ApplyCommand:cancel", ActionClass.Desk, "ready"),

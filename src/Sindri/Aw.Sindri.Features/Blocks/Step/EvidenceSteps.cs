@@ -20,6 +20,12 @@ internal static class EvidenceSteps
     /// <summary>'step.evidence.ui-run': the long browser run (DT spec §8.2); 'passed', 'failed' or 'broken', 'fact:evidenceSummary' on every one.</summary>
     public static BlockDescriptor UiRun { get; } = AgentStep("step.evidence.ui-run", Capability.Tools).Reads("fact:evidencePlan", "fact:built").Reports("passed", "failed", "broken").Writes(Every("fact:evidenceSummary"));
 
+    /// <summary>'step.evidence.desktop-run': the real desktop app driven screen by screen against its mockups (the Evidence 'desktop-run' verb); 'passed', 'failed' or 'broken', 'fact:evidenceSummary' on every one.</summary>
+    public static BlockDescriptor DesktopRun { get; } = AgentStep("step.evidence.desktop-run", Capability.Tools).Reads("fact:built").Reports("passed", "failed", "broken").Writes(Every("fact:evidenceSummary"));
+
+    /// <summary>'step.evidence.desktop-review': compares each screen's app frame with its mockup frame; 'match' or 'mismatch', 'fact:desktopMismatches' on mismatch.</summary>
+    public static BlockDescriptor DesktopReview { get; } = AgentStep("step.evidence.desktop-review", Capability.Tools).Reads("fact:evidenceSummary", "fact:built").Reports("match", "mismatch").Writes(On("fact:desktopMismatches", "mismatch"));
+
     /// <summary>'step.evidence.api-run': 'passed' or 'failed', 'fact:evidenceSummary' on both.</summary>
     public static BlockDescriptor ApiRun { get; } = Run("step.evidence.api-run");
 
@@ -33,7 +39,7 @@ internal static class EvidenceSteps
     public static BlockDescriptor Combine { get; } = BlockStep("step.evidence.combine", Capability.None).Reads("fact:evidenceUi", "fact:evidenceApi", "fact:evidenceDb").Reports("done").Writes(On("fact:evidenceSummary", "done"));
 
     /// <summary>'step.evidence.desk': a human records evidence for a change no provider covers; human-only; 'recorded' or 'noneFound', summary and reason on both.</summary>
-    public static BlockDescriptor Desk { get; } = HumanDeskStep("step.evidence.desk", Capability.None).Reads("fact:built").Reports("recorded", "noneFound").Writes(Every("fact:evidenceSummary"), Every("fact:evidenceReason"));
+    public static BlockDescriptor Desk { get; } = DeskStep("step.evidence.desk", Capability.None).Reads("fact:built").Reports("recorded", "noneFound").Writes(Every("fact:evidenceSummary"), Every("fact:evidenceReason"));
 
     private static BlockDescriptor Plan(string id) => AgentStep(id, Capability.Tools).Reads("fact:phasePacket", "fact:built").Reports("planned", "noTarget").Writes(On("fact:evidencePlan", "planned"), On("fact:evidenceSummary", "noTarget"));
 

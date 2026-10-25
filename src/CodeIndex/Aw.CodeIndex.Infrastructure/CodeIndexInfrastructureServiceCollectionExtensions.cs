@@ -29,11 +29,13 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
             .AddSingleton<ISymbolParser, CSharpParser>()
             .AddSingleton<IBodyScrubber, RedactingBodyScrubber>()
             .AddSingleton<IEmbedder, OllamaEmbedder>()
+            .AddSingleton<ICodeIndexPins>(new FileCodeIndexPins(environment))
             .AddSingleton<IParseQuarantine>(_ => new FileParseQuarantine(settings.IndexDirectory))
             .AddSingleton<IGraphRunner>(provider => new GraphifyRunner(GraphifyOptions.FromEnvironment(environment), provider.GetRequiredService<IBodyScrubber>()))
             .AddSingleton<IManifestReader, PackageJsonReader>()
             .AddSingleton<IManifestReader, CsprojReader>()
             .AddSingleton<IManifestReader, CentralPackagesReader>()
-            .AddSingleton<IIndexStore>(provider => new SqliteIndexStore(settings.IndexDirectory, provider.GetRequiredService<TimeProvider>()));
+            .AddSingleton<IRepoIndexLock, InProcessRepoIndexLock>()
+            .AddSingleton<IIndexStore>(provider => new SqliteIndexStore(settings.IndexDirectory, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<IRepoIndexLock>()));
     }
 }

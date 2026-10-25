@@ -6,8 +6,8 @@ namespace Aw.Sindri.Ui.ViewModels.Controls;
 
 /// <summary>
 /// The command catalog as controls (UI spec §9.1: the only list of actions the app knows), read on connect and after a
-/// reconnect. Each row becomes a <see cref="ControlViewModel"/>; only the actions the app has a sender for run. Health
-/// lists the pending rows by phase (§4.8) and the palette lists every row (§8).
+/// reconnect. Each row becomes a <see cref="ControlViewModel"/>; the actions the app has a sender for run, and the rest
+/// show their command to copy. Health lists the copy-only rows (§4.8) and the palette lists every row (§8).
 /// </summary>
 /// <param name="clipboard">Where Copy puts a CLI.</param>
 /// <param name="clock">The clock for the controls' timings.</param>
@@ -24,14 +24,8 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <summary>Every catalog row, in the API's order.</summary>
     public IReadOnlyList<ControlViewModel> Controls { get; private set => Set(ref field, value); } = [];
 
-    /// <summary>The pending rows grouped by the phase that ships them, in the order the phases first appear (§4.8).</summary>
-    public IReadOnlyList<PendingPhase> Pending { get; private set => Set(ref field, value); } = [];
-
-    /// <summary>"N actions arrive in later phases", or empty when none are pending.</summary>
-    public string PendingSummary { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>The cli-only rows (copy blocks).</summary>
-    public IReadOnlyList<ControlViewModel> CliOnly { get; private set => Set(ref field, value); } = [];
+    /// <summary>The rows the app has no form for (copy blocks).</summary>
+    public IReadOnlyList<ControlViewModel> CopyOnly { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The Rebuild views control, or null before the catalog is read.</summary>
     public ControlViewModel? Rebuild { get; private set => Set(ref field, value); }
@@ -39,8 +33,13 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <summary>The Stop Sindri control (destructive: it asks first), or null before the catalog is read.</summary>
     public ControlViewModel? Stop { get; private set => Set(ref field, value); }
 
-    /// <summary>"49 in this app, 14 at a terminal on purpose, 4 arriving later", or empty before the catalog is read.</summary>
+    /// <summary>"49 in this app, 14 to copy", or empty before the catalog is read.</summary>
     public string Counts { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True when the catalog lists the action as ready: Sindri lets the app do it. A row it serves as cli-only or pending is the command to copy.</summary>
+    /// <param name="action">The action id.</param>
+    /// <returns>True for a listed row whose ui word is "ready".</returns>
+    internal bool IsReady(string action) => _rows.TryGetValue(action, out var row) && string.Equals(row.Ui, "ready", StringComparison.Ordinal);
 
     /// <summary>The control for an action id, or null when the catalog has no such row.</summary>
     /// <param name="action">The action id.</param>
@@ -56,9 +55,10 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <param name="action">The action id.</param>
     /// <param name="subject">The subject's id, named in the control's accessible name.</param>
     /// <param name="send">Sends the command once; null when nothing is wired to it.</param>
+    /// <param name="confirm">True when the app asks first even though the catalog does not call the command destructive (a spec'd Confirm and Keep, as on Cancel job).</param>
     /// <returns>The control, or null.</returns>
-    internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send) =>
-        _rows.TryGetValue(action, out var row) ? new ControlViewModel(row, send, Clipboard, clock, subject) : null;
+    internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, bool confirm = false) =>
+        _rows.TryGetValue(action, out var row) ? new ControlViewModel(confirm ? row with { Destructive = true } : row, send, Clipboard, clock, subject) : null;
 
     /// <summary>Shows a catalog read from the API at <paramref name="api"/>.</summary>
     /// <param name="api">Where the API answers (the senders call it).</param>
@@ -69,16 +69,13 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
         Listed = catalog;
         _rows = catalog.Rows.ToDictionary(r => r.Action, StringComparer.Ordinal);
         Controls = [.. catalog.Rows.Select(row => new ControlViewModel(row, Sender(api, client, row.Action), Clipboard, clock))];
-        var pending = Controls.Where(c => c.IsPending).ToList();
-        Pending = [.. pending.GroupBy(c => c.Stage, StringComparer.Ordinal).Select(g => new PendingPhase(Labels.Arrives(g.Key), [.. g]))];
-        PendingSummary = pending.Count == 0 ? string.Empty : Labels.PendingSummary(pending.Count);
-        CliOnly = [.. Controls.Where(c => c.IsCliOnly)];
+        CopyOnly = [.. Controls.Where(c => c.IsCopyOnly)];
         (Rebuild, Stop) = (For("RebuildViews"), For("StopProcess"));
-        Counts = Labels.ActionCounts(Controls.Count(c => c.IsReady), CliOnly.Count, pending.Count);
+        Counts = Labels.ActionCounts(Controls.Count - CopyOnly.Count, CopyOnly.Count);
     }
 
-    // The actions the catalog's own list can send. A service's actions are per row (On); every other ready row waits
-    // for the phase that gives it a form. StopProcess is destructive: its control asks first.
+    // The actions the catalog's own list can send. A service's actions are per row (On); every other row shows its
+    // command to copy until it has a form. StopProcess is destructive: its control asks first.
     private static Func<CancellationToken, Task<Result<CommandAcceptedView>>>? Sender(Uri api, ISindriApi client, string action) => action switch
     {
         "RebuildViews" => ct => client.RebuildViews(api, ct),

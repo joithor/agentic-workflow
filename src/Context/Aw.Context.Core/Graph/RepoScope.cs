@@ -3,7 +3,7 @@ namespace Aw.Context.Core.Graph;
 /// <summary>
 /// The nodes a repo implements (spec §3): the targets of 'implements' edges with file evidence in that repo
 /// ('repo:&lt;repo&gt;/&lt;path&gt;'), and the code files those edges start from ("that repo's files and code"). S-3b adds their cascade.
-/// Since owner decision 2026-10-15 (B) a session also sees the intent linked to those nodes (<see cref="WithLinkedIntent"/>), without waiting for 'context.repoTeams'.
+/// Since owner decision 2026-10-15 (B) a session also sees the intent linked to those nodes (<see cref="WithLinkedIntent"/>).
 /// </summary>
 public static class RepoScope
 {
@@ -81,6 +81,20 @@ public static class RepoScope
         var all = new HashSet<string>(scope, StringComparer.Ordinal);
         all.UnionWith(decisions);
         all.UnionWith(records);
+        return all;
+    }
+
+    /// <summary>
+    /// <paramref name="scope"/> and the concepts its members belong to: a concept node with a 'belongs-to' edge from a node in <paramref name="scope"/>. A concept with no member in scope stays out, so a session
+    /// sees its repo's concepts, sized by its repo's members.
+    /// </summary>
+    /// <param name="graph">The graph.</param>
+    /// <param name="scope">The nodes the repo implements with their hierarchy and linked intent.</param>
+    /// <returns>The keys of the scope and of those concepts (ordinal).</returns>
+    internal static IReadOnlySet<string> WithConcepts(GraphSnapshot graph, IReadOnlySet<string> scope)
+    {
+        var all = new HashSet<string>(scope, StringComparer.Ordinal);
+        all.UnionWith(graph.Edges.Where(e => e.Type == EdgeType.BelongsTo && e.To.Kind == NodeKind.Concept && scope.Contains(e.From.Value)).Select(e => e.To.Value));
         return all;
     }
 }

@@ -9,10 +9,9 @@ using Aw.Sindri.Host.Commands.Recipe;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'recipe approve-all [--json]' (setup-once spec §5.3, §7.2; protected): read the plan, ask the server for the 'approve-all
-/// &lt;digest&gt;' challenge, print the plan it is bound to, read the action text the human types, and send it to the job route,
-/// which starts the job that approves every recipe in the plan. A session or a CLI with no terminal is refused by the
-/// challenge (SND-AUTH-002); an empty plan says so and exits 2 without a challenge.
+/// 'recipe approve-all [--json]' (setup-once spec §5.3, §7.2): read the plan, print it (the server's challenge carries the plan; it is never
+/// redeemed), and call the job route, which starts the job that approves every recipe in the plan. No typed phrase and no terminal are needed
+/// (owner decision q93); an empty plan says so and exits 2.
 /// </summary>
 /// <param name="desk">The API client, the terminal input and the start rule.</param>
 /// <param name="output">Where the verb writes.</param>
@@ -42,9 +41,8 @@ internal sealed class ApproveAllCommand(RecipeDesk desk, Output output)
         var challenge = issued.Value;
         var plan = challenge.ApproveAll!;   // why: Issue returns only a challenge that carries the plan
         var shown = ApproveAllText.Plan(plan);
-        await (json ? output.OnStandardError().Out : output.Out).WriteAsync(shown + $"Type '{challenge.Action}' to confirm (the challenge lasts 5 minutes): ").ConfigureAwait(false);
-        var typed = (await desk.Input.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
-        var started = await desk.Client.Post<ChallengeAnswer, JobStartedResponse>(Route, new ChallengeAnswer(challenge.Challenge, typed), ct).ConfigureAwait(false);
+        await (json ? output.OnStandardError().Out : output.Out).WriteAsync(shown).ConfigureAwait(false);
+        var started = await desk.Client.Post<ChallengeAnswer, JobStartedResponse>(Route, body: null, ct).ConfigureAwait(false);
         return started.IsError
             ? await output.Error(started.Error).ConfigureAwait(false)
             : json ? await output.Raw(started.Value.Body, 0).ConfigureAwait(false)

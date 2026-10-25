@@ -44,13 +44,29 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
     {
         using var turn = await _gates.Turn(launch, cancellationToken).ConfigureAwait(false);   // a Launch the caller cancelled finishes unwinding first, so it can't re-create the memory this removes
         _ = _started.TryRemove(launch, out _);
-        var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+        var stopped = await StopOnEveryHost(launch, cancellationToken).ConfigureAwait(false);
         if (stopped.IsSuccess)
         {
             await parts.EndLive(launch, cancellationToken).ConfigureAwait(false);   // the session is over (a session tmux no longer has counts as stopped): the row stops being live now, and the lost sweep never marks it
         }
 
         await Cleanup(launch).ConfigureAwait(false);
+        return stopped;
+    }
+
+    /// <summary>
+    /// Stops the launch's session on the tmux host and on every other host (T3): a launch's row doesn't say which host it used, and a stop of a session a host
+    /// doesn't have is a success. The stop succeeds only when every host could be asked.
+    /// </summary>
+    private async ValueTask<Result<Unit>> StopOnEveryHost(LaunchId launch, CancellationToken cancellationToken)
+    {
+        var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+        foreach (var other in parts.OtherHosts)
+        {
+            var also = await other.Stop(new HostRef(other.Kind, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+            stopped = stopped.IsError ? stopped : also;
+        }
+
         return stopped;
     }
 
@@ -208,7 +224,8 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
             return await RunOnViewer(request, host, (name, prepared.WorkDir, wrapped), (source, prepared.Session), cancellationToken).ConfigureAwait(false);
         }
 
-        var started = await host.Start(new HostSession(name, prepared.WorkDir, wrapped, prepared.Env), parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
+        var session = new HostSession(name, prepared.WorkDir, wrapped, prepared.Env) { RepoPath = request.RepoPath, Seed = prepared.Seed, Title = $"sindri {request.Item.Value}", Agent = request.Agent };
+        var started = await host.Start(session, parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
         if (started.IsError)
         {
             if (started.Error.Kind == ErrorKind.Conflict)
@@ -227,7 +244,7 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
         {
             viewer = request.Attended
                 ? await OpenViewer(new ViewerRequest(started.Value, host.AttachArgv(started.Value), $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = prepared.WorkDir }, cancellationToken).ConfigureAwait(false)
-                : ViewerOutcome.Skipped;
+                : await Background(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -244,7 +261,7 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
         var none = new HostRef(host.Kind, session.Name);
         var outcome = request.Attended
             ? await OpenViewer(new ViewerRequest(none, session.Argv, $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = session.WorkDir }, cancellationToken).ConfigureAwait(false)
-            : ViewerOutcome.Skipped;
+            : await Background(cancellationToken).ConfigureAwait(false);
         if (outcome.Kind != ViewerOutcomeKind.Failed)
         {
             return new StartedLaunch(none, outcome, session.Argv, started.Entry.Source, started.Entry.Hash) { ChosenSession = started.Chosen };

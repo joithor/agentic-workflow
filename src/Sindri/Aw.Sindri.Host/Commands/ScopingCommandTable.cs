@@ -7,6 +7,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Scoping;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Host.Commands.Scoping;
 
@@ -97,7 +98,7 @@ internal static partial class ScopingCommandTable
         }
 
         var result = await services.GetRequiredService<IService<ScopingShowRequest, ScopingView>>().Handle(new ScopingShowRequest(facts.Value), ct).ConfigureAwait(false);
-        return result.IsError || desk.Client.SessionReason is null ? result : ScopingFencing.Fence(result.Value);
+        return result.IsError || await desk.Client.ResolveSessionReason(ct).ConfigureAwait(false) is null ? result : ScopingFencing.Fence(result.Value);
     }
 
     /// <summary>Exactly one of an address and --facts.</summary>
@@ -188,7 +189,7 @@ internal static partial class ScopingCommandTable
             return await Fail(output, result.Error).ConfigureAwait(false);
         }
 
-        var report = await WriteReport(result.Value, outDirectory, (services.GetRequiredService<IPackets>(), services.GetRequiredService<JsonSerializerOptions>()), ct).ConfigureAwait(false);
+        var report = await WriteReport(result.Value, outDirectory, (services.GetRequiredService<IPackets>(), services.GetRequiredService<JsonSerializerOptions>(), services.GetRequiredService<BlockCatalog>()), ct).ConfigureAwait(false);
         if (report.IsError)
         {
             return await Fail(output, report.Error).ConfigureAwait(false);
@@ -213,7 +214,7 @@ internal static partial class ScopingCommandTable
     }
 
     /// <summary>Writes the Step's fact files, its run-area files and report.json under the out directory; the evidence step's packet gets its hash from aw-packets.</summary>
-    private static async Task<Result<ScopingDeskReport>> WriteReport(ScopingDeskResponse response, string outDirectory, (IPackets Packets, JsonSerializerOptions Json) context, CancellationToken ct)
+    private static async Task<Result<ScopingDeskReport>> WriteReport(ScopingDeskResponse response, string outDirectory, (IPackets Packets, JsonSerializerOptions Json, BlockCatalog Catalog) context, CancellationToken ct)
     {
         var outputs = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (key, text) in response.Outputs)
@@ -239,7 +240,7 @@ internal static partial class ScopingCommandTable
             outputs["fact:scopePacket"] = "scopePacket.json";
         }
 
-        var report = new ScopingDeskReport(response.Block, response.Outcome, outputs, [.. response.Files.Select(static f => f.Path)], response.Findings, response.Warnings);
+        var report = new ScopingDeskReport(response.Block, response.Outcome, outputs, DeskOutputs.ByOutcome(context.Catalog, response.Block), [.. response.Files.Select(static f => f.Path)], response.Findings, response.Warnings);
         await ScopingFactDirectory.Write(Path.Combine(outDirectory, "report.json"), Encoding.UTF8.GetString(AwJson.Serialize(report, context.Json)) + "\n", append: false, ct).ConfigureAwait(false);
         return report;
     }

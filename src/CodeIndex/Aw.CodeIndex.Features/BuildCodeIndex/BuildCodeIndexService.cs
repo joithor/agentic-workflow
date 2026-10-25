@@ -9,8 +9,8 @@ using Aw.Kernel.Services;
 namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
 /// <summary>
-/// The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write in batches, the syntax
-/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the clones rows are written with the structure; the embeddings layer is built here; the deps layer plugs in later; until then it is recorded as unavailable
+/// The build slice (spec §5.7): the snapshot, the incremental plan, the structure write in batches, the syntax
+/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the clones rows are written with the structure; the embeddings layer is only recorded here (bodies stay stored and vectors of unchanged files are carried, graph files included: the graph layer writes only the graph files whose blob or planned symbols changed; the embed slice embeds the rest outside the heavy slot); the deps layer plugs in later; until then it is recorded as unavailable
 /// with its reason, so a reader never mistakes a layer that was not built for one that is empty.
 /// </summary>
 /// <param name="heads">Whether a commit is still on the default branch.</param>
@@ -18,9 +18,8 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 /// <param name="structure">Parses and writes the planned files.</param>
 /// <param name="layers">The embeddings and graph layers.</param>
 /// <param name="store">The index files.</param>
-/// <param name="heavy">The box-wide heavy-job slots.</param>
 /// <param name="clock">The time source.</param>
-public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, BuildLayers layers, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
+public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, BuildLayers layers, IIndexStore store, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
 {
     private static readonly LayerName[] _laterLayers = [LayerName.Deps];
 
@@ -32,16 +31,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
     {
         ArgumentNullException.ThrowIfNull(request);
         var started = clock.GetTimestamp();
-        var slot = await heavy.Take("sindri code-index:" + request.Repo.Name.Value, CodeIndexRules.HeavySlotWait, waiting: null, cancellationToken).ConfigureAwait(false);
-        if (slot.IsError)
-        {
-            return string.Equals(slot.Error.Code, CodeIndexErrors.HeavyBusy.Code, StringComparison.Ordinal) ? Nothing(request, BuildOutcome.Deferred, started) : slot.Error;
-        }
-
-        await using (slot.Value.ConfigureAwait(false))
-        {
-            return await Run(request, started, cancellationToken).ConfigureAwait(false);
-        }
+        return await Run(request, started, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<BuildReport>> Run(BuildCodeIndexRequest request, long started, CancellationToken cancellationToken)
@@ -108,7 +98,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             return graphLayer.Error;
         }
 
-        var embedded = await layers.Embeddings.Run(build, settings.Embeddings, request.Progress, cancellationToken).ConfigureAwait(false);
+        var embedded = await layers.Embeddings.Record(build, settings.Embeddings, cancellationToken).ConfigureAwait(false);
         if (embedded.IsError)
         {
             return embedded.Error;

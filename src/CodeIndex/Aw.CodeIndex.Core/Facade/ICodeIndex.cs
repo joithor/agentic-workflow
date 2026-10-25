@@ -7,7 +7,7 @@ namespace Aw.CodeIndex.Core.Facade;
 /// The code index's one facade (spec §7): every surface calls it with Core records only. Reads open the repo's index
 /// file read-only and never create it. Every call takes a <see cref="CodeIndexScope"/> and returns a <see cref="Result{T}"/>;
 /// a repo outside the scope, or no such repo, is the same not-found as a repo with no index (SND-CODEIDX-013).
-/// <see cref="Build"/> is the only write.
+/// <see cref="Build"/> and <see cref="Embed"/> are the only writes.
 /// </summary>
 public interface ICodeIndex
 {
@@ -17,8 +17,16 @@ public interface ICodeIndex
     /// <param name="commit">The commit; it must still be on the default branch.</param>
     /// <param name="progress">Told a counts-only line per step ('structure 1,400 of 3,100 files').</param>
     /// <param name="cancellationToken">Cancels the build between files and batches; a cancelled build leaves the live index alone.</param>
-    /// <returns>The report. A busy box is a deferred report, not an error; SND-CODEIDX-002, 003, 010 and 011 are errors.</returns>
+    /// <returns>The report. A build takes no heavy-job slot; SND-CODEIDX-002, 003, 010 and 011 are errors.</returns>
     public ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken);
+
+    /// <summary>Embeds a repo's pending symbols without the heavy slot, until none remain or the model fails (spec §5.7a); called by Sindri's EmbedCodeIndexService.</summary>
+    /// <param name="scope">The caller's repos.</param>
+    /// <param name="repo">The repo to embed.</param>
+    /// <param name="progress">Told a counts-only line per batch ('embeddings 1,400 of 3,100').</param>
+    /// <param name="cancellationToken">Cancels the run between batches; every published chunk is kept.</param>
+    /// <returns>Where the embeddings stand. SND-CODEIDX-016 (a build holds the repo's index) and 013 (no index yet) mean try later; 005, 006 and 009 are the model's failures.</returns>
+    public ValueTask<Result<EmbedReport>> Embed(CodeIndexScope scope, RepoName repo, IProgress<string> progress, CancellationToken cancellationToken);
 
     /// <summary>Each repo's index state from the files only: no git, no counting.</summary>
     /// <param name="scope">The caller's repos.</param>
@@ -81,7 +89,7 @@ public interface ICodeIndex
     /// <param name="scope">The caller's repos.</param>
     /// <param name="repo">The repo.</param>
     /// <param name="text">The text.</param>
-    /// <param name="k">How many; at most <see cref="CodeIndexRules.MaxNeighbors"/>.</param>
+    /// <param name="k">How many, 1 or more.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The neighbors; unavailable with the embeddings layer's code when that layer is (006, 009, 005).</returns>
     public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken);

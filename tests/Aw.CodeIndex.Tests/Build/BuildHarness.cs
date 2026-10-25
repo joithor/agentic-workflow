@@ -1,9 +1,11 @@
 using Aw.CodeIndex.Core;
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Testing;
 using Aw.Kernel;
 using Microsoft.Extensions.Time.Testing;
@@ -25,8 +27,6 @@ internal sealed class BuildHarness
 
     public FakeParseQuarantine Quarantine { get; } = new();
 
-    public FakeHeavyJobLock Heavy { get; init; } = new();
-
     public FakeRepoHeads Heads { get; } = new();
 
     public FakeBodyScrubber Scrubber { get; init; } = new();
@@ -43,9 +43,18 @@ internal sealed class BuildHarness
 
     public CodeIndexScope Scope => new([Repo], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
-    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), new BuildLayers(new EmbeddingsLayer(Embedder, Clock), new GraphLayer(Snapshot, Clock, Graph)), Store, Heavy, Clock);
+    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), new BuildLayers(new EmbeddingsLayer(Embedder, Clock), new GraphLayer(Snapshot, Clock, Scrubber, Graph)), Store, Clock);
 
     public CodeIndexFacade Facade => new(Service, Store, Embedder, Graph);
+
+    public EmbedCodeIndexService Embed => new(Store, new EmbeddingsLayer(Embedder, Clock), Clock);
+
+    /// <summary>Builds the commit, then embeds what the build left pending (the build itself never calls the embedder).</summary>
+    public async Task<EmbedCodeIndexResponse> BuildAndEmbed(CommitSha commit, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    {
+        _ = await Build(commit, cancellationToken: cancellationToken);
+        return (await Embed.Handle(new EmbedCodeIndexRequest(Repo, progress ?? new Progress<string>()), cancellationToken)).Value;
+    }
 
     public async Task<BuildReport> Build(CommitSha commit, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {

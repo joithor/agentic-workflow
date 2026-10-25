@@ -25,6 +25,9 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     /// <summary>The per-start human token (0600, in an 'auth' folder that is 0700).</summary>
     public string TokenPath => Path.Combine(Home, "auth", "human.token");
 
+    /// <summary>How this Sindri is deployed (AW_SINDRI_DEPLOY): the desktop unless it says pod.</summary>
+    public DeployMode Deploy { get; init; } = DeployMode.Desktop;
+
     /// <summary>The temp directory ($TMPDIR, else the platform's), for the prover rule.</summary>
     public string TempDirectory { get; init; } = Path.GetTempPath();
 
@@ -35,10 +38,4 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     public bool ProverLabelAllowed =>
         RealPath.Of(Home) is { } home && RealPath.Of(TempDirectory) is { } temp && RealPath.Of(StateDirectory) is { } state
         && ProverHome.Allows(home, temp, state);
-
-    /// <summary>The marker only the prover writes into a scratch home (setup-once spec §4 item 6).</summary>
-    public string ProverScratchPath => Path.Combine(Home, ".prover-scratch");
-
-    /// <summary>Whether the prover may confirm what the app confirms: a temp or proof home that also holds the marker. The owner's default home never does.</summary>
-    public bool ProverMayConfirm => ProverLabelAllowed && File.Exists(ProverScratchPath);
 }

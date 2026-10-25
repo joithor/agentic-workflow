@@ -24,7 +24,7 @@ internal sealed class GetHistoryService(MapReader reader, HistoryPipeline pipeli
         }
 
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if (QueryRules.CheckAnchors(anchors) is { } refused)
+        if (QueryRules.CheckAnchors(anchors, "history") is { } refused)
         {
             return refused;
         }
@@ -35,6 +35,7 @@ internal sealed class GetHistoryService(MapReader reader, HistoryPipeline pipeli
             return read.Error;
         }
 
+        using var band = FillBands.Start(FillBands.History);
         var view = await pipeline.Run(new HistoryInputs(read.Value, request.Window, request.Read.Draft), anchors, settings.Value, request.Scope, cancellationToken).ConfigureAwait(false);
         return view.Map(v => HistoryTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }

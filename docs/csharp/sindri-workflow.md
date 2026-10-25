@@ -104,7 +104,7 @@ no-progress pass
 rounds pass
 ```
 
-A line the engine rejects (an answer that doesn't fit the park, a grant of 0 or above the loop's cap, an undeclared
+A line the engine rejects (an answer that doesn't fit the park, a grant of 0, an undeclared
 outcome) or one out of the format (not JSON, an unknown `kind`, a `variant` that doesn't go with its kind) fails its case
 at that line, saying why. A recipe without `evals:` prints `no evals declared` and exits 0: nothing failed. Approving
 such a recipe is refused (`SND-RECIPE-008`, see `sindri recipe approve` below). `--json` prints `{"cases":[{"case","passed","line","detail"}],"scaffold":null,"passed"}`, where `"case"` is the eval file's path as `evals:` lists it (`evals/workflow.step/happy.jsonl`); the text output shows the bare name (`happy`).
@@ -177,7 +177,7 @@ failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 `input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
 an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
-`pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
+`pin-drift` (a pinned block's interface changed in this build; a block whose version alone moved is renewed by the next check, owner q93 2026-10-23: `recipe.approved` with `drift`, actor `service:pin-drift`), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
 `{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind, generate}`
 (`type` `null` when not declared, `kind` `null` only on a legacy row, `generate` `null` when the input has no template; `name` is the instance-name template or `null`) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs`, `name` and the inputs' `kind` and `generate` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no name, no kinds); registering the same
@@ -198,40 +198,40 @@ starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cros
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 
-Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
-or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
-the audit row.
+Both are `protected` by name only (engine spec §4.2, §6.2, §6.3). Owner decision q93: any caller may run them (a human at a
+terminal, a human in the app, an agent session), and neither asks for a typed phrase or a terminal. The CLI prints the
+preview and calls the route; the route ignores a body, so an older app that sends `{challenge, typed, heldMs}` still works.
+Approve still runs the validator and the evals first.
 
 `sindri recipe approve <file|id@hash>`:
 
 1. With a file, the CLI validates it in-process (`SND-RECIPE-001` if it fails) and checks every eval file its `evals:`
    names is present beside it (`SND-RECIPE-008` otherwise; P4 runs them at approve). It registers the file if the server
    doesn't know it yet.
-2. It asks `POST /sindri/workflow/challenges` for `approve <id> <version>` and prints the preview: id, version, hash and
+2. It reads the preview from `POST /sindri/workflow/challenges` (`approve <id> <version>`; the challenge is never redeemed) and prints it: id, version, hash and
    base; the diff against the last approved version of the id (`nothing` for a first approval); the capability uses
    (block, `from -> to`, capabilities and capability parameters); the effect kinds and their allowlist status; the pinned
    blocks with their descriptor hashes and the pinned children; the eval files. A re-approval of an approved hash also
    shows the blocks whose descriptor changed and the drift-parked instances it resumes.
-3. You type the action text, `approve workflow.step 1`. With a file, the CLI re-reads it first and refuses with
-   `SND-RECIPE-009` if it changed while you read.
+3. With a file, the CLI re-reads it and refuses with `SND-RECIPE-009` if it changed while you read, then calls the route.
 4. It prints `approved workflow.step@<hash12>`.
 
-The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
+The server refuses when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
 (`SND-RECIPE-008`) or a child it starts has no approved hash to pin (`SND-RECIPE-003`). An approved hash approved again
 with the same pins is not refused: it records nothing, sends the approve wake to its running instances again and prints
 `already approved workflow.step@<hash12>; woke N instances` (exit 0). That is the remedy for a drift-parked instance a first
-wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
-subject changed (another hash, or other pins: a child approved while you read) is `SND-RECIPE-009` and records nothing.
+wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed).
 A generated recipe whose base was revoked after it was registered is refused too (`SND-RECIPE-005`). With a file whose
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
 with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
-`sindri recipe approve-all [--json]` is the same hold for every shipped recipe at once (setup-once spec §5.3): it reads
-`GET /sindri/workflow/recipes/approve-all`, asks `POST /sindri/workflow/challenges` for `approve-all <digest6>`, prints the
-plan (each recipe and version in the order approval happens, children first, then the recipes approved one at a time), reads
-the typed phrase and posts it to `POST /sindri/workflow/recipes/approve-all`, which starts the `ApproveAllRecipes` job; the
-CLI prints the job id and `sindri jobs show <id>` (`--json`: the started job). A session or a CLI without a terminal gets
-`SND-AUTH-002`, a wrong phrase `SND-RECIPE-009`, and an empty plan prints its sentence, asks nothing and exits 2.
+**A shipped version that gains a capability (#983).** A previously approved shipped recipe whose new version adds a capability waits for its own approval: approve-all leaves it out, and nothing has registered it yet. The recipe list (`GET /sindri/workflow/recipes`, `recipe list`, and `recipe list --stale`) names that version anyway, registered or not, with its id, version, hash, standing `unapproved`, status `changed` and `gainsCapability: true`, read from the same plan the needs-you row is. The row's `cli` is `sindri recipe approve <id>@<hash>` of that version, and that exact string works pasted. `recipe approve <id>@<hash>`, its challenge (`approve <id>@<hash>` and `approve <id> <version>`) and `POST /sindri/workflow/recipes/{id}@{hash}/approve` register the version from this build's embedded set first when it is not registered (the same registration approve-all does), so the app's typed approval and the CLI reach the same approval. A hash or version this build does not ship is `SND-RECIPE-002`, as before.
+
+`sindri recipe approve-all [--json]` approves every shipped recipe at once (setup-once spec §5.3): it reads
+`GET /sindri/workflow/recipes/approve-all`, prints the plan (each recipe and version in the order approval happens, children
+first, then the recipes approved one at a time) and posts to `POST /sindri/workflow/recipes/approve-all`, which starts the
+`ApproveAllRecipes` job; the CLI prints the job id and `sindri jobs show <id>` (`--json`: the started job). No typed phrase and
+no terminal; an empty plan prints its sentence and exits 2.
 
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
@@ -251,7 +251,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 
 ### Reading
 
-- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
+- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 4 MiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
 - **All schema errors** are reported with their line and column, not just the first. When the reader's only findings
@@ -393,7 +393,7 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   which starts that Step without counting a round). A run that fails over budget still parks on it.
   **A state's budget is each round's allowance**: spend is counted by (state, loop round), a fresh allowance starts with the round, a grant applies to the
   round it answers (and raises the recipe's allowance too), and the recipe's budget is the cap over the whole instance. A round that overspends is kept and
-  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes at most 4x the original budget, and the error names that bound;
+  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes any whole number from 1, with no upper bound (owner q93, 2026-10-23; it was 4x the original budget);
   the park suggests a whole round's budget. An instance that began before the rule (Temporal patch `token-budget-per-round-v1`) keeps the pooled count.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
@@ -437,11 +437,11 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][A-Za-z0-9]{0,31}` (camelCase), the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
-| `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
+| `RCP-CHOICE-005` | A route state that routes `uncertain` to a desk twin sends it to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 10 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -531,11 +531,7 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 
    Three more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
    until DT-J, absent means today's rule), `HumanOnly` (true or absent, never false) and `HumanTrigger` (an effect that acts with a
-   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). A Step is **human-only** when its descriptor
-   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
-   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
-   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
-   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
+   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). `HumanOnly` marks a Step the owner decides: the app shows it as "only you" (`RecipeStateKind.OnlyYou`), `RCP-HUMAN-001` counts it as a human act, and a recommendation on it is dropped when it isn't one of the outcomes. It is not an authorization rule (owner q93, 2026-10-23, reworked by q100, 2026-10-24). Who may report a Step depends on who started the agent, not on which Step it is: a plain session (an agent the owner started: no launch secret) may `workflow complete` every desk Step, including the merge decision and the scoping stop. A session Sindri launched reports with its launch secret (`X-Sindri-Launch-Secret`, sent by `workflow complete` from `AW_SINDRI_LAUNCH_SECRET`), and `AgentReportAuthority` refuses that secret on a desk run with `SND-AUTH-002`, before the nonce is claimed, so a launched step child can never answer a human's Step. A session report on an instance that can't be read is refused with that read error. The command chain (`AuthorizingService`) still decides which caller classes reach `CompleteStep` (api's table).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
@@ -565,11 +561,13 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-run` | agent | `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-review` | agent | `evidenceSummary`, `built` | `match`, `mismatch` | `desktopMismatches` on mismatch |
 | `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
-| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.evidence.desk` | desk | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
 | `step.review.round` | block | `change`, `phasePacket`, `lensRounds` | `ready`, `noLens` | `lensQueue`, `lensRounds` on ready |
 | `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
 | `step.review.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings`, `behaviourWrong`, `needsOwner` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong, needsOwner; `escalation` on needsOwner |
@@ -578,14 +576,14 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.apply-answer` | agent | `change`, `review`, `escalation`, `answers` | `fixed`, `needsOwner` | `change` on fixed; `escalation` on needsOwner |
 | `step.lens.ask` | desk, human-only | `escalation` | `answered`, `stop` | `answers` on answered |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
-| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+| `step.owner.decide` | desk | - | `retry`, `stop` | `notes` on retry |
 | `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
-| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
+| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext`, `workspace`, `green` | `packed` | `handoffDraft` on packed |
 | `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
 | `step.ship.open` | desk, human-only | `handoff`, `workspace` | `opened`, `updated`, `refused` | `pr` on opened and updated (stands in for `effect.pr.open`; nothing reaches the forge) |
 | `step.ship.return` | block | `findings` | `noted` | `returnNotes` on noted |
 | `step.docs.scope` | block | `pr`, `phasePacket` | `candidates`, `none`, `disabled`, `notOpen` | `docsResult` (every outcome); `docsScope`, `prState`, `findings`, `handoffNote`, `workspace` on candidates |
-| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
+| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket`, `workspace` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
 | `step.docs.check` | block | `docsScope`, `workspace` | `pass`, `fail` | `findings` on fail |
 | `step.docs.open-pr` | desk, human-only | `pr`, `workspace` | `opened`, `updated`, `rejected` | `docsPr` on opened and updated (stands in for `effect.pr.create-stacked`; nothing reaches the forge) |
 
@@ -682,7 +680,7 @@ Shapes the spec leaves open, chosen here:
 
 Run-area files: `design-packet/` (13 files) in the design instance, `plan-packet/` (7) and `phase-packets/<phase>/` (7 each) in the plan instance, written by the evidence Steps and read by the next station through `fact:*Packet.dir`. A Step has no ledger port (a write needs a lease grant), so `line.escape`, `design.approved` and `plan.approved` rows are not written (the escapes are in `escapes.json`), the holdout sets are not sealed, and LN-CTX1's proposals to the context map are not made; `step.plan.freeze` also cannot re-run the design checks (it reads no scope), so it re-runs the plan checks and confirms the design and plan packets still hash to what the evidence checked. Also known: `DSN-XSPEC-001/-002` and `DSN-STYLE-001` only warn, `PLN-PKT-001`'s `--sizes` is not passed.
 
-`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and, since owner q93 (2026-10-23) and q100 (2026-10-24), answerable by a plain agent session; their hashes moved once when the two fields
 landed (provisional owner default). The agent runtime (engine P8) moved `step.produce`, `step.build.red`, `step.build.green` and `step.prove.holdout`; every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them). `sindri recipe list --stale` shows which approved recipes use a moved descriptor and need re-approval.
 
 ### Lens loop facts (`step.lens.log` and the lens report)
@@ -742,7 +740,7 @@ Each round queues the lenses whose `when` holds, in pack order, as `fact:lensQue
 |---|---|---|
 | `fact:phasePacket`, `fact:activePacket` | `{ hash, dir, repo? }`: the packet's frozen hash and directory; `repo` is a checkout of the repository it builds on (PKT-BASE-001 needs the base commit), which `step.build.prepare` sets to `fact:workspace` | the phase's seed (`hash`, `dir`), prepare (`repo`), amend (the child's) |
 | `fact:answers` | object `{ allow?: string[], reason?: string, revert?: string[] }`, the shape the shipped `workflow.build` evals use. `allow` holds the granted paths (repo-relative globs or `new: <path>`); amend needs at least one, and takes the owner's `reason` or the stock line `allowed at the scope desk` | prepare seeds `{}`; the scope desk writes it |
-| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` (at the desk until its fact shapes are settled) |
+| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` |
 | `fact:proofPack`, `fact:review` | each holds `head`, the commit its run covered | `step.prove.evidence`, `step.review.record` |
 | `fact:handoff` | `{ hash, dir }`: the frozen hand-off | freeze |
 | `fact:findings` | array of `{ rule, message }` | `SHIP-SHA-001` on stale |
@@ -771,14 +769,14 @@ With **no commands** (no approved profile, or a profile that lists none): red-ch
 The line spec names the facts but not their fields; these are the shapes the prove Steps on the block runtime read and write (`Aw.Sindri.Features/Prove/`, rules in `Aw.Sindri.Core/Prove/ProofChecks.cs`). They are all JSON, and a fact the instance does not hold is a Step failure or, for an optional one, a rule reported as not run.
 
 - `findings`: a list of `{rule, item, message, fix, severity}` (`severity` is `fail` or `warn`; `item` is an acceptance item id or null), the scoping findings shape as a bare list, as `step.build.prepare` seeds it.
-- `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts; `step.prove.collect` appends them (below).
+- `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts. `signals.json` is the flat list the line writes, `{signals: [{item, kind, statement, runs}]}`: intake groups it by `item`, gives a signal with no `id` the id `<item>-s<n>` (n from 1 in the item's own order) and reads `runs` as `runsAt`, the key every prove reader uses (`PhaseSignals`). A packet of another shape (the old map keyed by item id included) fails the Step with the file and the expected shape; `step.prove.collect` appends them (below).
 - `beforeAfter`: `{commit, results[{item, signal, base, head, baseScript?, headScript?}]}`, `base` and `head` being `fail` or `pass`. `holdoutResult`: `{commit, canary?, results[{scenario, item, verdict, category, observed, spent?}]}`, `verdict` being `pass` or `fail`, `canary` `clean` or `leaked`. Both start as `{commit, results: []}`.
-- `redTests` (spec A.7, §7.2): an object keyed by item id. Each value is a list of test ids (`{"i1":["T1"]}`, the short form the evals seed) or `{tests?: [id | {id, path}], appOnly?: {signal}, commit?, output?}`. `PRV-RED-001` holds when every live (not superseded) item has at least one test or an `appOnly` entry; each item without either is one finding naming it, and a value of another shape is a finding naming the item and the expected shape, never read as "no tests". `docs` and `config` phases are exempt. Whether the tests failed (BLD-RED-001) is `step.build.red-check`'s, not checked again here. `red.json` of the pack is the fact as it is.
+- `redTests` (spec A.7, §7.2): one shape, parsed by `RedTestsFact` (`Aw.Sindri.Core/Prove/`) for `step.build.red-check`, `step.prove.before-after` and `PRV-RED-001` alike, and told to the red agent by `PayloadFacts` (a shape line on `step.build.red`'s brief). An object keyed by item id, with nothing else at the top level. Each value is a list of test ids (`{"i1":["T1"]}`, the short form the recipe evals seed) or `{tests?: [id | {id, path}], appOnly?: {signal}, commit?, output?}`. The red commit is per item: red-check takes it from the items that name one and requires them to agree (none named, or two different, fails the Step; the short form is enough beside an item that names it). `PRV-RED-001` holds when every live (not superseded) item has at least one test or an `appOnly` entry; each item without either is one finding naming it, and a value of another shape is a finding naming the item and the expected shape, never read as "no tests"; red-check fails the Step the same way, naming each wrong key (it is never "red"). `docs` and `config` phases are exempt. Whether the tests failed (BLD-RED-001) is `step.build.red-check`'s, not checked again here. `red.json` of the pack is the fact as it is. `schemas/line/red-tests.json` describes this shape.
 - The canary: a result of `holdoutResult` with `kind` `canary`, or with no `item` (the canary scenario shows no visible item; BS-6's `HoldoutScenario.CanaryKind`), is not a hidden scenario. `PRV-HOLD-001` leaves it out of the count of scenarios that ran and out of the verdict failures, `PRV-HOLD-002` leaves it out of the unspent count, and the pack's `holdout.json` does not list it. `holdout.json`'s `count` in the phase packet counts the hidden scenarios without the canary.
 - `phasePacket.dir`: absolute as it is; relative, it is read under the repo's checkout (never under serve's working directory), by `step.prove.intake` and `step.prove.evidence` alike. A relative directory with no repo or no checkout fails the Step.
 - `beforeAfter` matching: a result with no `signal` matches any signal of its item.
 - `proofPack`: `{hash, dir}`, the machine-frozen proof pack (the same shape as a packet fact).
-- `step.prove.before-after` runs each live item's `base+head` signal's `script` (a relative path inside `fact:workspace`, no `..`) with bash, at the phase's `baseSha` in a scratch worktree under the run area (`before-after/base`, removed afterwards, never forced) and at the head in the workspace: the same file runs in both trees, so `baseScript` and `headScript` are equal. Exit 0 is `pass`, anything else `fail`; a signal with no usable `script` is recorded `missing` with a note (nothing run; it does not fail the Step). The outcome is `pass` only when every result is `fail` at the base and `pass` at the head. A script that cannot run (no bash, no file, a 20 minute timeout) fails the Step, which parks the instance. The Step is long (LN-WF7): its `maxDuration` is 90 minutes (`CommandStepLimits.ProveMaxDuration`), enough for two signals' scripts at the base and at the head, and inside `prove`'s 2 h state timeout, so the Step's own `timeout` ends a run first. Like every block Step it runs on the heartbeating activity.
+- `step.prove.before-after` runs each live item's `base+head` signal's `script` (a relative path inside `fact:workspace`, no `..`) with bash, at the phase's `baseSha` in a scratch worktree under the run area (`before-after/base`, removed afterwards, never forced) and at the head in the workspace: the same file runs in both trees, so `baseScript` and `headScript` are equal. Exit 0 is `pass`, anything else `fail`; a signal with no usable `script` (and no red test of its item to write one from, which needs `fact:redTests` among the Step's declared reads) is recorded `missing` with a note (nothing run) and makes the outcome `fail`. The outcome is `pass` only when every result is `fail` at the base and `pass` at the head. A script that cannot run (no bash, no file, a 20 minute timeout) fails the Step, which parks the instance. The Step is long (LN-WF7): its `maxDuration` is 90 minutes (`CommandStepLimits.ProveMaxDuration`), enough for two signals' scripts at the base and at the head, and inside `prove`'s 2 h state timeout, so the Step's own `timeout` ends a run first. Like every block Step it runs on the heartbeating activity.
 - `step.prove.fail-log` keeps the findings the instance holds, adds one `PRV-BA-001` per before/after result that did not fail at the base and pass at the head, and one `PRV-HOLD-001` per hidden scenario that did not pass (by item and the observed line, never the scenario's id or text; spec §9.3), never the same rule and item twice; with nothing recorded it adds `PRV-FAIL-001`.
 - `step.prove.evidence` reads exactly its descriptor's six facts (`phasePacket`, `built`, `proof`, `redTests`, `beforeAfter`, `holdoutResult`), and the runner hands it nothing else (`proof` was missing from the descriptor until this fix, so it never reached the Step and every phase parked). `PRV-ACC-001` and `PRV-SHA-001` need `proof`'s artifacts and have no structural cover in the recipe, so without them **the Step fails** (`ProofReport.Unrunnable`, `ProofChecks.Required`): an unrouted `step.failed` parks the instance for the owner, nothing is frozen and the phase is not proven (LN7). Until something writes the artifacts into `proof` and the descriptor reads it, the evidence Step therefore parks every phase for the owner. `PRV-APP-001` needs the hand test and verify results (`manualTest`, `evidencePack`, which the descriptor does not read), and `PRV-HOLD-003` needs `holdoutResult.canary`: the recipe guarantees both structurally (evidence-pack is reached only after the hand-test and verify children resolve, and holdout-log routes `leaked` to fail-log), so each is reported **not run**, listed in the pack's `proof.json` under `notRun`, and is a warning, not a failure. `PRV-HOLD-002` uses a minimum of 2 until the profile key `workflow.prove.holdoutMin` exists. A phase of kind `docs` or `config` needs no application run and may have no red tests. `PRV-NP-001` is met by construction: `not-proven.md` lists every planned signal no passing head artifact names (by `signal`), or says `nothing skipped`. A pack that aw-packets refuses is the Step's own output, which the builder cannot fix: the Step fails with aw-packets' failed checks as the message instead of sending findings back to build.
 - `step.prove.collect` (BS-13) runs between the evidence child and `before-after`. A child's fact (`manualTest`, `evidencePack`, `evidenceSummary`) names the files it produced as `{artifacts: [path | {path, kind?, item?, signal?, passing?}]}`; a relative path is read under `fact:workspace`. The Step hashes each file itself (`IArtifactFiles`, SHA-256 of the bytes), stamps `commit` with `fact:built`'s head and `at` with the clock, and takes `passing` from the child's own record (true unless the entry says `false`: the recipe reaches `collect` only after all three children resolved). A file with an `item` backs that item; one with a `signal` backs the items that hold the signal; one with neither backs every item of the phase (the hand test and the verify journey walk the whole phase). Default kinds are `app-run`, `verify` and `ui-evidence`/`evidence` by source. A file that is missing or unreadable, and a fact that names none, add nothing: the item keeps its empty list and `PRV-ACC-001` names it. An artifact already in `proof` from an older head stays, so `PRV-SHA-001` still catches it. The children's `next:` text asks each to end its report with `artifacts` (workspace-relative paths, never a hash or a commit), so `workflow.hand-test`, `workflow.verify` and `workflow.evidence-ui|api|db` each go up one version; `step.evidence.combine` keeps the three summaries whole, so `collect` also reads the `artifacts` of the combined summary's `ui`, `api` and `db` parts (kinds `ui-evidence`, `api-evidence`, `db-evidence`). Collecting twice on one head adds a file once. `workflow.prove` is version 4 for the new `collect` state, so it needs re-approval after the merge (it rides the approve-all). Decisions tabled for the owner and taken provisionally (reversible): Sindri hashes the files itself; a missing file ends the phase `incomplete` (back to the builder), not parked for the owner; the children's prompts changed.
@@ -793,6 +791,8 @@ family and review-loop) are listed with their inputs, outputs and terminals in `
 `issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
 (every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
 `payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
+
+`workflow.evidence-desktop` is the desktop-app leaf the `desktop` choice of `workflow.evidence` waits on. It runs two agent Steps: `step.evidence.desktop-run` follows the state's `next:` text to run the ui-evidence `desktop-run` verb on the repo's screens manifest (exit 0 is `passed`, 2 `failed`, anything else `broken`), then `step.evidence.desktop-review` compares each screen's app frame with its mockup frame, skips the differences the manifest lists as accepted, and reports `match` or `mismatch` (the list goes in `desktopMismatches`). A broken run repairs and reruns at most once (`repairs` cap 2, on purpose: a desktop run launches the real app; `workflow.evidence-ui` allows 4). Both Steps are agent Steps with no runtime of their own, so there is no `deps.yaml` edge. `workflow.evidence` goes to version 3 and the new recipe is version 1, so the owner re-approves with one approve-all.
 
 ## Writing a decision tree
 
@@ -992,7 +992,7 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 |---|---|---|
 | Workflow input | `InstanceStart`: the recipe `RecipeVersion (id, version, hash)`, the item, the attempt, the input facts (`InputFact`: the file name status shows, and the stored `FactValue`), the tenant and the ring | `Aw.Sindri.Core/Workflow/Engine/Runtime` |
 | Workflow id | The address, `InstanceStart.WorkflowId()` (`{item}/{recipe-name}/{attempt}`) | same |
-| `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
+| `GetInstance` Query | `InstanceView`: the state, its detail and since, `next`, `allowedCommands` as `AllowedCommand` (`{ actionId, cli }`, UI E-13, and `verb` on a recipe verb: see below), the open `OpenQuestion` or `DeskTask` (the Step's declared outcomes and outputs, the inputs, when the timeout fires), the run token, the children and the outcome. `InstanceViews.Of` builds it, and it is pure | same |
 | Updates (§5.2) | `complete(StepCompleted)`, `answer(AnswerGiven)`, `command(CommandFired)`, `cancel(CancelRequested)`, `takeover(TakeoverRequested)`, `handback(HandbackRequested)`, `open-request(OpenRequested)` (update id `wf:{instance}:open:{launch}`, from the engine). Each has a `[WorkflowUpdateValidator]` and returns `CommandResult` (the view after the command, and what happened). The update id is the nonce | `RecipeWorkflow` |
 | Desk Step (rev 8.1 §5.3) | `RunStep` is a short activity with id `run:{token}:{n}`. The workflow then waits for the `complete` Update, bounded by the state's timer (`TimerScopes`), the state's timeout raised to `workflow.deskTimeout`; the expiry always parks `timeout` | `RecipeWorkflow.RunStep`, `RunStepActivities` |
 | Events (§5.4) | The `event` signal carries a `WaitSatisfied` | `RecipeWorkflow.EventAsync` |
@@ -1001,8 +1001,10 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 | Items | `IItems.Resolve` (an ItemId or a tracker alias). The stub `SelfItems` stands in until API P3 lands | Core port; `Aw.Sindri.Workflows` |
 | Approved recipes | `IApprovedRecipes` (`Latest`, `Find`, `Check`) is the minimal read port the interpreter and the start and command slices use. `RegistryApprovedRecipes` implements it over P2's registry (`IRecipeStore`, `IRecipeApprovals`): a recipe starts only when it is registered and its latest approval isn't revoked (`SND-RECIPE-003`) | `Aw.Sindri.Core/Workflow/Registry` |
 
+**Recipe verbs in `allowedCommands` (PR babysitter spec API18).** Each `command.<verb>` transition out of the instance's current state is one more entry, in recipe order and once per verb: `{ actionId: "ApplyCommand:command", cli: "sindri workflow command <address> <verb>", verb: "<verb>" }`. They come after the answers and `CompleteStep` and before `handback`, `takeover` and `cancel`. The other entries carry no `verb` (the key is omitted). A taken-over instance lists none (the human has it) and an ended one lists none at all. One generic desk row serves every verb (owner ruling), so the app builds one button per entry from its `verb`. A verb whose transition carries a human-trigger effect (the babysitter's `merge`; `rework` carries none) is listed too: the server refuses an agent session's call with `SND-AUTH-002`, and the entry says `destructive: true` (a `bool?` written only when true), set when any `command.<verb>` transition out of the current state has an effect whose block descriptor has `HumanTrigger`, so the app reads the data, not the verb's name. If a verb ever needs its own `ApplyCommand:command-<verb>` catalog row (another class, or destructive), that entry should carry that action id instead; no such row exists yet.
+
 The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. Every Update on this path is built,
-including `takeover`, `handback` and the engine's `open-request` (P5). A rejected
+including `takeover`, `handback` and the engine's `open-request` (P5). A takeover that applies then opens the Step's live session in the launcher's viewer and says what came of it on the response (`viewer`) and as `launch.takeover-opened` ([sindri-launcher.md](sindri-launcher.md) "Background launches and takeover"). A rejected
 Update records nothing. `RecipeWorkflowTests` pins the interface (the desk task 1.1 with its declared outcomes through
 the Query, `allowedCommands`, the ledger key, and replay), and `PhaseFourSignalTests` (integration) is phase 4 signal 1:
 start `workflow.step` on an item, then status shows the desk task with run 1.1.
@@ -1073,7 +1075,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
-  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and a parent's view lists its live children, each with the state that child answers now (engine P7); a child the status read cannot reach shows the state `unreachable`, never its last known one); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none. A mirrored needs-answer or budget park (the mirror holds the child's reason, so its answer is known) names the child's own answer command in its status `answer` line (`sindri workflow answer <child> --text <answer>`, `--resume [--text <answer>]` on a wait park, `--grant-tokens <n>` at a terminal), noted `(the child's own; <address> forwards it)`, with `via: "child"` and `child` kept and the needs-you row built by the same rule; a mirrored spec-conflict and a child's escalation, whose park or escalation kind the mirror does not hold, keep the pointer, and that status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and a parent's view lists its live children, each with the state that child answers now (engine P7); a child the status read cannot reach shows the state `unreachable`, never its last known one); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A needs-you row for a nested park (a parked descendant below the root, which itself mirrors nothing) keeps `via: "child"` and `child`, but its cli, answer kind and action are that descendant's own answer at its address (`sindri workflow answer <descendant> --resume` on a refused dispatch, `--text <answer>` on a needs-answer), so a terminal user can run it there; only a descendant with no answer of its own (a drift) keeps the placeholder. The same holds for a root whose own answer is marked `via: "child"` (a mirror, whether it points at the child or names the child's own command): once a parked descendant is known, its needs-you row describes the deepest one, with that descendant's own answer at its address (the status `answer` line keeps the root's own). A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
 - **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
   next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
   `takenOverAt` (ISO time, written only while the instance is taken over: the time it entered `taken-over`, which is the header's `since`) lets a client say "took over at 14:05 (2h 35m ago)".
@@ -1139,10 +1141,8 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `RCP-BLOCK-001` at `recipe validate` and at register.
 - **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
-  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
-  answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
-  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject `instance:<address>@v<version>`, the
-  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
+  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); a protected
+  answer (`--grant`, `--grant-tokens`, `--accept`) is checked like any other: no challenge is redeemed (owner decision q93; the request's `challenge` is ignored); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
   then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
   Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
   an answer prints the resume action it ran (`resumed (transition): -> produce`).
@@ -1175,7 +1175,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 
 ## Step inputs at run time
 
-Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`, 60 s, 3 attempts), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
+Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`; it heartbeats every 15 s and fails only after 2 minutes of silence or 30 minutes in all, retries included, with up to 3 attempts for a transient failure; a timeout is `SND-WF-020`, named with the seconds), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
 
 - **No text is stored.** The activity returns `{section, input, bytes, sha256}` per section and the size and digest of the typed result; that metadata is all Temporal records. The text lives in `MemoryInjectionTexts`, keyed by instance address, state, run token and input, bounded (64 entries, 8 MiB), dropped when a newer run of the instance arrives, and never persisted or logged. A history recorded before the `step-inputs-v1` patch replays without filling.
 - **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
@@ -1258,8 +1258,9 @@ Unit (b), as built:
   `IApprovedProfile.Latest`, never the live file. It reads `workflow.effects` straight from `WorkflowSettings.Effects`
   (unit (d) validates the key; an id that doesn't parse is not allowlisted). A read that fails throws, so the local
   activity retries; a running recipe with no approval row is treated as revoked. Engine-origin effects read neither.
-- **`EffectRules.Recheck`** is pure: an engine-origin `effect.notify.desk` passes; any other engine-origin kind is
-  `SND-WF-011` (`Engine_origin_limited_to_notify_desk`); a recipe effect is `SND-RECIPE-005` when revoked,
+- **`EffectRules.Recheck`** is pure: an engine-origin `effect.notify.desk` passes, and so does `effect.line.report` (LN-WF1: a linked
+  instance's report to its line); any other engine-origin kind is
+  `SND-WF-011` (`Engine_origin_limited_to_notify_desk_and_the_line_report`); a recipe effect is `SND-RECIPE-005` when revoked,
   `SND-RECIPE-006` when drifted, and `SND-WF-011` when its kind isn't allowlisted or the approved profile has no
   `workflow.effects` (or none is approved).
 - **The refusal** writes `outbox.refused` (code and reason) and hands the loop `OutboxRefused`, which carries the
@@ -1357,7 +1358,7 @@ Unit (c), as built:
 Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 
 - **`workflow takeover <address>`** (also `sindri takeover <item-or-address>`, a bare item being the root of its latest attempt; class `pause`: an agent session may take over, so the attach hook works) and
-  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`) are `ApplyCommand` kinds
   `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
   the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
   that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has
@@ -1390,7 +1391,7 @@ A Step whose descriptor says `runtime: block` and that has a registered `IBlockS
 opens a run with no launch and no desk task, calls the `RunBlockStep` activity (one attempt, no retry; heartbeating so a
 `cancel` is delivered) and feeds the result back as `step.completed` (actor `service:block:<step>`), validated like a
 desk report. An invalid result, a failure or a run past the descriptor's `maxDuration` becomes `step.failed`; the route
-sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run and stays human-only.
+sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run; a plain session may answer it (owner q93/q100).
 
 - **A desk report on a block run is refused** (`SND-WF-003`): the engine runs this Step, so only its own result applies. The
   human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:
@@ -1455,9 +1456,29 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 - **A failed launch counts no round:** a launch that never started a session ends the run as `step.failed` with reason `launch`
   (`StepFailed.LaunchReason`); when the recipe's failed transition re-enters the looped state, the round stays, and the loop
   counts the failure in `LoopState.LaunchFailures` (a counted round resets it). The third in a row (`LoopRules.MaxLaunchFailures`)
-  parks the instance with `needs-answer` (kind step, resume `rerun`) and the last launch error as the question. The decision
+  parks the instance as `unavailable` (see "A dependency that is down" below; `needs-answer` in a history from before that park) with the last launch error in
+  the question. The decision
   is `TransitionDecision`'s re-entry; `Workflow.Patched("launch-failure-keeps-round-v1")` (after `ln-wf3-heavy-slot`) sets
   `DecisionContext.LegacyLaunchRound` for a history recorded without it, which counts the round as it did.
+- **A dependency that is down (the `unavailable` park):** a Step failure no transition takes (every unmatched `step.failed`: a
+  session that exited or was lost, a launch that failed, an input that threw, a block Step that failed or timed out) is a
+  dependency being down, which no human can answer, so it is never a `needs-answer` question. The engine runs the Step again,
+  a new run in the same entry with no loop round counted (`OpenRun.Retries`, `Unavailables.MaxRetries` = 2 reruns, three tries
+  in all, as many as a launch gets); the third failure parks the instance with `ParkReason.unavailable` (kind step, resume
+  `rerun`). The park's words name the dependency, the retries and the last error (`step.produce is unavailable after 2
+  retries; the last error: exit`); `StepFailed.Dependency` names the dependency where the runtime knows it (an input's block
+  id, `the agent launcher`; the Step itself otherwise), and `StepFailed.Code` (or `BlockStepResult.Unavailable`'s code) becomes the
+  park's `Suspension.Code`, served as the status's `reasonCode` (`SND-LAUNCH-007`, `SND-WF-016` …; none when the failure had
+  no typed code). `answer --resume` runs the Step again and starts the retries from 0; it is the only answer (served through the
+  status's `allowedCommands` as `answer-resume`, plus `open` for the instance), `--text` does not fit. The park asks no one:
+  it makes no needs-you row and no desk task, sends no notice, leaves the `NeedsYou` search attribute off, the item reads
+  `running` (not `waitingOnYou`) in the queue, and its resume is no human time in the stats (it is counted under the park
+  reason `unavailable`). `GET /status` shows it instead: `HealthSummary.WithUnavailable` makes a healthy report `degraded`
+  with `SND-ENGINE-003` ("N workflow instances wait on a dependency that is down"), counted from the items view
+  (`EngineItemPart.Reason`). Not changed: a gate refusal or a failed evidence check still re-runs below the cap and parks
+  `needs-answer` or `rounds` past it, a wait that refuses still parks `needs-answer`, and a Step input with no runtime still parks
+  `SND-WF-010`. `Workflow.Patched("step-unavailable-v1")` (last in `Begin`) sets `DecisionContext.LegacyUnavailable` for a
+  history recorded without it, which parks `needs-answer` at once as it did.
 - **The phase worktree (LN-WF2):** an instance that holds `fact:workspace` launches every agent Step in that path instead of a
   per-run worktree (`AgentLaunches.RequestFor`'s `workspace`), and the launcher sets `AW_SINDRI_WORKTREE` to it. A line phase's
   `seed` makes the worktree and passes it to `build`, `prove`, `review-loop` and `pr-babysitter`; docs sync's own `fact:workspace`
@@ -1488,6 +1509,9 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 
 - **The board.** `step.line.seed` writes `fact:phaseBoard` after the plan freezes: one row per phase in plan order (state `waiting`, attempt 0, its dependencies). `step.line.dispatch` folds the last `fact:phaseEvent` and the owner's `fact:boardEdit` into it (`PhaseBoard`, pure), then reports `start`, `full`, `done` or `blocked`.
 - **Which phase starts.** The first `waiting` phase in plan order whose dependencies are all merged (built on the default branch), or exactly one of which is unmerged and `shipped` with its head branch known (stacked on that branch). A failed phase blocks the line for the owner. `workflow.line.parallel` (default 2) caps running phases; `workflow.line.maxOpenPrs` (default 4) caps shipped, unmerged ones; at either cap, or with nothing ready while a phase runs, it reports `full` and the line waits in `building`.
-- **Starting.** The `start` transition carries `effect.line.start-phase` with `recipe: workflow.phase`. It starts `workflow.phase` as a linked instance at `{line}/phase.<id>.<attempt>` (idempotent by that address; a retry is the next attempt), pinned and approved with the line like a child, with `fact:phasePacket` (the plan's packet entry plus its `base` and `stackParent`) and the line's `fact:lineContext`. It replies `started`.
-- **Events.** `line.phaseChanged` is routed to the linked parent (`route: parent`; an effect run by the line itself, like the start, answers the line). Outcomes: `started`, `shipped`, `parked`, `resumed`, `merged`, `ended`, `failed`. `fact:phaseEvent` is `{ line, phase, attempt?, status, instance, at }`; the attempt is the instance address's when absent. `effect.line.report` replies `shipped`, `merged` and `failed`; because `merged` is also an outcome of `pr.mergeResult` and `pr.docsMerged`, an effect names its reply event in `EffectDone.Event` when more than one declares its outcome. `workflow.phase` reports `failed` when the owner stops it.
-- **The owner.** A failed phase sends the line to `step.line.decide`: `retry` (the next attempt), `skip` (the phase and, transitively, its dependents) or `stop` (the line ends `failed`). `ticks` (cap 400) bounds the dispatch loop.
+- **Starting.** The `start` transition carries `effect.line.start-phase` with `recipe: workflow.phase`. It starts `workflow.phase` as a linked instance at `{line}/phase.<slug>.<attempt>`, where the slug is the plan's phase id lowercased with each run of other characters as one hyphen (`P1` is `p1`, `WS 2_b` is `ws-2-b`; the facts and the reply keep the plan's id, and two ids with the same slug would share an address), idempotent by that address (a retry is the next attempt), pinned and approved with the line like a child, with `fact:phasePacket` (the plan's packet entry plus its `base` and `stackParent`) and the line's `fact:lineContext`. It replies `started`.
+- **Events.** `line.phaseChanged` is routed to the linked parent (`route: parent`; an effect run by the line itself, like the start, answers the line). Outcomes: `started`, `shipped`, `parked`, `resumed`, `merged`, `ended`, `failed`. `fact:phaseEvent` is `{ line, phase, attempt?, status, instance, at }`; the attempt is the instance address's when absent. `effect.line.report` replies `shipped`, `merged` and `failed` (the phase recipe sends them) and, sent by the engine, `parked`, `resumed` and `ended`; because `merged` is also an outcome of `pr.mergeResult` and `pr.docsMerged`, an effect names its reply event in `EffectDone.Event` when more than one declares its outcome. `workflow.phase` reports `failed` when the owner stops it.
+- **The engine's reports (gap 1).** A linked instance (its address has the linked form, `InstanceAddress.LinkedParent()` is not null) tells its line when it parks (a park or an escalation), resumes or ends: `Emit` adds one engine-origin `effect.line.report` (`LinkedPhaseReports.For`), like a notice (no dispatch delay, no recheck), whose reply's causer is the linked instance, so `route: parent` reaches the line. The payload's `phase` is the plan's id ("P1") read from the instance's `fact:phasePacket`, never the address slug; it also adds `attempt` (the address's), `parkReason` on `parked`, and on `ended` `ended` (the terminal outcome: `PhaseBoard` reads `resolved` as merged and anything else, `cancelled` included, as failed) and `packet`: the sha256 of the linked instance's `fact:phasePacket` input. Amendments (LN-PKT1) don't exist yet, so that is the packet the phase started with, not the newest. The identity is `{instance}:{entry}:n{version}.l`, one per change, so a phase that parks and resumes twice reports four times. The report of a cancelled end is not stopped by that cancel. A Temporal-level cancel of the workflow (not the `cancel` command) ends without a transition and reports nothing.
+- **Linked instances are not roots.** The `Root` search attribute is false for a linked instance as it is for a child, so `list --root true` shows the line and not its phases.
+- **Cancel cascades.** An instance that ends `cancelled` sends `parentCancel` to each live instance linked to it (the `LiveLinked` activity: the live instances of its item whose `LinkedParent()` is it), as it does to its Temporal children, so each records its own `cancelled`. A line that ends any other way has no live phase. All three are behind the patch `ln-wf1-linked-phase-events`.
+- **The owner.** A failed phase sends the line to `step.line.decide`: `retry` (the next attempt), `skip` (the phase and, transitively, its dependents) or `stop` (the line ends `failed`). `ticks` (cap 5000) bounds the dispatch loop.

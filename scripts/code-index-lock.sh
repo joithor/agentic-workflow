@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # scripts/code-index-lock.sh — check the shape of context/code-index.lock, the pins the Sindri code index is built from
-# (spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9), and its parity with sindri/package.json.
+# (spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9), and its parity with context/graphify.pin.
 #
-# Usage: scripts/code-index-lock.sh check [--file F] [--requirements F] [--package F]
+# Usage: scripts/code-index-lock.sh check [--file F] [--requirements F] [--pin F]
 #        scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes> [--file F]
 #   check  every row is well formed, there is exactly one graphify, one ollama-model and one need disk-bytes row, the sha256 of the
 #          requirements file (default: code-index-requirements.txt next to the lock) is the graphify row's, and the graphify version
-#          and date equal sindri/package.json's sindri.graphifyPin and sindri.graphifyPinDate. Prints one line per problem:
-#          'CODEIDX-LOCK-00n <line>: <what>'. Needs jq for the package.json parity.
+#          and date equal context/graphify.pin's graphify row (default: graphify.pin next to the lock).
+#          Prints one line per problem: 'CODEIDX-LOCK-00n <line>: <what>'.
 #   get    print one pinned value (what scripts/install-deps.sh reads); runs no check, prints nothing and exits 1 when the row is absent.
 # Rows (whitespace-separated; '#' comments and blank lines are ignored):
 #   graphify <version> <exclude-newer-date> <requirements-sha256>   exactly one; version X.Y.Z, date YYYY-MM-DDTHH:MM:SSZ
@@ -18,7 +18,7 @@
 #   a line holds no NUL, CR, VT or FF (the lock is LF-only).
 # Codes: 001 graphify row (missing, repeated, bad version or date), 002 a malformed value, 003 ollama-model row (missing, repeated),
 #        004 need row (missing, repeated, not a number), 005 unknown row kind or need name, 006 the requirements file is missing or its
-#        sha256 differs from the graphify row, 007 the graphify row differs from sindri/package.json.
+#        sha256 differs from the graphify row, 007 the graphify row differs from context/graphify.pin (or the pin file is missing or has no graphify row).
 # Exit: 0 ok, 1 a check failed, 2 usage or I/O error.
 # Bash 3.2 compatible (macOS /bin/bash).
 set -euo pipefail
@@ -30,17 +30,18 @@ usage() { sed -n '5,6p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; 
 cmd="${1:-}"; { [ "$cmd" = "check" ] || [ "$cmd" = "get" ]; } || usage; shift
 key=""
 if [ "$cmd" = "get" ]; then key="${1:-}"; [ -n "$key" ] || usage; shift; fi
-file="$ROOT/context/code-index.lock"; reqs=""; pkg="$ROOT/sindri/package.json"
+file="$ROOT/context/code-index.lock"; reqs=""; pin_file=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --file) file="${2:?--file needs a path}"; shift 2 ;;
     --requirements) reqs="${2:?--requirements needs a path}"; shift 2 ;;
-    --package) pkg="${2:?--package needs a path}"; shift 2 ;;
+    --pin) pin_file="${2:?--pin needs a path}"; shift 2 ;;
     *) usage ;;
   esac
 done
 [ -r "$file" ] || { echo "code-index-lock: cannot read $file" >&2; exit 2; }
 [ -n "$reqs" ] || reqs="$(dirname "$file")/code-index-requirements.txt"
+[ -n "$pin_file" ] || pin_file="$(dirname "$file")/graphify.pin"
 
 if [ "$cmd" = "get" ]; then
   LC_ALL=C awk -v k="$key" '
@@ -108,7 +109,7 @@ out="$(LC_ALL=C awk '
 ' "$file")" || rc=1
 [ -z "$out" ] || printf '%s\n' "$out"
 
-# The requirements file the graphify row hashes, and the TS pin it must equal (only when the row itself parsed).
+# The requirements file the graphify row hashes, (only when the row itself parsed).
 want_sha="$(awk '$1 == "graphify" && NF == 4 { print $4; exit }' "$file")"
 if [ -n "$want_sha" ]; then
   if [ ! -r "$reqs" ]; then
@@ -119,16 +120,16 @@ if [ -n "$want_sha" ]; then
       echo "CODEIDX-LOCK-006 0: $(basename "$reqs") has sha256 $got_sha, the graphify row says $want_sha"; rc=1
     fi
   fi
-  if [ ! -r "$pkg" ] || ! command -v jq >/dev/null 2>&1; then
-    echo "code-index-lock: needs jq and a readable $pkg" >&2; exit 2
+  if [ ! -r "$pin_file" ]; then
+    echo "code-index-lock: cannot read $pin_file" >&2; exit 2
   fi
-  pin="$(jq -r '.sindri.graphifyPin // empty' "$pkg")"; pin_date="$(jq -r '.sindri.graphifyPinDate // empty' "$pkg")"
+  pin="$(awk '$1 == "graphify" && NF == 3 { print $2; exit }' "$pin_file")"; pin_date="$(awk '$1 == "graphify" && NF == 3 { print $3; exit }' "$pin_file")"
   lock_ver="$(awk '$1 == "graphify" && NF == 4 { print $2; exit }' "$file")"; lock_date="$(awk '$1 == "graphify" && NF == 4 { print $3; exit }' "$file")"
   if [ "$pin" != "$lock_ver" ]; then
-    echo "CODEIDX-LOCK-007 0: graphify version is $lock_ver, sindri/package.json's sindri.graphifyPin is ${pin:-absent}"; rc=1
+    echo "CODEIDX-LOCK-007 0: graphify version is $lock_ver, context/graphify.pin's is ${pin:-absent}"; rc=1
   fi
   if [ "$pin_date" != "$lock_date" ]; then
-    echo "CODEIDX-LOCK-007 0: graphify date is $lock_date, sindri/package.json's sindri.graphifyPinDate is ${pin_date:-absent}"; rc=1
+    echo "CODEIDX-LOCK-007 0: graphify date is $lock_date, context/graphify.pin's is ${pin_date:-absent}"; rc=1
   fi
 fi
 exit "$rc"

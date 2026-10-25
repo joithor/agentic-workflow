@@ -109,7 +109,7 @@ public sealed class OnyxStatusTests
         Assert.Equal("v4.9.0", status.PinnedVersion);
         Assert.Equal(40, status.PinnedCommit.Length);
         Assert.Equal(0, status.ExitCode);
-        Assert.Equal(3000, status.Port);
+        Assert.Equal(3189, status.Port);
         Assert.Equal(["docker", "compose", "memory", "disk", "port"], status.Checks.Select(static c => c.Name), StringComparer.Ordinal);
         Assert.All(status.Checks, static c => Assert.Equal(CheckState.Ok, c.State));
         Assert.Null(status.Url);
@@ -134,9 +134,9 @@ public sealed class OnyxStatusTests
         var status = await Status(rig);
 
         Assert.Equal(OnyxState.Running, status.State);
-        Assert.Equal("http://127.0.0.1:3000", status.Url);
+        Assert.Equal("http://127.0.0.1:3189", status.Url);
         Assert.Equal("v4.9.0", status.RunningVersion);
-        Assert.Equal(3000, status.Port);
+        Assert.Equal(3189, status.Port);
         Assert.Equal(0, status.ExitCode);
     }
 
@@ -147,14 +147,14 @@ public sealed class OnyxStatusTests
         rig.Workspace.State = rig.Workspace.State! with { Port = 3005 };
         rig.Health.Probed.Clear();   // up's own health wait probed already
         var nginx = rig.Runtime.Containers.Single(static c => c.Service == "nginx");
-        rig.Runtime.Containers[rig.Runtime.Containers.IndexOf(nginx)] = nginx with { Publishers = [new ComposePublisher("127.0.0.1", 3001, 80)] };
+        rig.Runtime.Containers[rig.Runtime.Containers.IndexOf(nginx)] = nginx with { Publishers = [new ComposePublisher("127.0.0.1", 3190, 80)] };
 
         var status = await Status(rig);
 
         Assert.Equal(OnyxState.Running, status.State);
-        Assert.Equal(3001, status.Port);
-        Assert.Equal("http://127.0.0.1:3001", status.Url);
-        Assert.Equal([3001], rig.Health.Probed);
+        Assert.Equal(3190, status.Port);
+        Assert.Equal("http://127.0.0.1:3190", status.Url);
+        Assert.Equal([3190], rig.Health.Probed);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -186,7 +186,7 @@ public sealed class OnyxStatusTests
     public async Task Status_is_not_set_up_without_a_done_start_step()
     {
         var rig = await RunningRig();
-        rig.Workspace.WriteState(new OnyxSetupState(3000, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Fetch] = "x" }));
+        rig.Workspace.WriteState(new OnyxSetupState(3189, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Fetch] = "x" }));
 
         Assert.Equal(OnyxState.NotSetUp, (await Status(rig)).State);
     }
@@ -216,13 +216,13 @@ public sealed class OnyxStatusTests
     public async Task Status_shows_the_own_port_not_taken_while_running()
     {
         var rig = await RunningRig();
-        _ = rig.Probes.TakenPorts.Add(3000);
+        _ = rig.Probes.TakenPorts.Add(3189);
 
         var status = await Status(rig);
 
         var port = Assert.Single(status.Checks, static c => c.Name == "port");
         Assert.Equal(CheckState.Ok, port.State);
-        Assert.Equal("3000 (Onyx's own)", port.Detail);
+        Assert.Equal("3189 (Onyx's own)", port.Detail);
         Assert.Equal(0, status.ExitCode);
     }
 
@@ -238,6 +238,22 @@ public sealed class OnyxStatusTests
         var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
         Assert.Equal(1, status.ExitCode);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_does_not_wait_for_a_starting_OrbStack_and_names_its_fix()
+    {
+        // Status is read-only and fast: one inspection, no wait, the fix in the row (only `onyx up` waits).
+        var rig = new OnyxUpRig();
+        rig.Runtime.Facts = FakeContainerRuntime.Starting with { Endpoint = "unix:///Users/u/.orbstack/run/docker.sock" };
+        var begun = rig.Clock.GetUtcNow();
+
+        var status = await Status(rig);
+
+        var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
+        Assert.Contains("`orb restart`", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Equal(1, rig.Runtime.Calls.Count(static c => c == "Inspect"));
+        Assert.Equal(begun, rig.Clock.GetUtcNow());
     }
 
     [Fact, Trait("Lane", "unit")]

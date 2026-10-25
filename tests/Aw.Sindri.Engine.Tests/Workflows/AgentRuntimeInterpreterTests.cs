@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing.Workflow;
@@ -46,7 +47,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
     }
 
     [Fact(Timeout = 120_000)]
-    public async Task A_session_that_ends_without_a_report_is_step_failed_exit()
+    public async Task A_session_that_ends_without_a_report_is_step_failed_exit_and_the_Step_runs_again()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var rig = await Rig(ct);
@@ -54,13 +55,50 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
             await Launched(ct);
-            _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 1);
+            var first = rig.Launch;
+            _sessions.End(first, SessionEndReason.Exit, exitCode: 1);
+
+            Assert.Equal("exit", await rig.FailureReason(ct));
+            await WaitFor(() => _launcher.Requests.Count == 2, ct);   // the engine runs the Step again, and asks no one
+            await WaitFor(() => _launcher.Stops.Contains(first), ct);   // the run closed, so its session is stopped
+            Assert.Null((await handle.QueryAsync(static wf => wf.GetInstance())).Question);
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task Three_sessions_that_end_without_a_report_park_the_Step_as_unavailable_not_as_a_question()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            await EndEveryRun(SessionEndReason.Exit, exitCode: 1, ct);
+
+            var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
+
+            Assert.Equal(ParkReason.Unavailable, parked.Question?.Reason);
+            Assert.Contains("unavailable after 2 retries", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Equal(3, _launcher.Requests.Count);
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_session_ended_for_a_refused_report_fails_the_Step_with_the_refusal_in_the_question()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            var refusals = rig.Sindri.GetRequiredService<ReportRefusals>();
+            await EndEveryRun(SessionEndReason.Exit, exitCode: 0, ct, launch => refusals.Record(launch, "fact:design is a payload, so it must be a JSON object or array, and it isn't JSON at all"));
 
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
             Assert.Equal("exit", await rig.FailureReason(ct));
-            Assert.Equal(ParkReason.NeedsAnswer, parked.Question?.Reason);
-            await WaitFor(() => _launcher.Stops.Contains(rig.Launch), ct);   // the run closed, so its session is stopped
+            Assert.Contains("the last error: exit: fact:design is a payload", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Contains("isn't JSON at all", parked.Question?.Question, StringComparison.Ordinal);
         });
     }
 
@@ -72,8 +110,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
         await rig.Run(async handle =>
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
-            await Launched(ct);
-            _sessions.End(rig.Launch, SessionEndReason.Lost);
+            await EndEveryRun(SessionEndReason.Lost, exitCode: null, ct);
 
             _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
@@ -99,11 +136,11 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
         using var second = rig.Worker();
         await second.ExecuteAsync(async () =>
         {
-            _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 0);
-            _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
+            var first = rig.Launch;
+            _sessions.End(first, SessionEndReason.Exit, exitCode: 0);
 
-            Assert.Equal("exit", await rig.FailureReason(ct));
-            _ = Assert.Single(_launcher.Requests);   // the replay launched nothing
+            Assert.Equal("exit", await rig.FailureReason(ct));   // the engine then runs the Step again, a new run with its own launch
+            _ = Assert.Single(_launcher.Requests, r => r.Launch == first);   // the replay launched nothing for the first run
             await AgentRig.Replayed(handle);
         }, ct);
     }
@@ -151,13 +188,13 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             await WaitFor(() => _launcher.SessionCount == 1, ct);
             Assert.Equal(1, _launcher.SessionCount);   // one live session, however often the launch was requested
             Assert.Empty(_launcher.Stops);   // and the handback stopped nothing
-            _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 0);   // the resumed watch sees it
+            var first = rig.Launch;
+            _sessions.End(first, SessionEndReason.Exit, exitCode: 0);   // the resumed watch sees it
 
-            _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
-            var reason = await rig.FailureReason(ct);   // waits for the mirror row that follows the park
+            var reason = await rig.FailureReason(ct);   // waits for the mirror row of the failure
 
             Assert.Equal("exit", reason);
-            _ = Assert.Single(_launcher.Requests.Select(static r => r.Launch).Distinct());   // a relaunch after the handback is the same launch id, which the launcher keeps idempotent
+            Assert.Equal(first, _launcher.Requests.Select(static r => r.Launch).First());   // a relaunch after the handback is the same launch id, which the launcher keeps idempotent
         });
     }
 
@@ -186,7 +223,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
     public async Task A_failed_launch_is_step_failed_launch_and_the_launchers_words_reach_the_question()
     {
         var ct = TestContext.Current.CancellationToken;
-        _launcher.FailNextWith(SindriErrors.LaunchAgentMissing.With("the agent is gone"));
+        _launcherSeen = new FailsEveryLaunch(_launcher, SindriErrors.LaunchAgentMissing.With("the agent is gone"));   // the engine tries three times, then parks unavailable
         await using var rig = await Rig(ct);
         await rig.Run(async handle =>
         {

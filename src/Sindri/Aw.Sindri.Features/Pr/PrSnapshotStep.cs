@@ -11,14 +11,14 @@ namespace Aw.Sindri.Features.Pr;
 
 /// <summary>
 /// 'step.pr.snapshot' on the block runtime (babysitter spec §4.3): one forge read of the pull request and its conversation, reported as the first outcome that holds, in the
-/// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged (the merge commit 'fact:merge' holds when this instance merged it; else the head sha, an approximation: the forge port has no merge commit on a view). The fact is the pull request view in camelCase (link, state, headSha, mergeable,
+/// spec's order, with 'fact:prState' and 'fact:prStatus' (the merge-stop summary) on every outcome and 'fact:mergedSha' when merged (the merge commit 'fact:merge' holds when this instance merged it; else the head sha, an approximation: the forge port has no merge commit on a view). The fact is the pull request view in camelCase (link, state, headSha, mergeable,
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
 /// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
 /// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold'; a marked comment is handled and is not in queue.unhandled or the 'comments' outcome, and 'stale' says the checks ran on another commit than the head.
 /// The docs pull request ('fact:docsPr', when the instance holds one) is read too: a merged pull request whose docs pull request is open is 'mergedDocsOpen', a red docs pull request is 'docsRed'
 /// (after the comments, before pending; not when the owner skipped the docs, 'fact:docsResult' result 'skippedByOwner'), and checks still running on it keep the snapshot pending; 'docs' carries it
 /// (link, state, headSha, checks). 'workspaceAhead' says the workspace ('fact:workspace') is on another commit than the pull request's head (null when its head can't be read).
-/// Not read yet, for want of a port: the base branch, so 'restack' is never reported and 'base' { ref, sha, defaultRef, onto } and 'head.ref', which effect.pr.restack reads, are not written (TODO: the forge port's PullView has no base branch or default branch).
+/// 'base' ({ ref, sha, tip, was }, see <see cref="PrBaseFact"/>) carries the base branch and the tip the pull request was built on, which effect.pr.restack replays after. Not read yet, for want of a port: the default branch, so 'restack' is never reported and 'base.defaultRef', 'base.onto' and 'head.ref' are not written.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
 /// <param name="marks">The comment marks.</param>
@@ -69,10 +69,12 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count, docs.Value);
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
-        return await Report(context, new Snapshot(pull.Value, outcome, state), cancellationToken).ConfigureAwait(false);
+        state["base"] = PrBaseFact.Of(pull.Value, StepFacts.Read(context, "fact:prState"), StepFacts.Read(context, "fact:restack"));
+        var status = PrStatusFact.Of(StepFacts.Read(context, "fact:recheck"), StepFacts.Read(context, "fact:docsResult"), pull.Value, threads.Value, docs.Value?.View);
+        return await Report(context, new Snapshot(pull.Value, outcome, state), status, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<BlockStepResult> Report(StepContext context, Snapshot snapshot, CancellationToken cancellationToken)
+    private async ValueTask<BlockStepResult> Report(StepContext context, Snapshot snapshot, JsonObject status, CancellationToken cancellationToken)
     {
         var (pull, outcome, state) = snapshot;
         state["workspaceAhead"] = await WorkspaceAhead(context, pull.HeadSha, cancellationToken).ConfigureAwait(false);
@@ -84,8 +86,8 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         }
 
         return string.Equals(outcome, "merged", StringComparison.Ordinal) || string.Equals(outcome, "mergedDocsOpen", StringComparison.Ordinal)
-            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.HeadSha)))
-            : StepFacts.Done(outcome, ("fact:prState", state));
+            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:prStatus", status), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.HeadSha)))
+            : StepFacts.Done(outcome, ("fact:prState", state), ("fact:prStatus", status));
     }
 
     // The snapshot row (spec §4.7), when the outcome or the head differs from the previous snapshot's. Its identity is the previous snapshot's time, so a retry of this Step writes it once.
@@ -289,7 +291,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
     };
 
     // Sindri's replies never come back as work: a marker it wrote.
-    private static bool Own(PullThread thread) =>
+    internal static bool Own(PullThread thread) =>
         thread.Markers.Any(static m => m.StartsWith("sindri", StringComparison.Ordinal));
 
     private sealed record DocsRead(PullView View, bool Skipped);

@@ -54,43 +54,43 @@
       "state": "gray"
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "form-none",
       "text": "This agent hasn't been taught how to follow a Step's rules, so it can't run by itself. Use Claude Code or Codex, or add its policy setting.",
       "attendedText": "This agent hasn't been taught how to follow the sandbox's rules, so this session can't be opened. Use Claude Code or Codex, or add its policy setting."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "form-reserved",
       "text": "This agent hasn't been taught how to follow a Step's rules, so it can't run by itself. Use Claude Code or Codex, or add its policy setting.",
       "attendedText": "This agent hasn't been taught how to follow the sandbox's rules, so this session can't be opened. Use Claude Code or Codex, or add its policy setting."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "tool-not-expressible",
       "text": "This Step allows `<tool>`, which this agent can't restrict. Change the Step's tools, or use another agent.",
       "attendedText": "This session allows `<tool>`, which this agent can't restrict. Use another agent."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "bin-denied",
       "text": "The agent program lives somewhere the sandbox hides (`<path>`). Move or reinstall it somewhere under your home or `/usr`.",
       "attendedText": "The agent program lives somewhere the sandbox hides (`<path>`). Move or reinstall it somewhere under your home or `/usr`."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "host-not-tmux",
       "text": "The Step's workspace isn't set up the way the sandbox needs. This is a Sindri fault: press Copy details and report it, then Resume.",
       "attendedText": "The session's workspace isn't set up the way the sandbox needs. This is a Sindri fault: press Copy details and report it, then open again."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "worktree-outside-repo",
       "text": "The Step's workspace isn't set up the way the sandbox needs. This is a Sindri fault: press Copy details and report it, then Resume.",
       "attendedText": "The session's workspace isn't set up the way the sandbox needs. This is a Sindri fault: press Copy details and report it, then open again."
     },
     {
-      "code": "SND-LAUNCH-025",
+      "code": "SND-LAUNCH-028",
       "reason": "no-stored-plan",
       "text": "This session's sandbox record is gone, so it can't be reopened safely. Start the Step again.",
       "attendedText": "This session's sandbox record is gone, so it can't be reopened safely. Open a new session."

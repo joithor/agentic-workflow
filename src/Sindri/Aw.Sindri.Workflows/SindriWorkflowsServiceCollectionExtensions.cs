@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -9,6 +11,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -23,14 +26,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (the Sindri home and the state root).</param>
+    /// <param name="childStart">Makes the start info of a child process: the composition passes Infrastructure's child-environment factory (ARCH-PROC-001), so the dev server's shell gets the pod-mode environment.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddSindriWorkflows(this IServiceCollection services, Func<string, string?> environment)
+    public static IServiceCollection AddSindriWorkflows(this IServiceCollection services, Func<string, string?> environment, Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> childStart)
     {
         var settings = TemporalSettings.FromEnvironment(environment);
         return services
             .AddSingleton(settings)
             .AddSingleton(new WorkflowsHome(settings.Home))
-            .AddSingleton<TemporalDevServer>()
+            .AddSingleton(new TemporalDevServer(childStart))
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddInterpreterActivities()
             .AddAgentRuntime()
@@ -43,6 +47,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceReader>(provider => provider.GetRequiredService<IInstanceRuntime>())   // the queries' read port (ARCH-CQRS-002)
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>()
+            .AddSingleton<EngineMirrorLag>().AddSingleton<IEngineReader, TemporalEngineReader>()   // API P13: the engine in depth's read side (the only Temporal client but the worker)
             .AddSingleton<HomeFactStore>()
             .AddSingleton<IFactStore>(static sp => sp.GetRequiredService<HomeFactStore>())   // engine P4 unit (c): facts stored 0600 before the report
             .AddSingleton<IFactContents>(static sp => sp.GetRequiredService<HomeFactStore>()) // engine P6 unit (d): read back for effect.claim.ref
@@ -66,7 +71,12 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<RouterStubCursor>()                          // engine P7: the stub's cursor file
             .AddScoped<ItemRouter>()
             .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
-            .AddSingleton(RouterStub.BuiltIn);
+            .AddSingleton(RouterStub.BuiltIn)
+            .AddSingleton<PrWatchStore>()                              // PB spec API15: the watcher's 'pr-watch.json'
+            .AddScoped<PrChangedRecorder>()                            // the watcher's 'pr.changed' rows
+            .AddScoped<IWatchedPulls, TemporalWatchedPulls>()          // the pull requests the live instances wait on
+            .AddScoped<IScheduledService, PrWatchService>()            // PB spec API15: 'pr.changed' from the forge's digests
+            .AddSingleton(PrWatchService.BuiltIn);
 
     /// <summary>The activities the interpreter runs (RunStep, RecordEvent, ReadItemRepo, the effect activities, EvaluateGates) and the Step, effect and gate dispatchers they run blocks through.</summary>
     private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services
@@ -82,7 +92,9 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<PhaseWorkspaceRemoval>()                     // LN-WF2: the ended phase's worktree
         .AddSingleton<CleanupActivities>()                         // engine P7: ReleaseClaim, LN-WF2: RemovePhaseWorkspace
         .AddSingleton<ChildActivities>()                           // engine P7: LoadChildren
+        .AddSingleton<LiteralFactActivities>()                     // a child's literal inputs, stored under their hash at its start
         .AddSingleton<HeavyLeases>().AddSingleton<HeavyActivities>()   // LN-WF3: TakeHeavy, ReleaseHeavy over IHeavySlots; the leases a worker holds
+        .AddSingleton<LinkedActivities>()                          // LN-WF1: LiveLinked
         .AddSingleton<EngineActivities>()
         .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
         .AddStepInputRuntime()                                     // the Step inputs: FillInput, the in-memory texts and their runner
@@ -101,11 +113,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
     }
 
     // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
-    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services)
+    {
+        services.TryAddSingleton<ReportRefusals>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
+        return services
         .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
         .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
         .AddSingleton<WorkerActivities>();
+    }
 
     private static async ValueTask FlushScoped(IServiceProvider provider, LaunchId launch, CancellationToken cancellationToken)
     {

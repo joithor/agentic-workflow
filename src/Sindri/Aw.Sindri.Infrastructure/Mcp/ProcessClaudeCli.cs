@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
 
@@ -21,13 +22,10 @@ internal sealed class ProcessClaudeCli(McpSettings settings) : IClaudeCli
             return null;   // not on PATH, or not executable
         }
 
-        var start = new ProcessStartInfo(executable, arguments)
-        {
-            UseShellExecute = false,
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start(executable, arguments);
+        start.WorkingDirectory = workingDirectory;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         Process? claude;
         try
         {

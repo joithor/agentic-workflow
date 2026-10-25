@@ -59,10 +59,12 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<ReportedIdAdmission>()
             .AddScoped<LaunchSessionEvents>()
             .AddScoped<RecipeApprovalPlanner>()
+            .AddScoped<Workflow.ApproveAll.ShippedApprovalPlans>()
             .AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
+            .AddSingleton<IPinRenewals, PinRenewals>()
             .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
 
     /// <summary>The views' projections, in the order the projector folds them.</summary>
@@ -77,5 +79,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, NeedsYouProjection>()
             .AddSingleton<IProjection, JobsProjection>()
             .AddSingleton<IProjection, LaunchesProjection>()
-            .AddSingleton<IProjection, RecipeStatsProjection>();
+            .AddSingleton<IProjection, RecipeStatsProjection>()
+            .AddSingleton<IProjection, CodeIndexProjection>();
 }

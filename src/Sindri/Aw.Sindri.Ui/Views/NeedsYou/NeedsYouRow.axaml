@@ -16,7 +16,7 @@
       <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" VerticalAlignment="Center">
         <ctl:StateChipView x:Name="NeedsYouChip" Chip="{Binding Chip}" VerticalAlignment="Center" Margin="0,0,8,0" />
         <TextBlock Grid.Column="1" Classes="mono subtle" Text="{Binding ShownId}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AccessibilityView="Raw" />
-        <Button x:Name="NeedsYouTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
+        <Button x:Name="NeedsYouTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}" ToolTip.Tip="{Binding OpenLabel}">
           <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
         </Button>
         <TextBlock x:Name="NewWord" Grid.Column="3" Classes="caption" Text="{Binding NewWord}" IsVisible="{Binding HasNewWord}" AutomationProperties.AccessibilityView="Raw" Margin="8,0" VerticalAlignment="Center" />
@@ -36,8 +36,6 @@
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
                 <Button Classes="command-control" Classes.primary="{Binding IsPrimary}" IsEnabled="{Binding IsEnabled}" Content="{Binding Action.Label}"
                         Click="OnAction" ToolTip.Tip="{Binding Tooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.HelpText="{Binding Tooltip}" AutomationProperties.Name="{Binding Name}" />
-                <TextBlock Classes="caption subtle mono" Text="{Binding Action.Cli}" IsVisible="{Binding IsProtected}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Action.Cli}" />
-                <TextBlock Classes="caption subtle" Text="{Binding Action.FillInHint}" IsVisible="{Binding IsProtectedWithHint}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

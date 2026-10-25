@@ -40,6 +40,7 @@ internal sealed partial class RecipeWorkflow
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
+    private const string LinkedEventsPatch = "ln-wf1-linked-phase-events";   // LN-WF1: a linked instance's reports to its line, its Root attribute and the cancel that reaches it
     private bool _children;   // engine P7: the 'p7-children' marker is in this history (gates run, the slot stub grants); false on a replay of an older one
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
@@ -105,17 +106,16 @@ internal sealed partial class RecipeWorkflow
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
         var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
-        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
-        var loaded = await Workflow.ExecuteLocalActivityAsync(
-            (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
-            new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
+        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; a history without it never takes or grants a slot
+        var storesLiterals = Workflow.Patched("child-literal-facts-v1");   // a child's literal inputs go into the fact store at its start; a history without it never stored them
+        var loaded = await LoadRecipe(start, storesLiterals).ConfigureAwait(true);
         var pins = await LoadChildPins(loaded).ConfigureAwait(true);   // engine P7: the children the approval pinned
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, PooledBudget = !perRound, LegacyLaunchRound = !keepsRoundOnLaunchFailure };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, PooledBudget = !perRound, LegacyLaunchRound = !keepsRoundOnLaunchFailure, LegacyUnavailable = !_unavailable };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
@@ -200,11 +200,11 @@ internal sealed partial class RecipeWorkflow
 
     /// <summary>
     /// The instance waits on a human (spec §5.1 'NeedsYou'): it is parked or escalated, or it holds an open desk task. A
-    /// takeover doesn't: the human already has it.
+    /// takeover doesn't: the human already has it. A park for a dependency that is down doesn't either: nobody can answer it, and health shows it.
     /// </summary>
     private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Suspension switch
     {
-        { Kind: SuspensionKind.Takeover } => false,
+        { Kind: SuspensionKind.Takeover } or { Kind: SuspensionKind.Park, Reason: ParkReason.Unavailable } => false,
         not null => true,
         _ => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };

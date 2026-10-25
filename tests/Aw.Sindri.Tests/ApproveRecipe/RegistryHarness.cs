@@ -81,7 +81,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddEffectPorts(H)
             .AddRecipeBlocks()
             .AddSingleton<BlockCatalog>().AddSingleton<StepInputRuntimes>()
-            .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeApprovalPlanner>().AddScoped<Core.Workflow.ApproveAll.ShippedApprovalPlans>().AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton(Workflow.RecipeReaderTests.Reader)
@@ -92,12 +92,14 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>()
             .AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>()
             .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>()
-            .AddSingleton<IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json));
+            .AddSingleton<IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json, Renewals(sp)));
         configure?.Invoke(services);
         _provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
     public IServiceProvider Services => _provider;
+
+    private Core.Events.PinRenewals Renewals(IServiceProvider sp) => new(Approvals, sp.GetRequiredService<Core.Events.RecipeEvents>(), Wake, H.Callers, H.Ids, H.Clock);
 
     public SliceHarness H { get; } = new();
 
@@ -156,6 +158,13 @@ internal sealed class RegistryHarness : IAsyncDisposable
     /// <summary>Asks for a challenge for <paramref name="action"/> as <paramref name="caller"/> (a human at a terminal by default).</summary>
     public Task<Result<IssueChallengeResponse>> Issue(string action, CallerContext? caller = null) =>
         Run<IssueChallengeRequest, IssueChallengeResponse>(new IssueChallengeRequest(action), caller ?? Human);
+
+    /// <summary>The approval check of <paramref name="recipe"/> against this build's blocks, as a running instance's next step asks it.</summary>
+    public async Task<Result<Core.Workflow.Engine.Decisions.ApprovalCheck>> Check(RegisteredRecipe recipe)
+    {
+        using var entered = H.Callers.Enter(Human);
+        return await _provider.GetRequiredService<IApprovedRecipes>().Check(new RecipeVersion(recipe.Id, recipe.Version, recipe.Hash), TestContext.Current.CancellationToken);
+    }
 
     /// <summary>Approves <paramref name="recipe"/> as a human would: a challenge, its action typed back.</summary>
     public async Task<Result<ApproveRecipeResponse>> Approve(RegisteredRecipe recipe)
@@ -230,6 +239,7 @@ file static class EffectPortRegistrations
         .AddSingleton<Core.Scoping.IRepoCheckouts>(new InMemoryRepoCheckouts())
         .AddSingleton<IPullRequests>(new Testing.Forge.FakePullRequests(["forge.test"]))
         .AddSingleton<IRunDiff>(new FakeRunDiff())
+        .AddSingleton<IWorkspaceRebase>(new FakeWorkspaceRebase())
         .AddSingleton<IRunArea>(new InMemoryRunArea())
         .AddSingleton<IPrCommentMarks>(new InMemoryPrCommentMarks())
         .AddSingleton<IForgeRepos>(new FakeForgeRepos())

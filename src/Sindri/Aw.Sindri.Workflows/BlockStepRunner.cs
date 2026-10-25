@@ -44,7 +44,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
         var seeded = await Seed(run, catalog.Find(run.Step), cancellationToken).ConfigureAwait(false);
         if (seeded.IsError)
         {
-            return Failed(seeded.Error.Message);
+            return Failed(seeded.Error);
         }
 
         var seed = seeded.Value;
@@ -53,12 +53,12 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             : Results.Success(seed);
         if (context.IsError)
         {
-            return Failed(context.Error.Message);
+            return Failed(context.Error);
         }
 
         var result = await dispatch(run.Step, context.Value, cancellationToken).ConfigureAwait(false);
         return result.Result is not { } done
-            ? Failed(result.Failure ?? "the Step failed")
+            ? Failed(result.Failure ?? "the Step failed") with { Dependency = result.Dependency, Code = result.Code }
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);
     }
 
@@ -94,6 +94,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
                 Repo = repo.Value,
                 Address = run.Address,
                 HeavySlotHeld = run.HeavyHeld,
+                LoopCaps = run.LoopCaps ?? new Dictionary<string, int>(StringComparer.Ordinal),
             };
     }
 
@@ -208,6 +209,9 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
 
         return new BlockStepOutcome(done.Outcome, stored, DecisionOf(done.Outputs), Failure: null);
     }
+
+    // An Unavailable error (a fact or the profile can't be read) is infrastructure: the engine retries the Step, then parks it as unavailable.
+    private static BlockStepOutcome Failed(Error error) => Failed(error.Message) with { Dependency = error.Kind == ErrorKind.Unavailable ? "a fact or the profile" : null, Code = error.Kind == ErrorKind.Unavailable ? error.Code : null };
 
     private static BlockStepOutcome Failed(string reason) => new(Outcome: null, Outputs: null, Decision: null, reason);
 

@@ -18,5 +18,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="ByState">One row per step.</param>
 /// <param name="Buckets">Four weekly buckets, oldest first.</param>
 /// <param name="AsOf">When the figures were counted.</param>
+/// <param name="Babysitter">The babysitter's own figures, (only for workflow.pr-babysitter; null for every other recipe).</param>
 internal sealed record RecipeStatsView(string Recipe, string? Hash, string Window, bool ChildOnly, int? Runs, int? Done, int? Failed, int? Cancelled, StatsOutcomesView? Outcomes, double? HumanRate,
-    long? MedianSeconds, StatsTokensView? Tokens, int? BudgetHits, StatsHumanTimeView? HumanTime, IReadOnlyList<StateStatsView>? ByState, IReadOnlyList<StatsBucketView>? Buckets, string? AsOf);
+    long? MedianSeconds, StatsTokensView? Tokens, int? BudgetHits, StatsHumanTimeView? HumanTime, IReadOnlyList<StateStatsView>? ByState, IReadOnlyList<StatsBucketView>? Buckets, string? AsOf,
+    BabysitterStatsView? Babysitter = null);

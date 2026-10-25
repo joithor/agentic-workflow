@@ -5,7 +5,9 @@ using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Profile;
@@ -71,6 +73,10 @@ public sealed class GatherInputsFillTests : IDisposable
 
         public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => _lenses.Lenses(anchor, read, range, scope, cancellationToken);
 
+        public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.WholeMap(query, scope, cancellationToken);
+
+        public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.Search(query, scope, cancellationToken);
+
         public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.FileMap(query, scope, cancellationToken);
 
         public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) => _history.History(anchors, window, read, scope, cancellationToken);
@@ -133,7 +139,7 @@ public sealed class GatherInputsFillTests : IDisposable
     }
 
     [Fact]
-    public async Task A_huge_map_fills_under_the_runners_caps_and_the_Step_does_not_fail()
+    public async Task A_huge_map_fills_whole_and_the_Step_does_not_fail()
     {
         _combined = new Combined(a => ContextInputFixtures.SmallSet([.. Enumerable.Range(0, 20000).Select(i => "feature:f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))]));
         await using var provider = Compose();
@@ -142,7 +148,8 @@ public sealed class GatherInputsFillTests : IDisposable
         var filled = await runner.Fill(Context("input.context.lenses"), 1, TestContext.Current.CancellationToken);
 
         Assert.False(filled.IsError, filled.IsError ? filled.Error.Message : string.Empty);
-        Assert.Contains("more lines not shown", filled.Value.Texts.Sections["lenses"], StringComparison.Ordinal);
+        Assert.DoesNotContain("more lines not shown", filled.Value.Texts.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Equal(20000, filled.Value.Texts.Result!.Value.GetProperty("anchors").GetArrayLength());
     }
 
     [Fact]

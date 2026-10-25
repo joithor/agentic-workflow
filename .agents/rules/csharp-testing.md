@@ -15,7 +15,7 @@ alwaysApply: false
 
 # C# Testing Rules
 
-Source of truth: spec §4b.5 (`docs/superpowers/specs/2026-10-09-agent-readiness-design.md`). The TypeScript test rules (`.agents/rules/testing.md`) still apply to the TS packages until the cutover.
+Source of truth: spec §4b.5 (`docs/superpowers/specs/2026-10-09-agent-readiness-design.md`).
 
 Each rule names the check that enforces it. "Gap — R1b" means the check doesn't exist yet: follow the rule by hand.
 
@@ -103,6 +103,7 @@ ArchUnitNET (not NetArchTest), in the `integration` lane (owner, 2026-10-16), in
 | `ARCH-REG-001`, `002`, `003` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), each one's assembly (its `<AssemblyName>` if set) loads, and a project that is neither tier 0 nor a layer project is declared in `Packages.Unshaped` (the UI and its heads) |
 | `ARCH-ASYNC-001` | Every `Task`/`ValueTask` method on a Core interface (a port) takes a `CancellationToken`; `DisposeAsync` is exempt |
 | `ARCH-UI-001` | The UI package: no UI type uses a Sindri type; a view model uses no `Avalonia.*` type; a platform head holds no view or view model |
+| `ARCH-ENGINE-001` | The Temporal boundary: only `Aw.Sindri.Workflows` (the worker and the engine read adapter) references the `Temporalio` package, and only types in `Aw.Sindri.Infrastructure.Workflows` use a `Temporalio` type; the app, the CLI, the UI and the MCP server hold no Temporal client (API spec P13) |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`
 or `.App`, and not tier 0 in `deps.yaml`, which `RegistryTests` checks against `Rules/TierZero.cs`); tier-0 packages (`Aw.Kernel`, `Aw.Kernel.Data`) get the cycle, naming, service-provider and typed-id rules.

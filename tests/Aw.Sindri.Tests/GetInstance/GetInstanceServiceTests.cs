@@ -2,6 +2,8 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
@@ -17,8 +19,8 @@ public sealed class GetInstanceServiceTests
 {
     private const string ItemA = "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-    private static GetInstanceService Service(SomeInstances instances, DetailViews? views = null, FixedRepos? repos = null, CallerContext? caller = null, StepRunEvents? stepRuns = null, StepRunRecipes? recipes = null) =>
-        new(instances, instances, views ?? new DetailViews(), repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()), new DetailContexts(new FakeTimeProvider(StatusCases.Now)), new StepRunReader(stepRuns ?? new StepRunEvents(), recipes ?? new StepRunRecipes()));
+    private static GetInstanceService Service(SomeInstances instances, DetailViews? views = null, CallerContext? caller = null, StepRunEvents? stepRuns = null, StepRunRecipes? recipes = null) =>
+        new(instances, instances, views ?? new DetailViews(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()), new DetailContexts(new FakeTimeProvider(StatusCases.Now)), new StepRunReader(stepRuns ?? new StepRunEvents(), recipes ?? new StepRunRecipes()));
 
     [Fact]
     public async Task Serves_the_detail_with_title_parent_and_counts()
@@ -79,33 +81,30 @@ public sealed class GetInstanceServiceTests
     }
 
     [Fact]
-    public async Task Session_caller_in_another_repo_gets_SND_ITEM_404()
+    public async Task Session_caller_in_any_repo_reads_the_detail()
     {
         var view = StatusCases.View("done") with { ItemId = ItemKey.From(ItemA) };
-        var repos = new FixedRepos((ItemA, "beta"));
         var instances = new SomeInstances(view);
 
-        var other = await Service(instances, repos: repos, caller: new CallerContextBuilder().Session().InRepo("alpha").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
-        var own = await Service(instances, repos: repos, caller: new CallerContextBuilder().Session().InRepo("beta").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
-        var human = await Service(instances, repos: repos).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
+        var other = await Service(instances, caller: new CallerContextBuilder().Session().InRepo("alpha").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
+        var own = await Service(instances, caller: new CallerContextBuilder().Session().InRepo("beta").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
+        var human = await Service(instances).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
 
-        Assert.Equal(SindriErrors.ItemNotFound.Code, other.Error.Code);
+        Assert.True(other.IsSuccess);
         Assert.True(own.IsSuccess);
         Assert.True(human.IsSuccess);
     }
 
     [Fact]
-    public async Task An_unknown_instance_and_another_repos_answer_the_same_not_found()
+    public async Task An_unknown_instance_answers_not_found()
     {
         var view = StatusCases.View("done") with { ItemId = ItemKey.From(ItemA) };
         var instances = new SomeInstances(view);
         var unknown = WorkflowInstanceId.From("WFI-" + new string('9', 32));
 
         var missing = await Service(instances).Handle(new GetInstanceRequest(unknown.Value), CancellationToken.None);
-        var elsewhere = await Service(instances, repos: new FixedRepos((ItemA, "beta")), caller: new CallerContextBuilder().Session().InRepo("alpha").Build()).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
 
         Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {unknown.Value} in this repo."), (missing.Error.Code, missing.Error.Message));
-        Assert.Equal((SindriErrors.ItemNotFound.Code, $"No workflow instance {view.Id.Value} in this repo."), (elsewhere.Error.Code, elsewhere.Error.Message));
     }
 
     [Theory]
@@ -143,6 +142,80 @@ public sealed class GetInstanceServiceTests
         Assert.Equal(string.Join(", ", status.Commands.Where(static c => c.Verb != StatusVerb.Approve).Select(static c => StatusVerbNames.Of(c.Verb)).Distinct(StringComparer.Ordinal)), parsed);   // one word per verb: an answer with two variants is still "answer"
         Assert.All(status.Commands.Where(static c => c.Verb == StatusVerb.Approve), c => Assert.Contains(Words(c.Cli), Words(status.Text), StringComparison.Ordinal));
     }
+
+    [Fact]
+    public async Task A_parked_root_opens_where_its_needs_you_row_opens()
+    {
+        var view = StatusCases.View("done");
+        var open = new NeedsYouOpen("workflow/" + view.Address.Value + "/step.6", "Answer in the child");
+        var views = new DetailViews(needsYou: [Row(NeedsYouRowIds.Park(view.Address), open)]);
+
+        var result = await Service(new SomeInstances(view), views).Handle(new GetInstanceRequest(view.Address.Value), CancellationToken.None);
+
+        Assert.Equal(open, result.Value.Open);
+    }
+
+    [Fact]
+    public async Task A_child_with_an_open_desk_opens_its_desk_row()
+    {
+        var view = StatusCases.View("desk-task") with { Address = InstanceAddress.From("T-1/step/1/step.4"), Id = WorkflowInstanceId.Of(InstanceAddress.From("T-1/step/1/step.4")) };
+        var open = new NeedsYouOpen("workflow/T-1/step/1/step.4", "Answer the question");
+        var views = new DetailViews(needsYou: [Row(NeedsYouRowIds.Desk(view.Address), open)]);
+
+        var result = await Service(new SomeInstances(view), views).Handle(new GetInstanceRequest(view.Id.Value), CancellationToken.None);
+
+        Assert.Equal(open, result.Value.Open);
+    }
+
+    [Fact]
+    public async Task An_idle_takeover_opens_its_takeover_row()
+    {
+        var view = StatusCases.View("done");
+        var open = new NeedsYouOpen("workflow/" + view.Address.Value, "Hand back or cancel");
+        var views = new DetailViews(needsYou: [Row(NeedsYouRowIds.Takeover(view.Address), open)]);
+
+        var result = await Service(new SomeInstances(view), views).Handle(new GetInstanceRequest(view.Address.Value), CancellationToken.None);
+
+        Assert.Equal(open, result.Value.Open);
+    }
+
+    [Fact]
+    public async Task A_park_row_wins_over_a_desk_row_of_the_same_instance()
+    {
+        var view = StatusCases.View("done");
+        var park = new NeedsYouOpen("workflow/" + view.Address.Value + "/step.6", "Answer in the child");
+        var views = new DetailViews(needsYou: [Row(NeedsYouRowIds.Desk(view.Address), new NeedsYouOpen("workflow/" + view.Address.Value, "Answer the question")), Row(NeedsYouRowIds.Park(view.Address), park)]);
+
+        var result = await Service(new SomeInstances(view), views).Handle(new GetInstanceRequest(view.Address.Value), CancellationToken.None);
+
+        Assert.Equal(park, result.Value.Open);
+    }
+
+    [Fact]
+    public async Task An_instance_no_row_waits_on_has_no_open()
+    {
+        var view = StatusCases.View("done");
+        var other = InstanceAddress.From("T-9/step/1");
+        var views = new DetailViews(needsYou: [Row(NeedsYouRowIds.Park(other), new NeedsYouOpen("workflow/" + other.Value, "Open the workflow"))]);
+
+        var result = await Service(new SomeInstances(view), views).Handle(new GetInstanceRequest(view.Address.Value), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Open);
+    }
+
+    [Fact]
+    public async Task A_needs_you_view_that_cannot_be_read_leaves_open_off_and_serves_the_detail()
+    {
+        var view = StatusCases.View("done");
+
+        var result = await Service(new SomeInstances(view), new DetailViews(needsYouFails: true)).Handle(new GetInstanceRequest(view.Address.Value), CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        Assert.Null(result.Value.Open);
+    }
+
+    private static NeedsYouRow Row(NeedsYouRowId id, NeedsYouOpen open) => new NeedsYouRowBuilder().Build() with { Id = id, Open = open };
 
     /// <summary>The text with every run of whitespace as one space: the layout wraps long lines.</summary>
     private static string Words(string text) => string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

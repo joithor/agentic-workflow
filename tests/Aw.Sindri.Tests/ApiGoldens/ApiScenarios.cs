@@ -17,9 +17,9 @@ internal static class ApiScenarios
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
         ("ping", "running"), ("commands", "catalog"), ("events", "process-started"), ("events-catalog", "catalog"),
-        ("stop", "accepted"), ("stop", "refused-session"), ("stop", "refused-origin"),
+        ("stop", "accepted"), ("stop", "refused-origin"),
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
-        ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
+        ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         ("workflow-recipe", "not-found"),
     ];
@@ -38,7 +38,7 @@ internal static class ApiScenarios
         ["Jobs"] = [.. JobScenarios.All, .. JobScopeScenarios.All],
         ["Launches"] = [.. LaunchScenarios.All, .. WrapSessionScenarios.All],
         ["Setup"] = [.. SetupScenarios.All, .. SetupRepoScenarios.All],
-        ["Recipes"] = ApproveAllScenarios.All,
+        ["Recipes"] = [.. ApproveAllScenarios.All, .. RecipeApprovedVersionScenarios.All],
         ["CodeIndex"] = CodeIndexScenarios.All,
     };
 
@@ -50,15 +50,21 @@ internal static class ApiScenarios
 
     /// <summary>Starts the host the scenario runs on: the plain golden host, or for the context routes one over a small git repo with a map.</summary>
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
-        CodeIndexScenarios.Handles(slug)
-            ? await CodeIndexScenarios.Start(ct)
+        CodeIndexScenarios.Handles(slug, scenario)
+            ? await CodeIndexScenarios.Start(ct, demoBehindMain: scenario == CodeIndexScenarios.StaleScenario)
             : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : (slug, scenario) is ("profile", "repo-added")
+            ? await ViewScenarios.StartWithGit(ct)
             : IsSetup(slug, scenario)
             ? await SetupHost(slug, scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
-            : LaunchScenarios.Handles(slug, scenario)
+            : await StartLaunchOrLater(slug, scenario, ct);
+
+    /// <summary>The last hosts of <see cref="Start"/>: the launch, approve-all, item-scope and wrapped-session ones, else the plain golden host.</summary>
+    private static async Task<GoldenHost> StartLaunchOrLater(string slug, string scenario, CancellationToken ct) =>
+        LaunchScenarios.Handles(slug, scenario)
             ? await LaunchScenarios.Start(scenario, ct)
             : ApproveAllScenarios.Handles(slug, scenario)
             ? await ApproveAllScenarios.Start(scenario, ct)
@@ -82,7 +88,7 @@ internal static class ApiScenarios
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
-        if (CodeIndexScenarios.Handles(slug))
+        if (CodeIndexScenarios.Handles(slug, scenario))
         {
             return await CodeIndexScenarios.Body(host, slug, scenario, ct);
         }
@@ -112,7 +118,6 @@ internal static class ApiScenarios
             ("events-catalog", "catalog") => await Ask(host, Get("/sindri/events/catalog", Human(token))),
             ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
-            ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
             ("stop", "refused-origin") => await Ask(host, Post("/sindri/stop", json: null, [.. Human(token), Origin])),
             _ => await ApproveScenario(host, scenario, ct),
         };
@@ -134,12 +139,12 @@ internal static class ApiScenarios
     /// <summary>The body of an approve-all (recipes), collector (sessions) or wrap (launch) session scenario, else null.</summary>
     private static Func<Task<string>>? SessionBody(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
         ApproveAllScenarios.Handles(slug, scenario) ? () => ApproveAllScenarios.Body(host, slug, scenario, ct)
+        : RecipeApprovedVersionScenarios.Handles(slug, scenario) ? () => RecipeApprovedVersionScenarios.Body(host, ct)
         : SetupRepoScenarios.Handles(slug, scenario) ? () => SetupRepoScenarios.Body(host, slug, scenario)
         : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : WrapSessionScenarios.Handles(slug, scenario) ? () => WrapSessionScenarios.Body(host, slug, scenario, ct)
         : null;
 
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8), from GET /workflow/recipes/{id} (API P11).
     private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown";
@@ -156,9 +161,6 @@ internal static class ApiScenarios
             "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null}", Human(token))),
             "approved" => await Ask(host, Post("/sindri/profile/approve", await Confirmed(host, hash), Human(token))),
             "already-approved" => await AfterApproval(host, () => Post("/sindri/profile/approve", approve, Human(token)), ct),
-            "refused-session" => await Ask(host, Post("/sindri/profile/approve", approve, Session)),
-            "refused-no-terminal" => await Ask(host, Post("/sindri/profile/approve", approve,
-                [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "cli"), (SindriHeaders.Token, token)])),
             "refused-origin" => await Ask(host, Post("/sindri/profile/approve", approve, [.. Human(token), Origin])),
             "stale-hash" => await Ask(host, Post("/sindri/profile/approve",
                 $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\"}}", Human(token))),

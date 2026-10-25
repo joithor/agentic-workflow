@@ -87,16 +87,16 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Lenses_route_21_anchors_is_006_problem_and_a_draft_with_a_map_version_is_006()
+    public async Task Lenses_route_takes_fifty_anchors_and_a_draft_with_a_map_version_is_006()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var many = await host.Http.Ask(Get(Lenses([.. Enumerable.Range(0, 21).Select(i => A("feature:nope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))]), Terminal(host)));
+        var many = await host.Http.Ask(Get(Lenses([.. Enumerable.Range(0, 50).Select(i => A("feature:nope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))]), Terminal(host)));
         var both = await host.Http.Ask(Get(Lenses(A(Anchor), "draft=true", "mapVersion=v1"), Terminal(host)));
         var malformed = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=latest"), Terminal(host)));
 
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (many.Status, many.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (many.Status, many.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (both.Status, both.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (malformed.Status, malformed.Code));
     }
@@ -256,7 +256,7 @@ public sealed class ContextLensesApiTests : IDisposable
         var wrongType = await mcp.Call("context_lenses", """{"anchors":"feature:a"}""", ct);
         var wrongItem = await mcp.Call("context_lenses", """{"anchors":[1]}""", ct);
 
-        Assert.Equal(["anchor", "anchors", "mapVersion", "hops"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.Equal(["anchor", "anchors", "mapVersion", "hops", "limit", "offset"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
         Assert.False(tool.TryGetProperty("required", out _));
         Assert.Equal((1, Anchor), (lone.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), lone.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString()));
         Assert.Equal((2, 2), (set.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), set.StructuredContent!.Value.GetProperty("anchors").GetArrayLength()));
@@ -285,7 +285,7 @@ public sealed class ContextLensesApiTests : IDisposable
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Lenses_depth_is_0_to_4_and_anything_else_is_006_over_http()
+    public async Task Lenses_depth_is_0_or_more_deeper_than_8_is_read_as_8_and_negative_is_006_over_http()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -294,11 +294,13 @@ public sealed class ContextLensesApiTests : IDisposable
         var zero = await host.Http.Ask(Get(route + "&depth=0", Terminal(host)));
         var four = await host.Http.Ask(Get(route + "&depth=4", Terminal(host)));
         var five = await host.Http.Ask(Get(route + "&depth=5", Terminal(host)));
+        var deep = await host.Http.Ask(Get(route + "&depth=99", Terminal(host)));
         var negative = await host.Http.Ask(Get(route + "&depth=-1", Terminal(host)));
 
         Assert.Equal((HttpStatusCode.OK, 0), (zero.Status, Json(zero.Body).GetProperty("depth").GetInt32()));
         Assert.Equal((HttpStatusCode.OK, 4), (four.Status, Json(four.Body).GetProperty("depth").GetInt32()));
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (five.Status, five.Code));
+        Assert.Equal((HttpStatusCode.OK, 5), (five.Status, Json(five.Body).GetProperty("depth").GetInt32()));   // the old cap of 4 was raised to 8 (owner q93, 2026-10-23)
+        Assert.Equal(HttpStatusCode.OK, deep.Status);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (negative.Status, negative.Code));
     }
 
@@ -374,7 +376,8 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
+        Assert.True(session.Status == HttpStatusCode.OK, session.Body);   // a session proposes too (owner q93), and its re-run adds nothing
+        Assert.Equal(0, Json(session.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
         Assert.Equal(HttpStatusCode.OK, reject.Status);
         Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
@@ -505,22 +508,17 @@ public sealed class ContextLensesApiTests : IDisposable
         var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
         Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var shown = Json(preview.Body);
-        var draft = shown.GetProperty("draft").GetString();
-        var challenge = shown.GetProperty("challenge");
-        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft, answer }), Terminal(host)));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var draft = Json(promoted.Body).GetProperty("draft").GetString();
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
-        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
         Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
         Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
         Assert.NotNull(recorded.Value);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task EvalMap_route_answers_numbers_and_refuses_sessions_020()
+    public async Task EvalMap_route_answers_numbers_to_a_human_and_a_session()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -534,7 +532,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.True(run.GetProperty("report").TryGetProperty("nodePrecision", out _));
         Assert.StartsWith("map", Path.GetFileName(run.GetProperty("path").GetString()), StringComparison.Ordinal);
         Assert.Contains(Path.Combine("eval", "map"), run.GetProperty("path").GetString(), StringComparison.Ordinal);
-        Assert.Equal("SND-CONTEXT-020", session.Code);
+        Assert.Equal(HttpStatusCode.OK, session.Status);   // a session may measure the map (owner q93, 2026-10-23)
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

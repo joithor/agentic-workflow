@@ -8,6 +8,7 @@
              x:DataType="wf:WorkflowsViewModel">
   <!-- The Workflows page (screens spec §4.2): the head with the root-wide counts and the filters, then the open root runs grouped by
        workflow in the order the API serves them, the finished line collapsed under them, and the shared states. -->
+  <Grid ColumnDefinitions="*,Auto">
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <Grid ColumnDefinitions="Auto,*,Auto">
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -66,4 +67,9 @@
 
     <wfv:RunListView x:Name="WorkflowsList" IsVisible="{Binding IsList}" />
   </StackPanel>
+  <!-- The run drawer takes its own column, so the board narrows and its horizontal scroll takes over; its width follows the window (code-behind). -->
+  <Border x:Name="WorkflowsInspectorHost" Grid.Column="1" IsVisible="{Binding IsInspectorOpen}" VerticalAlignment="Top">
+    <wfv:RunInspectorView DataContext="{Binding Inspector}" />
+  </Border>
+  </Grid>
 </UserControl>

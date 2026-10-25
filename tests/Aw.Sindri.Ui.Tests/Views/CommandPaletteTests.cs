@@ -118,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Check launch targets again, coming soon", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, " + Labels.CopyCli(shell.Health.Catalog.Row("ProbeLaunchTargets")!.Cli), names, StringComparer.Ordinal);   // why: the catalog serves the row
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");
@@ -132,13 +132,13 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(field.Focus(NavigationMethod.Tab));
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
-        window.KeyTextInput("revoke recipe");
+        window.KeyTextInput("show line holdout");
         Settle(window);
 
-        Assert.Equal(["Revoke recipe, Copy: sindri recipe revoke <recipe>"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal(["Show hidden scenarios, Copy: sindri line holdout show <line> <phase>"], EntryNames(window), StringComparer.Ordinal);
         Press(window, Key.Enter, PhysicalKey.Enter);
-        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
-        Assert.Equal(["Revoke recipe, Copied"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal("sindri line holdout show <line> <phase>", _clipboard.Text);
+        Assert.Equal(["Show hidden scenarios, Copied"], EntryNames(window), StringComparer.Ordinal);
         Frame(window, "palette-filtered");
 
         Press(window, Key.Escape, PhysicalKey.Escape);
@@ -253,8 +253,11 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(heading.TranslatePoint(default, scroll) is { Y: >= 0 } at && at.Y < scroll.Viewport.Height, "the Actions heading is in view");
         Frame(window, "palette-top");
 
-        Press(window, Key.Down, PhysicalKey.ArrowDown);
-        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        for (var i = 0; i < 60 && scroll.Offset.Y <= 0; i++)
+        {
+            Press(window, Key.Down, PhysicalKey.ArrowDown);   // every row that runs is a stop now, so it takes more presses to leave the first screen
+        }
+
         Assert.True(scroll.Offset.Y > 0, "the arrows bring the selection into view");
 
         window.KeyTextInput("o");

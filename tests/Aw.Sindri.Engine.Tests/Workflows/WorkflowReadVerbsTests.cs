@@ -67,11 +67,11 @@ public sealed class WorkflowReadVerbsTests : IDisposable
     {
         var lines = status.TrimEnd('\n').Split('\n');
         Assert.Matches(@"^T-1/step/1  workflow\.step@[0-9a-f]{12}  v1  produce: desk task  since \d\d:\d\d \(.+\)$", lines[0]);
-        Assert.Equal("  next      Produce the Step output for T-1 (round 1/3), then run:", lines[1]);
+        Assert.Equal("  next      Produce the Step output for T-1 (round 1/5), then run:", lines[1]);
         Assert.Equal("            sindri workflow complete T-1/step/1 --run 1.1 --outcome done --output fact:output=<file>", lines[2]);
         Assert.Equal("  inputs    fact:spec  spec.md  sha256:aaaa...", lines[3]);
         Assert.Matches(@"^  timeout   parks in .+ \(desk\)$", lines[4]);
-        Assert.Equal("  budget    tokens 0 / 1M (state, this round), 0 used (instance)", lines[5]);
+        Assert.Equal("  budget    tokens 0 / 5M (state, this round), 0 used (instance)", lines[5]);
         Assert.Equal("  commands  complete, takeover, cancel", lines[6]);
     }
 

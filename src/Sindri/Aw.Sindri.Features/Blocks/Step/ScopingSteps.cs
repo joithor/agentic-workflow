@@ -71,7 +71,7 @@ internal static class ScopingSteps
 
     /// <summary>'step.interview.answer': the owner's answers to the questions (the form is built from 'fact:questions'); human-only. 'doneAsking' also closes the interview.</summary>
     public static BlockDescriptor InterviewAnswer { get; } = HumanDeskStep("step.interview.answer", Capability.None)
-        .Reads("fact:questions", "fact:answerLog").Reports("answered", "doneAsking")
+        .Reads("fact:questions", "fact:answerLog").Reviewing(ReviewOf("fact:questions", DeskReviewKind.Questions)).Reports("answered", "doneAsking")
         .Writes(On("fact:answers", "answered", "doneAsking"), On("fact:interviewClosed", "doneAsking"));
 
     /// <summary>'step.interview.record': appends the latest batch to the answer log once, by its digest; 'recorded'.</summary>
@@ -108,11 +108,11 @@ internal static class ScopingSteps
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
         .Reports("complete", "incomplete", "regather")
-        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:findings", "incomplete", "regather"));
+        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete", "regather"));
 
     /// <summary>'step.scope.review': the owner's stop, human-only: approve, revise (notes become answers) or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.scope.review", Capability.None)
-        .Reads("fact:scopePacket").Reports("approve", "revise", "drop").Writes(On("fact:answers", "revise"));
+        .Reads("fact:scopePacket").Reviewing(ReviewOf("fact:scopePacket", DeskReviewKind.Scope)).Reports("approve", "revise", "drop").Writes(On("fact:answers", "revise"));
 
     /// <summary>'step.scope.freeze': re-runs the evidence checks, confirms the packet's hash and freezes it through aw-packets; 'frozen' re-records fact:scopePacket as {hash, dir}, 'mismatch' carries findings.</summary>
     public static BlockDescriptor Freeze { get; } = BlockStep("step.scope.freeze", Capability.Tools)

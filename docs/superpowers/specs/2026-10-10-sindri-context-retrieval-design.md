@@ -120,7 +120,7 @@ that graph plus rank fusion across adapters.
   session caller on the whole-map paths (bulk accept, `--apply`, export, promote, build) and leaves a single decision to
   the class check.
 - **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
-  run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected.
+  run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected. **Amended per owner q93 (2026-10-23):** the key defaults to on (the owner may turn it off); sessions also build, back-test, measure, read the repo heads, review, promote and preview a map, and search the intent sources (no `context.repoTeams` needed); map import, export, hold, release, eval purge and profile approval stay with a human or the service, and the typed confirmation stays on import. The "Decisions stay human (X63)" rule below is superseded for review and promote.
 - **Denied paths.** The profile's `index.denyPaths` (added to the built-in secret globs) hide a path from every read of the map as soon as the profile with the glob is approved: its code nodes, the edges touching them, the features only they made, the surfaces only they produced and any evidence that names them are left out of lenses, file maps, queries, export, `map status`, the review queue (its counts, the bulk accept and the promote check), the history and a run's proposal statuses, for every caller. The decision is made once, on the map with the overrides applied, so a feature a person accepted goes with its only file. The path leaves the stored map when a draft is promoted, whether the draft came from a build or from a proposal.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
@@ -415,12 +415,12 @@ No model call happens on the query path unless rerank is on.
 
 ### 8.3 Budgets and packing
 
-The request carries `budget` (tokens, capped at `context.maxBudget`, default 32 000) and optional per-section caps
+The request carries `budget` (tokens, capped at `context.maxBudget`, default 200 000; raised from 32 000 per owner q93, 2026-10-23) and optional per-section caps
 (the §17.8 injection plan). Sections, in fill order: `graph` (anchor facts, never cut mid-item), `affects` (the
 cascade with paths), `decisions`, `code` (refs and signatures, not bodies), `records` (snippets). Within a section
 items are filled greedily by score; overflow is listed as refs only ("+12 more"). **Conflicts and `degraded` sit
 outside the budget and are always returned in full.** Tokens are estimated as UTF-8 characters / 4 and labeled
-`estimate`. Server-side caps: depth ≤ 4, `path` length ≤ 8, `Limit` ≤ 200, record text ≤ 64 KB per record, one map
+`estimate`. Server-side caps: depth ≤ 8 (a deeper ask is read as 8; was 4), `path` length unlimited (was 8), no `Limit` ceiling (was 200), a question has no length limit and keeps up to 64 terms (was 2000 characters, 16 terms), the 20-item fused cap is gone (all removed or raised per owner q93, 2026-10-23), record text ≤ 64 KB per record, one map
 build at a time.
 
 ### 8.4 Result
@@ -947,7 +947,7 @@ HIGHs, fixed:
 
 Also fixed: a stage-owner brief overriding `/specToProvenPR`'s epic defaults (devex); owners stay assigned until merge
 and do their own rebases; the lead is the only `stages.md` writer; caps on ready-unmerged PRs and stack depth; a token
-budget per stage; S-2W as its own stage, merging before S-5A; `context.sessions.enabled` defaults to false; MCP usage
+budget per stage; S-2W as its own stage, merging before S-5A; `context.sessions.enabled` defaults to false (on since owner q93, 2026-10-23); MCP usage
 counts in `sources status` (P-4); every-source-down is exit 2 (`SND-CONTEXT-011`); `scrub-blocked` as a citation state;
 stale review files refused (`SND-CONTEXT-043`), resume after quit, `--undo`; cascade behaviour after ascend; truth
 mapped through the sample's as-of map; as-of maps deterministic-only and cached; Linear canonical keys on the UUID; the
@@ -1201,7 +1201,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`, S-D `110–119` (S-LB 120–129, S-SK 130–139, S-CH 140–149, S-CL 150–159, S-H 160–169, S-TR 170–179 are booked for the scoping-station stages; explain 180–189; the map's publish rules 190–194, §8.7a). §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`, S-D `110–119` (S-LB 120–129, S-SK 130–139, S-CH 140–149, S-CL 150–159, S-H 160–169, S-TR 170–179 are booked for the scoping-station stages; explain 180–189; the map's publish rules 190–194, §8.7a; the whole-map read 200–209, `SND-CONTEXT-200` "No such area in this map", Part D of the deployable-context spec). §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |

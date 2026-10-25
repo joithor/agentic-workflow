@@ -52,7 +52,10 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var kept = cut.Records.Select(r => r.Key).Concat(cut.Decisions.Select(d => d.Node));
         var counts = new HistoryCounts(cut.TotalRecords, cut.TotalDecisions, changes.Total, git.Files, git.Unlocated, cut.AfterCut);
         var truncated = new HistoryTruncated(cut.RecordsTruncated, cut.DecisionsTruncated, changes.Truncated, git.FilesTruncated);
-        return new HistoryView(1, found.Anchors, found.MissingAnchors, basis.Map, basis.Draft, basis.AsOf, inputs.Window, cut.Records, cut.Decisions, changes.Items,
+        var repoOf = NodeRepos.Index(inputs.Map.Graph, basis.MapRepo);
+        var records = cut.Records.Select(r => r with { Repo = repoOf.GetValueOrDefault(r.Key.Value) }).ToList();
+        var decisions = cut.Decisions.Select(d => d with { Repo = repoOf.GetValueOrDefault(d.Node.Value) }).ToList();
+        return new HistoryView(1, found.Anchors, found.MissingAnchors, basis.Map, basis.Draft, basis.AsOf, inputs.Window, records, decisions, changes.Items,
             HistoryIncidents.NotConfigured, HistoryLens.Edges(found, kept), counts, truncated, git.Repos, HistoryLens.Coverage(found, basis), searched, degraded,
             new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
@@ -85,8 +88,8 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var located = found.Files.Where(f => f.Repo is not null).ToList();
         var unlocated = found.Files.Count - located.Count;
         var mine = located.Where(f => repos.FirstOrDefault(r => r.Name == f.Repo) is { } repo && !repo.Denies(f.Path)).ToList();
-        var chosen = mine.Take(HistoryRules.MaxFiles).ToList();
-        var read = new GitRead(chosen.Count, unlocated, mine.Count > HistoryRules.MaxFiles);
+        var chosen = mine;   // every implementing file is searched: no cap
+        var read = new GitRead(chosen.Count, unlocated, filesTruncated: false);
         using var timer = new CancellationTokenSource(settings.Deadline, clock);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timer.Token);
         var version = inputs.Map.Snapshot.Version;

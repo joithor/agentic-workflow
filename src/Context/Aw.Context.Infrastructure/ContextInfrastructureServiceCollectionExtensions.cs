@@ -9,6 +9,7 @@ using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Trust;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Eval;
@@ -17,10 +18,12 @@ using Aw.Context.Infrastructure.Git;
 using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Intent;
 using Aw.Context.Infrastructure.Labeling;
+using Aw.Context.Infrastructure.Linear;
 using Aw.Context.Infrastructure.Map;
 using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Infrastructure.Review;
 using Aw.Context.Infrastructure.Scrubbing;
+using Aw.Context.Infrastructure.Search;
 using Aw.Context.Infrastructure.Sources;
 using Aw.Context.Infrastructure.Store;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +38,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// Adds the context store (context.db under $AW_SINDRI_HOME/context), git, the repo-docs index and source catalog,
     /// the scrubber factory over Aw.Redaction (each call's scrubbers carry the profile's extra patterns), the graph store,
     /// the map file reader, the exports folder, the probe file reader and the probe reports folder, and the factory that builds the onyx source from the
-    /// profile's onyx settings and Linear teams (doctor's 'context:onyx' check runs that source's probe). The onyx source reads its key by calling
+    /// profile's onyx settings and Linear teams (doctor's 'context:onyx' check runs that source's probe), and the factory of the native linear source from its settings. The onyx source reads its key by calling
     /// <paramref name="environment"/> with the settings' pointer text (Sindri's Composition wraps the environment so
     /// pointers resolve there). Needs a TimeProvider, ILogger and the host's AwJson options (a JsonSerializerOptions
     /// singleton whose context holds the map types), all registered by the host.
@@ -56,6 +59,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IProposalRuns>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IIntentStore, SqliteIntentStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()
+            .AddSingleton<IMapSearchIndexFactory, SqliteMapSearchIndexFactory>()
             .AddSingleton<IExportStore, FileExportStore>()
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()
             .AddSingleton<ICurrentUser, OsCurrentUser>()
@@ -72,7 +76,9 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IAsOfDocs, AsOfDocsFactory>()
             .AddSingleton<IEvalStore, FileEvalStore>()
             .AddSingleton(sp => new OnyxSources(new OnyxSourceParts(
-                OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())));
+                OnyxHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<OnyxClient>>())))
+            .AddSingleton(sp => new LinearSources(new LinearSourceParts(
+                LinearHttp.Client, environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<LinearClient>>())));
 
     /// <summary>
     /// Adds the labeling pass ('context.labeling'): <see cref="ILabeler"/> over the host's <see cref="Core.Models.IModelPort"/>. The token cap
@@ -81,6 +87,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddContextLabeling(this IServiceCollection services)
-        => services.AddSingleton<ILabeler>(sp => new ModelLabeler(
-            sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
+        => services
+            .AddSingleton<ILabeler>(sp => new ModelLabeler(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()))
+            .AddSingleton<Core.Concepts.IConceptNamer>(sp => new ModelConceptNamer(sp.GetRequiredService<Core.Models.IModelPort>(), sp.GetRequiredService<IScrubberFactory>()));
 }

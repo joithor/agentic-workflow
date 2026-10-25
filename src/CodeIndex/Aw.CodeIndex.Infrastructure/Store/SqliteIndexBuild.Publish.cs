@@ -28,9 +28,9 @@ internal sealed partial class SqliteIndexBuild
 
         // The swap is the only step a reader can see; a cancel before it leaves the live index alone.
         cancellationToken.ThrowIfCancellationRequested();
-        await files.SwapPointer(repo, ulid, cancellationToken).ConfigureAwait(false);
+        await target.Files.SwapPointer(target.Repo, target.Ulid, cancellationToken).ConfigureAwait(false);
         _published = true;
-        files.ClearBuild(repo, ulid);
+        target.Files.ClearBuild(target.Repo, target.Ulid);
         return header;
     }
 
@@ -56,7 +56,7 @@ internal sealed partial class SqliteIndexBuild
 
         await connection.DisposeAsync().ConfigureAwait(false);
         _closed = true;
-        IndexFiles.DeleteSidecars(files.DbPath(repo, ulid));
+        IndexFiles.DeleteSidecars(target.Files.DbPath(target.Repo, target.Ulid));
         return Unit.Value;
     }
 

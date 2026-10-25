@@ -1,18 +1,19 @@
 using System.Globalization;
 using Aw.Context.Core;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
 namespace Aw.Context.Features.BuildMap;
 
 /// <summary>
-/// Proposes the map from the repos (spec Phase 4): under the heavy-job lock, reads each mapped repo at its HEAD (never the
+/// Proposes the map from the repos (spec Phase 4): one build at a time (<see cref="MapBuildGate"/>), reads each mapped repo at its HEAD (never the
 /// working tree, never a denied path), extracts the deterministic anchors with file-level 'implements', adds graphify
 /// clusters as candidate features and, only when 'context.labeling.enabled', names them with a model. The result joins the
 /// current map (a draft is a whole map, so a promote loses nothing) and is written as a draft in one step; 'current' is never
@@ -22,8 +23,8 @@ namespace Aw.Context.Features.BuildMap;
 internal sealed class BuildMapService(
     IRepoReader repos,
     IClusterSource clusterSource,
-    ILabeler labeler,
-    IHeavyJobLock heavy,
+    MapNamers namers,
+    MapBuildGate gate,
     IDefaultBranch defaults,
     IGraphStore store,
     TimeProvider clock) : IService<BuildMapRequest, MapBuildReport>
@@ -33,11 +34,6 @@ internal sealed class BuildMapService(
     public async ValueTask<Result<MapBuildReport>> Handle(BuildMapRequest request, CancellationToken cancellationToken)
     {
         var scope = request.Scope;
-        if (scope.Caller.Kind == ContextCallerKind.Session)
-        {
-            return ContextErrors.SessionsDisabled.With("building the map is a human or service job: a session can't start one");
-        }
-
         var mapped = SettingsReader.Read(scope.Settings).Bind(settings => ScopeRules.Resolve(settings, scope.Repos, scope.Caller).Map(r => (Settings: settings, Repos: r)));
         if (mapped.IsError)
         {
@@ -50,16 +46,8 @@ internal sealed class BuildMapService(
             return ContextErrors.SettingsInvalid.With("context.repos: the profile maps no repo to build from (fix: add a repo to the profile and approve it)");
         }
 
-        var slot = await heavy.Take(request.Progress, cancellationToken).ConfigureAwait(false);
-        if (slot.IsError)
-        {
-            return slot.Error;
-        }
-
-        await using (slot.Value.ConfigureAwait(false))
-        {
-            return await Build(request.Progress, settings, mappedRepos, scope.Repos, cancellationToken).ConfigureAwait(false);
-        }
+        using var turn = await gate.Enter(cancellationToken).ConfigureAwait(false);
+        return await Build(request.Progress, settings, mappedRepos, scope.Repos, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<MapBuildReport>> Build(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, IReadOnlyList<ContextRepo> profileRepos, CancellationToken cancellationToken)
@@ -90,7 +78,7 @@ internal sealed class BuildMapService(
         }
 
         // why: mappedRepos is not empty, so the loop set the primary
-        return MapHead.Check(heads) is { } invalid ? invalid : new Reading(found, degraded, primary!.Value.Name, primary.Value.Commit, heads);
+        return MapHead.Check(heads) is { } invalid ? invalid : new Reading(found, degraded, primary!.Value.Name, primary.Value.Commit, heads, settings);
     }
 
     private async ValueTask<Result<MapBuildReport>> Save(Reading read, IReadOnlyList<ContextRepo> profileRepos, IReadOnlyList<ContextRepo> mappedRepos, CancellationToken cancellationToken)
@@ -111,11 +99,12 @@ internal sealed class BuildMapService(
         var at = clock.GetUtcNow();
         var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
         undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
-        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, Join(kept, read.Found), undo, read.Heads), at, cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), read.Degraded, read.Heads);
+        var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], cancellationToken).ConfigureAwait(false);
+        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads) { Ruleset = MapRuleset.Of(ScopeRules.Mapped(read.Settings, profileRepos)) }, at, cancellationToken).ConfigureAwait(false);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), note is null ? read.Degraded : [.. read.Degraded, note], read.Heads);
     }
 
-    private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads);
+    private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads, ContextSettings Settings);
 
     // Whether the default branch holds the commit the build read; a checkout whose default ref can't be read counts as no (the repo is then not waited on), never a failed build.
     private async ValueTask<bool> OnDefault(ContextRepo repo, string commit, CancellationToken cancellationToken)
@@ -149,12 +138,16 @@ internal sealed class BuildMapService(
         }
 
         // A model that couldn't answer leaves the clusters their file-derived names.
-        var features = ClusterFeatures.Propose(repo.Name, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
+        var features = ClusterFeatures.Propose(repo, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
         return new RepoExtraction(extracted.Plus(features), commit, Degraded(clusters, labels, timedOut));
     }
 
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
-        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
+        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. LabelNote(labels), .. timedOut ? new[] { "recognizers" } : []];
+
+    private static string[] LabelNote(Result<LabelPass> labels) =>
+        labels is { IsError: false, Value.Unavailable: { } why } ? [$"labels: {ContextErrors.LabelingUnavailable.Code}: {why}"]
+        : labels.IsError || !labels.Value.Complete ? ["labels"] : [];
 
     // A denied path is never read, whatever a recognizer wants.
     private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
@@ -213,11 +206,41 @@ internal sealed class BuildMapService(
         }
 
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"labeling {clusters.Clusters.Count} clusters"));
-        return await labeler.Label(clusters.Clusters, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
+        return await namers.Labeler.Label(clusters.Clusters, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
     }
 
     private static void Tell(IProgress<string>? progress, int done, int total) =>
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"extracting {done}/{total} files"));
+
+    // The concepts the last build derived are rebuilt from scratch with the new features; a person's own concept nodes (human provenance) stay.
+    private static GraphSnapshot WithoutDerivedConcepts(GraphSnapshot kept)
+    {
+        var derived = kept.Nodes.Where(n => n.Key.Kind == NodeKind.Concept && n.Provenance != Provenance.Human).Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        return derived.Count == 0
+            ? kept
+            : kept with { Nodes = [.. kept.Nodes.Where(n => !derived.Contains(n.Key.Value))], Edges = [.. kept.Edges.Where(e => !derived.Contains(e.To.Value) && !derived.Contains(e.From.Value))] };
+    }
+
+    // The concepts ('index.concepts' pins of the mapped repos first) are derived over the whole joined graph (records and decisions included) and saved in the draft, so reads never call a model. A namer that can't answer leaves the deterministic names and says so as a degraded note.
+    private async ValueTask<(GraphSnapshot Graph, string? Note)> WithConcepts(ContextSettings settings, GraphSnapshot joined, IReadOnlyList<ConceptPin> pins, CancellationToken cancellationToken)
+    {
+        ConceptNames? names = null;
+        string? note = null;
+        var groups = ConceptDeriver.Groups(joined, pins);
+        if (settings.Labeling.Enabled && groups.Count > 0)
+        {
+            var named = await namers.Concepts.Name(groups, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
+            names = named.IsError ? null : named.Value;
+            note = named.IsError ? "concepts" : null;
+        }
+
+        var concepts = ConceptDeriver.Derive(joined, pins, names);
+        return (joined with
+        {
+            Nodes = [.. joined.Nodes.Concat(concepts.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal)],
+            Edges = [.. joined.Edges.Concat(concepts.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
+        }, note);
+    }
 
     // The current map first (already without what the built repos' deny globs take out, spec §6.2): what a person put there wins over what the build found, and a promote loses nothing.
     private static GraphSnapshot Join(GraphSnapshot kept, ExtractedMap found) =>

@@ -66,18 +66,17 @@ internal sealed partial class ShellViewModel : ObservableObject
         Queue.PageShown(RowScopeOf(CurrentPage));
         var decisions = new DecisionSender(api);
         Item = new ItemSheetViewModel(api, Health.Catalog, clock, decisions);
-        Health.Follow(Queue.Refresh);
-        Health.Follow(Item.Refresh);
+        FollowViews();
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
-        ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
+        ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
-        Inbox = InitInbox(api, clipboard);
+        Inbox = InitInbox(api, clipboard, (window ?? WindowPorts.None).Launcher);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
         window ??= WindowPorts.None;
-        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile, () => NeedsYou.Seen.ReducedMotion);
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile);
         InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
@@ -87,11 +86,19 @@ internal sealed partial class ShellViewModel : ObservableObject
         Recipe = new RecipeSheetViewModel(api, clipboard);
         InitRecipe();
         InitAgents(clipboard);
-        InitContext(api, clipboard);
+        InitContext(api, clipboard, window.Launcher);
         InitRunPage(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
+    }
+
+    // The views the control plane's follower re-reads on connect and after every event.
+    private void FollowViews()
+    {
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Health.Follow(Health.CodeIndex.Refresh);
     }
 
     /// <summary>The app's copy, for the view.</summary>
@@ -221,17 +228,27 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         ShowPage(page, filter);
+        OpenPage(page);
+    }
+
+    // What a page does when it is entered: GoTo runs it, and so does Restore for the page the app starts on.
+    private void OpenPage(PageId page)
+    {
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
+        if (page == PageId.Context)
+        {
+            _ = Context.Opened(CancellationToken.None);   // the page opens on the whole map, read here with no starting point
+        }
     }
 
     internal void ShowPage(PageId page, HomeFilter filter)
     {
         _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
-        if (page == PageId.Settings)
-        {
-            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
-        }
-
         if (page != PageId.Workflows || page == CurrentPage)
         {
             CloseRunPage();   // any other page, and the Workflows tab again, leaves a run for the list

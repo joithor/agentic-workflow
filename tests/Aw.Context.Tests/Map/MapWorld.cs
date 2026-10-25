@@ -11,9 +11,11 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Trust;
+using Aw.Context.Core.WholeMap;
 using Aw.Context.Features;
 using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Engine;
@@ -63,7 +65,7 @@ internal sealed class MapWorld : IDisposable
         ["README.md"] = "# Split panes",
     };
 
-    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null, ICodeSearch? codeSearch = null, IFileHistory? history = null, ICodeSymbolSource? symbols = null)
+    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null, ICodeSearch? codeSearch = null, IFileHistory? history = null, ICodeSymbolSource? symbols = null, WholeMapRules? wholeMapRules = null)
     {
         Sources = new FixedSourceCatalog(intent is null ? [Docs] : [Docs, intent]);
         Exports = new FakeExportStore(Clock);
@@ -92,6 +94,8 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IHeavyJobLock>(HeavyLock)
             .AddSingleton<IReviewFileStore>(ReviewFiles)
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
+            .AddSingleton(wholeMapRules ?? WholeMapRules.Default)
+            .AddSingleton<IMapSearchIndexFactory>(new Context.Infrastructure.Search.SqliteMapSearchIndexFactory())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
@@ -118,6 +122,12 @@ internal sealed class MapWorld : IDisposable
     public FakeReviewFileStore ReviewFiles { get; } = new();
 
     public FakeMapFileReader Reader { get; } = new();
+
+    /// <summary>How many whole-map answers were built rather than served from the cache.</summary>
+    internal int WholeMapBuilds => _scope.ServiceProvider.GetRequiredService<Features.GetWholeMap.WholeMapCache>().Builds;
+
+    /// <summary>How many search indexes were built rather than served from the cache.</summary>
+    internal int SearchBuilds => _scope.ServiceProvider.GetRequiredService<Features.SearchMap.MapSearchCache>().Builds;
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 

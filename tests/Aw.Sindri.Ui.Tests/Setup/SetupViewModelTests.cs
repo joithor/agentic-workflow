@@ -147,6 +147,15 @@ public sealed class SetupViewModelTests
     }
 
     [Fact]
+    public async Task Homes_meter_counts_finished_steps_out_of_all_of_them()
+    {
+        var first = await ReadWith("first-run");
+        var progress = await ReadWith("running-progress");
+
+        Assert.Equal(((0.0, 6.0), (5.0, 6.0)), ((first.MeterDone, first.MeterMax), (progress.MeterDone, progress.MeterMax)));
+    }
+
+    [Fact]
     public async Task Home_shows_one_line_while_any_step_is_open_and_none_when_setup_is_finished()
     {
         var open = await ReadWith("profile-needs-approval");
@@ -294,9 +303,9 @@ public sealed class SetupViewModelTests
         var setup = await _f.Read(Token);
 
         Assert.Equal((true, false, false), (setup.IsNotRunning, setup.IsFailed, setup.IsHomeLineShown));
-        Assert.Equal(("Sindri isn't running.", "sindri-app", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher.Cli, setup.ReconnectsText));
+        Assert.Equal(("Sindri isn't running.", "sindri", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher.Cli, setup.ReconnectsText));
         await setup.Launcher.Copy(Token);
-        Assert.Equal("sindri-app", _f.Clipboard.Text);
+        Assert.Equal("sindri", _f.Clipboard.Text);
     }
 
     [Fact]

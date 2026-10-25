@@ -21,7 +21,7 @@ public sealed class NeighborsTests
         var symbols = Enumerable.Range(0, methods).Select(i => Parsed.Method("A.M" + i.ToString("D4", CultureInfo.InvariantCulture), 2 + (i * 3)) with { Body = "{ Work(" + i.ToString("D4", CultureInfo.InvariantCulture) + "); }" }).ToList();
         _ = harness.Parser.With("src/A.cs", new ParseOutcome(symbols));
         _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A");
-        _ = await harness.Build(BuildHarness.First, cancellationToken: Token);
+        _ = await harness.BuildAndEmbed(BuildHarness.First, cancellationToken: Token);
         return harness;
     }
 
@@ -55,7 +55,10 @@ public sealed class NeighborsTests
     [Fact]
     public async Task A_pending_layer_answers_from_the_vectors_it_has()
     {
-        var harness = await Built(4_100);
+        var harness = await Built();
+        _ = harness.Parser.With("src/B.cs", new ParseOutcome([Parsed.Method("B.N", 2)]));
+        _ = harness.Snapshot.WithFile(BuildHarness.Second, "src/A.cs", "class A").WithFile(BuildHarness.Second, "src/B.cs", "class B");
+        _ = await harness.Build(BuildHarness.Second, cancellationToken: Token);
 
         var answer = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, "M0001\nvoid M0001()\n{ Work(0001); }", 3, Token)).Value;
 
@@ -103,8 +106,7 @@ public sealed class NeighborsTests
     [InlineData("   ", 3)]
     [InlineData("text", 0)]
     [InlineData("text", -1)]
-    [InlineData("text", 101)]
-    public async Task A_blank_text_or_a_k_outside_1_to_100_is_a_bad_query(string text, int k)
+    public async Task A_blank_text_or_a_k_below_1_is_a_bad_query(string text, int k)
     {
         var harness = await Built();
 
@@ -119,7 +121,7 @@ public sealed class NeighborsTests
     {
         var harness = await Built();
 
-        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, new string('x', 5_000), 1, Token);
+        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, new string('x', CodeIndexRules.EmbedTextMaxCharacters + 1_000), 1, Token);
 
         Assert.False(answer.IsError);
         Assert.Equal(CodeIndexRules.EmbedTextMaxCharacters, harness.Embedder.Batches[^1].Single().Length);

@@ -23,25 +23,25 @@ public static partial class SandboxReasons
     /// <summary>-014: macOS (until SB-9) and other platforms.</summary>
     public const string UnsupportedPlatform = "unsupported-platform";
 
-    /// <summary>-025: the entry's policy form is 'none'.</summary>
+    /// <summary>-028: the entry's policy form is 'none'.</summary>
     public const string FormNone = "form-none";
 
-    /// <summary>-025: the entry's policy form is reserved (Cursor).</summary>
+    /// <summary>-028: the entry's policy form is reserved (Cursor).</summary>
     public const string FormReserved = "form-reserved";
 
-    /// <summary>-025: the agent can't restrict a tool the Step allows.</summary>
+    /// <summary>-028: the agent can't restrict a tool the Step allows.</summary>
     public const string ToolNotExpressible = "tool-not-expressible";
 
-    /// <summary>-025: the agent's binary lives in a denied tree.</summary>
+    /// <summary>-028: the agent's binary lives in a denied tree.</summary>
     public const string BinDenied = "bin-denied";
 
-    /// <summary>-025: the host isn't tmux.</summary>
+    /// <summary>-028: the host isn't tmux.</summary>
     public const string HostNotTmux = "host-not-tmux";
 
-    /// <summary>-025: the worktree isn't under the repo.</summary>
+    /// <summary>-028: the worktree isn't under the repo.</summary>
     public const string WorktreeOutsideRepo = "worktree-outside-repo";
 
-    /// <summary>-025: a resume found no stored plan.</summary>
+    /// <summary>-028: a resume found no stored plan.</summary>
     public const string NoStoredPlan = "no-stored-plan";
 
     /// <summary>-016: the 'fs-deny' canary.</summary>

@@ -169,6 +169,10 @@ public static class EventTypes
 
     /// <summary>A sandbox limit was reached without ending the session: pids, memory high or disk growth (sandbox spec §8).</summary>
     public const string SandboxLimitHit = "sandbox.limit-hit";
+
+    /// <summary>A takeover tried to open the taken-over Step's live session in a viewer (issue 1004).</summary>
+    public const string LaunchTakeoverOpened = "launch.takeover-opened";
+
     /// <summary>A setup step's derived state changed (setup-once spec §7.5).</summary>
     public const string SetupStepChanged = "setup.step.changed";
 

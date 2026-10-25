@@ -1,16 +1,10 @@
 namespace Aw.Context.Core.History;
 
-/// <summary>The fixed caps of the history lens (S-H decision 16; no profile key).</summary>
+/// <summary>The history lens's rules. It has no caps on what it lists (owner q89/q93); the git read just never stops short of the end.</summary>
 public static class HistoryRules
 {
-    /// <summary>Records, decisions and changes each cap here, after the cut.</summary>
-    public const int ListCap = 100;
-
-    /// <summary>The implementing files searched per anchor set.</summary>
-    public const int MaxFiles = 50;
-
-    /// <summary>The changes read per repo (one more than the list cap, so a cut is told).</summary>
-    public const int ChangesPerRepo = ListCap + 1;
+    /// <summary>What one git read is asked for per repo: all of it (the read adds one to see whether more follow, so this stays below the int maximum).</summary>
+    public const int ChangesPerRepo = int.MaxValue - 1;
 
     /// <summary>A change's subject is cut at this many characters.</summary>
     public const int SubjectChars = 200;

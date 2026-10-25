@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.pr-babysitter
-version: 4
+version: 5
 description: "The line's last station for one PR: fix red CI, handle each comment by its type, re-prove when the source changes, sync the docs once, then stop at ready-to-merge for the owner's merge or rework."
 displayName: "Watch the pull request until you merge it"
 inputs:
@@ -11,6 +11,7 @@ inputs:
   - { key: fact:workspace,   label: "Phase worktree (empty when started by hand)", type: payload, kind: payload }
 outputs:
   - { key: fact:prState,     label: "Last snapshot",   type: payload, from: snapshot }
+  - { key: fact:prStatus,    label: "Merge-stop summary", type: payload, from: snapshot }
   - { key: fact:mergedSha,   label: "Merged sha",      type: text,    from: snapshot }
   - { key: fact:docsPr,      label: "Stacked docs PR", type: link,    from: docs }
   - { key: fact:reworkNotes, label: "Rework notes",    type: payload, from: rework-notes }
@@ -38,7 +39,7 @@ states:
     kind: active
     step: { use: step.pr.ci-fix, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
     loop: ci
-    budget: { tokens: 1M }
+    budget: { tokens: 5M }
     timeout: { after: 4h, then: park }
     next: "Fix the failing checks on {item}'s pull request, attempt {loop.ci}/{loop.ci.cap}. Commit in the workspace; Sindri pushes."
   next-comment:
@@ -76,26 +77,26 @@ states:
   fix:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: full }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 1M }
+    budget: { tokens: 5M }
     timeout: { after: 4h, then: park }
     next: "Make the change this comment asks for on {item}'s pull request. Commit with its trailer; Sindri pushes."
   fix-nit:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: cheap }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 1M }
-    timeout: { after: 1h, then: park }
+    budget: { tokens: 5M }
+    timeout: { after: 4h, then: park }
     next: "Fix this nit if it is cheap; otherwise decline it with a one-line reason."
   fix-bot:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: bot }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 1M }
-    timeout: { after: 2h, then: park }
+    budget: { tokens: 5M }
+    timeout: { after: 4h, then: park }
     next: "Fix this automated finding, or decline it with the reason it doesn't apply."
   reply:
     kind: active
     step: { use: step.pr.reply-draft, inputs: [input.pr.context, input.handoff-note] }
-    budget: { tokens: 1M }
-    timeout: { after: 1h, then: park }
+    budget: { tokens: 5M }
+    timeout: { after: 4h, then: park }
     next: "Draft the reply to this comment on {item}'s pull request. Sindri checks and posts it."
   pushing:
     kind: wait
@@ -165,7 +166,7 @@ states:
     why: "Fixes a held comment the way you decided."
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: full }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 1M }
+    budget: { tokens: 5M }
     timeout: { after: 4h, then: park }
     next: "Make the fix the owner asked for on this held comment. Commit with its trailer; Sindri pushes when the walk ends."
   rework-notes:
@@ -183,7 +184,7 @@ states:
   docs-merging:
     kind: wait
     waitFor: { event: pr.docsMerged }
-    timeout: { after: 2h, then: park }
+    timeout: { after: 4h, then: park }
     next: "{item}'s pull request is merged; waiting for its stacked docs PR to be retargeted, checked and merged."
   docs-merge-owner:
     displayName: "Decide about the docs pull request"
@@ -212,26 +213,26 @@ transitions:
 
   # snapshot: the first row whose `when` holds is taken, so row order is §4.3's priority
   # BD9 with PB3: the docs PR is merged on its own only after this instance's click (fact:merge)
-  - { from: snapshot, to: docs-merging, on: step.completed, produces: [fact:prState, fact:mergedSha],
+  - { from: snapshot, to: docs-merging, on: step.completed, produces: [fact:prState, fact:prStatus, fact:mergedSha],
       when: { all: [ { outcome: mergedDocsOpen }, { fact: fact:merge, is: present } ] },
-      effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr } } }] }
-  - { from: snapshot, to: docs-merge-owner, on: step.completed, when: { outcome: mergedDocsOpen }, produces: [fact:prState, fact:mergedSha] }
-  - { from: snapshot, to: merged,     on: step.completed, when: { outcome: merged },   produces: [fact:prState, fact:mergedSha],
+      effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr }, trigger: command.merge } }] }
+  - { from: snapshot, to: docs-merge-owner, on: step.completed, when: { outcome: mergedDocsOpen }, produces: [fact:prState, fact:prStatus, fact:mergedSha] }
+  - { from: snapshot, to: merged,     on: step.completed, when: { outcome: merged },   produces: [fact:prState, fact:prStatus, fact:mergedSha],
       effects: [{ use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
-  - { from: snapshot, to: closed,     on: step.completed, when: { outcome: closed },   produces: [fact:prState],
+  - { from: snapshot, to: closed,     on: step.completed, when: { outcome: closed },   produces: [fact:prState, fact:prStatus],
       effects: [{ use: effect.pr.record, with: { kind: end, terminal: closed } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
-  - { from: snapshot, to: restacking, on: step.completed, when: { outcome: restack },  produces: [fact:prState],
+  - { from: snapshot, to: restacking, on: step.completed, when: { outcome: restack },  produces: [fact:prState, fact:prStatus],
       effects: [{ use: effect.pr.restack, with: { pr: { fact: fact:pr } } }] }
-  - { from: snapshot, to: owner,      on: step.completed, when: { outcome: conflict }, produces: [fact:prState] }
-  - { from: snapshot, to: ci-fix,     on: step.completed, when: { outcome: ciRed },    produces: [fact:prState],
+  - { from: snapshot, to: owner,      on: step.completed, when: { outcome: conflict }, produces: [fact:prState, fact:prStatus] }
+  - { from: snapshot, to: ci-fix,     on: step.completed, when: { outcome: ciRed },    produces: [fact:prState, fact:prStatus],
       gates: [{ use: gate.pr.autofix-cap, with: { pr: { fact: fact:pr }, cap: { profile: workflow.pr.autofixCap } } }] }
-  - { from: snapshot, to: next-comment, on: step.completed, when: { outcome: comments }, produces: [fact:prState] }
-  - { from: snapshot, to: recheck,    on: step.completed, when: { outcome: stale },    produces: [fact:prState] }
-  - { from: snapshot, to: docs-owner, on: step.completed, when: { outcome: docsRed },  produces: [fact:prState] }
-  - { from: snapshot, to: await,      on: step.completed, when: { outcome: pending },  produces: [fact:prState] }
-  - { from: snapshot, to: docs,       on: step.completed, produces: [fact:prState],
+  - { from: snapshot, to: next-comment, on: step.completed, when: { outcome: comments }, produces: [fact:prState, fact:prStatus] }
+  - { from: snapshot, to: recheck,    on: step.completed, when: { outcome: stale },    produces: [fact:prState, fact:prStatus] }
+  - { from: snapshot, to: docs-owner, on: step.completed, when: { outcome: docsRed },  produces: [fact:prState, fact:prStatus] }
+  - { from: snapshot, to: await,      on: step.completed, when: { outcome: pending },  produces: [fact:prState, fact:prStatus] }
+  - { from: snapshot, to: docs,       on: step.completed, produces: [fact:prState, fact:prStatus],
       when: { all: [ { outcome: green }, { fact: fact:docsResult, is: absent } ] } }
-  - { from: snapshot, to: ready,      on: step.completed, when: { outcome: green },    produces: [fact:prState],
+  - { from: snapshot, to: ready,      on: step.completed, when: { outcome: green },    produces: [fact:prState, fact:prStatus],
       effects: [effect.notify.desk] }
   - { from: snapshot, to: owner,      on: step.failed }
 
@@ -372,23 +373,25 @@ transitions:
       effects: [{ use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
   - { from: docs-merging, to: docs-merge-owner, on: wait.satisfied, when: { outcome: pending }, produces: [fact:docsMerge] }
   - { from: docs-merge-owner, to: docs-merging, on: step.completed, when: { outcome: merge },
-      effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr } } }] }
-  - { from: docs-merge-owner, to: merged, on: step.completed, when: { any: [ { outcome: done }, { outcome: leave } ] },
-      effects: [{ use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
+      effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr }, trigger: ownerDesk } }] }
+  - { from: docs-merge-owner, to: merged, on: step.completed, when: { outcome: done },
+      effects: [{ use: effect.pr.record, with: { kind: docsMerge, outcome: doneByHand, trigger: ownerDesk } }, { use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
+  - { from: docs-merge-owner, to: merged, on: step.completed, when: { outcome: leave },
+      effects: [{ use: effect.pr.record, with: { kind: docsMerge, outcome: left, trigger: ownerDesk } }, { use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
 
   - { from: owner, to: intake,  on: step.completed, when: { outcome: retry } }
   - { from: owner, to: stopped, on: step.completed, when: { outcome: stop },
       effects: [{ use: effect.pr.record, with: { kind: end, terminal: stopped } }] }
 loops:
-  cycles:      { cap: 150 }
-  ci:          { cap: 3 }
+  cycles:      { cap: 1000 }
+  ci:          { cap: 5 }
   comments:    { cap: 60 }
   rounds:      { cap: 6 }
   rechecks:    { cap: 4 }
-  docs:        { cap: 3 }
+  docs:        { cap: 5 }
   refresh:     { cap: 500 }
   held:        { cap: 40 }
-  docs-merges: { cap: 3 }
+  docs-merges: { cap: 5 }
   retries:     { cap: 5 }
 evals:
   - evals/workflow.pr-babysitter/happy.jsonl

@@ -5,9 +5,8 @@ using static Aw.Sindri.Features.Blocks.Step.StepSpec;
 namespace Aw.Sindri.Features.Blocks.Step;
 
 /// <summary>
-/// The prove station's own Steps (line spec §7.3, Appendix C.4): descriptors only, desk-capable, so each parks with SND-WF-010 at the
-/// desk until its runtime ships. The hand test, verify and evidence run as children. 'step.prove.holdout' is an agent Step (the evaluator
-/// model, LN-WF4). Fact and outcome names are camelCase.
+/// The prove station's own Steps (line spec §7.3, Appendix C.4): the descriptors; the block Steps' runtimes are in Features/Prove. The hand test,
+/// verify and evidence run as children. 'step.prove.holdout' is an agent Step (the evaluator model, LN-WF4). Fact and outcome names are camelCase.
 /// </summary>
 internal static class ProveSteps
 {
@@ -23,7 +22,7 @@ internal static class ProveSteps
 
     /// <summary>'step.prove.before-after': each fix item's recorded script must fail at the base and pass at the head; 'pass' or 'fail', the result on both.</summary>
     public static BlockDescriptor BeforeAfter { get; } = BlockStep("step.prove.before-after", Capability.Tools)
-        .Reads("fact:phasePacket", "fact:built", "fact:workspace").Reports("pass", "fail").Long(CommandStepLimits.ProveMaxDuration).Writes(Every("fact:beforeAfter"));
+        .Reads("fact:phasePacket", "fact:built", "fact:workspace", "fact:redTests").Reports("pass", "fail").Long(CommandStepLimits.ProveMaxDuration).Writes(Every("fact:beforeAfter"));
 
     /// <summary>'step.prove.holdout': runs the hidden scenarios against the head in the running app; 'ran' with the verdicts.</summary>
     public static BlockDescriptor Holdout { get; } = AgentStep("step.prove.holdout", Capability.Tools | Capability.WriteScope)

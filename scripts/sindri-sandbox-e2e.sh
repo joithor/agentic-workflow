@@ -10,8 +10,8 @@
 #   --repo PATH      the repo to clone (default: this one); the clone gets a new branch sandbox/e2e-<stamp>
 #   --start RECIPE   the recipe to start (default workflow.line)
 #   --title TEXT     the item's title (default: the feature file's first heading)
-#   --stall SECONDS  no progress for this long is a stop (default 300)
-#   --max-wait SEC   the whole follow gives up after this long (default 3600)
+#   --stall SECONDS  no progress for this long is a stop (default 900: an agent Step can run 5-15 min with no ledger change)
+#   --max-wait SEC   the whole follow gives up after this long (default 10800: the whole line takes hours)
 #   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
 #                    with a grant of 200k tokens (the most one grant may give), recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
@@ -21,6 +21,8 @@
 #   --desk-max N     --auto-desk answers at most N desk states (default 25)
 #   --agent ID       profile workflow.agent.target: agent Steps launch real sessions of that agent (default: none, so
 #                    every Step is completed at the desk and the line stops at the first Step that needs a model)
+#   --build-command CMD  one profile workflow.build.commands entry, repeatable, in order (default: the demo brief's
+#                    test, `bash scripts/tests/binaries-lock.test.sh`); step.build.red-check needs one to fail on red
 #   --no-context     leave the context section out of the profile (scoping then parks at gather: no lenses)
 #   --keep           keep the scratch dir (default: stop serve and delete it on exit)
 #   --print-config   parse the arguments, run the guard, print the configuration and exit 0 (no scratch, no serve)
@@ -41,8 +43,9 @@ PROVE="$ROOT/scripts/sindri-prove.sh"
 die() { echo "sindri-sandbox-e2e: $*" >&2; exit 2; }
 say() { echo "sindri-sandbox-e2e: $*" >&2; }
 
-FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=300 MAX_WAIT=3600
+FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=900 MAX_WAIT=10800
 AUTO_DESK=0 DESK_MAX=25 AGENT="" KEEP=0 PRINT_CONFIG=0 CONTEXT=1 MAP_FILE="" CODE_FILE=""
+BUILD_COMMANDS=() DEFAULT_BUILD_COMMAND="bash scripts/tests/binaries-lock.test.sh"
 
 usage() { sed -n '2,/^# Tests:/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
@@ -62,6 +65,7 @@ parse_args() {
       --code) [ $# -ge 2 ] || die "--code needs a repo path"; CODE_FILE="$2"; shift 2 ;;
       --desk-max) [ $# -ge 2 ] || die "--desk-max needs a number"; DESK_MAX="$2"; shift 2 ;;
       --agent) [ $# -ge 2 ] || die "--agent needs an agent id"; AGENT="$2"; shift 2 ;;
+      --build-command) [ $# -ge 2 ] && [ -n "$2" ] || die "--build-command needs a command line"; BUILD_COMMANDS+=("$2"); shift 2 ;;
       --no-context) CONTEXT=0; shift ;;
       --keep) KEEP=1; shift ;;
       --print-config) PRINT_CONFIG=1; shift ;;
@@ -69,6 +73,7 @@ parse_args() {
     esac
   done
   [ -n "$FEATURE" ] || die "--feature <spec-file> is required"
+  [ ${#BUILD_COMMANDS[@]} -gt 0 ] || BUILD_COMMANDS=("$DEFAULT_BUILD_COMMAND")
   case "$DESK_MAX" in '' | *[!0-9]*) die "--desk-max takes a whole number (got $DESK_MAX)" ;; esac
   case "$STALL" in '' | *[!0-9]*) die "--stall takes whole seconds (got $STALL)" ;; esac
   case "$MAX_WAIT" in '' | *[!0-9]*) die "--max-wait takes whole seconds (got $MAX_WAIT)" ;; esac
@@ -184,7 +189,7 @@ publish_sindri() {
   git -C "$ROOT" ls-files -z --cached --others --exclude-standard -- "${SINDRI_BUILD_PATHSPECS[@]}" context \
     | while IFS= read -r -d '' f; do if [ -f "$ROOT/$f" ]; then printf '%s\0' "$f"; fi; done \
     | (cd "$ROOT" && tar --null -cf - -T -) | tar -xf - -C "$tree" || die "could not copy the build inputs"
-  # the shipped recipes are HEAD's (as sindri-app.sh embeds them): an edited working-tree recipe is never embedded
+  # the shipped recipes are HEAD's (as scripts/install-cs.sh embeds them): an edited working-tree recipe is never embedded
   find "$tree/recipes/sindri" -delete 2>/dev/null
   git -C "$ROOT" archive HEAD recipes/sindri | tar -xf - -C "$tree" || die "could not stage recipes/sindri from HEAD"
   commit="$(git -C "$ROOT" rev-parse --short HEAD)"
@@ -193,7 +198,7 @@ publish_sindri() {
   (cd "$tree" && $pre dotnet publish src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj -c Release --no-self-contained \
     -p:AwRecipesDir="$tree/recipes/sindri" -o "$out") </dev/null >"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
   [ -x "$out/sindri" ] || die "the publish left no sindri in $out"
-  # The C# judge beside it (NativeAOT, as sindri-app.sh publishes it): step.judge.choose runs `judge choose` through
+  # The C# judge beside it (NativeAOT, as scripts/install-cs.sh publishes it): step.judge.choose runs `judge choose` through
   # AW_SINDRI_JUDGE, and the judge on the PATH is the TypeScript one, which has no choose. Published apart, then the
   # binary and its bundled e_sqlite3 are copied next to sindri.
   local jout="$SCRATCH/judge-bin" rid f
@@ -238,6 +243,10 @@ write_profile() {
     # the effect ids the code registers (grep '\"effect\\.' src/Sindri)
     echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
     echo "  forge: { adapter: file, hosts: [forge.test] }"
+    # step.build.red-check needs one to fail on the red commit; checks and ship.green need all to pass
+    echo "  build:"
+    echo "    commands:"
+    local c; for c in "${BUILD_COMMANDS[@]}"; do printf "      - '%s'\n" "${c//\'/\'\'}"; done
     if [ -n "$AGENT" ]; then echo "  agent: { target: $AGENT }"; fi
   } > "$file"
   chmod 600 "$file"
@@ -400,6 +409,7 @@ main() {
     guard_scratch "${TMPDIR:-/tmp}" 2>/dev/null || true
     printf 'feature=%s\nsindri=%s\nrepo=%s\nstart=%s\nstall=%s\nmax-wait=%s\nauto-desk=%s\ndesk-max=%s\nagent=%s\ncontext=%s\nkeep=%s\n' \
       "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "$(or_none "$AGENT")" "$CONTEXT" "$KEEP"
+    printf 'build=%s\n' "${BUILD_COMMANDS[@]}"
     exit 0
   fi
   for t in git jq curl script; do command -v "$t" >/dev/null || die "$t is required"; done

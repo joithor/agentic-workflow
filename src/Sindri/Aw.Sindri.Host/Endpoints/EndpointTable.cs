@@ -34,11 +34,6 @@ internal static class EndpointTable
         _ = queries.MapGetNeedsYou();
         _ = queries.MapListDecisions();
         _ = queries.MapListRequests();
-        _ = queries.MapGetInstance();
-        _ = queries.MapGetInstanceEvents();
-        _ = queries.MapGetInstanceFact();
-        _ = queries.MapGetInstanceScoping();
-        _ = queries.MapGetInstanceDesignStop();
         _ = queries.MapGetPacketFile();
         _ = queries.MapReadInjection();
         _ = queries.MapGetProfile();
@@ -46,7 +41,6 @@ internal static class EndpointTable
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListItems();
-        _ = queries.MapListInstances();
         _ = queries.MapListOutbox();
         _ = queries.MapListServices();
         _ = queries.MapListSessions();
@@ -56,8 +50,30 @@ internal static class EndpointTable
         _ = queries.MapShowRecipe();
         _ = queries.MapGetRecipeStats();
         _ = queries.MapStreamEvents();
+        _ = MapEngineQueries(queries);
+        _ = MapInstanceQueries(queries);
         _ = MapCodeIndexQueries(queries);
         return MapContextQueries(queries);
+    }
+
+    private static RouteGroupBuilder MapEngineQueries(RouteGroupBuilder queries)
+    {
+        _ = queries.MapGetEngine();
+        _ = queries.MapGetEngineHistory();
+        _ = queries.MapListEngineInstances();
+        return queries;
+    }
+
+    private static RouteGroupBuilder MapInstanceQueries(RouteGroupBuilder queries)
+    {
+        _ = queries.MapGetInstance();
+        _ = queries.MapGetInstanceEvents();
+        _ = queries.MapGetInstanceFact();
+        _ = queries.MapGetInstanceScoping();
+        _ = queries.MapGetInstanceDesignStop();
+        _ = queries.MapGetInstanceLine();
+        _ = queries.MapListInstances();
+        return queries;
     }
 
     private static RouteGroupBuilder MapCodeIndexQueries(RouteGroupBuilder queries)
@@ -72,15 +88,19 @@ internal static class EndpointTable
     private static RouteGroupBuilder MapContextQueries(RouteGroupBuilder queries)
     {
         _ = queries.MapExportContextMap();
+        _ = queries.MapGetContextConcepts();
+        _ = queries.MapGetContextConceptMembers();
         _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
         _ = queries.MapGetContextFileMap();
         _ = queries.MapGetContextHistory();
         _ = queries.MapGetContextLenses();
         _ = queries.MapGetContextSubgraph();
+        _ = queries.MapSearchContextMap();
         _ = queries.MapGetContextCode();
         _ = queries.MapGetContextEvalMap();
         _ = queries.MapGetContextMap();
+        _ = queries.MapGetContextWholeMap();
         _ = queries.MapGetMapPublishStatus();
         _ = queries.MapGetContextProposals();
         _ = queries.MapGetContextReview();

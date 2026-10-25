@@ -40,6 +40,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(EvidenceSteps.ApiPlan)
         .AddBlockDescriptor(EvidenceSteps.DbPlan)
         .AddBlockDescriptor(EvidenceSteps.UiRun)
+        .AddBlockDescriptor(EvidenceSteps.DesktopRun)
+        .AddBlockDescriptor(EvidenceSteps.DesktopReview)
         .AddBlockDescriptor(EvidenceSteps.ApiRun)
         .AddBlockDescriptor(EvidenceSteps.DbRun)
         .AddBlockDescriptor(EvidenceSteps.None)
@@ -61,6 +63,7 @@ internal static class BlockRegistrations
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddPrEffects()
         .AddSingleton<IMergeRecord, MergeRecord>() // PB-B: the merge record's one writer
+        .AddSingleton<IMergeRecordReader, MergeRecordReader>() // PB spec API19: the stats' read side
         .AddEffect<LineReportEffect>()    // LN-WF1: a phase's shipped and merged, recorded for its line
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
@@ -77,7 +80,11 @@ internal static class BlockRegistrations
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
         .AddEffect<PrPurgeMarksEffect>()  // PB-E: W26's terminal cleanup of a PR's marks
-        .AddEffect<PrOpenEffect>();       // PB-O (BD1)
+        .AddEffect<PrOpenEffect>()          // PB-O (BD1)
+        .AddEffect<PrCreateStackedEffect>() // PB-E: the stacked docs PR
+        .AddEffect<PrMergeDocsEffect>()     // PB-E: the docs PR after the click
+        .AddEffect<PrRestackEffect>()       // PB-E: rebase onto the new base, scan, lease push
+        .AddSingleton<RebasedRangeScan>();
 
     /// <summary>Registers the gates that have runtimes in this build.</summary>
     /// <param name="services">The service collection.</param>
@@ -175,6 +182,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Check)
         .AddBlockDescriptor(PlanSteps.ExecReview)
         .AddBlockDescriptor(PlanSteps.Holdout)
+        .AddBlockDescriptor(PlanSteps.HoldoutStore)
         .AddBlockDescriptor(PlanSteps.Evidence)
         .AddBlockDescriptor(PlanSteps.Questions)
         .AddBlockDescriptor(PlanSteps.Settle)
@@ -239,6 +247,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrSteps.ReadyCheck)
         .AddBlockDescriptor(PrSteps.NextComment)
         .AddBlockDescriptor(PrSteps.HeldComment)
+        .AddBlockDescriptor(PrSteps.CiLog)
         .AddBlockDescriptor(PrSteps.CiFix)
         .AddBlockDescriptor(PrSteps.FixComment)
         .AddBlockDescriptor(PrSteps.ReplyDraft)
@@ -252,9 +261,6 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrGates.BaseIsDefault)
         .AddGate<PrDiffScopeGate>()
         .AddGate<PrSecretScanGate>()
-        .AddBlockDescriptor(PrEffects.Restack)
-        .AddBlockDescriptor(PrEffects.CreateStacked)
-        .AddBlockDescriptor(PrEffects.MergeDocs)
         .AddStepInput<PrContextInput>()
         .AddStepInput<PhasePacketInput>()
         .AddStepInput<HandoffNoteInput>();

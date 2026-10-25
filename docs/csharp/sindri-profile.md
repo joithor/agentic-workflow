@@ -1,13 +1,13 @@
 # Sindri profile reference
 
 The profile of the C# Sindri app (`src/Sindri`), schema version 1. It documents the keys of `SindriProfile`
-(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaces the reference of the TypeScript profile
-(`sindri/src/profile/schema.ts`), which is generated separately and stays until the switch. Unknown keys are errors;
+(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaced the TypeScript profile
+reference (`sindri/src/profile/schema.ts`, gone), and `docs/sindri/profile.md` points here. Unknown keys are errors;
 new optional keys join version 1, renames and removals bump it. `node scripts/check-profile-doc.mjs` fails when a
 `SindriProfile` key is missing from this page.
 
 The profile is a YAML file, by default `$AW_SINDRI_HOME/profile/profile.yaml` (`AW_SINDRI_PROFILE`). A changed profile
-takes effect only after `sindri profile approve` (a human approval). The machine's terminal and extra agent entries are
+takes effect only after `sindri profile approve` (a human approval), with one exception (owner q102, CIX-L59): the code index also indexes every repo in the live file that the approved profile doesn't name, using the approved `index.denyPaths` and embeddings address (a live-only repo's own `denyPaths` only add to them), so a repo added with `sindri repo add` is indexed at once. The machine's terminal and extra agent entries are
 not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.md`).
 
 ## profile.yaml
@@ -21,7 +21,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `services` | map of service name to `ServiceSettings` | no | none | Background services by name, each with its cadence |
 | `api` | `ApiSettings` | no | `{ port: 7410 }` | The local API's settings |
 | `workflow` | `WorkflowSettings` | no | all defaults | The workflow engine's times (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
-| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.publish.waitForIndexMinutes` (int 0 to 240, default 15; 0 turns the wait off) is how long a refreshed map waits for the code index of its commit before it becomes the current map; outside the range is SND-CONTEXT-001 with the key path (context retrieval spec §8.7a, code index spec §6.4, `docs/csharp/sindri-context.md` F1P). `context.ranker` (S-8, retrieval spec §8.2 steps 5 and 6) holds the query's two optional ranker stages, both off by default until a backtest arm (`sindri context eval backtest --arms ranker`) or the owner turns them on: `context.ranker.features` (bool) re-orders the fused items by five feature scores, `context.ranker.weights` (`cascadeDistance`, `edgeType`, `provenance`, `supersession`, `recency`; each 0 to 10, default 1, 0 turns a feature off) weights them, `context.ranker.rerank` (bool) asks a model to order the top items (the only model call on the query path; a failure leaves the order and lists `rerank` as degraded, SND-CONTEXT-090) and `context.ranker.rerankTop` (int 1 to 50, default 30) is how many it orders; a wrong type or a value outside its range is SND-CONTEXT-001 with the key path. `context.cascadeComponentFanOut` (int 1 to 50, default 5) caps how many features one code unit may implement for the opt-in `component` cascade hop to walk through it; a unit over the cap is skipped and reported in `skippedComponents` (scoping station C4, `docs/csharp/sindri-context.md`). `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.extract.recognizers` (array of `{ kind, glob, pattern, keyFrom }`, default none, at most 50, a pattern at most 512 characters) adds surface recognizers to the built-in ones: `kind` is a surface kind, `glob` a repo-relative glob (a denied path is never read), `pattern` a regex whose named group `keyFrom` becomes `surface:<kind>/<name>`; matches are suggested, never confirmed; a bad entry is SND-CONTEXT-130, too many or too long is 131 (scoping station C2, `docs/csharp/sindri-context.md`). `context.extract.graphify` (`{ timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB }`, whole numbers, defaults 60, 2048, 16, 256, `0` is no limit; `timeoutMinutes` at most 70,000) bounds the graphify cluster pass of a map build; a negative, fractional or over-the-cap value (`timeoutMinutes` over 70,000, a size over 10,000,000) is SND-CONTEXT-133 at the key path (`docs/sindri/context.md` S-4). `context.code.schemaGlobs` (string[], default migration and schema globs; `[]` turns the schema scan off) and `context.code.testGlobs` (string[], default common test globs) steer the code lens's lexical search (`sindri context code`, context spec S-CL). Globs are repo-relative, at most 50, and never override `denyPaths`. `context.code.deadline` (duration `100ms` to `600s`, default `60s`) is that search's own deadline, apart from the 4s `context.deadline`: it runs one git grep per implementing file and data thing, in turn |
+| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.sessions.enabled` (bool, default true since owner q93, 2026-10-23; false is the owner's kill switch: every agent-session context read is then SND-CONTEXT-020) lets agent sessions read and work with the context engine. `context.publish.waitForIndexMinutes` (int 0 to 240, default 15; 0 turns the wait off) is how long a refreshed map waits for the code index of its commit before it becomes the current map; outside the range is SND-CONTEXT-001 with the key path (context retrieval spec §8.7a, code index spec §6.4, `docs/csharp/sindri-context.md` F1P). `context.ranker` (S-8, retrieval spec §8.2 steps 5 and 6) holds the query's two optional ranker stages, both off by default until a backtest arm (`sindri context eval backtest --arms ranker`) or the owner turns them on: `context.ranker.features` (bool) re-orders the fused items by five feature scores, `context.ranker.weights` (`cascadeDistance`, `edgeType`, `provenance`, `supersession`, `recency`; each 0 to 10, default 1, 0 turns a feature off) weights them, `context.ranker.rerank` (bool) asks a model to order the top items (the only model call on the query path; a failure leaves the order and lists `rerank` as degraded, SND-CONTEXT-090) and `context.ranker.rerankTop` (int 1 to 50, default 30) is how many it orders; a wrong type or a value outside its range is SND-CONTEXT-001 with the key path. `context.cascadeComponentFanOut` (int 1 to 50, default 5) caps how many features one code unit may implement for the opt-in `component` cascade hop to walk through it; a unit over the cap is skipped and reported in `skippedComponents` (scoping station C4, `docs/csharp/sindri-context.md`). `context.labeling.enabled` (bool, default true since owner decision 2026-10-24; false turns off the cluster-naming pass, which sends file paths to a model, and the per-sync decision extraction) and `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.extract.recognizers` (array of `{ kind, glob, pattern, keyFrom }`, default none, at most 50, a pattern at most 512 characters) adds surface recognizers to the built-in ones: `kind` is a surface kind, `glob` a repo-relative glob (a denied path is never read), `pattern` a regex whose named group `keyFrom` becomes `surface:<kind>/<name>`; matches are suggested, never confirmed; a bad entry is SND-CONTEXT-130, too many or too long is 131 (scoping station C2, `docs/csharp/sindri-context.md`). `context.extract.graphify` (`{ timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB }`, whole numbers, defaults 60, 2048, 16, 256, `0` is no limit; `timeoutMinutes` at most 70,000) bounds the graphify cluster pass of a map build; a negative, fractional or over-the-cap value (`timeoutMinutes` over 70,000, a size over 10,000,000) is SND-CONTEXT-133 at the key path (`docs/sindri/context.md` S-4). `context.code.schemaGlobs` (string[], default migration and schema globs; `[]` turns the schema scan off) and `context.code.testGlobs` (string[], default common test globs) steer the code lens's lexical search (`sindri context code`, context spec S-CL). Globs are repo-relative, at most 50, and never override `denyPaths`. `context.code.deadline` (duration `100ms` to `600s`, default `60s`) is that search's own deadline, apart from the 4s `context.deadline`: it runs one git grep per implementing file and data thing, in turn |
 | `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
 | `launch` | `LaunchSettings` | no | none | The launch targets and the confirm window (UI spec E-4). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 | `agents` | `AgentSettings` | no | none | Per-agent budgets and the argv hashes unattended Steps may run (screens spec E-28, launcher L-11). Left out of the canonical JSON when absent |
@@ -127,7 +127,7 @@ The PR babysitter's settings (PR babysitter spec W27, §4, §5, §6). A change t
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `bots` | string[] (logins) | no | none | The bot logins whose comments are fixed or declined instead of held; any other bot is untrusted (Q2) |
-| `autofixCap` | integer, 1 to 5 | no | `3` | The most CI fixes pushed for one PR; the babysitter stops at the cap (`gate.pr.autofix-cap`) |
+| `autofixCap` | integer, 1 to 5 | no | `5` | The most CI fixes pushed for one PR; the babysitter stops at the cap (`gate.pr.autofix-cap`) |
 | `pollInterval` | delay (`5s` to `24h`, unit `s`, `m` or `h`) | no | `60s` | How often the PR watcher polls the forge |
 | `remindAfter` | duration (`1m` and up, unit `m`, `h` or `d`) | no | `14d` | How long a PR waits at ready-to-merge before the desk is reminded |
 | `replies` | `desk` or `post` | no | `desk` | Whether the owner sends each reply or Sindri posts it from its account with a footer (Q5) |
@@ -162,13 +162,60 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `denyPaths` | string[] | no | none | Repo-relative globs map extraction never reads (`private/**`, `**/*.generated.ts`), added to the built-in secret globs and never replacing them (context spec §6.2). A repo's own are added to the profile's |
+| `roles` | map of string to string[] | no | none | File roles of this repo. Their files are denied (not indexed, never cited, as with `denyPaths`) unless `demote` names the role (below): a role name to its repo-relative globs (`cron: ["**/*cron*"]`, `fixture: ["**/fixtures/**"]`; same glob rules as `denyPaths`). The files of a named role are never extracted, clustered, cited or searched, exactly as if their globs were in `denyPaths`; roles are per repo only; a profile-level `index.roles` is refused. A glob that matches a directory covers everything under it (`**/*cron*` denies `src/crons/run.ts`). An entry may instead be `prefix:<text>`, `suffix:<text>` or `regex:<pattern>`, matched against any one path segment (a directory or the file name) ignoring case (`suffix:.generated.ts`, `regex:^v\\d+$`); a bad regex or a `/` in a prefix or suffix is refused with the key path. Roles apply when the map is built and again on every read, so a role added later hides its nodes and evidence at once. There are no built-in roles: without `roles`, nothing extra is hidden |
+| `ignore` | string[] | no | none | Role names (keys of this repo's `roles`) whose files are not indexed and never cited, as for `denyPaths`. A role in neither `ignore` nor `demote` is denied exactly as today (not indexed, never cited), so a profile with `roles` and no lists behaves as before. Per repo only (a profile-level `index.ignore` is refused); a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.ignore[0]`) |
+| `demote` | string[] | no | none | Role names (keys of this repo's `roles`) whose files stay indexed and searchable but are never a feature implementer, anchor or scope surface, and rank last in answers and lenses. Per repo only; a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.demote[1]`), and a role in both `ignore` and `demote` is refused |
 | `utilityGlobs` | string[] | no | none | Globs (same rules as `denyPaths`) of internal utility modules; the code index flags their exports `utility`. A repo's own are added to the profile's |
-| `maxFileKB` | whole number | no | `512` | The code index skips larger files as `too-large`. 1 to 102400 |
-| `maxTotalMB` | whole number | no | `200` | Larger tracked input stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
+| `maxFileKB` | whole number | no | `4096` | The code index skips larger files as `too-large`. 1 to 102400 |
+| `maxTotalMB` | whole number | no | `4096` | Larger tracked code input (code files only; docs, assets and lockfiles do not count) stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
+| `concepts` | list of mappings | no | none | Concepts you pin for the context map, below. A repo's own are added to the profile's |
 | `embeddings` | mapping | no | none | The code index's embeddings layer, below |
 | `graph` | mapping | no | none | The code index's graph layer, below |
 
 A repo's `index:` replaces each scalar key it names (and each `embeddings` and `graph` key it names) and adds its list keys to the profile's. Unknown keys fail validation, in `embeddings` and `graph` too; a bad value is refused with its key path (`index.graph.maxMB: must be 1 to 4096`).
+
+#### `index.ignore` and `index.demote`
+
+A role names a set of files. `ignore` hides them from the code index and the context map; `demote` keeps them indexed and searchable but out of the product picture: a demoted file keeps its node but implements no feature, is never an anchor or a scope surface, and ranks last in answers and lenses.
+
+```yaml
+repos:
+  - name: web-app
+    path: /work/web-app
+    index:
+      roles:
+        test: ["**/*.test.ts", "**/__tests__/**"]
+        fixture: ["**/fixtures/**"]
+        demo: ["demo/**"]
+        generated: ["**/*.generated.ts"]
+      ignore: [generated]
+      demote: [test, fixture, demo]
+```
+
+
+#### `index.concepts`
+
+Each entry pins one concept: it takes its members first, derived concepts fill the rest from what is left, and `concept:other` keeps the leftovers. An entry with no members still shows, empty. A change is part of the profile hash, so it needs approval, and the next map build or refresh applies it.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `id` | text | no | derived from `name` | The slug of the concept's key (`scheduling` pins `concept:scheduling`): lowercase words of letters and digits joined by single `-` or `.` (`tabs.tab-manager` pins a derived id). `other` is reserved; ids are unique across the profile's list and the repo's |
+| `name` | text | yes | none | What the map shows. Not empty |
+| `summary` | text | no | none | A line about the concept |
+| `features` | string[] | no | none | Feature node keys or key globs (`feature:shifts`, `feature:shifts.*`); each must start with `feature:` |
+| `paths` | string[] | no | none | Repo-relative file globs (same rules as `denyPaths`); the features implemented there belong to the concept |
+
+```yaml
+index:
+  concepts:
+    - id: scheduling
+      name: Self scheduling
+      summary: Shifts, swaps and time off
+      features: ["feature:shifts", "feature:shifts.*"]
+      paths: ["apps/web/src/Schedule/**"]
+```
+
+A bad entry is refused with its key path (`index.concepts[0].features[1]: must be a feature: key or glob, like 'feature:shifts' or 'feature:shifts.*'`).
 
 #### `index.embeddings`
 
@@ -183,8 +230,7 @@ A repo's `index:` replaces each scalar key it names (and each `embeddings` and `
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `enabled` | true or false | no | `true` | `false` leaves the graph layer `disabled` |
-| `maxMB` | whole number | no | `256` | The largest graph file read. 1 to 4096 |
-| `maxNodes` | whole number | no | `500000` | The most graph nodes read (edges: four times that). 1 to 5000000 |
+| `maxMB` | whole number | no | `1024` | The largest graph file read. 1 to 4096 |
 
 ### `launch`
 

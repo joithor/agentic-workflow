@@ -38,7 +38,7 @@ public static class ContextErrors
     public static readonly ErrorDefinition SessionsDisabled = new("SND-CONTEXT-020", ErrorKind.Forbidden, "Context reads and the map export from sessions are off");
 
     /// <summary>SND-CONTEXT-021: an MCP call without X-Sindri-Repo, so it has no repo scope (stage S-1M).</summary>
-    public static readonly ErrorDefinition McpRepoMissing = new("SND-CONTEXT-021", ErrorKind.Invalid, "The MCP call names no repo");
+    public static readonly ErrorDefinition McpRepoMissing = new("SND-CONTEXT-021", ErrorKind.Invalid, "The call names no repo");
 
     /// <summary>SND-CONTEXT-022: an MCP tool's arguments don't match its input schema (S-1M).</summary>
     public static readonly ErrorDefinition McpArgumentsInvalid = new("SND-CONTEXT-022", ErrorKind.Invalid, "The MCP tool's arguments are invalid");
@@ -179,7 +179,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-130: a profile recognizer ('context.extract.recognizers[i]') is invalid: an unknown kind, a bad glob, a regex that doesn't compile or a key group it doesn't name. 132 is reserved for a recognizer that timed out on a file (degraded, never a failure).</summary>
     public static readonly ErrorDefinition RecognizerInvalid = new("SND-CONTEXT-130", ErrorKind.Invalid, "A profile recognizer is invalid");
 
-    /// <summary>SND-CONTEXT-131: more than 50 profile recognizers, or a pattern over 512 characters.</summary>
+    /// <summary>SND-CONTEXT-131: more than 500 profile recognizers, or a pattern over 2000 characters.</summary>
     public static readonly ErrorDefinition RecognizerOverCap = new("SND-CONTEXT-131", ErrorKind.Invalid, "Too many profile recognizers, or a pattern is too long");
 
     /// <summary>SND-CONTEXT-150: a 'context.code.schemaGlobs' or 'context.code.testGlobs' entry isn't a repo-relative glob. The message starts with the key path.</summary>
@@ -194,6 +194,21 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-133: a 'context.extract.graphify' limit (timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB) isn't a whole number from 0 (no limit) up. The message names the key path.</summary>
     public static readonly ErrorDefinition GraphifyLimitInvalid = new("SND-CONTEXT-133", ErrorKind.Invalid, "A graphify limit is invalid");
 
+    /// <summary>
+    /// SND-CONTEXT-070: the Linear url isn't Linear's own API host over https, or a loopback address whose token is an 'env:' or 'file:' pointer (spec §14 S-L2: the real keychain key never goes to a local listener).
+    /// The message names the key path 'context.sources.linear.url' and the fix, never the token.
+    /// </summary>
+    public static readonly ErrorDefinition LinearUrlRefused = new("SND-CONTEXT-070", ErrorKind.Invalid, "The Linear url isn't Linear's API host, or a loopback address with an env or file token");
+
+    /// <summary>SND-CONTEXT-071: Linear refused the key (HTTP 401 or 403, or an authentication error): it is missing, revoked or lacks read access. Fix: create a read-only personal API key and store it behind 'context.sources.linear.token'.</summary>
+    public static readonly ErrorDefinition LinearKeyRefused = new("SND-CONTEXT-071", ErrorKind.Forbidden, "Linear refused the key: it is missing, revoked or can't read");
+
+    /// <summary>SND-CONTEXT-072: Linear answered with an unexpected status or shape, or GraphQL errors on a query the adapter wrote. The query goes on without Linear (Unavailable).</summary>
+    public static readonly ErrorDefinition LinearUnexpectedReply = new("SND-CONTEXT-072", ErrorKind.Unavailable, "Linear answered with an unexpected shape");
+
+    /// <summary>SND-CONTEXT-073: Linear has no such record at the cited version: it was deleted, left the profile's teams, or changed since it was cited.</summary>
+    public static readonly ErrorDefinition LinearRecordNotFound = new("SND-CONTEXT-073", ErrorKind.NotFound, "Linear has no such record at that version");
+
     /// <summary>SND-CONTEXT-090: the query's rerank (Phase 8, 'context.ranker.rerank') could not order the items: the model was unavailable, over budget, or answered no order. The query went on in its feature or fusion order; the answer lists 'rerank' as degraded (never a route failure).</summary>
     public static readonly ErrorDefinition RerankUnavailable = new("SND-CONTEXT-090", ErrorKind.Unavailable, "The rerank could not order the items");
 
@@ -203,14 +218,17 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-191: a map head names a commit that is not 7 to 40 lowercase hex characters, or a repo twice (a build report, a hold or an import).</summary>
     public static readonly ErrorDefinition MapHeadInvalid = new("SND-CONTEXT-191", ErrorKind.Invalid, "A map head is invalid");
 
+    /// <summary>SND-CONTEXT-200: the whole-map read was asked to open an area the map doesn't have (Part D; 201 to 209 are reserved for this stage).</summary>
+    public static readonly ErrorDefinition AreaUnknown = new("SND-CONTEXT-200", ErrorKind.NotFound, "No such area in this map");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
-         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, HistoryDeadline, IntentNotSynced, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap, DraftChanged, MapHeadInvalid, GraphifyLimitInvalid, RerankUnavailable];
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, LinearUrlRefused, LinearKeyRefused, LinearUnexpectedReply, LinearRecordNotFound, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, HistoryDeadline, IntentNotSynced, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap, DraftChanged, MapHeadInvalid, GraphifyLimitInvalid, RerankUnavailable, AreaUnknown];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -223,6 +241,6 @@ public static class ContextErrors
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
         LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
         NoEligibleSample.Code, NoBriefSource.Code, UnknownArm.Code,
-        CommitUnknown.Code, NoMergeBase.Code, MapVersionNotRetained.Code, CodeGlobInvalid.Code, CodeGlobsTooMany.Code, DraftChanged.Code, MapHeadInvalid.Code,
+        CommitUnknown.Code, NoMergeBase.Code, MapVersionNotRetained.Code, CodeGlobInvalid.Code, CodeGlobsTooMany.Code, DraftChanged.Code, MapHeadInvalid.Code, AreaUnknown.Code,
     };
 }

@@ -100,6 +100,7 @@ public sealed class ShellSetupTests
     [Fact]
     public Task The_profile_button_stays_in_the_app_under_Homes_decisions_filter() => UiThread.Run(async () =>
     {
+        _server.Catalog = SetupFixture.CatalogAnswer("extra-approve-all-ready", "ApproveProfile");   // listed cli-only: the row has no Approve button of its own, the app opens the Needs you row
         _server.SetupAnswer = SetupFixture.Answer("profile-needs-approval");
         _server.NeedsYouView = RouteAnswer.Api("needs-you", "fixture");
         var shell = await Connected();
@@ -138,5 +139,19 @@ public sealed class ShellSetupTests
         await ShellWait.Until(shell, () => shell.NeedsYou.Rows.Count == 2, Token);
 
         Assert.Equal(["setup:mcp", "setup:recipes"], shell.NeedsYou.Rows.Select(r => r.Id).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }, Token);
+
+    [Fact]
+    public Task Approve_nudge_lands_on_the_outdated_list() => UiThread.Run(async () =>
+    {
+        _server.RecipeListAnswer = FakeSindriApi.OutdatedRecipeList();
+        _server.SetupAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, SetupFixture.With("extra-priority-mix", "recipes", "done").ToJsonString());
+        var shell = await Connected();
+        var landed = "none";
+        shell.Setup.RevealRequested += (_, e) => landed = e.StepId;
+
+        shell.RecipesPage.RequestApproveNew();
+
+        Assert.Equal((PageId.Settings, "recipes", true), (shell.CurrentPage, landed, shell.Setup.Steps.Single(s => s.Id == "recipes").IsOpen));
     }, Token);
 }

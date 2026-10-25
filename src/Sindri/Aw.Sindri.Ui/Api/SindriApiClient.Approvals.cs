@@ -4,15 +4,11 @@ using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Api;
 
-/// <summary>The approve-all routes (<see cref="SindriApiClient"/>, continued): the plan, the app challenge, the approval and the job it runs as. A challenge and the approval are sent once.</summary>
+/// <summary>The approve-all routes (<see cref="SindriApiClient"/>, continued): the plan, the approval and the job it runs as. The approval is sent once.</summary>
 internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
     public Task<Result<ApproveAllPlan>> ApproveAllPlan(Uri api, CancellationToken cancellationToken) => Get<ApproveAllPlan>(api, WorkflowRoutes.ApproveAll, cancellationToken);
-
-    /// <inheritdoc />
-    public Task<Result<AppChallengeView>> IssueAppChallenge(Uri api, AppChallengeRequest request, CancellationToken cancellationToken) =>
-        Call<AppChallengeView>(api, HttpMethod.Post, WorkflowRoutes.AppChallenge, cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 
     /// <inheritdoc />
     public Task<Result<ApproveAllStarted>> ApproveAll(Uri api, ApproveAllRequest request, CancellationToken cancellationToken) =>
@@ -26,6 +22,9 @@ internal sealed partial class SindriApiClient
         Call<ProfileApproved>(api, HttpMethod.Post, "/sindri/profile/approve", cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 
     /// <inheritdoc />
-    public Task<Result<RecipeApproved>> ApproveRecipe(Uri api, string id, string hash, ProfileAnswer answer, CancellationToken cancellationToken) =>
-        Call<RecipeApproved>(api, HttpMethod.Post, WorkflowRoutes.ApproveRecipe(id, hash), cancellationToken, new CallOptions(Content: AwJson.Serialize(answer, Json)));
+    public Task<Result<ProfileRead>> ProfileSummary(Uri api, CancellationToken cancellationToken) => Get<ProfileRead>(api, "/sindri/profile", cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Result<RecipeApproved>> ApproveRecipe(Uri api, string id, string hash, CancellationToken cancellationToken) =>
+        Call<RecipeApproved>(api, HttpMethod.Post, WorkflowRoutes.ApproveRecipe(id, hash), cancellationToken, new CallOptions(Content: "{}"u8.ToArray()));
 }

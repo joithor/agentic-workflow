@@ -120,6 +120,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         await Run("T-75", [ProbeInput.Id], async run =>
         {
             _ = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);   // the task is open before the FillInput activity has run; counting before it lets the fill land during the replay
             var calls = _probe.Calls.Count;
 
             var replay = await InterpreterEvalTests.Replay(run.Handle, TestContext.Current.CancellationToken);
@@ -183,19 +184,19 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
     }
 
     [Fact]
-    public async Task Inputs_that_together_pass_the_plan_cap_fail_the_Step_and_drop_their_texts()
+    public async Task Inputs_that_together_pass_the_old_plan_cap_fill_and_run_the_Step()
     {
-        var big = new string('x', 200 * 1024);   // 3 sections of 200 KiB: 600 KiB an input, under the 1 MiB cap alone
+        var big = new string('x', 200 * 1024);   // 3 sections of 200 KiB: 600 KiB an input, 1.2 MiB together, past the 1 MiB plan cap a new run no longer keeps
         _probe.Behavior = _ => new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { ["a"] = big, ["b"] = big, ["c"] = big });
         await Run("T-79", [ProbeInput.Id, SecondProbeInput.Id], async run =>
         {
-            var result = await run.Handle.GetResultAsync();
+            var task = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
 
-            Assert.Equal("broken", result.State);   // the two inputs are 1.2 MiB together: one plan over the cap
             Assert.Equal(2, _probe.Calls.Count);
-            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 1)));
-            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 2)));
+            Assert.NotNull(texts.Get(new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, 1)));
+            Assert.NotNull(texts.Get(new InjectionKey(run.Handle.Id, "checks", task.Run.Value.Value, 2)));
         });
     }
 

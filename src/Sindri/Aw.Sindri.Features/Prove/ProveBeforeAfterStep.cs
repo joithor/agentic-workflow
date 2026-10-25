@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Prove;
 /// 'step.prove.before-after' on the block runtime (line spec §7.3, PRV-BA-001): for every live item's <c language="text">base+head</c> signal, its recorded script (the signal's
 /// <c language="text">script</c>, a path inside the phase's workspace) runs at the phase's base, in a scratch worktree made for the run, and at the head, in the workspace. It is the
 /// workspace's one file that runs in both trees, so the two runs are by the same script. The result is <c language="text">{commit, results[{item, signal, base, head, baseScript, headScript}]}</c>
-/// in 'fact:beforeAfter'; 'pass' when every script failed at the base and passed at the head, otherwise 'fail' (a signal with no usable script is recorded as 'missing' with a note, nothing is run, and it does not fail the Step: the spec names no other runnable source).
+/// in 'fact:beforeAfter'; 'pass' when every script failed at the base and passed at the head, otherwise 'fail' (a signal with no usable script, and no red test to write one from, is recorded as 'missing' with a note and nothing is run, and the Step is 'fail': it has no base result, and fail-log turns it into PRV-BA-001's finding).
 /// The Step fails (and an unrouted failure parks the instance) when a script cannot run at all, when the scratch worktree cannot be made, or when the context or a phase file is missing.
 /// The scratch worktree is removed afterwards (never forced).
 /// </summary>
@@ -57,7 +57,7 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
             return BlockStepResult.Failed(unrunnable);
         }
 
-        var holds = rows.OfType<JsonObject>().All(static r => (string?)r["base"] == "missing" || ((string?)r["base"] == "fail" && (string?)r["head"] == "pass"));   // why: a signal with no runnable script is recorded, not failed (the demo can't block on a field nobody writes)
+        var holds = rows.OfType<JsonObject>().All(static r => (string?)r["base"] == "fail" && (string?)r["head"] == "pass");   // why: a 'missing' row has no base result, so it shows no fix; the Step fails and fail-log writes PRV-BA-001's finding
         return StepFacts.Done(holds ? "pass" : "fail", ("fact:beforeAfter", new JsonObject { ["commit"] = inputs.Head, ["results"] = new JsonArray([.. rows]) }));
     }
 
@@ -136,7 +136,7 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
     };
 
     private static IEnumerable<Planned> Signals(PhaseFiles phase) =>
-        ProofChecks.LiveItems(phase.Acceptance).SelectMany(item => (phase.Signals?["signals"]?[item] as JsonArray ?? []).OfType<JsonObject>()
+        ProofChecks.LiveItems(phase.Acceptance).SelectMany(item => PhaseSignals.Of(phase.Signals, item)
             .Where(static s => (string?)s["runsAt"] == "base+head")
             .Select(s => new Planned(item, (string?)s["id"] ?? string.Empty, Script((string?)s["script"]))));
 
@@ -187,9 +187,8 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
     }
 
     private static List<string> TestPaths(JsonNode? redTests, string item) =>
-        redTests?["items"]?[item]?["tests"] is JsonArray listed
-            ? [.. listed.OfType<JsonObject>().Select(static t => Script((string?)t["path"])).OfType<string>().Distinct(StringComparer.Ordinal)]
-            : [];
+        [.. RedTestsFact.Parse(redTests).Entries.Where(e => string.Equals(e.Item, item, StringComparison.Ordinal))
+            .SelectMany(static e => e.Tests).Select(static t => Script(t.Path)).OfType<string>().Distinct(StringComparer.Ordinal)];
 
     private static string RunScript(string workspace, List<string> paths, IReadOnlyList<BuildCommand> profile)
     {

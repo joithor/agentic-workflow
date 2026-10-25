@@ -11,55 +11,17 @@ namespace Aw.Sindri.Tests.Commands;
 /// <summary>How the CLI classes itself and the caller headers it sends (API spec §6 "Who sends what", §3.1 repo).</summary>
 public sealed class CliCallerTests
 {
-    private static FakeProcessAncestry Shell => FakeProcessAncestry.Under(Environment.ProcessId, "zsh", "login");
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(null, true, true, null)]
-    [InlineData(null, false, false, "no terminal")]
-    [InlineData("CLAUDECODE", true, false, "CLAUDECODE is set")]
-    [InlineData("AW_SINDRI_CHILD", true, false, "AW_SINDRI_CHILD is set")]
-    [InlineData("CODEX_SANDBOX", true, false, "CODEX_SANDBOX is set")]
-    [InlineData("CURSOR_AGENT", true, false, "CURSOR_AGENT is set")]
-    [InlineData("CLAUDECODE", false, false, "CLAUDECODE is set")]
-    public void Cli_is_human_only_at_a_terminal_with_no_agent_signal(string? variable, bool terminal, bool human, string? reason)
+    [InlineData(true, null, false)]
+    [InlineData(false, null, false)]
+    [InlineData(true, "1", true)]
+    public void Detect_reads_only_the_terminal_and_the_prover_marker(bool terminal, string? prover, bool expectedProver)
     {
-        var session = AgentSession.Detect(n => n == variable ? "1" : null, Shell, terminal);
+        var session = AgentSession.Detect(n => n == "AW_SINDRI_PROVER" ? prover : "1", terminal);   // every other variable is set: an agent's environment changes nothing
 
-        Assert.Equal((human, reason), (session.Human, session.SessionReason));
-    }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("claude", "claude")]
-    [InlineData("codex", "codex")]
-    [InlineData("cursor-agent", "cursor-agent")]
-    [InlineData("/opt/homebrew/bin/codex", "codex")]
-    public void A_harness_parent_makes_the_cli_a_session(string parent, string named)
-    {
-        var session = AgentSession.Detect(_ => null, FakeProcessAncestry.Under(Environment.ProcessId, "zsh", parent, "login"), interactive: true);
-
-        Assert.Equal((false, true, $"parent process {named}"), (session.Human, session.InAgent, session.SessionReason));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void Prover_marker_skips_the_parent_check_but_not_the_variables()
-    {
-        var underClaude = FakeProcessAncestry.Under(Environment.ProcessId, "zsh", "claude");
-
-        var prover = AgentSession.Detect(n => n == "AW_SINDRI_PROVER" ? "1" : null, underClaude, interactive: true);
-        var withVariable = AgentSession.Detect(n => string.Equals(n, "AW_SINDRI_PROVER", StringComparison.Ordinal) || string.Equals(n, "CLAUDECODE", StringComparison.Ordinal) ? "1" : null, underClaude, interactive: true);
-
-        Assert.Equal((true, true), (prover.Human, prover.Prover));
-        Assert.Equal((false, "CLAUDECODE is set"), (withVariable.Human, withVariable.SessionReason));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void An_ancestry_that_cant_be_read_is_ignored()
-    {
-        var session = AgentSession.Detect(_ => null, new FakeProcessAncestry(), interactive: true);
-
-        Assert.True(session.Human);
+        Assert.Equal((terminal, expectedProver), (session.Terminal, session.Prover));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -74,10 +36,38 @@ public sealed class CliCallerTests
             (Header(sent, SindriHeaders.Caller), Header(sent, SindriHeaders.Terminal), Header(sent, SindriHeaders.Client), Header(sent, SindriHeaders.Token), Header(sent, SindriHeaders.Repo)));
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("LCH-00000000000000000000000000000001", "LCH-00000000000000000000000000000001")]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Detect_reads_the_launch_variable(string? value, string? expected) =>
+        Assert.Equal(expected, AgentSession.Detect(n => n == "AW_SINDRI_LAUNCH" ? value : null, interactive: false).Launch);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_cli_sends_the_launch_header_when_it_has_a_launch()
+    {
+        var launched = await Sent(CallerHeaders.For(Human() with { Launch = "LCH-00000000000000000000000000000001" }, new InMemoryHumanTokenStore(), Repo(name: null)));
+        var owned = await Sent(CallerHeaders.For(Human(), InMemoryHumanTokenStore.WithToken(), Repo(name: null)));
+
+        Assert.Equal("LCH-00000000000000000000000000000001", Header(launched, SindriHeaders.Launch));
+        Assert.Null(Header(owned, SindriHeaders.Launch));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_launched_cli_calls_as_a_session_with_no_token_even_when_the_token_is_readable()
+    {
+        var headers = CallerHeaders.For(Human() with { Launch = "LCH-00000000000000000000000000000001" }, InMemoryHumanTokenStore.WithToken(), Repo(name: null));
+
+        var sent = await Sent(headers);
+
+        Assert.Equal(("session", "LCH-00000000000000000000000000000001", null, null), (Header(sent, SindriHeaders.Caller), Header(sent, SindriHeaders.Launch), Header(sent, SindriHeaders.Token), Header(sent, SindriHeaders.Terminal)));
+        Assert.Contains("AW_SINDRI_LAUNCH", headers.SessionReason, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Prover_marker_labels_the_human_cli_prover()
     {
-        var sent = await Sent(CallerHeaders.For(Human() with { Prover = true }, new InMemoryHumanTokenStore(), Repo(name: null)));
+        var sent = await Sent(CallerHeaders.For(Human() with { Prover = true }, InMemoryHumanTokenStore.WithToken(), Repo(name: null)));
 
         Assert.Equal(("human", "prover"), (Header(sent, SindriHeaders.Caller), Header(sent, SindriHeaders.Client)));
     }
@@ -96,25 +86,33 @@ public sealed class CliCallerTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Session_cli_sends_no_token_and_no_terminal()
+    public async Task Cli_with_no_readable_token_is_a_session_and_sends_no_token_and_no_terminal()
     {
-        var tokens = new InMemoryHumanTokenStore();
-        _ = await tokens.Mint(Token);
-
-        var sent = await Sent(CallerHeaders.For(new AgentSession(Signal: null, Terminal: false, Prover: false), tokens, Repo("demo")));
+        var sent = await Sent(CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), new InMemoryHumanTokenStore(), Repo("demo")));
 
         Assert.Equal(("session", null, "cli", null, "demo"),
             (Header(sent, SindriHeaders.Caller), Header(sent, SindriHeaders.Terminal), Header(sent, SindriHeaders.Client), Header(sent, SindriHeaders.Token), Header(sent, SindriHeaders.Repo)));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Agent_cli_never_reads_the_token_file()
+    public async Task Cli_with_a_readable_token_is_a_human_caller_with_or_without_a_terminal()
     {
-        var tokens = new CountingTokenStore();
+        var tokens = InMemoryHumanTokenStore.WithToken();
 
-        var sent = await Sent(CallerHeaders.For(new AgentSession(Signal: "CLAUDECODE is set", Terminal: true, Prover: false), tokens, Repo(name: null)));
+        var noTerminal = await Sent(CallerHeaders.For(new AgentSession(Terminal: false, Prover: false), tokens, Repo(name: null)));
 
-        Assert.Equal(("session", 0), (Header(sent, SindriHeaders.Caller), tokens.Reads));
+        Assert.Equal(("human", null, "cli", "token-1"),
+            (Header(noTerminal, SindriHeaders.Caller), Header(noTerminal, SindriHeaders.Terminal), Header(noTerminal, SindriHeaders.Client), Header(noTerminal, SindriHeaders.Token)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_token_that_cant_be_read_makes_the_cli_a_session_and_names_why()
+    {
+        var headers = CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), new UnreadableTokenStore(), Repo(name: null));
+
+        var sent = await Sent(headers);
+
+        Assert.Equal(("session", "the per-start human token isn't readable"), (Header(sent, SindriHeaders.Caller), headers.SessionReason));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -137,13 +135,13 @@ public sealed class CliCallerTests
         var approvals = approved ? await Approved(new RepoEntry("demo", "/work/demo")) : new InMemoryProfiles();
         var locator = new FakeRepoLocator().In("/work/demo", "/work/demo");
 
-        var sent = await Sent(CallerHeaders.For(new AgentSession(Signal: null, Terminal: false, Prover: false), new InMemoryHumanTokenStore(),
+        var sent = await Sent(CallerHeaders.For(new AgentSession(Terminal: false, Prover: false), new InMemoryHumanTokenStore(),
             ct => CallerHeaders.RepoOf(approvals, locator, directory, ct)));
 
         Assert.Null(Header(sent, SindriHeaders.Repo));
     }
 
-    private static AgentSession Human() => new(Signal: null, Terminal: true, Prover: false);
+    private static AgentSession Human() => new(Terminal: true, Prover: false);
 
     private static Func<CancellationToken, ValueTask<RepoName?>> Repo(string? name) =>
         _ => ValueTask.FromResult(name is null ? (RepoName?)null : RepoName.From(name));
@@ -166,18 +164,13 @@ public sealed class CliCallerTests
     private static string? Header(HttpRequestMessage request, string name) =>
         request.Headers.TryGetValues(name, out var values) ? string.Join(',', values) : null;
 
-    /// <summary>A token store that counts its reads (and has no token).</summary>
-    private sealed class CountingTokenStore : IHumanTokenStore
+    /// <summary>A token store whose file can't be read.</summary>
+    private sealed class UnreadableTokenStore : IHumanTokenStore
     {
-        public int Reads { get; private set; }
-
         public ValueTask<Result<HumanToken>> Mint(CancellationToken cancellationToken) => throw new NotSupportedException("the CLI never mints");
 
-        public ValueTask<Result<HumanToken?>> Read(CancellationToken cancellationToken)
-        {
-            Reads++;
-            return ValueTask.FromResult<Result<HumanToken?>>((HumanToken?)null);
-        }
+        public ValueTask<Result<HumanToken?>> Read(CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<HumanToken?>>(Core.SindriErrors.NotRunning.With("unreadable"));
 
         public ValueTask<Result<Unit>> Remove(HumanToken mine, CancellationToken cancellationToken) => throw new NotSupportedException("the CLI never removes");
     }

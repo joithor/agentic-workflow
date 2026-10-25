@@ -17,38 +17,28 @@ internal static class ContextRoutes
     /// <summary>GET /sindri/context/sources.</summary>
     internal const string Sources = Root + "/sources";
 
-    internal static string Lenses(LensesQuery query)
+    /// <summary>QUERY /sindri/context/lenses: the anchors travel as the JSON body, so the list has no length limit.</summary>
+    internal const string Lenses = Root + "/lenses";
+
+    internal static string WholeMap(WholeMapQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
         var parts = new List<string>();
-        parts.AddRange(query.Anchors.Select(a => "anchor=" + Uri.EscapeDataString(a)));
-        if (query.Depth is { } depth)
-        {
-            parts.Add(string.Create(CultureInfo.InvariantCulture, $"depth={depth}"));
-        }
-
+        Add(parts, "detail", query.Detail);
+        Add(parts, "area", query.Area);
+        Add(parts, "repo", query.Repo);
+        parts.AddRange(query.Locate.Select(k => "locate=" + Uri.EscapeDataString(k)));
         if (query.Draft)
         {
             parts.Add("draft=true");
         }
 
         Add(parts, "mapVersion", query.MapVersion);
-        return With(Root + "/lenses", parts);
+        return With(Root + "/map/whole", parts);
     }
 
-    internal static string Code(CodeQuery query)
-    {
-        ArgumentNullException.ThrowIfNull(query);
-        var parts = new List<string>();
-        parts.AddRange(query.Anchors.Select(a => "anchor=" + Uri.EscapeDataString(a)));
-        if (query.Draft)
-        {
-            parts.Add("draft=true");
-        }
-
-        Add(parts, "mapVersion", query.MapVersion);
-        return With(Root + "/code", parts);
-    }
+    /// <summary>QUERY /sindri/context/code: the anchors travel as the JSON body.</summary>
+    internal const string Code = Root + "/code";
 
     internal static string FileMap(FileMapQuery query)
     {
@@ -65,6 +55,8 @@ internal static class ContextRoutes
             parts.Add("draft=true");
         }
 
+        Add(parts, "cursor", query.Cursor);
+        parts.AddRange(Limit(query.Limit));
         return With(Root + "/filemap", parts);
     }
 

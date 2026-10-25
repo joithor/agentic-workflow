@@ -31,11 +31,14 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view),
+            [.. StatusRecords.ActionIds(view), .. Reruns.Of(view)],
             view.StartedBy,
             view.StartedAt,
             context.LineStage,
-            RootOf(view.Address));
+            RootOf(view.Address),
+            RowSentences.IsUnavailable(view) ? WaitingOn.Engine : WaitingOn.Of(chip, deskOpen: view.Task is not null, agentRunOpen: view.AgentRun is not null, ended: view.Outcome is not null),   // a down dependency waits on nobody here: health shows it
+            view.EngineOwned is { Kind: EngineOwnedKind.TakenOver } ? view.TakenOverBy : null,
+            view.Again);
     }
 
     /// <summary>

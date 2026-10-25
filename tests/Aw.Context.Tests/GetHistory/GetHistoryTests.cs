@@ -21,7 +21,7 @@ public sealed class GetHistoryTests : IDisposable
 {
     private const string Anchor = "feature:layout.split-pane";
     private const string Orientation = "feature:layout.split-pane.orientation";
-    private const string OnyxSettings = """{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"v4.9.0"}}}""";
+    private const string OnyxSettings = """{"sources":{"onyx":{"url":"http://127.0.0.1:3189","token":"env:K","version":"v4.9.0"}}}""";
     private static readonly SourceId _onyx = SourceId.From("onyx");
     private static readonly string[] _searched = ["src/layout/PaneResize.ts", "src/layout/SplitPane.ts"];
     private readonly List<IDisposable> _worlds = [];
@@ -206,13 +206,15 @@ public sealed class GetHistoryTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Over_20_anchors_is_006()
+    public async Task Fifty_anchors_are_not_refused_for_their_count_and_none_is_006()
     {
         var world = await Start(Fake(Landed()));
 
-        var view = await Ask(world, [.. Enumerable.Range(0, 21).Select(i => "feature:n" + i.ToString(CultureInfo.InvariantCulture))]);
+        var many = await Ask(world, [.. Enumerable.Range(0, 50).Select(i => "feature:n" + i.ToString(CultureInfo.InvariantCulture))]);
+        var none = await Ask(world, []);
 
-        Assert.Equal(ContextErrors.QueryInvalid.Code, view.Error.Code);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, many.Error.Code);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, none.Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]

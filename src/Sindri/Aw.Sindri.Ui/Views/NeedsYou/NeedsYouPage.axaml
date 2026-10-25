@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:nyv="using:Aw.Sindri.Ui.Views.NeedsYou"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
@@ -80,6 +81,10 @@
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock x:Name="NeedsYouCardTitle" Classes="detail-title" Text="{Binding Card.Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  <Button x:Name="NeedsYouCardPr" Classes="row-title" Click="OnPr" IsVisible="{Binding Card.HasPr}" HorizontalAlignment="Left"
+                          AutomationProperties.Name="{Binding Card.OpenPrText}">
+                    <TextBlock Classes="caption muted" Text="{Binding Card.OpenPrText}" AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
                   <Button x:Name="NeedsYouCardItem" Classes="row-title" Click="OnItem" IsVisible="{Binding Card.CanOpenItem}" HorizontalAlignment="Left"
                           AutomationProperties.Name="{Binding OpenItemWord}">
                     <TextBlock Classes="caption muted" Text="{Binding OpenItemWord}" AutomationProperties.AccessibilityView="Raw" />
@@ -113,7 +118,38 @@
                   <TextBlock x:Name="NeedsYouWhyText" Classes="body" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Why}" />
                 </StackPanel>
               </Border>
+              <UniformGrid x:Name="NeedsYouOutcomes" Columns="2" IsVisible="{Binding Bar.HasIfApprove}" Margin="20,8">
+                <Border x:Name="NeedsYouIfApprove" Classes="card-section" IsVisible="{Binding Bar.HasIfApprove}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfApproveCaption}" />
+                    <TextBlock x:Name="NeedsYouIfApproveText" Classes="body" Text="{Binding Bar.IfApprove}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfApprove}" />
+                  </StackPanel>
+                </Border>
+                <Border x:Name="NeedsYouIfSendBack" Classes="card-section" IsVisible="{Binding Bar.HasIfSendBack}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfSendBackCaption}" />
+                    <TextBlock x:Name="NeedsYouIfSendBackText" Classes="body" Text="{Binding Bar.IfSendBack}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfSendBack}" />
+                  </StackPanel>
+                </Border>
+              </UniformGrid>
               <Border Classes="hairline" />
+              <Border x:Name="NeedsYouMergeCard" Classes="card-section" IsVisible="{Binding Bar.HasMergeCard}">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="eyebrow" Text="{Binding Bar.MergeCard.Heading}" />
+                  <Button x:Name="NeedsYouMergePr" Classes="row-title" HorizontalAlignment="Left" Click="OnOpenPr" IsEnabled="{Binding Bar.MergeCard.CanOpen}"
+                          Content="{Binding Bar.MergeCard.PrText}" AutomationProperties.Name="{Binding Bar.MergeCard.PrName}" />
+                  <ItemsControl x:Name="NeedsYouMergeLines" ItemsSource="{Binding Bar.MergeCard.Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="ny:MergeCardLine">
+                        <Grid ColumnDefinitions="90,*" AutomationProperties.Name="{Binding Name}">
+                          <TextBlock Classes="caption subtle" Text="{Binding Name}" AutomationProperties.AccessibilityView="Raw" />
+                          <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
               <Border x:Name="NeedsYouRequest" Classes="card-section" IsVisible="{Binding Question, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <StackPanel Spacing="4">
                   <TextBlock Classes="eyebrow" Text="{Binding RequestCaption}" />
@@ -161,13 +197,11 @@
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <Button Classes="command-control" Classes.primary="{Binding IsPrimary}" IsEnabled="{Binding IsEnabled}" Content="{Binding Action.Label}"
                               Click="OnAction" ToolTip.Tip="{Binding Tooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.HelpText="{Binding Tooltip}" AutomationProperties.Name="{Binding Name}" />
-                      <TextBlock Classes="caption subtle mono" Text="{Binding Action.Cli}" IsVisible="{Binding IsProtected}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Action.Cli}" />
-                      <TextBlock Classes="caption subtle" Text="{Binding Action.FillInHint}" IsVisible="{Binding IsProtectedWithHint}" VerticalAlignment="Center" />
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <!-- A paused run's answer form (F3 needs-you spec §3, slice 4): three options and one button. More tries is protected, so its button copies the command. -->
+              <!-- A paused run's answer form (F3 needs-you spec §3, slice 4): three options and one button; each option is one click. -->
               <Border x:Name="NeedsYouAnswer" Classes="card-section" IsVisible="{Binding ShowsAnswer}">
                 <StackPanel Spacing="8" DataContext="{Binding Answer}" x:DataType="ny:PausedAnswerViewModel">
                   <TextBlock Classes="eyebrow" Text="{Binding Caption}" />
@@ -259,28 +293,126 @@
        <!-- The action bar (F3 needs-you spec §2, §5): fixed under the card, outside it, always in view. A and D reach the same methods as its buttons. -->
        <Border x:Name="NeedsYouActionBar" Grid.Row="1" Classes="action-bar" IsVisible="{Binding Bar.HasBar}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group" AutomationProperties.Name="{Binding Bar.BarName}">
         <StackPanel MaxWidth="760" Spacing="8">
+          <!-- The ask step (engine 817): every question with its answer field, options as choices; Send answers waits for them all. -->
+          <StackPanel x:Name="NeedsYouQuestions" Spacing="8" IsVisible="{Binding Bar.HasQuestions}">
+            <TextBlock Classes="body-strong" Text="{Binding Bar.QuestionsHeading}" />
+            <ItemsControl x:Name="NeedsYouQuestionList" ItemsSource="{Binding Bar.Questions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:DeskQuestionViewModel">
+                  <StackPanel Spacing="4" Margin="0,0,0,8">
+                    <TextBlock x:Name="NeedsYouQuestionPrompt" Classes="body" Text="{Binding Prompt}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption subtle" Text="{Binding Context}" IsVisible="{Binding HasContext}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding HasOptions}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ny:DeskQuestionOptionViewModel">
+                          <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Text}" Click="OnChooseOption" AutomationProperties.Name="{Binding Text}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox x:Name="NeedsYouQuestionAnswer" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40" MaxHeight="96" Text="{Binding Answer, Mode=TwoWay}"
+                             PlaceholderText="{Binding AnswerPlaceholder}" AutomationProperties.Name="{Binding AnswerName}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NeedsYouQuestionsHint" Classes="caption muted" Text="{Binding Bar.QuestionsHint}" />
+          </StackPanel>
+          <!-- What the step asks the person to read (engine q65): one button each, the agent session behind it, and why the step stands as it does. -->
+          <StackPanel x:Name="NeedsYouReviewRow" Spacing="4" IsVisible="{Binding Bar.HasReviews}">
+            <ItemsControl x:Name="NeedsYouReviews" ItemsSource="{Binding Bar.Reviews}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="comps:DeskReviewViewModel">
+                  <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <TextBlock x:Name="NeedsYouStepReason" Classes="caption muted" Text="{Binding Bar.ReasonLine}" IsVisible="{Binding Bar.HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.ReasonLine}" />
+          <Button x:Name="NeedsYouSession" Classes="bar-button" HorizontalAlignment="Left" Content="{Binding Bar.SessionLinkText}" IsVisible="{Binding Bar.HasSession}" Click="OnSession"
+                  AutomationProperties.Name="{Binding Bar.SessionLinkName}" />
+          <!-- The scoping interview (q65 d): each question a choice among its answers with their reasons, Other with a box, or Skip; Send answers waits for every pick, Done asking stops with what is answered. -->
+          <StackPanel x:Name="NeedsYouScoping" Spacing="8" IsVisible="{Binding Bar.HasScoping}">
+            <TextBlock Classes="body-strong" Text="{Binding Bar.QuestionsHeading}" />
+            <ItemsControl x:Name="NeedsYouScopingList" ItemsSource="{Binding Bar.Scoping}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:ScopingQuestionViewModel">
+                  <StackPanel Spacing="4" Margin="0,0,0,10">
+                    <TextBlock Classes="caption subtle" Text="{Binding Dimension}" IsVisible="{Binding HasDimension}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="NeedsYouScopingPrompt" Classes="body" Text="{Binding Prompt}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Choices}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ny:ScopingChoiceViewModel">
+                          <Button x:Name="NeedsYouScopingChoice" Classes="segment" Classes.chosen="{Binding IsChosen}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                                  Click="OnScopingChoice" AutomationProperties.Name="{Binding Name}">
+                            <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Classes="body" Text="{Binding Text}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption subtle" Text="{Binding RecommendedWord}" IsVisible="{Binding IsRecommended}" VerticalAlignment="Center" />
+                              </StackPanel>
+                              <TextBlock Classes="caption muted" Text="{Binding Rationale}" IsVisible="{Binding HasRationale}" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox x:Name="NeedsYouScopingOther" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40" MaxHeight="96" Text="{Binding OtherText, Mode=TwoWay}" IsVisible="{Binding IsOther}"
+                             PlaceholderText="{Binding OtherPlaceholder}" AutomationProperties.Name="{Binding OtherName}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NeedsYouScopingHint" Classes="caption muted" Text="{Binding Bar.ScopingHint}" />
+            <Button x:Name="NeedsYouDoneAsking" Classes="bar-button" HorizontalAlignment="Left" Content="{Binding Bar.DoneAskingWord}" IsEnabled="{Binding Bar.DoneAskingEnabled}" Click="OnDoneAsking"
+                    AutomationProperties.Name="{Binding Bar.DoneAskingWord}" />
+          </StackPanel>
           <WrapPanel x:Name="NeedsYouBarButtons" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" IsVisible="{Binding ShowsBarButtons}">
             <Button x:Name="NeedsYouApprove" Classes="bar-button primary" Classes.asking="{Binding Bar.IsAsking}" IsVisible="{Binding Bar.ShowsPrimary}" IsEnabled="{Binding Bar.PrimaryEnabled}"
                     Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.ApproveWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouApproveSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.ApproveSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="A" /></Border>
-              </StackPanel>
-            </Button>
-            <Button x:Name="NeedsYouTerminal" Classes="bar-button terminal" IsVisible="{Binding Bar.ShowsTerminal}" Click="OnTerminal" AutomationProperties.Name="{Binding Bar.TerminalName}"
-                    ToolTip.Tip="{Binding Bar.TerminalTip}">
-              <StackPanel Orientation="Horizontal" Spacing="6" AutomationProperties.AccessibilityView="Raw">
-                <TextBlock Text="⌂" VerticalAlignment="Center" />
-                <TextBlock Classes="mono" Text="{Binding Bar.TerminalButton}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
             <Button x:Name="NeedsYouSendBack" Classes="bar-button" IsVisible="{Binding Bar.ShowsSendBack}" IsEnabled="{Binding Bar.SendBackEnabled}" Click="OnSendBack"
                     ToolTip.Tip="{Binding Bar.SendBackTooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding Bar.SendBackName}" AutomationProperties.HelpText="{Binding Bar.SendBackTooltip}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.SendBackWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouSendBackSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.SendBackSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
               </StackPanel>
             </Button>
+            <!-- One button per recipe verb the instance accepts now (stop 3); the merge asks first, in the Destructive style. -->
+            <ItemsControl x:Name="NeedsYouVerbs" ItemsSource="{Binding Bar.Verbs}" IsVisible="{Binding Bar.HasVerbs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:DeskVerbViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="NeedsYouVerb" Classes="bar-button" Classes.destructive="{Binding IsDestructive}" IsVisible="{Binding ShowsButton}" IsEnabled="{Binding IsEnabled}"
+                            Click="OnVerb" AutomationProperties.Name="{Binding Name}">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                    <StackPanel x:Name="NeedsYouVerbAsk" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConfirming}">
+                      <TextBlock x:Name="NeedsYouVerbQuestion" Classes="body" Text="{Binding Question}" VerticalAlignment="Center" />
+                      <Button x:Name="NeedsYouVerbConfirm" Classes="bar-button destructive" Click="OnVerbConfirm" IsEnabled="{Binding IsEnabled}" Content="{Binding ConfirmLabel}" />
+                      <Button x:Name="NeedsYouVerbKeep" Classes="bar-button" Click="OnVerbKeep" Content="{Binding KeepLabel}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <!-- A feature that is not built yet: a dashed chip, not a control (no focus, no key). -->
             <Panel x:Name="NeedsYouEditChip" IsVisible="{Binding Bar.ShowsEditChip}" Focusable="False" AutomationProperties.AccessibilityView="Content">
               <Rectangle Classes="chip-dash" RadiusX="6" RadiusY="6" />
@@ -290,16 +422,6 @@
               </StackPanel>
             </Panel>
           </WrapPanel>
-          <!-- The shared confirmation controls (F3 needs-you spec §8.3): the typed box of a drifted profile and the hold of approve-all, shown only when the catalog lets the app confirm.
-               A moves focus here and nothing more; the control approves, and the bar sends what it reports. -->
-          <StackPanel x:Name="NeedsYouConfirm" Spacing="6" IsVisible="{Binding Bar.ShowsConfirm}" IsEnabled="{Binding Bar.ConfirmEnabled}">
-            <Border x:Name="NeedsYouTypedRow" IsVisible="{Binding Bar.ShowsTyped}">
-              <ctl:TypedConfirmBox x:Name="NeedsYouTypedBox" PartPrefix="NeedsYouTyped" DataContext="{Binding Bar.TypedBox}" />
-            </Border>
-            <Border x:Name="NeedsYouHoldRow" IsVisible="{Binding Bar.ShowsHold}">
-              <ctl:HoldButton x:Name="NeedsYouHoldControl" PartName="NeedsYouHold" DataContext="{Binding Bar.HoldBox}" HorizontalAlignment="Left" />
-            </Border>
-          </StackPanel>
           <StackPanel x:Name="NeedsYouReasonBox" Spacing="6" IsVisible="{Binding Bar.IsSendingBack}">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Classes="body-strong" Text="{Binding Bar.ReasonLabel}" />
@@ -333,7 +455,7 @@
             </Button>
           </StackPanel>
           <TextBlock x:Name="NeedsYouBarRefusal" Classes="caption attention" Text="{Binding Bar.Refusal}" IsVisible="{Binding Bar.HasRefusal}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-          <TextBlock x:Name="NeedsYouBarHint" Classes="caption muted" Classes.attention="{Binding Bar.HintIsAttention}" Classes.success="{Binding Bar.HintIsSuccess}" Text="{Binding Bar.Hint}"
+          <TextBlock x:Name="NeedsYouBarHint" Classes="caption muted" Classes.attention="{Binding Bar.HintIsAttention}" Text="{Binding Bar.Hint}"
                      IsVisible="{Binding Bar.HasHint}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
         </StackPanel>
        </Border>

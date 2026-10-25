@@ -4,6 +4,7 @@ using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -18,7 +19,8 @@ namespace Aw.CodeIndex.Features;
 /// <param name="store">The index files.</param>
 /// <param name="embedder">Embeds a Neighbors query with the model the index was embedded with.</param>
 /// <param name="graph">The graph layer's tool, or null where none is registered.</param>
-public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IEmbedder embedder, IGraphRunner? graph = null) : ICodeIndex
+/// <param name="embed">The embed slice, or null where none is registered (Embed then answers not built).</param>
+public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IEmbedder embedder, IGraphRunner? graph = null, IService<EmbedCodeIndexRequest, EmbedCodeIndexResponse>? embed = null) : ICodeIndex
 {
     /// <inheritdoc />
     public async ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
@@ -28,6 +30,25 @@ public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, Buil
         return registered is null
             ? CodeIndexErrors.RepoNotFound.With("no such repo is registered")
             : await build.Handle(new BuildCodeIndexRequest(registered, commit, progress), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<EmbedReport>> Embed(CodeIndexScope scope, RepoName repo, IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        var registered = scope.Repos.FirstOrDefault(r => r.Name == repo);
+        if (registered is null)
+        {
+            return CodeIndexErrors.RepoNotFound.With("no such repo is registered");
+        }
+
+        if (embed is null)
+        {
+            return CodeIndexErrors.IndexNotBuilt.With("no embed slice is registered");
+        }
+
+        var done = await embed.Handle(new EmbedCodeIndexRequest(registered, progress), cancellationToken).ConfigureAwait(false);
+        return done.IsError ? done.Error : new EmbedReport(done.Value.Repo, done.Value.Embedded, done.Value.Embeddable, done.Value.Carried, done.Value.Made, done.Value.Embeddings);
     }
 
     /// <inheritdoc />
@@ -100,7 +121,7 @@ public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, Buil
     }
 
     private static bool IsValid(SymbolQuery query)
-        => !string.IsNullOrWhiteSpace(query.Text) && query.Text.Length <= InputLimits.QueryCharacters && query.Limit is >= 1 and <= CodeIndexRules.MaxSymbolHits;
+        => !string.IsNullOrWhiteSpace(query.Text) && query.Text.Length <= InputLimits.QueryCharacters && query.Limit >= 1;
 
     private async ValueTask<Result<Unit>> SearchOne(CodeIndexRepo repo, SymbolQuery query, Found found, CancellationToken cancellationToken)
     {
@@ -131,11 +152,6 @@ public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, Buil
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(paths);
-        if (paths.Count > CodeIndexRules.MaxFileSymbolPaths)
-        {
-            return CodeIndexErrors.QueryInvalid.With("at most 200 paths per call");
-        }
-
         var opened = await Open(scope, repo, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
@@ -218,6 +234,6 @@ public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, Buil
 
     private static class InputLimits
     {
-        public const int QueryCharacters = 512;
+        public const int QueryCharacters = 4_096;
     }
 }

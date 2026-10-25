@@ -99,15 +99,15 @@ public sealed class ScopingDeskBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Anchor_keeps_the_first_twenty_and_warns_because_the_context_engine_takes_no_more()
+    public async Task Anchor_keeps_every_suggested_anchor_past_twenty_without_a_warning()
     {
         var many = new JsonObject { ["suggestedAnchors"] = new JsonArray([.. Enumerable.Range(1, 25).Select(static i => (JsonNode?)JsonValue.Create(string.Create(CultureInfo.InvariantCulture, $"feature:f{i}")))]) };
         var facts = new ScopingFacts { ["brief"] = ScopingFacts.Expiry()["brief"], ["contextQuery"] = many.ToJsonString() };
 
         var response = await Run("anchor", facts);
 
-        Assert.Equal(20, Out(response, "anchors").AsArray().Count);
-        _ = Assert.Single(response.Warnings);
+        Assert.Equal(25, Out(response, "anchors").AsArray().Count);
+        Assert.Empty(response.Warnings);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -128,7 +128,6 @@ public sealed class ScopingDeskBlocksTests
         Assert.Contains("surface:route/links-create", anchors, StringComparer.Ordinal);
         Assert.Contains("code:migrations/006_link_expiry.sql", anchors, StringComparer.Ordinal);   // a changed file the brief anchored stays
         Assert.Equal(anchors.Length, anchors.Distinct(StringComparer.Ordinal).Count());
-        Assert.True(anchors.Length <= 20);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -219,6 +218,33 @@ public sealed class ScopingDeskBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Gather_records_a_catching_up_code_index_as_a_limit_that_passes_the_check_and_keeps_both_commits_and_the_pending_files()
+    {
+        var facts = GatherFacts();
+        var code = JsonNode.Parse(facts["codeView"])!.AsObject();
+        var pending = new JsonArray("src/Worker.cs", "src/New.cs");
+        code["searched"]!["sources"]!.AsArray().Add(new JsonObject
+        {
+            ["id"] = "code-index",
+            ["state"] = "ok",
+            ["reason"] = "catching-up",
+            ["catchingUp"] = new JsonObject { ["indexCommit"] = "0123456789abcdef0123456789abcdef01234567", ["mapCommit"] = "1234567890abcdef1234567890abcdef12345678", ["pending"] = pending },
+        });
+        facts["codeView"] = code.ToJsonString();
+        var response = await Run("gather", facts);
+        var check = ScopingFacts.Expiry();
+        check["lenses"] = response.Outputs["lenses"];
+        check["coverage"] = response.Outputs["coverage"];
+
+        var row = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
+        var source = row["searched"]!["sources"]!.AsArray().Single(s => s!["id"]!.GetValue<string>() == "code-index")!;
+        Assert.Contains(row["limits"]!.AsArray(), l => l!["why"]!.GetValue<string>() == "catching-up");
+        Assert.Equal(["src/Worker.cs", "src/New.cs"], source["catchingUp"]!["pending"]!.AsArray().Select(static p => p!.GetValue<string>()), StringComparer.Ordinal);
+        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
+        Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Gather_over_the_code_lens_golden_whose_commit_is_not_held_records_both_limits_and_passes_the_coverage_rules()
     {
         var facts = GatherFacts();
@@ -229,7 +255,8 @@ public sealed class ScopingDeskBlocksTests
         check["coverage"] = response.Outputs["coverage"];
 
         var code = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
-        Assert.Equal(["commit-not-held", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        // the context golden's code view also has edges to nodes outside the lens, which the lens leaves out and records (#993)
+        Assert.Equal(["commit-not-held", "edges-out-of-scope", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
         Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
         Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-LENS-001", StringComparison.Ordinal)).Status);

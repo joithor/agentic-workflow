@@ -37,6 +37,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets or sets the facts the fake reports.</summary>
     public ContainerRuntimeFacts Facts { get; set; } = facts;
 
+    /// <summary>Gets the facts later inspections report: each <see cref="Inspect"/> first takes the next queued one into <see cref="Facts"/>, and once the queue is empty it keeps reporting the last.</summary>
+    public Queue<ContainerRuntimeFacts> Later { get; } = new();
+
     /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, RenderedConfig, Up, Stop, Ps, RepoDigests, MemoryUsedOutside.</summary>
     public IList<string> Calls { get; } = [];
 
@@ -68,7 +71,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     public string Platform { get; set; } = "linux/arm64";
 
     /// <summary>Gets or sets the host port nginx is published on after <see cref="Up"/>.</summary>
-    public int PublishedPort { get; set; } = 3000;
+    public int PublishedPort { get; set; } = 3189;
 
     /// <summary>Gets the standard error lines <see cref="Pull"/> and <see cref="Up"/> hand to their progress callback.</summary>
     public IList<string> ProgressLines { get; } = [];
@@ -93,6 +96,11 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken)
     {
         Calls.Add("Inspect");
+        if (Later.TryDequeue(out var next))
+        {
+            Facts = next;
+        }
+
         return Facts;
     }
 

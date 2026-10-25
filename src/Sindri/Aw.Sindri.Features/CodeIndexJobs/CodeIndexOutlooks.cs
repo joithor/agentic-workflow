@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 
 /// <summary>
 /// The code index's side of the map publish gate (code index spec §6.4): fills <see cref="IndexOutlookInput"/> per repo from the index's stored heads, the repos' live heads, the 'index:&lt;repo&gt;' jobs
-/// (a failed job is a failure, a succeeded one whose outcome is 'deferred' is a deferral) and whether the 'code-index-main-move' service is paused, then classifies with <see cref="IndexOutlookRules"/>.
+/// (a failed job is a failure) and whether the 'code-index-main-move' service is paused, then classifies with <see cref="IndexOutlookRules"/>.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="index">The code index: its stored heads.</param>
@@ -83,7 +83,7 @@ internal sealed class CodeIndexOutlooks(CodeIndexJobScopes scopes, ICodeIndex in
         var stored = recorded.FirstOrDefault(h => string.Equals(h.Repo.Value, repo, StringComparison.Ordinal))?.Commit?.Value;
         var mine = builds.Where(j => IndexJobs.IsOf(j, repo)).ToList();
         var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentJobs)
-            .Select(static j => new IndexAttempt(j.State == JobState.Failed, IndexJobs.Deferred(j), j.EndedAt ?? default)).ToList();
+            .Select(static j => new IndexAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
         return new IndexOutlookInput(
             stored, hold.Commit, hold.OnDefaultBranch,
             live.FirstOrDefault(h => string.Equals(h.Repo.Value, repo, StringComparison.Ordinal))?.Head?.Value,

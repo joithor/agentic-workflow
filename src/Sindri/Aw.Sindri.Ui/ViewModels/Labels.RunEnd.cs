@@ -6,11 +6,19 @@ internal static partial class Labels
     /// <summary>The heading of the block that says why a step failed.</summary>
     internal const string RunWhatWentWrong = "What went wrong";
 
+    /// <summary>The header link of a run that is another attempt: where the old run is.</summary>
+    /// <param name="address">The old run's address.</param>
+    /// <returns>"again of ITM-01JKX/triage-alert/1".</returns>
+    internal static string RunAgainOf(string address) => "again of " + address;
+
     /// <summary>The step could not be started.</summary>
     internal const string RunReasonLaunch = "The agent could not be started.";
 
     /// <summary>The step's session went away.</summary>
     internal const string RunReasonLost = "The agent's session was lost before it finished.";
+
+    /// <summary>The step's agent ended its turn with no report.</summary>
+    internal const string RunReasonIdle = "The agent finished its turn without reporting, so Sindri stopped waiting.";
 
     /// <summary>The step's agent stopped on its own.</summary>
     internal const string RunReasonExit = "The agent stopped before it finished.";
@@ -31,6 +39,7 @@ internal static partial class Labels
         "launch" => RunReasonLaunch,
         "lost" => RunReasonLost,
         "exit" => RunReasonExit,
+        "idle" => RunReasonIdle,
         "limit" => RunReasonLimit,
         _ => reason,
     };

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
@@ -13,7 +14,9 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 
 namespace Aw.Context.Testing.Engine;
@@ -99,9 +102,7 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <summary>The fake keeps no eval files.</summary>
     public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<EvalPurgeReport>>(request.Scope.Caller.Kind == ContextCallerKind.Session
-            ? ContextErrors.SessionsDisabled.With("purging eval files is a human or service call: a session can't")
-            : new EvalPurgeReport(0, 0, 0));
+        ValueTask.FromResult<Result<EvalPurgeReport>>(new EvalPurgeReport(0, 0, 0));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
@@ -187,7 +188,17 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesSetView>();
 
     /// <inheritdoc/>
+    public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<WholeMapView>();
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<MapSearchView>();
+
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<ConceptsView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<ConceptMembersView>();
 
     /// <inheritdoc/>
     public ValueTask<Result<MapHealth>> CheckMap(ContextScope? scope, CancellationToken cancellationToken) =>

@@ -226,6 +226,8 @@ public sealed class LineCommandTests : IDisposable
         using var gaps = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(OutDirectory, "report.json"), TestContext.Current.CancellationToken));
         Assert.Equal("gaps", gaps.RootElement.GetProperty("outcome").GetString());
         Assert.Equal("findings.json", gaps.RootElement.GetProperty("outputs").GetProperty("fact:findings").GetString());
+        Assert.Equal(["fact:findings"], gaps.RootElement.GetProperty("outputsByOutcome").GetProperty("gaps").EnumerateArray().Select(static e => e.GetString()), StringComparer.Ordinal);
+        Assert.Empty(gaps.RootElement.GetProperty("outputsByOutcome").GetProperty("pass").EnumerateArray());
         Assert.Contains("DSN-ACC-001", await File.ReadAllTextAsync(Path.Combine(OutDirectory, "findings.json"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 

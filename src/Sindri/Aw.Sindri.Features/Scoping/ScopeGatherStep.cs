@@ -1,5 +1,5 @@
 using Aw.Kernel;
-using Aw.Sindri.Core;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -28,7 +28,7 @@ internal sealed class ScopeGatherStep() : ScopingCodeStep(Id), IBlockStepId, IRe
         if (!context.InputResults.ContainsKey(_views[0].Input))
         {
             // As a block the lenses come from its input, not a --lenses file: say which input gave nothing and why, from the section the input injected.
-            return ValueTask.FromResult<Result<IReadOnlyDictionary<string, string>>>(SindriErrors.InvalidInput.With(
+            return ValueTask.FromResult<Result<IReadOnlyDictionary<string, string>>>(ScopingErrors.LensesUnavailable.With(
                 "gather needs the lenses view, and input.context.lenses gave no typed result: " + Why(context.Injection)));
         }
 
@@ -48,6 +48,6 @@ internal sealed class ScopeGatherStep() : ScopingCodeStep(Id), IBlockStepId, IRe
             }
         }
 
-        return "the lenses were unavailable or their typed result was over 256 KiB (its injected section says which)";
+        return "the lenses were unavailable (the input gave no section saying why)";
     }
 }

@@ -21,7 +21,7 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     public (ContainerRuntimeFacts Docker, HostFacts Host) Read(CancellationToken cancellationToken) => Read(stickyPort: null, cancellationToken);
 
     /// <summary>Reads the facts, preferring the port a previous `onyx up` settled on: it stays while it is free (or ours) and the search moves on to the usual ports only when something else holds it.</summary>
-    /// <param name="stickyPort">The port state.json recorded, or null for a first run (3000 first).</param>
+    /// <param name="stickyPort">The port state.json recorded, or null for a first run (3189 first).</param>
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The runtime's facts and the host's.</returns>
     public (ContainerRuntimeFacts Docker, HostFacts Host) Read(int? stickyPort, CancellationToken cancellationToken)
@@ -75,6 +75,26 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <returns>The bytes, or the error (Docker isn't usable here, or the read failed).</returns>
     public Result<long> MemoryUsedByOthers(CancellationToken cancellationToken)
         => DockerProblem(cancellationToken) is { } problem ? problem : runtime.MemoryUsedOutside(Project, cancellationToken);
+
+    /// <summary>Reads the runtime's facts: the one inspection every question of this instance is judged against (made on first use).</summary>
+    /// <param name="cancellationToken">Cancels the inspection.</param>
+    /// <returns>The runtime's facts.</returns>
+    public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken) => Docker(cancellationToken);
+
+    /// <summary>Asks the runtime again and keeps the new answer for every later question: for `onyx up`, which waits for a Docker that is starting.</summary>
+    /// <param name="cancellationToken">Cancels the inspection.</param>
+    /// <returns>The new facts.</returns>
+    public ContainerRuntimeFacts Reinspect(CancellationToken cancellationToken) => _docker = runtime.Inspect(cancellationToken);
+
+    /// <summary>Records how long a caller waited in all for a daemon that still doesn't answer, so the docker row says it (<see cref="ContainerRuntimeFacts.WaitedSeconds"/>).</summary>
+    /// <param name="waited">The whole wait.</param>
+    public void NoteWait(TimeSpan waited)
+    {
+        if (_docker is { DaemonAnswers: false } docker)
+        {
+            _docker = docker with { WaitedSeconds = (int)waited.TotalSeconds };
+        }
+    }
 
     private ContainerRuntimeFacts Docker(CancellationToken cancellationToken) => _docker ??= runtime.Inspect(cancellationToken);
 

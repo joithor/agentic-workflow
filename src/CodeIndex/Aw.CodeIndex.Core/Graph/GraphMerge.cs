@@ -6,7 +6,7 @@ using Aw.CodeIndex.Core.Values;
 namespace Aw.CodeIndex.Core.Graph;
 
 /// <summary>
-/// Turns a checked graph into index rows (spec §5.5): each node in a file no parser covers becomes a 'graph-symbol' symbol (no
+/// Turns a checked graph into index rows (spec §5.5): each node in a file no parser covers becomes a 'graph-symbol' symbol, or a 'class' symbol when graphify marks it a class (no
 /// signature, no clone rows, end line = its line) and each call edge a 'graphify' edge whose confidence follows graphify's word
 /// (EXTRACTED is certain, anything else likely). Nodes in C# files are ignored: the syntax edges describe those.
 /// </summary>
@@ -15,7 +15,7 @@ public static class GraphMerge
     private const string Csharp = "csharp";
 
     /// <summary>A node that has what a symbol needs: a file, a name and a line.</summary>
-    private sealed record Placed(string NodeKey, string File, string Name, int Line);
+    private sealed record Placed(string NodeKey, string File, string Name, int Line, bool IsClass);
 
     /// <summary>Plans the rows.</summary>
     /// <param name="repo">The repo, for the refs.</param>
@@ -55,7 +55,7 @@ public static class GraphMerge
     }
 
     private static Placed? Placeable(GraphNode node)
-        => node is { File: { } file, Name: { Length: > 0 } name, Line: >= 1 and var line } ? new Placed(node.NodeKey, file, name, line) : null;
+        => node is { File: { } file, Name: { Length: > 0 } name, Line: >= 1 and var line } ? new Placed(node.NodeKey, file, name, line, node.IsClass) : null;
 
     private static (List<EdgeRecord> Edges, int Dropped) Link(GraphSnapshot graph, Dictionary<string, (SymbolRef Ref, string Name)> refs, HashSet<string> allowed)
     {
@@ -93,7 +93,8 @@ public static class GraphMerge
         return SymbolRef.TryFrom(text, out var reference) ? reference : null;
     }
 
+    // A class node is class-like (embedded by its name alone), like a parsed class; its body, when the node is a function, is attached later from the file.
     private static SymbolRecord Symbol(SymbolRef reference, Placed node)
-        => new(reference, node.Name, node.Name, SymbolKind.GraphSymbol, Arity: 0, node.Line, node.Line, Exported: false, Utility: false,
+        => new(reference, node.Name, node.Name, node.IsClass ? SymbolKind.Class : SymbolKind.GraphSymbol, Arity: 0, node.Line, node.Line, Exported: false, Utility: false,
             Signature: string.Empty, ShapeHash: string.Empty, TokenCount: 0, Complexity: 0, ReadOnlyMemory<byte>.Empty, [], Body: null, []);
 }

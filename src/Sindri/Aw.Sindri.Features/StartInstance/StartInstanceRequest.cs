@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.StartInstance;
@@ -16,4 +17,9 @@ public sealed record StartInstanceRequest(
     string Recipe,
     string Item,
     bool NextAttempt,
-    IReadOnlyDictionary<FactKey, StartFact> Facts) : ICommand<StartInstanceResponse>;
+    IReadOnlyDictionary<FactKey, StartFact> Facts) : ICommand<StartInstanceResponse>
+{
+    /// <summary>The instance this start reruns (set by 'RerunInstance', never by a client: the wire body ignores it); null for an ordinary start.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public InstanceAddress? Again { get; init; }
+}

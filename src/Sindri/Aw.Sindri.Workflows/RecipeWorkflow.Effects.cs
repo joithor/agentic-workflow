@@ -24,13 +24,16 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 internal sealed partial class RecipeWorkflow
 {
     private const string Dispatcher = "system:dispatcher";
+    private const string LineReportOrderPatch = "ln-wf1-line-report-order";   // LN-WF1: a linked instance's reports reach its line one after the other, in the order of the changes
     private readonly List<Task> _effects = [];
     private readonly HashSet<string> _effectsOpen = new(StringComparer.Ordinal);
     private readonly HashSet<string> _effectsSent = new(StringComparer.Ordinal);
     private bool? _replyFacts;
+    private bool? _noticesSurviveCancel;
     private CancellationTokenSource? _effectsCancel;
     private TimeSpan _dispatchDelay;
     private bool _deskTaskNotified;
+    private Task? _lastReport;
 
     /// <summary>
     /// Runs <paramref name="effects"/> of the change that left the instance as <paramref name="after"/>: each through
@@ -46,16 +49,44 @@ internal sealed partial class RecipeWorkflow
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(effects);
         List<Task> running = [];
+        List<EffectCommand> later = [];
         foreach (var effect in effects)
         {
-            if (!_effectsSent.Contains(effect.Identity.Text) && _effectsOpen.Add(effect.Identity.Text))
+            if (IsLineReport(effect))
+            {
+                later.Add(effect);   // LN-WF1: the report follows the others, so two effects of one change never race for the history's order
+            }
+            else if (!_effectsSent.Contains(effect.Identity.Text) && _effectsOpen.Add(effect.Identity.Text))
             {
                 running.Add(DispatchOne(after, effect));
             }
         }
 
-        return Workflow.WhenAllAsync(running);
+        if (later.Count == 0)
+        {
+            return Workflow.WhenAllAsync(running);
+        }
+
+        // LN-WF1 (line spec §8.2): a line is told 'parked', 'resumed' and 'ended' in that order, so a report also waits for the previous change's. Behind a marker: a history recorded before it ran them concurrently.
+        var previous = Workflow.Patched(LineReportOrderPatch) ? _lastReport : null;
+        return _lastReport = ThenReport(after, running, later, previous);
     }
+
+    private async Task ThenReport(WorkflowInstance after, List<Task> first, List<EffectCommand> reports, Task? previous)
+    {
+        await Workflow.WhenAllAsync(first).ConfigureAwait(true);
+        if (previous is not null)
+        {
+            _ = await Workflow.WhenAnyAsync(previous).ConfigureAwait(true);   // done, failed or cancelled: a failure surfaces through Settle, it doesn't hold the next report
+        }
+
+        foreach (var report in reports.Where(r => !_effectsSent.Contains(r.Identity.Text) && _effectsOpen.Add(r.Identity.Text)))
+        {
+            await DispatchOne(after, report).ConfigureAwait(true);
+        }
+    }
+
+    private static bool IsLineReport(EffectCommand effect) => effect.Origin == CommandOrigin.Engine && effect.Effect.Value == "effect.line.report";
 
     /// <summary>
     /// Starts the effects of a change just mirrored: the recipe's effects for this instance and the engine's own notices.
@@ -68,7 +99,7 @@ internal sealed partial class RecipeWorkflow
     private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects, WorkflowEventType change = WorkflowEventType.Transition)
     {
         Announce(before, after);   // engine P7: a child tells its parent about a park, escalation or resume
-        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change)];
+        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change), .. LineReports(before, after)];
         if (all.Count > 0)
         {
             _effects.Add(Dispatch(after, all));
@@ -97,6 +128,10 @@ internal sealed partial class RecipeWorkflow
         _deskTaskNotified |= EngineNotices.NoticedDeskTask(after, notices);
         return [.. notices.Select(static n => n.Command)];
     }
+
+    /// <summary>A linked instance's report to its line (LN-WF1): 'parked', 'resumed' or 'ended', an engine-origin 'effect.line.report'.</summary>
+    private IReadOnlyList<EffectCommand> LineReports(WorkflowInstance? before, WorkflowInstance after) =>
+        Workflow.Patched(LinkedEventsPatch) && LinkedPhaseReports.For(before, after, _mirrored) is { } report ? [report] : [];
 
     /// <summary>
     /// A recipe effect's text (P6 unit (c)): the rendered 'next' of the state its transition entered. An engine notice
@@ -135,7 +170,7 @@ internal sealed partial class RecipeWorkflow
 
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
-            options.CancellationToken = Effects().Token;   // a cancel of the instance stops the retries too, not only the delay
+            options.CancellationToken = RunToken(effect);
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
             {
@@ -161,6 +196,15 @@ internal sealed partial class RecipeWorkflow
             _ = _effectsOpen.Remove(row.Identity);
         }
     }
+
+    /// <summary>
+    /// What cancels an effect's 'RunEffect': a cancel of the instance stops a recipe effect's retries too, not only its delay. An engine notice (a desk task, a park)
+    /// and the report of a cancelled end to its line are never cancelled by it: a cancel Update shares its activation with the resolution of a notice that just
+    /// completed, and the server fails the workflow task that cancels an activity it has already completed (ACTIVITY_UNKNOWN) over and over, so the cancel never returned.
+    /// Behind the 'engine-effects-survive-cancel' marker, read once at the first effect dispatch like <see cref="ReplyFacts"/>: a history recorded before it asked for the cancel of a running notice and replays exactly so.
+    /// </summary>
+    private CancellationToken RunToken(EffectCommand effect) =>
+        effect.Origin == CommandOrigin.Engine && (_noticesSurviveCancel ??= Workflow.Patched("engine-effects-survive-cancel")) ? Workflow.CancellationToken : IsLineReport(effect) ? Workflow.CancellationToken : Effects().Token;
 
     /// <summary>The code and message an ended 'RunEffect' is refused with: its own SND code, else SND-WF-015.</summary>
     // Deterministic in practice: the scrub's rules are linear and its result only feeds activity inputs, never a value compared on replay.

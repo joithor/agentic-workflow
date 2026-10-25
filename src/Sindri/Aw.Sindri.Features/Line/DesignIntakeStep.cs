@@ -36,6 +36,11 @@ internal sealed class DesignIntakeStep(IPackets packets, IPacketFiles files, ISt
             return BlockStepResult.Failed($"{Id.Value}: {scope.Error.Message}");
         }
 
+        if (string.IsNullOrWhiteSpace(LineJson.Str(scope.Value, "baseSha")))
+        {
+            return BlockStepResult.Failed($"{Id.Value}: SND-LINE-001: the scope packet in {LineJson.Str(scope.Value, "dir")} has no baseSha in its scope-map.json, so the design has no commit to stand on (fix: re-run scoping; the evidence step stamps baseSha from the repo checkout, and a packet is never edited)");
+        }
+
         var packs = await Packs(context, cancellationToken).ConfigureAwait(false);
         if (packs.IsError)
         {

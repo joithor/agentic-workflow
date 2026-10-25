@@ -80,16 +80,24 @@ internal static partial class Labels
     /// <summary>The Actions card's name for what the app does itself.</summary>
     internal const string ActionsReady = "in this app";
 
-    /// <summary>The Actions card's name for what stays at a terminal on purpose.</summary>
-    internal const string ActionsTerminal = "at a terminal on purpose";
+    /// <summary>The count of actions the app shows as a command to copy.</summary>
+    internal const string ActionsCopy = "to copy";
 
-    /// <summary>The Actions card's name for what arrives later.</summary>
-    internal const string ActionsLater = "arriving later";
+    /// <summary>The page width under which the Services table keeps three columns (system spec §2).</summary>
+    internal const double SystemWideFrom = 900;
+
+    /// <summary>The link on a row whose manual run is in flight.</summary>
+    internal const string ViewJob = "View job";
 
     /// <summary>The Services tab: "Services (6)".</summary>
     /// <param name="count">How many services are scheduled.</param>
     /// <returns>The tab's label.</returns>
     internal static string ServicesTab(int count) => string.Create(CultureInfo.InvariantCulture, $"{Services} ({count})");
+
+    /// <summary>The View job link's accessible name.</summary>
+    /// <param name="service">The service's name.</param>
+    /// <returns>"View job for heartbeat".</returns>
+    internal static string ViewJobName(string service) => "View job for " + service;
 
     /// <summary>The Services card's link: "6 scheduled".</summary>
     /// <param name="count">How many services are scheduled.</param>
@@ -107,13 +115,12 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string ViewsProgress(long cursor, long head) => string.Create(CultureInfo.InvariantCulture, $"event {cursor} of {head}");
 
-    /// <summary>The Actions card's counts: "49 in this app, 14 at a terminal on purpose, 4 arriving later".</summary>
+    /// <summary>The Actions card's counts: "49 in this app, 14 to copy".</summary>
     /// <param name="ready">Actions the app runs.</param>
-    /// <param name="terminal">Actions that stay at a terminal.</param>
-    /// <param name="later">Actions that arrive in a later phase.</param>
+    /// <param name="copy">Actions the app shows as a command to copy.</param>
     /// <returns>The words.</returns>
-    internal static string ActionCounts(int ready, int terminal, int later) =>
-        string.Create(CultureInfo.InvariantCulture, $"{ready} {ActionsReady}, {terminal} {ActionsTerminal}, {later} {ActionsLater}");
+    internal static string ActionCounts(int ready, int copy) =>
+        string.Create(CultureInfo.InvariantCulture, $"{ready} {ActionsReady}, {copy} {ActionsCopy}");
 
     /// <summary>What a built-in service does, in plain words; empty for a service the app does not know.</summary>
     /// <param name="name">The service's name.</param>
@@ -123,6 +130,7 @@ internal static partial class Labels
         "heartbeat" => "Records that Sindri is alive.",
         "context-map-refresh" => "Builds the context map again so it stays current.",
         "context-sync-gaps" => "Starts a sync for a source that has never synced.",
+        "pr-watch" => "Watches the pull requests that wait on the forge.",
         "router-stub" => "Routes each started item to its workflow.",
         "setup" => "Keeps the setup checklist in step with the profile.",
         "workflow-events" => "Passes ledger events to the running workflows.",

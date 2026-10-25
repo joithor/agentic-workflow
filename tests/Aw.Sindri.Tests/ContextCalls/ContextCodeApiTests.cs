@@ -15,7 +15,7 @@ public sealed class ContextCodeApiTests : IDisposable
 
     private async Task<GoldenHost> Host()
     {
-        var host = await ContextHosts.Approved(_repo.Path, sessions: true, TestContext.Current.CancellationToken, name: CodeLensRepo.Repo);
+        var host = await ContextHosts.Approved(_repo.Path, sessions: true, TestContext.Current.CancellationToken, name: CodeLensRepo.Repo, contextExtra: "  code: { testGlobs: [\"**/tests/**\", \"**/*.test.*\"] }\n");
         await ContextMapApiTests.Import(host, CodeLensRepo.WriteMap(host.Home, CodeLensRepo.MapYaml()));
         return host;
     }
@@ -43,16 +43,16 @@ public sealed class ContextCodeApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Code_refuses_an_unknown_anchor_as_003_and_21_anchors_as_006()
+    public async Task Code_refuses_an_unknown_anchor_as_003_and_takes_fifty_anchors()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
         var unknown = await host.Http.Ask(Get("/sindri/context/code?anchor=feature%3Anope", Human(host.Token.Value)));
-        var many = await host.Http.Ask(Get("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), Human(host.Token.Value)));
+        var many = await host.Http.Ask(Get("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 50).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), Human(host.Token.Value)));
 
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (unknown.Status, unknown.Code));
-        Assert.Equal("SND-CONTEXT-006", many.Code);
+        Assert.Equal("SND-CONTEXT-003", many.Code);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

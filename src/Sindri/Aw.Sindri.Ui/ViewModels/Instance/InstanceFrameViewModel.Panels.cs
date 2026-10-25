@@ -45,15 +45,25 @@ internal sealed partial class InstanceFrameViewModel
 
     private void ShowFacts(InstanceDetail detail, FactViewerContext context)
     {
-        var fresh = new FactsPanelViewModel(detail, Viewers, context);
+        var fresh = new FactsPanelViewModel(detail, Viewers, context, nameOf: NameOf);
         if (Facts is not null && string.Equals(Facts.Signature, fresh.Signature, StringComparison.Ordinal))
         {
             return;
         }
 
         var wasOpen = Facts?.IsOpen == true;
-        Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
+        Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys, NameOf) : fresh;
         Facts.IsOpen |= wasOpen;   // the person's choice survives a re-read
+    }
+
+    // A review with nothing to open: the facts panel opens at that fact.
+    private void ShowFact(string key)
+    {
+        if (Facts is { } facts)
+        {
+            facts.IsOpen = true;
+            Focus(FrameFocus.PendingOutput, key);
+        }
     }
 
     /// <summary>Raised when the frame asks the view to put focus on one of its parts.</summary>
@@ -115,7 +125,7 @@ internal sealed partial class InstanceFrameViewModel
         FrameIntent.FocusPointer => FrameFocus.ChildPointer,
         FrameIntent.FocusRecipe => FrameFocus.Recipe,
         FrameIntent.FocusChildren => FrameFocus.Children,   // see ChildrenFocus: a frame with no children falls back at once
-        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial => null,
+        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial or FrameIntent.TakeOver or FrameIntent.HandBack => null,
         _ => null,
     };
 

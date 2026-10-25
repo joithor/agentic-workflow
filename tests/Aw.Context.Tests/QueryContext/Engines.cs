@@ -1,9 +1,11 @@
 using System.Text.Json;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Symbols;
+using Aw.Context.Core.WholeMap;
 using Aw.Context.Features;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
@@ -20,6 +22,7 @@ using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
+using Aw.Context.Features.GetWholeMap;
 using Aw.Context.Features.HeldMap;
 using Aw.Context.Features.HoldMap;
 using Aw.Context.Features.ImportMap;
@@ -45,7 +48,6 @@ using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.History;
 using Aw.Context.Testing.Linking;
-using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Review;
 using Aw.Context.Tests.EvalProbes;
@@ -71,10 +73,13 @@ internal static class Engines
         return new ContextEngine(new QueryContextService(scrubbers, new SequentialIdGenerator(), clock, new LiveInputs(graphs, catalog, repos), intents, new FakeModelPort()),
             new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
-                new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers, new NoCodeSymbolSource()), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos, new NoCodeSymbolSource()),
-                new ContextCodeHistory(new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), new CodeSymbolSearch(new NoCodeSymbolSource()), scrubbers),
+                new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers, new NoCodeSymbolSource(), repos), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos, new NoCodeSymbolSource(), new RepoTreeCache()),
+                new ContextCodeHistory(new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), new CodeSymbolSearch(new NoCodeSymbolSource(), repos), scrubbers),
                     new GetHistoryService(graphs, new HistoryPipeline(new LensBasisReader(repos, intents, clock), intents, new FakeFileHistory(Repos[0], new HistoryWorld("0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", [])), clock), scrubbers),
-                    new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers))),
+                    new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers),
+                    new GetWholeMapService(graphs, scrubbers, new WholeMapCache(), WholeMapRules.Default),
+                    new Features.SearchMap.SearchMapService(graphs, scrubbers, new Context.Infrastructure.Search.SqliteMapSearchIndexFactory(), new Features.SearchMap.MapSearchCache(), WholeMapRules.Default),
+                    new Features.GetConcepts.GetConceptsService(new ConceptReader(graphs, scrubbers)), new Features.GetConceptMembers.GetConceptMembersService(new ConceptReader(graphs, scrubbers)))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()),
             new Features.MapHeads.MapHeadsService(repos, new FakeDefaultBranch()));
     }
@@ -107,7 +112,7 @@ internal static class Engines
 
     /// <summary>The build slice over empty fakes (the query tests never build).</summary>
     private static BuildMapService Build(TimeProvider clock, FakeGraphStore store) =>
-        new(new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal)), new FakeClusterSource(), new FakeLabeler(), new FakeHeavyJobLock(), new FakeDefaultBranch(), store, clock);
+        new(new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal)), new FakeClusterSource(), new MapNamers(new FakeLabeler(), new DisabledConceptNamer()), new MapBuildGate(), new FakeDefaultBranch(), store, clock);
 
     internal static IContextEngine Over(params IContextSource[] sources) => Over(new FixedSourceCatalog(sources));
 

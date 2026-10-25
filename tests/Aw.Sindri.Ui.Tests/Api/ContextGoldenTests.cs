@@ -34,7 +34,7 @@ public sealed class ContextGoldenTests
         "context-lenses" => Read<LensesView>,
         "context-filemap" => Read<FileMapView>,
         "context-code" => Read<CodeView>,
-        "context-map-review" => scenario.StartsWith("post-", StringComparison.Ordinal) ? Read<ReviewDecisionResponse> : Read<ReviewQueueView>,
+        "context-map-review" => scenario.StartsWith("post-", StringComparison.Ordinal) || scenario.StartsWith("session-", StringComparison.Ordinal) ? Read<ReviewDecisionResponse> : Read<ReviewQueueView>,
         "context-map-review-history" => Read<ReviewHistoryView>,
         "context-map" => Read<MapStatusView>,
         "context-map-publish" => Read<MapPublishView>,

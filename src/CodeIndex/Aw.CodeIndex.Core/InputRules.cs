@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.CodeIndex.Core.Model;
+using Aw.CodeIndex.Core.Planning;
 using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
 
@@ -7,7 +8,7 @@ namespace Aw.CodeIndex.Core;
 
 /// <summary>
 /// What the snapshot keeps of a commit's tree (spec §5.1, §9): regular files only, with a safe path, outside the deny globs,
-/// under the size caps. Pure, so the git adapter and the fake apply the same rules.
+/// under the file size cap (the total cap counts code files only). Pure, so the git adapter and the fake apply the same rules.
 /// </summary>
 public static class InputRules
 {
@@ -45,6 +46,39 @@ public static class InputRules
     /// <returns>True when the path is denied.</returns>
     public static bool IsDenied(string path, IReadOnlyList<string> addedGlobs) => MatchesAny(path, SecretGlobs.Concat(addedGlobs));
 
+    // A role entry in place of a glob ('prefix:', 'suffix:' or 'regex:' text, matched against any one path segment, ignoring case); null for a glob.
+    private static bool? Tagged(string entry, string[] segments)
+    {
+        if (entry.StartsWith("prefix:", StringComparison.Ordinal))
+        {
+            return entry.Length > 7 && segments.Any(s => s.StartsWith(entry[7..], StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (entry.StartsWith("suffix:", StringComparison.Ordinal))
+        {
+            return entry.Length > 7 && segments.Any(s => s.EndsWith(entry[7..], StringComparison.OrdinalIgnoreCase));
+        }
+
+        return entry.StartsWith("regex:", StringComparison.Ordinal) ? AnySegmentMatchesRegex(entry[6..], segments) : null;
+    }
+
+    // An invalid or runaway expression matches nothing (the profile check refuses a bad one; a hand-written settings file must not throw inside a snapshot).
+    private static bool AnySegmentMatchesRegex(string pattern, string[] segments)
+    {
+        try
+        {
+            return segments.Any(s => System.Text.RegularExpressions.Regex.IsMatch(s, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)));
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Whether a path matches any of the globs, ignoring case ('*' and '?' inside a segment, '**' across segments).</summary>
     /// <param name="path">The repo-relative path, with '/' separators.</param>
     /// <param name="globs">The globs; an empty one matches nothing.</param>
@@ -54,14 +88,14 @@ public static class InputRules
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(globs);
         var segments = path.Split('/');
-        return globs.Any(glob => glob.Length > 0 && Matches(glob.Split('/'), 0, segments, 0));
+        return globs.Any(glob => glob.Length > 0 && (Tagged(glob, segments) ?? Matches(glob.Split('/'), 0, segments, 0)));
     }
 
     /// <summary>Applies the rules to a commit's tree.</summary>
     /// <param name="commit">The commit the tree belongs to.</param>
     /// <param name="entries">Every blob and submodule entry, as git lists them.</param>
     /// <param name="limits">The deny globs and caps.</param>
-    /// <returns>The kept files in path order and a count per skip reason; SND-CODEIDX-003 when the kept sizes or the kept file count pass their cap.</returns>
+    /// <returns>The kept files in path order and a count per skip reason; SND-CODEIDX-003 when the kept code files' sizes pass the cap.</returns>
     public static Result<SnapshotInventory> Apply(CommitSha commit, IEnumerable<TreeEntry> entries, SnapshotLimits limits)
     {
         var skipped = new Dictionary<SkipReason, int>();
@@ -77,17 +111,15 @@ public static class InputRules
 
             var size = entry.Size ?? 0;
             kept.Add(new SnapshotFile(entry.Path, entry.Blob, size));
-            total += size;
-        }
-
-        if (kept.Count > limits.MaxFiles)
-        {
-            return CodeIndexErrors.InputTooLarge.With(string.Create(CultureInfo.InvariantCulture, $"{kept.Count} kept files are over the cap of {limits.MaxFiles}"));
+            if (LanguageTable.Of(entry.Path) is not null)
+            {
+                total += size;
+            }
         }
 
         if (total > limits.MaxTotalBytes)
         {
-            return CodeIndexErrors.InputTooLarge.With(string.Create(CultureInfo.InvariantCulture, $"{total} kept bytes are over the cap of {limits.MaxTotalBytes}"));
+            return CodeIndexErrors.InputTooLarge.With(string.Create(CultureInfo.InvariantCulture, $"{total} kept code bytes are over the cap of {limits.MaxTotalBytes}"));
         }
 
         kept.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
@@ -128,7 +160,7 @@ public static class InputRules
     {
         if (g == glob.Length)
         {
-            return p == path.Length;
+            return true;   // the glob ended on a file or a directory: a directory covers everything under it, as in .gitignore
         }
 
         if (glob[g] == "**")

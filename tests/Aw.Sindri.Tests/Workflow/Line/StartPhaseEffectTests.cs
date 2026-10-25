@@ -31,12 +31,12 @@ public sealed class StartPhaseEffectTests
         return JsonSerializer.SerializeToElement(new { @ref = put.Value.Ref, sha256 = put.Value.Sha256 });
     }
 
-    private async Task<EffectContext> Context(string next = Next, string recipe = "workflow.phase", bool lineContext = true)
+    private async Task<EffectContext> Context(string next = Next, string recipe = "workflow.phase", bool lineContext = true, string lineContextJson = """{"base":"main"}""")
     {
         var facts = new Dictionary<FactKey, JsonElement>();
         if (lineContext)
         {
-            facts[FactKey.From("fact:lineContext")] = await Stored("""{"base":"main"}""");
+            facts[FactKey.From("fact:lineContext")] = await Stored(lineContextJson);
         }
 
         return new EffectContext(
@@ -60,7 +60,7 @@ public sealed class StartPhaseEffectTests
         Assert.Equal(("p2", "sha256:abc", "dependency-head", "sindri/p1", "p1"),
             (packet!["phase"]!.GetValue<string>(), packet["hash"]!.GetValue<string>(), packet["base"]!["rule"]!.GetValue<string>(), packet["base"]!["ref"]!.GetValue<string>(), packet["stackParent"]!.GetValue<string>()));
         var context = await _facts.Read(start.Inputs[FactKey.From("fact:lineContext")], Token);
-        Assert.Equal("""{"base":"main"}""", Encoding.UTF8.GetString(context.Value.Span));
+        Assert.Equal("""{"base":"main","phase":"p2"}""", Encoding.UTF8.GetString(context.Value.Span));
         Assert.Equal(("started", false), (done.Value.Reply?.Value, done.Value.Existed));
     }
 
@@ -98,6 +98,34 @@ public sealed class StartPhaseEffectTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Two_phases_of_one_line_each_get_a_line_context_naming_their_own_phase()
+    {
+        const string LineContext = """{"line":"L-1","phase":"p1","base":"main"}""";
+        var first = Next.Replace("\"phase\":\"p2\",\"attempt\"", "\"phase\":\"p1\",\"attempt\"", StringComparison.Ordinal);
+        _ = await Effect().Dispatch(await Context(first, lineContextJson: LineContext), Token);
+        _ = await Effect().Dispatch(await Context(lineContextJson: LineContext), Token);
+
+        var contexts = new List<JsonNode?>();
+        foreach (var start in _starts.Started)
+        {
+            contexts.Add(await Content(start.Inputs[FactKey.From("fact:lineContext")]));
+        }
+
+        Assert.Equal(["p1", "p2"], contexts.Select(static c => c!["phase"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["L-1", "L-1"], contexts.Select(static c => c!["line"]!.GetValue<string>()), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_phase_gets_the_lines_context_with_only_its_phase_replaced()
+    {
+        _ = await Effect().Dispatch(await Context(lineContext: true, lineContextJson: """{"line":"L-1","phase":"line-level","base":"main","runArea":{}}"""), Token);
+
+        var start = Assert.Single(_starts.Started);
+        var context = await Content(start.Inputs[FactKey.From("fact:lineContext")]);
+        Assert.Equal("""{"line":"L-1","phase":"p2","base":"main","runArea":{}}""", context!.ToJsonString());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_line_without_a_context_starts_the_phase_without_one()
     {
         _ = await Effect().Dispatch(await Context(lineContext: false), Token);
@@ -107,7 +135,24 @@ public sealed class StartPhaseEffectTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("""{"phase":"P2","attempt":1,"packet":{}}""")]
+    [InlineData("P1", "p1")]
+    [InlineData("WS 2_b", "ws-2-b")]
+    public async Task A_plan_id_keeps_its_name_and_only_the_address_uses_its_slug(string id, string slug)
+    {
+        var next = Next.Replace("\"phase\":\"p2\",\"attempt\"", $"\"phase\":\"{id}\",\"attempt\"", StringComparison.Ordinal);
+
+        var done = await Effect().Dispatch(await Context(next), Token);
+
+        var start = Assert.Single(_starts.Started);
+        Assert.Equal(id, start.Phase);
+        var reply = done.Value.Facts![FactKey.From("fact:phaseEvent")];
+        var content = JsonNode.Parse((await _facts.Read(new FactValue(reply.Ref, reply.Sha256, HeadSha: null), Token)).Value.Span);
+        Assert.Equal((id, $"T-3/line/1/phase.{slug}.1"), (content!["phase"]!.GetValue<string>(), content["instance"]!.GetValue<string>()));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"phase":"!!!","attempt":1,"packet":{}}""")]
+    [InlineData("""{"phase":"","attempt":1,"packet":{}}""")]
     [InlineData("""{"phase":"p2","attempt":0,"packet":{}}""")]
     [InlineData("""{"phase":"p2","attempt":1}""")]
     [InlineData("not json")]

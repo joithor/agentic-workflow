@@ -14,7 +14,7 @@ public sealed class OnyxPreflightTests
         "v4.9.0", new string('0', 40), [], [], DiskBytes: 30 * Gib, DockerMemoryBytes: 5_905_580_032);   // the lock's floor: 5.5 GiB of MemTotal for a 6 GiB VM
 
     private static readonly DiskFacts _roomy = new("/h", 80 * Gib);
-    private static readonly PortFacts _free = new(3000, PreferredFree: true, FirstFreeFallback: 3001);
+    private static readonly PortFacts _free = new(3189, PreferredFree: true, FirstFreeFallback: 3190);
 
     private static PreflightCheck Check(PreflightReport report, string name) => Assert.Single(report.Checks, c => c.Name == name);
 
@@ -24,13 +24,13 @@ public sealed class OnyxPreflightTests
         var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, _free), _pins);
 
         Assert.True(report.Ok);
-        Assert.Equal(3000, report.Port);
+        Assert.Equal(3189, report.Port);
         Assert.Equal(["docker", "compose", "memory", "disk", "port"], report.Checks.Select(static c => c.Name), StringComparer.Ordinal);
         Assert.Equal("29.4.0", Check(report, "docker").Detail);
         Assert.Equal("v2.40.3", Check(report, "compose").Detail);
         Assert.Equal("15.7 GiB for Docker, needs a 6 GiB setting", Check(report, "memory").Detail);
         Assert.Equal("80.0 GiB free at /h, needs 30.0 GiB" + VmNote, Check(report, "disk").Detail);
-        Assert.Equal("3000 free", Check(report, "port").Detail);
+        Assert.Equal("3189 free", Check(report, "port").Detail);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -81,8 +81,8 @@ public sealed class OnyxPreflightTests
         var docker = Check(report, "docker");
         Assert.Equal(CheckState.Fail, docker.State);
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
-        Assert.Equal("Docker didn't answer within 25 s; it may be starting (Docker Desktop's Resource Saver)", docker.Detail);
-        Assert.Contains("wait", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Equal("Docker didn't answer within 25 s; it may be starting", docker.Detail);
+        Assert.Contains("isn't answering (no reply within 25 s)", docker.Problem?.Message, StringComparison.Ordinal);
         Assert.Contains("run this again", docker.Problem?.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
     }
@@ -320,23 +320,23 @@ public sealed class OnyxPreflightTests
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_uses_the_first_free_fallback()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: 3002)), _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3189, PreferredFree: false, FirstFreeFallback: 3002)), _pins);
 
         var port = Check(report, "port");
         Assert.Equal(CheckState.Ok, port.State);
-        Assert.Equal("3000 taken; would use 3002", port.Detail);
+        Assert.Equal("3189 taken; would use 3002", port.Detail);
         Assert.Equal(3002, report.Port);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_006_when_no_port_is_free()
     {
-        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3000, PreferredFree: false, FirstFreeFallback: null)), _pins);
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, new PortFacts(3189, PreferredFree: false, FirstFreeFallback: null)), _pins);
 
         var port = Check(report, "port");
         Assert.Equal(CheckState.Fail, port.State);
         Assert.Equal("SND-ONYX-006", port.Problem?.Code);
-        Assert.Equal(3000, report.Port);
+        Assert.Equal(3189, report.Port);
         Assert.False(report.Ok);
     }
 

@@ -33,7 +33,8 @@
       "testedBy": [
         "tests/edge.test.ts",
         "tests/links.test.ts"
-      ]
+      ],
+      "repo": "aw-split-panes"
     },
     {
       "path": "src/sharing/routes.ts",
@@ -55,7 +56,8 @@
       "testedBy": [
         "tests/edge.test.ts",
         "tests/routes.test.ts"
-      ]
+      ],
+      "repo": "aw-split-panes"
     }
   ],
   "tests": [
@@ -77,7 +79,8 @@
       "trust": "trusted",
       "anchors": [
         "feature:sharing"
-      ]
+      ],
+      "repo": "aw-split-panes"
     },
     {
       "path": "tests/links.test.ts",
@@ -94,7 +97,8 @@
       "trust": "trusted",
       "anchors": [
         "feature:sharing"
-      ]
+      ],
+      "repo": "aw-split-panes"
     },
     {
       "path": "tests/routes.test.ts",
@@ -111,7 +115,8 @@
       "trust": "trusted",
       "anchors": [
         "feature:sharing"
-      ]
+      ],
+      "repo": "aw-split-panes"
     }
   ],
   "data": {

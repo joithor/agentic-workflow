@@ -3,9 +3,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <summary>The action bar (<see cref="NeedsYouBarViewModel"/>, continued): what A, D, Ctrl+Enter, Esc and the buttons do.</summary>
 internal sealed partial class NeedsYouBarViewModel
 {
-    private static readonly TimeSpan _copiedShown = TimeSpan.FromMilliseconds(1500);
-
-    /// <summary>A, or the primary button: approve, accept, or copy the terminal command. On a desk request not read to the end the first press only asks.</summary>
+    /// <summary>A, or the primary button: approve or accept. On a desk request not read to the end the first press only asks.</summary>
     /// <returns>A task that completes when the press was handled.</returns>
     internal async Task PressApprove()
     {
@@ -14,13 +12,12 @@ internal sealed partial class NeedsYouBarViewModel
             return;
         }
 
-        if (ShowsConfirm)
+        if (Kind == BarKind.Settings)
         {
-            ConfirmFocusRequested?.Invoke(this, EventArgs.Empty);   // a protected row's A only moves to its control: the hold or the typed box does the approving
-        }
-        else if (ShowsTerminal)
-        {
-            await CopyTerminal().ConfigureAwait(true);
+            if (PrimaryEnabled && _confirm is { } confirm)
+            {
+                await confirm.Approve().ConfigureAwait(true);
+            }
         }
         else if (Kind == BarKind.Decision)
         {
@@ -74,6 +71,26 @@ internal sealed partial class NeedsYouBarViewModel
     // The first A on a request not read to the end only asks; the second, or one on a request read to the end, reports it.
     private async Task ApproveDesk()
     {
+        if (HasScoping)
+        {
+            if (ScopingReady)
+            {
+                await SendRound(NeedsYouBarOutcome.Answered).ConfigureAwait(true);
+            }
+
+            return;   // every question needs a pick; "Done asking" is the way to stop early
+        }
+
+        if (HasQuestions)
+        {
+            if (AllAnswered)
+            {
+                await Report(NeedsYouBarOutcome.Answer, DeskReporter.AnswersJson(Questions.Select(q => (q.Question.Id, q.Question.Question, q.Answer.Trim())))).ConfigureAwait(true);
+            }
+
+            return;   // every answer is needed; the question box is the consent, so there is no "read to the end" step
+        }
+
         if (!ReadToEnd && Mode != NeedsYouBarMode.Confirming)
         {
             Mode = NeedsYouBarMode.Confirming;
@@ -151,30 +168,6 @@ internal sealed partial class NeedsYouBarViewModel
         }
     }
 
-    /// <summary>Copies the served command the terminal button stands for.</summary>
-    /// <returns>A task that completes when the clipboard answered.</returns>
-    internal async Task CopyTerminal()
-    {
-        if (!ShowsTerminal || TerminalCli.Length == 0)
-        {
-            return;
-        }
-
-        if (await _clipboard.SetText(TerminalCli, CancellationToken.None).ConfigureAwait(true))
-        {
-            HintIsSuccess = true;
-            Refresh();
-            CopiedExpiry = DropCopied();
-        }
-    }
-
-    private async Task DropCopied()
-    {
-        await Task.Delay(_copiedShown, _clock).ConfigureAwait(true);
-        HintIsSuccess = false;
-        Refresh();
-    }
-
     // One report per press: the flag is set before the first await. A refusal shows as served and leaves the request pressable.
     private async Task Report(NeedsYouBarOutcome outcome, string? answers)
     {
@@ -213,6 +206,9 @@ internal sealed partial class NeedsYouBarViewModel
         NeedsYouBarOutcome.Revise => "revise",
         NeedsYouBarOutcome.Rework => "rework",
         NeedsYouBarOutcome.Drop => "drop",
+        NeedsYouBarOutcome.Answer => "done",
+        NeedsYouBarOutcome.Answered => "answered",
+        NeedsYouBarOutcome.DoneAsking => "doneAsking",
         NeedsYouBarOutcome.None => throw new InvalidOperationException("no outcome to send"),
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };

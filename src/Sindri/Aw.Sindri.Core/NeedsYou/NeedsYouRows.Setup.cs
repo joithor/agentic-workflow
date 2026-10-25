@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 
@@ -41,7 +42,8 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _addRepo,
             [_addRepo],
-            cli.Value.Text);
+            cli.Value.Text,
+            new NeedsYouOpen("setup", "Open setup"));
     }
 
     private static readonly ActionId _registerMcp = ActionId.From(SetupActions.RegisterMcp);
@@ -85,6 +87,7 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _registerMcp,
             [_registerMcp],
-            cli.Value.Text);
+            cli.Value.Text,
+            new NeedsYouOpen("setup", "Open setup"));
     }
 }

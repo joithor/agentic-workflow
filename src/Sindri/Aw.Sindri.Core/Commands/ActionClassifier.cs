@@ -31,7 +31,7 @@ public static class ActionClassifier
             : row;
     }
 
-    private static CommandRow Protect(CommandRow row) => row with { Class = ActionClass.Protected, NeedsTerminal = true };
+    private static CommandRow Protect(CommandRow row) => row with { Class = ActionClass.Protected };
 
     /// <summary>A protected row for an attempt the catalog has no row for, named '&lt;Command&gt;[:&lt;variant&gt;]' when that is an action id.</summary>
     private static CommandRow Unlisted(Type type, IReadOnlyList<CommandRow> rows, string? variant)

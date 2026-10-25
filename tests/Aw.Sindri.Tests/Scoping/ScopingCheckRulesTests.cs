@@ -13,9 +13,9 @@ public sealed class ScopingCheckRulesTests
     private static async Task<ScopingCheckResponse> Evidence(ScopingFacts facts) =>
         (await new ScopingCheckService().Handle(new ScopingCheckRequest(facts, ScopeStage.Evidence), CancellationToken.None)).Value;
 
-    private static void Fails(ScopingCheckResponse response, string rule, string item)
+    private static void Fails(ScopingCheckResponse response, string rule, string item, ScopeOutcome outcome = ScopeOutcome.Incomplete)
     {
-        Assert.Equal(ScopeOutcome.Incomplete, response.Outcome);
+        Assert.Equal(outcome, response.Outcome);
         Assert.Contains(response.Findings, f => f.Rule == rule && f.Item == item);
         Assert.Equal(ScopeRuleStatus.Fail, response.Rules.Single(r => r.Rule == rule).Status);
     }
@@ -56,7 +56,7 @@ public sealed class ScopingCheckRulesTests
     {
         var facts = ScopingFacts.Expiry().Edit("lenses", n => n["code"]!["foundCount"] = 99);
 
-        Fails(await Evidence(facts), "SCP-LENS-001", "code");
+        Fails(await Evidence(facts), "SCP-LENS-001", "code");   // a lens fault is the lens's: gathering again reproduces it, so it is never a regather
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -71,7 +71,7 @@ public sealed class ScopingCheckRulesTests
             ["confirmed"] = true,
         }));
 
-        Fails(await Evidence(facts), "SCP-LENS-001", "code");
+        Fails(await Evidence(facts), "SCP-LENS-001", "code");   // a lens fault is the lens's: gathering again reproduces it, so it is never a regather
     }
 
     [Fact, Trait("Lane", "unit")]

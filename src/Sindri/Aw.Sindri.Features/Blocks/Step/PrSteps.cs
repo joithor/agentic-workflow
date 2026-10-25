@@ -18,7 +18,7 @@ internal static class PrSteps
     /// <summary>'step.pr.snapshot': reads the PR's state in §4.3's priority order; the outcome names what to do next.</summary>
     public static BlockDescriptor Snapshot { get; } = BlockStep("step.pr.snapshot", Capability.Network).Takes(Text("pr"), Text("handoff"), Text("recheck"), Text("workspace"))
         .Reports("mergedDocsOpen", "merged", "closed", "restack", "conflict", "ciRed", "comments", "stale", "docsRed", "pending", "green")
-        .Writes(Every("fact:prState"), On("fact:mergedSha", "merged", "mergedDocsOpen"));
+        .Writes(Every("fact:prState"), Every("fact:prStatus"), On("fact:mergedSha", "merged", "mergedDocsOpen"));
 
     /// <summary>'step.pr.ready-check': whether the PR changed while it waits to be merged; 'same' or 'changed'.</summary>
     public static BlockDescriptor ReadyCheck { get; } = BlockStep("step.pr.ready-check", Capability.Network).Takes(Text("pr"), Text("at")).Reports("same", "changed").Writes();
@@ -30,6 +30,10 @@ internal static class PrSteps
     /// <summary>'step.pr.held-comment': takes the oldest held thread for the owner's walk.</summary>
     public static BlockDescriptor HeldComment { get; } = BlockStep("step.pr.held-comment", Capability.Network).Takes(Text("pr")).Reads("fact:prState")
         .Reports("comment", "drainedUnpushed", "drained").Writes(On("fact:comment", "comment"));
+
+    /// <summary>'step.pr.ci-log': keeps a capped excerpt of each failing check's log (fact:ciLog, as data for the fix); 'logged' or 'none' when nothing is failing.</summary>
+    public static BlockDescriptor CiLog { get; } = BlockStep("step.pr.ci-log", Capability.Network).Takes(Text("pr")).Reads("fact:prState")
+        .Reports("logged", "none").Writes(Every("fact:ciLog"));
 
     /// <summary>'step.pr.ci-fix': an agent fixes the failing checks in the workspace; Sindri pushes.</summary>
     public static BlockDescriptor CiFix { get; } = AgentStep("step.pr.ci-fix", Capability.Tools | Capability.WriteScope).Reads("fact:prState")
@@ -44,7 +48,7 @@ internal static class PrSteps
         .Reports("drafted", "noReply", "needsOwner").Writes(On("fact:reply", "drafted", "needsOwner"));
 
     /// <summary>'step.pr.owner-comment': the owner decides a held comment: 'fix' (with a note), 'reply' (with the text), 'skip' or 'later'.</summary>
-    public static BlockDescriptor OwnerComment { get; } = HumanDeskStep("step.pr.owner-comment", Capability.None).Reads("fact:comment")
+    public static BlockDescriptor OwnerComment { get; } = HumanDeskStep("step.pr.owner-comment", Capability.None).Reads("fact:comment").Reviewing(ReviewOf("fact:comment", DeskReviewKind.Text))
         .Reports("fix", "reply", "skip", "later").Writes(On("fact:ownerNote", "fix"), On("fact:reply", "reply"));
 
     /// <summary>'step.pr.rework-notes': the owner writes what the phase must change ('noted') or sends the PR back to the babysitter ('back').</summary>

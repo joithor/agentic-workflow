@@ -93,7 +93,7 @@ rest of Sindri reads it.
 
 ## 3. Terms
 
-- **Registered repo:** a repo in the approved profile, with its main checkout path (`repos[*].path`).
+- **Registered repo:** a repo in the approved profile, or in the live profile file when the approved one doesn't name it (owner q102, CIX-L59: a repo the owner adds with `sindri repo add` or an agent proposes is indexed at once), with its main checkout path (`repos[*].path`). The typed approval stays the consent for `index.denyPaths` and the embeddings server address only: both always come from the approved profile, an approved repo keeps its approved entry (a live edit to it takes effect on approval), and a live-only repo's own `denyPaths` only add to the approved ones and its entry never changes the embeddings address or model (it may only turn the layer off). Health and doctor rows list live-only repos too. With no approved profile nothing is indexed (SND-PROFILE-005).
 - **Head:** the commit `HEAD` of that checkout names. **Default branch:** the first of `origin/HEAD`'s target, `main`,
   `master` that exists as a local ref (no fetch). A head is **on main** when it is the default branch's tip or one of its ancestors.
 - **The shared trigger:** CI2 and §6.
@@ -122,8 +122,8 @@ is immutable and has no sidecars. Readers read the pointer, then open that file 
 Superseded files and leftovers matching exactly `<repo>\.[0-9A-HJKMNP-TV-Z]{26}\.db(-wal|-shm)?` (and no looser glob, since a repo may be called `a.b`) are deleted when no pointer names them, they are not the build file the running build
 recorded in `<repo>.building`, and they are older than 10 minutes (readers hold a file only for one call), at the start and end of each build; the heavy lock means no two builds of a repo run. Files are
 created 0600 explicitly. A repo name is `[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}` (no leading dot; refused otherwise, `SND-CODEIDX-001`) before it goes into any file name,
-and the pointer is opened without following symlinks and must match a ULID, else the index is `damaged`. An incremental build and an
-embeddings continuation each copy the current file once (the cost of immutable files; a large index is hundreds of MB).
+and the pointer is opened without following symlinks and must match a ULID, else the index is `damaged`. An incremental build and each
+embed chunk copy the current file once (the cost of immutable files; a large index is hundreds of MB).
 The index is derived data: a different `user_version` is rebuilt from scratch, never migrated (CI10).
 
 ### 4.2 Schema (version 1)
@@ -138,7 +138,7 @@ CREATE TABLE symbols (
   id INTEGER PRIMARY KEY, file TEXT NOT NULL REFERENCES files(path) ON DELETE CASCADE,
   ref TEXT NOT NULL UNIQUE, name TEXT NOT NULL, qualified TEXT NOT NULL, kind TEXT NOT NULL, arity INTEGER NOT NULL,
   start_line INTEGER NOT NULL, end_line INTEGER NOT NULL, exported INTEGER NOT NULL, utility INTEGER NOT NULL,
-  signature TEXT NOT NULL,                                                            -- scrubbed and cut at 400 characters
+  signature TEXT NOT NULL,                                                            -- scrubbed and cut at 2,000 characters (raised from 400 per owner q93, 2026-10-23)
   shape_hash TEXT NOT NULL, token_count INTEGER NOT NULL, complexity INTEGER NOT NULL,
   minhash BLOB NULL);                                                                         -- null under 30 tokens; such symbols have no clone rows (a tiny getter would make a huge exact-clone group)
 CREATE INDEX symbols_name ON symbols(name); CREATE INDEX symbols_file ON symbols(file); CREATE INDEX symbols_shape ON symbols(shape_hash);
@@ -221,7 +221,7 @@ For repo path P and commit C: `git -C P ls-tree -r -z --full-tree C` gives mode,
 snapshot keeps regular files only (mode 100644 and 100755); symlinks (120000) and submodules (160000) are skipped and
 counted. A path that matches a deny glob (the built-in secret globs, then the profile's `index.denyPaths`, then the repo's;
 case-insensitive; additions only, as in the TS index) is skipped as `denied`, a file over `index.maxFileKB` as `too-large`.
-The sum of kept sizes over `index.maxTotalMB` stops the build with `SND-CODEIDX-003` before any content is read. Contents
+The sum of the kept code files' sizes (docs, assets and lockfiles do not count, and the number of files has no cap, removed per owner q93 (2026-10-23)) over `index.maxTotalMB` stops the build with `SND-CODEIDX-003` before any content is read. Contents
 come from one long-lived `git cat-file --batch` process per build, fed blob ids; no file is read from the working tree, so
 there is no symlink or race to defend against, and a path swapped after the commit does not matter. The git calls clear the
 environment variables `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_NAMESPACE`, `GIT_CEILING_DIRECTORIES`, `GIT_COMMON_DIR` and every `GIT_CONFIG_*` the way `Aw.Context.Infrastructure.Git.GitCli` does (that class is
@@ -229,7 +229,7 @@ environment variables `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_OBJECT_
 in the owner's checkout), `--no-replace-objects` (a replace ref in the repo must not swap what a blob id means),
 `-c protocol.allow=never` plus `GIT_NO_LAZY_FETCH=1` where git knows it (git 2.44 and later; this box has 2.43, which ignores it, so `protocol.allow=never` is the guard and a contract test with a promisor-repo fixture proves a missing blob is a `missing` skip and a layer note, never a network fetch),
 `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, `-c core.fsmonitor=false -c core.hooksPath=/dev/null`, and never
-`safe.directory=*`; a repo git refuses as unsafe is `SND-CODEIDX-002`. Roslyn's depth and time guards are CI12. Every path from `ls-tree` is validated at inventory: a component that is empty, `..`, `.git` (any case), contains a backslash or NUL, or an absolute path is skipped as `unsafe-path`, and every write of the graphify snapshot asserts the resolved path is under the snapshot root. Fixed ceilings live in `CodeIndexRules`: 100,000 files, 5,000 symbols and 20,000 call sites per file, a 2 GB index file, a 2-hour build; passing one fails that file or the build with a count, never a hang.
+`safe.directory=*`; a repo git refuses as unsafe is `SND-CODEIDX-002`. Roslyn's depth and time guards are CI12. Every path from `ls-tree` is validated at inventory: a component that is empty, `..`, `.git` (any case), contains a backslash or NUL, or an absolute path is skipped as `unsafe-path`, and every write of the graphify snapshot asserts the resolved path is under the snapshot root. Fixed ceilings live in `CodeIndexRules`: 100,000 symbols and 500,000 call sites per file (a file past one is left unparsed; raised from 5,000 and 20,000 per owner q93, 2026-10-23). The 100,000-file ceiling, the 2 GB index file and the 2-hour build that this spec once listed are gone (removed per owner q93 (2026-10-23); the last two were never enforced).
 
 ### 5.2 Incremental planning (`BuildPlanner`, Core, pure)
 
@@ -272,19 +272,17 @@ callees of the symbol, so the caller can tell "no callers" from "unknown".
 
 graphify runs on a snapshot of the commit written from the filtered inventory of §5.1 (so the index's deny globs apply and
 `export-ignore` does not change what is read) into a temp directory (the same shape as
-`Aw.Context.Infrastructure.Extract.GraphifySnapshot`, which is `internal` to Context, so this is a copy kept honest by a shared contract test (the one deliberate difference, the index's private directory bound writable, is a named parameter of the wrapper that the test pins on both sides): files copied under the file and total caps, the reserved
+`Aw.Context.Infrastructure.Extract.GraphifySnapshot`, which is `internal` to Context, so this is a copy kept honest by a shared contract test (the one deliberate difference, the index's private directory bound writable, is a named parameter of the wrapper that the test pins on both sides): every file of the filtered inventory is copied, with no file or total cap of its own (removed per owner q93 (2026-10-23)), the reserved
 `graphify-out/` and `.sindri-tmp*` paths never copied), with `extract <dir> --code-only --no-viz`, a private temp and cache
 directory beside the snapshot (below), a cleaned environment, a time limit, and at most 64 KB kept from each output stream. It runs
 only under a sandbox that denies the network and confines writes to the snapshot and its private directory (bubblewrap on Linux,
 `sandbox-exec` on macOS, absolute paths, root-owned, never from `PATH`); with none, the layer is `unavailable`
-`SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graph.maxMB`) and read with a streaming reader that stops at the node and edge caps, read as a regular
+`SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graph.maxMB`) and read as a regular
 file through no symlink, parsed with `System.Text.Json` into a strict DTO (a wrong top-level shape is `SND-CODEIDX-008`; a malformed record is dropped and counted, below), and
 treated as untrusted. Nodes with a file and line are matched to `symbols` by file and the enclosing span; an unmatched node
-becomes a `symbols` row of kind `graph-symbol` (ref as §3, `signature` empty, `end_line` = its line, no clone rows) when graphify's file is a
-language no parser covers (every language but C#). Node ids and files are kept only if the file is in the snapshot's
-file list; names are scrubbed and cut like signatures, and a name with a control character or a newline is malformed; a colon is allowed, since the ref is read from the right (`path:name:startLine`). `graph.json` also has node and edge caps
-(`index.graph.maxNodes` 500,000, edges four times that; over either is `SND-CODEIDX-008`). graphify runs with a memory limit
-(`RLIMIT_AS`) as well as the time limit. What graphify emits was measured, not guessed: the CI-0d spike ran the pinned graphify (0.9.67) on a TypeScript and a Python fixture (`tests/fixtures/code-index/graphify/`, `SPIKE.md`), and the recorded `graph.json` files are the contract fixtures CI-7's tests replay. `graph.json` is NetworkX node-link JSON: top-level `directed` (false), `multigraph` (false), `graph` (an object), `hyperedges` (an array, ignored), `nodes` and `links` (the edge list is `links`). The strict DTO requires these fields on each record, ignores any other field (the size cap still counts it), and drops a malformed record rather than failing the layer:
+becomes a `symbols` row (ref as §3, `signature` empty, `end_line` = its line, no clone rows) when graphify's file is a
+language no parser covers (every language but C#): a node marked `_callable_class` is stored as kind `class` (never embedded, it keeps no text), every other node as kind `graph-symbol`. Node ids and files are kept only if the file is in the snapshot's
+file list; names are scrubbed and cut like signatures, and a name with a control character or a newline is malformed; a colon is allowed, since the ref is read from the right (`path:name:startLine`). `graph.json` has the byte cap only: the node and edge caps (`index.graph.maxNodes` 500,000, edges four times that) are removed per owner q93 (2026-10-23), and so is the `graph.maxNodes` key. graphify runs under a 2-hour time limit (raised from 30 minutes per owner q93); a run that times out leaves the last good graph in place and the layer `unavailable` (`timeout`). The graphify memory kill (`RLIMIT_AS`, a run-size cap) that an earlier revision of this spec described was never built and is not to be built (owner q93: build nothing new; CIX-L63). What graphify emits was measured, not guessed: the CI-0d spike ran the pinned graphify (0.9.67) on a TypeScript and a Python fixture (`tests/fixtures/code-index/graphify/`, `SPIKE.md`), and the recorded `graph.json` files are the contract fixtures CI-7's tests replay. `graph.json` is NetworkX node-link JSON: top-level `directed` (false), `multigraph` (false), `graph` (an object), `hyperedges` (an array, ignored), `nodes` and `links` (the edge list is `links`). The strict DTO requires these fields on each record, ignores any other field (the size cap still counts it), and drops a malformed record rather than failing the layer:
 
 - **node**: `id` (string, required), `label` (string, required), `source_file` (string, required: relative to the snapshot root with `/` separators; an absolute path is cut textually, with no filesystem call, at a path-segment boundary of the snapshot root (compared against the root as given and as resolved, since graphify may report `/private/tmp` for `/tmp` on macOS) (`snap` is not a prefix of `snap2`) and made relative; a path with a `..` segment, a backslash or a NUL is malformed; a node without one, or naming a path not in the snapshot's file list, is dropped and counted), `source_location` (string `L<n>`, required, 1 <= n <= `int.MaxValue`: the start line; there is no end line), `community` (integer, optional), `file_type` (string, optional), `_callable` and `_callable_class` (booleans, optional). A wrong type on a known field, or a missing `id`, `label` or `source_location` (or one that is not `L<n>`), makes that node malformed: dropped and counted. NetworkX merges equal ids before `graph.json` is written, so a repeated `id` should not occur (two symbols whose derived ids coincide are merged inside graphify, which the layer cannot see: a precision limit that `basis = graphify` and `coverage = partial` already tell the reader about); if one does, every node with that `id` is dropped and counted; a `graph-symbol` ref is `path:name:startLine`, so two nodes cannot collide on it. There is no kind field: a node with neither `_callable` nor `_callable_class` is a file node and is not stored as a symbol; `_callable_class` is a class; the target of a `method` edge is a method; any other `_callable` node is a function. A label is the name with `()` for functions and methods (`.name()` for a method) and bare for a class or file; the stored name drops the `()` and the leading `.`.
 - **edge**: `source` and `target` (strings naming node ids, required), `relation` (required: a missing one makes the edge malformed, dropped and counted; `calls`, `contains`, `method`, `imports` and `imports_from` are known, any other value is skipped, not an error), `confidence` (`EXTRACTED` or `INFERRED`; a missing or any other word is treated as `INFERRED`; stored in the `edges` vocabulary of §3 as `EXTRACTED` = `certain`, `INFERRED` = `likely`; `basis = graphify` is what marks the edge as the coarser source, so a reader weighs it by basis and confidence together), `source_file` and `source_location` (string `L<n>`; required on `calls`, where they are the call site in the caller's file, and a `calls` edge without them is malformed), `confidence_score` (number, optional). Only `calls` edges become `edges` rows: `source` is the caller and `target` the callee, both ends must be nodes that kept their file and line (an edge naming an id that is not a node, or one that was dropped, is dropped quietly and counted, not an error), and a `calls` edge whose target is a class is a construction (stored with the class as the callee). A `calls` edge whose caller is a file node (a call at module level) has no caller symbol and is dropped, counted with the others. The graph is not a multigraph, so a caller and callee pair carries one edge and one call site; later call sites of the same pair are not visible, and the layer does not claim they are: `Callers` and `Callees` rows from graphify languages carry `coverage = partial`, and an empty answer for such a language reads "none found", never "none", and the code lens, the file map, the CLI's first line, the JSON field and `GET /sindri/context/code` carry the same words (any partial row marks the whole answer partial; the marker is text, never colour alone; the CI-10a goldens and the CI-10b and S-9 accessible-name and text-fit checks include it), with `basis` shown next to a `likely` confidence so a graphify edge is not read as parser-grade. Graphify TypeScript symbols have no end line (the end equals the start), so a symbol-level `implements` for a graphify language matches by name and file, not by span. The graph is declared undirected but every edge keeps its direction (all 13 `calls` edges in the spike ran caller to callee).
@@ -302,10 +300,11 @@ The private temp and cache directory (`TMPDIR`, `XDG_CACHE_HOME`, `UV_CACHE_DIR`
 `POST {url}/api/embed` through a `SocketsHttpHandler` with `UseProxy = false` and `AllowAutoRedirect = false`, on the profile's URL, which must be `127.0.0.1` or `[::1]` with no credentials (never `localhost`:
 it can resolve elsewhere) and not a model whose name contains `cloud`; redirects are errors; a bad URL or model is
 `SND-CODEIDX-005`. The model must be present with the pinned digest (`/api/tags`), else the layer is `unavailable`
-`SND-CODEIDX-009`. Texts are `name + scrubbed signature + scrubbed body`, cut at 2,000 characters, in batches of 32, written to the
-store as each batch returns. At most 4,096 symbols are embedded per build (a first build of a big repo finishes over
-several builds: `pending`, "N of M embedded", and the service schedules a continuation, §6.3). The
-embedding step skips `class`-like symbols, as the TS index does. Nothing in the unit lane talks to Ollama (§11).
+`SND-CODEIDX-009`. Texts are `name + scrubbed signature + scrubbed body`, cut at 6,000 characters (raised from 2,000 per owner q93, 2026-10-23), in batches of 32, written to the
+store as each batch returns. Embedding is its own operation (`EmbedCodeIndex`, §5.7a), outside the heavy slot: a build only stores bodies,
+carries the vectors of unchanged files and records the layer `pending`, "N of M embedded" (or `ok` when none is missing, `disabled` when the profile turns it off);
+the embed run then works through the pending symbols in chunks of 4,096 until none remain, so a repo is fully embedded without waiting for a HEAD move (the service starts it whenever the layer is `pending`, §6.3). The
+embedding step skips `class`-like symbols, as the TS index does. A graph symbol's embed text is its source span from its line to the line before the next graph symbol in the same file (or the end of the file), scrubbed then cut; this is an approximation, since graphify gives no end line. A file whose blob cannot be read leaves its graph symbols without text, and the graph layer's detail counts those files. Nothing in the unit lane talks to Ollama (§11).
 
 ### 5.7 The build slice (`BuildCodeIndex`, Features)
 
@@ -315,11 +314,20 @@ embedding step skips `class`-like symbols, as the TS index does. Nothing in the 
    `Succeeded` job with `skipped: not-on-main` and no change).
 3. Plan, parse, write structure, call sites, clones and deps into the build file in one transaction per 200 files, reporting a
    progress line each time (`structure 1,400 of 3,100 files`; counts only).
-4. Graph layer (it empties and refills the graph tables), then resolve: one set-based pass builds the syntax edges from `call_sites` and merges the graphify edges; then the embeddings layer. Each layer is in its own try; failure becomes layer status.
+4. Graph layer (it empties and refills the graph tables), then resolve: one set-based pass builds the syntax edges from `call_sites` and merges the graphify edges; then the embeddings layer is recorded from the counts (bodies stay stored until embedded; the build never calls the embedder). Each layer is in its own try; failure becomes layer status.
 5. Write `meta`, check, convert and close the file, switch the pointer (§4.1), append `codeindex.built` (§8). `result.commit` is set
 only when an index at that commit was published, else null.
 Cancellation is honored between files and between batches; a cancelled build deletes its build file and leaves the live
 index alone. The slot is released in a `finally`.
+
+### 5.7a The embed slice (`EmbedCodeIndex`, Features)
+
+No heavy slot. It embeds the repo's pending symbols (those with a stored body and no vector) in chunks of 4,096, each chunk one copy-embed-publish of the live
+index, so progress survives a cancel or a crash and a chunk is the most a cancel loses; it continues until no symbol is pending, the model fails (the layer
+is `unavailable` with the code, the vectors made stay) or the call is cancelled, and answers `Embedded`, `Embeddable` and the layer's state. A build and an embed chunk of the same repo
+never interleave: the store takes a per-repo code-index lock (`IRepoIndexLock`, not a heavy slot) when it starts a build file and the build releases it when it is disposed, so
+neither discards the other's work (a wait past 10 minutes is `SND-CODEIDX-016`, retried later). A move needs no extra work to stay differential: the build already cascades away the
+symbols and vectors of changed and removed files and keeps those of unchanged files, so only changed and new symbols are pending and a move never re-embeds the repo.
 
 ## 6. The background trigger
 
@@ -364,15 +372,9 @@ indexed from a feature branch, and the Health row says why ("checkout is not on 
 
 ### 6.3 Pending layers and first builds
 
-A job that ends with embeddings `pending` records `layersPending: ["embeddings"]` in its result. The service then calls
-`Decide` with that repo's recorded head withheld (null), so a continuation is the same function with a different input,
-not a second path. When to withhold it, and when to suppress a start, is its own small pure function in `CodeIndex.Core`, `IndexContinuationDecision`, called before `Decide` on every tick and every start, including a moved head (inputs: the head, the recorded head, the repo's newest
-jobs with their results' `layersPending`, `embedded` counts and `deferred` flag, and the clock; outputs: `Pass`, `Suppress` (no `Decide` call this tick) or `WithholdRecorded`): after a job that embedded something it says
-"continue" from 2 minutes later; after one that embedded nothing, and after a `deferred: heavy-busy` job (which publishes nothing and writes no
-`codeindex.built`, so `Decide` alone would start it every minute), `Suppress` for 10 minutes, for a moved head as well; after 3 in a row that embedded nothing, never until the head moves. (A large repo's first
-build takes about ten continuations; Health shows the percentage.) A layer that was `unavailable` for a fixable cause
+Embedding is not a build: a repo whose embeddings layer is `pending` gets an `EmbedCodeIndex` job (key `embed:<repo>`, no heavy slot, §5.7a) that runs until the layer is ok, with no HEAD move needed. The built-in `code-index-embed` service (every 1 minute) starts it from `ICodeIndex.Status` and the repo's `embed:` jobs through the pure `EmbedDecision` in `Aw.Sindri.Core/Scheduling`: a running job holds the start, a layer that is not `pending` starts nothing, then the wait after the newest ended job (failures in a row: the 5, 10, 20, 40, 60 minute backoff; `SND-CODEIDX-016` or `013`, a busy or unbuilt index, ends the job `later`, not failed, and waits 2 minutes; a job that ended `pending` with no more vectors than the job before waits 10 minutes; a job that embedded more is followed at once). A build never embeds, so nothing here continues a build: `code-index-main-move` starts a build only for a moved head, a retry after failures (the backoff) or a layers-only build, and a `deferred: heavy-busy` build (which publishes nothing and writes no `codeindex.built`, so `Decide` alone would start it every minute) holds the repo's next start for 10 minutes. (A large repo's first embeddings take many 4,096-symbol chunks; Health shows the percentage.) A layer that was `unavailable` for a fixable cause
 (`SND-CODEIDX-007` to `009`: graphify, sandbox, Ollama or pin missing) is probed at most every 10 minutes (`ICodeIndex.ProbeLayers`:
-the same lock check the build does, no work) and, when it has become available, starts a layers-only continuation, so
+the same lock check the build does, no work) and, when it has become available, starts a layers-only build, so
 fixing the box with `./setup.sh` is enough; nobody has to wait for the next commit to main. A repo registered and approved for the first time has no recorded head, so the next tick starts its first
 build; the owner does nothing.
 
@@ -548,7 +550,7 @@ repo names, version numbers, reason words and counts, never a path or text):
 - `context.map.refreshed` gains `held` (bool; false when the refresh promoted itself).
 The `heads` field is in the stored payload only; the public form of `context.map.published` leaves it and the repo names out, as `repo.added` leaves its path out, and a session's `map status` and lens text are cut to its own repos. One event per map version, not per repo: `repo` is the version's own repo (`MapVersion.Repo`) and `repos` counts the mapped ones. Idempotency keys (the `v` as in `context.map.refreshed`) `context.map.held:<repo>:v<version>`, `context.map.published:<repo>:v<version>`, `context.map.hold.dropped:<repo>:v<version>:<ulid>`. Public form: `held` and `hold.dropped` are not public (they name repos); `published` is public without repo names, heads and counts of repos (`repos` and `staleRepos` become one boolean, `anyStale`); `refreshed` keeps its existing public form. `sindri jobs` and `jobs show` text is as visible to a caller as the jobs list already is to that caller; this section adds no reader.
 
-**Errors.** The code index range is untouched: `SND-CODEIDX-014..029` stay reserved and this section adds no code (the
+**Errors.** The code index range is untouched: `SND-CODEIDX-017..029` stay reserved and this section adds no code (the
 index is read through `Heads`, whose failure is "no index", which is `Absent` or `Coming`, never an error to the map). The map
 side reserves **`SND-CONTEXT-190..194`** (explain owns 180..189) and uses **190** (Conflict): an `Error` the engine returns from `Promote`, `CleanDraft` and `AppendOverrides` when `expectedVersion` is given and the latest draft is another number (a rebuild replaced it, or it was promoted). The publish job maps it to a `Succeeded` result with `Code` 190, drops the hold, and raises nothing. **`SND-CONTEXT-046` keeps its own meaning (no draft, or undecided review items)**, so the job can tell the two apart: 046 fails the job, leaves the hold, and backs off for a person to decide. A
 bad profile value is 001. `191..194` are reserved. The range row in the retrieval spec (§14 phases note) is updated in F1P-b2.
@@ -578,9 +580,9 @@ and returns `Result<T>` (`Aw.Kernel`). Reads open the repo's file read-only and 
 | `Status(scope)` | per repo, **from the files only**: `state` (`missing`, `ok`, `damaged`; `stale` once Sindri compares the commit with the checkout's head), `building` and `waiting` are overlaid by Sindri from its jobs and service state, `commit`, `builtAt`, `layers[]` (status, code, detail), counts (files, symbols, edges; stored in `meta`, never counted per call) | Health, doctor, the code lens' `searched.code-index` row |
 | `Heads(scope)` | per repo: the commit the index describes, from stored state only (no git, no live probe), or none when the file is missing or damaged | the service's recorded heads (§6.2); doctor |
 | `ProbeLayers(scope)` | per repo: which unavailable layers can now be built (lock and tool check, no work) | §6.3 |
-| `FindSymbols(scope, SymbolQuery)` | by exact name, `path`, `path#name` or ref; `prefix` search; ordered, at most 200; each hit with ref, kind, span, signature, exported | S-9 `symbol` shape; `context query --symbol` |
+| `FindSymbols(scope, SymbolQuery)` | by exact name, `path`, `path#name` or ref; `prefix` search; ordered, 200 by default and any limit from 1 (removed per owner q93 (2026-10-23)); each hit with ref, kind, span, signature, exported | S-9 `symbol` shape; `context query --symbol` |
 | `FileSymbols(scope, repo, paths[])` | the symbols each of up to 200 files defines | S-9 symbol-level `implements`; the file map's `symbols` column |
-| `Callers(scope, SymbolRef, CallDepth)` | edges into the symbol, depth 1 to 3, at most 100 per level, each with basis and confidence, plus `unresolvedCount` (for a graphify language it includes the module-level calls dropped for want of a caller symbol); every row carries `coverage` (`full` for C#, `partial` for a graphify language, §5.5) | SC C3 (code lens `callers`) |
+| `Callers(scope, SymbolRef, CallDepth)` | edges into the symbol, depth 1 to 8, at most 1,000 per level (raised from 3 and 100 per owner q93, 2026-10-23), each with basis and confidence, plus `unresolvedCount` (for a graphify language it includes the module-level calls dropped for want of a caller symbol); every row carries `coverage` (`full` for C#, `partial` for a graphify language, §5.5) | SC C3 (code lens `callers`) |
 | `Callees(scope, SymbolRef, CallDepth)` | edges out of the symbol, same shape, `coverage` per row | SC C3 (code lens `callees`) |
 | `Similar(scope, SymbolRef)` | exact clones (same shape hash) and near clones (MinHash bands, then estimated Jaccard at or above the threshold) | later shape signals (CI11); `index query` in the TS build |
 | `Neighbors(scope, text, k)` | the k nearest symbols by embedding; the text is embedded by the same loopback model; `unavailable` with the layer's code when the layer is | CTX `code` source "embedding neighbors" |
@@ -734,18 +736,21 @@ Area `SND-CODEIDX` (new; free: the TS `SND-INDEX-*` codes stay documented until 
 |---|---|---|---|
 | `SND-CODEIDX-001` | Invalid | the `index:` section has a bad key or value (the message starts with the key path) | edit the profile, `sindri profile validate` |
 | `SND-CODEIDX-002` | NotFound | the repo path is not a git repo, or the commit is not in it | check the repo's path in the profile |
-| `SND-CODEIDX-003` | Invalid | the tracked input is over `index.maxTotalMB` | add generated or vendored paths to `index.denyPaths`, or raise the cap |
+| `SND-CODEIDX-003` | Invalid | the tracked code input is over `index.maxTotalMB` | add generated or vendored paths to `index.denyPaths`, or raise the cap |
 | `SND-CODEIDX-004` | Unavailable | every heavy-job slot stayed busy past the wait (returned only as the job's result code, never as an error to a caller; the job ends `deferred`, not Failed) | none needed; the service retries after 10 minutes |
 | `SND-CODEIDX-005` | Invalid | the embedding URL is not loopback, or the model is a cloud model | set `index.embeddings.url` to `http://127.0.0.1:11434` or turn embeddings off |
 | `SND-CODEIDX-006` | Unavailable | the embedding server failed or answered in an unexpected shape (a layer code) | start Ollama; `sindri doctor` shows the pin |
 | `SND-CODEIDX-007` | Unavailable | no network sandbox for graphify (a layer code) | Linux: install bubblewrap (`./setup.sh`); or set `index.graph.enabled: false` |
-| `SND-CODEIDX-008` | Unavailable | graphify is missing, failed, timed out, would not start under the sandbox, wrote a wrong top-level shape, a graph with over a quarter of its records untrusted, or a too large graph (more than `graph.maxMB`, `graph.maxNodes` or the edge cap), or filled its private directory past the cap (a layer code; `detail` names which, from a closed set: `missing`, `failed`, `timeout`, `no-start`, `shape`, `untrusted`, `too-large`, `dir-full`, each with its own doctor fix line) | `./setup.sh` installs the pin; raise `index.graph.maxMB` for a big graph; for a start failure `sindri doctor` prints the resolved environment path and says to check the bind and the mask, not the install |
+| `SND-CODEIDX-008` | Unavailable | graphify is missing, failed, timed out, would not start under the sandbox, wrote a wrong top-level shape, a graph with over a quarter of its records untrusted, or a too large graph (more than `graph.maxMB`), or filled its private directory past the cap (a layer code; `detail` names which, from a closed set: `missing`, `failed`, `timeout`, `no-start`, `shape`, `untrusted`, `too-large`, `dir-full`, each with its own doctor fix line) | `./setup.sh` installs the pin; raise `index.graph.maxMB` for a big graph; for a start failure `sindri doctor` prints the resolved environment path and says to check the bind and the mask, not the install |
 | `SND-CODEIDX-009` | Unavailable | a tool or model does not match `context/code-index.lock` (a layer code) | `./setup.sh` re-installs the pin |
 | `SND-CODEIDX-010` | Unavailable | the index file is damaged; it is deleted and rebuilt on the next tick | none |
 | `SND-CODEIDX-011` | NotFound | the symbol ref names no symbol in this index | `sindri code-index symbols <name>` |
 | `SND-CODEIDX-012` | Invalid | a query is empty, too broad, or over a limit | narrow it |
 | `SND-CODEIDX-013` | NotFound | no index for this repo yet | none; the first build is queued |
-| `SND-CODEIDX-014..029` | | reserved | |
+| `SND-CODEIDX-014` | Unavailable | the index describes an older commit than the repo's main; only a health row on `GET /status`, the index still answers | rebuild it from the System page; the next tick also builds it |
+| `SND-CODEIDX-015` | Unavailable | a build failed and is retrying after its backoff; only a health row on `GET /status` | `sindri jobs` shows the failed build; `sindri doctor` names the cause |
+| `SND-CODEIDX-016` | Unavailable | the repo's index is locked by another build or embed run past the wait | none; retried later |
+| `SND-CODEIDX-017..029` | | reserved | |
 
 Revision 4 adds none: the map's gate reads `Heads`, whose failure is "no index" (`Coming` or `Absent`), never an error to the map (§6.4 "Errors"; the map side reserves `SND-CONTEXT-190..194`).
 
@@ -761,12 +766,11 @@ validation. A repo entry's `index:` unions its `denyPaths` and `utilityGlobs` wi
 |---|---|---|
 | `denyPaths` | `[]` | added to the built-in secret globs (never replacing them) |
 | `utilityGlobs` | `[]` | globs of internal utility modules; their exports are flagged `utility` |
-| `maxFileKB` | 512 | larger files are skipped as `too-large` |
-| `maxTotalMB` | 200 | larger input stops the build (`SND-CODEIDX-003`) |
+| `maxFileKB` | 4096 | larger files are skipped as `too-large` |
+| `maxTotalMB` | 4096 | larger code input (code files only) stops the build (`SND-CODEIDX-003`) |
 | `embeddings.enabled` / `.url` / `.model` | true / `http://127.0.0.1:11434` / the lock's model | loopback only; a cloud model is refused |
 | `graph.enabled` | true | off leaves the graph layer `disabled` |
-| `graph.maxMB` | 256 | largest `graph.json` read |
-| `graph.maxNodes` | 500000 | most graph nodes read (edges: four times that) |
+| `graph.maxMB` | 1024 | largest `graph.json` read |
 
 Revision 4's one new key is not an `index:` key: `context.publish.waitForIndexMinutes` (int 0 to 240, default 15) belongs to the context section because it is the map's rule (§6.4; listed in `docs/csharp/sindri-profile.md` by F1P).
 
@@ -863,7 +867,7 @@ Defaults are what the builders do if you say nothing.
 - **Q7. Keep symbol text on disk?** The index stores each symbol's text (secrets scrubbed) so it can embed it later.
   *Default:* keep it only until the embedding is made, then drop it; the cost is that a changed model means re-reading the
   file from git, which is cheap. Say if you would rather keep it for faster rebuilds.
-- **Q8. Sessions reading the index.** An agent session may ask for symbols and callers in its own repo, with names fenced as
+- **Q8. Sessions reading the index.** An agent session may ask for symbols and callers in every repo of the approved profile (widened from its own repo only, per owner q93, 2026-10-23), with names fenced as
   untrusted, the same as the context lenses. *Default:* yes.
 - **Q9. One commit per repo.** The index keeps only the newest commit, so a scoping run that asks "as of last month's map"
   gets today's callers marked stale. *Default:* accept that for version 1.
@@ -880,6 +884,6 @@ Defaults are what the builders do if you say nothing.
   were measured there, to be re-measured in the heavy lane.
 - The service and job names (`code-index-main-move`, `BuildCodeIndex`) and the event name `codeindex.built`; the CLI group
   `code-index` (the TS `index` group stays the TS build's).
-- `CodeIndexRules` limits (200 hits, 100 edges per level, depth 3).
+- `CodeIndexRules` limits (200 hits, 100 edges per level, depth 3; raised to 200 by default, 1,000 and 8 per owner q93, 2026-10-23).
 - File layout inside the package follows the slice recipe (`Features/BuildCodeIndex/`, `Features/Status/` and so on); every
   file under 300 lines, every method under 40, one top-level type per file (`.agents/rules/csharp.md`).

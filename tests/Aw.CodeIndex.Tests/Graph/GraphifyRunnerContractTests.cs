@@ -37,13 +37,7 @@ public sealed class GraphifyRunnerContractTests : GraphRunnerContract, IDisposab
     {
         var bin = Directory.CreateDirectory(Path.Combine(_directory, "env", "bin")).FullName;
         var path = Path.Combine(bin, "graphify");
-        File.WriteAllText(path, $"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo graphify {version}; exit 0; fi\n{body}\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.OtherExecute);
-        }
-
-        return path;
+        return ExecutableScript.Write(path, $"if [ \"$1\" = \"--version\" ]; then echo graphify {version}; exit 0; fi\n{body}\n");
     }
 
     private string Writes(string json)
@@ -124,7 +118,7 @@ public sealed class GraphifyRunnerContractTests : GraphRunnerContract, IDisposab
     public async Task A_graph_over_the_size_cap_is_too_large()
     {
         var runner = Runner(Tool(Pin, Writes(GraphJson)));
-        var request = Request() with { Settings = new GraphSettings(Enabled: true, MaxMegabytes: 0, MaxNodes: 1_000) };
+        var request = Request() with { Settings = new GraphSettings(Enabled: true, MaxMegabytes: 0) };
 
         var run = await runner.Run(request, TestContext.Current.CancellationToken);
 

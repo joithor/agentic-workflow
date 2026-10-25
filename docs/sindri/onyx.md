@@ -1,25 +1,28 @@
 # Onyx for Sindri's context engine
 
-Sindri's `onyx` source reads business intent (Linear issues with their comments, Slack, docs spaces) from a local Onyx
+Sindri's `onyx` source reads business intent (Linear issues with their comments, GitHub issues, Slack, docs spaces) from a local Onyx
 Community Edition. Onyx stays unmodified; Sindri uses it for recall only and does its own ranking (context spec D2,
 D3). Connecting Onyx to company Linear and Slack uses company OAuth: get sign-off first. Sindri never connects a
 source itself.
 
-`$SINDRI` is the C# Sindri build (before the switch, `~/.local/bin/sindri` is still the TS one); see
-[context.md](context.md).
+`$SINDRI` is the installed `sindri`; see [context.md](context.md).
 
 ## Quick start: Sindri sets Onyx up
 
-Docker (Docker Desktop, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
+Docker (Docker Desktop, OrbStack, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
 
 ```bash
-sindri-app onyx up        # or: $SINDRI onyx up (`./setup.sh --with-sindri` runs it for you). The first bare `sindri` at a terminal offers the same thing.
+$SINDRI onyx up           # `./setup.sh` runs it for you. The first bare `sindri` at a terminal offers the same thing.
 ```
 
 It runs the pinned Onyx v4.9.0 (`context/onyx.lock`) as the compose project `sindri-onyx-<hash>` under `$AW_SINDRI_HOME/onyx/`: preflight
 (docker, compose, memory, disk, port), the deployment files fetched at the pinned commit and checked against their
 sha256, `.env` and a compose override (nginx on `127.0.0.1` only, every image by digest, telemetry off, local models,
-one-user sizing), the pull and the start. Then it needs you twice:
+one-user sizing), the pull and the start. A Docker that is still starting, or not running yet, is waited for before the
+preflight: `onyx up` prints a line naming it (OrbStack, Docker Desktop, or Docker) and what you can do meanwhile, then a
+dot every 2 s, for up to 3 minutes (Ctrl-C stops it); only then does it stop with `SND-ONYX-001` and the fix for that
+runtime (OrbStack: open it, or `orb restart` when it says Running but doesn't answer; Docker Desktop: open it, it may be
+waking from Resource Saver). `onyx status` never waits. Then it needs you twice:
 
 1. **Your account.** It opens Onyx's sign-up page; create your own account (the first account is Onyx's admin) and press
    Enter. Sindri never sees that account's password except at step 2.
@@ -59,7 +62,7 @@ one-user sizing), the pull and the start. Then it needs you twice:
    registering. A rerun after any failure resumes at this step (the user is reused, never doubled).
 
 Last it opens Onyx's connectors page and prints the checklist: connect Linear (the product's teams, with a start date that
-covers the backtests) and Slack (the product's channels) with the company's OAuth, in Onyx's UI. `$SINDRI doctor` then
+covers the backtests), Slack (the product's channels) and GitHub (the product's repositories, issues on, with a read-only personal access token) in Onyx's UI, using the company's OAuth for Linear and Slack. `$SINDRI doctor` then
 shows `context:onyx` and `onyx:stack`.
 
 Day to day:
@@ -117,14 +120,14 @@ The stock compose file publishes nginx on all interfaces (`"${HOST_PORT:-3000}:8
 services:
   nginx:
     ports: !override
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:3189:80"
 ```
 
 Leave every other service's `ports:` commented out, as shipped. Start it:
 
 ```bash
 docker compose up -d
-lsof -nP -iTCP:3000 -sTCP:LISTEN     # must show 127.0.0.1:3000 only
+lsof -nP -iTCP:3189 -sTCP:LISTEN     # must show 127.0.0.1:3189 only
 ```
 
 ### A one-user dev box (optional)
@@ -172,7 +175,15 @@ Create only these, in Admin → Connectors:
 |---|---|
 | Linear | Start date early enough to cover the backtest projects; the product's teams only |
 | Slack | The product's channels only (connector-indexed; Sindri doesn't use the federated lane) |
+| GitHub | The product's repositories only. Issues on; pull requests optional. See below |
 | Docs spaces (Confluence, Drive, …) | The product's spaces only |
+
+GitHub: Onyx's GitHub connector signs in with a GitHub personal access token, not OAuth. Use a fine-grained token limited
+to the product's repositories and read-only: Issues, Pull requests and Metadata, plus Contents only if Onyx asks for it.
+Confirm the exact permissions on the first connect. Issues reach Sindri through this connector; Sindri has no GitHub-issue
+adapter. A GitHub document keys as `onyx:github/<document id>`, using the document id Onyx gives it, with kind Doc. It
+has no issue kind and no `#N` alias (only Linear issues get those; Slack threads are kind Message), and nothing turns it into a
+Sindri item: items are added with `sindri item add`.
 
 Check first indexing and each connector's progress in Onyx's Admin → Connectors page. Sindri doesn't read Onyx's
 connector status (no connector route is on its allowlist, §7), so `$SINDRI context sources status` shows whether Onyx
@@ -208,7 +219,7 @@ Linux (install `libsecret-tools` on Debian/Ubuntu if `secret-tool` is missing; i
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3189", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
     linear: { teams: [ENG] }        # team keys whose ENG-n identifiers become aliases
 ```
 

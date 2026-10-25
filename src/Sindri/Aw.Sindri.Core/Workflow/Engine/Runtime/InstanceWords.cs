@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -37,6 +38,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     public string? Answer() => Instance.Suspension switch
     {
         _ when Instance.Ended => null,
+        { Mirrors: not null } mirror when Child is { } child && ParkAnswers.ChildOwn(ParkShape.Of(mirror), child.Address.Value) is { } own => ChildOwnAnswer(mirror, own),
         { Kind: SuspensionKind.Park, Mirrors: not null } park when !AnswerVariants.ReasonFixesChildFit(park.Reason) => $"{Answering} <the child's answer>{Gap}(forwarded to {ChildName})",
         { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict } park => SpecConflictAnswer(park),
         { Kind: SuspensionKind.Park } park => ParkAnswer(park),
@@ -56,6 +58,27 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     private Suspension? BehindDrift() => Instance is { Suspension.Kind: SuspensionKind.Park }
         ? Instance.PendingParks().FirstOrDefault(static p => p is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift, Approved: false })
         : null;
+
+    /// <summary>
+    /// The mirrored child's own answer command, as its status prints it (its grant is the child's recipe's, so '&lt;n&gt;'): the one rule
+    /// <see cref="ParkAnswers"/> gives the record, noting that answering the root forwards it.
+    /// </summary>
+    private string ChildOwnAnswer(Suspension park, StatusAnswer own)
+    {
+        var notes = new List<string>();
+        if (own.AtTerminal)
+        {
+            notes.Add("at a terminal");
+        }
+
+        if (park.Reason == ParkReason.Budget)
+        {
+            notes.Add("once per park");
+        }
+
+        notes.Add($"the child's own; {Address} forwards it");
+        return $"{own.Cli}{Gap}({string.Join("; ", notes)})";
+    }
 
     private string Answering => $"sindri workflow answer {Address}";
 
@@ -85,7 +108,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
             ParkReason.Budget => $"{Answering} --grant-tokens {GrantTokens()}{Gap}(at a terminal; once per park)",
             ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"{Answering} --resume [--text <answer>]",
             ParkReason.NeedsAnswer => $"{Answering} --text <answer>",
-            ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or null or _ => $"{Answering} --resume",
+            ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or ParkReason.Unavailable or null or _ => $"{Answering} --resume",
         };
     }
 
@@ -126,6 +149,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         ParkReason.NeedsAnswer => "needs-answer",
         ParkReason.Timeout => "timeout",
         ParkReason.SpecConflict => "spec-conflict",
+        ParkReason.Unavailable => "unavailable",
         ParkReason.NoRuntime or _ => "SND-WF-010",
     };
 

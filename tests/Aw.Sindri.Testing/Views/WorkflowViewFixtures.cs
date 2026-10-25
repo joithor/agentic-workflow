@@ -1,11 +1,14 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
+using DeskReviewKind = Aw.Sindri.Core.Workflow.Blocks.DeskReviewKind;
 
 namespace Aw.Sindri.Testing.Views;
 
@@ -41,6 +44,13 @@ public static class WorkflowViewFixtures
     private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
     private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
     private static readonly RecipeShape _fork = FixtureRecipes.Fork;
+    private static readonly RecipeShape _scoping = FixtureRecipes.Scoping;
+    // this instance was started on the scope packet alone and lists fact:answers (no declared output of the shipped recipe) as the ask desk's pending output, so its shape narrows the inputs and adds it
+    private static readonly RecipeShape _design = FixtureRecipes.Design with
+    {
+        Inputs = [.. FixtureRecipes.Design.Inputs.Take(1)],
+        Outputs = [.. FixtureRecipes.Design.Outputs, new ShapeOutput("fact:answers", "Answers", FactType.Payload, "ask")],
+    };
 
     private static Func<StateCell, StateCell> Shape(params (string State, Func<StateCell, StateCell> Change)[] changes) =>
         cell => changes.Where(c => c.State == cell.State).Aggregate(cell, (acc, c) => c.Change(acc));
@@ -53,9 +63,12 @@ public static class WorkflowViewFixtures
         EngineOwnedBadge? owned, SubjectRef subject, IReadOnlyList<StateCell> cells, string now, params string[] actions)
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
+        var deskOpen = states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active);
+        var outcome = states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? (OutcomeName?)OutcomeName.From("resolved") : null;
+        var chip = StateChip.For(owned, deskOpen, outcome);
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
-            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null),
-            since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
+            chip, since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions),
+            WaitingOn: WaitingOn.Of(chip, deskOpen, agentRunOpen: false, ended: outcome is not null));
     }
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>
@@ -215,6 +228,8 @@ public static class WorkflowViewFixtures
         {
             Run = lines.Run,
             TakenOverAt = lines.TakenOverAt,
+            TakenOverBy = lines.TakenOverBy,
+            ReasonCode = lines.ReasonCode,
         };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
@@ -267,7 +282,7 @@ public static class WorkflowViewFixtures
         "ApplyCommand:answer-resume" => "--resume",
         "ApplyCommand:answer-reject" => "--reject",
         "ApplyCommand:answer-grant" => "--grant 1",
-        "ApplyCommand:answer-grant-tokens" => "--grant-tokens 1M",
+        "ApplyCommand:answer-grant-tokens" => "--grant-tokens 5M",
         "ApplyCommand:answer-accept" => "--accept",
         _ => throw new InvalidOperationException($"{action} is not an answer variant"),
     };
@@ -288,7 +303,7 @@ public static class WorkflowViewFixtures
     private static StatusAnswer Answer(AnswerKind kind, string address, string? arguments = null) => kind switch
     {
         AnswerKind.Grant => new(kind, Act("ApplyCommand:answer-grant"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant 1"}", AtTerminal: true),
-        AnswerKind.GrantTokens => new(kind, Act("ApplyCommand:answer-grant-tokens"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant-tokens 1M"}", AtTerminal: true),
+        AnswerKind.GrantTokens => new(kind, Act("ApplyCommand:answer-grant-tokens"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant-tokens 5M"}", AtTerminal: true),
         AnswerKind.Accept => new(kind, Act("ApplyCommand:answer-accept"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--accept"}", AtTerminal: true),
         AnswerKind.Resume => new(kind, Act("ApplyCommand:answer-resume"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--resume"}", AtTerminal: false),
         AnswerKind.Text => new(kind, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--text <answer>"}", AtTerminal: false),
@@ -322,7 +337,11 @@ public static class WorkflowViewFixtures
 
         public StatusPaused? Paused { get; init; }
 
+        public string? ReasonCode { get; init; }
+
         public DateTimeOffset? TakenOverAt { get; init; }
+
+        public string? TakenOverBy { get; init; }
 
         public StatusRun? Run { get; init; }
     }
@@ -381,8 +400,8 @@ public static class WorkflowViewFixtures
         });
 
     /// <summary>Layout 3: a budget park; the answer grants tokens.</summary>
-    public static StatusFields StatusParkedBudget() => Status(_budgetStep, "budget", "Parked (budget): produce used 1M of 1M tokens.",
-        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1"), Budget = new StatusBudget("state", 1_000_000, 1_000_000, new BudgetFigures(1_000_000, null)) });
+    public static StatusFields StatusParkedBudget() => Status(_budgetStep, "budget", "Parked (budget): produce used 5M of 5M tokens.",
+        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1"), Budget = new StatusBudget("state", 5_000_000, 5_000_000, new BudgetFigures(5_000_000, null)) });
 
     /// <summary>Layout 4: an escalated gate; the answer accepts at a terminal.</summary>
     public static StatusFields StatusEscalatedGate() => Status(_p2211, "gate",
@@ -392,7 +411,7 @@ public static class WorkflowViewFixtures
     /// <summary>Layout 5: a taken-over instance with its timeout paused.</summary>
     public static StatusFields StatusTakenOver() => Status(_takenOver, null,
         "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(),
-        new StatusLines { Paused = new StatusPaused(40), TakenOverAt = _takenOver.Since, Budget = new StatusBudget("state", 40_000, 1_000_000, new BudgetFigures(40_000, null)) });
+        new StatusLines { Paused = new StatusPaused(40), TakenOverAt = _takenOver.Since, TakenOverBy = "human:thor", Budget = new StatusBudget("state", 40_000, 5_000_000, new BudgetFigures(40_000, null)) });
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
@@ -401,6 +420,14 @@ public static class WorkflowViewFixtures
     public static StatusFields StatusAgentRun() => Status(_agentRun, "agent running",
         "An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", new OpenWork(RunningSteps: 1),
         new StatusLines { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F") });
+
+    /// <summary>q65: a dispatch park (an effect refused because the setup it needs isn't there) with its typed code, so the app never reads the words to name it.</summary>
+    public static StatusFields StatusParkedDispatchRefused() => Status(_prjCache, "spec-conflict (dispatch)",
+        "effect.claim.ref can't run: repo 'web' isn't in the approved profile. Fix that, then resume to send it again.\nAnswer with --resume once the cause is fixed.", new OpenWork(),
+        new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JKF/project/1"), ReasonCode = "SND-WF-010" });
+
+    /// <summary>q65: the agent run once its launch knows the session: provider and id, the handle the Agents page opens (session/claude-code/{id}).</summary>
+    public static StatusFields StatusAgentRunSession() => StatusAgentRun() with { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) };
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",
@@ -491,7 +518,7 @@ public static class WorkflowViewFixtures
         evidence,
     ];
 
-    /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked.</summary>
+    /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked, so its needs-you row's open (q65) is that child.</summary>
     public static InstanceDetail ProjectBuild()
     {
         var status = Status(_prjSync, null, "Waiting on 9 children: 4 done, 1 running, 1 parked, 3 not started.", new OpenWork(OpenChildren: 5),
@@ -511,13 +538,14 @@ public static class WorkflowViewFixtures
             [Child(parent, 6, "ITM-01JD7", "Background sync (iOS)", StateGlyph.Active, "produce", owned: park), Child(parent, 7, "ITM-01JF3", "doctor views line", StateGlyph.Pending, "produce", age: 3_120),
                 Child(parent, 8, "ITM-01JF4", "Tray badge on Linux", StateGlyph.Pending, "produce", age: 2_400)]);
         var ws4 = new Workstream("ws-4", "Rollout", [Child(parent, 9, "ITM-01JF8", "Receipt verify route", StateGlyph.Pending, "produce", age: 720)]);
-        return Detail(_prjSync, "Offline sync", PathOrdering.Path,
+        var detail = Detail(_prjSync, "Offline sync", PathOrdering.Path,
             new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"),
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
             [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
+        return detail with { Open = new NeedsYouOpen("workflow/ITM-01JK3/project/1/step.6", "Answer in the child") };
     }
 
     private static readonly InstanceSummary _prjDocs = Row("ITM-01JKG/project/1", _project, "build", Today(8, 40), null,
@@ -572,6 +600,79 @@ public static class WorkflowViewFixtures
             [], Counts(3, 0, 1));
     }
 
+    /// <summary>
+    /// ITM-01JN2: the design review's ask desk after a round in which two lenses raised three questions (owner decision q60, 2026-10-23): ONE desk, 'fact:escalation' holds all three
+    /// (a list: kind, question, options, lens, finding) and the desk asks for 'fact:answers', one {id, question, answer} entry per question, the id echoing the question's (q1, q2, q3).
+    /// </summary>
+    public static InstanceDetail LensAskMulti()
+    {
+        var row = Row("ITM-01JN2/design/1", _design, "ask", Today(12, 22), null, Subject("text", "ITM-01JN2", "Add expiry to sessions"),
+            _design.Cells("ask"), "needs your answers (desk)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = DeskStatus(row, "Answer the 3 questions the reviewers raised on ITM-01JN2", "4.1", ("fact:answers", "<file>"),
+            DeskLines(new StatusInput("fact:escalation", "escalation.json", Hash("5c1e9a30")), 604_560, "ask"));
+        var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
+        return Detail(row, "Add expiry to sessions", PathOrdering.TransitionList,
+            new CurrentState("ask", new StepDeclaration("active", "step.lens.ask", "asks you to decide questions the reviewers could not settle"), [],
+                new DeskForm(RunToken.From("4.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
+            _design.Facts(
+                Produced(_design, "fact:scopePacket", "scope packet, frozen", At(10, 12, 9, 0), "step.design.intake", Ref(factKey: "fact:scopePacket")),
+                Produced(_design, "fact:escalation", "3 questions: q1 Keep the legacy flow? · q2 Which table owns expiry? · q3 Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
+                Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
+            [], Counts(9, 0, 1));
+    }
+
+    /// <summary>
+    /// q65: the design review's ask desk (<see cref="LensAskMulti"/>) with what it has the person review, as its block declares it: the questions (no place to open), the frozen scope packet
+    /// (its directory, read from the fact's { hash, dir }) and the pull request (its url, read from 'fact:prStatus').
+    /// </summary>
+    public static InstanceDetail DeskReviews()
+    {
+        var detail = LensAskMulti();
+        var form = detail.Current.Desk! with
+        {
+            Reviews =
+            [
+                new DeskReview("fact:escalation", DeskReviewKind.Questions),
+                new DeskReview("fact:scopePacket", DeskReviewKind.Scope, Path: "/home/dev/.agentic-workflow/packets/acme/web/scope-7/frozen"),
+                new DeskReview("fact:prStatus", DeskReviewKind.Pr, Url: "https://github.com/acme/web/pull/412"),
+            ],
+        };
+        var address = InstanceAddress.From("ITM-01JN4/design/1");   // its own instance: the UI fake finds an instance by id
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JN4"), Current = detail.Current with { Desk = form } };
+    }
+
+    /// <summary>q65: an agent run of a running branch with its session handle on the run.</summary>
+    public static InstanceDetail AgentRunSession()
+    {
+        var detail = TransitionList();
+        return detail with { Current = detail.Current with { Status = detail.Current.Status with { Run = new StatusRun("agent", "LCH-01JL3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) } } };
+    }
+
+    /// <summary>
+    /// ITM-01JN3: workflow.scoping parked at its 'interview' desk (step.interview.answer, human-only) in the first round: 'questions' left three questions in fact:questions (each with options, one
+    /// recommended; schemas/scoping/questions.json), and the answer log and the answers are still empty. The desk completes with 'answered' (fact:answers, the loop goes on) or 'doneAsking' (fact:answers
+    /// and the interview is closed); both outcomes are in the status text, which is where a desk form lists them.
+    /// </summary>
+    public static InstanceDetail ScopingInterview()
+    {
+        var row = Row("ITM-01JN3/scoping/1", _scoping, "interview", Today(12, 10), null, Subject("text", "ITM-01JN3", "Expiry for shared links"),
+            _scoping.Cells("interview", round: 1, Shape(("interview", c => c with { Round = new Round(1, 4) }))), "needs your answers (desk)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var answered = "sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>";
+        var doneAsking = "sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>";
+        var status = Status(row, "desk task", $"Answer the 3 questions on ITM-01JN3, then run:\n{answered}\nor, to stop asking and close the interview:\n{doneAsking}", new OpenWork(CompleteCli: answered),
+            DeskLines(new StatusInput("fact:questions", "questions.json", Hash("7e3a90b1")), 172_800, "interview"));
+        var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
+        return Detail(row, "Expiry for shared links", PathOrdering.Path,
+            new CurrentState("interview", new StepDeclaration("active", "step.interview.answer", "the owner's answers to the questions; pick an option, write your own under other, or skip one"), [],
+                new DeskForm(RunToken.From("6.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
+            _scoping.Facts(
+                Produced(_scoping, "fact:scopeInput", "brief: shared links expire", At(10, 12, 12, 0), "human:cli", Ref(factKey: "fact:scopeInput")),
+                Produced(_scoping, "fact:questions", "3 questions: Q1 Does this replace decision 0001? · Q2 What happens to links that already exist? · Q3 What does someone see on an expired link?", At(10, 12, 12, 10), "step.interview.questions", Ref(factKey: "fact:questions")),
+                Fake(_scoping, "fact:answerLog", FactStatus.Produced, "empty: no answers yet", At(10, 12, 12, 5), "step.scope.intake"),
+                Fake(_scoping, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
+            [], Counts(7, 0, 1));
+    }
+
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>
     public static InstanceDetail EscalatedGate() =>
         Detail(_p2211, "PagerDuty P-2211", PathOrdering.Path,
@@ -591,10 +692,10 @@ public static class WorkflowViewFixtures
     public static InstanceDetail ItemProduce()
     {
         var row = Row("ITM-01JE7/item/1/step.4", _step, "produce", Today(12, 20), null, Subject("text", "Linear ENG-511 · repo agentic-workflow ·", "Linear ENG-511 · repo agentic-workflow · no project · feature:needs-you.ack"),
-            _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
-            "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
-        var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", ("fact:output", "<file>"),
-            DeskLines(new StatusInput("fact:spec", "spec.md", Hash("1c0e5a77")), 172_440, "produce", new StatusBudget("state", 0, 1_000_000, new BudgetFigures(0, null))));
+            _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 5) }))),
+            "your output for the Step (desk) · round 2/5", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/5)", "3.1", ("fact:output", "<file>"),
+            DeskLines(new StatusInput("fact:spec", "spec.md", Hash("1c0e5a77")), 172_440, "produce", new StatusBudget("state", 0, 5_000_000, new BudgetFigures(0, null))));
         return Detail(row, "Add needs-you ack route", PathOrdering.Path,
             new CurrentState("produce", new StepDeclaration("active", "step.produce", "produce the output for the item"), [],
                 new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),
@@ -661,6 +762,32 @@ public static class WorkflowViewFixtures
                 Produced(_triage, "fact:item", "ITM-01JF0 startable", At(10, 12, 11, 58), "step.route", Ref(item: "ITM-01JF0"))),
             [], Counts(7, 0, 0));
 
+    /// <summary>
+    /// A root instance that ended failed: its actions offer 'RerunInstance'. It is its own instance, so no list or fact lookup by id finds two.
+    /// </summary>
+    public static InstanceDetail F5RerunFailed()
+    {
+        var detail = Done();
+        var address = InstanceAddress.From("ITM-01JKX/triage-alert/1");
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JKX"), Title = "429s on stream (failed)", Actions = [Act("RerunInstance")] };
+    }
+
+    /// <summary>A rerun waiting at its desk: it carries <c language="text">again</c>, the address of the failed instance it reruns, and the form recommends an outcome.</summary>
+    public static InstanceDetail F5DeskRecommended()
+    {
+        var detail = TriageDesk();
+        var address = InstanceAddress.From("ITM-01JKY/triage-alert/2");
+        var form = detail.Current.Desk! with { Recommended = new DeskRecommendation("done", "Every check passed and no question is left open.") };
+        return detail with
+        {
+            Address = address,
+            Id = WorkflowInstanceId.Of(address),
+            ItemId = ItemKey.From("ITM-01JKY"),
+            Current = detail.Current with { Desk = form },
+            Again = InstanceAddress.From("ITM-01JKX/triage-alert/1"),
+        };
+    }
+
     // ---- the recipe additions (E-22) ---------------------------------------------------------------------------------
 
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
@@ -676,9 +803,9 @@ public static class WorkflowViewFixtures
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
-    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
+    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>, or workflow.design.</param>
     /// <returns>The view.</returns>
-    public static RecipeView Recipe(string id) => FixtureRecipes.All.Single(r => r.Id == id).View();
+    public static RecipeView Recipe(string id) => FixtureRecipes.All.Append(FixtureRecipes.Design).Single(r => r.Id == id).View();
 
     /// <summary>
     /// workflow.f5-fields, a fixture-only recipe that sets every F5 field the app reads: the recipe's why, each kind of state (agent, automatic, you, onlyYou, subWorkflow), outcome texts,

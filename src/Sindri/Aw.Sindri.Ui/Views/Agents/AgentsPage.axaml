@@ -28,7 +28,7 @@
 
     <StackPanel x:Name="AgentsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
       <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
-      <TextBlock Classes="caption subtle" Text="{Binding StaleText}" VerticalAlignment="Center" />
+      <TextBlock x:Name="AgentsStaleText" Classes="caption attention" Text="{Binding StaleText}" VerticalAlignment="Center" />
     </StackPanel>
 
     <!-- One polite region: "N agents · M asking", said when those counts change and never on a read that changes nothing. -->
@@ -50,6 +50,13 @@
         <Border x:Name="AgentsReadingName" Margin="16,8" IsVisible="{Binding IsReading}" AutomationProperties.Name="{Binding ReadingText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
           <TextBlock Classes="caption quiet" Text="{Binding ReadingText}" AutomationProperties.AccessibilityView="Raw" />
         </Border>
+        <StackPanel x:Name="AgentsSkeleton" IsVisible="{Binding IsReading}" AutomationProperties.AccessibilityView="Raw">
+          <Grid Classes="skrow" ColumnDefinitions="150,2*,1.2*,56" Margin="16,0"><Border Classes="skeleton" Width="90" /><Border Grid.Column="1" Classes="skeleton" Width="240" /><Border Grid.Column="2" Classes="skeleton" Width="120" /><Border Grid.Column="3" Classes="skeleton" Width="32" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,2*,1.2*,56" Margin="16,0"><Border Classes="skeleton" Width="90" /><Border Grid.Column="1" Classes="skeleton" Width="200" /><Border Grid.Column="2" Classes="skeleton" Width="150" /><Border Grid.Column="3" Classes="skeleton" Width="32" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,2*,1.2*,56" Margin="16,0"><Border Classes="skeleton" Width="90" /><Border Grid.Column="1" Classes="skeleton" Width="260" /><Border Grid.Column="2" Classes="skeleton" Width="100" /><Border Grid.Column="3" Classes="skeleton" Width="32" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,2*,1.2*,56" Margin="16,0"><Border Classes="skeleton" Width="90" /><Border Grid.Column="1" Classes="skeleton" Width="220" /><Border Grid.Column="2" Classes="skeleton" Width="130" /><Border Grid.Column="3" Classes="skeleton" Width="32" /></Grid>
+          <Grid Classes="skrow" ColumnDefinitions="150,2*,1.2*,56" Margin="16,0"><Border Classes="skeleton" Width="90" /><Border Grid.Column="1" Classes="skeleton" Width="180" /><Border Grid.Column="2" Classes="skeleton" Width="110" /><Border Grid.Column="3" Classes="skeleton" Width="32" /></Grid>
+        </StackPanel>
         <Border x:Name="AgentsUnavailableName" Margin="16,8" IsVisible="{Binding IsUnavailable}" AutomationProperties.Name="{Binding UnavailableText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
           <TextBlock x:Name="AgentsUnavailable" Classes="caption" Text="{Binding UnavailableText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
         </Border>
@@ -59,13 +66,18 @@
         <Border x:Name="AgentsEmptyName" Margin="16,8" IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding EmptyText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
           <TextBlock x:Name="AgentsEmpty" Classes="caption quiet" Text="{Binding EmptyText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
         </Border>
+        <Button x:Name="AgentsClearFilters" Margin="16,0,16,8" HorizontalAlignment="Left" Click="OnClearFilters" IsVisible="{Binding ShowsClearFilters}" Content="{Binding ClearFiltersText}"
+                AutomationProperties.Name="{Binding ClearFiltersText}" />
+        <Button x:Name="AgentsOpenWorkflows" Margin="16,0,16,8" HorizontalAlignment="Left" Click="OnOpenWorkflows" IsVisible="{Binding ShowsOpenWorkflows}" Content="{Binding OpenWorkflowsText}"
+                AutomationProperties.Name="{Binding OpenWorkflowsText}" />
         <Border x:Name="AgentsColumns" Padding="16,4" IsVisible="{Binding HasColumns}" AutomationProperties.AccessibilityView="Raw">
-          <Grid ColumnDefinitions="150,2*,2*,2*,56">
+          <Grid x:Name="AgentsColumnsGrid" ColumnDefinitions="150,2*,1.2*,100,1.4*,56">
             <TextBlock Classes="caption subtle" Text="{Binding Columns.Status}" />
             <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Columns.Agent}" />
-            <TextBlock Grid.Column="2" Classes="caption subtle" Text="{Binding Columns.Where}" />
-            <TextBlock Grid.Column="3" Classes="caption subtle" Text="{Binding Columns.Doing}" />
-            <TextBlock Grid.Column="4" Classes="caption subtle" Text="{Binding Columns.For}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="2" Classes="caption subtle" Text="{Binding Columns.Repo}" IsVisible="{Binding IsWide}" />
+            <TextBlock Grid.Column="3" Classes="caption subtle" Text="{Binding Columns.Where}" IsVisible="{Binding IsWide}" />
+            <TextBlock Grid.Column="4" Classes="caption subtle" Text="{Binding Columns.Doing}" IsVisible="{Binding IsWide}" />
+            <TextBlock Grid.Column="5" Classes="caption subtle" Text="{Binding Columns.For}" HorizontalAlignment="Right" />
           </Grid>
         </Border>
         <ItemsControl x:Name="AgentGroups" ItemsSource="{Binding Groups}">

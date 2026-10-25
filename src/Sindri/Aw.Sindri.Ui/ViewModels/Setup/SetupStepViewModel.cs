@@ -69,8 +69,8 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>What the profile allows in plain words (the profile step before it is approved); empty otherwise.</summary>
     public IReadOnlyList<SetupPreviewLineViewModel> Preview { get; private set; } = [];
 
-    /// <summary>True when there is a preview to show.</summary>
-    public bool HasPreview => Preview.Count > 0;
+    /// <summary>True when there is a preview to show; the profile's own summary (the consent, setup-once spec §5.2) takes its place while there is one.</summary>
+    public bool HasPreview => Preview.Count > 0 && Profile?.Summary.HasSummary != true;
 
     /// <summary>The action, or null.</summary>
     public SetupActionViewModel? Action { get; private set; }
@@ -78,11 +78,26 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>The repo form of the repo step; null for every other step.</summary>
     public SetupRepoFormViewModel? Repo { get; set; }
 
+    /// <summary>Asked when a form in this step needs focus on the step heading.</summary>
+    internal event EventHandler<SetupFocusEventArgs>? FocusRequested;
+
     /// <summary>The typed approval of the profile step; null for every other step.</summary>
-    public SetupProfileConfirmViewModel? Profile { get; set; }
+    public SetupProfileConfirmViewModel? Profile
+    {
+        get;
+        set
+        {
+            field = value;
+            value?.Summary.PropertyChanged += (_, _) => OnChanged(nameof(HasPreview));
+            value?.FocusRequested += (_, e) => FocusRequested?.Invoke(this, e);
+        }
+    }
 
     /// <summary>The plan, hold and typed alternative of the workflows step (the approve-all dialog's own view model); null for every other step.</summary>
     public Approvals.ApproveAllViewModel? Workflows { get; set; }
+
+    /// <summary>The workflows under the workflows step; empty for every other step.</summary>
+    public SetupRecipeListViewModel Recipes { get; private set; } = SetupRecipeListViewModel.Empty;
 
     /// <summary>The Onyx controls of the Onyx step; null for every other step.</summary>
     public SetupOnyxViewModel? Onyx { get; set; }
@@ -181,6 +196,10 @@ internal sealed class SetupStepViewModel : ObservableObject
         return changed;
     }
 
+    /// <summary>Takes the workflows read with the list; read before <see cref="Update"/> so the row words itself with them.</summary>
+    /// <param name="recipes">The workflows.</param>
+    internal void ShowRecipes(SetupRecipeListViewModel recipes) => Recipes = recipes;
+
     /// <summary>Shows the step as working with a note, until the next read says otherwise (a retry was started, or one was already running).</summary>
     /// <param name="note">The note.</param>
     internal void ShowWorking(string note)
@@ -224,7 +243,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         var state = running ? "running" : Step.State;
         var (word, said, tone) = Labels.SetupChip(state);
         (Title, Chip, ChipWord) = (Labels.SetupTitle(Step.Id, Step.Title), new StateChip(word, tone), said);
-        Sub = Labels.SetupSubFor(Step.Id, state, Waiting, Step.Why, Step.Detail);
+        Sub = SubFor(state);
         Note = _overrideNote ?? string.Empty;
         DetailText = IsFinished || running ? string.Empty : Step.Detail ?? string.Empty;
         ErrorText = running ? string.Empty : Step.Error?.Sentence ?? string.Empty;
@@ -233,6 +252,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         DeriveProgress();
     }
 
+    private string SubFor(string state) => Recipes.HasOutdated && NeedsYou ? Labels.SetupOutdatedSub(Recipes.OutdatedCount) : Labels.SetupSubFor(Step.Id, state, Waiting, Step.Why, Step.Detail);
     // A todo step with no action waits on another step.
     private bool Waiting => string.Equals(Step.State, "todo", StringComparison.Ordinal) && string.IsNullOrEmpty(Step.Action);
 

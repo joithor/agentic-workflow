@@ -4,9 +4,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -29,9 +27,8 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="recipes">The approval check.</param>
 /// <param name="nonces">The nonce table.</param>
-/// <param name="challenges">The server's challenges, for a protected answer.</param>
 /// <param name="callers">The caller the API chain classed: its actor sends the command.</param>
-internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces, IChallenges challenges,
+internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces,
     ICallerContextAccessor callers)
     : IService<ApplyCommandRequest, ApplyCommandResponse>
 {
@@ -64,16 +61,21 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        return await Deliver(request, address.Value, new SentCommand(nonce, subject, claim.Value), trigger, cancellationToken).ConfigureAwait(false);
+        return await Deliver(request, address.Value, new SentCommand(nonce, subject, claim.Value), (trigger, caller), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Routes the command (spec §5.8), checks it when this call created the claim, and sends it.</summary>
-    private async ValueTask<Result<ApplyCommandResponse>> Deliver(ApplyCommandRequest request, InstanceAddress address, SentCommand command, Trigger trigger, CancellationToken cancellationToken)
+    private async ValueTask<Result<ApplyCommandResponse>> Deliver(ApplyCommandRequest request, InstanceAddress address, SentCommand command, (Trigger Trigger, CallerContext Caller) call, CancellationToken cancellationToken)
     {
-        var route = await Route(request, address, new Dispatch(command.Nonce, trigger), cancellationToken).ConfigureAwait(false);
+        var route = await Route(request, address, new Dispatch(command.Nonce, call.Trigger), cancellationToken).ConfigureAwait(false);
         if (route.IsError)
         {
             return await Refused(route.Error, command.Nonce, command.Claim, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (await LaunchedRefusal(request, call.Caller, route.Value, cancellationToken).ConfigureAwait(false) is { } launched)
+        {
+            return await Refused(launched, command.Nonce, command.Claim, cancellationToken).ConfigureAwait(false);
         }
 
         // only a claim this call created is checked (a pending or applied one was checked by the call that made it: a protected
@@ -84,6 +86,24 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         }
 
         return await Send(route.Value.Target, command, route.Value.Dispatch, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A launched session's answer or command on a human step (q100, <see cref="LaunchedCallers"/>); null for any other call.</summary>
+    private async ValueTask<Error?> LaunchedRefusal(ApplyCommandRequest request, CallerContext caller, Routing route, CancellationToken cancellationToken)
+    {
+        if (caller.Launch is null || request.Kind is not (ApplyCommandKind.Answer or ApplyCommandKind.Command))
+        {
+            return null;
+        }
+
+        var view = await ViewOf(route, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        var action = request.Kind == ApplyCommandKind.Answer ? "workflow answer" : "workflow command " + request.Verb?.Value;
+        return LaunchedCallers.RefuseOnHumanStep(caller, view.Value, action);
     }
 
     /// <summary>A refusal before the Update gives back a claim this call created, so a refused command consumes nothing.</summary>
@@ -160,8 +180,8 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     private readonly record struct SentCommand(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
     /// <summary>
-    /// The checks before the Update (spec §4.2, §5.2): a protected answer redeems its challenge against the instance as it
-    /// is now; a human trigger that isn't exempt needs its recipe's approval to hold.
+    /// The checks before the Update (spec §4.2, §5.2): a protected answer (a grant or an accept) asks for no typed challenge (owner decision q93) but is checked like any
+    /// other; a human trigger that isn't exempt needs its recipe's approval to hold.
     /// </summary>
     private async ValueTask<Result<Unit>> Check(ApplyCommandRequest request, Routing route, CancellationToken cancellationToken)
     {
@@ -178,11 +198,6 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return view.Error;
         }
 
-        if (protectedAnswer && Redeem(request, address, view.Value) is { } stale)
-        {
-            return stale;
-        }
-
         var approval = await recipes.Check(view.Value.Recipe, cancellationToken).ConfigureAwait(false);
         if (approval.IsError)
         {
@@ -195,19 +210,6 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     /// <summary>The view the check reads: the parent's, when routing already read it, else the target's.</summary>
     private ValueTask<Result<InstanceView>> ViewOf(Routing route, CancellationToken cancellationToken) =>
         route.Parent is { } known ? ValueTask.FromResult<Result<InstanceView>>(known) : runtime.Get(route.Target, cancellationToken);
-
-    /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>
-    private Error? Redeem(ApplyCommandRequest request, InstanceAddress address, InstanceView view)
-    {
-        var action = InstanceChallenge.Action(address, request.Answer!.Value, request.Amount); // why: only a protected answer redeems
-        if (request.Challenge is not { } answer)
-        {
-            return WorkflowErrors.WorkflowChallengeStale.With($"'{action.Text}' is protected and needs its challenge typed at a terminal (fix: run it again in a terminal: sindri workflow answer {address.Value} ...)");
-        }
-
-        var redeemed = challenges.Redeem(answer, action, InstanceChallenge.Subject(view), WorkflowErrors.WorkflowChallengeStale);
-        return redeemed.IsError ? redeemed.Error : null;
-    }
 
     /// <summary>The arguments each kind needs (spec §6.3): an answer's variant and its text or amount, a command's verb.</summary>
     private static Error? Malformed(ApplyCommandRequest request) => request switch

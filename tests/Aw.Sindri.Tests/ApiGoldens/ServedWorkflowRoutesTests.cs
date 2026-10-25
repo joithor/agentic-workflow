@@ -29,12 +29,14 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     public static IReadOnlyList<(string Slug, string Scenario)> Goldens { get; } =
     [
         ("workflow-instance", "not-found"), ("workflow-instance-fact", "not-found"), ("workflow-recipes", "list"), ("workflow-recipes-id-stats", "workflow-item"),   // the stats golden is recorded by RecipeStatsRouteTests
+        ("workflow-recipes-id-stats", "pr-babysitter"), ("workflow-recipes-id-stats", "pr-babysitter-empty"),   // recorded by BabysitterStatsGoldenTests (API19's section, for the app's typed record)
         ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-malformed"), ("workflow-instances", "start-missing-input"),
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),
         ("workflow-instance-scoping", "expiry-stop"),   // recorded by ScopingShowTests (API2 serves that view as is)
         ("needs-you", "desk-with-stop"), ("needs-you", "park-with-timeout"),   // recorded by NeedsYouJoinsTests (the read-time joins of GetNeedsYou)
         ("workflow-instance-design-stop", "gold-stop"),   // recorded by DesignStopViewTests (LN-API2 serves that view as is)
+        ("workflow-instance-line", "gold-line"),   // recorded by GetInstanceLineServiceTests (LN-API1 serves that view as is)
     ];
 
     /// <summary>What a served start draws at run time: its timestamps and the instance id.</summary>
@@ -275,7 +277,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         return changed;
     }
 
-    /// <summary>Registers <paramref name="yaml"/> and approves it with block pins that differ from this build's, as a block that changed since the approval leaves it.</summary>
+    /// <summary>Registers <paramref name="yaml"/> and approves it with block pins that differ from this build's, as a block whose interface changed since the approval leaves it (a version bump alone is renewed, PinRenewals).</summary>
     private void Drifted(string yaml)
     {
         var registered = _harness.Register(yaml);
@@ -285,7 +287,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         var recipe = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document!.Recipe;
         var pins = PinRules.Pins(recipe, sindri.GetRequiredService<BlockCatalog>(), [], json);
         Assert.NotEmpty(pins.Blocks);
-        var stale = pins with { Blocks = [.. pins.Blocks.Select(static p => p with { Hash = DescriptorHash.From("sha256:" + new string('0', 64)) })] };
+        var stale = pins with { Blocks = [.. pins.Blocks.Select(static p => p with { Hash = DescriptorHash.From("sha256:" + new string('0', 64)), Interface = DescriptorHash.From("sha256:" + new string('1', 64)) })] };
         var approved = sindri.GetRequiredService<IRecipeApprovals>()
             .Approve(new RecipeApproval(registered.Id, registered.Version, registered.Hash, "human:test", RealTime.NowOffset, ApprovalVia.Desk, Base: null, stale), ct).AsTask().GetAwaiter().GetResult();
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);

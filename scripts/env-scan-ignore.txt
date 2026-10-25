@@ -42,9 +42,8 @@ AW_EXTERNAL_SKILL_DIRS # set by setup.sh (fetched skill packs) for the provider 
 WITH_SINDRI # set by setup.sh --with-sindri for the Claude installer
 AW_JUDGE_CHILD # recursion guard the judge sets on the agent CLIs it starts
 AW_SINDRI_CHILD # recursion guard sindri sets on the processes it starts; sindri's CLI classes itself as a session under it
-AW_SINDRI_PROVER # set by scripts/sindri-prove.sh human; exempts sindri's CLI from the parent-process check
+AW_SINDRI_PROVER # set by scripts/sindri-prove.sh human; labels sindri's CLI calls 'prover'
 LOCK_NAME # a parameter callers set before sourcing skills/_shared/skill-lock.sh
-REF # install-sindri.sh's --ref value
 REPO # sync-rules.sh's positional argument; the script resets it before reading arguments, so the environment can't set it
 
 # Script-local UPPER_CASE variables the scan can't tell from overrides (config/statusline.sh).
@@ -70,3 +69,5 @@ NUGET_PACKAGES # NuGet's own variable; scripts/ci/bash-tests.sh keeps the real p
 PPID # the shell sets it (the aw:fleet hook walks up from it)
 EPOCHREALTIME # the shell sets it (bash 5; the aw:fleet hook timestamps with it)
 AW_HOOK_PROVIDER # set by the Codex and Cursor adapters (config/hooks/adapters/common.sh) for the hook they run, never by the user; the aw:fleet hook maps it to the provider directory
+EDITOR # the user's own editor choice; sindri-pod.sh profile edit opens the profile in it (vi when unset)
+AW_SINDRI_ONYX_URL # set by the chart in the pod, read there by sindri-pod.sh (connect --onyx) to find Onyx's port

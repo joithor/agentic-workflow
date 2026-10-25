@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.ApproveAll;
@@ -75,12 +76,14 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _approveAllRecipes,
             [_approveAllRecipes],
-            cli.Value.Text);
+            cli.Value.Text,
+            new NeedsYouOpen("setup", "Open setup"));
     }
 
     private static Result<NeedsYouRow> OwnRow(OwnApprovalRow own, DateTimeOffset since, ITextScrubber scrubber)
     {
-        var cli = Cli("sindri recipe approve <recipe>", "recipe", own.Id);
+        // the waiting version's own id@hash: the CLI takes <file|id@hash>, never a bare id (#983)
+        var cli = own.Hash is { } hash ? Cli("sindri recipe approve <recipe>@<hash>", "recipe", own.Id).Bind(form => form.Fill("hash", hash)) : Cli("sindri recipe approve <recipe>", "recipe", own.Id);
         if (cli.IsError)
         {
             return cli.Error;
@@ -102,6 +105,7 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             _approveRecipe,
             [_approveRecipe],
-            cli.Value.Text);
+            cli.Value.Text,
+            new NeedsYouOpen("recipe/" + own.Id.Value, "Review the workflow change"));
     }
 }

@@ -1,7 +1,9 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Facade;
@@ -22,7 +24,7 @@ public interface IContextLenses
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The union of the lenses around several nodes (scoping spec C1, schema 2), read from one map snapshot.</summary>
-    /// <param name="anchors">One to 20 node keys, aliases or labels; duplicates count once.</param>
+    /// <param name="anchors">Node keys, aliases or labels; duplicates count once.</param>
     /// <param name="read">Which map.</param>
     /// <param name="depth">How far the neighbors range and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
@@ -46,13 +48,27 @@ public interface IContextLenses
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The union of the lenses around several nodes with the cascade hops the caller names.</summary>
-    /// <param name="anchors">One to 20 node keys, aliases or labels; duplicates count once.</param>
+    /// <param name="anchors">Node keys, aliases or labels; duplicates count once.</param>
     /// <param name="read">Which map.</param>
     /// <param name="range">The depth and the cascade hops.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The lenses, or SND-CONTEXT-140 for a bad hops list, else as the overload without hops.</returns>
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>The whole map in one answer (Part D): every node and edge when the map fits the node budget, else one entry per area; a session sees only its repo.</summary>
+    /// <param name="query">The detail, the keys to place, which map and whose repo.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The view, or SND-CONTEXT-001/003/004/006/020/030/044/045/120.</returns>
+    public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Ranked full-text search over everything in the map the caller may read: node labels, file paths, record titles, decision wording and quotes, descriptive attributes (title over path over text).</summary>
+    /// <param name="query">The words, the limit, the area and repo, and which map.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The hits best first and how many matched in all (a session whose repo implements nothing gets none), or SND-CONTEXT-001/004/006/020/030/044/045/120.</returns>
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The direct children of a repo path with their status.</summary>
     /// <param name="query">The repo, the path and the filters.</param>

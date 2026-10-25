@@ -2,8 +2,11 @@ using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Symbols;
+using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Symbols;
 using Aw.Context.Tests.Contract;
 using Aw.Context.Tests.Map;
@@ -30,9 +33,9 @@ public sealed class GetCodeSymbolsTests
 
     private static SearchedSource Row(CodeView view) => Assert.Single(view.Searched.Sources, s => s.Id.Value == "code-index");
 
-    private static async Task<(CodeWorld World, CodeView View)> Lens(ICodeSymbolSource source, string? mapCommit = MapCommit)
+    private static async Task<(CodeWorld World, CodeView View)> Lens(ICodeSymbolSource source, string? mapCommit = MapCommit, Func<IRepoReader, IRepoReader>? decorateRepo = null)
     {
-        var world = new CodeWorld(symbols: source);
+        var world = new CodeWorld(decorateRepo: decorateRepo, symbols: source);
         _ = await world.ImportSharing(mapCommit);
         return (world, (await world.Code()).Value);
     }
@@ -64,6 +67,26 @@ public sealed class GetCodeSymbolsTests
         Assert.NotEmpty(view.Callers.Items);
         Assert.All(view.Callers.Items.Concat(view.Callees.Items), e => Assert.Equal((AheadCommit, MapCommit, SymbolsState.Stale), (e.Commit, e.AsOfCommit, e.State)));
         Assert.Contains("code-index: stale", view.Degraded, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_map_ahead_of_an_ancestor_index_is_catching_up_and_only_rows_in_pending_files_are_stale()
+    {
+        var (world, view) = await Lens(new FakeCodeSymbolSource([Index(AheadCommit)]), decorateRepo: git => ((FakeRepoReader)git).WithHistory([AheadCommit, MapCommit],
+            [new RepoChanges(AheadCommit, MapCommit, AheadCommit, [new RepoChange("src/main.ts", ChangeKind.Modified)])]));
+        using var _ = world;
+
+        Assert.Equal((SearchedState.Ok, "catching-up", null), (Row(view).State, Row(view).Reason, Row(view).Code));
+        var catching = Assert.IsType<SearchedCatchingUp>(Row(view).CatchingUp);
+        Assert.Equal((AheadCommit, MapCommit), (catching.IndexCommit, catching.MapCommit));
+        Assert.Equal(["src/main.ts"], catching.Pending, StringComparer.Ordinal);
+        Assert.Empty(view.Degraded);
+        Assert.Equal((AheadCommit, MapCommit, "catching-up"), (view.Callers.Commit, view.Callers.AsOfCommit, view.Callers.Reason));
+        var pending = Assert.Single(view.Callers.Items, e => e.Symbol.Ref == _main.Ref);
+        Assert.Equal((SymbolsState.Stale, MapCommit), (pending.State, pending.AsOfCommit));
+        var current = Assert.Single(view.Callers.Items, e => e.Symbol.Ref == _routes.Ref);
+        Assert.Equal((SymbolsState.Ok, null), (current.State, current.AsOfCommit));
+        Assert.All(view.Callees.Items, e => Assert.Equal(SymbolsState.Ok, e.State));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -120,7 +143,7 @@ public sealed class GetCodeSymbolsTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_lens_asks_the_map_versions_commit_and_only_the_files_repo_and_never_more_than_the_symbol_cap()
     {
-        var many = Enumerable.Range(0, 30).Select(i => new SymbolSite($"src/sharing/links.ts#f{i.ToString("D2", CultureInfo.InvariantCulture)}", $"f{i.ToString("D2", CultureInfo.InvariantCulture)}", "function", "src/sharing/links.ts", StartLine: i + 1, EndLine: i + 1, Signature: null, Exported: i % 2 == 0)).ToList();
+        var many = Enumerable.Range(0, CodeRules.MaxCallSymbols + 10).Select(i => new SymbolSite($"src/sharing/links.ts#f{i.ToString("D2", CultureInfo.InvariantCulture)}", $"f{i.ToString("D2", CultureInfo.InvariantCulture)}", "function", "src/sharing/links.ts", StartLine: i + 1, EndLine: i + 1, Signature: null, Exported: i % 2 == 0)).ToList();
         var recording = new RecordingSymbolSource(new FakeCodeSymbolSource([Index(MapCommit, symbols: many, calls: [])]));
         var (world, _) = await Lens(recording);
         using var __ = world;
@@ -128,8 +151,8 @@ public sealed class GetCodeSymbolsTests
         Assert.All(recording.Calls, c => Assert.Equal((_repo.Value, MapCommit), (c.Repo, c.AsOf)));
         Assert.Equal(CodeRules.MaxCallSymbols, recording.Calls.Count(c => c.Call == "callers"));
         Assert.Equal(CodeRules.MaxCallSymbols, recording.Calls.Count(c => c.Call == "callees"));
-        // exported symbols come first, then by position
-        Assert.Equal(many.OrderByDescending(s => s.Exported).ThenBy(s => s.StartLine).Select(s => s.Ref).Take(CodeRules.MaxCallSymbols), recording.Calls.Where(c => c.Call == "callers").Select(c => c.Subject), StringComparer.Ordinal);
+        // the cap keeps exported symbols first, then by position; they are asked in parallel, so the order of asking is not compared
+        Assert.Equal(many.OrderByDescending(s => s.Exported).ThenBy(s => s.StartLine).Select(s => s.Ref).Take(CodeRules.MaxCallSymbols).Order(StringComparer.Ordinal), recording.Calls.Where(c => c.Call == "callers").Select(c => c.Subject).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

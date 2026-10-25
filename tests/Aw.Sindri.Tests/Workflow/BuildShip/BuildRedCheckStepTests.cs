@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Build;
 
@@ -11,12 +12,15 @@ public sealed class BuildRedCheckStepTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static StepContext Context(string redTests = """{"commit":"h1","items":{"A1":{"tests":["T1","T2"]},"A2":{"tests":["T3"]},"A3":{"appOnly":"the page shows it"}}}""") =>
-        StepRig.Context("step.build.red-check", new Dictionary<string, string>(StringComparer.Ordinal)
+    private static StepContext Context(string redTests = """{"A1":{"tests":["T1","T2"],"commit":"h1"},"A2":{"tests":["T3"],"commit":"h1"},"A3":{"appOnly":{"signal":"SG-1"}}}""", string? startHead = null, bool rework = false)
+    {
+        var start = startHead is null ? string.Empty : $",\"startHead\":\"{startHead}\"{(rework ? ",\"rework\":true" : string.Empty)}";   // prepare records where the round started, and that it began with notes
+        return StepRig.Context("step.build.red-check", new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["activePacket"] = $$"""{"hash":"sha256:x","dir":"{{StepRig.PacketDir}}","repo":"{{StepRig.Tree}}"}""",
+            ["activePacket"] = $$"""{"hash":"sha256:x","dir":"{{StepRig.PacketDir}}","repo":"{{StepRig.Tree}}"{{start}} }""",
             ["redTests"] = redTests,
         });
+    }
 
     private static BuildRedCheckStep Step(StepRig rig) => new(rig.Diff, rig.Runner);
 
@@ -90,6 +94,69 @@ public sealed class BuildRedCheckStepTests
         Assert.Empty(rig.Commands.Calls);
     }
 
+    // A rework round starts from the earlier round's code head (prepare records it as the packet's startHead), so HEAD is not the red commit; the red tests were
+    // proven red on that commit in the round that wrote them.
+    [Fact]
+    public async Task A_rework_round_that_adds_no_tests_passes_on_the_earlier_red_commit_without_running_anything()
+    {
+        var rig = new StepRig("red-tests");   // the worktree is at h1, the code head the round started from
+        rig.Diff.Differ(StepRig.Tree, "src/a.cs");   // r0 is behind it
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"r0"}}""", startHead: "h1", rework: true), Token);
+
+        Assert.Null(result.Failure);
+        Assert.Equal("red", result.Result!.Outcome.Value);
+        Assert.Empty(rig.Commands.Calls);
+        Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task A_rework_round_that_adds_tests_runs_them_at_its_own_red_commit()
+    {
+        var rig = new StepRig("red-tests");
+        rig.Diff.Advance(StepRig.Tree);   // the round's red commit: h1+
+        _ = rig.Commands.Answer("red-tests", StepRig.Fail());
+
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"h1+"}}""", startHead: "h1", rework: true), Token);
+
+        Assert.Equal("red", result.Result!.Outcome.Value);
+        _ = Assert.Single(rig.Commands.Calls);
+    }
+
+    [Fact]
+    public async Task A_rework_round_whose_code_moved_on_past_the_head_it_started_from_still_fails_the_Step()
+    {
+        var rig = new StepRig("red-tests");
+        rig.Diff.Advance(StepRig.Tree);   // h1+, not the red commit r0 and not where the round started
+
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"r0"}}""", startHead: "h1", rework: true), Token);
+
+        Assert.Contains("not the red commit r0", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
+    [Fact]
+    public async Task A_first_round_citing_an_older_commit_with_nothing_committed_fails_BLD_RED_001()
+    {
+        var rig = new StepRig("red-tests");
+        rig.Diff.Differ(StepRig.Tree, "src/a.cs");   // the commit is real and behind HEAD, but no rework began this round
+
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"base0"}}""", startHead: "h1"), Token);
+
+        Assert.Contains("not the red commit base0", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
+    [Fact]
+    public async Task A_rework_citing_a_commit_that_is_not_behind_the_head_it_started_at_fails_BLD_RED_001()
+    {
+        var rig = new StepRig("red-tests");   // nothing differs between that commit and HEAD, so it is no earlier red commit
+
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"other"}}""", startHead: "h1", rework: true), Token);
+
+        Assert.Contains("not the red commit other", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
     [Fact]
     public async Task A_profile_with_no_commands_fails_the_Step_with_the_fix_and_takes_no_slot()
     {
@@ -102,8 +169,33 @@ public sealed class BuildRedCheckStepTests
     }
 
     [Theory]
+    [InlineData("""{"AC-13":{"appOnly":{"signal":"AC-13"},"commit":"d1ab76c"}}""")]
+    [InlineData("""{"A1":{"appOnly":{"signal":"s"},"commit":"h1"},"A2":{"appOnly":{"signal":"t"}}}""")]
+    public async Task When_every_item_is_app_only_there_is_nothing_to_run_and_the_check_passes(string redTests)
+    {
+        var rig = new StepRig("red-tests");
+
+        var result = await Step(rig).Run(Context(redTests), Token);
+
+        Assert.Null(result.Failure);
+        Assert.Equal("red", result.Result!.Outcome.Value);   // their proof happens at prove
+        Assert.Empty(rig.Commands.Calls);
+        Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task App_only_items_need_no_command_in_the_profile()
+    {
+        var rig = new StepRig();
+
+        var result = await Step(rig).Run(Context("""{"A1":{"appOnly":{"signal":"s"}}}"""), Token);
+
+        Assert.Equal("red", result.Result!.Outcome.Value);
+    }
+
+    [Theory]
     [InlineData("{}")]
-    [InlineData("""{"items":{"A1":{"appOnly":"s"}}}""")]
+    [InlineData("""{"A1":{"commit":"h1"}}""")]
     public async Task No_test_to_run_fails_the_Step(string redTests)
     {
         var rig = new StepRig("red-tests");
@@ -141,9 +233,46 @@ public sealed class BuildRedCheckStepTests
     {
         var rig = new StepRig("red-tests");
 
-        var result = await Step(rig).Run(Context("""{"items":{"A1":{"tests":["T1"]}}}"""), Token);
+        var result = await Step(rig).Run(Context("""{"A1":["T1"]}"""), Token);
 
-        Assert.Contains("fact:redTests.commit", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("name the red commit", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
+    [Fact]
+    public async Task The_short_form_with_the_commit_on_another_item_is_enough()
+    {
+        var rig = new StepRig("red-tests");
+        _ = rig.Commands.Answer("red-tests", StepRig.Fail());
+
+        var result = await Step(rig).Run(Context("""{"A1":["T1"],"A2":{"tests":["T2"],"commit":"h1"}}"""), Token);
+
+        Assert.Equal("red", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task Run24_s_fact_fails_the_Step_naming_the_expected_shape_and_the_field_and_runs_nothing()
+    {
+        var rig = new StepRig("red-tests");
+
+        var result = await Step(rig).Run(Context("""{"commit":"h1","file":"a.sh","tests":[{"name":"x","covers":["AC-1"]}]}"""), Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("fact:redTests", result.Failure, StringComparison.Ordinal);
+        Assert.Contains(RedTestsFact.Shape, result.Failure, StringComparison.Ordinal);
+        Assert.Contains("commit", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("tests", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
+
+    [Fact]
+    public async Task Items_naming_different_red_commits_fail_the_Step_and_run_nothing()
+    {
+        var rig = new StepRig("red-tests");
+
+        var result = await Step(rig).Run(Context("""{"A1":{"tests":["T1"],"commit":"h1"},"A2":{"tests":["T2"],"commit":"h2"}}"""), Token);
+
+        Assert.Contains("h2", result.Failure, StringComparison.Ordinal);
         Assert.Empty(rig.Commands.Calls);
     }
 }

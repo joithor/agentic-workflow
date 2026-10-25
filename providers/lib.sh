@@ -233,34 +233,6 @@ aw_install_skills_into() {
   aw_link_external_skills "$dir"
 }
 
-# Skills that ship a TypeScript helper need dist/ built before their SKILL.md
-# can run it (skills/<name>/dist/bin.js). Override in tests.
-AW_SKILL_PACKAGES=(${AW_SKILL_PACKAGES[@]+"${AW_SKILL_PACKAGES[@]}"})
-[ ${#AW_SKILL_PACKAGES[@]} -gt 0 ] || AW_SKILL_PACKAGES=(ui-evidence bugFixOrchestrator)
-
-# Build every skill package: aw_build_skill_packages <toolkit-root>
-# A failed build warns and continues — the rest of setup must not abort.
-# --ignore-scripts: building needs no dependency install scripts, so none run.
-aw_build_skill_packages() {
-  local root="$1" name dir
-  for name in "${AW_SKILL_PACKAGES[@]}"; do
-    dir="$root/skills/$name"
-    if [ ! -f "$dir/package.json" ]; then
-      echo "  $name: no package.json, skipping"
-      continue
-    fi
-    if aw_dry; then
-      echo "  [dry-run] would run: npm ci && npm run build (in $dir)"
-      continue
-    fi
-    if (cd "$dir" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null && npm run build >/dev/null); then
-      echo "  $name: built"
-    else
-      echo "  WARN: $name build failed — run: (cd $dir && npm ci && npm run build)"
-    fi
-  done
-}
-
 # $HOME/.agentic-workflow/toolkit -> repo root. Skills resolve shared fragments
 # via $HOME/.agentic-workflow/toolkit/skills/_shared regardless of provider.
 aw_link_toolkit() {
@@ -276,6 +248,47 @@ aw_link_toolkit() {
   fi
   aw_run ln -sfn "$TOOLKIT_DIR" "$link"
   echo "  toolkit: $link → $TOOLKIT_DIR"
+}
+
+# Write <src>'s content into <file> between "<!-- aw:<tag>:start -->" and "<!-- aw:<tag>:end -->":
+# replaced in place when the block exists, appended when it doesn't (the file is created if missing).
+# Text outside the markers is never touched, and the file keeps its inode and mode. A start marker
+# with no end marker after it is refused (exit 1, file untouched): the rest of the file might be the user's.
+# Usage: aw_write_managed_block <file> <tag> <src>
+aw_write_managed_block() {
+  local file="$1" tag="$2" src="$3"
+  local start="<!-- aw:$tag:start -->" end="<!-- aw:$tag:end -->"
+  if aw_dry; then
+    echo "  [dry-run] would write the aw:$tag block from $src into $file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$file")"
+  if [ ! -f "$file" ] || ! grep -qxF -- "$start" "$file"; then
+    # A last line without a newline would glue the start marker onto it, and the next run would not find the block.
+    { [ -s "$file" ] && { [ -z "$(tail -c 1 "$file")" ] || printf '\n'; printf '\n'; }; echo "$start"; cat "$src"; echo "$end"; } >> "$file"
+    return 0
+  fi
+  local tmp
+  tmp="$(mktemp)"
+  awk -v s="$start" -v e="$end" -v src="$src" '
+    $0 == s { print; while ((getline line < src) > 0) print line; close(src); skip = 1; next }
+    $0 == e && skip { skip = 0; print; next }
+    !skip { print }
+    END { if (skip) exit 3 }
+  ' "$file" > "$tmp" || {
+    rm -f "$tmp"
+    echo "  WARN: $file has $start but no $end after it; left it alone (fix it by hand)" >&2
+    return 1
+  }
+  cat "$tmp" > "$file"
+  rm -f "$tmp"
+}
+
+# The reply voice (config/voice/joi.md) inlined into a provider's global instruction file.
+# Usage: aw_install_voice <file>
+aw_install_voice() {
+  aw_write_managed_block "$1" voice "$TOOLKIT_DIR/config/voice/joi.md" || return 0
+  echo "  voice: $1"
 }
 
 # Write $HOME/.agentic-workflow/providers: one "<name> <skills-dir>" line per
@@ -408,11 +421,11 @@ aw_remove_retired_dir() {
 # Cheap-agent-harness lever hooks for one provider. Each scripts/install-*.sh
 # takes --provider (default claude) and no-ops with a note where a lever is
 # unsupported on that provider.
-AW_LEVER_INSTALLERS="install-wake-gating install-context-guard install-scope-gate install-done-gate install-external-write-guard install-live-pane"
+AW_LEVER_INSTALLERS="install-wake-gating install-context-guard install-scope-gate install-done-gate install-external-write-guard"
 aw_install_levers() {
   local provider="$1" inst
   echo ""
-  echo "=== Installing lever hooks for $provider (wake gating 1A, context-guard 2B, evaluator gates 3, live pane) ==="
+  echo "=== Installing lever hooks for $provider (wake gating 1A, context-guard 2B, evaluator gates 3) ==="
   for inst in $AW_LEVER_INSTALLERS; do
     if aw_dry; then
       echo "  [dry-run] would run scripts/$inst.sh --provider $provider"
