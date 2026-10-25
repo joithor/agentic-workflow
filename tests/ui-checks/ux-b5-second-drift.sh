@@ -25,7 +25,12 @@ OUT="${UXCHECK_OUT:-$(mktemp -d "$TMP_ROOT/ux-b5-second-drift-out-XXXXXX")}"
 mkdir -p "$OUT" || exit 2
 
 APP_WRAPPER_PID=""
-setup_fail() { echo "ux-b5-second-drift: setup failed: $*" >&2; exit 2; }
+# A setup miss keeps a screenshot of what the app showed, so the next miss can be read.
+setup_fail() {
+  "$DRIVER" screenshot --out "$OUT/setup-fail.png" >/dev/null 2>&1 || true
+  echo "ux-b5-second-drift: setup failed: $* (screenshot in $OUT)" >&2
+  exit 2
+}
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 cleanup() {
@@ -62,8 +67,10 @@ APP_WRAPPER_PID=$!
 "$DRIVER" ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never answered (see $OUT/app.log)"
 
 approve=(--type Button --name "Approve settings")
+# Settings opens by the Ctrl+, chord (ShellWindow.Overlays.cs OpenSettingsByKey). Nothing has focus in a fresh window, and a key
+# with no selector fails then, so the chord goes to the window itself (node 0).
 open_settings() {
-  "$DRIVER" key --chord Ctrl+OemComma >/dev/null 2>&1 || true
+  "$DRIVER" key --chord Ctrl+OemComma --node-id 0 >/dev/null 2>&1 || setup_fail "the Ctrl+, chord was not accepted by the window"
 }
 
 
