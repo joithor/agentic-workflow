@@ -52,7 +52,7 @@ public sealed class ApproveWaitingShippedTests
     {
         await using var registry = Harness();
 
-        Assert.Single(await registry.List(stale: true), l => l.Hash == ShippedHash);
+        _ = Assert.Single(await registry.List(stale: true), l => l.Hash == ShippedHash);
     }
 
     [Fact]
