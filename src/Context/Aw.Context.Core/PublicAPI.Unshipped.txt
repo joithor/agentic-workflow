@@ -6983,3 +6983,7 @@ static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMa
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int
 Aw.Context.Core.Graph.NodeDetail.Repo.get -> string?
 Aw.Context.Core.Graph.NodeDetail.Repo.init -> void
+Aw.Context.Core.Graph.NodeKind.Concept = 8 -> Aw.Context.Core.Graph.NodeKind
+Aw.Context.Core.Graph.EdgeType.BelongsTo = 13 -> Aw.Context.Core.Graph.EdgeType
+Aw.Context.Core.Graph.ConceptKeys
+const Aw.Context.Core.Graph.ConceptKeys.Other = "" -> string!
