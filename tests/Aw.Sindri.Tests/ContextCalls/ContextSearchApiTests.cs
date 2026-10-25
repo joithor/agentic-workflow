@@ -41,7 +41,7 @@ public sealed class ContextSearchApiTests : IDisposable
 
         var whole = await host.Http.Ask(Get("/sindri/context/map/whole?detail=nodes", Terminal(host)));
         var only = await host.Http.Ask(Get("/sindri/context/search?q=manager", Terminal(host)));
-        var seen = $"search: {answer.Body}\nsearch q=manager: {only.Body}\nwhole map nodes: {string.Join(' ', Json(whole.Body).TryGetProperty("nodes", out var nodes) ? nodes.EnumerateArray().Select(static n => n.GetProperty("key").GetString()) : [whole.Body])}";
+        var seen = $"search: {answer.Body}\nsearch q=manager: {only.Body}\nwhole map nodes: {(Json(whole.Body).TryGetProperty("nodes", out var nodes) ? string.Join(' ', nodes.EnumerateArray().Select(static n => n.GetProperty("key").GetString())) : whole.Body)}";
         Assert.True(answer.Status == HttpStatusCode.OK, seen);
         var view = Json(answer.Body);
         var hits = view.GetProperty("hits").EnumerateArray().ToList();
