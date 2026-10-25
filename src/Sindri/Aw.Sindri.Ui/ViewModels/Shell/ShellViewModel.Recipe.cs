@@ -19,6 +19,12 @@ internal sealed partial class ShellViewModel
     /// <summary>True when the sheet's subject is a recipe.</summary>
     public bool IsRecipeSheet => SheetLink?.Kind == DeepLinkKind.Recipe;
 
+    /// <summary>True while the open sheet covers the page at every width: a recipe's sheet is prose and needs the room, and the page behind it keeps its columns.</summary>
+    public bool SheetCoversPage => false;
+
+    /// <summary>The sheet's title text: a workflow's name for its sheet, else the link's subject.</summary>
+    public string SheetHeading => SheetSubject;
+
     // The recipe part of opening the sheet (OnSheetOpened): the sheet names its recipe at once and reads it.
     private void OnRecipeSheetOpened(DeepLink link)
     {
