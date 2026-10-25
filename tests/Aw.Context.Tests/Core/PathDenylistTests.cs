@@ -100,4 +100,16 @@ public sealed class PathDenylistTests
         Assert.False(PathDenylist.Matches(path, [glob]));
         Assert.False(PathDenylist.MatchesExactCase(path, [glob]));
     }
+
+    // '(?=.)' is a look-ahead NonBacktracking can't run, so this role entry keeps the backtracking engine and its limit; 40 'a's then '!' take it exponential.
+    [Fact, Trait("Lane", "unit")]
+    public void A_role_regex_that_must_backtrack_and_runs_out_of_time_carries_its_pattern()
+    {
+        const string pattern = "^(?=.)(a+)+$";
+        var segment = new string('a', 40) + "!";
+
+        var timeout = Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PathDenylist.Matches("src/" + segment + "/x.ts", ["regex:" + pattern]));
+
+        Assert.Equal(pattern, timeout.Pattern);
+    }
 }

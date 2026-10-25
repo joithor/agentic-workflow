@@ -66,7 +66,7 @@ public static class PathDenylist
     }
 
     private static Regex SegmentRegex(string pattern, RegexOptions options) =>
-        _segmentRegexes.GetOrAdd((pattern, options), k => new Regex(k.Pattern, RegexOptions.CultureInvariant | k.Options, TimeSpan.FromSeconds(1)));
+        _segmentRegexes.GetOrAdd((pattern, options), k => LinearRegex.Create(k.Pattern, RegexOptions.CultureInvariant | k.Options));
 
     private static readonly ConcurrentDictionary<(string Pattern, RegexOptions Options), Regex> _segmentRegexes = new();
 
@@ -106,6 +106,6 @@ public static class PathDenylist
             }
         }
 
-        return new Regex(pattern.Append("(?:/.*)?$").ToString(), RegexOptions.CultureInvariant | caseOption | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+        return LinearRegex.Create(pattern.Append("(?:/.*)?$").ToString(), RegexOptions.CultureInvariant | caseOption | RegexOptions.Singleline);
     }
 }

@@ -203,4 +203,21 @@ public sealed partial class CleanMapTests : IDisposable
         Assert.DoesNotContain(applied.Nodes, n => n.Key.Value == "feature:weak");
         Assert.Contains(applied.Nodes, n => n.Key.Value == "feature:keep");
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_pattern_that_runs_out_of_time_fails_the_cleanup_with_its_own_code_and_names_the_pattern_not_the_path()
+    {
+        const string pattern = "^(?=.)(a+)+$";
+        var segment = new string('a', 40) + "!";
+        IReadOnlyList<ContextRepo> repos = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "regex:" + pattern] }];
+        await Seed(new GraphBuilder().Node("surface:command/split", "Split pane", Provenance.Deterministic)
+            .Edge($"code:src/{segment}/a.ts", EdgeType.Implements, "surface:command/split", provenance: Provenance.Deterministic, confidence: 1.0).Build());
+
+        var cleaned = await _world.Map.CleanDraft(MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, repos), MapWorld.None);
+
+        Assert.True(cleaned.IsError);
+        Assert.Equal(ContextErrors.PatternTimedOut.Code, cleaned.Error.Code);
+        Assert.Contains(pattern, cleaned.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(segment, cleaned.Error.Message, StringComparison.Ordinal);
+    }
 }
