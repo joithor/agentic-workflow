@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Palette;
 
 namespace Aw.Sindri.Ui.Tests.Palette;
 
