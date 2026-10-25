@@ -181,7 +181,7 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         OnChanged(nameof(HasHead));
         OnChanged(nameof(HeadName));
         ObserveCounts(list.Counts.Live, list.Counts.Asking);
-        Patch.To(ProblemLines, [.. list.Problems.Select(p => p.Code + " " + p.Text)]);
+        Patch.To(ProblemLines, [.. list.Problems.Select(p => p.Text)]);
         ReplaceChoices(list);
         Apply(before, list);
     }
