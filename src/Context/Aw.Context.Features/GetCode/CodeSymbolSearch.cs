@@ -64,6 +64,13 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
         var symbols = files.Value.Rows.SelectMany(r => r.Symbols).DistinctBy(s => s.Ref, StringComparer.Ordinal)
             .OrderByDescending(s => s.Exported).ThenBy(s => s.Path, StringComparer.Ordinal).ThenBy(s => s.StartLine).Take(read.Remaining).ToList();
         read.Asked += symbols.Count;
+        await Edges(read, ask, symbols, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The callers and callees of each symbol, one level; the first failed read ends the repo's edges.
+    private static async ValueTask Edges(SymbolRead read, RepoAsk ask, List<SymbolSite> symbols, CancellationToken cancellationToken)
+    {
+        var (source, repo, asOf, _) = ask;
         foreach (var symbol in symbols)
         {
             var callers = await source.Callers(repo, symbol.Ref, 1, asOf, cancellationToken).ConfigureAwait(false);
