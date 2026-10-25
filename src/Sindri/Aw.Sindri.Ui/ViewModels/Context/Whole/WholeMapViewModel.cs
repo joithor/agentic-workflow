@@ -26,6 +26,13 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     {
         _zone = zone ?? (() => TimeZoneInfo.Local);
         Panel = new NodePanelViewModel(LookUp, Jump);
+        Panel.PropertyChanged += (_, e) =>
+        {
+            if (HasConcept && e.PropertyName is nameof(Panel.IsOpen) or nameof(Panel.Title))
+            {
+                OnChanged(nameof(Crumbs));   // the node you are on is the last step
+            }
+        };
     }
 
     /// <summary>The side panel of the node a click pinned.</summary>
@@ -52,9 +59,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     public string AreaTitle { get; private set; } = string.Empty;
 
     /// <summary>Where the map is, as a breadcrumb: "~" on the whole map, "~ / Billing" in an open feature, "~ / Starting points" on a query's answer. "~" goes back to the whole map.</summary>
-    public IReadOnlyList<Crumb> Crumbs => IsZoomed ? [Crumb.Top(isLink: true), new Crumb(Labels.ContextCrumbAnswer, Path: null, IsLink: false)]
-        : IsAreaOpen ? [Crumb.Top(isLink: true), new Crumb(AreaTitle, Path: null, IsLink: false)]
-        : [Crumb.Top(isLink: false)];
+    public IReadOnlyList<Crumb> Crumbs => CrumbList();
 
     /// <summary>The breadcrumb's name.</summary>
     public string CrumbsName { get; } = Labels.ContextMapCrumbsName;

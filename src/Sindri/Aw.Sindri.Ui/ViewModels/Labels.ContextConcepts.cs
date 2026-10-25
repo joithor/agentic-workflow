@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -36,12 +35,14 @@ internal static partial class Labels
     internal static string ContextConceptsUnavailable(string code) => $"Concepts are not available ({code}), so the whole map is shown.";
 
     /// <summary>What a concept holds, in people's words.</summary>
-    /// <param name="size">The counts.</param>
+    /// <param name="features">Features.</param>
+    /// <param name="records">Records.</param>
+    /// <param name="decisions">Decisions.</param>
+    /// <param name="code">Code files.</param>
     /// <returns>"4 features · 3 records · 2 decisions · 40 code files"; a kind with none is left out, and "nothing yet" when all are none.</returns>
-    internal static string ContextConceptSize(ConceptSize size)
+    internal static string ContextConceptSize(int features, int records, int decisions, int code)
     {
-        ArgumentNullException.ThrowIfNull(size);
-        var parts = new (string Kind, int Count)[] { ("feature", size.Features), ("record", size.Records), ("decision", size.Decisions), ("code", size.Code) }
+        var parts = new (string Kind, int Count)[] { ("feature", features), ("record", records), ("decision", decisions), ("code", code) }
             .Where(p => p.Count > 0).Select(p => ContextWholeKindCount(p.Kind, p.Count)).ToList();
         return parts.Count == 0 ? "nothing yet" : string.Join(" · ", parts);
     }

@@ -19,10 +19,10 @@ internal sealed partial class ContextPageViewModel
     public bool ShowWholeStatus => ShowMap && !HasStack && !NoMap && !IsBuilding && (Whole.IsLoading || Whole.IsFailed);
 
     /// <summary>The note by the search box when nothing on the map matches.</summary>
-    public string SearchNote => Whole.NoMatches ? Labels.ContextSearchNoMatches : string.Empty;
+    public string SearchNote => Whole.NoMatches || Concepts.NoMatches ? Labels.ContextSearchNoMatches : string.Empty;
 
     /// <summary>Whether the note shows.</summary>
-    public bool HasSearchNote => Whole.NoMatches;
+    public bool HasSearchNote => Whole.NoMatches || Concepts.NoMatches;
 
     /// <summary>The clear button's words.</summary>
     public string SearchClearText { get; } = Labels.ContextSearchClear;
@@ -35,7 +35,7 @@ internal sealed partial class ContextPageViewModel
         Whole.Panel.Launcher = Ports.Launcher ?? NullLauncher.Instance;
         Whole.Panel.Loader = async (key, cancellationToken) => Ports.ApiUrl() is { } api ? await Ports.Api.Node(api, key, cancellationToken).ConfigureAwait(true) : null;
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
-        Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
+        Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed && !Concepts.IsOnStage ? (_conceptsRead ? ReadWhole(cancellationToken) : OpenFirst(cancellationToken)) : Task.CompletedTask);
     }
 
     /// <summary>The page was shown: the whole map is read once, with no starting point.</summary>
@@ -44,7 +44,7 @@ internal sealed partial class ContextPageViewModel
     internal Task Opened(CancellationToken cancellationToken = default)
     {
         _wholeWanted = true;
-        return Whole.IsReady || Whole.IsLoading ? Task.CompletedTask : ReadWhole(cancellationToken);
+        return Whole.IsReady || Whole.IsLoading || Concepts.IsOnStage ? Task.CompletedTask : OpenFirst(cancellationToken);
     }
 
     /// <summary>Reads the whole map again (Retry, and when a build has ended).</summary>
@@ -59,7 +59,7 @@ internal sealed partial class ContextPageViewModel
 
         Whole.Loading();
         ChangedWhole();
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.Show(read.Value);
@@ -100,7 +100,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo, Concept: _concept), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.ShowArea(read.Value);

@@ -121,7 +121,7 @@ public sealed class ContextConceptsTests
         await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
 
         Expect.True(page.Up());
-        Expect.Equal((false, null, false), (page.Whole.IsAreaOpen, page.OpenedConceptId, page.ShowConcepts));
+        Expect.Equal((false, "self-scheduling", false), (page.Whole.IsAreaOpen, page.OpenedConceptId, page.ShowConcepts));
         Expect.True(page.Up());
         Expect.Equal((null, true, false, 4), (page.OpenedConceptId, page.ShowConcepts, page.ShowWhole, page.Concepts.Tiles.Count));
         Expect.True(!page.Up());
@@ -134,10 +134,13 @@ public sealed class ContextConceptsTests
         var page = await ConceptPage.Shown(api);
         await page.OpenConcept("billing", Token);
         _ = page.Up();
+        var gate = new TaskCompletionSource();
+        api.WholeMapGate = gate;
 
         var reading = page.OpenConcept("sync", Token);
 
         Expect.Equal(false, page.Whole.IsReady);
+        _ = gate.TrySetResult();
         await reading;
         Expect.Equal(("sync", true), (api.WholeMapAsked[^1].Concept, page.Whole.IsReady));
     }
@@ -169,7 +172,7 @@ public sealed class ContextConceptsTests
     public async Task A_search_keeps_the_concept_that_holds_a_matching_node()
     {
         var located = JsonNode.Parse(GoldenFiles.Api("context-whole", "locate"))!;   // why: the golden is a JSON object
-        foreach (var entry in located["located"]!.AsArray())
+        foreach (var entry in located["located"]!.AsArray())   // why: the golden lists what it located
         {
             entry!["concept"] = "sync";   // why: every located entry is an object
         }

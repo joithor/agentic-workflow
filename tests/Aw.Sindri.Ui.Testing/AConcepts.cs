@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text;
-using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
 

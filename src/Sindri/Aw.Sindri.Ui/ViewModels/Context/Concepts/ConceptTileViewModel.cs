@@ -12,7 +12,7 @@ internal sealed class ConceptTileViewModel
         (Id, Name, Summary, _open) = (id, name, summary, open);
         Size = size;
         IsSetByPerson = setByPerson;
-        SizeText = Labels.ContextConceptSize(size);
+        SizeText = Labels.ContextConceptSize(size.Features, size.Records, size.Decisions, size.Code);
         AccessibleName = Labels.ContextConceptTileName(name, SizeText);
     }
 
