@@ -193,7 +193,6 @@ internal static class MapPublishStatusRules
     {
         RepoWait.Queued => "build queued",
         RepoWait.Building => "building",
-        RepoWait.WaitingForSlot => "waiting for a free build slot",
         RepoWait.Retrying => repo.RetryAt is { } at ? Text($"retrying in {Math.Max(1, (int)Math.Ceiling((at - now).TotalMinutes))} min") : "retrying",
         RepoWait.NewerIndex => "index is newer (waiting for the next map)",
         RepoWait.Damaged => "index damaged (rebuilding)",
