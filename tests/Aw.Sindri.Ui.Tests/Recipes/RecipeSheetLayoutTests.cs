@@ -1,6 +1,7 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Recipes;
 
 namespace Aw.Sindri.Ui.Tests.Recipes;
@@ -79,7 +80,7 @@ public sealed class RecipeSheetLayoutTests
 
         Assert.StartsWith("sha256:", _clipboard.Text, StringComparison.Ordinal);
         Assert.True(_clipboard.Text!.Length > "sha256:".Length + 12);
-        Assert.Contains(Aw.Sindri.Ui.ViewModels.Labels.Hash12(_clipboard.Text), sheet.Identity, StringComparison.Ordinal);
+        Assert.Contains(Labels.Hash12(_clipboard.Text), sheet.Identity, StringComparison.Ordinal);
     }
 
     [Fact]
