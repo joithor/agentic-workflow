@@ -79,6 +79,7 @@ internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes
             return Unavailable(view.Error.Code + ": " + view.Error.Message, notes);
         }
 
+        // TODO(#1005): call IContextEngine.RememberScopeGraph(instance, view) here once context lands it; on an error still inject the graph and add a note.
         var text = string.Create(CultureInfo.InvariantCulture, $"The scoping graph has {view.Value.Nodes.Count} nodes and {view.Value.Edges.Count} edges at map {view.Value.MapVersion}; {view.Value.Limits.Count} limits.\n");
         return ContextInputSections.Filled(Section, text, notes, view.Value, json);
     }

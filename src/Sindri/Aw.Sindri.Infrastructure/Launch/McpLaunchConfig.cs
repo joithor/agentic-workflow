@@ -9,11 +9,13 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <summary>
 /// What an agent is told at launch about Sindri's MCP endpoint (launcher spec section 3, the entry's 'mcp' form): Claude Code gets a 0600 file under
 /// <c lang="text">launch/</c> that is deleted with the launch, Codex gets typed '-c' overrides. Neither carries a token: the session reaches the
-/// loopback endpoint with the repo header alone. Not a Step's run header (the blocks-over-MCP spec, BA-1, adds that later).
+/// loopback endpoint with headers: the repo, and for an agent Step's launch also its instance and run, which scope the context tools to the Step's graph.
 /// </summary>
 internal static class McpLaunchConfig
 {
     private const string RepoHeader = "X-Sindri-Repo";
+    private const string InstanceHeader = "X-Sindri-Instance";
+    private const string RunHeader = "X-Sindri-Run";
 
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(LauncherJsonContext.Default, indented: true);
 
@@ -28,9 +30,22 @@ internal static class McpLaunchConfig
     internal static byte[] Render(McpTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
-        var server = new McpServerEntry("http", Url(target.Port), new Dictionary<string, string>(StringComparer.Ordinal) { [RepoHeader] = target.Repo });
+        var server = new McpServerEntry("http", Url(target.Port), Headers(target));
         var document = new McpConfigDocument(new Dictionary<string, McpServerEntry>(StringComparer.Ordinal) { [McpScope.ServerName] = server });
         return [.. AwJson.Serialize(document, _json), .. "\n"u8];
+    }
+
+    // The repo header always; the instance and run headers only for an agent Step's launch (both set).
+    private static Dictionary<string, string> Headers(McpTarget target)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.Ordinal) { [RepoHeader] = target.Repo };
+        if (target.Instance is { Length: > 0 } instance && target.Run is { Length: > 0 } run)
+        {
+            headers[InstanceHeader] = instance;
+            headers[RunHeader] = run;
+        }
+
+        return headers;
     }
 
     /// <summary>Where the launch's config file lives under <paramref name="directory"/>.</summary>
@@ -122,7 +137,7 @@ internal static class McpLaunchConfig
             McpForm.CodexOverrides =>
             [
                 "-c", $"mcp_servers.{McpScope.ServerName}.url={Toml(Url(target.Port))}",
-                "-c", $"mcp_servers.{McpScope.ServerName}.http_headers={{ {RepoHeader} = {Toml(target.Repo)} }}",
+                "-c", $"mcp_servers.{McpScope.ServerName}.http_headers={{ {string.Join(", ", Headers(target).Select(static h => $"{h.Key} = {Toml(h.Value)}"))} }}",
             ],
             McpForm.None or McpForm.ClaudeConfigFile => [],
             _ => [],
