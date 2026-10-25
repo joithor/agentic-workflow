@@ -203,12 +203,11 @@ viewer gets 10 s). The attempt is recorded as `launch.takeover-opened` (public, 
 response carries it as `viewer` beside `attach`, with the launch's own viewer record:
 
 ```json
-{ "viewer": { "kind": "warp", "label": "Warp", "outcome": "opened|unconfirmed|failed|skipped", "code": null, "reason": "…or absent" },
+{ "viewer": { "kind": "warp", "label": "Warp", "outcome": "opened|unconfirmed|failed", "code": null, "detail": null, "reason": "…or absent" },
   "attach": ["tmux", "-L", "sindri-launch", "attach", "-t", "=snd-LCH-…"] }
 ```
 
-`outcome` is `skipped` with a `reason` when no viewer on the box can open a window, and `failed` with `code` (`SND-LAUNCH-001`, or `-009` on a timeout) and a `reason`
-when the viewer was tried. Both fields are absent when the instance has no live session, and on a repeat of a takeover that had already applied.
+`outcome` is `failed` with a `reason` when nothing opened: `code` `no-viewer` when no viewer on the box can open a window, `SND-LAUNCH-001` when the viewer was tried and failed, `SND-LAUNCH-009` on a timeout. (`skipped` is only a background launch's.) Both fields are absent when the instance has no live session, and on a repeat of a takeover that had already applied.
 
 ## What a launched Step can't do
 

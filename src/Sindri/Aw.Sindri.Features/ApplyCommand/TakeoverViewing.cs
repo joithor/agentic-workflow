@@ -82,7 +82,7 @@ internal sealed class TakeoverViewing(ILaunchViews launches, ITerminalViewer vie
         {
             ViewerOutcomeKind.Opened or ViewerOutcomeKind.Unconfirmed => new LaunchViewer(kind, label, outcome.Kind, Code: null, Detail: null),
             ViewerOutcomeKind.Failed => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, outcome.Code ?? "SND-LAUNCH-001", Detail: null) { Reason = $"the {label ?? kind} viewer failed to open" },
-            _ => new LaunchViewer(kind, label, ViewerOutcomeKind.Skipped, Code: null, Detail: null) { Reason = "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)" },
+            _ => new LaunchViewer(kind, label, ViewerOutcomeKind.Failed, "no-viewer", Detail: null) { Reason = "no terminal viewer can open a window on this box (fix: name one in launcher.json, or run the attach command)" },
         };
     }
 

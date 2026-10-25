@@ -209,7 +209,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
             : row;
     }
 
-    /// <summary>The row after a 'launch.takeover-opened': the takeover's viewer outcome is the launch's latest, and a late attach no longer applies to it.</summary>
+    /// <summary>The row after a 'launch.takeover-opened': the takeover's viewer outcome is the launch's latest, its attach command is kept, and a late attach no longer applies to it.</summary>
     /// <param name="row">The row so far.</param>
     /// <param name="opened">The payload.</param>
     /// <param name="recorded">The recorded event.</param>
@@ -219,7 +219,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         ArgumentNullException.ThrowIfNull(row);
         ArgumentNullException.ThrowIfNull(opened);
         ArgumentNullException.ThrowIfNull(recorded);
-        return row with { Viewer = opened.Viewer, Late = false, Sequence = recorded.Sequence };
+        return row with { Viewer = opened.Viewer, Attach = opened.Attach, Late = false, Sequence = recorded.Sequence };
     }
 
     /// <summary>The row after a 'launch.session-reported': the id is kept (the first one wins).</summary>

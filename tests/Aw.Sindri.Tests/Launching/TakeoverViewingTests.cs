@@ -1,8 +1,12 @@
+using Aw.Kernel;
+using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.Launching;
 using Aw.Sindri.Testing;
@@ -78,9 +82,57 @@ public sealed class TakeoverViewingTests
 
         var shown = await Viewing.Open(_instance, _nonce, Token);
 
-        Assert.Equal(ViewerOutcomeKind.Skipped, shown!.Viewer.Outcome);
+        Assert.Equal(ViewerOutcomeKind.Failed, shown!.Viewer.Outcome);
+        Assert.Equal("no-viewer", shown.Viewer.Code);
         Assert.NotNull(shown.Viewer.Reason);
         Assert.Equal(_attach, shown.Attach);
+    }
+
+    [Fact]
+    public async Task A_failed_viewer_leaves_the_takeover_accepted()
+    {
+        await Live();
+        _rig.Viewer = Scripted(ViewerOutcome.Failed("SND-LAUNCH-001"));
+        var command = new TakeoverViewingCommand(new AppliedTakeover(), Viewing);
+
+        var result = await command.Handle(new ApplyCommandRequest(_instance.Value, ApplyCommandKind.Takeover), Token);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        Assert.Equal("taken over", result.Value.Result.Happened);
+        Assert.Equal(ViewerOutcomeKind.Failed, result.Value.Viewer!.Outcome);
+        Assert.Equal(_attach, result.Value.Attach);
+    }
+
+    [Fact]
+    public async Task A_takeover_that_was_already_applied_opens_no_viewer()
+    {
+        await Live();
+        var command = new TakeoverViewingCommand(new AppliedTakeover(alreadyApplied: true), Viewing);
+
+        var result = await command.Handle(new ApplyCommandRequest(_instance.Value, ApplyCommandKind.Takeover), Token);
+
+        Assert.Null(result.Value.Viewer);
+        Assert.Empty(_rig.Viewer.Requests);
+    }
+
+    /// <summary>The apply-command service as far as the decorator reads it: every takeover applies.</summary>
+    private sealed class AppliedTakeover(bool alreadyApplied = false) : IService<ApplyCommandRequest, ApplyCommandResponse>
+    {
+        private static readonly RecipeVersion _recipe = new(RecipeId.From("workflow.step"), 1, RecipeHash.From("sha256:" + new string('a', 64)));
+
+        public ValueTask<Result<ApplyCommandResponse>> Handle(ApplyCommandRequest request, CancellationToken cancellationToken)
+        {
+            var view = new InstanceView(_instance, _recipe, "taken-over", Detail: null, DateTimeOffset.FromUnixTimeMilliseconds(1_000), string.Empty, [], Question: null, Task: null, Run: null, Children: [], Outcome: null)
+            { Id = WorkflowInstanceId.Of(_instance), Version = 1 };
+            return ValueTask.FromResult<Result<ApplyCommandResponse>>(new ApplyCommandResponse(new CommandResult(view, "taken over"), _nonce, alreadyApplied));
+        }
+    }
+
+    private static FakeTerminalViewer Scripted(ViewerOutcome outcome)
+    {
+        var viewer = new FakeTerminalViewer("warp", "Warp");
+        viewer.Script(outcome);
+        return viewer;
     }
 
     [Fact]
