@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -32,6 +33,9 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
 
     /// <summary>True while a manual run's job is in flight.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
+
+    /// <summary>True when its next run is long past (more than twice its cadence, and at least 30 s) and it is neither paused nor running.</summary>
+    public bool IsOverdue { get; private set => Set(ref field, value); }
 
     /// <summary>True when its latest run failed.</summary>
     public bool HasFailed { get; private set => Set(ref field, value); }
@@ -126,7 +130,8 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
 
     /// <summary>Shows the service as the API serves it.</summary>
     /// <param name="view">The row.</param>
-    internal void Show(ServiceRowView view)
+    /// <param name="now">The time now, for whether its next run is long past.</param>
+    internal void Show(ServiceRowView view, DateTimeOffset now)
     {
         Every = Labels.ServiceEvery(view.Every);
         IsPaused = view.Paused;
@@ -134,12 +139,38 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
         HasFailed = view.LastRun is { } run && string.Equals(run.Outcome, "failed", StringComparison.Ordinal);
         JobId = view.Job ?? string.Empty;
         LastRun = view.LastRun is { } last ? "last run " + StatusText.Time(last.RanAt) : Labels.ServiceNotRun;
-        Status = (IsRunning, IsPaused, HasFailed) switch
+        IsOverdue = !IsRunning && !IsPaused && Overdue(view, now);
+        Status = (IsRunning, IsPaused, IsOverdue, HasFailed) switch
         {
-            (true, _, _) => Labels.ServiceRunning,
-            (false, true, _) => Labels.ServicePaused,
-            (false, false, true) => Labels.ServiceLastRunFailed,
-            (false, false, false) => Labels.ServiceScheduled,
+            (true, _, _, _) => Labels.ServiceRunning,
+            (false, true, _, _) => Labels.ServicePaused,
+            (false, false, true, _) => Labels.ServiceOverdue,
+            (false, false, false, true) => Labels.ServiceLastRunFailed,
+            (false, false, false, false) => Labels.ServiceScheduled,
+        };
+    }
+
+    private static readonly TimeSpan _overdueFloor = TimeSpan.FromSeconds(30);
+
+    // Overdue: the next slot is more than max(2 x cadence, 30 s) in the past; a cadence this build cannot read never is.
+    private static bool Overdue(ServiceRowView view, DateTimeOffset now) =>
+        view.NextSlot is { } next && Cadence(view.Every) is { } every && now - next > TimeSpan.FromTicks(Math.Max(2 * every.Ticks, _overdueFloor.Ticks));
+
+    // "5s", "30m", "2h", "1d" as the profile writes them.
+    private static TimeSpan? Cadence(string every)
+    {
+        if (every.Length < 2 || !int.TryParse(every.AsSpan(0, every.Length - 1), NumberStyles.None, CultureInfo.InvariantCulture, out var n))
+        {
+            return null;
+        }
+
+        return every[^1] switch
+        {
+            's' => TimeSpan.FromSeconds(n),
+            'm' => TimeSpan.FromMinutes(n),
+            'h' => TimeSpan.FromHours(n),
+            'd' => TimeSpan.FromDays(n),
+            _ => null,
         };
     }
 }

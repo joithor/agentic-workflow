@@ -139,11 +139,13 @@ internal sealed partial class HealthViewModel
     // The headline's tone, the problem lines and the Views and Agents cards, from what the last status and services read said.
     private void ShowSystemState()
     {
-        (ToneWarn, ToneError) = ToneFor(State, _health?.Word, HasProfileFix);
+        var look = NeedsLook();
+        Sentence = SentenceFor(new SentenceInputs(State, _health is not null, Pill.IsHealthy, Pill.Problems, HasProfileFix, _health?.Sentence, look));
+        (ToneWarn, ToneError) = ToneFor(State, _health?.Word, HasProfileFix || look.Length > 0);
         ProblemLines = _health?.Problems ?? [];
         OnChanged(nameof(HasProblemLines));
         AgentsRows = Sessions is { } s
-            ? [new(Labels.AgentsRunning, Count(s.Live)), new(Labels.AgentsAsking, Count(s.Asking)), new(Labels.AgentsProblems, Count(s.Problems))]
+            ? [new(Labels.AgentsWorking, Count(s.Running ?? s.Live)), new(Labels.AgentsAsking, Count(s.Asking)), new(Labels.AgentsProblems, Count(s.Problems))]
             : [];
         var views = _serviceList?.AsOf;
         ViewsWord = views switch
@@ -156,6 +158,42 @@ internal sealed partial class HealthViewModel
         ViewsRows = views is null ? [] : ViewsCells(views);
         ViewsFix = views is { } v && (v.Stalled || v.Rebuilding) ? Catalog.Rebuild : null;
         ShowStateBox();
+    }
+
+    private CodeIndexCardViewModel WatchCodeIndex(CodeIndexCardViewModel card)
+    {
+        card.PropertyChanged += CodeIndexChanged;
+        return card;
+    }
+
+    // What the cards say needs a look that the server's one health word does not: the Code index and overdue services; empty when neither.
+    private string NeedsLook()
+    {
+        List<string> parts = [];
+        if (string.Equals(CodeIndex.Word, Labels.CodeIndexNeedsLook, StringComparison.Ordinal))
+        {
+            parts.Add(Labels.CodeIndexLookName);
+        }
+
+        var overdue = ServiceCard.Count(static r => r.IsOverdue);
+        if (overdue > 0)
+        {
+            parts.Add(Labels.ServicesOverdueHeadline(overdue));
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    // The Code index card read again: the headline follows it.
+    private void CodeIndexChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(CodeIndexCardViewModel.Word), StringComparison.Ordinal))
+        {
+            lock (_gate)
+            {
+                ShowSystemState();
+            }
+        }
     }
 
     private static string Count(int n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -211,7 +249,7 @@ internal sealed partial class HealthViewModel
                 vm.JobRequested += (_, e) => JobRequested?.Invoke(this, e);
             }
 
-            vm.Show(row);
+            vm.Show(row, clock.GetUtcNow());
             WireServiceControls(vm, row);
             shown.Add(vm);
         }
@@ -219,7 +257,8 @@ internal sealed partial class HealthViewModel
         ServiceTable = shown;
         ServiceCard = [.. shown];
         ServicesTabLabel = Labels.ServicesTab(shown.Count);
-        ServicesScheduled = Labels.ServicesScheduled(shown.Count);
+        var overdue = shown.Count(static r => r.IsOverdue);
+        ServicesScheduled = overdue > 0 ? Labels.ServicesOverdueSummary(overdue, shown.Count - overdue) : Labels.ServicesScheduled(shown.Count);
         lock (_gate)
         {
             ShowSystemState();
