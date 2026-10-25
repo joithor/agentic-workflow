@@ -45,14 +45,18 @@ internal sealed class CheckMapService(IGraphStore store) : IService<CheckMapRequ
         var (shown, layer) = seen is { } ok ? (ok.Value.Graph, ok.Value.Overrides) : (graph.Value, overrides.Value);
         var detail = string.Create(CultureInfo.InvariantCulture,
             $"map v{version.Number} current ({version.Repo}, whole map: {shown.Nodes.Count} nodes, {shown.Edges.Count} edges); commits behind HEAD: unknown until a build records its commit");
-        var orphaned = OverrideApplier.Apply(shown, layer).Orphaned.Count;
+        return Verdict(version, detail, OverrideApplier.Apply(shown, layer).Orphaned.Count, request.Scope);
+    }
+
+    private static MapHealth Verdict(MapVersion version, string detail, int orphaned, ContextScope? scope)
+    {
         if (orphaned > 0)
         {
             return new MapHealth(Name, MapHealthState.Warn, string.Create(CultureInfo.InvariantCulture, $"{detail}; {orphaned} orphaned override(s)"),
                 "sindri context map import a map that has their nodes again, or leave them for map review (S-4)");
         }
 
-        return OlderRules(version, request.Scope)
+        return OlderRules(version, scope)
             ? new MapHealth(Name, MapHealthState.Warn, $"{detail}; built under older map rules", "sindri context map build (the refresh service also rebuilds it on its next tick)")
             : new MapHealth(Name, MapHealthState.Ok, detail, Fix: null);
     }
