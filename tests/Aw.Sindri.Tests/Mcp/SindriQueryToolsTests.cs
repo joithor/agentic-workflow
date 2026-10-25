@@ -180,7 +180,7 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var fromMcp = new List<long>();
         for (var offset = 0; ; offset += 10)
         {
-            var window = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":{{offset}}}""", ct);
+            var window = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":{{offset.ToString(CultureInfo.InvariantCulture)}}}""", ct);
             fromMcp.AddRange(window.StructuredContent!.Value.GetProperty("entries").EnumerateArray().Select(e => e.GetProperty("sequence").GetInt64()));
             if (!window.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean())
             {
