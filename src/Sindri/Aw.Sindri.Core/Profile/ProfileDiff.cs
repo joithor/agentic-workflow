@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>Which settings changed between two profiles, as key paths, for 'profile approve' to show before it records anything.</summary>
-public static class ProfileDiff
+public static partial class ProfileDiff
 {
     /// <summary>The key paths whose values differ; every path when there is no earlier approval.</summary>
     /// <param name="approved">The latest approved profile, if any.</param>
@@ -46,97 +46,6 @@ public static class ProfileDiff
         }
 
         return values;
-    }
-
-    /// <summary>
-    /// The 'index:' keys at <paramref name="prefix"/> (the profile's, or a repo's): every one feeds the hash, so each key the profile sets has a path (#1147).
-    /// A role or a concept has a path of its own, so adding one shows by name.
-    /// </summary>
-    private static IEnumerable<(string Key, string Value)> IndexKeys(string prefix, IndexSettings? index)
-    {
-        if (index is null)
-        {
-            yield break;
-        }
-
-        (string Key, string? Value)[] keys =
-        [
-            ($"{prefix}.denyPaths", Joined(index.DenyPaths)),
-            ($"{prefix}.utilityGlobs", Joined(index.UtilityGlobs)),
-            ($"{prefix}.maxFileKB", Number(index.MaxFileKB)),
-            ($"{prefix}.maxTotalMB", Number(index.MaxTotalMB)),
-            ($"{prefix}.embeddings.enabled", index.Embeddings?.Enabled?.ToString()),
-            ($"{prefix}.embeddings.url", index.Embeddings?.Url),
-            ($"{prefix}.embeddings.model", index.Embeddings?.Model),
-            ($"{prefix}.graph.enabled", index.Graph?.Enabled?.ToString()),
-            ($"{prefix}.graph.maxMB", Number(index.Graph?.MaxMB)),
-            ($"{prefix}.ignore", Joined(index.Ignore)),
-            ($"{prefix}.demote", Joined(index.Demote)),
-        ];
-        foreach (var (key, value) in keys.Where(static k => k.Value is not null))
-        {
-            yield return (key, value!);   // why: the nulls are filtered out just above
-        }
-
-        foreach (var (role, globs) in index.Roles ?? new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal))
-        {
-            yield return ($"{prefix}.roles.{role}", string.Join(", ", globs));
-        }
-
-        var position = 0;
-        foreach (var concept in index.Concepts ?? [])
-        {
-            var name = concept.Id is { } id ? id.Value : (position++).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            yield return ($"{prefix}.concepts.{name}", string.Join(" | ", concept.Name, concept.Summary, Joined(concept.Features), Joined(concept.Paths)));
-        }
-    }
-
-    /// <summary>The 'setup:' key and the 'context:' section, whose every leaf has a path (they feed the hash as well, #1147).</summary>
-    private static IEnumerable<(string Key, string Value)> SetupAndContext(SindriProfile p)
-    {
-        if (p.Setup?.Mcp is { } mcp)
-        {
-            yield return ("setup.mcp", mcp);
-        }
-
-        if (p.Context is { } context)
-        {
-            foreach (var leaf in Leaves("context", context))
-            {
-                yield return leaf;
-            }
-        }
-    }
-
-    private static IEnumerable<(string Key, string Value)> Leaves(string path, System.Text.Json.JsonElement element)
-    {
-        switch (element.ValueKind)
-        {
-            case System.Text.Json.JsonValueKind.Object:
-                foreach (var property in element.EnumerateObject().OrderBy(static p => p.Name, StringComparer.Ordinal))
-                {
-                    foreach (var leaf in Leaves($"{path}.{property.Name}", property.Value))
-                    {
-                        yield return leaf;
-                    }
-                }
-
-                break;
-            case System.Text.Json.JsonValueKind.Array:
-                var position = 0;
-                foreach (var item in element.EnumerateArray())
-                {
-                    foreach (var leaf in Leaves(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path}[{position++}]"), item))
-                    {
-                        yield return leaf;
-                    }
-                }
-
-                break;
-            default:
-                yield return (path, element.ToString());
-                break;
-        }
     }
 
     /// <summary>The 'launch:' and 'agents:' keys the profile sets; an absent key has no path, so adding one shows as a change.</summary>
