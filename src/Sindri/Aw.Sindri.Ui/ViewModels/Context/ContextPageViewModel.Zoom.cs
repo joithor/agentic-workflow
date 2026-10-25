@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
@@ -5,7 +6,8 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// <summary>A query zooms into the whole map (<see cref="ContextPageViewModel"/>, continued; whole-map spec §3.1 "Zoomed in"): the answer's nodes stand out on the map, the camera eases to them, Esc goes back.</summary>
 internal sealed partial class ContextPageViewModel
 {
-    private const int MaxOpenedAreas = 3;
+    private const int ReadBatch = 8;          // areas read at once
+    private const int SoftNodeGuard = 5000;   // opening stops once this many nodes are drawn; the rest are counted
     private const int MaxLocate = 100;
 
     private IReadOnlyCollection<string> _unopenedHitAreas = [];   // the features a search touched that stay tiles
@@ -40,7 +42,7 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(IsZoomedIn));
     }
 
-    // By feature: where the answer's nodes sit is read with locate=, the features with most of them are opened with area= (three at once), and the rest are counted.
+    // By feature: where the answer's nodes sit is read with locate=, every feature they touch is opened with area= (eight reads at once, most-touched first, until the drawn nodes pass a soft guard), and any left over are counted.
     private async Task<bool> ZoomIntoAreas(Uri api, IReadOnlyList<string> keys, CancellationToken cancellationToken)
     {
         if (Whole.Answer is not { } overview)
@@ -55,22 +57,38 @@ internal sealed partial class ContextPageViewModel
             return true;   // the refusal is the banner; nothing else says "no match"
         }
 
+        // why: the Where above drops every located entry with no area, so no group key is null
         var touched = (located.Value.Located ?? []).Where(l => l.Area is not null).GroupBy(l => l.Area, StringComparer.Ordinal)
-            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key).ToList();
+            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key!).ToList();
         if (touched.Count == 0)
         {
             return false;
         }
 
-        var reads = await Task.WhenAll(touched.Take(MaxOpenedAreas).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken))).ConfigureAwait(true);
+        var reads = await ReadAreas(api, touched, cancellationToken).ConfigureAwait(true);
         if (reads.FirstOrDefault(r => r.IsError) is { } failed)
         {
             Problem = failed.Error.Message;
             return true;
         }
 
-        _unopenedHitAreas = [.. touched.Skip(reads.Length).OfType<string>()];
-        return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Length);
+        _unopenedHitAreas = [.. touched.Skip(reads.Count)];
+        return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Count);
+    }
+
+    // Eight areas at a time, most-touched first, until the drawn nodes pass the soft guard.
+    private async Task<List<Result<WholeMapView>>> ReadAreas(Uri api, List<string> touched, CancellationToken cancellationToken)
+    {
+        var reads = new List<Result<WholeMapView>>();
+        var drawn = 0;
+        for (var next = 0; next < touched.Count && drawn < SoftNodeGuard; next += ReadBatch)
+        {
+            var batch = await Task.WhenAll(touched.Skip(next).Take(ReadBatch).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken))).ConfigureAwait(true);
+            reads.AddRange(batch);
+            drawn += batch.Sum(r => r.IsError ? 0 : r.Value.Nodes?.Count ?? 0);
+        }
+
+        return reads;
     }
 
     /// <summary>

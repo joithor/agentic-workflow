@@ -37,6 +37,19 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         }
     }
 
+    public DateTimeOffset? TurnEndedAt(LaunchId launch)
+    {
+        var path = Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.TurnEndedName(launch));
+        try
+        {
+            return File.Exists(path) ? new DateTimeOffset(File.GetLastWriteTimeUtc(path)) : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;   // a file that can't be read says nothing about the turn
+        }
+    }
+
     public void Forget(LaunchId launch)
     {
         LaunchSecrets.Delete(options.SecretsDirectory, launch);
@@ -138,6 +151,7 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     {
         _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.CaptureName(launch)));
         _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.SessionIdName(launch)));
+        _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.TurnEndedName(launch)));
     }
 
     /// <summary>Deletes <paramref name="file"/> when its <paramref name="directory"/> exists; whatever is gone is fine.</summary>
@@ -151,6 +165,6 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         }
     }
 
-    [GeneratedRegex("^(?<launch>LCH-[0-9a-f]{32})\\.(?:capture\\.json|session-id)\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^(?<launch>LCH-[0-9a-f]{32})\\.(?:capture\\.json|session-id|turn-ended)\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex PerLaunch { get; }
 }

@@ -111,7 +111,7 @@ The multi-agent bridge space is emerging rapidly alongside Claude Code and OpenA
 | **Type Safety** | TypeScript strict + Zod; the C# port runs nullable with warnings as errors | Runtime only | Partial | TypeScript | TypeScript | TypeScript |
 | **Transaction Safety** | Sindri ledger: SQLite WAL, migrations in one transaction | N/A | None | None | N/A | None |
 | **Setup Complexity** | Low (setup.sh) | Low (pip install) | Medium | Low | Low | Medium-High |
-| **Architecture** | Skills, hooks and local CLIs (judge, scorer, sindri); no server | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
+| **Architecture** | Skills, hooks and local CLIs (judge, sindri); no server | Relay | Planning coordinator | Session server | Tool server | Central orchestrator |
 
 ## Differentiation Summary
 

@@ -13,9 +13,9 @@ public sealed class FakeAgentSessions : IAgentSessions
 
     /// <summary>Ends <paramref name="launch"/>'s session; a second end changes nothing.</summary>
     /// <param name="launch">The launch.</param>
-    /// <param name="reason">Exit or lost.</param>
+    /// <param name="reason">Exit, lost or idle.</param>
     /// <param name="exitCode">The exit code for an exit.</param>
-    public void End(LaunchId launch, SessionEndReason reason, int? exitCode = null) => _ = _ended.TryAdd(launch, new AgentSessionState(reason == SessionEndReason.Exit ? AgentSessionEnd.Exit : AgentSessionEnd.Lost, exitCode));
+    public void End(LaunchId launch, SessionEndReason reason, int? exitCode = null) => _ = _ended.TryAdd(launch, new AgentSessionState(reason switch { SessionEndReason.Exit => AgentSessionEnd.Exit, SessionEndReason.Lost => AgentSessionEnd.Lost, SessionEndReason.Idle => AgentSessionEnd.Idle, _ => throw new ArgumentOutOfRangeException(nameof(reason)) }, exitCode));
 
     /// <summary>Records a cumulative usage sample; an earlier sample number than the latest changes nothing.</summary>
     /// <param name="launch">The launch.</param>

@@ -19,6 +19,18 @@ public sealed class ParkReasonCodeTests
     }
 
     [Fact]
+    public void An_unavailable_park_serves_the_code_of_the_dependency_that_was_down() =>
+        Assert.Equal("SND-LAUNCH-007", StatusOf(StatusCases.Instance("parked-unavailable-step")).ReasonCode);
+
+    [Fact]
+    public void An_unavailable_park_without_a_dependency_code_serves_none()
+    {
+        var parked = StatusCases.Instance("parked-unavailable-step");
+
+        Assert.Null(StatusOf(parked with { Suspension = parked.Suspension! with { Code = null } }).ReasonCode);
+    }
+
+    [Fact]
     public void A_step_with_no_runtime_serves_SND_WF_010_without_a_stored_code() =>
         Assert.Equal("SND-WF-010", StatusOf(StatusCases.Instance("parked-no-runtime")).ReasonCode);
 

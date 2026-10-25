@@ -8,4 +8,7 @@ public enum AgentSessionEnd
 
     /// <summary>No heartbeat for 120 s.</summary>
     Lost = 2,
+
+    /// <summary>The agent's turn ended with no report and nothing happened for 120 s.</summary>
+    Idle = 3,
 }

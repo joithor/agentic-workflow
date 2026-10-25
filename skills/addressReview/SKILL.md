@@ -116,7 +116,7 @@ source "$SHARED_DIR/repo-slug.sh"
 ```
 
 1. **Tests** — detect the runner per `$SHARED_DIR/test-runner-detection.md` (read it) and run the detected `TEST_CMD`.
-2. **User-facing fixes** (routes, UI components, styles) — **Invoke skill `verify-app`** with args `--yes` and a journey covering each changed flow; require a non-FAIL verdict.
+2. **User-facing fixes** (routes, UI components, styles) — **Invoke skill `verify-app`** with args `--yes` and a journey covering each changed flow; require a non-FAIL verdict. A desktop UI fix runs `verify-app` the same way (it dispatches to `verify-desktop`, the real app against its mockups) and needs its pack not FAIL.
 3. **Push once** — `git push origin {branch}`, only after 1–2 pass (implementers never push; one serialized push avoids parallel-push races). If tests fail or verify-app returns FAIL, the affected issues stay `addressed: false` — never mark an issue addressed without passing verification.
 
 ## Step 7: Update State File

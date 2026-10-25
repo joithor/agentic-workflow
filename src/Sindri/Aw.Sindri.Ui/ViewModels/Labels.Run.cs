@@ -88,7 +88,7 @@ internal static partial class Labels
         "SND-LAUNCH-009" => "The viewer timed out.",
         "SND-LAUNCH-002" => "No viewer is set up.",
         "SND-ITEM-409" => "The item has changed or is closed. Reload it and try again.",
-        "SND-AUTH-002" => "Only you can watch the agent, from the app or a terminal. A session can't.",
+        "SND-AUTH-002" => "Sindri's own steps can't watch the agent.",
         _ => null,
     };
 
@@ -109,6 +109,7 @@ internal static partial class Labels
             "launch" => "The agent couldn't start",
             "lost" => "The agent session was lost",
             "exit" => "The agent exited",
+            "idle" => "The agent stopped without reporting",
             "limit" => "The agent hit its limit",
             _ => "The agent's step failed",
         };
