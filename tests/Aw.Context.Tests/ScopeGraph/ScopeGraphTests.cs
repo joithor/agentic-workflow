@@ -114,8 +114,4 @@ public sealed class ScopeGraphTests : IDisposable
         Assert.Contains(small.Limits, l => l.Why == "cap");
         Assert.Contains(small.Nodes, n => n.Id == Manager);   // the anchor is the last to go
     }
-
-    [Fact(Skip = "A concept node needs the concept kind from the concepts lane; write this against its map shape once it lands"), Trait("Lane", "unit")]
-    public Task ScopeGraph_expands_a_concept_anchor_to_its_member_features_and_summarizes_it_with_its_summary_attribute() =>
-        throw new NotSupportedException("waits on the concepts lane");
 }
