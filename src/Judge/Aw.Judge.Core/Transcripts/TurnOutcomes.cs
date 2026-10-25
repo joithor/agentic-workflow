@@ -121,7 +121,7 @@ public static partial class TurnOutcomes
             foreach (var line in own[i].After.Split('\n').Where(l => !TrivialLine.IsMatch(l)))
             {
                 added++;
-                if (!later.Any(edit => Removes(edit, line)))
+                if (!later.Exists(edit => Removes(edit, line)))
                 {
                     alive++;
                 }
@@ -151,9 +151,9 @@ public static partial class TurnOutcomes
     [GeneratedRegex(@"^[\s{}()\[\];,]*$", RegexOptions.None, TimeoutMs)]
     private static partial Regex TrivialLine { get; }
 
-    [GeneratedRegex(@"^\s*(no\b|nope|wait\b|stop\b|don'?t\b|actually\b|that'?s (wrong|not)|not what|undo|revert)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeoutMs)]
+    [GeneratedRegex(@"^\s*(no\b|nope|wait\b|stop\b|don'?t\b|actually\b|that'?s (wrong|not)|not what|undo|revert)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeoutMs)]
     private static partial Regex CorrectionStart { get; }
 
-    [GeneratedRegex(@"^\s*(continue|keep going|go on|go ahead|proceed|yes|yep|y|ok|okay|do it|carry on)[\s.!]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeoutMs)]
+    [GeneratedRegex(@"^\s*(continue|keep going|go on|go ahead|proceed|yes|yep|y|ok|okay|do it|carry on)[\s.!]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeoutMs)]
     private static partial Regex BareContinueText { get; }
 }

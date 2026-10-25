@@ -57,12 +57,13 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var line in text.Split('\n'))
         {
-            if (line.AsSpan().Trim().IsEmpty || !TryRow(line, out var document))
+            if (line.AsSpan().Trim().IsEmpty)
             {
                 continue;
             }
 
-            using (document)
+            using var document = ParseRow(line);
+            if (document is not null)
             {
                 var row = document.RootElement;
                 var sessionName = Text(row, "sessionId") is { Length: > 0 and <= 4096 } id ? id : UnknownSession;
@@ -104,25 +105,26 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
         return new Transcript(modifiedAt, prompts, [.. turns.Select(t => new TranscriptTurn(t.Session, t.Index, t.Prompt, t.Edits))], ends);
     }
 
-    private static bool TryRow(string line, out JsonDocument document)
+    // The line as a JSON object, or null when it is not one.
+    private static JsonDocument? ParseRow(string line)
     {
+        JsonDocument document;
         try
         {
             document = JsonDocument.Parse(line);
         }
         catch (JsonException)
         {
-            document = null!;
-            return false;
+            return null;
         }
 
         if (document.RootElement.ValueKind == JsonValueKind.Object)
         {
-            return true;
+            return document;
         }
 
         document.Dispose();
-        return false;
+        return null;
     }
 
     // The text of a user message, or null for a tool result or a content shape that carries no text.
@@ -139,7 +141,7 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
                 return content.GetString();
             case JsonValueKind.Array:
                 var blocks = content.EnumerateArray().Where(b => b.ValueKind == JsonValueKind.Object).ToList();
-                if (blocks.Any(b => Text(b, "type") == "tool_result"))
+                if (blocks.Exists(b => Text(b, "type") == "tool_result"))
                 {
                     return null;
                 }
