@@ -183,13 +183,13 @@ internal static class ContextTools
             return McpResults.Failure(services, request.Error);
         }
 
-        if (request.Value.Node is { } node && await ScopedReads.Check(services, Query, node, split.Value, ct).ConfigureAwait(false) is { } refused)
-        {
-            return McpResults.Failure(services, refused);
-        }
-
         var answer = await services.GetRequiredService<IService<QueryContextRequest, ContextResult>>().Handle(request.Value, ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, McpSummaries.Query);
+
+        // why: 'node' may be a name or an alias, so the graph check uses the anchor the query resolved it to
+        return answer.IsSuccess && request.Value.Node is { } node
+            && await ScopedReads.Check(services, Query, answer.Value.Anchors.FirstOrDefault() ?? node, split.Value, ct).ConfigureAwait(false) is { } refused
+            ? McpResults.Failure(services, refused)
+            : McpResults.From(services, answer, McpSummaries.Query);
     }
 
     /// <summary>Runs context_sources.</summary>

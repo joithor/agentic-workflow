@@ -138,7 +138,7 @@ public sealed class ScopedReadsMcpTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task An_alias_of_a_node_in_the_graph_is_allowed_and_logged_under_the_node_key_and_an_alias_of_one_outside_is_154()
+    public async Task An_alias_of_a_node_in_the_graph_is_allowed_on_all_three_tools_and_logged_under_the_node_key_and_an_alias_of_one_outside_is_154()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host();
@@ -147,9 +147,11 @@ public sealed class ScopedReadsMcpTests : IDisposable
         var inside = await mcp.Call("context_node", """{"key":"feature:old.in"}""", ct);
         var neighbors = await mcp.Call("context_neighbors", """{"key":"feature:old.in"}""", ct);
         var outside = await mcp.Call("context_node", """{"key":"feature:old.out"}""", ct);
+        var query = await mcp.Call("context_query", """{"node":"feature:old.in"}""", ct);
+        var queryOutside = await mcp.Call("context_query", """{"node":"feature:old.out"}""", ct);
 
-        Assert.All([inside, neighbors], r => Assert.NotEqual(true, r.IsError));
-        Assert.Equal("SND-CONTEXT-154", Code(outside));
-        Assert.Equal([InGraph, InGraph], (await Reads(host)).Select(r => r.Node));
+        Assert.All([inside, neighbors, query], r => Assert.NotEqual(true, r.IsError));
+        Assert.Equal(("SND-CONTEXT-154", "SND-CONTEXT-154"), (Code(outside), Code(queryOutside)));
+        Assert.Equal([InGraph, InGraph, InGraph], (await Reads(host)).Select(r => r.Node));
     }
 }
