@@ -13,7 +13,7 @@ public sealed class ShippedRecipeScaffoldTests
 
     private static readonly Dictionary<string, string[]> _routes = new(StringComparer.Ordinal)
     {
-        ["sindri/workflow.evidence.yaml"] = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step_failed"],
+        ["sindri/workflow.evidence.yaml"] = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-desktop", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step_failed"],
         ["sindri/workflow.reproduce.yaml"] = ["scaffold-uiCheck", "scaffold-testCheck", "scaffold-uncertain", "scaffold-step_failed"],
     };
 

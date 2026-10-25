@@ -10,8 +10,8 @@ namespace Aw.Sindri.Core.Line;
 [JsonConverter(typeof(StringIdJsonConverter<LinePhaseId>))]
 public readonly partial struct LinePhaseId : ITypedId<LinePhaseId, string>
 {
-    private static Vogen.Validation Validate(string value) =>
-        value.Length > 0 ? Vogen.Validation.Ok : Vogen.Validation.Invalid("A phase id is not empty and at most 256 characters");
+    private static Validation Validate(string value) =>
+        value.Length > 0 ? Validation.Ok : Validation.Invalid("A phase id is not empty and at most 256 characters");
 
     private static string NormalizeInput(string input) => input.Length > 256 ? string.Empty : input;
 }

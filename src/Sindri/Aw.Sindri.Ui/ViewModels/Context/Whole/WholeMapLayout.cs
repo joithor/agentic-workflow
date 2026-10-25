@@ -64,7 +64,7 @@ internal static partial class WholeMapLayout
         if (map.Area is { } opened)
         {
             // One feature opened in full: its nodes alone, in one column (the others stay tiles in the overview it came from).
-            map = map with { Areas = [.. map.Areas.Where(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))], AreaEdges = [] };
+            map = map with { Areas = [.. map.Areas.Where(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))], AreaEdges = [], Nodes = map.Nodes?.Where(n => string.Equals(n.Area, opened.Key, StringComparison.Ordinal)).ToList() };
         }
 
         var order = WholeAreaOrder.Of(map.Areas, map.AreaEdges);
@@ -98,17 +98,55 @@ internal static partial class WholeMapLayout
         var columns = Columns(overview with { Areas = [.. overview.Areas.Where(a => openKeys.Contains(a.Key))], AreaEdges = [], Nodes = nodes, Edges = edges, Detail = "nodes", Area = null }, open, nodes, Tiles(restMap, restOrder, floor).Bands);
         var tiles = Tiles(restMap, restOrder, columns.Bands);
         var shift = columns.World.Right + TileGap;
-        var placedTiles = tiles.Tiles.Select(t => Shifted(t, shift, open.Count)).ToList();
+        var placedTiles = tiles.Tiles.Select(t => Shifted(t, shift, columns.Order.Count)).ToList();
         var areaEdges = tiles.AreaEdges.Select(e => e with { X1 = e.X1 + shift, X2 = e.X2 + shift }).ToList();
         var world = new WholeRect(0, 0, shift + tiles.World.Width, Math.Max(columns.World.Height, tiles.World.Height));
-        return new WholeMapGeometry(world, ByArea: false, [.. columns.Order, .. tiles.Order], columns.Columns, columns.Nodes, placedTiles, columns.Edges, areaEdges, columns.Bands);
+        var bands = columns.Bands.Select(b => b with { Meta = WithMore(b, rest) }).ToList();
+        return new WholeMapGeometry(world, ByArea: false, [.. columns.Order, .. tiles.Order], columns.Columns, columns.Nodes, placedTiles, columns.Edges, areaEdges, bands);
     }
 
-    private static WholeMapGeometry Columns(WholeMapView map, IReadOnlyList<string> order, IReadOnlyList<WholeNode> nodes, IReadOnlyList<PlacedBand>? floor = null)
+    // A node is never dropped for want of a column: one whose area is not a column goes to the area of what no feature claims, which gets a column of its own.
+    private static (IReadOnlyList<string> Order, List<WholeNode> Nodes, Dictionary<string, string> Names) Homed(WholeMapView map, IReadOnlyList<string> order, IReadOnlyList<WholeNode> nodes)
     {
-        var index = order.Select((k, i) => (k, i)).ToDictionary(p => p.k, p => p.i, StringComparer.Ordinal);
         var labels = map.Areas.ToDictionary(a => a.Key, a => a.Label, StringComparer.Ordinal);
-        var kept = nodes.Where(n => index.ContainsKey(n.Area)).ToList();
+        var known = order.ToHashSet(StringComparer.Ordinal);
+        if (nodes.All(n => known.Contains(n.Area)))
+        {
+            return (order, [.. nodes], labels);
+        }
+
+        var home = map.Areas.FirstOrDefault(a => a.Unassigned)?.Key ?? "area:unassigned";
+        if (!known.Contains(home))
+        {
+            order = [.. order, home];
+        }
+
+        if (!labels.TryGetValue(home, out var label) || label.Length == 0)
+        {
+            labels[home] = Labels.ContextFilesNoFeature;
+        }
+
+        return (order, [.. nodes.Select(n => known.Contains(n.Area) || string.Equals(n.Area, home, StringComparison.Ordinal) ? n : n with { Area = home })], labels);
+    }
+
+    // A band's label counts the nodes drawn; what stays a tile is named after them: "1 decision · 168 more in Billing".
+    private static string WithMore(PlacedBand band, IReadOnlyList<WholeArea> rest)
+    {
+        var holding = rest.Select(a => (Area: a, Count: NodeBands.ByBand(a.ByKind).GetValueOrDefault(band.Band)?.Sum(k => k.Value) ?? 0)).Where(p => p.Count > 0).ToList();
+        if (holding.Count == 0)
+        {
+            return band.Meta;
+        }
+
+        var where = holding.Count == 1 ? holding[0].Area.Label.Length > 0 ? holding[0].Area.Label : Labels.ContextFilesNoFeature : Labels.ContextWholeKindCount("feature", holding.Count);
+        var more = Labels.ContextWholeBandMore(holding.Sum(p => p.Count), where);
+        return band.Meta.Length == 0 ? more : string.Join(" · ", band.Meta, more);
+    }
+
+    private static WholeMapGeometry Columns(WholeMapView map, IReadOnlyList<string> placeOrder, IReadOnlyList<WholeNode> placeNodes, IReadOnlyList<PlacedBand>? floor = null)
+    {
+        var (order, kept, labels) = Homed(map, placeOrder, placeNodes);
+        var index = order.Select((k, i) => (k, i)).ToDictionary(p => p.k, p => p.i, StringComparer.Ordinal);
         var groups = kept.GroupBy(n => (Area: index[n.Area], Band: BandOf(n.Kind))).ToDictionary(g => g.Key, g => g.OrderBy(n => n.Kind, StringComparer.Ordinal).ThenBy(n => n.Key, StringComparer.Ordinal).ToList());
         var need = groups.GroupBy(g => g.Key.Band).ToDictionary(g => g.Key, g => g.Max(x => Math.Ceiling(x.Value.Count / (double)Across)) * NodeCell);
         var bands = Extents(need, KindMeta(kept.GroupBy(n => n.Kind, StringComparer.Ordinal).Select(g => new KeyValuePair<string, int>(g.Key, g.Count()))), floor);
