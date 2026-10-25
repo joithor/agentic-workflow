@@ -28,12 +28,15 @@ public sealed class ProjectorUnreadableRowTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_fold_that_reads_an_unreadable_row_does_not_stall_and_the_views_rebuild_from_the_ledger()
     {
-        await Append(2);
+        var projector = Projector();
+        await Append(1);
+        _ = await projector.CatchUp(Token);   // the first pass is itself a rebuild (views.db created), which seeds the old-shape row and is never healed again
+        await Append(1);
 
-        var pass = await Projector().CatchUp(Token);
+        var pass = await projector.CatchUp(Token);
 
         Assert.Equal(ProjectorPass.CaughtUp, pass);
-        Assert.Equal(4, _projection.Calls);   // the two events, then the replay of both
+        Assert.Equal(4, _projection.Calls);   // the seeding event, the second event, then the replay of both
         Assert.True(_progress.Current is { Cursor: 2, Stalled: false, Rebuilding: false });
         Assert.Null((await _views.Get<JobRow>(ViewNames.Profile, "stale", Token)).Value);   // the replay emptied the view
         Assert.Equal(2, (await _views.List<ServiceRow>(ViewNames.Services, Token)).Value.Count);
