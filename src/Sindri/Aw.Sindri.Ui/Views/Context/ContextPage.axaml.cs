@@ -42,6 +42,7 @@ internal sealed partial class ContextPage : UserControl
         base.OnAttachedToVisualTree(e);
         _scroller = this.FindAncestorOfType<ScrollViewer>();
         _scroller?.PropertyChanged += OnScrollerChanged;
+        LayoutUpdated += OnLayoutUpdated;   // a banner that shows above the stage moves it: the height follows
         ContextStack.DataContext = _page?.Map;
         FitStage();
     }
@@ -51,6 +52,7 @@ internal sealed partial class ContextPage : UserControl
     {
         _scroller?.PropertyChanged -= OnScrollerChanged;
         _scroller = null;
+        LayoutUpdated -= OnLayoutUpdated;
 
         base.OnDetachedFromVisualTree(e);
     }
@@ -202,6 +204,8 @@ internal sealed partial class ContextPage : UserControl
 
     private static void Dispatch(Action action) => Avalonia.Threading.Dispatcher.UIThread.Post(action);
 
+    private void OnLayoutUpdated(object? sender, EventArgs e) => FitStage();
+
     private void OnScrollerChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == ScrollViewer.ViewportProperty)
@@ -218,7 +222,13 @@ internal sealed partial class ContextPage : UserControl
             return;
         }
 
+        // The stage fills what the window leaves: the viewport less where the page starts in it, where the stage starts in the page, and the edge. It starts at the top of its row, so a row taller than it never centres it.
         var top = ContextStageHost.TranslatePoint(default, this)?.Y ?? 0;
-        ContextStageHost.Height = Math.Max(StageMinimum, scroller.Viewport.Height - top - PageEdge);
+        var start = scroller.Content is Visual content ? this.TranslatePoint(default, content)?.Y ?? 0 : 0;
+        var height = Math.Max(StageMinimum, scroller.Viewport.Height - start - top - PageEdge);
+        if (Math.Abs(ContextStageHost.Height - height) > 0.5 || double.IsNaN(ContextStageHost.Height))
+        {
+            ContextStageHost.Height = height;
+        }
     }
 }

@@ -39,6 +39,7 @@ internal sealed class MiniMapControl : Control
     public MiniMapControl()
     {
         Cursor = new Cursor(StandardCursorType.Hand);
+        ClipToBounds = true;   // nothing the control draws lies outside its card
     }
 
     /// <summary>Raised when the pointer asks to centre the stage on a point of the world.</summary>
