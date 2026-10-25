@@ -19,6 +19,9 @@ public sealed record ContextRepo(ContextRepoName Name, string Path)
     /// <summary>The globs of the paths whose role the repo demotes: a demoted file keeps its code node but implements no feature.</summary>
     public IReadOnlyList<string> DemotePaths { get; init; } = [];
 
+    /// <summary>The demoted roles by the name the person gave them ('index.roles' entries listed in 'index.demote'), each with its globs.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> DemoteRoles { get; init; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
     /// <summary>Whether a path's role is demoted.</summary>
     /// <param name="path">The repo-relative path.</param>
     /// <returns>True when a demote glob matches it.</returns>

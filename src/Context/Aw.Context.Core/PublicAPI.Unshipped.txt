@@ -7527,3 +7527,23 @@ const Aw.Context.Core.Engine.FillBands.History = "context.fill.history" -> strin
 const Aw.Context.Core.Engine.FillBands.Lenses = "context.fill.lenses" -> string!
 static Aw.Context.Core.Engine.FillBands.Source.get -> System.Diagnostics.ActivitySource!
 static Aw.Context.Core.Engine.FillBands.Start(string! band) -> System.Diagnostics.Activity?
+Aw.Context.Core.Results.FilteredCounts
+Aw.Context.Core.Results.FilteredCounts.<Clone>$() -> Aw.Context.Core.Results.FilteredCounts!
+Aw.Context.Core.Results.FilteredCounts.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, int>! Demoted) -> void
+Aw.Context.Core.Results.FilteredCounts.Demoted.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
+Aw.Context.Core.Results.FilteredCounts.Demoted.init -> void
+Aw.Context.Core.Results.FilteredCounts.Equals(Aw.Context.Core.Results.FilteredCounts? other) -> bool
+Aw.Context.Core.Results.FilteredCounts.FilteredCounts(System.Collections.Generic.IReadOnlyDictionary<string!, int>! Demoted) -> void
+override Aw.Context.Core.Results.FilteredCounts.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.FilteredCounts.GetHashCode() -> int
+override Aw.Context.Core.Results.FilteredCounts.ToString() -> string!
+static Aw.Context.Core.Results.FilteredCounts.operator !=(Aw.Context.Core.Results.FilteredCounts? left, Aw.Context.Core.Results.FilteredCounts? right) -> bool
+static Aw.Context.Core.Results.FilteredCounts.operator ==(Aw.Context.Core.Results.FilteredCounts? left, Aw.Context.Core.Results.FilteredCounts? right) -> bool
+Aw.Context.Core.Results.ContextResult.Filtered.get -> Aw.Context.Core.Results.FilteredCounts?
+Aw.Context.Core.Results.ContextResult.Filtered.init -> void
+Aw.Context.Core.Lenses.LensesView.Filtered.get -> Aw.Context.Core.Results.FilteredCounts?
+Aw.Context.Core.Lenses.LensesView.Filtered.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Filtered.get -> Aw.Context.Core.Results.FilteredCounts?
+Aw.Context.Core.Lenses.LensesSetView.Filtered.init -> void
+Aw.Context.Core.Engine.ContextRepo.DemoteRoles.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+Aw.Context.Core.Engine.ContextRepo.DemoteRoles.init -> void
