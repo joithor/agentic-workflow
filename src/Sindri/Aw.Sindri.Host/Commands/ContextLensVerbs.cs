@@ -32,10 +32,7 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Read((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, string? Limit, string? Offset, bool Json) o, CancellationToken ct)
     {
-        var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
-            + (o.Hops is null ? string.Empty : "&hops=" + Uri.EscapeDataString(o.Hops))
-            + (o.Limit is null ? string.Empty : "&limit=" + Uri.EscapeDataString(o.Limit)) + (o.Offset is null ? string.Empty : "&offset=" + Uri.EscapeDataString(o.Offset))
-            + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
+        var query = LensQuery(o);
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
             var set = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesSetView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
@@ -48,6 +45,19 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextLensText.Lenses(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
+    }
+
+    /// <summary>The lenses question as the GET query: each anchor, then each option that was given.</summary>
+    private static string LensQuery((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, string? Limit, string? Offset, bool Json) o)
+    {
+        var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a)));
+        (string Name, string? Value)[] given = [("depth", o.Depth), ("hops", o.Hops), ("limit", o.Limit), ("offset", o.Offset)];
+        foreach (var (name, value) in given.Where(static g => g.Value is not null))
+        {
+            query += "&" + name + "=" + Uri.EscapeDataString(value!);
+        }
+
+        return query + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
     }
 
     /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>
