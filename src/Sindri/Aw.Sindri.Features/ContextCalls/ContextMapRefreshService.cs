@@ -27,12 +27,14 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="starts">The RefreshContextMap and PublishContextMap command chains.</param>
 /// <param name="clock">Dates the backoff and the wait.</param>
 /// <param name="logger">Logs a 409 that is not "the job is already running".</param>
-/// <param name="runningRuleset">The hash of the map rules the running build uses, or null when unknown (stub, issue 1041: the decision doesn't act on it yet).</param>
-internal sealed partial class ContextMapRefreshService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IIndexOutlooks outlooks, MapJobStarts starts, TimeProvider clock, ILogger<ContextMapRefreshService> logger, string? runningRuleset = null) : IScheduledService
+internal sealed partial class ContextMapRefreshService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IIndexOutlooks outlooks, MapJobStarts starts, TimeProvider clock, ILogger<ContextMapRefreshService> logger) : IScheduledService
 {
     // The wait caps at 60 minutes from the fifth failure in a row, and the failure alarm needs three: the newest few runs decide both.
     private const int RecentRuns = 8;
     private const int FailuresToAlarm = 3;
+
+    /// <summary>The hash of the map rules the running build uses, or null when unknown (stub, issue 1041: the decision doesn't act on it yet).</summary>
+    internal string? RunningRuleset { get; init; }
 
     internal static JobKind RefreshKind { get; } = JobKind.From("RefreshContextMap");
 
@@ -171,7 +173,7 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
     }
 
     private bool RulesChanged(MapPublishState state) =>
-        runningRuleset is not null && !string.Equals(state.CurrentRuleset, runningRuleset, StringComparison.Ordinal);
+        RunningRuleset is not null && !string.Equals(state.CurrentRuleset, RunningRuleset, StringComparison.Ordinal);
 
     private static JobRow[] Finished(IEnumerable<JobRow> jobs) =>
         [.. jobs.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns)];
