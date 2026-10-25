@@ -59,7 +59,14 @@ done
 status="$("$PROVE" human workflow status "$address" 2>&1 | tr -d '\r')"
 printf '%s\n' "$status" | grep -qi 'resume' || setup_fail "the parked status does not offer resume: $status"
 
-# 3. The real app, drivable, on the fixture's control plane.
+# 3. The real app, drivable, on the fixture's control plane: this checkout's debug build (sindri-app.sh's publish would
+#    make the build the owner's current one), unless AW_SINDRI_UI names a binary.
+if [ -z "${AW_SINDRI_UI:-}" ]; then
+  dotnet build "$ROOT/src/Sindri/Aw.Sindri.Ui.Desktop" -nologo -v q >"$OUT/ui-build.log" 2>&1 \
+    || setup_fail "the sindri-ui build failed (see $OUT/ui-build.log)"
+  export AW_SINDRI_UI="$ROOT/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui"
+fi
+[ -x "$AW_SINDRI_UI" ] || setup_fail "no sindri-ui at $AW_SINDRI_UI"
 if [ -n "${DISPLAY:-}" ]; then
   bash "$ROOT/scripts/sindri-ui-app.sh" >"$OUT/app.log" 2>&1 &
 else
