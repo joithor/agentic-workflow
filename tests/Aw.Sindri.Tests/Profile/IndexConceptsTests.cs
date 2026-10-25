@@ -55,7 +55,7 @@ public sealed class IndexConceptsTests : IDisposable
 
         var concepts = RepoConcepts.For(profile, profile.Repos![0]);
 
-        Assert.Equal(["Billing", "Scheduling"], concepts.Select(c => c.Name));
+        Assert.Equal(["Billing", "Scheduling"], concepts.Select(c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -66,22 +66,20 @@ public sealed class IndexConceptsTests : IDisposable
         var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
 
         Assert.Equal(
-            [new ConceptPin(ConceptId.From("billing"), "Billing", null, ["feature:invoices.*"], []), new ConceptPin(null, "Scheduling", null, [], ["src/schedule/**"])],
+            [new ConceptPin(ConceptId.From("billing"), "Billing", Summary: null, Features: ["feature:invoices.*"], Paths: []), new ConceptPin(Id: null, "Scheduling", Summary: null, Features: [], Paths: ["src/schedule/**"])],
             repo.Concepts);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_repo_without_pins_has_none()
-    {
+    public void A_repo_without_pins_has_none() =>
         Assert.Empty(ScopeRules.Usable(ContextScopes.Entries(Profile())).Single().Concepts);
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_pins_reach_the_context_repo_through_the_profile_entry()
     {
-        var pin = new ConceptPin(ConceptId.From("billing"), "Billing", null, [], []);
+        var pin = new ConceptPin(ConceptId.From("billing"), "Billing", Summary: null, Features: [], Paths: []);
 
-        Assert.Equal([pin], ScopeRules.Usable([new ProfileRepoEntry("web", "/r/web", null, [pin])]).Single().Concepts);
+        Assert.Equal([pin], ScopeRules.Usable([new ProfileRepoEntry("web", "/r/web", DenyPaths: null, Concepts: [pin])]).Single().Concepts);
     }
 
     [Theory, Trait("Lane", "unit")]
