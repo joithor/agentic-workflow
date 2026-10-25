@@ -4674,8 +4674,8 @@ static Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.operator !=(Aw.
 static Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest? right) -> bool
 Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Area.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Area.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Deconstruct(out string? Detail, out System.Collections.Generic.IReadOnlyList<string!>? Locate, out bool Draft, out string? MapVersion, out string? Repo, out string? Area) -> void
-Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.GetContextWholeMapRequest(string? Detail = null, System.Collections.Generic.IReadOnlyList<string!>? Locate = null, bool Draft = false, string? MapVersion = null, string? Repo = null, string? Area = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Deconstruct(out string? Detail, out System.Collections.Generic.IReadOnlyList<string!>? Locate, out bool Draft, out string? MapVersion, out string? Repo, out string? Area, out string? Concept) -> void
+Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.GetContextWholeMapRequest(string? Detail = null, System.Collections.Generic.IReadOnlyList<string!>? Locate = null, bool Draft = false, string? MapVersion = null, string? Repo = null, string? Area = null, string? Concept = null) -> void
 Aw.Sindri.Features.Scrub.ScrubMode
 Aw.Sindri.Features.Scrub.ScrubMode.InstallPreCommit = 2 -> Aw.Sindri.Features.Scrub.ScrubMode
 Aw.Sindri.Features.Scrub.ScrubMode.Staged = 1 -> Aw.Sindri.Features.Scrub.ScrubMode
@@ -4751,3 +4751,49 @@ override Aw.Sindri.Features.LineDoctor.LineDoctorResponse.ToString() -> string!
 static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator !=(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
 static Aw.Sindri.Features.LineDoctor.LineDoctorResponse.operator ==(Aw.Sindri.Features.LineDoctor.LineDoctorResponse? left, Aw.Sindri.Features.LineDoctor.LineDoctorResponse? right) -> bool
 Aw.Sindri.Features.LineDoctor.LineDoctorResponse.Passed.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Concept.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextWholeMapRequest.Concept.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest!
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Repo.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Repo.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Cursor.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Cursor.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Limit.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Limit.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Q.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Q.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Deconstruct(out string? Repo, out string? Cursor, out int? Limit, out string? Q, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.GetContextConceptsRequest(string? Repo = null, string? Cursor = null, int? Limit = null, string? Q = null, bool Draft = false, string? MapVersion = null) -> void
+override Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptsRequest? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest!
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Concept.get -> string!
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Concept.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Cursor.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Cursor.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Limit.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Limit.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Repo.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Repo.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Deconstruct(out string! Concept, out string? Cursor, out int? Limit, out string? Repo, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.GetContextConceptMembersRequest(string! Concept, string? Cursor = null, int? Limit = null, string? Repo = null, bool Draft = false, string? MapVersion = null) -> void
+override Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? right) -> bool

@@ -30,6 +30,8 @@ using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetCode;
+using Aw.Context.Features.GetConceptMembers;
+using Aw.Context.Features.GetConcepts;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
@@ -154,6 +156,11 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
         .AddScoped<IService<GetSubgraphRequest, SubgraphView>, GetSubgraphService>()
         .AddScoped<IService<GetWholeMapRequest, WholeMapView>, GetWholeMapService>()
+        .AddScoped<IService<GetConceptsRequest, ConceptsView>, GetConceptsService>()
+        .AddScoped<IService<GetConceptMembersRequest, ConceptMembersView>, GetConceptMembersService>()
+        .AddScoped<ConceptReader>()
+        .AddScoped<ContextConcepts>()
+        .AddScoped<IContextConcepts>(static sp => sp.GetRequiredService<ContextConcepts>())
         .AddSingleton<WholeMapCache>()
         .AddScoped<LensBasisReader>()
         .AddScoped<ContextCodeHistory>()

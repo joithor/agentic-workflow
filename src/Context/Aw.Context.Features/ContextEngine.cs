@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
@@ -33,7 +34,8 @@ internal sealed class ContextEngine(
     IContextMap map,
     ContextGraph graph,
     ContextEval eval,
-    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads,
+    ContextConcepts concepts) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -150,4 +152,10 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        concepts.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        concepts.ConceptMembers(query, scope, cancellationToken);
 }
