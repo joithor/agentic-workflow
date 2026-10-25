@@ -11,6 +11,7 @@ namespace Aw.Sindri.Features.Scoping.Relevance;
 internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
 {
     private const string Name = "step.scope.relevance-apply";
+    private const string Unreviewed = "unreviewed";
 
     private static readonly string[] _reads = ["fact:lenses", "fact:coverage", "fact:brief", "fact:relevanceVerdicts", "fact:relevanceRulings"];
 
@@ -53,8 +54,22 @@ internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
             ["hops"] = graph["hops"]?.DeepClone(),
             ["nodes"] = new JsonArray([.. nodes.Select(static n => n.DeepClone())]),
             ["edges"] = new JsonArray([.. edges.Select(static e => e.DeepClone())]),
-            ["limits"] = graph["limits"]?.DeepClone(),
+            ["limits"] = Limits(graph, nodes, kept),
         }, kept, []);
+    }
+
+    // The graph's limits, plus one for the lens entries the graph's cap left out: the review saw only the graph, so those have no verdict and stay in, marked unreviewed.
+    private static JsonArray Limits(JsonObject graph, List<JsonNode> nodes, JsonObject kept)
+    {
+        var limits = new JsonArray([.. ScopeJson.Items(graph, "limits").Where(static l => !string.Equals(ScopeJson.Str(l, "why"), Unreviewed, StringComparison.Ordinal)).Select(static l => l.DeepClone())]);
+        var shown = nodes.Select(static n => ScopeJson.Str(n, "lensItem")).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var outside = RelevanceEntries.Of(kept).Count(e => !shown.Contains(e.Id));
+        if (outside > 0)
+        {
+            limits.Add(new JsonObject { ["why"] = Unreviewed, ["not"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{outside} lens entries outside the graph cap were not reviewed") });
+        }
+
+        return limits;
     }
 
     private static JsonNode Fact(StepContext context, string key) => StepFacts.Read(context, key) ?? new JsonObject();
