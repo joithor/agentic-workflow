@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Ledger;
@@ -114,7 +115,7 @@ public abstract class AgentRuntimeTestBase : IDisposable
     {
         for (var n = 1; n <= 3; n++)
         {
-            await WaitFor(() => _launcher.Requests.Select(static r => r.Launch).Distinct().Count() >= n, ct);
+            await WaitFor(() => _launcher.Requests.Select(static r => r.Launch).Distinct().Skip(n - 1).Any(), ct);
             await Task.Delay(TimeSpan.FromSeconds(1), ct);
             var launch = _launcher.Requests.Select(static r => r.Launch).Distinct().ElementAt(n - 1);
             before?.Invoke(launch);
