@@ -51,7 +51,7 @@ internal static class AdjudicateCommand
         {
             if (string.Equals(args[i], LimitFlag, StringComparison.Ordinal))
             {
-                if (limit is not null || (i + 1) >= args.Count || !int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 1)
+                if (limit is not null || LimitAfter(args, i) is not { } value)
                 {
                     return null;
                 }
@@ -71,4 +71,10 @@ internal static class AdjudicateCommand
 
         return question is null ? null : (question, limit ?? DefaultLimit);
     }
+
+    // The whole number of at least 1 after the flag at the given position; null when there is none.
+    private static int? LimitAfter(IReadOnlyList<string> args, int flagAt) =>
+        (flagAt + 1) < args.Count && int.TryParse(args[flagAt + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
+            ? value
+            : null;
 }
