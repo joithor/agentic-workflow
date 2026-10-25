@@ -60,9 +60,7 @@ internal static partial class PlanChecks
         {
             var named = PlanPacket.TestChanges(phase).Select(static t => LineJson.Str(t, "path")).OfType<string>().ToList();
             var scope = LineJson.Strings(phase, "writeScope").ToList();
-            foreach (var path in (scope.Count > 0 ? scope : [.. LineJson.Strings(phase, "allowedFiles")])
-                .Select(static e => e.Trim())
-                .Where(e => !e.StartsWith("new:", StringComparison.Ordinal) && e.IndexOfAny(['*', '?']) < 0 && TestPaths.IsTest(e) && !named.Contains(e, StringComparer.Ordinal)))
+            foreach (var path in TestPaths.UnnamedExisting(scope.Count > 0 ? scope : [.. LineJson.Strings(phase, "allowedFiles")], named))
             {
                 yield return DesignContext.Fail("PLN-TEST-001", PlanContext.Id(phase), $"phase {PlanContext.Id(phase)} allows the existing test {path} but its testChange doesn't name it", $"Add {path} with a reason to the phase's testChange, or write 'new: {path}' if the phase creates it.");
             }
