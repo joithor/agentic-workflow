@@ -94,7 +94,7 @@ public sealed class ConceptGlossaryDeriveTests
     [Fact]
     public void A_pinned_feature_stays_in_its_pin_whatever_the_glossary_says()
     {
-        var pin = new ConceptPin(ConceptId.From("dragging"), "Dragging", null, ["feature:lone"], []);
+        var pin = new ConceptPin(ConceptId.From("dragging"), "Dragging", Summary: null, ["feature:lone"], []);
 
         var map = ConceptDeriver.Derive(Product(), [pin], names: null, Glossary());
 

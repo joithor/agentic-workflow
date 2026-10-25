@@ -9,7 +9,7 @@ namespace Aw.Context.Features.BuildMap;
 internal sealed record FeatureFiles(NodeKey Feature, string Label, IReadOnlyList<string> Paths)
 {
     /// <summary>The features of a graph with the files its 'implements' edges name, in key order.</summary>
-    internal static IReadOnlyList<FeatureFiles> Of(GraphSnapshot graph)
+    internal static List<FeatureFiles> Of(GraphSnapshot graph)
     {
         var paths = graph.Edges
             .Where(e => e.Type == EdgeType.Implements && e.From.Kind == NodeKind.Code && e.To.Kind == NodeKind.Feature)

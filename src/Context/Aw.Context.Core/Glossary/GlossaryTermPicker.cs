@@ -4,7 +4,7 @@ namespace Aw.Context.Core.Glossary;
 internal static class GlossaryTermPicker
 {
     /// <summary>The terms the most of the features carry, then the heaviest, then by name.</summary>
-    internal static IReadOnlyList<string> Top(MapGlossary? glossary, IReadOnlyList<string> features, int take)
+    internal static List<string> Top(MapGlossary? glossary, IReadOnlyList<string> features, int take)
     {
         if (glossary is null || features.Count == 0)
         {
