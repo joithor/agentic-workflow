@@ -15,14 +15,10 @@ namespace Aw.Sindri.Features.GetStatus;
 /// <param name="builds">The running and installed build stamps; none outside an install.</param>
 internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInService> builtIns, ICodeIndexHealth? codeIndex = null, StuckInstanceCount? stuck = null, IBuildStamps? builds = null)
 {
-    /// <summary>The stale build problem (#1032): the stamps this process runs and the install names join health when they differ.</summary>
-    public void CheckStaleBuild()
-    {
-        if (builds is not null)
-        {
-            throw new NotSupportedException("the stale build problem (#1032) is not built yet");   // red first
-        }
-    }
+    /// <summary>The report with the stale build problem (#1032) when the running build is not the one 'bin/cs/current' names.</summary>
+    /// <param name="report">The report so far.</param>
+    /// <returns>The report; the same one outside an install.</returns>
+    public HealthReport WithStaleBuild(HealthReport report) => builds is null ? report : HealthSummary.WithStaleBuild(report, builds.Running(), builds.Installed());
 
     /// <summary>How many workflow instances are stuck on a signal or update (API spec §3.8, E-30).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>

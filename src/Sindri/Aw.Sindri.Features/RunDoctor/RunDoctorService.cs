@@ -11,7 +11,6 @@ internal sealed class RunDoctorService(
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)
     {
-        runtime.CheckBuild();
         var now = clock.GetUtcNow();
         var read = await lease.Read(cancellationToken).ConfigureAwait(false);
         var row = read.IsSuccess ? read.Value : null;
@@ -26,6 +25,7 @@ internal sealed class RunDoctorService(
             DoctorRules.Profile(live, saved, recorded),
             DoctorRules.Api(await runtime.Api(cancellationToken).ConfigureAwait(false), row, now),
             DoctorRules.Temporal(await runtime.Temporal(cancellationToken).ConfigureAwait(false)),
+            .. runtime.BuildChecks(),
             .. await profile.Context(saved.IsSuccess ? saved.Value : null, cancellationToken).ConfigureAwait(false),
         ];
         return new RunDoctorResponse(checks, DoctorRules.ExitCode(checks));

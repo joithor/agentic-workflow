@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Features.RunDoctor;
@@ -14,12 +15,7 @@ internal sealed class RuntimeFacts(IControlPlaneProbe api, ITemporalServer tempo
 
     public ValueTask<TemporalFacts> Temporal(CancellationToken cancellationToken) => temporal.Inspect(cancellationToken);
 
-    /// <summary>The stale build check (#1032): doctor warns when the stamps differ.</summary>
-    public void CheckBuild()
-    {
-        if (builds is not null)
-        {
-            throw new NotSupportedException("the stale build check (#1032) is not built yet");   // red first
-        }
-    }
+    /// <summary>The build check (#1032): doctor warns when the stamps differ.</summary>
+    /// <returns>The check, or nothing outside an install.</returns>
+    public IEnumerable<DoctorCheck> BuildChecks() => builds is null ? [] : [DoctorRules.Build(builds.Running(), builds.Installed())];
 }
