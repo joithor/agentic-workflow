@@ -51,8 +51,13 @@ internal sealed class AgentTargetResolver(IApprovedProfile approved, IFactConten
 
     private static Result<AgentStepTarget> RepoOf(SindriProfile profile, ItemFact item, AgentId agent)
     {
+        if (!ItemId.TryFrom(item.Id, out var id))
+        {
+            return SindriErrors.InvalidInput.With("the instance's fact:item has an id that isn't an item id (an item id is 'ITM-' and 32 lowercase hex digits)");
+        }
+
         var path = profile.Repos?.FirstOrDefault(r => string.Equals(r.Name, item.Repo, StringComparison.Ordinal))?.Path;
-        return path is null || !ItemId.TryFrom(item.Id, out var id)
+        return path is null
             ? SindriErrors.LaunchRepoMissing.With($"the item's repo '{item.Repo}' is not in the approved profile's repos (fix: add it and approve the profile)")
             : new AgentStepTarget(id, agent, path, RepoName.TryFrom(item.Repo, out var repo) ? repo : null);
     }
