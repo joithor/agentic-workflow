@@ -123,8 +123,8 @@ decision · note  Smoke request  since TIME
   note request from session:cli
   recorded; acted on once the workflow engine runs
   sindri decide DEC-ID accept
-setup · workflows  Approve all new workflows (27)  since TIME
-  27 workflows wait for your approval.
+setup · workflows  Approve all new workflows (28)  since TIME
+  28 workflows wait for your approval.
   sindri recipe approve-all
 ## sindri decide DEC-ID accept (session)
 DEC-ID decided: accept (sequence SEQ)
@@ -133,8 +133,8 @@ decision · note  smoke  [smoke]  since TIME
   note request from session:mcp
   recorded; acted on once the workflow engine runs
   sindri decide DEC-ID accept
-setup · workflows  Approve all new workflows (27)  since TIME
-  27 workflows wait for your approval.
+setup · workflows  Approve all new workflows (28)  since TIME
+  28 workflows wait for your approval.
   sindri recipe approve-all
 ## sindri requests --state accepted
 REQ-ID  note  accepted  by session:cli  since TIME  decision DEC-ID
