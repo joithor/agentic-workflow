@@ -94,7 +94,7 @@ not with another rule.
   own environment. `PATH`, `HOME`, `DOTNET_ROOT` (a .NET apphost needs it) and the names listed in `AW_BUGFIX_CHECK_ENV` (for a test that needs
   `DATABASE_URL`, `JAVA_HOME`, …) decide which code runs, so their values are frozen at the baseline and a later run with other values
   is refused. Set `AW_BUGFIX_CHECK_ENV` before the baseline run: only the names the baseline recorded are compared, so a name
-  added later is not frozen for that bug fix (and a baseline frozen before `DOTNET_ROOT` joined the list still accepts runs that carry it).
+  added to `AW_BUGFIX_CHECK_ENV` after the baseline isn't frozen for that bug fix (and a baseline frozen before `DOTNET_ROOT` joined the list still accepts runs that carry it).
   `XDG_RUNTIME_DIR` passes through unfrozen. State and run records keep each one as a keyed digest (`hmac-sha256:` of the name, a NUL and the value, keyed with
   the bug fix's random `digest.key`, owner-only, beside `state.json` and never in it), never the value, since it may
   hold a credential; `status` shows the digests. A name listed in `AW_BUGFIX_CHECK_ENV` that also
