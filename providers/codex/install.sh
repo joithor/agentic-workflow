@@ -61,11 +61,14 @@ codex_install_agents() {
   echo "  codex: lean agent types → $(codex_agents_dir) (manifest: $manifest)"
 }
 
+codex_install_voice() { aw_install_voice "$CODEX_HOME_DIR/AGENTS.md"; }
+
 codex_install() {
   echo ""
   echo "=== Provider: Codex ==="
   aw_install_skills_into "$(codex_skills_dir)"
   codex_install_hooks
+  codex_install_voice
   aw_install_levers codex
   codex_register_mcp
 }

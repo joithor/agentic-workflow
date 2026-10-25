@@ -8,7 +8,9 @@ namespace Aw.Sindri.Host.Server;
 /// Folds the ledger into views.db (API spec §2.3), one pass at a time under one gate, as the caller 'service:projector'.
 /// A pass opens the store (rebuilding when views.db was just created, its schema version is old, or a rebuild was
 /// requested), reads the head, publishes it, then applies pages of 100 until the cursor reaches that head. A failing
-/// event stalls it (SND-VIEW-001, logged); a stalled projector retries 30 s later, or at once on a rebuild.
+/// event stalls it (SND-VIEW-001, logged); a stalled projector retries 30 s later, or at once on a rebuild. A fold that
+/// read back a stored row it could not deserialize (an older build's shape, #959) saw it as absent; the projector then
+/// rebuilds the views from the ledger on its own, once, right after the pass.
 /// </summary>
 internal sealed partial class Projector(
     ILedgerReader ledger, IViewStore store, IEnumerable<IProjection> projections, IProjectorFeed feed, ICallerContextAccessor callers,
@@ -22,6 +24,7 @@ internal sealed partial class Projector(
     private DateTimeOffset? _stalledSince;
     private string? _problem;
     private long _seenHead;
+    private bool _healing;
     private ViewsStatus _last = new(0, 0, ProjectedAt: null, Rebuilding: false, Stalled: false, StalledAt: null, StalledType: null);
 
     /// <summary>The ledger head the last pass saw; the host waits for an append past it.</summary>
@@ -39,7 +42,8 @@ internal sealed partial class Projector(
         try
         {
             using var caller = callers.EnterService("projector");
-            return await Pass(cancellationToken).ConfigureAwait(false);
+            var pass = await Pass(cancellationToken).ConfigureAwait(false);
+            return _healing && pass != ProjectorPass.Failed ? await Pass(cancellationToken).ConfigureAwait(false) : pass;
         }
         finally
         {
@@ -50,7 +54,7 @@ internal sealed partial class Projector(
     private async ValueTask<ProjectorPass> Pass(CancellationToken ct)
     {
         var rebuild = feed.RebuildRequested;   // taken only once the reset worked: a failed attempt keeps the request
-        if (!rebuild && _stalledSince is { } since && clock.GetUtcNow() - since < StallRetry)
+        if (!rebuild && !_healing && _stalledSince is { } since && clock.GetUtcNow() - since < StallRetry)
         {
             return ProjectorPass.Stalled;
         }
@@ -74,7 +78,7 @@ internal sealed partial class Projector(
         }
 
         var state = opened.Value;
-        var reason = requested ? "requested" : state.Fresh ? "views.db created" : state.SchemaVersion != ViewSchema.Version ? "schema version changed" : null;
+        var reason = requested ? "requested" : _healing ? "unreadable rows" : state.Fresh ? "views.db created" : state.SchemaVersion != ViewSchema.Version ? "schema version changed" : null;
         if (reason is null)
         {
             return state;
@@ -86,6 +90,7 @@ internal sealed partial class Projector(
         if (reset.IsSuccess)
         {
             _stalledSince = null;
+            _healing = false;
             if (requested)
             {
                 _ = feed.TakeRebuildRequest();
@@ -110,6 +115,7 @@ internal sealed partial class Projector(
             }
 
             state = applied.Value.State;
+            NoteUnreadable(applied.Value);
             if (applied.Value.Stall is { } stall)
             {
                 return Stalled(state, head, stall);
@@ -142,6 +148,18 @@ internal sealed partial class Projector(
         _problem = null;
         Publish(state, head);
         return ProjectorPass.CaughtUp;
+    }
+
+    private void NoteUnreadable(PageApplied page)
+    {
+        // a replay writes every row in the current shape, so unreadable rows during one are not an older build's: no second rebuild
+        if (page.Unreadable == 0 || page.State.Rebuilding || _healing)
+        {
+            return;
+        }
+
+        _healing = true;
+        LogUnreadable(log, page.Unreadable);
     }
 
     private ProjectorPass Stalled(ProjectorState state, long head, ViewStall stall)
@@ -187,6 +205,9 @@ internal sealed partial class Projector(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "SND-VIEW-001 {Sequence} {Type}: the projector stalled: {Code} {Detail}; it retries every 30 s, or run sindri views rebuild")]
     private static partial void LogStalled(ILogger logger, long sequence, string type, string code, string detail);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Count} stored view row(s) are unreadable under the current shape (an older build wrote them); the fold saw them as absent, and the views rebuild from the ledger")]
+    private static partial void LogUnreadable(ILogger logger, int count);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The projector couldn't run: {Code} {Detail}")]
     private static partial void LogFailed(ILogger logger, string code, string detail);

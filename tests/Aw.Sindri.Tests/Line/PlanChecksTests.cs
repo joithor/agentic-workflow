@@ -97,6 +97,29 @@ public sealed class PlanChecksTests
     }
 
     [Fact]
+    public void A_phase_that_allows_an_existing_test_file_must_name_it_in_its_test_change()
+    {
+        var unnamed = Check((_, p) => p["phases"]![0]!["allowedFiles"] = JsonNode.Parse("""["scripts/x.sh","scripts/tests/x.test.sh"]"""));
+        var named = Check((_, p) =>
+        {
+            p["phases"]![0]!["allowedFiles"] = JsonNode.Parse("""["scripts/x.sh","scripts/tests/x.test.sh"]""");
+            p["phases"]![0]!["testChange"] = JsonNode.Parse("""[{"path":"scripts/tests/x.test.sh","reason":"new cases"}]""");
+        });
+        var viaRule = Check((_, p) =>
+        {
+            p["phases"]![0]!["writeScope"] = JsonNode.Parse("""["scripts/tests/x.test.sh"]""");
+            p["phases"]![0]!["rules"] = JsonNode.Parse("""["test-change:scripts/tests/x.test.sh:new cases"]""");
+        });
+        var created = Check((_, p) => p["phases"]![0]!["allowedFiles"] = JsonNode.Parse("""["scripts/x.sh","new: scripts/tests/y.test.sh","scripts/**"]"""));
+
+        Assert.Equal(["PLN-TEST-001"], Failed(unnamed), StringComparer.Ordinal);
+        Assert.Contains("scripts/tests/x.test.sh", unnamed.Failures.Single(static f => f.Rule == "PLN-TEST-001").Message, StringComparison.Ordinal);
+        Assert.Empty(Failed(named));
+        Assert.Empty(Failed(viaRule));
+        Assert.Empty(Failed(created));   // a file the phase creates, or a glob, is not an existing test the plan must name
+    }
+
+    [Fact]
     public void More_than_one_dependency_waits_for_a_merge_and_a_stack_is_limited()
     {
         var join = Check((_, p) => p["phases"]!.AsArray().Add(JsonNode.Parse("""{"id":"P3","deps":["P1","P2"],"size":"S","kind":"feature","acceptance":[{"id":"AC-3","evidence":["cli-transcript"]}]}""")));

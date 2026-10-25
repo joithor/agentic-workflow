@@ -6,7 +6,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 /// <summary>The whole map's zoom onto a query's answer (<see cref="WholeMapViewModel"/>, continued; whole-map spec §3.1 "Zoomed in").</summary>
 internal sealed partial class WholeMapViewModel
 {
-    /// <summary>The nodes a query's answer holds, drawn at full strength while the rest of the map stays behind them; empty when nothing is zoomed to.</summary>
+    /// <summary>The nodes a query's answer holds, drawn with their direct links while the rest of the map is not drawn; empty when nothing is zoomed to.</summary>
     internal IReadOnlySet<string> HitKeys { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Whether the map read is the overview of features, which a query reaches through "locate". It stays so while zoomed, when the drawn geometry holds nodes.</summary>
@@ -22,10 +22,11 @@ internal sealed partial class WholeMapViewModel
     public bool HasMoreTouched => MoreTouchedText.Length > 0;
 
     private (WholeMapView? Answer, WholeMapGeometry? Geometry, IReadOnlyList<WholeAreaTileViewModel> Areas)? _beforeZoom;
+    private HashSet<string>? _zoomSet;
 
     /// <summary>
     /// The camera goes to a query's answer: the nodes of the answer that are on this map are drawn at full strength and the camera eases to the box around them.
-    /// The rest of the map stays where it is, dimmed.
+    /// Only the answer and its direct links are drawn.
     /// </summary>
     /// <param name="keys">The keys of the answer's nodes.</param>
     /// <returns>True when any of them is on the map; false moves nothing.</returns>
@@ -45,7 +46,9 @@ internal sealed partial class WholeMapViewModel
 
         HitKeys = hit.Select(n => n.Key).ToHashSet(StringComparer.Ordinal);
         IsZoomed = true;
+        _zoomSet = new HashSet<string>(HitKeys.SelectMany(Around), StringComparer.Ordinal);   // the answer and what it links to are drawn; the rest is not
         Changed();
+        OnChanged(nameof(Shown));
         ZoomRequested?.Invoke(this, new ValueEventArgs<WholeRect>(WholeZoomBox.Around([.. hit.Select(n => n.Rect)])));
         return true;
     }
@@ -94,7 +97,7 @@ internal sealed partial class WholeMapViewModel
             _beforeZoom = null;
         }
 
-        (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
+        (HitKeys, IsZoomed, MoreTouchedText, _zoomSet) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty, null);
         Changed();
         ResetSearch();
         FitRequested?.Invoke(this, EventArgs.Empty);

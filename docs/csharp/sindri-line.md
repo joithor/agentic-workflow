@@ -35,6 +35,7 @@ A rule whose files are absent is **not run** and names them; it never fails a dr
 | `PLN-SIZE-001` | draft | a phase is larger than `maxPhaseSize` (`M`); the files, items and budget limits of a size are PKT-SIZE-001's |
 | `PLN-SIG-001` | draft | a phase has no `kind:` rule, an item of a `fix` phase has no `base+head` signal, or a phase that is not `docs` or `config` has no real-app signal (`ui-browser`, `api-transcript`, `cli-transcript`, `ios-sim`) |
 | `PLN-STACK-001` | draft | a phase depends on a phase that does not exist or on itself, one with more than one dependency is not `waitsForMerge`, or a stack is deeper than `maxStack` (4) |
+| `PLN-TEST-001` | draft | a phase's write scope lists an existing test file (a plain path, not `new:` or a glob) that its `testChange` doesn't name; the build would fail BLD-TEST-001 and the builder can't fix it. If the build still meets such a file, `step.build.checks` ends the Step naming it as a plan defect |
 | `PLN-EXEC-001` | evidence | the executability review did not cover a phase or called it not executable (its `contextMissing` is in the message) |
 | `PLN-HOLD-003` | evidence | a phase has no hidden set, no `sha256:` set hash, no canary, or fewer than `holdoutMin` (2) scenarios besides the canary |
 

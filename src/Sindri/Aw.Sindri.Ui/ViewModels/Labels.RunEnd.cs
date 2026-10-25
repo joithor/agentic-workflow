@@ -17,6 +17,9 @@ internal static partial class Labels
     /// <summary>The step's session went away.</summary>
     internal const string RunReasonLost = "The agent's session was lost before it finished.";
 
+    /// <summary>The step's agent ended its turn with no report.</summary>
+    internal const string RunReasonIdle = "The agent finished its turn without reporting, so Sindri stopped waiting.";
+
     /// <summary>The step's agent stopped on its own.</summary>
     internal const string RunReasonExit = "The agent stopped before it finished.";
 
@@ -36,6 +39,7 @@ internal static partial class Labels
         "launch" => RunReasonLaunch,
         "lost" => RunReasonLost,
         "exit" => RunReasonExit,
+        "idle" => RunReasonIdle,
         "limit" => RunReasonLimit,
         _ => reason,
     };

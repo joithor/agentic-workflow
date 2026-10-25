@@ -14,13 +14,12 @@ internal sealed partial class WholeMapCanvas
     private const double TextSize = 12;
     private const double AreaLabelSize = 16;
     private const double EdgeFade = 0.35;   // the mockup's faded edges while a node is hovered or pinned
-    private const double Behind = 0.42;   // what is not part of the answer stays drawn, dimmed (whole-map spec §3.1)
 
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        if (Map?.Geometry is not { } geometry)
+        if (Map?.Shown is not { } geometry)
         {
             return;
         }
@@ -41,11 +40,10 @@ internal sealed partial class WholeMapCanvas
         }
     }
 
-    // Behind a search answer what is not in it stays drawn, dimmed; a highlight dims what is not linked to it, as far as it has faded.
-    private double EdgeOpacity(PlacedEdge edge, bool zoomed, IReadOnlySet<string> hits) =>
-        (zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1) * (Touches(edge.From, edge.To) ? 1 : Faded(EdgeFade));
+    // A highlight dims what is not linked to it, as far as it has faded.
+    private double EdgeOpacity(PlacedEdge edge) => Touches(edge.From, edge.To) ? 1 : Faded(EdgeFade);
 
-    private double NodeOpacity(string key, bool zoomed, IReadOnlySet<string> hits) => (zoomed && !hits.Contains(key) ? Behind : 1) * Strength(key);
+    private double NodeOpacity(string key) => Strength(key);
 
     private void DrawHeaders(DrawingContext context, WholeMapGeometry geometry, WholeRect view, bool dots)
     {
@@ -63,13 +61,11 @@ internal sealed partial class WholeMapCanvas
     {
         var chip = Brush("Brush.Surface2");
         var ink = Brush("Brush.Ink");
-        var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
-        var zoomed = Map?.IsZoomed == true;
         foreach (var node in geometry.Nodes.Where(n => n.Rect.Intersects(view)))
         {
             var (colour, pattern) = WholePalette.For(node.AreaIndex);
             var area = Brush(PaletteKey(colour));
-            using (context.PushOpacity(NodeOpacity(node.Key, zoomed, hits)))
+            using (context.PushOpacity(NodeOpacity(node.Key)))
             {
                 if (dots)
                 {

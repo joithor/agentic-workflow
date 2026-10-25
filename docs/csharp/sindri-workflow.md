@@ -561,6 +561,8 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-run` | agent | `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-review` | agent | `evidenceSummary`, `built` | `match`, `mismatch` | `desktopMismatches` on mismatch |
 | `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
@@ -789,6 +791,8 @@ family and review-loop) are listed with their inputs, outputs and terminals in `
 `issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
 (every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
 `payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
+
+`workflow.evidence-desktop` is the desktop-app leaf the `desktop` choice of `workflow.evidence` waits on. It runs two agent Steps: `step.evidence.desktop-run` follows the state's `next:` text to run the ui-evidence `desktop-run` verb on the repo's screens manifest (exit 0 is `passed`, 2 `failed`, anything else `broken`), then `step.evidence.desktop-review` compares each screen's app frame with its mockup frame, skips the differences the manifest lists as accepted, and reports `match` or `mismatch` (the list goes in `desktopMismatches`). A broken run repairs and reruns at most once (`repairs` cap 2, on purpose: a desktop run launches the real app; `workflow.evidence-ui` allows 4). Both Steps are agent Steps with no runtime of their own, so there is no `deps.yaml` edge. `workflow.evidence` goes to version 3 and the new recipe is version 1, so the owner re-approves with one approve-all.
 
 ## Writing a decision tree
 
@@ -1452,9 +1456,29 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 - **A failed launch counts no round:** a launch that never started a session ends the run as `step.failed` with reason `launch`
   (`StepFailed.LaunchReason`); when the recipe's failed transition re-enters the looped state, the round stays, and the loop
   counts the failure in `LoopState.LaunchFailures` (a counted round resets it). The third in a row (`LoopRules.MaxLaunchFailures`)
-  parks the instance with `needs-answer` (kind step, resume `rerun`) and the last launch error as the question. The decision
+  parks the instance as `unavailable` (see "A dependency that is down" below; `needs-answer` in a history from before that park) with the last launch error in
+  the question. The decision
   is `TransitionDecision`'s re-entry; `Workflow.Patched("launch-failure-keeps-round-v1")` (after `ln-wf3-heavy-slot`) sets
   `DecisionContext.LegacyLaunchRound` for a history recorded without it, which counts the round as it did.
+- **A dependency that is down (the `unavailable` park):** a Step failure no transition takes (every unmatched `step.failed`: a
+  session that exited or was lost, a launch that failed, an input that threw, a block Step that failed or timed out) is a
+  dependency being down, which no human can answer, so it is never a `needs-answer` question. The engine runs the Step again,
+  a new run in the same entry with no loop round counted (`OpenRun.Retries`, `Unavailables.MaxRetries` = 2 reruns, three tries
+  in all, as many as a launch gets); the third failure parks the instance with `ParkReason.unavailable` (kind step, resume
+  `rerun`). The park's words name the dependency, the retries and the last error (`step.produce is unavailable after 2
+  retries; the last error: exit`); `StepFailed.Dependency` names the dependency where the runtime knows it (an input's block
+  id, `the agent launcher`; the Step itself otherwise), and `StepFailed.Code` (or `BlockStepResult.Unavailable`'s code) becomes the
+  park's `Suspension.Code`, served as the status's `reasonCode` (`SND-LAUNCH-007`, `SND-WF-016` …; none when the failure had
+  no typed code). `answer --resume` runs the Step again and starts the retries from 0; it is the only answer (served through the
+  status's `allowedCommands` as `answer-resume`, plus `open` for the instance), `--text` does not fit. The park asks no one:
+  it makes no needs-you row and no desk task, sends no notice, leaves the `NeedsYou` search attribute off, the item reads
+  `running` (not `waitingOnYou`) in the queue, and its resume is no human time in the stats (it is counted under the park
+  reason `unavailable`). `GET /status` shows it instead: `HealthSummary.WithUnavailable` makes a healthy report `degraded`
+  with `SND-ENGINE-003` ("N workflow instances wait on a dependency that is down"), counted from the items view
+  (`EngineItemPart.Reason`). Not changed: a gate refusal or a failed evidence check still re-runs below the cap and parks
+  `needs-answer` or `rounds` past it, a wait that refuses still parks `needs-answer`, and a Step input with no runtime still parks
+  `SND-WF-010`. `Workflow.Patched("step-unavailable-v1")` (last in `Begin`) sets `DecisionContext.LegacyUnavailable` for a
+  history recorded without it, which parks `needs-answer` at once as it did.
 - **The phase worktree (LN-WF2):** an instance that holds `fact:workspace` launches every agent Step in that path instead of a
   per-run worktree (`AgentLaunches.RequestFor`'s `workspace`), and the launcher sets `AW_SINDRI_WORKTREE` to it. A line phase's
   `seed` makes the worktree and passes it to `build`, `prove`, `review-loop` and `pr-babysitter`; docs sync's own `fact:workspace`

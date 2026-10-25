@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
@@ -165,6 +166,35 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
+    public async Task By_feature_every_touched_feature_is_opened_not_just_the_first_three()
+    {
+        var api = new FakeSindriApi
+        {
+            WholeMapAnswer = q => q switch
+            {
+                { Locate.Count: > 0 } => LocatedInAreas(q, 5),
+                { Area: not null } => ContextAnswers.WholeMap(q),
+                _ => RouteAnswer.Api("context-whole", "areas-over-budget"),
+            },
+        };
+        var page = Page(api);
+        await page.Opened(Token);
+        page.AnchorText = Anchor;
+
+        await page.Submit(Token);
+
+        Assert.Equal((5, false), (api.WholeMapAsked.Count(q => q.Area is not null), page.Whole.HasMoreTouched));
+    }
+
+    private static RouteAnswer LocatedInAreas(WholeMapQuery query, int areas)
+    {
+        var golden = GoldenFiles.Node("context-whole", "locate");
+        golden["located"] = new JsonArray(
+            [.. Enumerable.Range(0, areas).Select(i => (JsonNode)new JsonObject { ["key"] = query.Locate[i % query.Locate.Count], ["area"] = "area:a" + i.ToString(CultureInfo.InvariantCulture) })]);
+        return new RouteAnswer(HttpStatusCode.OK, golden.ToJsonString());
+    }
+
+    [Fact]
     public async Task A_second_query_while_zoomed_by_feature_zooms_again_and_is_not_refused()
     {
         var page = Page(ByArea());
@@ -180,7 +210,7 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task A_query_keeps_every_node_of_the_map_drawn_behind_the_answer_to_be_dimmed_and_Whole_map_restores_it()
+    public async Task A_query_draws_only_the_answer_and_its_links_and_Whole_map_restores_every_node()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
@@ -190,9 +220,17 @@ public sealed class ContextWholeZoomTests
         await page.Submit(Token);
 
         Assert.Equal(nodes, page.Whole.Geometry!.Nodes.Count);
-        Assert.Contains(page.Whole.Geometry.Nodes, n => !page.Whole.HitKeys.Contains(n.Key));
+        var hits = page.Whole.HitKeys;
+        var expected = page.Whole.Geometry.Edges
+            .Where(e => hits.Contains(e.From) || hits.Contains(e.To))
+            .SelectMany(e => new[] { e.From, e.To })
+            .Concat(hits)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(expected.Order(StringComparer.Ordinal), page.Whole.Shown!.Nodes.Select(n => n.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.All(page.Whole.HitKeys, key => Assert.Contains(page.Whole.Shown.Nodes, n => string.Equals(n.Key, key, StringComparison.Ordinal)));
         _ = page.BackToWholeMap();
         Assert.Empty(page.Whole.HitKeys);
+        Assert.Same(page.Whole.Geometry, page.Whole.Shown);
     }
 
     [Fact]
@@ -224,22 +262,22 @@ public sealed class ContextWholeZoomTests
     };
 
     [Fact]
-    public async Task A_click_on_a_dimmed_node_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
+    public async Task A_click_on_a_node_outside_the_answer_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
     {
         var asked = new List<string>();
         var page = Page(Recording(asked));
         await page.Opened(Token);
         page.AnchorText = Anchor;
         await page.Submit(Token);
-        var dimmed = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
+        var outside = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
         var moved = new List<WholeRect>();
         page.Whole.ZoomRequested += (_, e) => moved.Add(e.Value);
         asked.Clear();
 
-        await page.ChooseWholeNode(dimmed, Token);
+        await page.ChooseWholeNode(outside, Token);
 
-        Assert.Equal([dimmed], asked);
-        Assert.Equal(dimmed, page.AnchorText);
+        Assert.Equal([outside], asked);
+        Assert.Equal(outside, page.AnchorText);
         _ = Assert.Single(moved);
         Assert.True(page.IsZoomedIn);
     }

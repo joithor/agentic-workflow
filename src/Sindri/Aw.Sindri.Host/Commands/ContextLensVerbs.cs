@@ -35,19 +35,18 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
             + (o.Hops is null ? string.Empty : "&hops=" + Uri.EscapeDataString(o.Hops))
             + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
-        var fence = client.SessionReason is null;
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
             var set = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesSetView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
             return set.IsError ? await Failed(set.Error).ConfigureAwait(false)
                 : o.Json ? await output.Raw(set.Value.Body, 0).ConfigureAwait(false)
-                : await output.Text(ContextLensText.LensesSet(set.Value.Value, fence), 0).ConfigureAwait(false);
+                : await output.Text(ContextLensText.LensesSet(set.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
         }
 
         var answer = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
+            : await output.Text(ContextLensText.Lenses(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>

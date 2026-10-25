@@ -14,12 +14,10 @@ internal sealed partial class WholeMapCanvas
     private void DrawNodeEdges(DrawingContext context, WholeMapGeometry geometry, WholeRect view)
     {
         var drawn = WholeEdgeSelection.Visible(geometry.Edges, geometry.Nodes, _focus).Where(e => Overlaps(view, e.X1, e.Y1, e.X2, e.Y2)).ToList();
-        var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
-        var zoomed = Map?.IsZoomed == true;
         foreach (var edge in drawn)
         {
             var lit = WholeEdgeSelection.Touches(edge, _focus);
-            using (context.PushOpacity(EdgeOpacity(edge, zoomed, hits)))
+            using (context.PushOpacity(EdgeOpacity(edge)))
             {
                 context.DrawLine(EdgePen(WholeEdgeStyle.Of(edge).Dashed, lit), new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
             }

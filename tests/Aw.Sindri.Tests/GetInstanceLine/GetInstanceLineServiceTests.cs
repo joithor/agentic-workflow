@@ -55,7 +55,7 @@ public sealed class GetInstanceLineServiceTests
     {
         internal Dictionary<string, string> Shas { get; } = new(StringComparer.Ordinal);
 
-        internal IFactContents Contents { get; } = new GetInstanceLineServiceTests.Contents();
+        internal IFactContents Contents { get; } = new Contents();
 
         internal Facts Add(string key, string json)
         {
