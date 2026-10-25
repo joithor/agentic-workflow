@@ -6,7 +6,6 @@ using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
-using Aw.Sindri.Tests.Server;
 using Aw.Sindri.Tests.Workflow.Cli;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;

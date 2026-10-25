@@ -4,7 +4,6 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.Layout;
 using Aw.Sindri.Tests.Ledger;
-using Aw.Sindri.Tests.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
