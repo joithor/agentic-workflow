@@ -5,7 +5,11 @@ namespace Aw.Context.Core.Engine;
 /// <summary>Whose repo a map read is for: the one rule the whole map and the concepts reads share.</summary>
 public static class RepoAddressing
 {
-    // Who the answer is for: a session its own repo, a human the repo they named (a profile with several cuts the graph to it) or the profile's only repo.
+    /// <summary>Who the answer is for: a session its own repo, a human the repo they named (a profile with several cuts the graph to it) or the profile's only repo.</summary>
+    /// <param name="settings">The checked settings.</param>
+    /// <param name="scope">The repos and the caller.</param>
+    /// <param name="asked">The repo the caller named, or null.</param>
+    /// <returns>The repo to read and whether to cut the graph to it; or SND-CONTEXT refusing a repo outside the caller's scope.</returns>
     public static Result<RepoChoice> Addressed(ContextSettings settings, ContextScope scope, string? asked)
     {
         var resolved = ScopeRules.Resolve(settings, scope.Repos, scope.Caller);

@@ -75,7 +75,7 @@ internal static class IndexRules
         };
 
     private static bool IsSlug(string id) =>
-        id.All(static c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-')
+        id.All(static c => (c is >= 'a' and <= 'z') || (c is >= '0' and <= '9') || c == '-')
         && !id.StartsWith('-') && !id.EndsWith('-') && !id.Contains("--", StringComparison.Ordinal);
 
     private static Error? Features(string path, IReadOnlyList<string>? features)

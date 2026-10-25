@@ -14,7 +14,7 @@ public sealed record ConceptPin(ConceptId? Id, string Name, string? Summary, IRe
     /// <param name="summary">A line about it, or null.</param>
     /// <param name="features">Feature keys or key globs, or null for none.</param>
     /// <param name="paths">File globs, or null for none.</param>
-    /// <returns>The pin; throws when <paramref name="id"/> is not a concept id.</returns>
-    public static ConceptPin Of(string? id, string? name, string? summary, IEnumerable<string>? features, IEnumerable<string>? paths) =>
-        new(id is null ? null : ConceptId.From(id), name ?? string.Empty, summary, [.. features ?? []], [.. paths ?? []]);
+    /// <returns>The pin.</returns>
+    public static ConceptPin Of(ConceptId? id, string? name, string? summary, IEnumerable<string>? features, IEnumerable<string>? paths) =>
+        new(id, name ?? string.Empty, summary, [.. features ?? []], [.. paths ?? []]);
 }
