@@ -25,16 +25,19 @@ internal static class Processes
     {
         using var output = new MemoryStream();
         using var error = new MemoryStream();
-        var (code, _, note) = Run(start, timeout, output, error, input);
+        var (code, _, note) = Run(start, timeout, TimeSpan.Zero, output, error, input);
         return new ProcessResult(code, Encoding.UTF8.GetString(output.ToArray()), note ?? Encoding.UTF8.GetString(error.ToArray()));
     }
 
-    /// <summary>Runs with stdout and stderr appended to <paramref name="log"/>; Ran is false when it couldn't start or hit the time limit.</summary>
-    internal static (int Code, bool Ran) ToLog(ProcessStartInfo start, TimeSpan timeout, string log)
+    /// <summary>
+    /// Runs with stdout and stderr appended to <paramref name="log"/>; Ran is false when it couldn't start or hit the time limit.
+    /// At the limit, and after a normal exit, every process the run started is stopped (TERM, up to <paramref name="grace"/>, then KILL).
+    /// </summary>
+    internal static (int Code, bool Ran) ToLog(ProcessStartInfo start, TimeSpan timeout, TimeSpan grace, string log)
     {
         using var file = new FileStream(log, FileMode.Create, FileAccess.Write, FileShare.Read);
         using var sink = Stream.Synchronized(file);
-        var (code, ran, note) = Run(start, timeout, sink, sink, input: null);
+        var (code, ran, note) = Run(start, timeout, grace, sink, sink, input: null);
         if (note is not null)
         {
             sink.Write(Encoding.UTF8.GetBytes($"\nbugfix-state: {note}\n"));
@@ -55,13 +58,22 @@ internal static class Processes
     }
 
     // The deadline covers the process; after it exits, output is drained only briefly, so a background child holding the
-    // pipes neither stretches the run nor erases its exit code (the child itself left the process tree and isn't killed).
-    private static (int Code, bool Ran, string? Note) Run(ProcessStartInfo start, TimeSpan timeout, Stream output, Stream error, string? input)
+    // pipes neither stretches the run nor erases its exit code. With a grace period (a test command, not a git or judge
+    // call) every process the run started is stopped at the limit and after the exit: the run's environment carries a
+    // token that survives setsid and daemonizing, so a detached child is found where the process tree no longer reaches it.
+    private static (int Code, bool Ran, string? Note) Run(ProcessStartInfo start, TimeSpan timeout, TimeSpan grace, Stream output, Stream error, string? input)
     {
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
         start.RedirectStandardInput = true;
         start.UseShellExecute = false;
+        var sweep = grace > TimeSpan.Zero;
+        var token = Guid.NewGuid().ToString("N");
+        if (sweep)
+        {
+            start.Environment[TaggedProcesses.Variable] = token;
+        }
+
         Process process;
         try
         {
@@ -78,17 +90,39 @@ internal static class Processes
             WriteInput(process, input);
             if (!process.WaitForExit(timeout))
             {
+                // TERM first, to the shell and whatever it is waiting on, so the check's EXIT trap runs; then the tree kill
+                // and the KILL for what outlived the grace.
+                var (found, killed) = sweep ? TaggedProcesses.Stop(token, grace) : (0, 0);
                 Kill(process);
-                return (TimedOut, false, $"{start.FileName} took longer than {timeout}; killed and counted as not run");
+                if (sweep)
+                {
+                    _ = Drain(pumps);   // the trap's last output lands in the log before the note
+                }
+
+                var after = killed > 0 ? string.Create(CultureInfo.InvariantCulture, $"; {killed} of {found} processes ignored the stop request for {grace} and were killed") : string.Empty;
+                return (TimedOut, false, $"{start.FileName} took longer than {timeout}; stopped and counted as not run{after}");
             }
 
-#pragma warning disable RS0030 // bugfix-state is a synchronous CLI; the wait is bounded by _drainAfterExit
-            return pumps.Wait(_drainAfterExit)
-                ? (process.ExitCode, true, null)
-                : (process.ExitCode, true, string.Create(CultureInfo.InvariantCulture, $"{start.FileName} exited {process.ExitCode} but left processes holding its output; output after the exit was not kept"));
-#pragma warning restore RS0030
+            var leftovers = sweep ? TaggedProcesses.Stop(token, grace) : (Found: 0, Killed: 0);
+            var drained = Drain(pumps);
+            var notes = new List<string>();
+            if (leftovers.Found > 0)
+            {
+                notes.Add(string.Create(CultureInfo.InvariantCulture, $"{start.FileName} exited {process.ExitCode} but left {leftovers.Found} processes running; they were stopped"));
+            }
+
+            if (!drained)
+            {
+                notes.Add(string.Create(CultureInfo.InvariantCulture, $"{start.FileName} exited {process.ExitCode} but left processes holding its output; output after the exit was not kept"));
+            }
+
+            return (process.ExitCode, true, notes.Count == 0 ? null : string.Join("; ", notes));
         }
     }
+
+#pragma warning disable RS0030 // bugfix-state is a synchronous CLI; the wait is bounded by _drainAfterExit
+    private static bool Drain(Task pumps) => pumps.Wait(_drainAfterExit);
+#pragma warning restore RS0030
 
     // The program reads its input while the pumps drain its output; a program that exits without reading it is not an error here.
     private static void WriteInput(Process process, string? input)
