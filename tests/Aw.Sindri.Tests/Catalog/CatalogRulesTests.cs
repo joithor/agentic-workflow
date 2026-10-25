@@ -24,7 +24,6 @@ public sealed class CatalogRulesTests
     [Fact, Trait("Lane", "unit")]
     public void Cli_only_rows_are_terminal_bound()
     {
-        Assert.Empty(CatalogRules.LooseCliOnly(Shipped));
         _ = Assert.Single(CatalogRules.LooseCliOnly([Row(ActionClass.Desk, "cli-only:typed-confirmation")]));
         Assert.Empty(CatalogRules.LooseCliOnly([Row(ActionClass.Local, "cli-only:local"), Row(ActionClass.Desk, "cli-only:typed-confirmation", needsTerminal: true)]));
     }

@@ -5,4 +5,11 @@ namespace Aw.Context.Core.WholeMap;
 /// <param name="Detail">What was asked: auto, nodes or areas.</param>
 /// <param name="Locate">The keys to place.</param>
 /// <param name="Area">The key of one area to open on its own, or null.</param>
-public sealed record WholeMapAsk(WholeMapBasis Basis, WholeMapDetail Detail, IReadOnlyList<string> Locate, string? Area = null);
+public sealed record WholeMapAsk(WholeMapBasis Basis, WholeMapDetail Detail, IReadOnlyList<string> Locate, string? Area = null)
+{
+    /// <summary>The repos the whole map holds nodes of (counted over the map before any repo cut), for the page's repo picker.</summary>
+    public IReadOnlyList<WholeMapRepo> Repos { get; init; } = [];
+
+    /// <summary>Each node's repo by node key (<see cref="Aw.Context.Core.Graph.NodeRepos.Index"/> over the map before any repo cut), or null to leave the nodes' repos out.</summary>
+    public IReadOnlyDictionary<string, string?>? RepoOf { get; init; }
+}

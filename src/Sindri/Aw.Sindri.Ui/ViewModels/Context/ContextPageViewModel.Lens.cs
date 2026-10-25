@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
@@ -84,7 +83,7 @@ internal sealed partial class ContextPageViewModel
         else
         {
             Show(view: null, choices: Suggestions(result.Error));
-            Problem = TooLongForOneRead(result.Error) ? Labels.ContextTooLongForOneRead : result.Error.Message;
+            Problem = result.Error.Message;
             if (Whole.IsReady)
             {
                 Whole.ApplySearch([], [], zoomed: false);   // nothing resolved: the map dims and says so
@@ -106,11 +105,6 @@ internal sealed partial class ContextPageViewModel
         AnchorText = anchor;
         return Submit(cancellationToken);
     }
-
-    // A very long anchor list can overrun the server's request line: the bare 414 or 400 says nothing, so the page says it.
-    private static bool TooLongForOneRead(Error error) =>
-        string.Equals(error.Code, SindriUiErrors.BadStatus.Code, StringComparison.Ordinal)
-        && (error.Message.EndsWith(" 414", StringComparison.Ordinal) || error.Message.EndsWith(" 400", StringComparison.Ordinal));
 
     private static List<string> Suggestions(Error error)
     {

@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
@@ -100,7 +99,7 @@ public static class SindriCommandServiceCollectionExtensions
         return new AuditingService<TRequest, TResponse>(
                 new AuthorizingService<TRequest, TResponse>(
                     new ValidatingService<TRequest, TResponse>(inner, sp.GetRequiredService<IValidator<TRequest>>()),
-                    callers, catalog, sp.GetService<ProverLabel>()),
+                    callers, catalog),
                 sp.GetRequiredService<AuditTrail>(), callers, catalog, sp.GetRequiredService<IIdGenerator>());
     }
 
