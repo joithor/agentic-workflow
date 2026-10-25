@@ -5,7 +5,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
-namespace Aw.Context.Features.GetConcepts;
+namespace Aw.Context.Features;
 
 /// <summary>
 /// The map a concepts read is built from: the map the caller may read (a session's graph is cut to its repo, concepts included), the repo the answer is for and the caller's text policy
@@ -46,9 +46,3 @@ internal sealed class ConceptReader(MapReader reader, IScrubberFactory scrubbers
         return new ConceptRead(new ConceptsBasis(visible.Value.Snapshot.Tag, addressed.Value.Name), graph, new MapText(built.Value, FencePolicies.For(scope.Caller)));
     }
 }
-
-/// <summary>One read's inputs for <see cref="ConceptBuilder"/>.</summary>
-/// <param name="Basis">The map version and repo the answer is for.</param>
-/// <param name="Graph">The graph the caller may see.</param>
-/// <param name="Text">The caller's text policy.</param>
-internal sealed record ConceptRead(ConceptsBasis Basis, GraphSnapshot Graph, MapText Text);

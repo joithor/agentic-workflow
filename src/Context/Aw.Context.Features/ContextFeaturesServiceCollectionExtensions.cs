@@ -159,8 +159,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetConceptsRequest, ConceptsView>, GetConceptsService>()
         .AddScoped<IService<GetConceptMembersRequest, ConceptMembersView>, GetConceptMembersService>()
         .AddScoped<ConceptReader>()
-        .AddScoped<ContextConcepts>()
-        .AddScoped<IContextConcepts>(static sp => sp.GetRequiredService<ContextConcepts>())
         .AddSingleton<WholeMapCache>()
         .AddScoped<LensBasisReader>()
         .AddScoped<ContextCodeHistory>()
@@ -179,7 +177,8 @@ public static class ContextFeaturesServiceCollectionExtensions
     private static IServiceCollection AddHistory(this IServiceCollection services) => services
         .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
         .AddScoped<HistoryPipeline>()
-        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>());
+        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>())
+        .AddScoped<IContextConcepts>(static sp => sp.GetRequiredService<ContextGraph>());
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()

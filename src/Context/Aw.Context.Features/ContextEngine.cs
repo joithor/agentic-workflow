@@ -34,8 +34,7 @@ internal sealed class ContextEngine(
     IContextMap map,
     ContextGraph graph,
     ContextEval eval,
-    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads,
-    ContextConcepts concepts) : IContextEngine
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -154,8 +153,8 @@ internal sealed class ContextEngine(
         graph.FileMap(query, scope, cancellationToken);
 
     public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        concepts.Concepts(query, scope, cancellationToken);
+        graph.Concepts(query, scope, cancellationToken);
 
     public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        concepts.ConceptMembers(query, scope, cancellationToken);
+        graph.ConceptMembers(query, scope, cancellationToken);
 }
