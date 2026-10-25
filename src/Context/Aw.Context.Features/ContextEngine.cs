@@ -12,6 +12,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.ScopeGraph;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Trust;
 using Aw.Context.Core.WholeMap;
@@ -150,4 +151,11 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
+
+    // Issue 1005: the context lane builds the scoping graph and keeps the call log; until then the engine answers a named error and Sindri's gather falls back to the lenses.
+    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<ScopeGraphView>>(ContextErrors.ScopeGraphUnavailable.With("the engine does not build the scoping graph yet"));
+
+    public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<IReadOnlyList<GraphRead>>>(ContextErrors.ScopeGraphUnavailable.With("the engine keeps no graph call log yet"));
 }

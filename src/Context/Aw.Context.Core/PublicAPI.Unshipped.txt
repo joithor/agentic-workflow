@@ -6983,3 +6983,134 @@ static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMa
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int
 Aw.Context.Core.Graph.NodeDetail.Repo.get -> string?
 Aw.Context.Core.Graph.NodeDetail.Repo.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphQuery!
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out Aw.Context.Core.Map.MapRead Read, out Aw.Context.Core.Lenses.LensRange! Range, out string? Brief, out int MaxNodes, out int MaxBytes) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphQuery? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Anchors.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Read.get -> Aw.Context.Core.Map.MapRead
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Read.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Range.get -> Aw.Context.Core.Lenses.LensRange!
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Range.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Brief.get -> string?
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Brief.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.MaxNodes.get -> int
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.MaxNodes.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.MaxBytes.get -> int
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.MaxBytes.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphQuery.ScopeGraphQuery(System.Collections.Generic.IReadOnlyList<string!>! Anchors, Aw.Context.Core.Map.MapRead Read, Aw.Context.Core.Lenses.LensRange! Range, string? Brief, int MaxNodes, int MaxBytes) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphQuery.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphQuery.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphQuery.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphQuery? left, Aw.Context.Core.ScopeGraph.ScopeGraphQuery? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphQuery.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphQuery? left, Aw.Context.Core.ScopeGraph.ScopeGraphQuery? right) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphView
+Aw.Context.Core.ScopeGraph.ScopeGraphView.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphView!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Deconstruct(out int Version, out string! MapVersion, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out int Depth, out System.Collections.Generic.IReadOnlyList<string!>! Hops, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphLimit!>! Limits) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphView? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Version.get -> int
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Version.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.MapVersion.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.MapVersion.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Anchors.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Depth.get -> int
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Depth.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Hops.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Hops.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphNode!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Nodes.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphEdge!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Edges.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Limits.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphLimit!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphView.Limits.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphView.ScopeGraphView(int Version, string! MapVersion, System.Collections.Generic.IReadOnlyList<string!>! Anchors, int Depth, System.Collections.Generic.IReadOnlyList<string!>! Hops, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphLimit!>! Limits) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphView.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphView.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphView.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphView? left, Aw.Context.Core.ScopeGraph.ScopeGraphView? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphView? left, Aw.Context.Core.ScopeGraph.ScopeGraphView? right) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNode
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphNode!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Deconstruct(out string! Id, out string! Kind, out string? Path, out string? Symbol, out string! Summary, out int Rank, out string! Lens, out string! LensItem, out string? Band, out System.Collections.Generic.IReadOnlyList<string!>! Citations) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphNode? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Kind.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Kind.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Path.get -> string?
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Path.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Symbol.get -> string?
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Symbol.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Summary.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Summary.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Rank.get -> int
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Rank.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Lens.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Lens.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.LensItem.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.LensItem.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.get -> string?
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.ScopeGraphNode(string! Id, string! Kind, string? Path, string? Symbol, string! Summary, int Rank, string! Lens, string! LensItem, string? Band, System.Collections.Generic.IReadOnlyList<string!>! Citations) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphNode.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphNode.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphNode.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphNode? left, Aw.Context.Core.ScopeGraph.ScopeGraphNode? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphNode.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphNode? left, Aw.Context.Core.ScopeGraph.ScopeGraphNode? right) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphEdge!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Deconstruct(out string! From, out string! To, out string! Type) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphEdge? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.From.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.From.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.To.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.To.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Type.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Type.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.ScopeGraphEdge(string! From, string! To, string! Type) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphEdge.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphEdge? left, Aw.Context.Core.ScopeGraph.ScopeGraphEdge? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphEdge.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphEdge? left, Aw.Context.Core.ScopeGraph.ScopeGraphEdge? right) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphLimit!
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Deconstruct(out string! Why, out string! Not) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphLimit? other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Why.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Why.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Not.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Not.init -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphLimit.ScopeGraphLimit(string! Why, string! Not) -> void
+override Aw.Context.Core.ScopeGraph.ScopeGraphLimit.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphLimit.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphLimit.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphLimit.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphLimit? left, Aw.Context.Core.ScopeGraph.ScopeGraphLimit? right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphLimit.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphLimit? left, Aw.Context.Core.ScopeGraph.ScopeGraphLimit? right) -> bool
+Aw.Context.Core.ScopeGraph.GraphRead
+Aw.Context.Core.ScopeGraph.GraphRead.<Clone>$() -> Aw.Context.Core.ScopeGraph.GraphRead!
+Aw.Context.Core.ScopeGraph.GraphRead.Deconstruct(out string! Node, out string! Tool, out bool Outside, out string? Reason, out System.DateTimeOffset At) -> void
+Aw.Context.Core.ScopeGraph.GraphRead.Equals(Aw.Context.Core.ScopeGraph.GraphRead? other) -> bool
+Aw.Context.Core.ScopeGraph.GraphRead.Node.get -> string!
+Aw.Context.Core.ScopeGraph.GraphRead.Node.init -> void
+Aw.Context.Core.ScopeGraph.GraphRead.Tool.get -> string!
+Aw.Context.Core.ScopeGraph.GraphRead.Tool.init -> void
+Aw.Context.Core.ScopeGraph.GraphRead.Outside.get -> bool
+Aw.Context.Core.ScopeGraph.GraphRead.Outside.init -> void
+Aw.Context.Core.ScopeGraph.GraphRead.Reason.get -> string?
+Aw.Context.Core.ScopeGraph.GraphRead.Reason.init -> void
+Aw.Context.Core.ScopeGraph.GraphRead.At.get -> System.DateTimeOffset
+Aw.Context.Core.ScopeGraph.GraphRead.At.init -> void
+Aw.Context.Core.ScopeGraph.GraphRead.GraphRead(string! Node, string! Tool, bool Outside, string? Reason, System.DateTimeOffset At) -> void
+override Aw.Context.Core.ScopeGraph.GraphRead.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.GraphRead.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.GraphRead.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.GraphRead.operator !=(Aw.Context.Core.ScopeGraph.GraphRead? left, Aw.Context.Core.ScopeGraph.GraphRead? right) -> bool
+static Aw.Context.Core.ScopeGraph.GraphRead.operator ==(Aw.Context.Core.ScopeGraph.GraphRead? left, Aw.Context.Core.ScopeGraph.GraphRead? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.ScopeGraphUnavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Facade.IContextLenses.ScopeGraph(Aw.Context.Core.ScopeGraph.ScopeGraphQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.ScopeGraph.ScopeGraphView!>!>
+Aw.Context.Core.Facade.IContextEngine.GraphReads(string! instanceAddress, string! runToken, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.GraphRead!>!>!>

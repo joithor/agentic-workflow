@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Scoping.Relevance;
 
 /// <summary>
-/// 'step.scope.relevance-apply' on the block runtime (spec 4.3): <see cref="RelevanceApply"/> over the lenses, the coverage, the brief and the two label sets. It rewrites 'fact:lenses' and 'fact:coverage' without the
+/// 'step.scope.relevance-apply' on the block runtime (spec 4.3): <see cref="RelevanceApply"/> over the lenses, the coverage, the brief and the two label sets. It rewrites 'fact:lenses', 'fact:graph' (the same entries leave it) and 'fact:coverage' without the
 /// entries both reviewers called off topic, and writes 'fact:relevance' and 'fact:mapFixes'. A verdict or ruling for an id the lenses do not hold, or an id twice, fails the Step with the fix line.
 /// </summary>
 internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
@@ -30,7 +30,31 @@ internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
         var applied = RelevanceApply.Apply(Fact(context, "fact:lenses"), Fact(context, "fact:coverage"), Fact(context, "fact:brief"), Fact(context, "fact:relevanceVerdicts"), Fact(context, "fact:relevanceRulings"));
         return ValueTask.FromResult(applied.IsError
             ? BlockStepResult.Failed(applied.Error.Message)
-            : StepFacts.Done("applied", ("fact:lenses", applied.Value.Lenses), ("fact:coverage", applied.Value.Coverage), ("fact:relevance", applied.Value.Relevance), ("fact:mapFixes", applied.Value.MapFixes)));
+            : StepFacts.Done("applied", ("fact:lenses", applied.Value.Lenses), ("fact:coverage", applied.Value.Coverage), ("fact:relevance", applied.Value.Relevance), ("fact:mapFixes", applied.Value.MapFixes), ("fact:graph", Graph(context, Fact(context, "fact:lenses"), applied.Value.Lenses))));
+    }
+
+    // The graph without the nodes whose lens items left the lenses, and the edges that lost an end; a legacy instance with no graph gets the projection of the kept lenses.
+    private static JsonObject Graph(StepContext context, JsonNode before, JsonObject kept)
+    {
+        if (StepFacts.Read(context, "fact:graph") is not JsonObject graph)
+        {
+            return GraphGather.Assemble(null, kept, []);
+        }
+
+        var left = RelevanceEntries.Of(before).Select(static e => e.Id).Except(RelevanceEntries.Of(kept).Select(static e => e.Id), StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal);
+        var nodes = ScopeJson.Items(graph, "nodes").Where(n => !left.Contains(ScopeJson.Str(n, "lensItem") ?? string.Empty)).ToList();
+        var ids = nodes.Select(static n => ScopeJson.Str(n, "id")).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var edges = ScopeJson.Items(graph, "edges").Where(e => ids.Contains(ScopeJson.Str(e, "from") ?? string.Empty) && ids.Contains(ScopeJson.Str(e, "to") ?? string.Empty)).ToList();
+        return GraphGather.Assemble(new JsonObject
+        {
+            ["mapVersion"] = ScopeJson.Str(graph, "mapVersion"),
+            ["anchors"] = graph["anchors"]?.DeepClone(),
+            ["depth"] = ScopeJson.Int(graph, "depth"),
+            ["hops"] = graph["hops"]?.DeepClone(),
+            ["nodes"] = new JsonArray([.. nodes.Select(static n => n.DeepClone())]),
+            ["edges"] = new JsonArray([.. edges.Select(static e => e.DeepClone())]),
+            ["limits"] = graph["limits"]?.DeepClone(),
+        }, kept, []);
     }
 
     private static JsonNode Fact(StepContext context, string key) => StepFacts.Read(context, key) ?? new JsonObject();

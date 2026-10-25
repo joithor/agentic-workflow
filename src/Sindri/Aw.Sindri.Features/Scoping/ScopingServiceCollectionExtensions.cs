@@ -24,6 +24,8 @@ internal static class ScopingServiceCollectionExtensions
         .AddBlockRuntime<ScopeEvidenceStep>()
         .AddBlockRuntime<ScopeFreezeStep>()
         .AddBlockRuntime<ScopeGatherStep>()
+        .AddSingleton<IAgentStepInstructions, ScopeDraftInstructions>()
+        .AddSingleton<IAgentStepInstructions, ScopeChallengeInstructions>()
         .AddBlockRuntime<ScopeIntakeStep>()
         .AddBlockRuntime<ScopeProposeStep>()
         .AddBlockRuntime<ScopeReadBriefStep>()

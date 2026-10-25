@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Packets;
 namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
-/// The scope packet assembler (scoping spec §8.3): the fourteen files aw-packets' scoping kind lists, built from the facts the evidence step
+/// The scope packet assembler (scoping spec §8.3): the fifteen files aw-packets' scoping kind lists, built from the facts the evidence step
 /// holds, with trust stamped by code. Every JSON file carries schemaVersion 1; the lens file is built from fact:lenses with every node, edge
 /// and item 'untrusted' (C14's answer provenance has no field to ride on yet).
 /// </summary>
@@ -30,6 +30,7 @@ internal static class ScopePacket
             Lines("answers.jsonl", ScopeJson.Items(facts["answerLog"]).Select(static e => Plain(e.DeepClone()))),
             Json("challenge.json", Versioned(Plain(facts.ObjectCopy("challenge")))),
             Json("gap-search.json", Versioned(Plain(facts.ObjectCopy("gapSearch")))),
+            Json("graph.json", Versioned(Plain(facts.ObjectCopy("graph")))),
             Lines("rounds.jsonl", ScopeJson.Items(facts["rounds"]).Select(static e => Plain(e.DeepClone()))),
             Json("runs.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["runs"] = Plain(Runs(facts).DeepClone()) }),
             Json("sources.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["sources"] = Sources(facts["brief"]) }),

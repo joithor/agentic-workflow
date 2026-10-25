@@ -110,7 +110,8 @@ internal static partial class DeskBlocks
         }
 
         var assembled = LensGather.Assemble(facts["lensesView"], facts["codeView"], facts["historyView"], [.. ScopeJson.Strings(facts["anchors"])]);
-        return Reply("step.scope.gather", "gathered", Outputs(("lenses", assembled.Lenses), ("coverage", assembled.Coverage)), []);
+        var graph = GraphGather.Assemble(facts["graphView"], assembled.Lenses, [.. ScopeJson.Strings(facts["anchors"])]);
+        return Reply("step.scope.gather", "gathered", Outputs(("lenses", assembled.Lenses), ("coverage", assembled.Coverage), ("graph", graph)), []);
     }
 
     private static Result<ScopingDeskResponse> Propose(ScopeFacts facts)
