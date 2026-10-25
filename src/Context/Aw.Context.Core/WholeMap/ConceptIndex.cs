@@ -1,6 +1,6 @@
 using Aw.Context.Core.Graph;
 
-namespace Aw.Context.Core.Concepts;
+namespace Aw.Context.Core.WholeMap;
 
 /// <summary>
 /// Who belongs to which concept in one graph: each feature, record and decision with its concepts (a member may be in several), each concept with its members, and the reserved

@@ -1,4 +1,4 @@
-namespace Aw.Context.Core.Concepts;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>A concept the owner pinned in the profile's 'index.concepts' (context concepts note §3): it takes its members first, and derived concepts fill the rest.</summary>
 /// <param name="Id">The slug of its key ('scheduling' pins concept:scheduling), or null to derive one from the name.</param>

@@ -4,7 +4,7 @@ using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
 using Vogen;
 
-namespace Aw.Context.Core.Concepts;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>A concept's id, the slug of its key without the 'concept:' prefix ('scheduling' for concept:scheduling).</summary>
 [ValueObject<string>(comparison: ComparisonGeneration.Omit)]

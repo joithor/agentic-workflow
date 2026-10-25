@@ -1,14 +1,12 @@
-using Aw.Context.Core;
-using Aw.Context.Core.Engine;
 using Aw.Kernel;
 
-namespace Aw.Context.Features;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>Whose repo a map read is for: the one rule the whole map and the concepts reads share.</summary>
-internal static class RepoAddressing
+public static class RepoAddressing
 {
     // Who the answer is for: a session its own repo, a human the repo they named (a profile with several cuts the graph to it) or the profile's only repo.
-    internal static Result<RepoChoice> Addressed(ContextSettings settings, ContextScope scope, string? asked)
+    public static Result<RepoChoice> Addressed(ContextSettings settings, ContextScope scope, string? asked)
     {
         var resolved = ScopeRules.Resolve(settings, scope.Repos, scope.Caller);
         if (resolved.IsError && resolved.Error.Code != ContextErrors.UnknownAnchor.Code)

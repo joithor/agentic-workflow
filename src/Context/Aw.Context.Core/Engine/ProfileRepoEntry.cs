@@ -1,5 +1,3 @@
-using Aw.Context.Core.Concepts;
-
 namespace Aw.Context.Core.Engine;
 
 /// <summary>A repo as the profile writes it, before the engine checks its name (<see cref="SettingsReader.Check(System.Text.Json.JsonElement?, IReadOnlyList{ProfileRepoEntry})"/>).</summary>

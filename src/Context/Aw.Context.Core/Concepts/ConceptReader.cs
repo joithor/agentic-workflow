@@ -1,10 +1,9 @@
-using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 
-namespace Aw.Context.Features;
+namespace Aw.Context.Core.Concepts;
 
 /// <summary>
 /// The map a concepts read is built from: the map the caller may read (a session's graph is cut to its repo, concepts included), the repo the answer is for and the caller's text policy
@@ -12,7 +11,7 @@ namespace Aw.Context.Features;
 /// </summary>
 /// <param name="reader">Reads the map the caller may see.</param>
 /// <param name="scrubbers">Builds the scrubbers of the profile's patterns.</param>
-internal sealed class ConceptReader(MapReader reader, IScrubberFactory scrubbers)
+public sealed class ConceptReader(MapReader reader, IScrubberFactory scrubbers)
 {
     /// <summary>The graph, basis and text of one read.</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
@@ -20,7 +19,7 @@ internal sealed class ConceptReader(MapReader reader, IScrubberFactory scrubbers
     /// <param name="repo">A human caller's repo when the profile has several, or null.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>What the builder needs, or SND-CONTEXT-001/003/004/020/030/044/045/120.</returns>
-    internal async ValueTask<Result<ConceptRead>> Read(ContextScope scope, MapRead read, string? repo, CancellationToken cancellationToken)
+    public async ValueTask<Result<ConceptRead>> Read(ContextScope scope, MapRead read, string? repo, CancellationToken cancellationToken)
     {
         var settings = SettingsReader.Read(scope.Settings);
         var built = settings.Bind(s => scrubbers.For(s.ExtraPatterns));

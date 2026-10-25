@@ -1,6 +1,6 @@
 using Aw.Context.Core.Graph;
 
-namespace Aw.Context.Core.Concepts;
+namespace Aw.Context.Core.WholeMap;
 
 /// <summary>
 /// The nodes one concept opens on the whole map: its members, then two levels below them, each level the nodes on the other end of an edge (either way, 'belongs-to' aside) from the level before. A
