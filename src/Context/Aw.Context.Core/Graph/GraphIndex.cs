@@ -44,8 +44,8 @@ internal sealed class GraphIndex
     internal static GraphIndex Of(GraphSnapshot graph, IReadOnlyList<EdgeType> types)
     {
         var byTypes = _structures.GetOrCreateValue(graph);
-        var key = string.Join(',', types.Select(t => (int)t).Order());
-        return byTypes.GetOrAdd(key, _ => new GraphIndex(graph with { Edges = [.. graph.Edges.Where(e => types.Contains(e.Type))] }));
+        var key = string.Join(',', types.Cast<int>().Order());
+        return byTypes.GetOrAdd(key, static (_, state) => new GraphIndex(state.Graph with { Edges = [.. state.Graph.Edges.Where(e => state.Types.Contains(e.Type))] }), (Graph: graph, Types: types));
     }
 
     /// <summary>Test seam: how many indexes this process has built.</summary>

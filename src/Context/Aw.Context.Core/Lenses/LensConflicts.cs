@@ -19,7 +19,7 @@ internal static class LensConflicts
         return [.. supersedes, .. contradicts, .. FileConflicts(graph, own)];
     }
 
-    private static IEnumerable<GraphEdge> Into(GraphSnapshot graph, HashSet<string> own, EdgeType type) => EdgeLookup.For(graph).Into(own, type);
+    private static List<GraphEdge> Into(GraphSnapshot graph, HashSet<string> own, EdgeType type) => EdgeLookup.For(graph).Into(own, type);
 
     private static List<LensConflict> Contradicts(GraphSnapshot graph, HashSet<string> own, IReadOnlyList<DecisionConflict> checkedPairs)
     {
