@@ -67,12 +67,9 @@ internal sealed partial class ContextPageViewModel
             return first;
         }
 
-        var joined = first.Value;
-        var concepts = new List<ContextConcept>(joined.Concepts ?? []);
-        var links = new List<ConceptLink>(joined.Links ?? []);
-        var glossary = new List<ConceptGlossaryEntry>(joined.Glossary ?? []);
+        var pages = new List<ContextConceptsView> { first.Value };
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        for (var next = joined.Next; next is { Length: > 0 } && seen.Add(next);)
+        for (var next = first.Value.Next; next is { Length: > 0 } && seen.Add(next);)
         {
             var page = await Ports.Api.ContextConcepts(api, new ConceptsQuery(repo, next), cancellationToken).ConfigureAwait(true);
             if (page.IsError)
@@ -80,14 +77,21 @@ internal sealed partial class ContextPageViewModel
                 break;
             }
 
-            concepts.AddRange(page.Value.Concepts ?? []);
-            links.AddRange(page.Value.Links ?? []);
-            glossary.AddRange(page.Value.Glossary ?? []);
+            pages.Add(page.Value);
             next = page.Value.Next;
         }
 
-        return joined with { Concepts = concepts, Links = links, Glossary = glossary, Next = null };
+        return Joined(pages);
     }
+
+    // The first page's state and Other, with the concepts, links and glossary of every page.
+    private static ContextConceptsView Joined(List<ContextConceptsView> pages) => pages[0] with
+    {
+        Concepts = [.. pages.SelectMany(p => p.Concepts ?? [])],
+        Links = [.. pages.SelectMany(p => p.Links ?? [])],
+        Glossary = [.. pages.SelectMany(p => p.Glossary ?? [])],
+        Next = null,
+    };
 
     /// <summary>Reads the page's top again (Retry, and when a build has ended): the concepts when none is open, else the open concept's map.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
