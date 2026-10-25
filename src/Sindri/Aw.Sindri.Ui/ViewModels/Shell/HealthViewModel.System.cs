@@ -144,9 +144,17 @@ internal sealed partial class HealthViewModel
         (ToneWarn, ToneError) = ToneFor(State, _health?.Word, HasProfileFix || look.Length > 0);
         ProblemLines = _health?.Problems ?? [];
         OnChanged(nameof(HasProblemLines));
-        AgentsRows = Sessions is { } s
-            ? [new(Labels.AgentsWorking, Count(s.Running ?? s.Live)), new(Labels.AgentsAsking, Count(s.Asking)), new(Labels.AgentsProblems, Count(s.Problems))]
-            : [];
+        ShowAgentsCard();
+        ShowViewsCard();
+        ShowStateBox();
+    }
+
+    private void ShowAgentsCard() => AgentsRows = Sessions is { } s
+        ? [new(Labels.AgentsWorking, Count(s.Running ?? s.Live)), new(Labels.AgentsAsking, Count(s.Asking)), new(Labels.AgentsProblems, Count(s.Problems))]
+        : [];
+
+    private void ShowViewsCard()
+    {
         var views = _serviceList?.AsOf;
         ViewsWord = views switch
         {
@@ -157,7 +165,6 @@ internal sealed partial class HealthViewModel
         };
         ViewsRows = views is null ? [] : ViewsCells(views);
         ViewsFix = views is { } v && (v.Stalled || v.Rebuilding) ? Catalog.Rebuild : null;
-        ShowStateBox();
     }
 
     private CodeIndexCardViewModel WatchCodeIndex(CodeIndexCardViewModel card)
