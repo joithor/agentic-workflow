@@ -4,7 +4,6 @@ using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Extract;
 using Aw.Context.Core.Symbols;
 using Aw.Kernel;
 using IndexSymbolHit = Aw.CodeIndex.Core.Facade.SymbolHit;
@@ -17,11 +16,10 @@ namespace Aw.Sindri.Host.CodeIndexHost;
 /// <summary>
 /// Context's <see cref="ICodeSymbolSource"/> over the code index facade (code-index spec §7.2, §7.3). The block's state words (the index file's state and its graph layer) become <see cref="CodeIndexState"/>;
 /// <see cref="CodeIndexReading.Head"/> then compares the index's commit with the map's ('asOf') at read time, so a mismatch reads stale with both commits and clears itself when the index for the map's commit lands.
-/// An index behind the map is catching up rather than stale when its commit is an ancestor of the map's (the repo reader's merge base says so): the files changed since are pending and only their rows are stale (#990).
 /// A repo outside the scope (no approved profile entry, or another session's repo) is not-configured, one with no index or a damaged one is an answer with no rows, and only a failed read is an error.
 /// Context names a symbol 'path#name'; the index names it '&lt;repo&gt;:path#name'.
 /// </summary>
-internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSource scopes, IRepoReader repos) : ICodeSymbolSource
+internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSource scopes) : ICodeSymbolSource
 {
     private const string DamagedCode = "SND-CODEIDX-010";
     private const string NotBuiltCode = "SND-CODEIDX-013";
@@ -145,21 +143,7 @@ internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSou
             return new Reading(CodeIndexHead.None, scope.Value, name);
         }
 
-        var checkout = new ContextRepo(repo, scope.Value.Repos.First(r => r.Name == name).Path);
-        return new Reading(await Trailing(CodeIndexReading.Head(Own(row), asOf), checkout, cancellationToken).ConfigureAwait(false), scope.Value, name);
-    }
-
-    // An index behind the map is catching up, not stale, when its commit is an ancestor of the map's (main moved on): git says so through the merge base, and the files changed since are the ones whose rows may be out of date.
-    // Git unable to tell (a commit the checkout does not hold, a failed read) leaves the head stale, as does any index that is not an ancestor.
-    private async ValueTask<CodeIndexHead> Trailing(CodeIndexHead head, ContextRepo checkout, CancellationToken cancellationToken)
-    {
-        if (head is not { State: CodeIndexState.Stale, Layer: null, Commit: { } indexed, AsOfCommit: { } mapped })
-        {
-            return head;
-        }
-
-        var changes = await repos.Changes(checkout, new DiffRange(indexed, mapped), cancellationToken).ConfigureAwait(false);
-        return changes.IsError ? head : CodeIndexReading.CatchingUp(head, changes.Value.MergeBase, [.. changes.Value.Files.Select(static f => f.Path).Where(p => !checkout.Denies(p))]);
+        return new Reading(CodeIndexReading.Head(Own(row), asOf), scope.Value, name);
     }
 
     private static CodeIndexHead NotConfigured() => CodeIndexHead.None with { State = CodeIndexState.NotConfigured };

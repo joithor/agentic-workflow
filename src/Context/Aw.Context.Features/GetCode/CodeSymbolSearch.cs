@@ -1,5 +1,6 @@
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Symbols;
 
@@ -10,7 +11,7 @@ namespace Aw.Context.Features.GetCode;
 /// at another commit say so with both commits. Bounded: the files one repo's read carries, the symbols asked about (exported first) and the rows listed are capped by <see cref="CodeRules"/>. A repo with no index, a build in
 /// progress or a read that fails is a row of 'searched', never an error of the route.
 /// </summary>
-internal sealed class CodeSymbolSearch(ICodeSymbolSource source)
+internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader repos)
 {
     internal async ValueTask<CodeSymbolFindings> Find(CodeView view, VisibleMap map, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {
@@ -30,13 +31,13 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source)
         foreach (var repo in targets)
         {
             var asOf = repo.Name == version.Repo && CodeIndexReading.IsCommit(version.Commit) ? version.Commit : null;
-            await Repo(read, repo.Name, asOf, byRepo.GetValueOrDefault(repo.Name.Value) ?? [], cancellationToken).ConfigureAwait(false);
+            await Repo(read, new TrailingCodeSymbolSource(source, repos, repo), repo.Name, asOf, byRepo.GetValueOrDefault(repo.Name.Value) ?? [], cancellationToken).ConfigureAwait(false);
         }
 
         return read.Findings();
     }
 
-    private async ValueTask Repo(SymbolRead read, ContextRepoName repo, string? asOf, List<string> paths, CancellationToken cancellationToken)
+    private static async ValueTask Repo(SymbolRead read, ICodeSymbolSource source, ContextRepoName repo, string? asOf, List<string> paths, CancellationToken cancellationToken)
     {
         var head = await source.Heads(repo, asOf, cancellationToken).ConfigureAwait(false);
         if (head.IsError)

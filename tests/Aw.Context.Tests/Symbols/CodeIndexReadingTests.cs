@@ -211,7 +211,9 @@ public sealed class CodeIndexReadingTests
         var row = CodeIndexReading.Row(CodeIndexReading.CatchingUp(Head(CodeIndexState.Ok, asOf: Other), Indexed, _pending));
 
         Assert.Equal((SearchedState.Ok, "catching-up", null), (row.State, row.Reason, row.Code));
-        Assert.Equal(new SearchedCatchingUp(Indexed, Other, _pending), row.CatchingUp);
+        var catching = Assert.IsType<SearchedCatchingUp>(row.CatchingUp);
+        Assert.Equal((Indexed, Other), (catching.IndexCommit, catching.MapCommit));
+        Assert.Equal(_pending, catching.Pending, StringComparer.Ordinal);
         Assert.Equal(_built, row.AsOf);
     }
 
