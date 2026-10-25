@@ -4,7 +4,6 @@ using Aw.Context.Core.Map;
 using Aw.Kernel;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Features.RunDoctor;
 
@@ -36,7 +35,7 @@ internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor ony
     // The approved profile's scope as a service reads it (the deny globs apply); null while no profile is approved.
     private static ContextScope? ScopeOf(LoadedProfile? approved) => approved is null
         ? null
-        : new ContextScope(approved.Profile.Context, ScopeRules.Usable(ContextScopes.Entries(approved.Profile)), new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
+        : new ContextScope(approved.Profile.Context, ScopeRules.Usable(ProfileRepoEntries.For(approved.Profile)), new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
 
     private static DoctorCheck Line(string name, Result<MapHealth> health) => health.IsError
         ? new DoctorCheck(name, CheckState.Fail, $"{health.Error.Code}: {health.Error.Message}", "check $AW_SINDRI_HOME/context")

@@ -1,4 +1,3 @@
-using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Kernel;
 using Aw.Sindri.Core;
@@ -42,22 +41,10 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
         return new(profile.Context, ScopeRules.Usable(Entries(profile)), caller, profile.Services?.ContainsKey(ContextSyncService.ServiceId.Value) == true);
     }
 
-    /// <summary>
-    /// The profile's repos as the engine takes them: each with the globs of the profile's 'index.denyPaths' and its own (extraction
-    /// adds them to the built-in secret globs and never reads a path they match) and the pins of 'index.concepts', or none when neither names any.
-    /// </summary>
+    /// <summary>The profile's repos as the engine takes them (see <see cref="ProfileRepoEntries.For"/>).</summary>
     /// <param name="profile">The approved profile.</param>
     /// <returns>The repo entries, in profile order.</returns>
-    internal static IReadOnlyList<ProfileRepoEntry> Entries(SindriProfile profile)
-    {
-        ArgumentNullException.ThrowIfNull(profile);
-        return [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path, RepoDenyGlobs.For(profile, r), Pins(profile, r)))];
-    }
-
-    private static IReadOnlyList<ConceptPin>? Pins(SindriProfile profile, RepoEntry repo) =>
-        RepoConcepts.For(profile, repo) is { Count: > 0 } concepts
-            ? [.. concepts.Select(c => new ConceptPin(c.Id is { } id ? ConceptId.From(id.Value) : null, c.Name ?? string.Empty, c.Summary, c.Features ?? [], c.Paths ?? []))]
-            : null;
+    internal static IReadOnlyList<ProfileRepoEntry> Entries(SindriProfile profile) => ProfileRepoEntries.For(profile);
 
     /// <summary>The engine's caller for a Sindri caller; no caller at all is an in-process service.</summary>
     /// <param name="caller">The Sindri caller, or null.</param>
