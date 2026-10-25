@@ -5,6 +5,8 @@ using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.SearchMap;
 using Aw.Context.Infrastructure.Scrubbing;
 using Aw.Context.Infrastructure.Search;
+using Aw.Context.Testing.Map;
+using Aw.Context.Tests.Map;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.SearchMap;
