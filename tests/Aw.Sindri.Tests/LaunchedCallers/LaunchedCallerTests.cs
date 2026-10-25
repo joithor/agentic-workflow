@@ -1,16 +1,8 @@
 using System.Net;
-using Aw.Kernel.Services;
-using Aw.Sindri.Core.Auth;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Tests.Callers;
-using Aw.Sindri.Tests.Ledger;
-using Aw.Sindri.Tests.Server;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
@@ -20,7 +12,7 @@ namespace Aw.Sindri.Tests.LaunchedCallers;
 /// A launched agent (#1002): a request that carries a launch's secret is that launch's session, whatever else it can read (the human
 /// token file sits in its environment), and a session is refused the human-only verbs with SND-AUTH-002.
 /// </summary>
-public sealed class LaunchedCallerTests(LaunchedCallerTests.Host host) : IClassFixture<LaunchedCallerTests.Host>
+public sealed class LaunchedCallerTests(LaunchedCallerHost host) : IClassFixture<LaunchedCallerHost>
 {
     private const string LaunchHeader = "X-Sindri-Launch";
     private const string Secret = "proof";
@@ -60,50 +52,6 @@ public sealed class LaunchedCallerTests(LaunchedCallerTests.Host host) : IClassF
         "cancel" => Post($"/sindri/workflow/instances/{Uri.EscapeDataString(Instance)}/commands", """{"kind":"cancel"}""", headers),
         "start" => Post("/sindri/workflow/instances", """{"recipe":"workflow.step","item":"ITM-00000000000000000000000000000c01","nextAttempt":false,"facts":{}}""", headers),
         "decide" => Post($"/sindri/decisions/{Decision}", """{"choice":"accept"}""", headers),
-        _ => Post($"/sindri/workflow/recipes/workflow.step@{RecipeHash}/approve", null, headers),
+        _ => Post($"/sindri/workflow/recipes/workflow.step@{RecipeHash}/approve", json: null, headers),
     };
-
-    /// <summary>One control plane for the class (CallerHost.Start's steps) with a test-only route that answers the caller's class.</summary>
-    public sealed class Host : IAsyncLifetime
-    {
-        private readonly TempHome _home = new();
-        private WebApplication? _app;
-
-        public HumanToken Token { get; } = new("token-of-this-start");
-
-        public WebApplication App => _app ?? throw new InvalidOperationException("the host isn't started");
-
-        public HttpClient Http { get; private set; } = new();
-
-        public async ValueTask InitializeAsync()
-        {
-            var home = _home.Path;
-            var app = LoopbackBinding.Build([], n => n switch { "AW_SINDRI_HOME" => home, _ => null }, TimeProvider.System, NoTemporal.Use);
-            _ = Pipeline.Configure(app);
-            _ = app.MapGet("/test/launched-caller", static (ICallerContextAccessor callers) =>
-                Results.Text(callers.Current?.Class.ToString() ?? "none"));
-            await using (var scope = app.Services.CreateAsyncScope())
-            {
-                _ = (await scope.ServiceProvider.GetRequiredService<IService<StartProcessRequest, StartProcessResponse>>()
-                    .Handle(new StartProcessRequest(), CancellationToken.None)).Value;
-            }
-
-            app.Services.GetRequiredService<HeldHumanToken>().Hold(Token);
-            await app.StartAsync(CancellationToken.None);
-            _app = app;
-            Http = new HttpClient { BaseAddress = new Uri(app.Urls.First()), Timeout = TimeSpan.FromSeconds(10) };
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            Http.Dispose();
-            if (_app is not null)
-            {
-                await _app.StopAsync(CancellationToken.None);
-                await _app.DisposeAsync();
-            }
-
-            _home.Dispose();
-        }
-    }
 }
