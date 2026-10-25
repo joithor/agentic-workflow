@@ -13,7 +13,7 @@ internal static class ApplyCommandEndpoint
     {
         _ = group.MapPost("/workflow/instances/{instanceId}/commands", static async (string instanceId, ApplyCommandBody body,
                 IService<ApplyCommandRequest, ApplyCommandResponse> service, CancellationToken ct)
-            => (await service.Handle(body.ToRequest(InstanceRoute.Id(instanceId)), ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(body.ToRequest(instanceId), ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
 }

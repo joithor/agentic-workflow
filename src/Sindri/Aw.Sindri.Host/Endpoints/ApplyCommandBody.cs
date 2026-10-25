@@ -22,8 +22,8 @@ internal sealed record ApplyCommandBody(
     CommandNonce? Nonce = null,
     ChallengeAnswer? Challenge = null)
 {
-    /// <summary>The request for <paramref name="instance"/>.</summary>
-    /// <param name="instance">The route's instance.</param>
+    /// <summary>The request for <paramref name="instance"/>, marked as a route's: its validator checks the instance id after authorization.</summary>
+    /// <param name="instance">The route value, unparsed.</param>
     /// <returns>The request.</returns>
-    internal ApplyCommandRequest ToRequest(string instance) => new(instance, Kind, Answer, Text, Amount, Verb, Nonce, Challenge);
+    internal ApplyCommandRequest ToRequest(string instance) => new(instance, Kind, Answer, Text, Amount, Verb, Nonce, Challenge) { FromRoute = true };
 }
