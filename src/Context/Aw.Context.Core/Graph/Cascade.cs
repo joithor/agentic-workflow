@@ -98,7 +98,13 @@ public static class Cascade
                 }
 
                 break;
-            case NodeKind.Surface or NodeKind.Action or NodeKind.Thing or NodeKind.Flow or NodeKind.Decision or NodeKind.Record or NodeKind.Code:
+            case NodeKind.Surface:
+            case NodeKind.Action:
+            case NodeKind.Thing:
+            case NodeKind.Flow:
+            case NodeKind.Decision:
+            case NodeKind.Record:
+            case NodeKind.Code:
                 break;
         }
 
