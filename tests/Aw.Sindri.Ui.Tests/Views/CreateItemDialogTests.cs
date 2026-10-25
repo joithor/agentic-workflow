@@ -307,7 +307,7 @@ public sealed class CreateItemDialogTests : IDisposable
         _ = await OpenFromButton(window, shell);
         shell.Create.Title = "Proof: selected on create";
 
-        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, keySymbol: null);
         await Until(window, () => shell.Create.CreatedId.Length > 0);
         Settle(window);
 
