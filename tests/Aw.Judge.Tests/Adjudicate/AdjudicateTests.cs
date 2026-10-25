@@ -141,9 +141,9 @@ public sealed class AdjudicateTests
     public async Task An_input_that_is_not_the_questions_or_an_image_question_is_failed_without_asking()
     {
         var provider = Claude().Decides("ask", 1);
-        _ = _store.With(new EvalItem(EvalItemId.From("item-a"), "ask-check", "not json", "decision:a", modelDecision: null, DateTimeOffset.UnixEpoch))
-            .With(new EvalItem(EvalItemId.From("item-b"), "ask-check", """{"wrong":1}""", "decision:b", modelDecision: null, DateTimeOffset.UnixEpoch))
-            .With(new EvalItem(EvalItemId.From("item-c"), "visual-critique", """{"afterScreenshot":"after.png","evidenceDir":"/tmp/e"}""", "decision:c", modelDecision: null, DateTimeOffset.UnixEpoch));
+        _ = _store.With(new EvalItem(EvalItemId.From("item-a"), "ask-check", "not json", "decision:a", ModelDecision: null, DateTimeOffset.UnixEpoch))
+            .With(new EvalItem(EvalItemId.From("item-b"), "ask-check", """{"wrong":1}""", "decision:b", ModelDecision: null, DateTimeOffset.UnixEpoch))
+            .With(new EvalItem(EvalItemId.From("item-c"), "visual-critique", """{"afterScreenshot":"after.png","evidenceDir":"/tmp/e"}""", "decision:c", ModelDecision: null, DateTimeOffset.UnixEpoch));
 
         var ask = await Service(provider).Handle(A.AdjudicateRequest().Build(), _ct);
         var image = await Service(provider).Handle(A.AdjudicateRequest().Question("visual-critique").Build(), _ct);
@@ -195,5 +195,5 @@ public sealed class AdjudicateTests
         new(_store, new FakeProviderCatalog(provider), new FakeInputRedactor(), _clock, _json);
 
     private static EvalItem Item(string id, string tail, string question = "ask-check", string? modelDecision = null) =>
-        new(EvalItemId.From(id), question, $$"""{"transcriptTail":{{JsonValue.Create(tail)!.ToJsonString()}}}""", $"decision:{id}", modelDecision, DateTimeOffset.UnixEpoch);
+        new(EvalItemId.From(id), question, $$"""{"transcriptTail":{{JsonValue.Create(tail).ToJsonString()}}}""", $"decision:{id}", modelDecision, DateTimeOffset.UnixEpoch);
 }
