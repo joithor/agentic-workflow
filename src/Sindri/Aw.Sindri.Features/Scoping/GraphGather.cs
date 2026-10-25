@@ -84,6 +84,9 @@ internal static class GraphGather
         };
     }
 
+    // A record or a decision is intent, whatever lens found it.
+    private static bool IsIntent(string? kind) => string.Equals(kind, "record", StringComparison.Ordinal) || string.Equals(kind, "decision", StringComparison.Ordinal);
+
     private static void Add(JsonArray nodes, HashSet<string> seen, string? id, JsonNode source, string lens, ref int rank)
     {
         if (string.IsNullOrEmpty(id) || !seen.Add(id))
@@ -107,7 +110,7 @@ internal static class GraphGather
             node["path"] = id[CodePrefix.Length..];   // why: a path is on code: nodes only, derived from the key
         }
 
-        if (ScopeJson.Str(source, "band") is { } band)
+        if ((ScopeJson.Str(source, "band") ?? (IsIntent(ScopeJson.Str(source, "kind")) ? "intent" : null)) is { } band)
         {
             node["band"] = band;
         }

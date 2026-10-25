@@ -9,6 +9,6 @@ namespace Aw.Context.Core.ScopeGraph;
 /// <param name="Rank">1 for the most relevant.</param>
 /// <param name="Lens">The lens it was found by: product, related, code or history.</param>
 /// <param name="LensItem">The lens item id ('L-code-3') the gather numbered it.</param>
-/// <param name="Band">The band (product own, neighbors or affects, or code), or null.</param>
+/// <param name="Band">The band: own, neighbors, affects, code or intent (a record or decision node), or null when the node was reached only as an edge end.</param>
 /// <param name="Citations">Where it is in the record store.</param>
 public sealed record ScopeGraphNode(string Id, string Kind, string? Path, string? Symbol, string Summary, int Rank, string Lens, string LensItem, string? Band, IReadOnlyList<ScopeGraphCitation> Citations);
