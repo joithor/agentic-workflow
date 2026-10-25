@@ -30,7 +30,7 @@ public sealed class AgentTargetResolverItemIdTests
         var target = await Resolve(factJson);
 
         Assert.True(target.IsError);
-        Assert.NotEqual(SindriErrors.LaunchRepoMissing.Code, target.Error.Code);
+        Assert.NotEqual(SindriErrors.LaunchRepoMissing.Code, target.Error.Code, StringComparer.Ordinal);
         Assert.Contains("item id", target.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("approved profile", target.Error.Message, StringComparison.Ordinal);
     }
