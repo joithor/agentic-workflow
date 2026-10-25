@@ -36,7 +36,5 @@ internal static class IndexJobs
             ? outcome.Value.GetString()
             : null;
 
-    internal static bool Deferred(JobRow job) => job.State == JobState.Succeeded && OutcomeOf(job) == BuildCodeIndexResult.Deferred;
-
     internal static bool Published(JobRow job) => job.State == JobState.Succeeded && OutcomeOf(job) == "published";
 }

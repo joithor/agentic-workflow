@@ -33,7 +33,6 @@ public sealed class BuildCodeIndexRealStoreTests
         Assert.Equal(5, report.Counts.Symbols);
         Assert.Equal("Post", callers.Edges.Single().Other!.Name);
         Assert.Equal(Coverage.Full, callers.Coverage);
-        Assert.Equal(0, index.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -65,7 +64,6 @@ public sealed class BuildCodeIndexRealStoreTests
 
         Assert.Equal("SND-CODEIDX-002", result.Error.Code);
         Assert.Equal(IndexState.Missing, (await index.Facade.Status(RealIndex.ScopeOf(repo), Token)).Value.Repos.Single().State);
-        Assert.Equal(0, index.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "integration")]

@@ -19,15 +19,14 @@ internal sealed class RealIndex : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-codeindex-" + RealTime.NewGuid().ToString("N"));
 
-    public RealIndex(FakeHeavyJobLock? heavy = null, IEmbedder? embedder = null, IGraphRunner? graph = null)
+    public RealIndex(IEmbedder? embedder = null, IGraphRunner? graph = null)
     {
         Embedder = embedder ?? new FakeEmbedder();
         _ = Directory.CreateDirectory(_directory);
         var snapshot = new GitRepoSnapshot();
         Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System, new InProcessRepoIndexLock());
-        Heavy = heavy ?? new FakeHeavyJobLock();
         var layers = new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph));
-        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), layers, Store, Heavy, TimeProvider.System);
+        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), layers, Store, TimeProvider.System);
         Facade = new CodeIndexFacade(Service, Store, Embedder, graph);
         Embed = new EmbedCodeIndexService(Store, layers.Embeddings, TimeProvider.System);
     }
@@ -36,7 +35,6 @@ internal sealed class RealIndex : IDisposable
 
     public IIndexStore Store { get; }
 
-    public FakeHeavyJobLock Heavy { get; }
 
     public BuildCodeIndexService Service { get; }
 
