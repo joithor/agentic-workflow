@@ -10,8 +10,8 @@ namespace Aw.Sindri.Ui.Testing;
 internal static class AConcepts
 {
     /// <summary>One concept.</summary>
-    internal static ContextConcept Concept(string id, string name, string summary = "", int features = 1, int records = 0, int decisions = 0, int code = 0, string source = "derived") =>
-        new(id, name, summary, new ConceptSize(features, records, decisions, code), source, []);
+    internal static ContextConcept Concept(string id, string name, string summary = "", int features = 1, int records = 0, int decisions = 0, int code = 0, string source = "derived", IReadOnlyList<string>? terms = null) =>
+        new(id, name, summary, new ConceptSize(features, records, decisions, code), source, [], terms);
 
     /// <summary>The synthetic concept of the unassigned nodes.</summary>
     internal static ConceptOther Other(int features = 0, int records = 0, int decisions = 0, int code = 0) => new("concept:other", "Other", new ConceptSize(features, records, decisions, code));
@@ -29,6 +29,9 @@ internal static class AConcepts
         ],
         Other(features: 1, code: 3),
         [new ConceptLink("concept:self-scheduling", "concept:billing", 1)]);
+
+    /// <summary>An answer with a glossary.</summary>
+    internal static ContextConceptsView WithGlossary(ContextConceptsView view, params ConceptGlossaryEntry[] entries) => view with { Glossary = entries };
 
     /// <summary>A state with no concepts to list: empty, building or unavailable.</summary>
     internal static ContextConceptsView Without(string state, string? code = null) => new(1, "aw-split-panes", state, Code: code);

@@ -22,6 +22,9 @@ internal sealed class ConceptLayerViewModel : ObservableObject
     /// <summary>The concepts drawn, the concept of the unassigned nodes last; while a search is on, only the ones it kept.</summary>
     public IReadOnlyList<ConceptTileViewModel> Tiles => _kept is null ? _all : [.. _all.Where(t => _kept.Contains(t.Id))];
 
+    /// <summary>The product's glossary, held for later (red stub).</summary>
+    internal IReadOnlyList<ConceptGlossaryEntry> Glossary { get; } = [];
+
     /// <summary>Whether the concepts are being read.</summary>
     public bool IsLoading { get; private set; }
 

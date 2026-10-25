@@ -43,6 +43,12 @@ internal sealed class ConceptTileViewModel
     /// <summary>The accessible name.</summary>
     public string AccessibleName { get; }
 
+    /// <summary>"Terms: a · b · c +2": the first three terms; empty when the server gave none (red stub).</summary>
+    public string TermsText { get; } = string.Empty;
+
+    /// <summary>Whether the card shows terms.</summary>
+    public bool HasTerms => TermsText.Length > 0;
+
     /// <summary>Opens the concept (click, Enter).</summary>
     public void Open() => _open(Id);
 }
