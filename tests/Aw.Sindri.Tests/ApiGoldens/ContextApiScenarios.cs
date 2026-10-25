@@ -67,7 +67,7 @@ internal static class ContextApiScenarios
         ("context-subgraph", "too-many-006", async (s, ct) => await s.Fetch(Subgraph(string.Join('&', Enumerable.Range(0, 21).Select(i => "nodes=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))), ct)),
         ("context-subgraph", "not-retained-120", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&mapVersion=v99", ct)),
         ("context-subgraph", "query-refused-origin", async (s, ct) => await s.QueryForeignOrigin("/sindri/context/subgraph", SubgraphBody, ct)),
-        ("context-search", "get-tabs", async (s, ct) => await s.Fetch("/sindri/context/search?q=tabs", ct)),   // the fixture map renames feature:tabs.tab-manager to "Tabs" with an override
+        ("context-search", "get-tab-manager", async (s, ct) => await s.Fetch("/sindri/context/search?q=tab+manager", ct)),
         ("context-search", "query-decision-text", async (s, ct) => await s.Query("/sindri/context/search", SearchBody, ct)),
         ("context-search", "session-own-repo", async (s, ct) => await s.FetchAsSession("/sindri/context/search?q=tab", ct)),
         ("context-search", "empty-q-006", async (s, ct) => await s.Fetch("/sindri/context/search?q=", ct)),
