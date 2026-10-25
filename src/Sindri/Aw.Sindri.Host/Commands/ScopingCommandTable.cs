@@ -98,7 +98,7 @@ internal static partial class ScopingCommandTable
         }
 
         var result = await services.GetRequiredService<IService<ScopingShowRequest, ScopingView>>().Handle(new ScopingShowRequest(facts.Value), ct).ConfigureAwait(false);
-        return result.IsError || desk.Client.SessionReason is null ? result : ScopingFencing.Fence(result.Value);
+        return result.IsError || await desk.Client.ResolveSessionReason(ct).ConfigureAwait(false) is null ? result : ScopingFencing.Fence(result.Value);
     }
 
     /// <summary>Exactly one of an address and --facts.</summary>
