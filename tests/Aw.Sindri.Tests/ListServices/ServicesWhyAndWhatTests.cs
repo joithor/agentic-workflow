@@ -13,7 +13,7 @@ namespace Aw.Sindri.Tests.ListServices;
 /// <summary>GET /sindri/services says why a service failed or is paused and what each one does (B-15): optional fields, read as raw JSON.</summary>
 public sealed class ServicesWhyAndWhatTests
 {
-    private static readonly string[] Profiled = ["heartbeat", "stuck", "phantom"];
+    private static readonly string[] _profiled = ["heartbeat", "stuck", "phantom"];
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task A_failed_service_carries_the_failure_detail()
@@ -56,8 +56,7 @@ public sealed class ServicesWhyAndWhatTests
 
         using var doc = JsonDocument.Parse(await ViewScenarios.Read(host, "/sindri/services"));
         var missing = doc.RootElement.GetProperty("services").EnumerateArray()
-            .Where(r => r.GetProperty("name").GetString() is "heartbeat" || !Profiled.Contains(r.GetProperty("name").GetString()))
-            .Where(r => !r.TryGetProperty("description", out var d) || string.IsNullOrWhiteSpace(d.GetString()))
+            .Where(r => IsBuiltInOrHeartbeat(r.GetProperty("name").GetString()) && (!r.TryGetProperty("description", out var d) || string.IsNullOrWhiteSpace(d.GetString())))
             .Select(r => r.GetProperty("name").GetString())
             .ToList();
 
@@ -76,4 +75,7 @@ public sealed class ServicesWhyAndWhatTests
         using var doc = JsonDocument.Parse(body);
         return doc.RootElement.GetProperty("services").EnumerateArray().Single(r => r.GetProperty("name").GetString() == name).Clone();
     }
+
+    private static bool IsBuiltInOrHeartbeat(string? name) =>
+        string.Equals(name, "heartbeat", StringComparison.Ordinal) || !_profiled.Contains(name, StringComparer.Ordinal);
 }
