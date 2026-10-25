@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -112,6 +113,8 @@ internal sealed class ContextEngine(
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.Promote(scope, cancellationToken, expectedVersion);
 
     public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.CleanDraft(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<ConceptScanReport>> ScanConcepts(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.ScanConcepts(scope, cancellationToken, expectedVersion);
 
     public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) => map.Held(scope, cancellationToken);
 

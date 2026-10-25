@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -139,6 +140,9 @@ public sealed class FakeContextEngine : IContextEngine
 
     /// <inheritdoc/>
     public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<CleanupReport>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<ConceptScanReport>> ScanConcepts(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<ConceptScanReport>();
 
     /// <inheritdoc/>
     public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) =>

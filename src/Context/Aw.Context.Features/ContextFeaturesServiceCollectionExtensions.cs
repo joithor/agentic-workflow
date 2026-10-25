@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -39,7 +40,6 @@ using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
-using Aw.Context.Features.SearchMap;
 using Aw.Context.Features.HeldMap;
 using Aw.Context.Features.HoldMap;
 using Aw.Context.Features.ImportMap;
@@ -57,6 +57,8 @@ using Aw.Context.Features.ReviewHistory;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.RunBacktest;
+using Aw.Context.Features.ScanConcepts;
+using Aw.Context.Features.SearchMap;
 using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.ShowPublishStatus;
@@ -79,6 +81,7 @@ public static class ContextFeaturesServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<IMapSearchIndexFactory, UnconfiguredMapSearchIndexFactory>();   // the host that wires Aw.Context.Infrastructure replaces it with the SQLite FTS5 adapter
+        services.TryAddSingleton<IConceptHintStore, UnconfiguredConceptHintStore>();   // the host that wires Aw.Context.Infrastructure replaces it with the SQLite store
         services.TryAddSingleton(WholeMapRules.Default);   // a host or a test may register other limits
         services.TryAddSingleton<ICodeSymbolSource, NoCodeSymbolSource>();   // the host that wires the code index (Sindri's Host adapter) replaces it
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
@@ -178,7 +181,9 @@ public static class ContextFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddPromoteSlices(this IServiceCollection services) => services
         .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
-        .AddScoped<IService<CleanMapRequest, CleanupReport>, CleanMapService>();
+        .AddScoped<IService<CleanMapRequest, CleanupReport>, CleanMapService>()
+        .AddScoped<IService<ScanConceptsRequest, ConceptScanReport>, ScanConceptsService>()
+        .AddScoped<IConceptScanSearch, ConceptScanSearch>();
 
     private static IServiceCollection AddHistory(this IServiceCollection services) => services
         .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()

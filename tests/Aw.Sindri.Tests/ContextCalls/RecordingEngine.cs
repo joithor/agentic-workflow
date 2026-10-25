@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -120,6 +121,8 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     }
 
     public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => inner.CleanDraft(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<ConceptScanReport>> ScanConcepts(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => inner.ScanConcepts(scope, cancellationToken, expectedVersion);
 
     public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) => inner.Held(scope, cancellationToken);
 

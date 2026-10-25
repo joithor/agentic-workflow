@@ -1,8 +1,10 @@
 using System.Text.Json;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Sources;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Core.WholeMap;
@@ -104,7 +106,15 @@ internal static class Engines
             new ShowMapStatusService(store), new CheckMapService(store), new CheckRetentionService(store, exports, clock, new Features.RunBacktest.UnconfiguredBacktest()), new PurgeMapService(store, exports, clock));
         var review = new MapReview(new ReviewQueueService(store, scrubbers), new ReviewMapService(store, new FakeCurrentUser(), clock), new ReviewHistoryService(store), new ExportReviewService(store, scrubbers, new FakeReviewFileStore(), clock),
             new PreviewReviewFileService(new FakeReviewFileStore()), new ApplyReviewFileService(store, new FakeReviewFileStore(), new FakeCurrentUser(), clock), new PromoteMapService(store, clock));
-        return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, store, clock), new GetProposalsService(store, store, scrubbers)), Publishing(store), new CleanMapService(store, scrubbers, new FakeModelPort(), new FakeCurrentUser(), clock));
+        return new ContextMap(admin, review, new MapProposals(Build(clock, store), new ProposeFromScopeService(store, store, clock), new GetProposalsService(store, store, scrubbers)), Publishing(store), new CleanMapService(store, scrubbers, new FakeModelPort(), new FakeCurrentUser(), clock),
+            new Features.ScanConcepts.ScanConceptsService(store, scrubbers, new FakeModelPort(), new NoConceptSearch(), new FakeConceptHintStore(), clock));
+    }
+
+    /// <summary>A scan search that finds nothing: the query tests never scan.</summary>
+    private sealed class NoConceptSearch : IConceptScanSearch
+    {
+        public ValueTask<Kernel.Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Kernel.Result<MapSearchView>>(Aw.Context.Core.ContextErrors.StoreUnavailable.With("no search in this test"));
     }
 
     private static MapPublishing Publishing(FakeGraphStore store) =>
