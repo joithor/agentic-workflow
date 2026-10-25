@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Checks;
@@ -235,5 +236,11 @@ public sealed class ProveBeforeAfterStepTests
 
         Assert.Equal("missing", (string?)Out(result)["results"]![0]!["base"]);
         Assert.Empty(rig.Scripts.Calls);
+    }
+
+    [Fact]
+    public void The_Step_declares_fact_redTests_as_an_input_because_the_runner_hands_it_only_the_declared_facts()
+    {
+        Assert.Contains(FactKey.From("fact:redTests"), ProveSteps.BeforeAfter.Inputs);
     }
 }
