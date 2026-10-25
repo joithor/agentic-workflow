@@ -24,7 +24,7 @@ public sealed class CheckPinTests : IDisposable
 
         var (exit, _, error) = _w.Run("record-run", "c1", "--state", _w.State, "--evidence", after.GetProperty("evidence").GetString()!);
 
-        Assert.True(exit == 0, $"record-run exited {exit}: {error}");
+        Assert.True(exit == 0, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"record-run exited {exit}: {error}"));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class CheckPinTests : IDisposable
     private JsonElement Ok(params string[] args)
     {
         var (exit, output, error) = _w.Run(args);
-        Assert.True(exit == 0, $"{string.Join(' ', args)} exited {exit}: {error}");
+        Assert.True(exit == 0, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{string.Join(' ', args)} exited {exit}: {error}"));
         using var document = JsonDocument.Parse(output);
         return document.RootElement.Clone();
     }
