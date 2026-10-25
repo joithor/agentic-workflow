@@ -1,6 +1,7 @@
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.ContextCalls;
 
@@ -29,8 +30,22 @@ public sealed class IndexConceptsTests : IDisposable
         var profile = (await _files.Source.Load(Token)).Value.Profile;
 
         var pin = Assert.Single(profile.Index!.Concepts!);
-        Assert.Equal(new ConceptSettings("scheduling", "Self scheduling", "Shifts and swaps", ["feature:shifts", "feature:shifts.*"], ["apps/web/src/Schedule/**"]), pin);
+        Assert.Equal(new ConceptSettings(ConceptPinId.From("scheduling"), "Self scheduling", "Shifts and swaps", ["feature:shifts", "feature:shifts.*"], ["apps/web/src/Schedule/**"]), pin);
         Assert.True(ProfileRules.Check(profile).IsSuccess);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("Bad Id")]
+    [InlineData("\"\"")]
+    [InlineData("Scheduling")]
+    public async Task An_id_that_is_not_a_slug_is_refused_with_its_key_path(string id)
+    {
+        _files.Write(Base + "index:\n  concepts:\n    - { id: " + id + ", name: Billing }\nrepos:\n  - { name: web, path: /work/web }\n");
+
+        var loaded = await _files.Source.Load(Token);
+
+        Assert.True(loaded.IsError);
+        Assert.Contains("index.concepts[0].id", loaded.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -46,12 +61,12 @@ public sealed class IndexConceptsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void The_pins_reach_the_context_repo()
     {
-        var profile = Profile(Pins(new ConceptSettings("billing", "Billing", Features: ["feature:invoices.*"])), Pins(new ConceptSettings(Name: "Scheduling", Paths: ["src/schedule/**"])));
+        var profile = Profile(Pins(new ConceptSettings(ConceptPinId.From("billing"), "Billing", Features: ["feature:invoices.*"])), Pins(new ConceptSettings(Name: "Scheduling", Paths: ["src/schedule/**"])));
 
         var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
 
         Assert.Equal(
-            [new ConceptPin("billing", "Billing", null, ["feature:invoices.*"], []), new ConceptPin(null, "Scheduling", null, [], ["src/schedule/**"])],
+            [new ConceptPin(ConceptId.From("billing"), "Billing", null, ["feature:invoices.*"], []), new ConceptPin(null, "Scheduling", null, [], ["src/schedule/**"])],
             repo.Concepts);
     }
 
@@ -64,7 +79,7 @@ public sealed class IndexConceptsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void The_pins_reach_the_context_repo_through_the_profile_entry()
     {
-        var pin = new ConceptPin("billing", "Billing", null, [], []);
+        var pin = new ConceptPin(ConceptId.From("billing"), "Billing", null, [], []);
 
         Assert.Equal([pin], ScopeRules.Usable([new ProfileRepoEntry("web", "/r/web", null, [pin])]).Single().Concepts);
     }
@@ -72,12 +87,10 @@ public sealed class IndexConceptsTests : IDisposable
     [Theory, Trait("Lane", "unit")]
     [InlineData(null, "billing", "index.concepts[0].name: must not be empty")]
     [InlineData("  ", "billing", "index.concepts[0].name: must not be empty")]
-    [InlineData("Billing", "Bad Id", "index.concepts[0].id: must be a slug")]
-    [InlineData("Billing", "", "index.concepts[0].id: must be a slug")]
     [InlineData("Billing", "other", "index.concepts[0].id: 'other' is reserved")]
     public void A_pin_that_cant_be_one_names_its_key_path(string? name, string id, string message)
     {
-        var error = ProfileRules.Check(Profile(Pins(new ConceptSettings(id, name)))).Error;
+        var error = ProfileRules.Check(Profile(Pins(new ConceptSettings(ConceptPinId.From(id), name)))).Error;
 
         Assert.Equal(SindriErrors.ProfileInvalid.Code, error.Code);
         Assert.Contains(message, error.Message, StringComparison.Ordinal);
@@ -86,8 +99,8 @@ public sealed class IndexConceptsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void Duplicate_ids_are_refused_in_a_list_and_between_the_profile_and_a_repo()
     {
-        var twice = Profile(Pins(new ConceptSettings("billing", "Billing"), new ConceptSettings("billing", "Invoices")));
-        var across = Profile(Pins(new ConceptSettings("billing", "Billing")), Pins(new ConceptSettings("billing", "Invoices")));
+        var twice = Profile(Pins(new ConceptSettings(ConceptPinId.From("billing"), "Billing"), new ConceptSettings(ConceptPinId.From("billing"), "Invoices")));
+        var across = Profile(Pins(new ConceptSettings(ConceptPinId.From("billing"), "Billing")), Pins(new ConceptSettings(ConceptPinId.From("billing"), "Invoices")));
 
         Assert.Contains("index.concepts[1].id: 'billing' is already used", ProfileRules.Check(twice).Error.Message, StringComparison.Ordinal);
         Assert.Contains("repos.web.index.concepts[0].id: 'billing' is already used", ProfileRules.Check(across).Error.Message, StringComparison.Ordinal);
@@ -109,7 +122,7 @@ public sealed class IndexConceptsTests : IDisposable
     public void A_bad_path_glob_names_the_repo_and_good_pins_pass()
     {
         var bad = Profile(repo: Pins(new ConceptSettings(Name: "Billing", Paths: ["ok/**", "../x"])));
-        var good = Profile(Pins(new ConceptSettings("billing", "Billing", "Invoices", ["feature:invoices", "feature:invoices.*"], ["src/billing/**"]), new ConceptSettings(Name: "Empty")));
+        var good = Profile(Pins(new ConceptSettings(ConceptPinId.From("billing"), "Billing", "Invoices", ["feature:invoices", "feature:invoices.*"], ["src/billing/**"]), new ConceptSettings(Name: "Empty")));
 
         Assert.Contains("repos.web.index.concepts[0].paths[1]: must not contain '..'", ProfileRules.Check(bad).Error.Message, StringComparison.Ordinal);
         Assert.True(ProfileRules.Check(good).IsSuccess);

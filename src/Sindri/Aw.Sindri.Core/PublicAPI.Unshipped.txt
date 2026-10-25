@@ -18503,12 +18503,12 @@ static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? sig
 static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!
 Aw.Sindri.Core.Profile.ConceptSettings
 Aw.Sindri.Core.Profile.ConceptSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ConceptSettings!
-Aw.Sindri.Core.Profile.ConceptSettings.ConceptSettings(string? Id = null, string? Name = null, string? Summary = null, System.Collections.Generic.IReadOnlyList<string!>? Features = null, System.Collections.Generic.IReadOnlyList<string!>? Paths = null) -> void
-Aw.Sindri.Core.Profile.ConceptSettings.Deconstruct(out string? Id, out string? Name, out string? Summary, out System.Collections.Generic.IReadOnlyList<string!>? Features, out System.Collections.Generic.IReadOnlyList<string!>? Paths) -> void
+Aw.Sindri.Core.Profile.ConceptSettings.ConceptSettings(Aw.Sindri.Core.Ids.ConceptPinId? Id = null, string? Name = null, string? Summary = null, System.Collections.Generic.IReadOnlyList<string!>? Features = null, System.Collections.Generic.IReadOnlyList<string!>? Paths = null) -> void
+Aw.Sindri.Core.Profile.ConceptSettings.Deconstruct(out Aw.Sindri.Core.Ids.ConceptPinId? Id, out string? Name, out string? Summary, out System.Collections.Generic.IReadOnlyList<string!>? Features, out System.Collections.Generic.IReadOnlyList<string!>? Paths) -> void
 Aw.Sindri.Core.Profile.ConceptSettings.Equals(Aw.Sindri.Core.Profile.ConceptSettings? other) -> bool
 Aw.Sindri.Core.Profile.ConceptSettings.Features.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.ConceptSettings.Features.init -> void
-Aw.Sindri.Core.Profile.ConceptSettings.Id.get -> string?
+Aw.Sindri.Core.Profile.ConceptSettings.Id.get -> Aw.Sindri.Core.Ids.ConceptPinId?
 Aw.Sindri.Core.Profile.ConceptSettings.Id.init -> void
 Aw.Sindri.Core.Profile.ConceptSettings.Name.get -> string?
 Aw.Sindri.Core.Profile.ConceptSettings.Name.init -> void
@@ -18525,3 +18525,20 @@ Aw.Sindri.Core.Profile.IndexSettings.Concepts.get -> System.Collections.Generic.
 Aw.Sindri.Core.Profile.IndexSettings.Concepts.init -> void
 Aw.Sindri.Core.Profile.RepoConcepts
 static Aw.Sindri.Core.Profile.RepoConcepts.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.ConceptSettings!>!
+Aw.Sindri.Core.Ids.ConceptPinId
+Aw.Sindri.Core.Ids.ConceptPinId.Equals(Aw.Sindri.Core.Ids.ConceptPinId other) -> bool
+Aw.Sindri.Core.Ids.ConceptPinId.Equals(Aw.Sindri.Core.Ids.ConceptPinId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Ids.ConceptPinId>! comparer) -> bool
+Aw.Sindri.Core.Ids.ConceptPinId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Ids.ConceptPinId.IsInitialized() -> bool
+Aw.Sindri.Core.Ids.ConceptPinId.ConceptPinId() -> void
+Aw.Sindri.Core.Ids.ConceptPinId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Ids.ConceptPinId.Value.get -> string!
+override Aw.Sindri.Core.Ids.ConceptPinId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Ids.ConceptPinId.GetHashCode() -> int
+override Aw.Sindri.Core.Ids.ConceptPinId.ToString() -> string!
+static Aw.Sindri.Core.Ids.ConceptPinId.From(string! value) -> Aw.Sindri.Core.Ids.ConceptPinId
+static Aw.Sindri.Core.Ids.ConceptPinId.operator !=(Aw.Sindri.Core.Ids.ConceptPinId left, Aw.Sindri.Core.Ids.ConceptPinId right) -> bool
+static Aw.Sindri.Core.Ids.ConceptPinId.operator ==(Aw.Sindri.Core.Ids.ConceptPinId left, Aw.Sindri.Core.Ids.ConceptPinId right) -> bool
+static Aw.Sindri.Core.Ids.ConceptPinId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ConceptPinId
+static Aw.Sindri.Core.Ids.ConceptPinId.TryFrom(string? value, out Aw.Sindri.Core.Ids.ConceptPinId vo) -> bool
+static Aw.Sindri.Core.Ids.ConceptPinId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.ConceptPinId result) -> bool

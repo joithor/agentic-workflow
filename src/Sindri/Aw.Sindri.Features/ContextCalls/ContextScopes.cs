@@ -56,7 +56,7 @@ internal sealed class ContextScopes(IApprovedProfile approvals, ICallerContextAc
 
     private static IReadOnlyList<ConceptPin>? Pins(SindriProfile profile, RepoEntry repo) =>
         RepoConcepts.For(profile, repo) is { Count: > 0 } concepts
-            ? [.. concepts.Select(c => new ConceptPin(c.Id, c.Name ?? string.Empty, c.Summary, c.Features ?? [], c.Paths ?? []))]
+            ? [.. concepts.Select(c => new ConceptPin(c.Id is { } id ? ConceptId.From(id.Value) : null, c.Name ?? string.Empty, c.Summary, c.Features ?? [], c.Paths ?? []))]
             : null;
 
     /// <summary>The engine's caller for a Sindri caller; no caller at all is an in-process service.</summary>

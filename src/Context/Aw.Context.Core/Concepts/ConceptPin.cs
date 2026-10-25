@@ -6,4 +6,4 @@ namespace Aw.Context.Core.Concepts;
 /// <param name="Summary">A line about it, or null.</param>
 /// <param name="Features">Feature node keys or key globs ('feature:shifts', 'feature:shifts.*') it holds.</param>
 /// <param name="Paths">Repo-relative file globs; the features implemented there belong to it.</param>
-public sealed record ConceptPin(string? Id, string Name, string? Summary, IReadOnlyList<string> Features, IReadOnlyList<string> Paths);
+public sealed record ConceptPin(ConceptId? Id, string Name, string? Summary, IReadOnlyList<string> Features, IReadOnlyList<string> Paths);

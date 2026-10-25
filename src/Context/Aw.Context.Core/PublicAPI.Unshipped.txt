@@ -6989,12 +6989,12 @@ Aw.Context.Core.Graph.ConceptKeys
 const Aw.Context.Core.Graph.ConceptKeys.Other = "concept:other" -> string!
 Aw.Context.Core.Concepts.ConceptPin
 Aw.Context.Core.Concepts.ConceptPin.<Clone>$() -> Aw.Context.Core.Concepts.ConceptPin!
-Aw.Context.Core.Concepts.ConceptPin.ConceptPin(string? Id, string! Name, string? Summary, System.Collections.Generic.IReadOnlyList<string!>! Features, System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
-Aw.Context.Core.Concepts.ConceptPin.Deconstruct(out string? Id, out string! Name, out string? Summary, out System.Collections.Generic.IReadOnlyList<string!>! Features, out System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Context.Core.Concepts.ConceptPin.ConceptPin(Aw.Context.Core.Concepts.ConceptId? Id, string! Name, string? Summary, System.Collections.Generic.IReadOnlyList<string!>! Features, System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
+Aw.Context.Core.Concepts.ConceptPin.Deconstruct(out Aw.Context.Core.Concepts.ConceptId? Id, out string! Name, out string? Summary, out System.Collections.Generic.IReadOnlyList<string!>! Features, out System.Collections.Generic.IReadOnlyList<string!>! Paths) -> void
 Aw.Context.Core.Concepts.ConceptPin.Equals(Aw.Context.Core.Concepts.ConceptPin? other) -> bool
 Aw.Context.Core.Concepts.ConceptPin.Features.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Concepts.ConceptPin.Features.init -> void
-Aw.Context.Core.Concepts.ConceptPin.Id.get -> string?
+Aw.Context.Core.Concepts.ConceptPin.Id.get -> Aw.Context.Core.Concepts.ConceptId?
 Aw.Context.Core.Concepts.ConceptPin.Id.init -> void
 Aw.Context.Core.Concepts.ConceptPin.Name.get -> string!
 Aw.Context.Core.Concepts.ConceptPin.Name.init -> void
@@ -7062,3 +7062,20 @@ static Aw.Context.Core.Concepts.ConceptName.operator !=(Aw.Context.Core.Concepts
 static Aw.Context.Core.Concepts.ConceptName.operator ==(Aw.Context.Core.Concepts.ConceptName? left, Aw.Context.Core.Concepts.ConceptName? right) -> bool
 static Aw.Context.Core.Concepts.ConceptGroup.operator !=(Aw.Context.Core.Concepts.ConceptGroup? left, Aw.Context.Core.Concepts.ConceptGroup? right) -> bool
 static Aw.Context.Core.Concepts.ConceptGroup.operator ==(Aw.Context.Core.Concepts.ConceptGroup? left, Aw.Context.Core.Concepts.ConceptGroup? right) -> bool
+Aw.Context.Core.Concepts.ConceptId
+Aw.Context.Core.Concepts.ConceptId.Equals(Aw.Context.Core.Concepts.ConceptId other) -> bool
+Aw.Context.Core.Concepts.ConceptId.Equals(Aw.Context.Core.Concepts.ConceptId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Concepts.ConceptId>! comparer) -> bool
+Aw.Context.Core.Concepts.ConceptId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Concepts.ConceptId.IsInitialized() -> bool
+Aw.Context.Core.Concepts.ConceptId.ConceptId() -> void
+Aw.Context.Core.Concepts.ConceptId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Concepts.ConceptId.Value.get -> string!
+override Aw.Context.Core.Concepts.ConceptId.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptId.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptId.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptId.From(string! value) -> Aw.Context.Core.Concepts.ConceptId
+static Aw.Context.Core.Concepts.ConceptId.operator !=(Aw.Context.Core.Concepts.ConceptId left, Aw.Context.Core.Concepts.ConceptId right) -> bool
+static Aw.Context.Core.Concepts.ConceptId.operator ==(Aw.Context.Core.Concepts.ConceptId left, Aw.Context.Core.Concepts.ConceptId right) -> bool
+static Aw.Context.Core.Concepts.ConceptId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Concepts.ConceptId
+static Aw.Context.Core.Concepts.ConceptId.TryFrom(string? value, out Aw.Context.Core.Concepts.ConceptId vo) -> bool
+static Aw.Context.Core.Concepts.ConceptId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Concepts.ConceptId result) -> bool

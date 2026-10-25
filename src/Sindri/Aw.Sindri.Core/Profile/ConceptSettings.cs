@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Core.Profile;
 
@@ -10,7 +11,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="Paths">Repo-relative file globs; the features implemented there belong to the concept.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ConceptSettings(
-    string? Id = null,
+    ConceptPinId? Id = null,
     string? Name = null,
     string? Summary = null,
     IReadOnlyList<string>? Features = null,

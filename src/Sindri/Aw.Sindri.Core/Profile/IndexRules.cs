@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Aw.Kernel;
+using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Core.Profile;
 
@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Profile;
 /// The code index keys of 'index:' (code index spec §13), the profile's and each repo's: limits in range, utility globs like
 /// deny globs, an embedding URL that is a loopback IP over http and a model that is not a cloud one. Each problem names its key path.
 /// </summary>
-internal static partial class IndexRules
+internal static class IndexRules
 {
     private const int MaxMegabytes = 102_400;
     private const int MaxGraphMegabytes = 4_096;
@@ -48,9 +48,9 @@ internal static partial class IndexRules
                 return problem;
             }
 
-            if (concepts[i].Id is { } id && !seen.Add(id))
+            if (concepts[i].Id is { } id && !seen.Add(id.Value))
             {
-                return Invalid($"{at}.id", $"'{id}' is already used by an earlier entry");
+                return Invalid($"{at}.id", $"'{id.Value}' is already used by an earlier entry");
             }
         }
 
@@ -58,20 +58,17 @@ internal static partial class IndexRules
     }
 
     private static Error? Pin(string at, ConceptSettings pin) =>
-        Name($"{at}.name", pin.Name) ?? Id($"{at}.id", pin.Id) ?? Features($"{at}.features", pin.Features) ?? Globs($"{at}.paths", pin.Paths);
+        Name($"{at}.name", pin.Name) ?? Reserved($"{at}.id", pin.Id) ?? Features($"{at}.features", pin.Features) ?? Globs($"{at}.paths", pin.Paths);
 
     private static Error? Name(string path, string? name) =>
         string.IsNullOrWhiteSpace(name) || name.Length > MaxName || name.Any(char.IsControl)
             ? Invalid(path, string.Create(CultureInfo.InvariantCulture, $"must not be empty, over {MaxName} characters or hold control characters"))
             : null;
 
-    private static Error? Id(string path, string? id) => id switch
-    {
-        null => null,
-        ConceptOther => Invalid(path, "'other' is reserved for the concept that holds what no other takes"),
-        _ when !IdShape.IsMatch(id) => Invalid(path, "must be a slug of lowercase letters, digits and '-' (like 'scheduling')"),
-        _ => null,
-    };
+    private static Error? Reserved(string path, ConceptPinId? id) =>
+        id is { } pinned && string.Equals(pinned.Value, ConceptOther, StringComparison.Ordinal)
+            ? Invalid(path, "'other' is reserved for the concept that holds what no other takes")
+            : null;
 
     private static Error? Features(string path, IReadOnlyList<string>? features)
     {
@@ -93,13 +90,13 @@ internal static partial class IndexRules
     /// <summary>A repo's pins may not reuse an id the profile's own already pin (a repo's list is added to the profile's).</summary>
     private static Error? SharedIds(string path, IReadOnlyList<ConceptSettings>? top, IReadOnlyList<ConceptSettings>? own)
     {
-        var shared = (top ?? []).Select(c => c.Id).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var shared = (top ?? []).Select(c => c.Id?.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         for (var i = 0; i < (own?.Count ?? 0); i++)
         {
             // why: the loop bound is zero when own is null
-            if (own![i].Id is { } id && shared.Contains(id))
+            if (own![i].Id is { } id && shared.Contains(id.Value))
             {
-                return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{i}].id"), $"'{id}' is already used by the profile's index.concepts");
+                return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{i}].id"), $"'{id.Value}' is already used by the profile's index.concepts");
             }
         }
 
@@ -146,11 +143,6 @@ internal static partial class IndexRules
     /// <summary>The URL without credentials, so a bad one is never echoed with its password.</summary>
     private static string Redacted(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.UserInfo.Length > 0 ? uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped) : url;
-
-    private static Regex IdShape { get; } = IdPattern();
-
-    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex IdPattern();
 
     private static Error Invalid(string keyPath, string problem) => SindriErrors.ProfileInvalid.With($"{keyPath}: {problem}");
 }
