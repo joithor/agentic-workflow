@@ -58,7 +58,7 @@ internal sealed class ConceptIndex
 
     private void JoinMembers(IReadOnlyList<GraphEdge> edges)
     {
-        foreach (var edge in edges.Where(e => IsMemberEdge(e)))
+        foreach (var edge in edges.Where(IsMemberEdge))
         {
             Join(edge.From.Value, edge.To.Value);
         }
