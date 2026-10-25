@@ -2,10 +2,10 @@ using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Glossary;
 
-/// <summary>Builds a <see cref="Glossary"/> from feature vectors: pure and deterministic, no I/O.</summary>
+/// <summary>Builds a <see cref="MapGlossary"/> from feature vectors: pure and deterministic, no I/O.</summary>
 internal static class GlossaryBuilder
 {
-    internal static Glossary Build(IReadOnlyList<FeatureVectors> features, GlossaryRules rules)
+    internal static MapGlossary Build(IReadOnlyList<FeatureVectors> features, GlossaryRules rules)
     {
         var ordered = features.OrderBy(f => f.Feature.Value, StringComparer.Ordinal).ToList();
         var used = ordered.Take(rules.MaxFeatures).ToList();
@@ -27,7 +27,7 @@ internal static class GlossaryBuilder
         var members = groups.Select(g => (IReadOnlyList<FeatureVectors>)[.. g.Select(i => vectored[i].Feature)]).ToList();
         var ranked = GlossaryTermRanking.Rank(members, rules);
         var clusters = members.Select((m, i) => new GlossaryCluster([.. m.Select(f => f.Feature)], [.. ranked[i].Select(t => t.Term)])).ToList();
-        return new Glossary(MergeTerms(clusters, ranked), clusters, unvectored, Truncated: ordered.Count > rules.MaxFeatures);
+        return new MapGlossary(MergeTerms(clusters, ranked), clusters, unvectored, Truncated: ordered.Count > rules.MaxFeatures);
     }
 
     // A term in several clusters takes the features of all of them and its highest weight.

@@ -3,7 +3,6 @@ using System.Text;
 using Aw.Context.Core.Glossary;
 using Aw.Kernel.Testing;
 using static Aw.Context.Tests.Glossary.GlossaryFixtures;
-using Gloss = Aw.Context.Core.Glossary.Glossary;
 
 namespace Aw.Context.Tests.Glossary;
 
@@ -26,7 +25,7 @@ public sealed class GlossaryGoldenTests
         Golden.Match(Render(Build(features)), typeof(GlossaryGoldenTests).Assembly, "Glossary/Golden/six-features.txt", Normalization.None);
     }
 
-    private static string Render(Gloss glossary)
+    private static string Render(MapGlossary glossary)
     {
         var text = new StringBuilder();
         foreach (var cluster in glossary.Clusters)

@@ -6,7 +6,7 @@ namespace Aw.Context.Core.Glossary;
 internal static class GlossaryAffinity
 {
     // The Jaccard overlap of the terms each feature carries, 0 to 1; 0 when either carries none.
-    internal static double Between(Glossary glossary, NodeKey a, NodeKey b)
+    internal static double Between(MapGlossary glossary, NodeKey a, NodeKey b)
     {
         var left = TermsOf(glossary, a);
         var right = TermsOf(glossary, b);
@@ -15,6 +15,6 @@ internal static class GlossaryAffinity
         return all == 0 ? 0 : (double)shared / all;
     }
 
-    private static HashSet<string> TermsOf(Glossary glossary, NodeKey feature) =>
+    private static HashSet<string> TermsOf(MapGlossary glossary, NodeKey feature) =>
         [.. glossary.Terms.Where(t => t.Features.Contains(feature)).Select(t => t.Term)];
 }

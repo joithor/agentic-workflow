@@ -1,6 +1,5 @@
 using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
-using Gloss = Aw.Context.Core.Glossary.Glossary;
 
 namespace Aw.Context.Tests.Glossary;
 
@@ -11,7 +10,7 @@ internal static class GlossaryFixtures
 
     internal static IReadOnlyList<string> Keys(IEnumerable<NodeKey> keys) => [.. keys.Select(k => k.Value)];
 
-    internal static Gloss Build(IReadOnlyList<FeatureVectors> features, GlossaryRules? rules = null) =>
+    internal static MapGlossary Build(IReadOnlyList<FeatureVectors> features, GlossaryRules? rules = null) =>
         GlossaryBuilder.Build(features, rules ?? new GlossaryRules());
 
     // Two feature groups on separate axes: billing on x, scheduling on y; each has distinct words and one shared word.
