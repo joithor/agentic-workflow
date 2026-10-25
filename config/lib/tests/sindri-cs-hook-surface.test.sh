@@ -67,7 +67,7 @@ HOME_NONE="$WORK/home-none"; mkdir -p "$HOME_NONE"
 BEFORE="$(cd "$HOME_APPROVED" && find . | sort)"
 
 RC=0; OUT="$(hook "$WORK/repo-b" "$HOME_APPROVED")" || RC=$?
-check "repo not in the approved profile: the one line" "$OUT" "sindri: repo-b is not onboarded (no secret scan, shape signals or index); run: sindri repo onboard"
+check "repo not in the approved profile: the one line" "$OUT" "sindri: repo-b is not onboarded (no secret scan or index); run: sindri repo onboard"
 check "repo not in the approved profile: exit 0" "$RC" "0"
 
 RC=0; OUT="$(hook "$WORK/repo-a" "$HOME_APPROVED")" || RC=$?

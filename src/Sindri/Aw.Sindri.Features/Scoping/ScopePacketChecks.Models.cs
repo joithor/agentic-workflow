@@ -79,7 +79,7 @@ internal static partial class ScopePacketChecks
             var who = drafter is null ? "the drafter" : $"the {role}";
             if (failOnMissingRecord)
             {
-                s.Fail(item: null, $"no run record for {who}", "Both agent runs leave a runtime record in runs.json.");
+                FailUnlessSpent(c, s, item: null, $"no run record for {who}", "Both agent runs leave a runtime record in runs.json.");
             }
             else
             {
@@ -89,10 +89,23 @@ internal static partial class ScopePacketChecks
             return;
         }
 
-        ModelsDiffer(drafter, other, step, role, s);
+        ModelsDiffer(drafter, other, step, role, c, s, challenger: failOnMissingRecord);
     }
 
-    private static void ModelsDiffer(JsonNode drafter, JsonNode other, string step, string role, RuleSink s)
+    // why: once the challenge loop is spent the challenger never reruns, so the drafter can't change which model ran; the owner reads it at the stop
+    private static void FailUnlessSpent(ScopeContext c, RuleSink s, string? item, string message, string fix)
+    {
+        if (Spent(c))
+        {
+            s.Warn(item, message + " and the second opinion is spent", fix);
+        }
+        else
+        {
+            s.Fail(item, message, fix);
+        }
+    }
+
+    private static void ModelsDiffer(JsonNode drafter, JsonNode other, string step, string role, ScopeContext c, RuleSink s, bool challenger)
     {
         var model = ScopeJson.Str(other, "model");
         var drafterModel = ScopeJson.Str(drafter, "model");
@@ -110,7 +123,14 @@ internal static partial class ScopePacketChecks
             // why: a default install names no models, so equal models there are only a warning; a fail needs both runs to have asked for one
             if (!string.IsNullOrEmpty(ScopeJson.Str(drafter, "requested")) && !string.IsNullOrEmpty(ScopeJson.Str(other, "requested")))
             {
-                s.Fail(step, $"the {role} ran on {model}, the drafter's model", $"Run the {role} on a different model.");
+                if (challenger)
+                {
+                    FailUnlessSpent(c, s, step, $"the {role} ran on {model}, the drafter's model", $"Run the {role} on a different model.");
+                }
+                else
+                {
+                    s.Fail(step, $"the {role} ran on {model}, the drafter's model", $"Run the {role} on a different model.");
+                }
             }
             else
             {

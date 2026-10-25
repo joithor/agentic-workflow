@@ -165,7 +165,7 @@ public sealed class LauncherReviewFixTests : IDisposable
     {
         var host = new BlockingHost(_host);
         var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => host, new FakeTerminalViewer(), Options, _clock) { ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null) });
-        var request = A.LaunchRequest().Unattended(new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"))).Build();   // no viewer step: the cancel must be seen after host.Start
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"))).Build();   // no viewer step: the cancel must be seen after host.Start
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
         var launching = launcher.Launch(request, cancel.Token).AsTask();
         await host.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);

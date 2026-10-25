@@ -24,7 +24,7 @@ public sealed class RunDoctorTests
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
         new(_h.Store, _h.Probe, new LedgerFacts(_h.Store, _views), new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events,
-            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(new MapPublishStatusReader(FakeContextEngine.Instance, new NoIndexOutlooks(), _h.Store, _h.Clock), _h.Clock), new LinearDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Features.CodeIndexJobs.CodeIndexDoctor(new CodeIndex.Testing.FakeCodeIndex(), new CodeIndex.Testing.FakeRepoHeads(), new InMemoryJobViews(), new CodeIndex.Testing.FakeEmbedder(), new CodeIndex.Testing.FakePins(), _h.Clock))), _api, _temporal, _h.Clock);
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(new MapPublishStatusReader(FakeContextEngine.Instance, new NoIndexOutlooks(), _h.Store, _h.Clock), _h.Clock), new LinearDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Features.CodeIndexJobs.CodeIndexDoctor(new CodeIndex.Testing.FakeCodeIndex(), new CodeIndex.Testing.FakeRepoHeads(), new InMemoryJobViews(), new CodeIndex.Testing.FakeEmbedder(), new CodeIndex.Testing.FakePins(), _h.Clock, _h.Profiles))), _api, _temporal, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()
@@ -32,7 +32,7 @@ public sealed class RunDoctorTests
         var approved = SliceHarness.Profile();
         _h.Profiles.Live = approved;
         var grant = await _h.HoldLease();
-        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
+        _ = await new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ApproveProfileRequest(approved.Hash, _h.Confirm(approved.Hash)), Token);
         _api.Answer = (new ControlEndpoint(new Uri("http://127.0.0.1:7410"), grant.Holder.Pid, grant.Epoch), new Ping(grant.Holder.Pid, grant.Epoch));
         _ = await _temporal.Ensure(Token);
         _ = await _views.Open(ViewSchema.Version, Token);

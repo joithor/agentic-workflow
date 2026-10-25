@@ -24,7 +24,6 @@ public abstract partial class SindriApiContract
     [InlineData("name-taken", "SND-SETUP-002", ErrorKind.Conflict)]
     [InlineData("bad-name", "SND-SETUP-002", ErrorKind.Conflict)]
     [InlineData("profile-changed", "SND-PROFILE-002", ErrorKind.Conflict)]
-    [InlineData("refused-session", "SND-AUTH-002", ErrorKind.Forbidden)]
     public async Task AddRepo_refusals_carry_the_apis_code_and_kind(string scenario, string code, ErrorKind kind)
     {
         var server = new FakeSindriApi { AddRepoAnswer = RouteAnswer.Problem("setup-repos", scenario) };

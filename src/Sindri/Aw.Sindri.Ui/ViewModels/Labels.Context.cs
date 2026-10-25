@@ -37,7 +37,4 @@ internal static partial class Labels
 
     /// <summary>The word for an anchor node in a band.</summary>
     internal const string ContextAnchorTag = "topic";
-
-    /// <summary>The box's line when the server could not take that many topics in one read.</summary>
-    internal const string ContextTooLongForOneRead = "Too many topics for one read. Try fewer.";
 }

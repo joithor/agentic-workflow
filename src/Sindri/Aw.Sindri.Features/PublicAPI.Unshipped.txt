@@ -64,10 +64,10 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.get -> long?
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Sequence.init -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.<Clone>$() -> Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest!
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Answer.init -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.ApproveRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
-Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.ApproveRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void
+Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Equals(Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest? other) -> bool
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
 Aw.Sindri.Features.ApproveRecipe.ApproveRecipeRequest.Hash.init -> void
@@ -1238,15 +1238,15 @@ Aw.Sindri.Features.RegisterRecipe.RegisterRecipeResponse.Version.get -> int
 Aw.Sindri.Features.RegisterRecipe.RegisterRecipeResponse.Version.init -> void
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.<Clone>$() -> Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest!
-Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Answer.init -> void
-Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Equals(Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest? other) -> bool
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Hash.init -> void
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.Id.init -> void
-Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.RevokeRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.RevokeRecipe.RevokeRecipeRequest.RevokeRecipeRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeResponse
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeResponse.<Clone>$() -> Aw.Sindri.Features.RevokeRecipe.RevokeRecipeResponse!
 Aw.Sindri.Features.RevokeRecipe.RevokeRecipeResponse.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
@@ -3744,10 +3744,10 @@ Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.<Clone>$() -> Aw.S
 Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.ApproveAll.get -> Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan?
 static Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.operator !=(Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? left, Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? right) -> bool
 override Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Equals(object? obj) -> bool
-Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
-Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.ApproveAllRecipesRequest(Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer) -> void
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.ApproveAllRecipesRequest(Aw.Sindri.Core.Challenges.ChallengeAnswer? Answer = null) -> void
 Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Answer.init -> void
-Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
 override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.GetHashCode() -> int
 override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(object? obj) -> bool
 Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? other) -> bool
@@ -4426,7 +4426,6 @@ Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.get -> Syste
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.init -> void
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.get -> int
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.init -> void
-const Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deferred = "deferred" -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.Deconstruct(out string? Repo) -> void

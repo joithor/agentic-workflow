@@ -22,7 +22,7 @@ public enum ScopeOutcome
     [JsonStringEnumMemberName("incomplete")]
     Incomplete = 4,
 
-    /// <summary>Every failing rule is SCP-COV-002: a lens must run again.</summary>
+    /// <summary>Every failing rule is SCP-COV-002 or SCP-LENS-001: a lens must run again.</summary>
     [JsonStringEnumMemberName("regather")]
     Regather = 5,
 }

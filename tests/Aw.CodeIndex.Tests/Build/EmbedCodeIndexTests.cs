@@ -65,7 +65,6 @@ public sealed class EmbedCodeIndexTests
         var repo = git.AsRepo("shop");
         var commit = git.Head;
         _ = await Build(index, repo, commit);
-        await using var otherJob = (await index.Heavy.Take("someone else", TimeSpan.Zero, waiting: null, Token)).Value;
 
         var response = await EmbedToOk(index, repo);
 
@@ -74,7 +73,6 @@ public sealed class EmbedCodeIndexTests
         Assert.Equal(response.Embeddable, response.Embedded);
         Assert.Equal(response.Embeddable, embedder.Batches.Sum(b => b.Count));
         Assert.Equal(commit, git.Head);
-        Assert.Equal(1, index.Heavy.Held);
     }
 
     [Fact, Trait("Lane", "integration")]

@@ -82,7 +82,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
     {
         var block = BlockId.From(run.Run.Step.Block);
         var descriptor = catalog.Find(block);
-        var facts = await StepFactFiles.Build(descriptor, run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
+        var facts = await StepFactFiles.Build(new FactFileStep(descriptor, run.Subject), run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
         return facts.IsError ? facts.Error : AgentLaunches.RequestFor(run.Run, target, descriptor, new AgentLaunchExtras(PayloadFacts.WithShapes(Told(block), run.Payloads), workspace, bundle, facts.Value, run.Model));   // the Step's own lines, then the shape of each payload output
     }
 

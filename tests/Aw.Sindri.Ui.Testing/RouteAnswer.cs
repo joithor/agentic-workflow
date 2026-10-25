@@ -18,6 +18,9 @@ internal sealed record RouteAnswer(HttpStatusCode Status, string Body)
         new(status, string.Create(System.Globalization.CultureInfo.InvariantCulture,
             $$"""{"type":"about:blank","title":"{{code}}","status":{{(int)status}},"detail":"{{detail}}","traceId":"<trace>"}"""));
 
+    /// <summary>A served SND-AUTH-002: what the API still answers a service or a call with no caller (a session is let through since owner decision q93).</summary>
+    internal static RouteAnswer Refused(string detail = "This caller may not run the command.") => Problem(HttpStatusCode.Forbidden, "SND-AUTH-002", detail);
+
     /// <summary>True for a 2xx answer.</summary>
     // A ProblemDetails golden (a spec-shaped stand-in where one is kept, else the API's own), served with the status it names.
     internal static RouteAnswer Problem(string slug, string scenario)

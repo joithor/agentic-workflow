@@ -1,4 +1,3 @@
-using Aw.CodeIndex.Core.Ports;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.CodeIndexJobs;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +14,6 @@ internal static class CodeIndexJobServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         return services
-            .AddSingleton<IHeavyJobLock, SindriCodeIndexHeavyLock>()
             .AddScoped<CodeIndexJobScopes>()
             .AddScoped<CodeIndexEventSource>()
             .AddScoped<IIndexOutlooks, CodeIndexOutlooks>()
@@ -38,7 +36,6 @@ internal static class CodeIndexJobServiceCollectionExtensions
 
     private static string Summary(BuildCodeIndexResult result) => result.Outcome switch
     {
-        BuildCodeIndexResult.Deferred => $"{result.Repo}: deferred, every heavy-job slot was busy",
         "not-on-main" => $"{result.Repo}: left the default branch, nothing indexed",
         _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols{Pending(result)}"),
     };

@@ -25,6 +25,10 @@ public sealed record WholeMapView(
     [property: JsonPropertyOrder(11)] IReadOnlyList<WholeMapAreaEdge> AreaEdges,
     [property: JsonPropertyOrder(16)] bool Truncated)
 {
+    /// <summary>Every repo the map holds nodes of with its node count, sorted by name; always there (empty when no node names a repo), so a page can offer a repo picker from any answer.</summary>
+    [JsonPropertyOrder(17)]
+    public IReadOnlyList<WholeMapRepo> Repos { get; init; } = [];
+
     /// <summary>The commit the map was built at (first seven characters), or null for an imported map; left out when null.</summary>
     [JsonPropertyOrder(3)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

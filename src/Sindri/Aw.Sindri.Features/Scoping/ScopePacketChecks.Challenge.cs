@@ -23,7 +23,7 @@ internal static partial class ScopePacketChecks
         var last = rounds[^1];
         var label = string.Create(CultureInfo.InvariantCulture, $"round {rounds.Count}");
         // why: the recipe's challenge loop (cap c.ChallengeCap) is spent at this many rounds; neither a new round nor a redraft can change what the challenger recorded
-        var spent = rounds.Count >= c.ChallengeCap;
+        var spent = Spent(c);
         if (!string.Equals(ScopeJson.Str(last, "verdict"), "nothingNew", StringComparison.Ordinal)
             || ScopeJson.Items(last, "surfaces").Any() || ScopeJson.Items(last, "behaviours").Any())
         {
@@ -41,6 +41,8 @@ internal static partial class ScopePacketChecks
 
         Walked(rounds, label, spent, s);
     }
+
+    private static bool Spent(ScopeContext c) => ScopeJson.Items(c.Facts["challenge"], "rounds").Skip(c.ChallengeCap - 1).Any();
 
     private static void Walked(List<JsonNode> rounds, string label, bool spent, RuleSink s)
     {
