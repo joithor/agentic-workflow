@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 using static Aw.Sindri.Tests.Workflow.Engine.EngineFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -114,6 +115,6 @@ public sealed class UnavailableParkTests
     private static AnswerGiven Resume() => new(
         "human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), AnswerVariant.Resume, Text: null, Amount: null, Forwarded: null);
 
-    private static Decision Decide(WorkflowInstance instance, Aw.Sindri.Core.Workflow.Recipes.Recipe recipe, Trigger trigger, DecisionContext? context = null) =>
+    private static Decision Decide(WorkflowInstance instance, Recipe recipe, Trigger trigger, DecisionContext? context = null) =>
         EngineFixture.Decide(instance, recipe, trigger, context: context);
 }

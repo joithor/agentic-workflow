@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -10,7 +11,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Failure">Why it failed; null when it completed.</param>
 internal sealed record BlockStepOutcome(OutcomeName? Outcome, IReadOnlyDictionary<FactKey, FactValue>? Outputs, string? Decision, string? Failure)
 {
-    /// <summary>The dependency that was down when the Step failed, where the Step named one (<see cref="Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Unavailable"/>); null otherwise.</summary>
+    /// <summary>The dependency that was down when the Step failed, where the Step named one (<see cref="BlockStepResult.Unavailable"/>); null otherwise.</summary>
     public string? Dependency { get; init; }
 
     /// <summary>The dependency's own error code, where it had one.</summary>
