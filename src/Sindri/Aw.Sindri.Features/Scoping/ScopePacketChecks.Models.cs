@@ -63,6 +63,9 @@ internal static partial class ScopePacketChecks
         Reported(s, step, "relevance agent", run, c.Facts["relevance"]);
     }
 
+    // Which run is compared with the drafter's: its Step, the name the messages call it, and whether it is the challenger (whose spent loop turns a failure into a warning).
+    private sealed record ModelComparison(string Step, string Role, bool Challenger);
+
     private static void Differs(ScopeContext c, RuleSink s, string step, string role, bool failOnMissingRecord)
     {
         var runs = Runs(c);
@@ -89,7 +92,7 @@ internal static partial class ScopePacketChecks
             return;
         }
 
-        ModelsDiffer(drafter, other, step, role, c, s, challenger: failOnMissingRecord);
+        ModelsDiffer(drafter, other, new ModelComparison(step, role, Challenger: failOnMissingRecord), c, s);
     }
 
     // why: once the challenge loop is spent the challenger never reruns, so the drafter can't change which model ran; the owner reads it at the stop
@@ -105,8 +108,9 @@ internal static partial class ScopePacketChecks
         }
     }
 
-    private static void ModelsDiffer(JsonNode drafter, JsonNode other, string step, string role, ScopeContext c, RuleSink s, bool challenger)
+    private static void ModelsDiffer(JsonNode drafter, JsonNode other, ModelComparison compare, ScopeContext c, RuleSink s)
     {
+        var (step, role, challenger) = compare;
         var model = ScopeJson.Str(other, "model");
         var drafterModel = ScopeJson.Str(drafter, "model");
         if (IsDesk(other) || IsDesk(drafter))
