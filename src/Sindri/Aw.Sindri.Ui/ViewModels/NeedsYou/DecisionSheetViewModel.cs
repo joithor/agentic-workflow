@@ -21,6 +21,18 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
     /// <summary>The decision's question as the pending list serves it; the row's title while the list has none.</summary>
     internal string Question => _row is null ? "" : _row.Entry.Question.Length > 0 ? _row.Entry.Question : _row.Title;
 
+    /// <summary>The sheet's title: the request's own words.</summary>
+    internal string Heading => "";
+
+    /// <summary>Who filed the request, how long ago and for which item.</summary>
+    internal string FiledLine => "";
+
+    /// <summary>What was decided, once Decide was accepted; it stays (unlike <see cref="Outcome"/>).</summary>
+    internal string DecidedLine => "";
+
+    /// <summary>True while the sheet still asks its question: not decided here, not cleared.</summary>
+    internal bool IsAsking => true;
+
     /// <summary>The recorded-only sentence as served; empty for none.</summary>
     internal string Notice => _row?.Notice ?? "";
 
