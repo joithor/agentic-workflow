@@ -89,7 +89,11 @@ internal sealed class StepClock : TimeProvider
 
         public ValueTask DisposeAsync()
         {
-            Dispose();
+            lock (clock._timers)
+            {
+                _ = clock._timers.Remove(this);
+            }
+
             return ValueTask.CompletedTask;
         }
     }

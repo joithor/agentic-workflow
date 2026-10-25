@@ -15,7 +15,10 @@ public sealed class AgentRecoveringTests
     private readonly InMemoryFactStore _facts = new();
     private readonly AgentRecovering _recovering;
 
-    public AgentRecoveringTests() => _recovering = new AgentRecovering(new BlockCatalog([TestBlocks.Step("step.produce")], []), _outputs, _facts);
+    public AgentRecoveringTests()
+    {
+        _recovering = new AgentRecovering(new BlockCatalog([TestBlocks.Step("step.produce")], []), _outputs, _facts);
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

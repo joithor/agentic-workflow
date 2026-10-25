@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Testing.Launch;
 
 namespace Aw.Sindri.Tests.SessionReports;
 
@@ -94,7 +93,7 @@ public sealed class StalledAgentRunsTests
         await Idle(TimeSpan.FromMinutes(5));
         _instances.Fail = true;
 
-        Assert.Single(await Runs().Find(Token));
+        _ = Assert.Single(await Runs().Find(Token));
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;

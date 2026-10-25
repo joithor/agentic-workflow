@@ -51,7 +51,7 @@ public sealed class CompleteRetryTests : IDisposable
         Assert.Equal(2, code);   // the refusal after it came back
         Assert.Equal(3, _ensured);
         Assert.Equal(2, _error.ToString().Split('\n').Count(static l => l.StartsWith("SND-API-001 ", StringComparison.Ordinal) && l.Contains("retrying in", StringComparison.Ordinal)));
-        Assert.Single(api.Calls, static c => c.Path == "/sindri/workflow/instances");   // a refusal is asked once
+        _ = Assert.Single(api.Calls, static c => c.Path == "/sindri/workflow/instances");   // a refusal is asked once
         Assert.Contains("SND-WF-001", _error.ToString(), StringComparison.Ordinal);
     }
 

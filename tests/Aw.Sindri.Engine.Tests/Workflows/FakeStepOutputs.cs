@@ -35,7 +35,7 @@ internal sealed class FakeStepOutputs : IStepOutputs
 
     /// <inheritdoc/>
     public ValueTask<Result<ReadOnlyMemory<byte>>> Read(string runDirectory, string name, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ReadOnlyMemory<byte>>>(_folders.TryGetValue(runDirectory, out var folder) && folder.TryGetValue(name, out var file)
-            ? file.Content
-            : SindriErrors.InvalidInput.With($"{name} is not in {runDirectory}"));
+        ValueTask.FromResult(_folders.TryGetValue(runDirectory, out var folder) && folder.TryGetValue(name, out var file)
+            ? Results.Success(new ReadOnlyMemory<byte>(file.Content))
+            : (Result<ReadOnlyMemory<byte>>)SindriErrors.InvalidInput.With($"{name} is not in {runDirectory}"));
 }

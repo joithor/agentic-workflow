@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflows;
 
