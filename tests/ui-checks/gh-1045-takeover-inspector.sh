@@ -105,13 +105,20 @@ drv key --chord Enter --node-id "$row_id" >"$OUT/enter.log" 2>&1 \
   || setup_fail "Enter on the run's row was not accepted (driver: $(tr -d '\n' <"$OUT/enter.log" | cut -c1-160))"
 drv wait-for --name "Run details" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the run drawer (Run details) never opened after Enter on the row"
-drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "the run drawer shows no Take over button for the live agent run"
+# The drawer's button may carry its label as its automation name or as its text, so look for either, visible, any type.
+take_id=""
+for _ in $(seq 1 30); do
+  take_id="$( { drv search --name "Take over" --limit 50; drv search --text "Take over" --limit 50; } 2>/dev/null \
+    | jq -rs '[.[].matches[]? | select(.visible)][0].id // empty')"
+  [ -n "$take_id" ] && break
+  sleep 1
+done
+[ -n "$take_id" ] || setup_fail "the run drawer shows no Take over button for the live agent run"
 drv screenshot --out "$OUT/before-click.png" >/dev/null 2>&1
 before="$(takeovers_by_ui)"
 
 # 4. Press it once. Within 10 s the ledger must hold ONE new takeover accepted from human:ui.
-drv click --type Button --text "Take over" --index 0 >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
+drv click --node-id "$take_id" >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
 sent=0
 for _ in $(seq 1 20); do
   now="$(takeovers_by_ui)"
