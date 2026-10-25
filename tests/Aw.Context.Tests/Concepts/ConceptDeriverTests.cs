@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Tests.Concepts;
 
@@ -10,6 +11,7 @@ namespace Aw.Context.Tests.Concepts;
 public sealed class ConceptDeriverTests
 {
     private static readonly IReadOnlyList<ConceptPin> _noPins = [];
+    private static readonly string[] _threeRoots = ["sched", "billing", "tabs"];
 
     private static GraphNode Feature(string name, string? label = null) => new(NodeKey.From("feature:" + name), label ?? name);
 
@@ -34,15 +36,15 @@ public sealed class ConceptDeriverTests
     private static GraphNode Concept(ExtractedMap map, string key) => Assert.Single(map.Nodes, n => n.Key.Value == key);
 
     private static ConceptNames Named(string seed, string name, string? summary = null) =>
-        new(new Dictionary<string, ConceptName> { [seed] = new ConceptName(name, summary) });
+        new(new Dictionary<string, ConceptName>(StringComparer.Ordinal) { [seed] = new ConceptName(name, summary) });
 
     [Fact]
     public void Groups_come_from_the_part_of_roots()
     {
-        var map = ConceptDeriver.Derive(Areas("sched", "billing", "tabs"), _noPins, null);
+        var map = ConceptDeriver.Derive(Areas("sched", "billing", "tabs"), _noPins, names: null);
 
-        Assert.Equal(["concept:billing", "concept:other", "concept:sched", "concept:tabs"], map.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
-        Assert.Equal(["feature:sched", "feature:sched.one", "feature:sched.two"], Members(map, "concept:sched").Order(StringComparer.Ordinal));
+        Assert.Equal(["concept:billing", "concept:other", "concept:sched", "concept:tabs"], map.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["feature:sched", "feature:sched.one", "feature:sched.two"], Members(map, "concept:sched").Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(map.Edges, e => Assert.Equal(EdgeType.BelongsTo, e.Type));
     }
 
@@ -51,11 +53,11 @@ public sealed class ConceptDeriverTests
     {
         var roots = Enumerable.Range(0, 20).Select(i => "area" + i.ToString("D2", CultureInfo.InvariantCulture)).ToArray();
 
-        var map = ConceptDeriver.Derive(Areas(roots), _noPins, null);
+        var map = ConceptDeriver.Derive(Areas(roots), _noPins, names: null);
 
         var concepts = map.Nodes.Where(n => n.Key.Value != ConceptKeys.Other).ToList();
         Assert.True(concepts.Count <= 15);
-        var features = map.Edges.Where(e => e.From.Kind == NodeKind.Feature).GroupBy(e => e.From.Value).ToList();
+        var features = map.Edges.Where(e => e.From.Kind == NodeKind.Feature).GroupBy(e => e.From.Value, StringComparer.Ordinal).ToList();
         Assert.Equal(60, features.Count);
         Assert.All(features, f => Assert.Single(f));
     }
@@ -63,14 +65,14 @@ public sealed class ConceptDeriverTests
     [Fact]
     public void A_group_under_three_features_merges_into_the_group_it_is_most_connected_to()
     {
-        var parts = new[] { "sched", "billing", "tabs" }.Select(r => Area(r)).ToList();
+        var parts = _threeRoots.Select(r => Area(r)).ToList();
         var nodes = parts.SelectMany(p => p.Nodes).Concat([Feature("lone"), Feature("other-lone")]);
         var edges = parts.SelectMany(p => p.Edges).Concat([Edge("feature:lone", "feature:billing.one", EdgeType.DependsOn), Edge("feature:lone", "feature:billing.two", EdgeType.DependsOn)]);
 
-        var map = ConceptDeriver.Derive(Graph(nodes, edges), _noPins, null);
+        var map = ConceptDeriver.Derive(Graph(nodes, edges), _noPins, names: null);
 
         Assert.Contains("feature:lone", Members(map, "concept:billing"));
-        Assert.DoesNotContain(map.Nodes, n => n.Key.Value is "concept:lone" or "concept:other-lone");
+        Assert.DoesNotContain(map.Nodes, n => string.Equals(n.Key.Value, "concept:lone", StringComparison.Ordinal) || string.Equals(n.Key.Value, "concept:other-lone", StringComparison.Ordinal));
         Assert.Equal(11, map.Edges.Where(e => e.From.Kind == NodeKind.Feature).Select(e => e.From.Value).Distinct(StringComparer.Ordinal).Count());
     }
 
@@ -79,9 +81,9 @@ public sealed class ConceptDeriverTests
     {
         var graph = Graph([Feature("a"), Feature("b"), Feature("c"), Feature("d")], []);
 
-        var map = ConceptDeriver.Derive(graph, _noPins, null);
+        var map = ConceptDeriver.Derive(graph, _noPins, names: null);
 
-        Assert.Equal(["concept:a", "concept:b", "concept:c", "concept:d", "concept:other"], map.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
+        Assert.Equal(["concept:a", "concept:b", "concept:c", "concept:d", "concept:other"], map.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Equal(["feature:b"], Members(map, "concept:b"));
     }
 
@@ -93,7 +95,7 @@ public sealed class ConceptDeriverTests
         var first = ConceptDeriver.Derive(graph, _noPins, Named("feature:sched", "Self scheduling"));
         var second = ConceptDeriver.Derive(graph, _noPins, Named("feature:sched", "Shift planning"));
 
-        Assert.Equal(first.Nodes.Select(n => n.Key.Value), second.Nodes.Select(n => n.Key.Value));
+        Assert.Equal(first.Nodes.Select(n => n.Key.Value), second.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
         Assert.Equal("Self scheduling", Concept(first, "concept:sched").Label);
         Assert.Equal("Shift planning", Concept(second, "concept:sched").Label);
         Assert.Equal(Provenance.Model, Concept(first, "concept:sched").Provenance);
@@ -109,7 +111,7 @@ public sealed class ConceptDeriverTests
             Edges = [.. graph.Edges, Edge("record:linear:issue/1", "feature:sched.one", EdgeType.Mentions), Edge("decision:d1", "feature:billing.two", EdgeType.Decides)],
         };
 
-        var map = ConceptDeriver.Derive(graph, _noPins, null);
+        var map = ConceptDeriver.Derive(graph, _noPins, names: null);
 
         Assert.Contains("record:linear:issue/1", Members(map, "concept:sched"));
         Assert.Contains("decision:d1", Members(map, "concept:billing"));
@@ -129,15 +131,15 @@ public sealed class ConceptDeriverTests
         ConceptPin[] pins =
         [
             new(ConceptId.From("scheduling"), "Self scheduling", "People pick their shifts.", ["feature:sched", "feature:sched.*"], []),
-            new(null, "Payments", null, [], ["src/pay/**"]),
-            new(ConceptId.From("empty-one"), "Nothing yet", null, ["feature:missing"], []),
+            new(Id: null, "Payments", Summary: null, [], ["src/pay/**"]),
+            new(ConceptId.From("empty-one"), "Nothing yet", Summary: null, ["feature:missing"], []),
         ];
 
-        var map = ConceptDeriver.Derive(graph, pins, null);
+        var map = ConceptDeriver.Derive(graph, pins, names: null);
 
         var scheduling = Concept(map, "concept:scheduling");
         Assert.Equal(("Self scheduling", Provenance.Human), (scheduling.Label, scheduling.Provenance));
-        Assert.Equal(["feature:sched", "feature:sched.one", "feature:sched.two"], Members(map, "concept:scheduling").Order(StringComparer.Ordinal));
+        Assert.Equal(["feature:sched", "feature:sched.one", "feature:sched.two"], Members(map, "concept:scheduling").Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Equal(["feature:tabs.two"], Members(map, "concept:payments"));
         Assert.DoesNotContain("feature:tabs.two", Members(map, "concept:tabs"));
         Assert.DoesNotContain(map.Nodes, n => n.Key.Value == "concept:sched");
@@ -151,12 +153,12 @@ public sealed class ConceptDeriverTests
     [Fact]
     public void Without_a_model_the_name_is_the_seed_label_and_the_summary_counts_the_features()
     {
-        var part = Area("sched", "week-view");
-        part.Nodes[1] = Feature("sched.one", "Shift swaps");
-        part.Nodes[2] = Feature("sched.two", "Open shifts");
-        var graph = Graph(part.Nodes.Concat(Area("billing").Nodes).Concat(Area("tabs").Nodes), part.Edges.Concat(Area("billing").Edges).Concat(Area("tabs").Edges));
+        var (nodes, edges) = Area("sched", "week-view");
+        nodes[1] = Feature("sched.one", "Shift swaps");
+        nodes[2] = Feature("sched.two", "Open shifts");
+        var graph = Graph(nodes.Concat(Area("billing").Nodes).Concat(Area("tabs").Nodes), edges.Concat(Area("billing").Edges).Concat(Area("tabs").Edges));
 
-        var concept = Concept(ConceptDeriver.Derive(graph, _noPins, null), "concept:sched");
+        var concept = Concept(ConceptDeriver.Derive(graph, _noPins, names: null), "concept:sched");
 
         Assert.Equal(("Week view", Provenance.Deterministic), (concept.Label, concept.Provenance));
         using var attributes = JsonDocument.Parse(concept.Attributes!.Value.GetRawText());
@@ -195,7 +197,7 @@ public sealed class ConceptDeriverTests
     [Fact]
     public void A_feature_key_with_accents_gets_a_plain_ascii_slug()
     {
-        var map = ConceptDeriver.Derive(Graph([Feature("caf\u00e9-r\u00e9sum\u00e9")], []), _noPins, null);
+        var map = ConceptDeriver.Derive(Graph([Feature("caf\u00e9-r\u00e9sum\u00e9")], []), _noPins, names: null);
 
         Assert.Contains(map.Nodes, n => n.Key.Value == "concept:cafe-resume");
     }
@@ -203,7 +205,7 @@ public sealed class ConceptDeriverTests
     [Fact]
     public void Feature_keys_with_no_latin_letters_get_distinct_valid_slugs()
     {
-        var map = ConceptDeriver.Derive(Graph([Feature("\u65e5\u672c\u8a9e"), Feature("\u0434\u043e\u043c")], []), _noPins, null);
+        var map = ConceptDeriver.Derive(Graph([Feature("\u65e5\u672c\u8a9e"), Feature("\u0434\u043e\u043c")], []), _noPins, names: null);
 
         var slugs = map.Nodes.Where(n => n.Key.Value != ConceptKeys.Other).Select(n => n.Key.Value["concept:".Length..]).ToList();
         Assert.Equal(2, slugs.Distinct(StringComparer.Ordinal).Count());
