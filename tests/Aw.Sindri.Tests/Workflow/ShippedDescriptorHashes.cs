@@ -12,6 +12,7 @@ internal static class ShippedDescriptorHashes
         ["gate.budget.available"] = "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135",
         ["gate.route.startable"] = "sha256:00a724a0231157eba73e8b90950bde6e40fb9e6f17f03f955d3896e6aa2fadf0",
         ["input.context.code"] = "sha256:5123ce153cfdb6fa6fbfc9b2389f86c50ced60c76c4ca856158159ad6c323094",
+        ["input.context.graph"] = "sha256:TODO-pin-from-the-gate-actual",
         ["input.context.history"] = "sha256:f0530a3e621910fb26ceace373310f46b2b35b46173a72ada286bfe0268392e2",
         ["input.context.lenses"] = "sha256:10e07eb604a8092412459861c964ccd631089a1c192fa246826c29b2b82d5f3e",
         ["step.babysit.watch"] = "sha256:a3cb1c180259271b02811d78d7a2e2c734386d24349987a6a1a8a3733505b1cd",
