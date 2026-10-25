@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <summary>
 /// The context engine's heavy-job lock (context spec §4), over Sindri's own port <see cref="IHeavySlots"/> (the shared lock directory,
 /// so builds, evidence runs and the shell tools count against one cap). A lock that stays busy, or a lock directory that can't be
-/// used, is SND-CONTEXT-040: a map build never runs without its slot.
+/// used, is SND-CONTEXT-040: a backtest never runs without its slot.
 /// </summary>
 internal sealed class SindriHeavyJobLock(IHeavySlots slots, TimeSpan wait) : IHeavyJobLock
 {
