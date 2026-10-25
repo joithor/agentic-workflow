@@ -142,12 +142,7 @@ internal static class ScopingViewBuilder
             rows.Add(new ScopingRow("relevance", "not yet: written by step.scope.relevance-apply", "not-yet", []));
         }
 
-        foreach (var entry in ScopeJson.Items(facts["relevance"], "entries").Where(static e => ScopeJson.Bool(e, "disputed") == true))
-        {
-            var id = ScopeJson.Str(entry, "id") ?? "?";
-            var text = $"disputed: {ScopeJson.Str(entry, "label") ?? id} — AI said {ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "class") ?? "nothing"}, judge said {ScopeJson.Str(ScopeJson.Obj(entry, "judge"), "class") ?? "nothing"}";
-            rows.Add(new ScopingRow(id, text, "disputed", [.. new[] { ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "reason") }.OfType<string>().Select(static r => $"AI: {r}")]));
-        }
+        rows.AddRange(DisputedRows(facts));
 
         if (!facts.Has("gapSearch"))
         {
@@ -159,6 +154,27 @@ internal static class ScopingViewBuilder
             return rows;
         }
 
+        rows.AddRange(GapRows(facts));
+
+        return rows;
+    }
+
+    private static List<ScopingRow> DisputedRows(ScopeFacts facts)
+    {
+        var rows = new List<ScopingRow>();
+        foreach (var entry in ScopeJson.Items(facts["relevance"], "entries").Where(static e => ScopeJson.Bool(e, "disputed") == true))
+        {
+            var id = ScopeJson.Str(entry, "id") ?? "?";
+            var text = $"disputed: {ScopeJson.Str(entry, "label") ?? id} — AI said {ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "class") ?? "nothing"}, judge said {ScopeJson.Str(ScopeJson.Obj(entry, "judge"), "class") ?? "nothing"}";
+            rows.Add(new ScopingRow(id, text, "disputed", [.. new[] { ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "reason") }.OfType<string>().Select(static r => $"AI: {r}")]));
+        }
+
+        return rows;
+    }
+
+    private static List<ScopingRow> GapRows(ScopeFacts facts)
+    {
+        var rows = new List<ScopingRow>();
         var rounds = ScopeJson.Items(facts["gapSearch"], "rounds").ToList();
         rows.AddRange(rounds.SelectMany(static r => ScopeJson.Items(r, "candidates"))
             .Where(static c => string.Equals(ScopeJson.Str(c, "ruling"), "uncertain", StringComparison.Ordinal))

@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -34,7 +35,7 @@ internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets, IRepoCh
     protected override async ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var recorded = context.Address is { } address
+        var recorded = context.Address is { } text && InstanceAddress.TryFrom(text, out var address)
             ? await runs.Of(address, cancellationToken).ConfigureAwait(false)
             : Results.Success<IReadOnlyList<ScopeRunRecord>>([]);
         if (recorded.IsError)

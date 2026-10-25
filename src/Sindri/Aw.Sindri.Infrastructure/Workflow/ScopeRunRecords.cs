@@ -55,7 +55,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
             return completed.Error;
         }
 
-        return Assemble(run, states.Value, launches.Value, spent.Value, completed.Value);
+        return Results.Success(Assemble(run, states.Value, launches.Value, spent.Value, completed.Value));
     }
 
     // Launched runs, then the completions that have no launch, in ledger order.
@@ -75,7 +75,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     }
 
     private static ScopeRunRecord AgentRecord(LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
-        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value);
+        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value);   // why: Launches keeps only launches that name their state
 
     private static ScopeRunRecord DeskRecord(WorkflowEventPayload completed, StateAsk ask) => new(
         ask.Step, completed.From, RunToken.From(completed.Run!).Number, Desk, Model: null, ask.Requested, Vendor: null, Tokens: 0, Launch: null);   // why: Of keeps only completions with a run token
@@ -108,6 +108,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
             return approved.Error;
         }
 
+        // why: the Where keeps only states that run a Step
         return approved.Value.Recipe.States.Where(static s => s.Value.Step is not null)
             .ToDictionary(static s => s.Key, static s => new StateAsk(s.Value.Step!.Use, RequestedModel(s.Value.Step)), StringComparer.Ordinal);
     }
@@ -163,10 +164,10 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
                 }
 
                 var usage = payload.Value;
-                var before = latest.GetValueOrDefault(usage.Launch.Value);
-                if (usage.Sample > before.Sample)
+                var (beforeSample, beforeModel) = latest.GetValueOrDefault(usage.Launch.Value);
+                if (usage.Sample > beforeSample)
                 {
-                    latest[usage.Launch.Value] = (usage.Sample, usage.InputTokens + usage.OutputTokens - (usage.CacheReadTokens ?? 0), usage.Model ?? before.Model);
+                    latest[usage.Launch.Value] = (usage.Sample, usage.InputTokens + usage.OutputTokens - (usage.CacheReadTokens ?? 0), usage.Model ?? beforeModel);
                 }
             }
         }
