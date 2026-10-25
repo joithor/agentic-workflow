@@ -15,28 +15,16 @@ internal sealed class ConceptIndex
     private ConceptIndex(IReadOnlyDictionary<string, GraphNode> known, IReadOnlyList<GraphEdge> edges)
     {
         Known = known;
-        Concepts = [.. known.Values.Where(n => n.Key.Kind == NodeKind.Concept && n.Key.Value != ConceptKeys.Other)
-            .OrderBy(n => n.Label, StringComparer.OrdinalIgnoreCase).ThenBy(n => n.Key.Value, StringComparer.Ordinal)];
+        Concepts = SortedConcepts(known);
         _membersOf[ConceptKeys.Other] = [];
         foreach (var concept in Concepts)
         {
             _membersOf[concept.Key.Value] = [];
         }
 
-        foreach (var edge in edges.Where(e => e.Type == EdgeType.BelongsTo && IsMember(e.From.Kind) && known.ContainsKey(e.From.Value) && _membersOf.ContainsKey(e.To.Value) && e.To.Value != ConceptKeys.Other))
-        {
-            Join(edge.From.Value, edge.To.Value);
-        }
-
-        foreach (var key in known.Values.Where(n => IsMember(n.Key.Kind) && !_conceptsOf.ContainsKey(n.Key.Value)).Select(n => n.Key.Value))
-        {
-            Join(key, ConceptKeys.Other);
-        }
-
-        foreach (var edge in edges.Where(e => e.Type == EdgeType.Implements && e.From.Kind == NodeKind.Code && e.To.Kind == NodeKind.Feature && known.ContainsKey(e.From.Value)))
-        {
-            Append(_implementedBy, edge.To.Value, edge.From.Value);
-        }
+        JoinMembers(edges);
+        JoinOther();
+        IndexImplementers(edges);
     }
 
     /// <summary>The nodes by key.</summary>
@@ -63,6 +51,37 @@ internal sealed class ConceptIndex
     /// <summary>The distinct code nodes the member features of <paramref name="members"/> are implemented by.</summary>
     internal int CodeOf(IEnumerable<string> members) =>
         members.Where(m => Known[m].Key.Kind == NodeKind.Feature).SelectMany(m => _implementedBy.TryGetValue(m, out var code) ? code : []).Distinct(StringComparer.Ordinal).Count();
+
+    private static List<GraphNode> SortedConcepts(IReadOnlyDictionary<string, GraphNode> known) =>
+        [.. known.Values.Where(n => n.Key.Kind == NodeKind.Concept && n.Key.Value != ConceptKeys.Other)
+            .OrderBy(n => n.Label, StringComparer.OrdinalIgnoreCase).ThenBy(n => n.Key.Value, StringComparer.Ordinal)];
+
+    private void JoinMembers(IReadOnlyList<GraphEdge> edges)
+    {
+        foreach (var edge in edges.Where(e => IsMemberEdge(e)))
+        {
+            Join(edge.From.Value, edge.To.Value);
+        }
+    }
+
+    private bool IsMemberEdge(GraphEdge edge) =>
+        edge.Type == EdgeType.BelongsTo && IsMember(edge.From.Kind) && Known.ContainsKey(edge.From.Value) && _membersOf.ContainsKey(edge.To.Value) && edge.To.Value != ConceptKeys.Other;
+
+    private void JoinOther()
+    {
+        foreach (var key in Known.Values.Where(n => IsMember(n.Key.Kind) && !_conceptsOf.ContainsKey(n.Key.Value)).Select(n => n.Key.Value))
+        {
+            Join(key, ConceptKeys.Other);
+        }
+    }
+
+    private void IndexImplementers(IReadOnlyList<GraphEdge> edges)
+    {
+        foreach (var edge in edges.Where(e => e.Type == EdgeType.Implements && e.From.Kind == NodeKind.Code && e.To.Kind == NodeKind.Feature && Known.ContainsKey(e.From.Value)))
+        {
+            Append(_implementedBy, edge.To.Value, edge.From.Value);
+        }
+    }
 
     private void Join(string member, string concept)
     {
