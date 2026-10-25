@@ -98,7 +98,7 @@ public static class Cascade
                 }
 
                 break;
-            default:
+            case NodeKind.Surface or NodeKind.Action or NodeKind.Thing or NodeKind.Flow or NodeKind.Decision or NodeKind.Record or NodeKind.Code:
                 break;
         }
 
