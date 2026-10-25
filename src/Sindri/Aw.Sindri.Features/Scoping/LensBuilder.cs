@@ -160,17 +160,18 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
     /// <summary>Records the asked anchors the view couldn't find: they leave the row's searched anchors and each is an anchor-missing limit.</summary>
     internal void Missing(IEnumerable<string> missing) => _missing.UnionWith(missing.Where(m => anchors.Contains(m, StringComparer.Ordinal)));
 
+    // The searched sources, and an 'edges' source when the lens left out edges ending outside its nodes and anchors (the edges-out-of-scope limit).
+    private List<JsonObject> RowSources()
+    {
+        var (_, dropped) = InScope();
+        return dropped > 0 ? [.. _sources, new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" }] : _sources;
+    }
+
     /// <summary>The lens's row in the coverage fact: its state follows what was found and what was recorded as a limit.</summary>
     internal JsonObject Row(string mapVersion, int depth, IReadOnlyList<string> hops)
     {
         var limits = new JsonArray();
-        var (_, dropped) = InScope();
-        var sources = _sources;
-        if (dropped > 0)
-        {
-            sources = [.. _sources, new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" }];
-        }
-
+        var sources = RowSources();
         foreach (var source in sources)
         {
             if (ScopeFixLines.Match(Lens, ScopeJson.Str(source, "state"), ScopeJson.Str(source, "reason")) is { } limit
