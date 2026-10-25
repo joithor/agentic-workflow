@@ -4,4 +4,4 @@ namespace Aw.Context.Core.ScopeGraph;
 /// <param name="From">The source node id.</param>
 /// <param name="To">The target node id.</param>
 /// <param name="Type">The edge type.</param>
-public sealed record ScopeGraphEdge(string From, string To, string Type);
+public sealed record ScopeGraphEdge(ScopeGraphNodeId From, ScopeGraphNodeId To, string Type);

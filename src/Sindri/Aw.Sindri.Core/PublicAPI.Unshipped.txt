@@ -12340,17 +12340,19 @@ Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.get -> string!
 Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord
 Aw.Sindri.Core.Scoping.ScopeRunRecord.<Clone>$() -> Aw.Sindri.Core.Scoping.ScopeRunRecord!
-Aw.Sindri.Core.Scoping.ScopeRunRecord.Deconstruct(out string! Step, out string! State, out int Round, out string! Via, out string? Model, out string? Requested, out string? Vendor, out long Tokens, out string? Launch) -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.Deconstruct(out string! Step, out string! State, out int Round, out string! Via, out string? Model, out string? Requested, out string? Vendor, out long Tokens, out string? Launch, out string? RunToken) -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Equals(Aw.Sindri.Core.Scoping.ScopeRunRecord? other) -> bool
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Launch.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Launch.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Model.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Model.init -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.RunToken.get -> string?
+Aw.Sindri.Core.Scoping.ScopeRunRecord.RunToken.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Requested.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Requested.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Round.get -> int
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Round.init -> void
-Aw.Sindri.Core.Scoping.ScopeRunRecord.ScopeRunRecord(string! Step, string! State, int Round, string! Via, string? Model, string? Requested, string? Vendor, long Tokens, string? Launch) -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.ScopeRunRecord(string! Step, string! State, int Round, string! Via, string? Model, string? Requested, string? Vendor, long Tokens, string? Launch, string? RunToken = null) -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.State.get -> string!
 Aw.Sindri.Core.Scoping.ScopeRunRecord.State.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Step.get -> string!

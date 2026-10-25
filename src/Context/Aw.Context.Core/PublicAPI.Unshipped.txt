@@ -7033,9 +7033,9 @@ static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator !=(Aw.Context.Core.Sco
 static Aw.Context.Core.ScopeGraph.ScopeGraphView.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphView? left, Aw.Context.Core.ScopeGraph.ScopeGraphView? right) -> bool
 Aw.Context.Core.ScopeGraph.ScopeGraphNode
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphNode!
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.Deconstruct(out string! Id, out string! Kind, out string? Path, out string? Symbol, out string! Summary, out int Rank, out string! Lens, out string! LensItem, out string? Band, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Deconstruct(out Aw.Context.Core.ScopeGraph.ScopeGraphNodeId Id, out string! Kind, out string? Path, out string? Symbol, out string! Summary, out int Rank, out string! Lens, out string! LensItem, out string? Band, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphNode? other) -> bool
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.get -> Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Id.init -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Kind.get -> string!
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Kind.init -> void
@@ -7055,7 +7055,7 @@ Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.get -> string?
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Band.init -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>!
 Aw.Context.Core.ScopeGraph.ScopeGraphNode.Citations.init -> void
-Aw.Context.Core.ScopeGraph.ScopeGraphNode.ScopeGraphNode(string! Id, string! Kind, string? Path, string? Symbol, string! Summary, int Rank, string! Lens, string! LensItem, string? Band, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNode.ScopeGraphNode(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId Id, string! Kind, string? Path, string? Symbol, string! Summary, int Rank, string! Lens, string! LensItem, string? Band, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ScopeGraph.ScopeGraphCitation!>! Citations) -> void
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.Equals(object? obj) -> bool
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.GetHashCode() -> int
 override Aw.Context.Core.ScopeGraph.ScopeGraphNode.ToString() -> string!
@@ -7063,15 +7063,15 @@ static Aw.Context.Core.ScopeGraph.ScopeGraphNode.operator !=(Aw.Context.Core.Sco
 static Aw.Context.Core.ScopeGraph.ScopeGraphNode.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphNode? left, Aw.Context.Core.ScopeGraph.ScopeGraphNode? right) -> bool
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.<Clone>$() -> Aw.Context.Core.ScopeGraph.ScopeGraphEdge!
-Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Deconstruct(out string! From, out string! To, out string! Type) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Deconstruct(out Aw.Context.Core.ScopeGraph.ScopeGraphNodeId From, out Aw.Context.Core.ScopeGraph.ScopeGraphNodeId To, out string! Type) -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphEdge? other) -> bool
-Aw.Context.Core.ScopeGraph.ScopeGraphEdge.From.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.From.get -> Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.From.init -> void
-Aw.Context.Core.ScopeGraph.ScopeGraphEdge.To.get -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.To.get -> Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.To.init -> void
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Type.get -> string!
 Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Type.init -> void
-Aw.Context.Core.ScopeGraph.ScopeGraphEdge.ScopeGraphEdge(string! From, string! To, string! Type) -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphEdge.ScopeGraphEdge(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId From, Aw.Context.Core.ScopeGraph.ScopeGraphNodeId To, string! Type) -> void
 override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.Equals(object? obj) -> bool
 override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.GetHashCode() -> int
 override Aw.Context.Core.ScopeGraph.ScopeGraphEdge.ToString() -> string!
@@ -7128,3 +7128,20 @@ override Aw.Context.Core.ScopeGraph.ScopeGraphCitation.GetHashCode() -> int
 override Aw.Context.Core.ScopeGraph.ScopeGraphCitation.ToString() -> string!
 static Aw.Context.Core.ScopeGraph.ScopeGraphCitation.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphCitation? left, Aw.Context.Core.ScopeGraph.ScopeGraphCitation? right) -> bool
 static Aw.Context.Core.ScopeGraph.ScopeGraphCitation.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphCitation? left, Aw.Context.Core.ScopeGraph.ScopeGraphCitation? right) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId other) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.Equals(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.ScopeGraph.ScopeGraphNodeId>! comparer) -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.IsInitialized() -> bool
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.ScopeGraphNodeId() -> void
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.Value.get -> string!
+override Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.Equals(object? obj) -> bool
+override Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.GetHashCode() -> int
+override Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.ToString() -> string!
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.From(string! value) -> Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.operator !=(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId left, Aw.Context.Core.ScopeGraph.ScopeGraphNodeId right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.operator ==(Aw.Context.Core.ScopeGraph.ScopeGraphNodeId left, Aw.Context.Core.ScopeGraph.ScopeGraphNodeId right) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.ScopeGraph.ScopeGraphNodeId
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.TryFrom(string? value, out Aw.Context.Core.ScopeGraph.ScopeGraphNodeId vo) -> bool
+static Aw.Context.Core.ScopeGraph.ScopeGraphNodeId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.ScopeGraph.ScopeGraphNodeId result) -> bool
