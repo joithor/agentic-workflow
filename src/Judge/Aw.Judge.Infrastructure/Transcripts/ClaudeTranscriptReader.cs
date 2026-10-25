@@ -21,7 +21,7 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
     public ValueTask<Result<Transcript>> FindSession(SessionId session, CancellationToken cancellationToken)
     {
         var name = session.Value;
-        if (name.Length == 0 || name.Contains('/', StringComparison.Ordinal) || name.Contains('\\', StringComparison.Ordinal) || name is "." or "..")
+        if (!IsPlainName(name))
         {
             return Missing($"no transcript for session '{name}'");
         }
@@ -48,13 +48,17 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
         return Parse(text, modifiedAt);
     }
 
+    // A session id names a file in a project directory, never a path.
+    private static bool IsPlainName(string name) =>
+        name.Length > 0
+        && !name.Contains('/', StringComparison.Ordinal)
+        && !name.Contains('\\', StringComparison.Ordinal)
+        && !string.Equals(name, ".", StringComparison.Ordinal)
+        && !string.Equals(name, "..", StringComparison.Ordinal);
+
     private static Result<Transcript> Parse(string text, DateTimeOffset modifiedAt)
     {
-        var prompts = new List<TranscriptPrompt>();
-        var turns = new List<TurnBuilder>();
-        var ends = new Dictionary<SessionId, DateTimeOffset>();
-        var current = new Dictionary<string, TurnBuilder>(StringComparer.Ordinal);
-        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var rows = new RowReader();
         foreach (var line in text.Split('\n'))
         {
             if (line.AsSpan().Trim().IsEmpty)
@@ -65,44 +69,11 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
             using var document = ParseRow(line);
             if (document is not null)
             {
-                var row = document.RootElement;
-                var sessionName = Text(row, "sessionId") is { Length: > 0 and <= 4096 } id ? id : UnknownSession;
-                var at = Timestamp(row);
-                if (at is { } stamp)
-                {
-                    var key = SessionId.From(sessionName);
-                    ends[key] = ends.TryGetValue(key, out var seen) && seen > stamp ? seen : stamp;
-                }
-
-                switch (Text(row, "type"))
-                {
-                    case "user" when PromptText(row) is { } prompt && TurnOutcomes.IsRealPromptText(prompt):
-                        if (at is { } sent)
-                        {
-                            prompts.Add(new TranscriptPrompt(sent, prompt));
-                        }
-
-                        if (prompt.AsSpan().Trim().IsEmpty)
-                        {
-                            break;
-                        }
-
-                        var index = counts.GetValueOrDefault(sessionName);
-                        counts[sessionName] = index + 1;
-                        var turn = new TurnBuilder(SessionId.From(sessionName), index, prompt);
-                        current[sessionName] = turn;
-                        turns.Add(turn);
-                        break;
-                    case "assistant" when current.TryGetValue(sessionName, out var open):
-                        AddEdits(row, open.Edits);
-                        break;
-                    default:
-                        break;
-                }
+                rows.Add(document.RootElement);
             }
         }
 
-        return new Transcript(modifiedAt, prompts, [.. turns.Select(t => new TranscriptTurn(t.Session, t.Index, t.Prompt, t.Edits))], ends);
+        return rows.Build(modifiedAt);
     }
 
     // The line as a JSON object, or null when it is not one.
@@ -135,58 +106,64 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
             return null;
         }
 
-        switch (content.ValueKind)
+        if (content.ValueKind == JsonValueKind.String)
         {
-            case JsonValueKind.String:
-                return content.GetString();
-            case JsonValueKind.Array:
-                var blocks = content.EnumerateArray().Where(b => b.ValueKind == JsonValueKind.Object).ToList();
-                if (blocks.Exists(b => Text(b, "type") == "tool_result"))
-                {
-                    return null;
-                }
-
-                var texts = blocks.Where(b => Text(b, "type") == "text").Select(b => Text(b, "text") ?? "").ToList();
-                return texts.Count == 0 ? null : string.Join('\n', texts);
-            default:
-                return null;
+            return content.GetString();
         }
+
+        if (content.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var blocks = content.EnumerateArray().Where(b => b.ValueKind == JsonValueKind.Object).ToList();
+        if (blocks.Exists(b => Text(b, "type") == "tool_result"))
+        {
+            return null;
+        }
+
+        var texts = blocks.Where(b => Text(b, "type") == "text").Select(b => Text(b, "text") ?? "").ToList();
+        return texts.Count == 0 ? null : string.Join('\n', texts);
     }
 
-    private static void AddEdits(JsonElement row, List<TranscriptEdit> edits)
+    // The Edit, Write and MultiEdit calls of an assistant row; any other tool call is not an edit.
+    private static IEnumerable<TranscriptEdit> EditsOf(JsonElement row)
     {
         if (!row.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object
             || !message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
         {
-            return;
+            return [];
         }
 
-        foreach (var block in content.EnumerateArray().Where(b => b.ValueKind == JsonValueKind.Object && Text(b, "type") == "tool_use"))
-        {
-            if (!block.TryGetProperty("input", out var input) || input.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            var file = Text(input, "file_path") ?? "";
-            switch (Text(block, "name"))
-            {
-                case "Edit":
-                    edits.Add(new TranscriptEdit(file, Text(input, "old_string") ?? "", Text(input, "new_string") ?? ""));
-                    break;
-                case "Write":
-                    edits.Add(new TranscriptEdit(file, "", Text(input, "content") ?? ""));
-                    break;
-                case "MultiEdit" when input.TryGetProperty("edits", out var list) && list.ValueKind == JsonValueKind.Array:
-                    edits.AddRange(list.EnumerateArray()
-                        .Where(e => e.ValueKind == JsonValueKind.Object)
-                        .Select(e => new TranscriptEdit(file, Text(e, "old_string") ?? "", Text(e, "new_string") ?? "")));
-                    break;
-                default:
-                    break;
-            }
-        }
+        return content.EnumerateArray()
+            .Where(b => b.ValueKind == JsonValueKind.Object && Text(b, "type") == "tool_use")
+            .SelectMany(EditsOfCall);
     }
+
+    private static IEnumerable<TranscriptEdit> EditsOfCall(JsonElement call)
+    {
+        if (!call.TryGetProperty("input", out var input) || input.ValueKind != JsonValueKind.Object)
+        {
+            return [];
+        }
+
+        var file = Text(input, "file_path") ?? "";
+        return Text(call, "name") switch
+        {
+            "Edit" => [Replacement(file, input)],
+            "Write" => [new TranscriptEdit(file, "", Text(input, "content") ?? "")],
+            "MultiEdit" => MultiEdit(file, input),
+            _ => [],
+        };
+    }
+
+    private static IEnumerable<TranscriptEdit> MultiEdit(string file, JsonElement input) =>
+        input.TryGetProperty("edits", out var list) && list.ValueKind == JsonValueKind.Array
+            ? list.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).Select(e => Replacement(file, e))
+            : [];
+
+    private static TranscriptEdit Replacement(string file, JsonElement change) =>
+        new(file, Text(change, "old_string") ?? "", Text(change, "new_string") ?? "");
 
     private static string? Text(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
@@ -211,6 +188,64 @@ internal sealed class ClaudeTranscriptReader(string projectsDirectory) : ITransc
         }
 
         return directories.Select(directory => Path.Combine(directory, name + ".jsonl"));
+    }
+
+    // Collects the rows of one transcript: prompts, turns with their edits, and where each session ends.
+    private sealed class RowReader
+    {
+        private readonly List<TranscriptPrompt> _prompts = [];
+        private readonly List<TurnBuilder> _turns = [];
+        private readonly Dictionary<SessionId, DateTimeOffset> _ends = [];
+        private readonly Dictionary<string, TurnBuilder> _current = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
+
+        public void Add(JsonElement row)
+        {
+            var session = Text(row, "sessionId") is { Length: > 0 and <= 4096 } id ? id : UnknownSession;
+            var at = Timestamp(row);
+            if (at is { } stamp)
+            {
+                var key = SessionId.From(session);
+                _ends[key] = _ends.TryGetValue(key, out var seen) && seen > stamp ? seen : stamp;
+            }
+
+            var type = Text(row, "type");
+            if (string.Equals(type, "user", StringComparison.Ordinal))
+            {
+                AddUser(row, session, at);
+            }
+            else if (string.Equals(type, "assistant", StringComparison.Ordinal) && _current.TryGetValue(session, out var open))
+            {
+                open.Edits.AddRange(EditsOf(row));
+            }
+        }
+
+        public Result<Transcript> Build(DateTimeOffset modifiedAt) =>
+            new Transcript(modifiedAt, _prompts, [.. _turns.Select(t => new TranscriptTurn(t.Session, t.Index, t.Prompt, t.Edits))], _ends);
+
+        private void AddUser(JsonElement row, string session, DateTimeOffset? at)
+        {
+            if (PromptText(row) is not { } prompt || !TurnOutcomes.IsRealPromptText(prompt))
+            {
+                return;
+            }
+
+            if (at is { } sent)
+            {
+                _prompts.Add(new TranscriptPrompt(sent, prompt));
+            }
+
+            if (prompt.AsSpan().Trim().IsEmpty)
+            {
+                return;
+            }
+
+            var index = _counts.GetValueOrDefault(session);
+            _counts[session] = index + 1;
+            var turn = new TurnBuilder(SessionId.From(session), index, prompt);
+            _current[session] = turn;
+            _turns.Add(turn);
+        }
     }
 
     private sealed class TurnBuilder(SessionId session, int index, string prompt)

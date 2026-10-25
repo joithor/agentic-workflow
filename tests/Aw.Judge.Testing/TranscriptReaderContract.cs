@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Ports;
@@ -126,8 +127,8 @@ public abstract class TranscriptReaderContract
         for (var i = 0; i < expected.Turns.Count; i++)
         {
             var (want, got) = (expected.Turns[i], actual.Turns[i]);
-            Expect.That(got.Session == want.Session && got.Index == want.Index && got.Prompt == want.Prompt, $"turn {i} keeps its session, its number in the session and its prompt");
-            Expect.That(got.Edits.SequenceEqual(want.Edits), $"turn {i} holds the Edit, Write and MultiEdit calls that followed its prompt, in order, and no other tool call");
+            Expect.That(got.Session == want.Session && got.Index == want.Index && got.Prompt == want.Prompt, string.Create(CultureInfo.InvariantCulture, $"turn {i} keeps its session, its number in the session and its prompt"));
+            Expect.That(got.Edits.SequenceEqual(want.Edits), string.Create(CultureInfo.InvariantCulture, $"turn {i} holds the Edit, Write and MultiEdit calls that followed its prompt, in order, and no other tool call"));
         }
 
         Expect.That(actual.SessionEnds.Count == expected.SessionEnds.Count && expected.SessionEnds.All(p => actual.SessionEnds.TryGetValue(p.Key, out var end) && end == p.Value),

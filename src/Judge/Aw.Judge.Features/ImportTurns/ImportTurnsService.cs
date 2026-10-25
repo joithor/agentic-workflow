@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Briefs;
@@ -60,22 +61,20 @@ internal sealed class ImportTurnsService(
         var bySession = transcript.Turns.GroupBy(t => t.Session.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => (IReadOnlyList<TranscriptTurn>)[.. g], StringComparer.Ordinal);
         foreach (var turn in transcript.Turns)
         {
-            var session = bySession[turn.Session.Value];
-            var source = $"transcript:{turn.Session.Value}:{turn.Index}";
-            var now = clock.GetUtcNow();
             if (turn.Edits.Count == 0)
             {
                 total.Skipped++;
                 continue;
             }
 
+            var session = bySession[turn.Session.Value];
             var item = new EvalItem(
                 EvalItemId.From(ids.NewId().ToString()),
                 Question,
                 InputCap.Write(redactor.Redact(await InputOf(turn, session, cancellationToken).ConfigureAwait(false)), InputCap.MaxChars, json),
-                source,
+                string.Create(CultureInfo.InvariantCulture, $"transcript:{turn.Session.Value}:{turn.Index}"),
                 ModelDecision: null,
-                now);
+                clock.GetUtcNow());
             var added = await items.AddItem(item, cancellationToken).ConfigureAwait(false);
             if (added.IsError)
             {
@@ -89,18 +88,23 @@ internal sealed class ImportTurnsService(
             }
 
             total.Imported++;
-            var closed = transcript.SessionEnds.TryGetValue(turn.Session, out var end) && now - end >= _sessionClosedAfter;
-            if (TurnOutcomes.TurnLabel(session, turn.Index, closed) is { } label)
+            var labeled = await Label(item, transcript, session, turn, cancellationToken).ConfigureAwait(false);
+            if (labeled.IsError)
             {
-                var recorded = await items.RecordLabel(item.Id, LabelSource.Outcome, label, now, cancellationToken).ConfigureAwait(false);
-                if (recorded.IsError)
-                {
-                    return recorded.Error;
-                }
+                return labeled.Error;
             }
         }
 
         return Results.Ok();
+    }
+
+    // The outcome label from what happened next in the transcript; no label yet is not an error.
+    private async ValueTask<Result<Unit>> Label(EvalItem item, Transcript transcript, IReadOnlyList<TranscriptTurn> session, TranscriptTurn turn, CancellationToken cancellationToken)
+    {
+        var closed = transcript.SessionEnds.TryGetValue(turn.Session, out var end) && item.CreatedAt - end >= _sessionClosedAfter;
+        return TurnOutcomes.TurnLabel(session, turn.Index, closed) is { } label
+            ? await items.RecordLabel(item.Id, LabelSource.Outcome, label, item.CreatedAt, cancellationToken).ConfigureAwait(false)
+            : Results.Ok();
     }
 
     // The turn-progress input, camel-cased as the question reads it. The brief of a task session (if the scope gate saved
@@ -120,7 +124,7 @@ internal sealed class ImportTurnsService(
             ["problem"] = brief is null ? turn.Prompt : $"Goal: {brief.Goal}\n\n{turn.Prompt}",
             ["acceptanceCriteria"] = brief?.AcceptanceCriteria ?? "",
             ["turnDiff"] = TurnOutcomes.TurnDiff(turn.Edits),
-            ["priorDiffStat"] = $"{earlier} files edited earlier in session",
+            ["priorDiffStat"] = string.Create(CultureInfo.InvariantCulture, $"{earlier} files edited earlier in session"),
             ["signals"] = "",
         };
     }

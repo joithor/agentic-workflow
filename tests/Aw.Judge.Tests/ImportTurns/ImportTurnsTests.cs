@@ -24,7 +24,7 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_counts_a_file_it_cannot_read_as_unreadable_and_imports_nothing()
     {
-        var harness = new Harness(null);
+        var harness = new Harness(transcript: null);
 
         var result = await harness.Service.Handle(A.ImportTurnsRequest().Files(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "no-such-transcript.jsonl")).Build(), _ct);
 
@@ -36,11 +36,11 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_imports_a_turn_with_edits_as_a_turn_progress_item_and_skips_one_without()
     {
-        var harness = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "old", "new")), Turn(1, "and then?")]));
+        var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new")), Turn(index: 1, "and then?")]));
 
         var result = await harness.Run();
 
-        Assert.Equal(new ImportTurnsResponse(1, 1, 0), result.Value);
+        Assert.Equal(new ImportTurnsResponse(Imported: 1, Skipped: 1, Unreadable: 0), result.Value);
         var item = Assert.Single(harness.Store.Items);
         Assert.Equal(("turn-progress", "transcript:sess-1:0", null), (item.Question, item.Source, item.ModelDecision));
         var input = JsonNode.Parse(item.InputJson)!;
@@ -51,20 +51,20 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_adds_a_turn_once()
     {
-        var harness = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "old", "new"))]));
+        var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))]));
 
         await harness.Run();
         var again = await harness.Run();
 
-        Assert.Equal(new ImportTurnsResponse(0, 1, 0), again.Value);
+        Assert.Equal(new ImportTurnsResponse(Imported: 0, Skipped: 1, Unreadable: 0), again.Value);
         Assert.Single(harness.Store.Items);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_labels_a_turn_whose_lines_survived_progressing_and_one_that_was_corrected_stalled()
     {
-        var kept = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(1, "thanks, now the docs")]));
-        var corrected = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(1, "no, revert that")]));
+        var kept = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(index: 1, "thanks, now the docs")]));
+        var corrected = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(index: 1, "no, revert that")]));
 
         await kept.Run();
         await corrected.Run();
@@ -77,7 +77,7 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_labels_the_last_turn_only_once_its_session_has_closed()
     {
-        var turns = new[] { Turn(0, "fix it", Edit("a.cs", "", "int x = 1;")) };
+        var turns = new[] { Turn(index: 0, "fix it", Edit("a.cs", "", "int x = 1;")) };
         var open = new Harness(Transcript(turns, end: _start.AddHours(1)), now: _start.AddHours(2));
         var closed = new Harness(Transcript(turns, end: _start.AddHours(1)), now: _start.AddHours(8));
 
@@ -91,18 +91,18 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_skips_a_file_older_than_since_without_counting_it()
     {
-        var harness = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "old", "new"))], modifiedAt: _start.AddDays(-30)), now: _start);
+        var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))], modifiedAt: _start.AddDays(-30)), now: _start);
 
         var result = await harness.Service.Handle(A.ImportTurnsRequest().Files(Path).Since(TimeSpan.FromDays(14)).Build(), _ct);
 
-        Assert.Equal(new ImportTurnsResponse(0, 0, 0), result.Value);
+        Assert.Equal(new ImportTurnsResponse(Imported: 0, Skipped: 0, Unreadable: 0), result.Value);
         Assert.Empty(harness.Store.Items);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_puts_the_goal_of_the_sessions_task_brief_into_the_problem()
     {
-        var harness = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "old", "new"))]));
+        var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))]));
         await harness.Briefs.Save(A.Brief().WithToolUseId("task:sess-1").Build(), _ct);
 
         await harness.Run();
@@ -116,7 +116,7 @@ public sealed class ImportTurnsTests
     public async Task ImportTurns_never_stores_a_secret_from_a_transcript()
     {
         var secret = SampleSecrets.AnthropicKey;
-        var harness = new Harness(Transcript([Turn(0, $"use {secret} to log in", Edit($"{secret}.cs", $"old {secret}", $"new {secret}"))]));
+        var harness = new Harness(Transcript([Turn(index: 0, $"use {secret} to log in", Edit($"{secret}.cs", $"old {secret}", $"new {secret}"))]));
 
         await harness.Run();
 
@@ -128,7 +128,7 @@ public sealed class ImportTurnsTests
     [Fact, Trait("Lane", "unit")]
     public async Task ImportTurns_returns_the_store_error_instead_of_counting_the_file_unreadable()
     {
-        var harness = new Harness(Transcript([Turn(0, "fix it", Edit("a.cs", "old", "new"))]), unavailable: true);
+        var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))]), unavailable: true);
 
         var result = await harness.Run();
 

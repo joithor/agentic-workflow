@@ -38,7 +38,7 @@ public sealed class LabelOutcomesTests
 
         var result = await Service(store, reader).Handle(A.LabelOutcomesRequest().Build(), _ct);
 
-        Assert.Equal(new LabelOutcomesResponse(1, 0), result.Value);
+        Assert.Equal(new LabelOutcomesResponse(Labeled: 1, NoSignal: 0), result.Value);
         var label = Assert.Single(store.Labels);
         Assert.Equal((store.Candidates[0].Item, LabelSource.Outcome, expected), (label.Item, label.Source, label.Label));
     }
@@ -50,7 +50,7 @@ public sealed class LabelOutcomesTests
 
         var result = await Service(store, reader).Handle(A.LabelOutcomesRequest().Build(), _ct);
 
-        Assert.Equal(new LabelOutcomesResponse(0, 1), result.Value);
+        Assert.Equal(new LabelOutcomesResponse(Labeled: 0, NoSignal: 1), result.Value);
         Assert.Empty(store.Labels);
     }
 
@@ -63,7 +63,7 @@ public sealed class LabelOutcomesTests
 
         var result = await Service(store, new InMemoryTranscriptReader()).Handle(A.LabelOutcomesRequest().Build(), _ct);
 
-        Assert.Equal(new LabelOutcomesResponse(0, 2), result.Value);
+        Assert.Equal(new LabelOutcomesResponse(Labeled: 0, NoSignal: 2), result.Value);
         Assert.Empty(store.Labels);
     }
 
@@ -76,7 +76,7 @@ public sealed class LabelOutcomesTests
 
         var result = await Service(store, reader).Handle(A.LabelOutcomesRequest().Build(), _ct);
 
-        Assert.Equal(new LabelOutcomesResponse(2, 0), result.Value);
+        Assert.Equal(new LabelOutcomesResponse(Labeled: 2, NoSignal: 0), result.Value);
         Assert.Equal(1, reader.Finds);
     }
 

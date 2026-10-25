@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Judge.Core.Ids;
 using Aw.Judge.Core.Transcripts;
 
@@ -32,7 +33,7 @@ public sealed class TurnOutcomesTests
             [new TranscriptEdit("a.cs", "int a = 1;\nint b = 2;", "int e = 5;")],
             [new TranscriptEdit("other.cs", "int c = 3;", "")]);
 
-        Assert.Equal(0.5, TurnOutcomes.Survival(session, 0));
+        Assert.Equal(0.5, TurnOutcomes.Survival(session, index: 0));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -40,7 +41,7 @@ public sealed class TurnOutcomesTests
     {
         var session = Turns([new TranscriptEdit("a.cs", "", "{\n\n}")]);
 
-        Assert.Null(TurnOutcomes.Survival(session, 0));
+        Assert.Null(TurnOutcomes.Survival(session, index: 0));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -50,7 +51,7 @@ public sealed class TurnOutcomesTests
             [new TranscriptEdit("a.cs", "", "int a = 1;\nint b = 2;\nint c = 3;")],
             [new TranscriptEdit("a.cs", "int a = 1;\nint b = 2;\nint c = 3;", "int z = 0;")]);
 
-        Assert.Equal(TurnOutcomes.Stalled, TurnOutcomes.TurnLabel(session, 0, sessionClosed: false));
+        Assert.Equal(TurnOutcomes.Stalled, TurnOutcomes.TurnLabel(session, index: 0, sessionClosed: false));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -61,11 +62,11 @@ public sealed class TurnOutcomesTests
             [new TranscriptEdit("a.cs", "int a = 1;", "int z = 0;")]);
         var last = Turns([new TranscriptEdit("a.cs", "", "int a = 1;")]);
 
-        Assert.Null(TurnOutcomes.TurnLabel(middle, 0, sessionClosed: true));
-        Assert.Null(TurnOutcomes.TurnLabel(last, 0, sessionClosed: false));
-        Assert.Equal(TurnOutcomes.Progressing, TurnOutcomes.TurnLabel(last, 0, sessionClosed: true));
+        Assert.Null(TurnOutcomes.TurnLabel(middle, index: 0, sessionClosed: true));
+        Assert.Null(TurnOutcomes.TurnLabel(last, index: 0, sessionClosed: false));
+        Assert.Equal(TurnOutcomes.Progressing, TurnOutcomes.TurnLabel(last, index: 0, sessionClosed: true));
     }
 
     private static List<TranscriptTurn> Turns(params TranscriptEdit[][] edits) =>
-        [.. edits.Select((e, i) => new TranscriptTurn(_session, i, $"prompt {i}", e))];
+        [.. edits.Select((e, i) => new TranscriptTurn(_session, i, string.Create(CultureInfo.InvariantCulture, $"prompt {i}"), e))];
 }
