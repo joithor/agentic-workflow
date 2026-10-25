@@ -21,7 +21,7 @@ internal sealed partial class NeedsYouConfirm
     /// <returns>The hash, or empty.</returns>
     internal static string HashOf(string? cli)
     {
-        var at = cli?.LastIndexOf('@', StringComparison.Ordinal) ?? -1;
+        var at = cli?.LastIndexOf('@') ?? -1;   // a char search is ordinal
         return at < 0 ? "" : cli![(at + 1)..].Trim();   // why: at is only >= 0 when cli is not null
     }
 
