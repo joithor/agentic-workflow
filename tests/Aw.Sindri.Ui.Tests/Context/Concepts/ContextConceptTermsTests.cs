@@ -41,11 +41,13 @@ public sealed class ContextConceptTermsTests
     [Fact]
     public async Task An_older_servers_answer_with_no_terms_or_glossary_field_reads_as_before()
     {
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
         const string body = """
             {"apiVersion":1,"repo":"r","mapVersion":"v1","state":"ok",
              "concepts":[{"id":"concept:a","name":"Alpha","summary":"First.","source":"derived","size":{"features":1,"records":0,"decisions":0,"code":2},"citations":[]}],
              "other":{"id":"concept:other","name":"Other","size":{"features":0,"records":0,"decisions":0,"code":0}},"links":[]}
             """;
+#pragma warning restore MA0136
         var api = new FakeSindriApi { ContextConceptsAnswer = _ => new RouteAnswer(HttpStatusCode.OK, body) };
 
         var page = await ConceptPage.Shown(api);
