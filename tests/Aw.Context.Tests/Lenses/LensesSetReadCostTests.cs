@@ -1,8 +1,8 @@
 using System.Globalization;
-using Aw.Context.Core;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Testing.Fixtures;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.Lenses;
@@ -47,7 +47,7 @@ public sealed class LensesSetReadCostTests
         var one = BuildsDuring(graph, [_manyAnchors[0]]);
         var many = BuildsDuring(graph, _manyAnchors);
 
-        Assert.True(many <= MaxBuildsPerFill, $"{_manyAnchors.Length} anchors built {many} indexes (1 anchor built {one}); the bound is {MaxBuildsPerFill}");
-        Assert.True(many <= one, $"index builds grew from {one} (1 anchor) to {many} ({_manyAnchors.Length} anchors)");
+        Assert.True(many <= MaxBuildsPerFill, "a fill over several anchors built more graph indexes than the bound");
+        Assert.True(many <= one, "graph index builds grew with the anchor count");
     }
 }
