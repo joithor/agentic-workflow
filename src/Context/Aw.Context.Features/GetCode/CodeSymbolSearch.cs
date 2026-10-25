@@ -73,7 +73,7 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
     private static async ValueTask Edges(SymbolRead read, RepoAsk ask, List<SymbolSite> symbols, CancellationToken cancellationToken)
     {
         var (source, repo, asOf, _) = ask;
-        Func<SymbolSite, (Result<CallAnswer> Callers, Result<CallAnswer> Callees), bool> take = (_, answer) =>
+        bool Take(SymbolSite _, (Result<CallAnswer> Callers, Result<CallAnswer> Callees) answer)
         {
             var (callers, callees) = answer;
             if (callers.IsError || callees.IsError)
@@ -87,12 +87,12 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
             read.UnresolvedCallers += callers.Value.Unresolved;
             read.UnresolvedCallees += callees.Value.Unresolved;
             return true;
-        };
+        }
 
         async ValueTask<(Result<CallAnswer>, Result<CallAnswer>)> Ask(SymbolSite symbol, CancellationToken token) =>
             (await source.Callers(repo, symbol.Ref, 1, asOf, token).ConfigureAwait(false), await source.Callees(repo, symbol.Ref, 1, asOf, token).ConfigureAwait(false));
 
-        await Fanout.ForEach(symbols, Ask, take, cancellationToken).ConfigureAwait(false);
+        await Fanout.ForEach(symbols, Ask, Take, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>What one repo is asked: its source (the pipeline's catching-up wrapper), name, the map's commit and the files to read symbols of.</summary>
