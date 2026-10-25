@@ -69,7 +69,7 @@ public sealed class TakeoverViewingTests
         Assert.NotNull(shown.Viewer.Reason);
         Assert.Null(shown.Viewer.Detail);
         Assert.Equal(_attach, shown.Attach);
-        Assert.Single(_rig.Recorded(EventTypes.LaunchTakeoverOpened));
+        _ = Assert.Single(_rig.Recorded(EventTypes.LaunchTakeoverOpened));
     }
 
     [Fact]

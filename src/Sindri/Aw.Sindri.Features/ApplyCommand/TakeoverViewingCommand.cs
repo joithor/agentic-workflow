@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features.ApplyCommand;
 
@@ -12,15 +11,6 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="viewing">Opens the session.</param>
 internal sealed class TakeoverViewingCommand(IService<ApplyCommandRequest, ApplyCommandResponse> inner, TakeoverViewing viewing) : IService<ApplyCommandRequest, ApplyCommandResponse>
 {
-    /// <summary>The product's: the apply-command service itself (resolving the service interface here would resolve the chain around this one).</summary>
-    /// <param name="service">Applies the command.</param>
-    /// <param name="viewing">Opens the session.</param>
-    [ActivatorUtilitiesConstructor]
-    public TakeoverViewingCommand(ApplyCommandService service, TakeoverViewing viewing)
-        : this((IService<ApplyCommandRequest, ApplyCommandResponse>)service, viewing)
-    {
-    }
-
     public async ValueTask<Result<ApplyCommandResponse>> Handle(ApplyCommandRequest request, CancellationToken cancellationToken)
     {
         var applied = await inner.Handle(request, cancellationToken).ConfigureAwait(false);
