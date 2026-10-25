@@ -19,7 +19,7 @@ public sealed class ShippedApprovalPlans(RecipeApprovalPlanner planner, ShippedR
     /// <returns>The plan, or the registration's or the planner's refusal.</returns>
     public async ValueTask<Result<ApprovalPlan>> Approve(RecipeId id, int version, CancellationToken cancellationToken)
     {
-        var registered = registration is null ? Results.Success(false) : await registration.EnsureVersion(id, version, cancellationToken).ConfigureAwait(false);
+        var registered = registration is null ? Results.Success(value: false) : await registration.EnsureVersion(id, version, cancellationToken).ConfigureAwait(false);
         return registered.IsError ? registered.Error : await planner.Approve(id, version, cancellationToken).ConfigureAwait(false);
     }
 
@@ -30,7 +30,7 @@ public sealed class ShippedApprovalPlans(RecipeApprovalPlanner planner, ShippedR
     /// <returns>The plan, or the registration's or the planner's refusal.</returns>
     public async ValueTask<Result<ApprovalPlan>> Approve(RecipeId id, string hash, CancellationToken cancellationToken)
     {
-        var registered = registration is null ? Results.Success(false) : await registration.EnsureHash(id, hash, cancellationToken).ConfigureAwait(false);
+        var registered = registration is null ? Results.Success(value: false) : await registration.EnsureHash(id, hash, cancellationToken).ConfigureAwait(false);
         return registered.IsError ? registered.Error : await planner.Approve(id, hash, cancellationToken).ConfigureAwait(false);
     }
 }

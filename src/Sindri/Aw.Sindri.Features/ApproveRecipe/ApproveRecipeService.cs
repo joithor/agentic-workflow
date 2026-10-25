@@ -42,7 +42,7 @@ internal sealed class ApproveRecipeService(
             return SindriErrors.AuthRefused.With("ApproveRecipe needs a caller");
         }
 
-        var registered = shipped is null ? Results.Success(false) : await shipped.EnsureHash(request.Id, request.Hash.Value, cancellationToken).ConfigureAwait(false);
+        var registered = shipped is null ? Results.Success(value: false) : await shipped.EnsureHash(request.Id, request.Hash.Value, cancellationToken).ConfigureAwait(false);
         var plan = registered.IsError ? registered.Error : await planner.Approve(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
         if (plan.IsError)
         {
