@@ -13,11 +13,12 @@ namespace Aw.Sindri.Tests.Mcp;
 public sealed class McpLaunchHeaderTests(PlainMcpHost plain) : IClassFixture<PlainMcpHost>
 {
     private const string Launch = "LCH-00000000000000000000000000000002";
+    private const string NeverOpened = "LCH-000000000000000000000000000000fe";   // its own id: the other test opens Launch on the shared host
 
     [Fact, Trait("Lane", "integration")]
     public async Task An_unknown_launch_over_mcp_is_403_SND_AUTH_003()
     {
-        var answer = await plain.Host.Http.Ask(Post("/sindri/mcp", "{}", (SindriHeaders.Repo, "alpha"), (SindriHeaders.Launch, Launch)));
+        var answer = await plain.Host.Http.Ask(Post("/sindri/mcp", "{}", (SindriHeaders.Repo, "alpha"), (SindriHeaders.Launch, NeverOpened)));
 
         Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-003"), (answer.Status, answer.Code));
     }
