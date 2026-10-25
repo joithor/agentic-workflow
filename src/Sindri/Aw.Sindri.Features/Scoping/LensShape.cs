@@ -1,11 +1,7 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Aw.Sindri.Features.Scoping;
-
-/// <summary>One way a lens's entry disagrees with itself or with its coverage row.</summary>
-/// <param name="Message">What is wrong, counted: one fault per kind, never one per edge.</param>
-/// <param name="Fix">What to change.</param>
-internal readonly record struct LensFault(string Message, string Fix);
 
 /// <summary>
 /// The lens-shape part of SCP-LENS-001, one pure function over a lens's entry (from fact:lenses) and its coverage row: the searched anchors, depth, mapVersion and hops agree,
@@ -38,7 +34,7 @@ internal static class LensShape
             }
         }
 
-        return lines.Count == 0 ? null : $"{GatherRule}: " + string.Join("\n", lines);
+        return lines.Count == 0 ? null : $"{GatherRule}: " + string.Join('\n', lines);
     }
 
     /// <summary>The faults of one lens, none when its entry and row agree.</summary>
@@ -121,7 +117,7 @@ internal static class LensShape
 
         if (count > 0)
         {
-            faults.Add(new LensFault($"the {lens} lens served {count} edges that end outside its found nodes and anchors (e.g. {string.Join("; ", dangling)})", "Keep only edges among the found nodes and the anchors."));
+            faults.Add(new LensFault($"the {lens} lens served {count.ToString(CultureInfo.InvariantCulture)} edges that end outside its found nodes and anchors (e.g. {string.Join("; ", dangling)})", "Keep only edges among the found nodes and the anchors."));
         }
     }
 }

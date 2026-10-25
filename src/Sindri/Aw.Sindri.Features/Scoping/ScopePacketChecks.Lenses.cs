@@ -1,5 +1,3 @@
-using System.Text.Json.Nodes;
-
 namespace Aw.Sindri.Features.Scoping;
 
 internal static partial class ScopePacketChecks
