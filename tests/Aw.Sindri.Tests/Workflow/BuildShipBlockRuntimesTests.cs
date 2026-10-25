@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Features.Ship;
@@ -98,7 +99,20 @@ public sealed class BuildShipBlockRuntimesTests
     {
         var recipe = RecipeComposition.ReadClean(ShippedRecipes.Read("sindri/" + file), file).Recipe;
         var runtimes = provider.GetRequiredService<BlockStepRuntimes>().Ids.ToDictionary(static id => id, static _ => StepRuntime.Block);
-        return (recipe, new DecisionContext(ApprovalCheck.Holds, provider.GetRequiredService<BlockCatalog>(), runtimes, new InMemoryChildRecipes()));
+        return (recipe, new DecisionContext(ApprovalCheck.Holds, provider.GetRequiredService<BlockCatalog>(), runtimes, Siblings()));
+    }
+
+    // The pinned child recipes a phase's wait enters: every shipped recipe, as the approval would pin them.
+    private static InMemoryChildRecipes Siblings()
+    {
+        var children = InMemoryChildRecipes.None;
+        foreach (var path in ShippedRecipes.Recipes.Where(r => r.StartsWith("sindri/", StringComparison.Ordinal)))
+        {
+            var recipe = EvalComposition.Recipe(path);
+            _ = children.With(new ChildRecipe(recipe, recipe.Hash!.Value));
+        }
+
+        return children;
     }
 
     // The state the engine moves to on the Step's result, after the same report validation a desk report gets.

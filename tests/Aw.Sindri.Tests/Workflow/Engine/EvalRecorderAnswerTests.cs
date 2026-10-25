@@ -134,7 +134,7 @@ public sealed class EvalRecorderAnswerTests
         var refused = """{"kind":"step.completed","outcome":"done","outputs":{"fact:output":"x"}}""";
         var gate = """{"gate.test.model":"fail"}""";
         var parked = """{"state":"parked","park":"needs-answer"}""";
-        var recorded = RoundTrip(StepGated(),
+        var recorded = RoundTripReportingSteps(StepGated(),
             Line(refused, gate, parked),
             Line("""{"kind":"answer","variant":"text","outputs":{"fact:answer":"Yes."}}""", gates: null, """{"state":"produce"}"""),
             Line(refused, gate, parked),
