@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Features.SetupSources;
 
@@ -66,7 +67,7 @@ internal sealed class MapSetupReader(IApprovedProfile approvals, IContextEngine 
 
     // The approved profile's scope as a service reads it (the deny globs apply), as doctor builds it.
     private static ContextScope Scope(SindriProfile profile) =>
-        new(profile.Context, ScopeRules.Usable([.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path, RepoDenyGlobs.For(profile, r), [.. RepoConcepts.For(profile, r).Select(c => ConceptPin.Of(c.Id is { } id ? ConceptId.From(id.Value) : null, c.Name, c.Summary, c.Features, c.Paths))], DemotePaths: RepoDemoteGlobs.For(profile, r)))]), new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
+        new(profile.Context, ScopeRules.Usable([.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path, RepoDenyGlobs.For(profile, r), [.. RepoConcepts.For(profile, r).Select(c => ConceptPin.Of(c.Id is { } id ? ConceptId.From(id.Value) : null, c.Name, c.Summary, c.Features, c.Paths))], DemotePaths: RepoDemoteGlobs.For(profile, r)) { Roles = RepoRoleSets.For(profile, r) })]), new ContextCaller(ContextCallerKind.Service, Repo: null, ContextClient.Service));
 
     // No map yet: a running build is under way; else the newest ended one says whether the last try failed.
     private async ValueTask<Result<MapFact>> Builds(CancellationToken cancellationToken)
