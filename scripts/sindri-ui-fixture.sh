@@ -29,6 +29,9 @@
 #   sindri-ui-fixture.sh workflows [--large]
 #                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
 #                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
+#   sindri-ui-fixture.sh line-run  (run after 'context up')
+#                                  start a workflow.line instance (the run page's recipe) on a new item in the context repo, as the
+#                                  owner; prints the item. The item has no frozen scope: no scoping packet was approved for it
 #   sindri-ui-fixture.sh incident start|stop
 #                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
 #   sindri-ui-fixture.sh context up|draft|down
@@ -324,6 +327,23 @@ workflows() {
   start_on_new_item workflow.dev-triage-three-state "Fixture triage" >/dev/null || return
   start_on_new_item workflow.dev-desk-round-trip "Fixture work one" >/dev/null || return
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
+}
+
+# A line run on a new item of the context repo (gh-1046: the run page's See its context needs a run with an item). The item has no
+# frozen scope, as a fresh item never has.
+line_run() {
+  local item dir out facts="$AW_SINDRI_HOME/ui-fixture-facts"
+  need jq
+  dir="$(context_dir)/$CONTEXT_REPO"
+  [ -d "$dir/.git" ] || die "line-run: run 'context up' first"
+  mkdir -p "$facts" || return
+  item="$(FIXTURE_REPO="$CONTEXT_REPO" new_item "Fixture line run")" || return
+  printf '{"kind":"brief","repo":"%s","path":"README.md"}\n' "$CONTEXT_REPO" > "$facts/scopeInput.json"
+  printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$(git -C "$dir" rev-parse HEAD)" > "$facts/lineContext.json"
+  if ! out="$("$PROVE" human workflow start workflow.line --item "$item" --fact "fact:scopeInput=$facts/scopeInput.json" --fact "fact:lineContext=$facts/lineContext.json" 2>&1)"; then
+    die "workflow start workflow.line on $item was refused: $out"
+  fi
+  printf '%s\n' "$item"
 }
 
 incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
@@ -688,6 +708,7 @@ case "$verb" in
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
+  line-run) [ "$#" -eq 1 ] || die "'line-run' takes no arguments" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
   context)
@@ -711,4 +732,4 @@ esac
 
 guard
 shift
-"$verb" "$@"
+"${verb//-/_}" "$@"
