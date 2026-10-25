@@ -92,7 +92,7 @@ for _ in $(seq 1 30); do
   nodes="$(drv search --limit 5000 2>/dev/null)" || nodes=""
   if [ -n "$nodes" ]; then
     [ "$(printf '%s' "$nodes" | jq '(.total // 0) > (.matches | length)')" = false ] || setup_fail "the node search is incomplete (more nodes than --limit 5000)"
-    row_id="$(printf '%s' "$nodes" | jq -r '[.matches[] | select(.visible == true and .type == "Border" and ((.name // "") | startswith("Fixture agent run, ")))][0].id // empty')"
+    row_id="$(printf '%s' "$nodes" | jq -r '[.matches[] | select(.visible == true and ((.name // "") | startswith("Fixture agent run, ")))][0].id // empty')"
     [ -n "$row_id" ] && break
   fi
   sleep 2
