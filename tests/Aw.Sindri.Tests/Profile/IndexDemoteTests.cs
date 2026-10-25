@@ -75,10 +75,8 @@ public sealed class IndexDemoteTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_valid_ignore_and_demote_pass()
-    {
+    public void A_valid_ignore_and_demote_pass() =>
         Assert.True(ProfileRules.Check(With(new IndexSettings(Roles: _roles, Ignore: ["generated"], Demote: ["test", "demo"]))).IsSuccess);
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void An_unknown_role_in_demote_names_its_key_path()

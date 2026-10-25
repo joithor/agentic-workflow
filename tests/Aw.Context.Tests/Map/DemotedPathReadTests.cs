@@ -36,8 +36,8 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
         var demoted = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, Demoting(Demoted), MapWorld.None)).Value;
 
-        Assert.Equal<IEnumerable<string>>([Demoted, Product], plain.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
-        Assert.Equal<IEnumerable<string>>([Product, Demoted], demoted.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
+        Assert.Equal([Demoted, Product], plain.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
+        Assert.Equal([Product, Demoted], demoted.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -48,8 +48,8 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = (await _world.Engine.Query(new ContextQuery(Text: "Kept"), MapWorld.Human, MapWorld.None)).Value;
         var demoted = (await _world.Engine.Query(new ContextQuery(Text: "Kept"), Demoting(Demoted), MapWorld.None)).Value;
 
-        Assert.Equal<IEnumerable<string?>>(["code:" + Demoted, "code:" + Product], CodeNodes(plain), StringComparer.Ordinal);
-        Assert.Equal<IEnumerable<string?>>(["code:" + Product, "code:" + Demoted], CodeNodes(demoted), StringComparer.Ordinal);
+        Assert.Equal(["code:" + Demoted, "code:" + Product], CodeNodes(plain), StringComparer.Ordinal);
+        Assert.Equal(["code:" + Product, "code:" + Demoted], CodeNodes(demoted), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
