@@ -23,6 +23,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     private readonly Func<Uri?> _url;
     private readonly ISindriApi _api;
     private string _hash = "";
+    private string _cli = "";   // the row's served command: the working way to do it, named with every refusal
     private bool _approved;   // the profile or workflow approval went through
     private bool _sending;
     private string ProfileRefusal { get; set; } = "";
@@ -81,7 +82,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     {
         _session++;
         All.Close();
-        (_hash, _approved, _sending) = ("", false, false);
+        (_hash, _cli, _approved, _sending) = ("", row?.Entry.Cli ?? "", false, false);
         ProfileRefusal = "";
         Kind = KindOf(row);
         if (Kind is NeedsYouConfirmKind.Profile or NeedsYouConfirmKind.Recipe)
@@ -144,7 +145,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
         }
         else
         {
-            ProfileRefusal = refused is null ? Labels.NeedsYouNotApproved : Words(refused);
+            ProfileRefusal = Labels.ApproveRefusal(refused is null ? "" : refused.Code, refused is null ? Labels.NeedsYouNotApproved : Words(refused), _cli);
         }
 
         Changed?.Invoke(this, EventArgs.Empty);
@@ -165,7 +166,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
                 : NeedsYouConfirmKind.All;
     }
 
-    // A refusal in words: Sindri's own steps are told in plain words they can't answer.
+    // A refusal's words: Sindri's own steps are told in plain words they can't answer. The code and the row's command go with them (Labels.ApproveRefusal).
     private static string Words(Error error) => string.Equals(error.Code, SessionRefusal, StringComparison.Ordinal) ? Labels.ApproveSessionRefused : error.Message;
 
     // The approve-all VM moved on (its phase, a refusal or a line): the bar reads it again.

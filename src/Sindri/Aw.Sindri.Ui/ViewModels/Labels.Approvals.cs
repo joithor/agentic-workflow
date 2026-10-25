@@ -38,6 +38,14 @@ internal static partial class Labels
     /// <summary>Spoken when the plan is ready to approve.</summary>
     internal const string ApproveReady = "Ready to approve. Press the Approve button.";
 
+    /// <summary>A refused approval as the app shows it: the code, the words, and the row's served command to run instead; never a silent failure.</summary>
+    /// <param name="code">The error code; empty for none.</param>
+    /// <param name="words">What went wrong, in words.</param>
+    /// <param name="cli">The row's served command; empty when it served none.</param>
+    /// <returns>The line.</returns>
+    internal static string ApproveRefusal(string code, string words, string cli) =>
+        (code.Length > 0 ? code + ": " : "") + words + (cli.Length > 0 ? " Run: " + cli : "");
+
     /// <summary>A step Sindri launched itself answered: Sindri's own steps are refused.</summary>
     internal const string ApproveSessionRefused = "Sindri's own steps can't answer this.";
 

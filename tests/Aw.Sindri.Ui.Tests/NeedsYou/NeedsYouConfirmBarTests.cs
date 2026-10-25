@@ -50,13 +50,27 @@ public sealed class NeedsYouConfirmBarTests
     [Fact]
     public async Task A_refused_approval_shows_the_words_and_leaves_the_row_open()
     {
-        _server.ApproveProfileAnswer = RouteAnswer.Problem("profile-approve", "refused-session");
-        var bar = await Bar(NeedsYouRows.ProfileReady());
+        _server.ApproveProfileAnswer = RouteAnswer.Refused();
+        var entry = NeedsYouRows.ProfileReady();
+        var bar = await Bar(entry);
 
         await bar.PressApprove();
 
-        Assert.Equal((false, true, Labels.ApproveSessionRefused), (bar.IsApproved, bar.HasRefusal, bar.Refusal));
+        Assert.Equal((false, true, "SND-AUTH-002: " + Labels.ApproveSessionRefused + " Run: " + entry.Cli), (bar.IsApproved, bar.HasRefusal, bar.Refusal));
         Assert.True(bar.PrimaryEnabled);
+    }
+
+    [Fact]
+    public async Task Any_refused_profile_approval_names_its_code_and_the_rows_command()
+    {
+        _server.ApproveProfileAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.Conflict, "SND-PROFILE-009", "The settings changed again.");
+        var entry = NeedsYouRows.ProfileReady();
+        var bar = await Bar(entry);
+
+        await bar.PressApprove();
+
+        Assert.Equal((false, "SND-PROFILE-009: The settings changed again. Run: sindri profile approve " + NeedsYouRows.ProfileHash[..6]), (bar.IsApproved, bar.Refusal));
+        Assert.Equal(entry.Cli, "sindri profile approve " + NeedsYouRows.ProfileHash[..6]);   // the served line, not a built one
     }
 
     [Fact]
@@ -67,7 +81,7 @@ public sealed class NeedsYouConfirmBarTests
 
         await bar.PressApprove();
 
-        Assert.Equal((false, Labels.NeedsYouNotApproved), (bar.IsApproved, bar.Refusal));
+        Assert.Equal((false, Labels.NeedsYouNotApproved + " Run: " + NeedsYouRows.ProfileReady().Cli), (bar.IsApproved, bar.Refusal));
     }
 
     [Fact]
@@ -129,22 +143,25 @@ public sealed class NeedsYouConfirmBarTests
     [Fact]
     public async Task A_refused_workflow_approval_shows_the_words_and_leaves_the_row_open()
     {
-        _server.ApproveRecipeAnswer = RouteAnswer.Problem("profile-approve", "refused-session");
-        var bar = await Bar(NeedsYouRows.Recipe());
+        _server.ApproveRecipeAnswer = RouteAnswer.Refused();
+        var entry = NeedsYouRows.Recipe();
+        var bar = await Bar(entry);
 
         await bar.PressApprove();
 
-        Assert.Equal((false, true, Labels.ApproveSessionRefused), (bar.IsApproved, bar.HasRefusal, bar.Refusal));
+        Assert.Equal((false, true, "SND-AUTH-002: " + Labels.ApproveSessionRefused + " Run: " + entry.Cli), (bar.IsApproved, bar.HasRefusal, bar.Refusal));
     }
 
     [Fact]
     public async Task A_workflow_the_list_does_not_name_is_not_approved()
     {
-        var bar = await Bar(NeedsYouRows.Recipe("workflow.gone"));
+        var entry = NeedsYouRows.Recipe("workflow.gone");
+        var bar = await Bar(entry);
 
         await bar.PressApprove();
 
-        Assert.Equal(Labels.NeedsYouRecipeGone, bar.Refusal);
+        Assert.Equal("SND-UI-004: " + Labels.NeedsYouRecipeGone + " Run: " + entry.Cli, bar.Refusal);   // the code and the served command
+        Assert.Equal("sindri recipe approve workflow.gone", entry.Cli);
         Assert.Empty(_server.RecipeApprovals);
     }
 
