@@ -131,11 +131,15 @@ internal static class McpPages
             if (buckets[index] is JsonObject child)
             {
                 // why: the bucket's name keys the list, so 'sections.graph.items' means the same list on every page and in every answer
-                var label = child["name"] is JsonValue named && named.TryGetValue<string>(out var bucket) && bucket.Length > 0 ? bucket : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var label = BucketName(child) ?? index.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 Slice(child, window, $"{name}.{label}.", lists, ref more);
             }
         }
     }
+
+    // A bucket is named by its 'name' (a section) or its 'group' (a queue group).
+    private static string? BucketName(JsonObject bucket) =>
+        new[] { "name", "group" }.Select(key => bucket[key] is JsonValue value && value.TryGetValue<string>(out var text) && text.Length > 0 ? text : null).FirstOrDefault(text => text is not null);
 
     // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
     private static void SliceBands(JsonObject bands, McpWindow window, JsonObject lists, ref bool more)

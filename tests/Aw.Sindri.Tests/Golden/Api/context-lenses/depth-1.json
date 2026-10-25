@@ -435,5 +435,20 @@
     }
   },
   "degraded": [],
-  "cites": {}
+  "cites": {},
+  "page": {
+    "offset": 0,
+    "limit": 100,
+    "more": false,
+    "totals": {
+      "bands.product.own": 6,
+      "bands.product.neighbors": 0,
+      "bands.product.affects": 0,
+      "bands.product.edges": 5,
+      "bands.intent.records": 1,
+      "bands.intent.decisions": 2,
+      "bands.code.files": 2,
+      "edges": 7
+    }
+  }
 }
