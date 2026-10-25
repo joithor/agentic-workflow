@@ -55,4 +55,13 @@ public sealed class NotifierCommandTests
         Assert.Equal("/custom/ui", NotifierCommand.UiBinary(_ => "/custom/ui", "/opt/sindri"));
         Assert.Equal(Path.Combine("/opt/sindri", "sindri-ui"), NotifierCommand.UiBinary(_ => null, "/opt/sindri"));
     }
+
+    [Fact]
+    public void A_banner_is_shown_only_when_its_click_opens_the_app()
+    {
+        Assert.True(NotifierCommand.Shows("needs-you/desk:WFI-a", Notifier));
+        Assert.False(NotifierCommand.Shows("needs-you/desk:WFI-a", terminalNotifier: null));   // osascript's click opens Script Editor, so no banner
+        Assert.False(NotifierCommand.Shows(deepLink: null, Notifier));
+        Assert.False(NotifierCommand.Shows("needs-you/x; echo hi", Notifier));
+    }
 }

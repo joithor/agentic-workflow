@@ -122,6 +122,17 @@ public sealed class FileDeskNoticesTests : IDisposable
         Assert.Equal("workflow/T-4/dev-notify/1", Assert.Single(_os.Links));   // no row: the instance link
     }
 
+    [Fact]
+    public async Task A_banner_is_titled_with_the_item_title_not_the_instance_address()
+    {
+        var notices = Notices();
+
+        _ = await notices.Send(DeskNoticesContract.Notice("WFI-a:1:n1") with { ItemTitle = "P-FRN-920 Singular Backend Model for Targets" }, Token);
+
+        var (title, _) = Assert.Single(_os.Shown);
+        Assert.Equal("P-FRN-920 Singular Backend Model for Targets", title);
+    }
+
     private FileDeskNotices Notices() =>
         new(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), _os, SliceHarness.Json);
 }

@@ -17,6 +17,16 @@ internal static partial class NotifierCommand
     /// <param name="Arguments">Its arguments.</param>
     internal sealed record BannerProcess(string File, IReadOnlyList<string> Arguments);
 
+    /// <summary>Whether a banner for this notice can be clicked through to the app: terminal-notifier is installed and the link is a safe deep link. Without both, no banner is shown (an osascript banner's click opens Script Editor).</summary>
+    /// <param name="deepLink">The deep link text a click should open; null or unsafe for none.</param>
+    /// <param name="terminalNotifier">The full path of terminal-notifier when it is installed; null otherwise.</param>
+    /// <returns>True when the banner's click opens the app.</returns>
+    internal static bool Shows(string? deepLink, string? terminalNotifier)
+    {
+        _ = (deepLink, terminalNotifier);   // stub: the red check fails against it
+        return true;
+    }
+
     /// <summary>The command for a banner.</summary>
     /// <param name="title">The title.</param>
     /// <param name="text">The body.</param>
