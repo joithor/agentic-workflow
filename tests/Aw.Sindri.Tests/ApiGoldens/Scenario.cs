@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Aw.Context.Core.Graph;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
+using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -44,6 +46,69 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(Get(route, AppHeaders()))).Body;
     }
 
+    /// <summary>Lets the views follow the ledger (the golden host hosts no projector), then GET as the app: what the profile's approval row says is there.</summary>
+    public async Task<string> FetchWithViews(string route, CancellationToken ct)
+    {
+        await ViewScenarios.CatchUp(host, ct);
+        return await Fetch(route, ct);
+    }
+
+    /// <summary>
+    /// Starts a map build as the human, then GET as the app. A <paramref name="hung"/> build never ends (and is waited for until its first progress line is in the jobs view, so the answer
+    /// counts it); the other ends first, leaving a draft and no current map.
+    /// </summary>
+    public async Task<string> FetchAfterBuild(string route, bool hung, CancellationToken ct)
+    {
+        var started = await host.Http.Ask(Post("/sindri/context/map/build", "{}", TerminalHeaders()));
+        Assert.Equal(System.Net.HttpStatusCode.OK, started.Status);
+        if (hung)
+        {
+            await using var scope = host.App.Services.CreateAsyncScope();
+            var jobs = scope.ServiceProvider.GetRequiredService<IJobViews>();
+            var waited = System.Diagnostics.Stopwatch.StartNew();
+            do
+            {
+                await ViewScenarios.CatchUp(host, ct);
+                var running = await jobs.Running(ct);
+                if (running.IsSuccess && running.Value.Any(j => j.Progress.Count > 0))
+                {
+                    break;
+                }
+
+                await Task.Delay(20, ct);
+            }
+            while (waited.Elapsed < Jobs.JobHost.Hang);
+        }
+        else
+        {
+            await Jobs.JobHost.Settle(host, ct);
+        }
+
+        await ViewScenarios.CatchUp(host, ct);
+        return await Fetch(route, ct);
+    }
+
+    /// <summary>QUERY (the HTTP method with a body) a body query as the app (the subgraph route): a read, so the answer is the body of a GET for the same keys.</summary>
+    public async Task<string> Query(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, AppHeaders()))).Body;
+    }
+
+    /// <summary>QUERY a body query as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>
+    public async Task<string> QueryAsSession(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
+    }
+
+    /// <summary>QUERY a body query from a browser page (an Origin header): refused as a command is.</summary>
+    public async Task<string> QueryForeignOrigin(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, [.. AppHeaders(), ("Origin", "http://localhost:3000")]))).Body;
+    }
+
     /// <summary>GET as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>
     public async Task<string> FetchAsSession(string route, CancellationToken ct)
     {
@@ -60,11 +125,18 @@ internal sealed class Scenario(GoldenHost host)
         return await Fetch(route, ct);
     }
 
-    /// <summary>POST map/review as an agent session: refused before the review runs.</summary>
+    /// <summary>POST map/import as an agent session: still refused before it runs (import keeps the typed confirmation, owner q93, 2026-10-23).</summary>
     public async Task<string> SessionReview(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         return (await host.Http.Ask(Post("/sindri/context/map/review", Review("accept", link: _link), (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
+    }
+
+    /// <summary>The draft is built, then GET as the app.</summary>
+    public async Task<string> FetchAfterDraft(string route, CancellationToken ct)
+    {
+        await Draft(ct);
+        return await Fetch(route, ct);
     }
 
     /// <summary>The draft, then the queue.</summary>
@@ -119,8 +191,8 @@ internal sealed class Scenario(GoldenHost host)
         return await Decide(Review("accept-deterministic"));
     }
 
-    /// <summary>Exporting the queue, then applying the file from a terminal: the preview and its challenge.</summary>
-    public async Task<string> ApplyFilePreview(CancellationToken ct)
+    /// <summary>Exporting the queue, then applying the file from a terminal: it acts at once, with no challenge.</summary>
+    public async Task<string> ApplyFile(CancellationToken ct)
     {
         await Draft(ct);
         var path = Json(await Fetch("/sindri/context/map/review/export", ct)).GetProperty("path").GetString() ?? string.Empty;
@@ -154,8 +226,8 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(Post("/sindri/context/map/promote", "{}", TerminalHeaders()))).Body;
     }
 
-    /// <summary>Promoting once every item is decided: the preview and its challenge.</summary>
-    public async Task<string> PromotePreview(CancellationToken ct)
+    /// <summary>Promoting once every item is decided: it promotes at once, with no challenge.</summary>
+    public async Task<string> Promote(CancellationToken ct)
     {
         await Draft(ct);
         _ = await Decide(Review("accept", link: _link));

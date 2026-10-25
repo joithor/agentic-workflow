@@ -23,7 +23,7 @@ public sealed class ContextScopesTests
     [InlineData(CallerClass.Session, ClientLabel.None, ContextCallerKind.Session, ContextClient.Http)]
     public void A_sindri_caller_maps_to_the_engine_s_caller_and_transport(CallerClass caller, ClientLabel client, ContextCallerKind kind, ContextClient transport)
     {
-        var context = CallerContext.Http(caller, terminal: true, client, RepoName.From("split-panes"), new SequentialIdGenerator());
+        var context = CallerContext.Http(new HttpCaller(caller, Terminal: true, client, RepoName.From("split-panes")), new SequentialIdGenerator());
 
         var mapped = ContextScopes.Caller(context);
 
@@ -66,7 +66,7 @@ public sealed class ContextScopesTests
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"repos":["nope"]}""").RootElement.Clone() } };
-        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, new Features.ApproveProfile.ProfileChecks(FakeContextEngine.Instance, new Testing.FixedAgentCatalog()));
+        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, new Features.ApproveProfile.ProfileChecks(FakeContextEngine.Instance, new Testing.FixedAgentCatalog()));
 
         var approved = await service.Handle(new Features.ApproveProfile.ApproveProfileRequest(Hash: null, Answer: null), TestContext.Current.CancellationToken);
 

@@ -28,7 +28,7 @@ namespace Aw.Sindri.Tests.BridgeEvents;
 [Lane(TestLane.Integration)]
 public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer>, IDisposable
 {
-    private const string Router = "router.stub";
+    private const string Router = "service:router-stub";
     private const string Dispatcher = "system:dispatcher";
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(20);
     private readonly WorkflowsHarness _harness = new();

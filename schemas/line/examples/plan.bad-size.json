@@ -1,0 +1,16 @@
+{
+  "workstreams": [],
+  "tasks": [
+    {
+      "id": "p1",
+      "workstream": "ws1",
+      "title": "t",
+      "deps": [],
+      "size": "XXL",
+      "writeScope": [],
+      "readSeeds": [],
+      "acceptance": [],
+      "budget": {}
+    }
+  ]
+}

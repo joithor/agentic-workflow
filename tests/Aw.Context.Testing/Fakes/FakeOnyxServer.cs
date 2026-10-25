@@ -72,7 +72,7 @@ public sealed class FakeOnyxServer : IAsyncDisposable
             throw new ArgumentException($"Onyx's account types are {string.Join(", ", _accountTypes)}.", nameof(options));
         }
 
-        var key = new OnyxKey(token, account, options.OnyxAdmin, options.OnyxVersion ?? PinnedVersion);
+        var key = new OnyxKey(token, account, options.OnyxAdmin, options.OnyxVersion ?? PinnedVersion, options.OnyxAccountEmail);
         var plant = options.OnyxPlant;
         var documents = options.OnyxDocuments is { } issues ? [.. issues.Select(OnyxIndex.From)] : OnyxIndex.Documents;
         var server = await LoopbackServer.Start("fake-onyx", r => Planted(Handle(r, key, documents), plant), options.Delay).ConfigureAwait(false);
@@ -93,7 +93,7 @@ public sealed class FakeOnyxServer : IAsyncDisposable
             return (request.Method, request.Path) switch
             {
                 ("GET", VersionRoute) => new FakeHttpReply(200, new JsonObject { ["backend_version"] = key.Version }, "version"),
-                ("GET", MeRoute) => authenticated ? new FakeHttpReply(200, OnyxMe.Info(key.AccountType, key.Admin), "me") : OnyxError(403, "UNAUTHORIZED", "Unauthorized", "refused: no valid credential"),
+                ("GET", MeRoute) => authenticated ? new FakeHttpReply(200, OnyxMe.Info(key.AccountType, key.Admin, key.Email), "me") : OnyxError(403, "UNAUTHORIZED", "Unauthorized", "refused: no valid credential"),
                 ("POST", SearchRoute) or ("GET", SizeRoute) or ("GET", ChunkRoute) when !authenticated => OnyxError(403, "UNAUTHORIZED", NotAuthenticated, "refused: no valid credential"),
                 ("POST", SearchRoute) when !key.Admin => OnyxError(403, "INSUFFICIENT_PERMISSIONS", "You do not have the required permissions for this action.", "refused: not admin"),
                 ("POST", SearchRoute) => Search(request.Body, documents),

@@ -17,4 +17,12 @@ public static class LaunchFiles
     /// <param name="launch">The launch.</param>
     /// <returns>'&lt;id&gt;.session-id'.</returns>
     public static string SessionIdName(LaunchId launch) => launch.Value + ".session-id";
+
+    /// <summary>The end of the name of the file a Step session's Stop hook touches when its turn ends (and its prompt hook deletes when a new turn starts).</summary>
+    public const string TurnEndedSuffix = ".turn-ended";
+
+    /// <summary>The file the Stop hook touches for <paramref name="launch"/>.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <returns>'&lt;id&gt;.turn-ended'.</returns>
+    public static string TurnEndedName(LaunchId launch) => launch.Value + TurnEndedSuffix;
 }

@@ -72,9 +72,9 @@ Optional, additive, in schema 1 (`schemas/launcher.schema.json`, `$defs.sessions
 The bash reader (`scripts/launcher-lib.sh`) refuses unknown keys, so CO-0 adds `sessions` to `x-aw-keys.root` and the
 reader accepts the key and ignores its content. An `aw-meta-launch` installed before this change refuses a file that
 has the key until `scripts/install-meta.sh` reinstalls it. The environment variables the collector will read
-(`AW_FLEET_DIR`, `AW_FLEET_DISABLE`, `AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) are not in `.env.example` yet: each
-lands with the phase whose code first reads it (CO-1, CO-2a), because `scripts/check-env-example.sh` fails an entry
-nothing reads.
+(`AW_FLEET_DIR`, `AW_FLEET_DISABLE`, `AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) are in `.env.example`: each
+landed with the phase whose code first reads it (CO-1 for `AW_FLEET_DISABLE`, CO-2a for the rest), because
+`scripts/check-env-example.sh` fails an entry nothing reads.
 
 ## Terminals' process names
 
@@ -86,7 +86,7 @@ fails a row without them.
 ## Dependency edge
 
 `deps.yaml`: Sindri owns `fleet/` as a state-root path (`files`), and a Hooks to Sindri `file` edge records the hook's
-writes. The edge is `planned` here and CO-1 flips it to `current` when `config/hooks/fleet-state.sh` exists, because
+writes. The edge is `current` since CO-1 added `config/hooks/fleet-state.sh`, because
 `check-deps` fails a current edge the source lacks (DEPS-STALE-001) and a planned one it finds (DEPS-STALE-002).
 `~/.claude/sessions` and the provider folders are outside the state root, so they are not edges.
 
@@ -126,15 +126,15 @@ socket, the terminals and the Meta teams), which `Features/Sessions/PassHostSour
   fills in only when the table gives none and the server pid in it is this server's. The pane is the one whose pid is the agent or an ancestor. The terminal that shows a
   tmux session comes from the chain of an attached client of that session only: the agent inherited `TERM_PROGRAM` and `WARP_*` through the server, which say nothing.
   The label is `tmux · <terminal>`, or `tmux` with no client or a server that can't be read (that is not a problem row; only a pass-deadline timeout is).
-- **Socket kind:** `sindri` (path ends `/sindri`), `default` (ends `/default`, whatever the session is named, so the owner's lanes there show `default`), `team` (the socket
+- **Socket kind:** `sindri` (path ends `/sindri`, or `/sindri-launch` for the launcher's own socket), `default` (ends `/default`, whatever the session is named, so the owner's lanes there show `default`), `team` (the socket
   is named for a Meta team, or the session is `<team>-<lane>`), else `other`. Teams come from `<state>/meta/team.json` and `<state>/meta/teams/*/team.json` (`team` and `lanes` only).
 - **Facts for human callers only** (never in the ledger payload): `TerminalFacts` (`XWindow` from `WINDOWID`, `KittyWindow`, `KittyListenOn`, `WeztermPane`, `WarpFocusUrl` only when it
   has the form `warp://session/<32 lower-case hex>`) and `TmuxFacts` (`Socket`, `SocketKind`, `Session`, `Pane`).
-- **`TmuxCli`** (`Infrastructure/Sessions`) is the only code that runs tmux (ARCH-SESS-001, spec CI-5): the four read-only verbs `list-sessions`, `list-panes`,
-  `list-clients`, `display-message` (the one list `TmuxRules.ReadVerbs` in the architecture test), every call as `tmux -S <absolute socket> <verb> …` with `TMUX` and
+- **`TmuxCli`** (`Infrastructure/Sessions`) is the only code that runs tmux (ARCH-SESS-001, spec CI-5): the five read-only verbs `list-sessions`, `list-panes`,
+  `list-clients`, `display-message` and, from CO-7a, `capture-pane` (the one list `TmuxRules.ReadVerbs` in the architecture test), every call as `tmux -S <absolute socket> <verb> …` with `TMUX` and
   `TMUX_PANE` removed from the child's environment, through its own bounded `Process.Start` that kills the child only. Output uses tabs (session names may hold spaces).
   A socket path that is not absolute is refused before any spawn. Each call is bounded by 1 s (`TmuxCli.CallBudget`, spec CO9); one read makes two calls (panes, then clients), so a
-  silent socket costs at most 2 s before it is skipped, and a pass deadline cancels without marking the socket. One read of a socket gives panes and clients and is kept 10 s; a socket that timed out is not asked again for 10 s. Only `list-panes` and `list-clients` are called today.
+  silent socket costs at most 2 s before it is skipped, and a pass deadline cancels without marking the socket. One read of a socket gives panes and clients and is kept 10 s; a socket that timed out is not asked again for 10 s. The pass calls `list-panes` and `list-clients`; the preview (below) calls `display-message` and `capture-pane`.
 - **Debug log:** one line per session whose host kind or socket kind changed (`session <ref> host <kind> tmux socket kind <kind>`): refs and kinds only, no path, cwd or title.
 - Tests: `HostRulesTests` (unit), `TmuxCliTests` (against a stand-in program), the port contracts (`TmuxServersContract`, `UnixSocketsContract`, `TeamNamesContract`, `TerminalNamesContract` in
   `Aw.Sindri.Testing`, bound to each fake and to its real adapter; the tmux one runs against a private `tmux -L aw-co2b-<pid>` server it starts and kills itself, skipped without tmux), `HostSourceFilesTests`, and the host golden
@@ -162,9 +162,13 @@ snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` 
   below the repo's checkout in the approved profile, else null), `host{kind, label, socketKind, attachedClients, terminal}`, `lane{team, lane}`, `launchId`, `startedAt`, `since`,
   `focus`. `focus` is `{method: none, possible: false, why: not-built}` until CO-4a (a stable code; the `FocusSession` catalog row keeps the phase label `pending:CO-4a`). `item` and `instance` come with CA-6.
   `inWorkflow` means "has a Sindri launch" until the launch join exists.
+- **Launch step:** `launch{instance, state, attempt}` says which workflow instance, Step (state id) and attempt the session's Sindri launch belongs to, so a row reads "on `<instance>` · `<state>`"
+  with no second call (`Core/Sessions/SessionLaunchSteps` looks the launch up in the `launches` view). `launch` is null when no launch of Sindri's is known for the session; its members are
+  null for an attended (click) launch. For example, a session with no launch row serves `"launch": null`, while one whose launch was a click serves `"launch": {"instance": null, "state": null, "attempt": null}`. A session's `state` is its own and unrelated to `launch.state`.
 - **`SessionList`:** `sessions`, `recentlyEnded` (each `{session, endedAt, resume}`), `problems`, `counts{live, asking, outsideWorkflow}` (over what the caller may see, before the
   filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty, with `asOf` the time of the request (no pass has run yet; `GetSession` answers 404). A `SND-SESSION-002` problem in the pass
   replaces the list (`503`, `detail` the reason); `-001` and `-003` stay problem rows.
+- **Ended by Stop:** stopping a Sindri launch records `session.ended` with reason `exit` once the host stop succeeded, so its launches row is no longer live and is never marked `lost`; nothing is recorded if the row isn't live (`docs/csharp/sindri-launcher.md`, "Stop ends the session").
 - **`SessionView`:** `{session, cwd, stateHistory, asOf}`. `stateHistory` is the snapshot's `History` (`StateHistoryRules`): per live session, the first state and each change of state or
   asking reason, at most 20, oldest first, in memory for this Sindri run.
 - **Status:** `GET /status` has `sessions{live, asking, problems}`, box-wide for every caller and deliberately public: a `session` caller sees the numbers (also through the MCP `sindri_status` tool), never the rows. `problems` counts every problem row, `SND-SESSION-003` (a test override) included.
@@ -174,6 +178,38 @@ snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` 
 - **Goldens:** `tests/Aw.Sindri.Tests/Golden/Api/sessions/` (`empty`, `fixture-three-providers`, `session-scoped`, `problems-source-failed`, `recently-ended`, `unsupported-platform`,
   `proc-unreadable`, `disabled`; these three are the `SND-SESSION-002` bodies, 503 problem+json), `sessions-id/` (`claude-tmux`, `codex-hook`, `not-found`, `session-caller-hidden-fields`) and `status/sessions.json`, from
   `ApiGoldens/SessionScenarios` (the snapshot is published into the host's store). `Aw.Sindri.Ui.Tests` reads every API golden and is in the gate.
+
+## Live preview (CO-7a)
+
+The read behind `GET /sindri/sessions/{provider}/{id}/preview` (spec CA-9, CI-10). CO-7a builds the read; the route, its goldens and the telemetry counter are CO-7b's. The read is human-only,
+on demand (never in the collector pass), writes no ledger event and logs no pane text.
+
+- **Service:** `Features/GetSessionPreview/GetSessionPreviewService`, `IQuery<GetSessionPreviewResponse>` for `GetSessionPreviewRequest(SessionRef Ref, DateTimeOffset? ExpectStartedAt)`. It is registered
+  (`AddQuery`) and needs only the route to be mapped. The response is a `SessionPreview{Lines, Truncated, CapturedAt, StartedAt, Host{Kind, Label}}` or, still HTTP 200, a
+  `SessionPreviewUnavailable{Reason, CapturedAt}` (`Reason` one of the `PreviewReason` constants `not-in-tmux`, `not-live`, `timed-out`). Both derive from `GetSessionPreviewResponse`; the endpoint serializes
+  the concrete type with the package's JSON context. The text in `Lines` is not scrubbed (spec §12 names this the one exception) and the endpoint must not scrub it.
+- **Check order, per request, before any shared wait:** (1) no caller is `SND-AUTH-002` (a `session` caller is let through since owner decision q93, and sees only its own repo's sessions via `SessionRows.Find`); (2) the collector-unavailable errors of the pass
+  (`SND-SESSION-002`), as `GetSession`; (3) the ref (`SessionRows.Find`): `SND-SESSION-404`; (4) `ExpectStartedAt`: when it is not null and differs from the row's `startedAt` (a row with none counts as different), `SND-SESSION-409` (`SindriErrors.SessionConflict`).
+  A caller whose row has no `startedAt` sends null, which skips the comparison, so the match is on the ref (provider and session id); null with a row that has a `startedAt` also skips it (the query is optional);
+  (5) the 200 answers: a row whose host is not tmux, or with no socket or pane, is `not-in-tmux`; the shared read; `timed-out`; `not-live`; the lines.
+- **Liveness (`not-live`):** `TmuxCli.Read(socket, pane)` runs `display-message -p -t <pane> '#{pane_pid}'` and then `capture-pane -p -J -S -40 -t <pane>`, both `-S <socket>` first, under one 1 s deadline (one
+  `CancellationTokenSource` on the injected `TimeProvider` for both spawns). A pane, server or tmux that isn't there answers `Gone`. The service then calls `PreviewRules.InPane`: the pid of the session must
+  be in the process table with the same start ticks and be `pane_pid` or a descendant of it within 64 parent hops (a loop or a missing parent ends the walk). An unreadable process table is `not-live`:
+  text that could not be checked is never shown.
+- **One read per pane:** `PaneCaptures` (a singleton) keeps one in-flight read per (socket, pane). A request that finds one waits for its answer; the checks above ran first, so a shared read never skips a 409.
+  It is not a cache: the next request after the read finishes reads again.
+- **Timeout mark:** a read that runs past the deadline answers `timed-out` and sets the preview's own per-socket mark for 10 s (`TmuxCli`, apart from the pass's `_timedOut`); while it is set the preview answers
+  `timed-out` without spawning tmux. The pass never reads this mark, so a slow `capture-pane` cannot blank session rows. The preview does not read the pass's mark either.
+- **`PreviewRules`** (`Core/Sessions`, pure; the six steps of CA-9): `Of(bytes)` decodes UTF-8 with replacement characters, `Of(text, dropped)` strips over the whole capture before the split (CSI; OSC, DCS, APC, PM and SOS
+  strings up to ST or, for OSC, a bell, even across lines, an unterminated string to the end; other escapes; C0 controls but tab and LF, so CR goes; DEL; C1 controls; bidi marks, overrides and isolates; U+2028 and U+2029),
+  splits on LF, drops trailing blank lines, keeps the last 40, cuts each line at 200 UTF-16 code units without splitting a surrogate pair, and sets `Truncated` only for a cut line or a dropped byte range.
+  A raw U+009B or U+009D is a stripped control character like the rest of C1; it does not start a sequence.
+- **64 KiB cap:** `TmuxCli` keeps the last 64 KiB plus one bytes of stdout (never more than twice that in memory); `PreviewRules.Of(bytes)` keeps the last 64 KiB, drops the first (partial) line unless the extra byte before it
+  is a line feed, and sets `Truncated`.
+- **Safety:** the argv is fixed (`ARCH-SESS-001` allows `capture-pane` as the fifth verb of `TmuxCli` alone); the pane id must match `%[0-9]+` and the socket must be absolute, else `Gone` with no spawn.
+  Tests that run a real tmux use a private `-L` server (`PrivateTmux`); the stand-in tests never run tmux.
+- Tests: `PreviewRulesTests`, `PreviewTmuxCliTests` (stand-in program), `GetSessionPreviewTests`, `PaneReaderContract` (bound to `FakePaneReader` and to `TmuxCli` on a private server), and the integration test
+  `Preview_reads_the_stub_pane_through_tmux` (a pane that prints escapes and a 300-character line).
 
 ## API rows for review
 

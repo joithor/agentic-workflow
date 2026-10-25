@@ -22,7 +22,7 @@ internal static class StatusCases
         "desk-task", "parked-no-progress-child", "parked-budget", "escalated-gate", "taken-over", "done",
         "parked-rounds", "parked-needs-answer-step", "parked-needs-answer-wait", "parked-timeout", "parked-revoked",
         "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled", "escalated-child", "parked-mirrored-needs-answer",
-        "parked-budget-odd", "parked-budget-no-cap", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget", "parked-mirrored-two-children", "parked-mirrored-unlisted-child",
+        "parked-budget-odd", "parked-budget-no-cap", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget", "parked-mirrored-two-children", "parked-mirrored-unlisted-child", "parked-unavailable-step",
     ];
 
     /// <summary>The cases whose suspension mirrors a child.</summary>
@@ -64,13 +64,14 @@ internal static class StatusCases
     {
         "desk-task" => Case(Produce(), Ago(72), timeoutAt: Now + new TimeSpan(days: 1, hours: 22, minutes: 48, seconds: 0)),
         "parked-no-progress-child" => Case(MirroringChild(), Ago(12), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: no-progress")]),
-        "parked-budget" => Case(Park(ParkReason.Budget, ParkKind.Step, "produce used 200k of 200k tokens") with { Spent = Spent(200_000) }, Ago(3)),
+        "parked-budget" => Case(Park(ParkReason.Budget, ParkKind.Step, "produce used 5M of 5M tokens") with { Spent = Spent(5_000_000) }, Ago(3)),
         "escalated-gate" => Case(Escalated(), Ago(120)),
         "taken-over" => Case(TakenOver(TimeSpan.FromSeconds(40)), Ago(5)),
         "done" => Case(Ended("done", "resolved"), Ago(1)),
         "parked-rounds" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
         "parked-needs-answer-step" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
         "parked-needs-answer-wait" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Wait, "gate.test.check refused produce -> checks (no output)"), Ago(8)),
+        "parked-unavailable-step" => Case(Produce() with { Suspension = Suspended(ParkReason.Unavailable, ParkKind.Step, "step.produce is unavailable after 2 retries; the last error: exit") with { Code = "SND-LAUNCH-007" } }, Ago(8)),
         "parked-timeout" => Case(Park(ParkReason.Timeout, kind: null, "produce ran past 2d"), Ago(60 * 26)),
         "parked-revoked" => Case(Park(ParkReason.SpecConflict, ParkKind.Revoked, "workflow.step was revoked."), Ago(4)),
         "parked-dispatch-no-runtime" => Case(DispatchPark("effect.claim.ref can't run: repo 'x' isn't in the approved profile (SND-WF-010). Fix that, then resume to send it again."), Ago(4)),
@@ -80,6 +81,8 @@ internal static class StatusCases
         "parked-no-runtime" => Case(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
         "parked-rounds-with-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
         "cancelled" => Case(Ended("cancelled", "cancelled"), Ago(1)),
+        "failed" => Case(Ended("failed", "failed"), Ago(1)),
+        "unresolved" => Case(Ended("unresolved", "unresolved"), Ago(1)),
         "parked-rounds-with-approved-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") with { Approved = true } }, Ago(30)),
         "parked-rounds-with-later-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with
         {
@@ -113,7 +116,7 @@ internal static class StatusCases
 
     private static ChildView Child(string state) => new(InstanceAddress.From("T-3/step/1/step.4"), state);
 
-    /// <summary>A park mirroring the child, as the engine builds it (§5.8): the child's reason, no park kind.</summary>
+    /// <summary>A park mirroring the child, as the engine builds it (§5.8): the child's reason, no park kind of its own (the child's is MirroredParkKind).</summary>
     private static WorkflowInstance MirroredPark(ParkReason reason, string question) => Produce() with
     {
         Suspension = Suspended(reason, kind: null, question) with { Mirrors = MirroredId, Resume = Resume(ResumeKind.Forward) },
@@ -122,7 +125,7 @@ internal static class StatusCases
     private static WorkflowInstance MirroredWait()
     {
         var park = MirroredPark(ParkReason.NeedsAnswer, "the child's wait could not read the reply");
-        return park with { Suspension = park.Suspension! with { ParkKind = ParkKind.Wait } };
+        return park with { Suspension = park.Suspension! with { MirroredParkKind = ParkKind.Wait } };
     }
 
     /// <summary>The shipped recipe with no budget on the recipe or any state: a gate.budget refusal has no cap to halve.</summary>

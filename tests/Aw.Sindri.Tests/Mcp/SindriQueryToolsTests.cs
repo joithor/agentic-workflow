@@ -39,7 +39,7 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_queue_lists_only_the_sessions_repo()
+    public async Task Sindri_queue_lists_every_repo()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var alpha = await seed.Open("alpha", ct);
@@ -48,22 +48,21 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
 
         var titles = Unfenced(mine).GetProperty("groups").EnumerateArray().SelectMany(g => g.GetProperty("items").EnumerateArray())
             .Select(i => i.GetProperty("title").GetString()).ToList();
-        Assert.Equal(3, titles.Count);
-        Assert.DoesNotContain("Beta one", titles, StringComparer.Ordinal);
+        Assert.Contains("Beta one", titles, StringComparer.Ordinal);
         Assert.Contains(SeededMcp.HostileTitle, titles, StringComparer.Ordinal);
-        Assert.StartsWith("3 open items in alpha", Text(mine), StringComparison.Ordinal);
+        Assert.StartsWith(titles.Count.ToString(CultureInfo.InvariantCulture) + " open items", Text(mine), StringComparison.Ordinal);
         McpGolden.Match(mine, seed.Host.Home, "sindri_queue", "alpha");
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_queue_of_a_repo_with_no_items_says_so()
+    public async Task Sindri_queue_with_a_repo_that_has_no_items_still_lists_the_others()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var gamma = await seed.Open("gamma", ct);
 
         var empty = await gamma.Call("sindri_queue", "{}", ct);
 
-        Assert.Equal(JsonValueKind.String, Unfenced(empty).GetProperty("empty").ValueKind);
+        Assert.NotEqual(JsonValueKind.String, Unfenced(empty).GetProperty("empty").ValueKind);
         McpGolden.Match(empty, seed.Host.Home, "sindri_queue", "empty");
     }
 
@@ -103,7 +102,7 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_item_of_another_repo_is_SND_ITEM_404_never_a_hint()
+    public async Task Sindri_item_of_another_repo_is_served_and_a_missing_one_is_SND_ITEM_404()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
@@ -111,10 +110,9 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var other = await mcp.Call("sindri_item", Args("itemId", seed.BetaItem), ct);
         var missing = await mcp.Call("sindri_item", Args("itemId", NoSuchItem), ct);
 
-        Assert.Equal("SND-ITEM-404", Code(other));
+        Assert.NotEqual(true, other.IsError);
+        Assert.Equal(seed.BetaItem, other.StructuredContent!.Value.GetProperty("id").GetString());
         Assert.Equal("SND-ITEM-404", Code(missing));
-        Assert.DoesNotContain("beta", Text(other), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(Text(other).Replace(seed.BetaItem, "X", StringComparison.Ordinal), Text(missing).Replace(NoSuchItem, "X", StringComparison.Ordinal));   // why: another repo's item answers as an absent one
         McpGolden.Match(other, seed.Host.Home, "sindri_item", "other-repo");
     }
 
@@ -134,23 +132,64 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_item_timeline_pages_with_after_and_says_next()
+    public async Task Sindri_item_timeline_pages_by_limit_and_offset_only_with_no_second_cursor()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
 
         var first = await mcp.Call("sindri_item_timeline", Args("itemId", seed.LongItem), ct);
-        var next = first.StructuredContent!.Value.GetProperty("next").GetInt64().ToString(CultureInfo.InvariantCulture);
-        var last = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","after":{{next}}}""", ct);
+        var last = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","offset":100}""", ct);
+        var small = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":95}""", ct);
+        var after = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","after":5}""", ct);
 
-        Assert.Equal(100, first.StructuredContent.Value.GetProperty("entries").GetArrayLength());
-        Assert.Contains($"100 lines, next after {next}", Text(first), StringComparison.Ordinal);
+        Assert.Equal(100, first.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
+        Assert.True(first.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, first.StructuredContent.Value.GetProperty("next").ValueKind);
         Assert.Equal(1, last.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
-        Assert.Equal(JsonValueKind.Null, last.StructuredContent.Value.GetProperty("next").ValueKind);
+        Assert.False(last.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean());
+        Assert.Equal(6, small.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
+        Assert.True(after.IsError);   // why: 'after' is gone from the tool; a second cursor beside limit/offset would disagree with it
         var line = last.StructuredContent.Value.GetProperty("entries")[0].GetProperty("line").GetString()!;
         Assert.StartsWith("<untrusted source=\"sindri:timeline\"", line, StringComparison.Ordinal);
         Assert.NotNull(McpFenceReader.AuthorOf(line));   // why: the entry's actor
         McpGolden.Match(last, seed.Host.Home, "sindri_item_timeline", "last-page");
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task The_mcp_windows_of_a_long_timeline_equal_the_http_pages_following_next()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var mcp = await seed.Open("alpha", ct);
+        var route = $"/sindri/items/{seed.LongItem}/timeline";
+
+        var fromHttp = new List<long>();
+        var first = JsonDocument.Parse(await seed.Http(route, "alpha", ct)).RootElement;
+        long? next;
+        do
+        {
+            var page = first;
+            fromHttp.AddRange(page.GetProperty("entries").EnumerateArray().Select(e => e.GetProperty("sequence").GetInt64()));
+            next = page.GetProperty("next").ValueKind == JsonValueKind.Null ? null : page.GetProperty("next").GetInt64();
+            if (next is { } after)
+            {
+                first = JsonDocument.Parse(await seed.Http($"{route}?after={after.ToString(CultureInfo.InvariantCulture)}", "alpha", ct)).RootElement;
+            }
+        }
+        while (next is not null);
+
+        var fromMcp = new List<long>();
+        for (var offset = 0; ; offset += 10)
+        {
+            var window = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":{{offset.ToString(CultureInfo.InvariantCulture)}}}""", ct);
+            fromMcp.AddRange(window.StructuredContent!.Value.GetProperty("entries").EnumerateArray().Select(e => e.GetProperty("sequence").GetInt64()));
+            if (!window.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean())
+            {
+                break;
+            }
+        }
+
+        Assert.True(fromHttp.Count > 100);
+        Assert.Equal(fromHttp, fromMcp);
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -165,16 +204,34 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_item_timeline_rejects_a_negative_after_and_another_repos_item()
+    public async Task Sindri_item_timeline_serves_another_repos_item_and_refuses_a_bad_window()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
 
-        var negative = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.AlphaItem}}","after":-1}""", ct);
+        var negative = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.AlphaItem}}","offset":-1}""", ct);
         var other = await mcp.Call("sindri_item_timeline", Args("itemId", seed.BetaItem), ct);
 
-        Assert.Equal("SND-CONTEXT-022", Code(negative));
-        Assert.Equal("SND-ITEM-404", Code(other));
+        Assert.Equal("SND-CONTEXT-006", Code(negative));
+        Assert.NotEqual(true, other.IsError);
+    }
+
+    [Theory(Timeout = 60_000), Trait("Lane", "integration")]
+    [InlineData("sindri_status", """{""")]
+    [InlineData("sindri_queue", """{""")]
+    [InlineData("sindri_pending_decisions", """{""")]
+    [InlineData("sindri_item", "ITEM")]
+    [InlineData("sindri_item_timeline", "ITEM")]
+    public async Task Every_query_tool_refuses_a_limit_under_1_and_an_offset_under_0_the_same_way(string tool, string prefix)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var mcp = await seed.Open("alpha", ct);
+        var head = prefix == "ITEM" ? $$"""{"itemId":"{{seed.AlphaItem}}",""" : prefix;
+
+        foreach (var window in new[] { "\"limit\":0}", "\"limit\":-1}", "\"offset\":-1}" })
+        {
+            Assert.Equal("SND-CONTEXT-006", Code(await mcp.Call(tool, head + window, ct)));
+        }
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -198,19 +255,19 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_pending_decisions_with_none_pending_says_so()
+    public async Task Sindri_pending_decisions_of_a_repo_without_any_lists_the_others()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var beta = await seed.Open("beta", ct);
 
         var none = await beta.Call("sindri_pending_decisions", "{}", ct);
 
-        Assert.Equal(0, none.StructuredContent!.Value.GetProperty("decisions").GetArrayLength());
-        McpGolden.Match(none, seed.Host.Home, "sindri_pending_decisions", "none");
+        Assert.Equal(seed.AlphaDecision, Assert.Single(none.StructuredContent!.Value.GetProperty("decisions").EnumerateArray()).GetProperty("id").GetString());
+        McpGolden.Match(none, seed.Host.Home, "sindri_pending_decisions", "beta");
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_pending_decisions_for_another_repos_item_is_SND_ITEM_404()
+    public async Task Sindri_pending_decisions_for_another_repos_item_is_served()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
@@ -218,13 +275,13 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var other = await mcp.Call("sindri_pending_decisions", Args("itemId", seed.BetaItem), ct);
         var own = await mcp.Call("sindri_pending_decisions", Args("itemId", seed.AlphaItem), ct);
 
-        Assert.Equal("SND-ITEM-404", Code(other));
+        Assert.NotEqual(true, other.IsError);
         Assert.Equal(1, own.StructuredContent!.Value.GetProperty("decisions").GetArrayLength());
         McpGolden.Match(other, seed.Host.Home, "sindri_pending_decisions", "other-repo-item");
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_job_of_another_repo_is_SND_JOB_404()
+    public async Task Sindri_job_of_another_repo_is_served()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
@@ -232,7 +289,7 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var other = await mcp.Call("sindri_job", Args("jobId", seed.BetaJob), ct);
         var bad = await mcp.Call("sindri_job", Args("jobId", "nope"), ct);
 
-        Assert.Equal("SND-JOB-404", Code(other));
+        Assert.NotEqual(true, other.IsError);
         Assert.Equal("SND-CLI-003", Code(bad));
         McpGolden.Match(other, seed.Host.Home, "sindri_job", "other-repo");
     }
@@ -300,7 +357,10 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         var http = await seed.Http(route, repo, ct);
 
         Assert.NotEqual(true, result.IsError);
-        Assert.Equal(ApiGolden.Reindent(http), ApiGolden.Reindent(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText()));
+        // why: the MCP answer carries the window it was cut with ('page'); the HTTP body has none
+        var unfenced = JsonNode.Parse(McpFenceReader.Unfence(result.StructuredContent!.Value).GetRawText())!.AsObject();
+        Assert.True(unfenced.Remove("page"));
+        Assert.Equal(ApiGolden.Reindent(http), ApiGolden.Reindent(unfenced.ToJsonString()));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -390,6 +450,8 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
         Assert.All(codes, c => Assert.Equal("SND-CONTEXT-022", c));
     }
 
+    private string ShortItem(string repo) => repo == "alpha" ? seed.AlphaItem : seed.BetaItem;
+
     private (string Arguments, string Route) Case(string tool, string repo)
     {
         var (item, job) = repo == "alpha" ? (seed.LongItem, seed.AlphaJob) : (seed.BetaItem, seed.BetaJob);
@@ -398,7 +460,8 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
             "sindri_status" => ("{}", "/sindri/status"),
             "sindri_queue" => ("{}", "/sindri/queue"),
             "sindri_item" => (Args("itemId", item), "/sindri/items/" + item),
-            "sindri_item_timeline" => (Args("itemId", item), $"/sindri/items/{item}/timeline"),
+            // why: the HTTP timeline pages by a server cursor ('after'/'next') and the MCP tool by limit and offset, so they agree only while the timeline fits one HTTP page; the long item's paging is covered by its own test
+            "sindri_item_timeline" => (Args("itemId", ShortItem(repo)), $"/sindri/items/{ShortItem(repo)}/timeline"),
             "sindri_pending_decisions" => ("{}", "/sindri/decisions?pending=true"),
             _ => (Args("jobId", job), "/sindri/jobs/" + job),
         };

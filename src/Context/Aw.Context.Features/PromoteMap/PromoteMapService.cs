@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
@@ -17,7 +18,7 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
 {
     public async ValueTask<Result<MapPromoted>> Handle(PromoteMapRequest request, CancellationToken cancellationToken)
     {
-        if (ReviewDrafts.Gate(request.Scope, "promoting a draft") is { } refused)
+        if (MapAccess.Gate(request.Scope) is { } refused)
         {
             return refused;
         }
@@ -30,7 +31,12 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
 
         if (found.Value is not { } draft)
         {
-            return PromoteReadiness.Check(queue: null).Error;
+            return request.ExpectedVersion is { } wanted ? Changed(wanted, latest: null) : PromoteReadiness.Check(queue: null).Error;
+        }
+
+        if (request.ExpectedVersion is { } expected && expected != draft.Version.Number)
+        {
+            return Changed(expected, draft.Version.Number);
         }
 
         // The queue the review shows: an item a deny glob hides is neither decidable nor blocking, and the stored map loses what the globs hide.
@@ -43,6 +49,10 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
         var ready = PromoteReadiness.Check(seen.Value.Queue);
         return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, cancellationToken).ConfigureAwait(false);
     }
+
+    // The caller decided about one draft; a rebuild replaced it or it was promoted (retrieval spec §8.7a).
+    private static Error Changed(int expected, int? latest) => ContextErrors.DraftChanged.With(string.Create(CultureInfo.InvariantCulture,
+        $"draft {expected} was expected, {(latest is { } n ? $"the latest draft is {n}" : "there is no draft")} (a rebuild replaced it, or it was promoted); nothing was promoted"));
 
     private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
@@ -65,16 +75,21 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
     private async ValueTask<Result<int>> WithAcceptedProposals(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var proposed = OverrideLog.Active(view.Overrides).Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal);
-        var nodes = view.Applied.Nodes.Where(n => proposed.Contains(n.Key.Value) && view.Graph.Resolve(n.Key) is null).ToList();
+        // Indexed once (per node a Resolve, per edge a scan of every edge, made a promote proposals × graph): a key resolves when it, or the
+        // target its alias names, is a node of the graph; an edge is new when no edge of the graph states the same fact.
+        var aliases = view.Graph.Aliases.DistinctBy(a => a.Alias.Value, StringComparer.Ordinal).ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal);
+        var keys = view.Graph.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        var facts = view.Graph.Edges.Select(e => (e.From.Value, e.To.Value, e.Type)).ToHashSet();
+        var nodes = view.Applied.Nodes.Where(n => proposed.Contains(n.Key.Value) && !keys.Contains(aliases.GetValueOrDefault(n.Key.Value) ?? n.Key.Value)).ToList();
         if (nodes.Count == 0 && !view.Filtered)
         {
             return draft.Version.Number;
         }
 
-        var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !view.Graph.Edges.Any(e.SameFact));
+        var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !facts.Contains((e.From.Value, e.To.Value, e.Type)));
         var joined = view.Graph with { Nodes = [.. view.Graph.Nodes, .. nodes], Edges = [.. view.Graph.Edges, .. edges] };
         var undo = view.UndoCutDecisions(draft.Overrides, clock.GetUtcNow());
-        var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, undo), draft.Version.Created, cancellationToken).ConfigureAwait(false);
+        var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, undo) { Ruleset = draft.Version.Ruleset }, draft.Version.Created, cancellationToken).ConfigureAwait(false);
         return saved.IsError ? saved.Error : saved.Value.Number;
     }
 }

@@ -11,6 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Evidence">The evidence it requires.</param>
 /// <param name="Effects">The effects it emits.</param>
 /// <param name="Produces">The facts it records, each an output or fact of the trigger's source (RCP-WIRE-002); a child's output may be renamed.</param>
+/// <param name="Label">Optional plain words for what this transition means ('gaps found: draft again'; at most 60 characters, RCP-DISPLAY-003); written into the hashed form only when set.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeTransition(
     IReadOnlyList<string> From,
@@ -20,4 +21,5 @@ public sealed record RecipeTransition(
     IReadOnlyList<GateUse> Gates,
     IReadOnlyList<EvidenceCheck> Evidence,
     IReadOnlyList<BlockUse> Effects,
-    IReadOnlyList<ProducedFact> Produces);
+    IReadOnlyList<ProducedFact> Produces,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Label = null);

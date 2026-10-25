@@ -2,8 +2,8 @@
   "recipes": [
     {
       "id": "workflow.step",
-      "version": 2,
-      "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
+      "version": 4,
+      "hash": "sha256:f511ce1fc529b5b471731b4023a1f07774af2f9a8836344fd5818f5aef644784",
       "standing": "approved",
       "via": "desk",
       "stale": [],
@@ -53,7 +53,42 @@
           "to": "produce"
         }
       ],
-      "name": null
+      "name": null,
+      "approvedVersion": 4,
+      "approvedHash": "sha256:f511ce1fc529b5b471731b4023a1f07774af2f9a8836344fd5818f5aef644784",
+      "status": "approved",
+      "childOnly": false,
+      "stats": {
+        "runs": 0,
+        "done": 0,
+        "failed": 0,
+        "humanRate": null,
+        "medianSeconds": null,
+        "tokensP50": null,
+        "buckets": [
+          {
+            "weekStart": "<week>",
+            "runs": 0,
+            "humanRate": null
+          },
+          {
+            "weekStart": "<week>",
+            "runs": 0,
+            "humanRate": null
+          },
+          {
+            "weekStart": "<week>",
+            "runs": 0,
+            "humanRate": null
+          },
+          {
+            "weekStart": "<week>",
+            "runs": 0,
+            "humanRate": null
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "window": "30d"
 }

@@ -22,6 +22,7 @@ public sealed class FactsFramesTests : FrameHost
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Facts is not null);
         Settle(window);
+        OpenDisclosures(window);
         return (window, shell);
     }
 
@@ -43,13 +44,37 @@ public sealed class FactsFramesTests : FrameHost
         Click(button);
         await Until(window, () => alert.Viewer is PayloadFactViewer { IsLoading: false });
 
-        var viewer = (PayloadFactViewer)alert.Viewer!;
+        _ = Assert.IsType<PayloadFactViewer>(alert.Viewer);
         Assert.Equal(FixtureInstances.Detail("incident-loop").Facts.Count, window.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Name == "FactLabel"));
-        Assert.Equal(viewer.Preview, window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "PayloadPreviewLine").Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
+        Assert.False(Visible(window, "PayloadScalar"));   // the body is drawn once, as the tree
         Assert.True(Visible(window, "PayloadTree"));
         Assert.Same(button, window.FocusManager?.GetFocusedElement());
         Assert.Equal(Labels.HideFact, button.Content?.ToString());
         Frame(window, "facts-payload-open");
+    });
+
+    [Fact]
+    public Task u13_frame_facts_scope_map_table() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("project-build");
+        var scope = shell.Instance.Facts!.Rows.Single(r => r.Key == "fact:scope");
+        Click(ViewButton(window, scope));
+        await Until(window, () => scope.Viewer is ScopeMapViewer { IsLoading: false } && Visible(window, "ScopeCounts"));
+
+        var viewer = (ScopeMapViewer)scope.Viewer!;
+        Assert.Equal(viewer.Counts, Named<TextBlock>(window, "ScopeCounts").Text);
+        var table = Named<StackPanel>(window, "ScopeTable");
+        var heard = Heard.Tree(table).Select(h => h.Name).ToList();
+        Assert.Contains(heard, h => string.Equals(h, viewer.Counts, StringComparison.Ordinal));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Title, StringComparison.Ordinal)));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Chip, StringComparison.Ordinal)));
+        Assert.False(Visible(window, "ScopeTree"));
+        Click(Named<Button>(window, "ScopeToggle"));
+        await Until(window, () => Visible(window, "ScopeTree"));
+        Assert.False(Visible(window, "ScopeCounts"));
+        Click(Named<Button>(window, "ScopeToggle"));
+        await Until(window, () => Visible(window, "ScopeCounts"));
+        Frame(window, "facts-scope-map");
     });
 
     [Fact]

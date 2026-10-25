@@ -1,6 +1,6 @@
 # Aw.Forge (C# build)
 
-`Aw.Forge` is the forge port (PR babysitter spec `docs/superpowers/specs/2026-10-15-sindri-pr-babysitter-docs-sync-design.md` §10.2; PB10, CFG-13, W27). Recipes, blocks and Sindri's services reach a code forge only through `IForge`; nothing in a recipe names GitHub. It is a tier-1 package with no Features project (the spec lists none: the port is called directly by Sindri's services and effects, so there is no slice to host). Sindri does not reference it yet; the first caller is PB-W.
+`Aw.Forge` is the forge port (PR babysitter spec `docs/superpowers/specs/2026-10-15-sindri-pr-babysitter-docs-sync-design.md` §10.2; PB10, CFG-13, W27). Recipes, blocks and Sindri's services reach a code forge only through `IForge`; nothing in a recipe names GitHub. It is a tier-1 package with no Features project (the spec lists none: the port is called directly by Sindri's services and effects, so there is no slice to host). Sindri reaches it through its own `IPullRequests` port (see "Sindri's port" below).
 
 ## Layout
 
@@ -17,7 +17,8 @@
 |---|---|
 | `Parse(link)` | A pull request link to a `ForgeRef`; refuses, naming the part, a link that is not https, carries credentials or a port, or whose host is not allowed. Sends nothing |
 | `GetPull`, `GetPullDigest` | The snapshot (status, draft, base, head, mergeable, review decision, checks) and the poller's cheap digest with a version that changes when the pull changes |
-| `ListThreads` | Threads, review bodies and top-level comments with association, bot, resolved and outdated flags. Text from the forge is untrusted |
+| `ListThreads` | Threads, review bodies and top-level comments, oldest first across all three kinds (by `CreatedAt`, then `Key`), with association, bot, resolved and outdated flags, the line an inline thread sits on, when it was written and last edited, and its link. Text from the forge is untrusted |
+| `Self` | The login the credential acts as: GitHub reads `GET /user` once and keeps it; the file adapter answers `AW_FORGE_LOGIN` (default `sindri`) |
 | `CheckLog` | A check's log tail, capped at `ForgeLimits.LogExcerptCharacters` and scrubbed |
 | `Reply`, `React` | One reply or reaction per idempotency marker (`ForgeMarker`); a second call with the marker returns `AlreadyDelivered` and sends nothing |
 | `Push` | An explicit sha to the profile's URL with a lease on the branch tip: `Pushed` or `HeadMoved` |
@@ -54,8 +55,10 @@ dotnet run --project src/Forge/Aw.Forge.Host -- <command> [options]
 | `pull <link>` | Print the snapshot |
 | `threads <link>` | Print the conversation |
 | `seed thread <link> --author <login> --body <text> [--kind thread\|review\|comment] [--association <text>] [--path <file>] [--bot]` | Seed a thread (file adapter) |
-| `seed checks <link> --state none\|pending\|passing\|failing [--failing <name,name>]` | Seed the head's checks (file adapter) |
+| `seed checks <link> --state none\|pending\|passing\|failing [--failing <name,name>] [--passed <n>] [--pending <n>]` | Seed the head's checks (file adapter); `--passed` and `--pending` set the counts the summary reports (default 0) |
 | `seed advance <link> --sha <sha>` | Move the head out of band (file adapter) |
+
+The checks summary of a snapshot (`pull`) is `{state, sha, failing, passed, pending}`: `failing` names the failing checks, `passed` counts the successful, neutral and skipped ones, `pending` the queued, in-progress and pending ones (GitHub counts them from the check runs; the file adapter reports what `seed checks` set, a re-run turns the failed checks into pending ones, and a new head resets both to 0).
 
 Each command prints one JSON document on stdout. Exit codes: 0 ok; 1 invalid input or not found (`error: ... (AW-FORGE-NNN)` on stderr); 2 usage; 3 refused or the forge unavailable (`refused: ... (AW-FORGE-NNN)`).
 
@@ -110,3 +113,15 @@ GitHub cannot be seeded from the outside, so the real adapter is proven by the o
 Without both variables every heavy test skips and nothing is sent. With them the read side runs on the real API: an unlisted host sends no request, link parsing, a missing pull is `AW-FORGE-004`, the repository's default branch, and `FindPull` with no match.
 
 The write side is a second test, `GitHubForgeWriteContractTests`, and runs only when `AW_FORGE_GITHUB_WRITE=1` is also set, because it writes to the repository. Use a scratch repository you do not mind writing to (the token needs contents and pull-request write). It clones the repository, pushes two branches (`aw-forge-contract-<time>` and `...-base`), opens a pull request from the first, finds it by marker, replies and reacts twice with one marker each (the second is `AlreadyDelivered`), pushes a second commit on a lease (`Pushed`, then `HeadMoved` for the stale lease), updates the title, retargets to the other branch and back, tries a merge on a stale head (`HeadMoved`) and then on the current head (`Merged`, or `Blocked` when the repository's rules say so). Both branches are deleted at the end, which closes the pull request if it did not merge. The same cases run against the fake and file adapters in `ForgeContract`, and GitHub's transport and error mapping also have stubbed-HTTP unit tests. The write test has not yet run against a real repository; the first owner run is its first proof.
+
+## Sindri's port
+
+Sindri does not hand `IForge` to its steps and effects. `Aw.Sindri.Core.Forge.IPullRequests` is Sindri's own port, with Sindri's records (`PullView`, `PullChecks`, `PullPush`, `FindPull`, `OpenPull`, `OpenedPull`) and no `Aw.Forge` type in Core or Features. Its members are `Get`, `CheckLog`, `Push`, `PushBranch`, `RerunChecks`, `Find`, `Open`, `Update`, `Threads` (oldest first, with each thread's time, line, edit time and link), `Self` (the login Sindri acts as), `Merge`, `Reply` and `React` (and `Retarget` and `DefaultBranch`, which `effect.pr.merge-docs` uses to move a docs PR off its merged base); `Find`, `PushBranch` and `Open` also serve `effect.pr.create-stacked`, whose lease is `PushBranch`'s; every one answers a `Result<T>` and never throws.
+
+The adapter lives in `Aw.Sindri.Host/Forge` (the one project that references this package):
+
+- `ForgePullRequests` maps the port onto `IForge`. `Get` joins `GetPull` and `ListThreads` (open threads are the unresolved `Thread` comments). `Push` pushes to the pull request's own repository on the host the link names, never to the worktree's remote, and refuses a head on a fork; a push the remote turns away (`AW-FORGE-008`) is the outcome `Rejected`, a lost lease is `HeadMoved`. `Open` adds the marker to the body with `ForgeMarker.Append`, and `Find` matches it, so a retried effect finds the pull request it opened.
+- `ConfiguredPullRequests` is what Sindri registers. Each call reads the approved profile's `workflow.forge` block and builds the adapter it names once (`file` or `github`, `hosts`, `credential`, with the choices `aw-forge-fake` makes), so approving a profile switches the forge without a restart.
+- `NoForgePullRequests` answers `SND-FORGE-001` for every call when the block names no adapter.
+
+Forge errors become `SND-FORGE-002` (a host outside the list, a missing or rejected credential, input the forge refuses), `SND-FORGE-003` (no such pull request) or `SND-FORGE-004` (unreachable, rate limited, push failed); the forge's own code leads the message. `PullRequestsContract` (in `Aw.Sindri.Testing`) runs over `FakePullRequests` and over `ForgePullRequests` on the file forge.

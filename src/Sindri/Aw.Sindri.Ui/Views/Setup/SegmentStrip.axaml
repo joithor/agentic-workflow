@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SegmentStrip"
+             x:DataType="sv:SetupViewModel">
+  <!-- The progress strip (setup spec §2.4): one 4 px segment per step, done in Success, working in the primary hover fill, the rest on Surface3. It is decoration: the count beside it
+       says the same in words, so the strip itself is not read. -->
+  <ItemsControl x:Name="SetupSegments" ItemsSource="{Binding Segments}" AutomationProperties.AccessibilityView="Raw">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <UniformGrid Rows="1" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="sv:SetupSegment">
+        <Border Classes="setup-seg" Classes.done="{Binding IsDone}" Classes.working="{Binding IsWorking}" AutomationProperties.AccessibilityView="Raw" />
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

@@ -27,6 +27,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         || string.Equals(eventType, EventTypes.LaunchStarted, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.LaunchFailed, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.LaunchViewerAttached, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.LaunchTakeoverOpened, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.LaunchSessionReported, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.SessionEnded, StringComparison.Ordinal);
 
@@ -40,6 +41,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
             EventTypes.LaunchStarted => await Started(recorded, rows, cancellationToken).ConfigureAwait(false),
             EventTypes.LaunchFailed => await Change<LaunchFailed>(recorded, rows, static f => f.Launch, Fold, cancellationToken).ConfigureAwait(false),
             EventTypes.LaunchViewerAttached => await Change<LaunchViewerAttached>(recorded, rows, static a => a.Launch, Fold, cancellationToken).ConfigureAwait(false),
+            EventTypes.LaunchTakeoverOpened => await Change<LaunchTakeoverOpened>(recorded, rows, static o => o.Launch, Fold, cancellationToken).ConfigureAwait(false),
             EventTypes.LaunchSessionReported => await Change<LaunchSessionReported>(recorded, rows, static r => r.Launch, Fold, cancellationToken).ConfigureAwait(false),
             _ => await Change<SessionEnded>(recorded, rows, static e => e.Launch, Fold, cancellationToken).ConfigureAwait(false),
         };
@@ -95,7 +97,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
 
             current = new LaunchRow(started.Value.Launch, started.Value.Item, repo.Value, started.Value.Mode, started.Value.Target, EngineChoice, LaunchState.Requested,
                 recorded.Envelope.OccurredAt, OutcomeAt: null, Code: null, Message: null, Stage: null, SessionId: null, ReportedSessionId: null, TabTitle: null,
-                Viewer: null, Late: false, Attach: null, CatalogSource: null, ArgvHash: null, Ended: null, recorded.Sequence);
+                Viewer: null, Late: false, Attach: null, CatalogSource: null, ArgvHash: null, Ended: null, LaunchStep.None, recorded.Sequence);
         }
 
         return await rows.Put(ViewNames.Launches, key, Fold(current, started.Value, recorded), cancellationToken).ConfigureAwait(false);
@@ -111,8 +113,14 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         }
 
         var key = launch(payload.Value).Value;
-        var row = await rows.Require<LaunchRow>(ViewNames.Launches, key, recorded.Envelope.Type, cancellationToken).ConfigureAwait(false);
-        return row.IsError ? row.Error : await rows.Put(ViewNames.Launches, key, fold(row.Value, payload.Value, recorded), cancellationToken).ConfigureAwait(false);
+        var row = await rows.Get<LaunchRow>(ViewNames.Launches, key, cancellationToken).ConfigureAwait(false);
+        if (row.IsError)
+        {
+            return row.Error;
+        }
+
+        // An outcome for a launch nobody requested (an engine launch whose request the ledger never held) has no row to change: skip it, never stall the projector on it. A launch that fails before it ever started therefore shows only as the engine step's own failure (step.failed), never in the launches view: the failure carries neither mode nor agent, so no honest row can be made of it
+        return row.Value is null ? Unit.Value : await rows.Put(ViewNames.Launches, key, fold(row.Value, payload.Value, recorded), cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<Result<RepoName?>> RepoOf(IViewRows rows, ItemId item, CancellationToken cancellationToken)
@@ -132,7 +140,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         ArgumentNullException.ThrowIfNull(recorded);
         return new LaunchRow(request.Launch, request.Item, repo, request.Mode, request.Target, request.ChosenBy, LaunchState.Requested, recorded.Envelope.OccurredAt,
             OutcomeAt: null, Code: null, Message: null, Stage: null, SessionId: null, ReportedSessionId: null, TabTitle: null, Viewer: null, Late: false, Attach: null,
-            CatalogSource: null, ArgvHash: null, Ended: null, recorded.Sequence);
+            CatalogSource: null, ArgvHash: null, Ended: null, LaunchStep.None, recorded.Sequence);
     }
 
     /// <summary>The row after a 'launch.started'. The first outcome wins (they share one key): a launch that already has one ignores it.</summary>
@@ -157,6 +165,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
                 Attach = started.Attach,
                 CatalogSource = started.CatalogSource,
                 ArgvHash = started.ArgvHash,
+                Step = new LaunchStep(started.Instance, started.State, started.Attempt),
                 Sequence = recorded.Sequence,
             };
     }
@@ -182,6 +191,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
                 Stage = failed.Stage,
                 Reason = failed.Reason,
                 Source = failed.Source,
+                Step = new LaunchStep(failed.Instance, failed.State, failed.Attempt),
                 Sequence = recorded.Sequence,
             };
     }
@@ -199,6 +209,19 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         return row.Viewer is { Outcome: ViewerOutcomeKind.Unconfirmed } viewer
             ? row with { Viewer = viewer with { Outcome = ViewerOutcomeKind.Opened }, Late = true, Sequence = recorded.Sequence }
             : row;
+    }
+
+    /// <summary>The row after a 'launch.takeover-opened': the takeover's viewer outcome is the launch's latest, its attach command is kept, and a late attach no longer applies to it.</summary>
+    /// <param name="row">The row so far.</param>
+    /// <param name="opened">The payload.</param>
+    /// <param name="recorded">The recorded event.</param>
+    /// <returns>The row.</returns>
+    public static LaunchRow Fold(LaunchRow row, LaunchTakeoverOpened opened, LedgerEvent recorded)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(opened);
+        ArgumentNullException.ThrowIfNull(recorded);
+        return row with { Viewer = opened.Viewer, Attach = opened.Attach, Late = false, Sequence = recorded.Sequence };
     }
 
     /// <summary>The row after a 'launch.session-reported': the id is kept (the first one wins).</summary>

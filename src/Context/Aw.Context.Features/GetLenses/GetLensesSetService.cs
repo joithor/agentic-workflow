@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.LensSupport;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
@@ -24,9 +25,15 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
 
         var depth = request.Depth ?? settings.Value.CascadeDepth;
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if ((QueryRules.CheckAnchors(anchors) ?? QueryRules.CheckDepth(depth)) is { } refused)
+        if ((QueryRules.CheckAnchors(anchors, "lenses") ?? QueryRules.CheckDepth(depth)) is { } refused)
         {
             return refused;
+        }
+
+        var hops = QueryRules.ParseHops(request.Hops);
+        if (hops.IsError)
+        {
+            return hops.Error;
         }
 
         var read = await reader.ReadViewAt(request.Scope, request.Read, cancellationToken).ConfigureAwait(false);
@@ -35,8 +42,9 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
             return read.Error;
         }
 
-        var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false);
+        var basis = (await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false)) with { Cascade = QueryRules.CascadeFor(hops.Value, settings.Value) };
+        using var band = FillBands.Start(FillBands.Lenses);
         var view = LensesBuilder.BuildSet(basis, read.Value.Graph, anchors, depth, read.Value.Conflicts);
-        return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
+        return view.Map(v => LensTexts.Clean(v with { Bands = DemotedFiles.Last(v.Bands, request.Scope.Repos) }, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
 }

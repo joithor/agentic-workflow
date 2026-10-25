@@ -58,9 +58,6 @@ internal static partial class Labels
     /// <returns>The line.</returns>
     internal static string MarkedSeen(int count) => string.Create(CultureInfo.InvariantCulture, $"{count} marked seen");
 
-    /// <summary>The tooltip of a protected action's control (screens fixture, "The protected-action label").</summary>
-    internal const string ProtectedTooltip = "Needs a typed confirmation at a terminal";
-
     /// <summary>The tooltip of an action that reads the views while they rebuild (UI spec §4.1, SND-API-010).</summary>
     internal const string RetryAfterRebuild = "Retry after the rebuild";
 
@@ -144,10 +141,10 @@ internal static partial class Labels
     internal static string SheetChanged => "Changed";
 
     /// <summary>A profile sheet's line for the profile's hash.</summary>
-    internal static string SheetHash => "Profile hash";
+    internal static string SheetHash => "Fingerprint";
 
     /// <summary>A profile sheet's line for the command that approves it.</summary>
-    internal static string SheetApprove => "Approve with";
+    internal static string SheetApprove => "To approve, run";
 
     /// <summary>The words that name the placeholders a command still has open.</summary>
     /// <param name="names">The open placeholders, without their angle brackets.</param>

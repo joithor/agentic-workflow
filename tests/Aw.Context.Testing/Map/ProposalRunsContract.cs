@@ -62,6 +62,28 @@ public abstract class ProposalRunsContract
         Expect.That(saved is { Surfaces.Count: 2 }, test, "the run's list wasn't saved with its rows");
     }
 
+    /// <summary>A withdrawal (an empty surface list with the undo rows) writes the rows and leaves the run with an empty list, not none; a repeat adds no row.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_withdrawal_writes_its_undo_rows_and_leaves_the_run_with_an_empty_list()
+    {
+        const string test = nameof(A_withdrawal_writes_its_undo_rows_and_leaves_the_run_with_an_empty_list);
+        var store = CreateRuns();
+        var repo = ContextRepoName.From("aw-split-panes");
+        var run = new ScopeProposal("run-11", repo, [new ProposedSurface("Zoom", Key: null, NodeKind.Feature)]);
+        var row = new MapOverride(OverrideAction.Propose, NodeKey.From("feature:zoom"), "service:engine", DateTimeOffset.UnixEpoch, "Zoom",
+            Proposal: new ProposalPayload("run-11", repo, NodeKind.Feature));
+        var undo = new MapOverride(OverrideAction.Undo, row.Target, "service:engine", DateTimeOffset.UnixEpoch.AddMinutes(1)) with { Undoes = row.ToId() };
+        _ = Expect.Ok(await store.Propose(run, [row], None), test);
+
+        var withdrawn = Expect.Ok(await store.Propose(run with { Surfaces = [] }, [undo], None), test);
+        var repeat = Expect.Ok(await store.Propose(run with { Surfaces = [] }, [undo], None), test);
+        var standing = Expect.Ok(await store.Run("run-11", None), test);
+
+        Expect.That(withdrawn == 1 && repeat == 0, test, "the undo row wasn't written once");
+        Expect.That(standing is { Surfaces.Count: 0 }, test, "the run wasn't left with an empty surface list");
+    }
+
     /// <summary>A fresh, empty store.</summary>
     /// <returns>The store.</returns>
     protected abstract IProposalRuns CreateRuns();

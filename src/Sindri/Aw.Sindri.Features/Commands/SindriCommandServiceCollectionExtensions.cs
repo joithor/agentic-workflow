@@ -26,6 +26,27 @@ public static class SindriCommandServiceCollectionExtensions
         where TService : class, IService<TCommand, TResult>
         => services.AddChained<TCommand, TResult, TService>();
 
+    /// <summary>
+    /// Adds <typeparamref name="TService"/> as the stop command's service, behind the command chain without its gate: audited, authorized
+    /// and validated like any command, but never waiting on the gate, so a long command holding it can't keep the process from stopping.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <typeparam name="TCommand">The command record.</typeparam>
+    /// <typeparam name="TResult">What it answers.</typeparam>
+    /// <typeparam name="TService">The handler.</typeparam>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddStopCommand<TCommand, TResult, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
+        where TCommand : ICommand<TResult>
+        where TService : class, IService<TCommand, TResult>
+    {
+        services.TryAddSingleton<CommandGateLock>();
+        services.TryAddSingleton<AuditTrail>();
+        return services
+            .AddScoped<TService>()
+            .AddScoped<IService<TCommand, TResult>>(static sp => Audited(sp,
+                new StoppingGate<TCommand, TResult>(Awaiting<TCommand, TResult, TService>(sp), sp.GetRequiredService<CommandGateLock>())));
+    }
+
     /// <summary>Adds <typeparamref name="TService"/> as the query <typeparamref name="TQuery"/>'s service, behind validation.</summary>
     /// <param name="services">The service collection.</param>
     /// <typeparam name="TQuery">The query record.</typeparam>
@@ -67,18 +88,24 @@ public static class SindriCommandServiceCollectionExtensions
     private static CommandGate<TRequest, TResponse> Chain<TRequest, TResponse, TService>(IServiceProvider sp)
         where TRequest : notnull
         where TService : class, IService<TRequest, TResponse>
+        => new(Audited(sp, Awaiting<TRequest, TResponse, TService>(sp)), sp.GetRequiredService<CommandGateLock>(), sp.GetRequiredService<TimeProvider>());
+
+    /// <summary>The chain inside the gate around <paramref name="inner"/>: audit, authorization, validation.</summary>
+    private static AuditingService<TRequest, TResponse> Audited<TRequest, TResponse>(IServiceProvider sp, IService<TRequest, TResponse> inner)
+        where TRequest : notnull
     {
         var callers = sp.GetRequiredService<ICallerContextAccessor>();
         var catalog = sp.GetRequiredService<ICommandCatalog>();
-        return new CommandGate<TRequest, TResponse>(
-            new AuditingService<TRequest, TResponse>(
+        return new AuditingService<TRequest, TResponse>(
                 new AuthorizingService<TRequest, TResponse>(
-                    new ValidatingService<TRequest, TResponse>(
-                        new AwaitingViews<TRequest, TResponse>(sp.GetRequiredService<TService>(), catalog,
-                            sp.GetRequiredService<IProjectorStatus>(), sp.GetRequiredService<ILedgerStore>()),
-                        sp.GetRequiredService<IValidator<TRequest>>()),
+                    new ValidatingService<TRequest, TResponse>(inner, sp.GetRequiredService<IValidator<TRequest>>()),
                     callers, catalog),
-                sp.GetRequiredService<AuditTrail>(), callers, catalog, sp.GetRequiredService<IIdGenerator>()),
-            sp.GetRequiredService<CommandGateLock>(), sp.GetRequiredService<TimeProvider>());
+                sp.GetRequiredService<AuditTrail>(), callers, catalog, sp.GetRequiredService<IIdGenerator>());
     }
+
+    /// <summary>Waiting for the views, then the handler.</summary>
+    private static AwaitingViews<TRequest, TResponse> Awaiting<TRequest, TResponse, TService>(IServiceProvider sp)
+        where TRequest : notnull
+        where TService : class, IService<TRequest, TResponse>
+        => new(sp.GetRequiredService<TService>(), sp.GetRequiredService<ICommandCatalog>(), sp.GetRequiredService<IProjectorStatus>(), sp.GetRequiredService<ILedgerStore>());
 }

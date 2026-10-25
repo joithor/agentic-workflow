@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "queryId": "q_00000000000000000000000000000018",
+  "query": {
+    "text": null,
+    "node": "feature:util.u0",
+    "item": null,
+    "symbol": null,
+    "depth": 1,
+    "budget": null,
+    "draft": false,
+    "hops": "component"
+  },
+  "anchors": [
+    "feature:util.u0"
+  ],
+  "mapVersion": "v1",
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "sections": [
+    {
+      "name": "graph",
+      "items": [
+        {
+          "kind": "feature",
+          "node": "feature:util.u0",
+          "title": "U0",
+          "text": "implemented-by code:src/util/format.ts",
+          "score": null,
+          "why": [
+            "anchor"
+          ],
+          "provenance": "human",
+          "confirmed": true,
+          "trust": "trusted",
+          "cites": [
+            "C1"
+          ],
+          "depth": null,
+          "path": null,
+          "tokens": 11
+        }
+      ]
+    },
+    {
+      "name": "code",
+      "items": [
+        {
+          "kind": "code",
+          "node": "code:src/util/format.ts",
+          "title": "src/util/format.ts",
+          "text": "implements feature:util.u0",
+          "score": null,
+          "why": [
+            "implements→feature:util.u0"
+          ],
+          "provenance": "human",
+          "confirmed": true,
+          "trust": "trusted",
+          "cites": [
+            "C1"
+          ],
+          "depth": null,
+          "path": null,
+          "tokens": 12
+        }
+      ]
+    }
+  ],
+  "conflicts": [],
+  "suggestedAnchors": [],
+  "degraded": [],
+  "cites": {
+    "C1": {
+      "key": "map:aw-split-panes/v1",
+      "refs": [
+        {
+          "source": "map",
+          "id": "v1",
+          "version": "v1",
+          "current": null,
+          "fetchedAt": "2026-01-01T00:00:00.0000000Z"
+        }
+      ],
+      "permalink": null,
+      "trust": "trusted",
+      "state": "current",
+      "aliases": []
+    }
+  },
+  "skippedComponents": [
+    {
+      "unit": "code:src/util/format.ts",
+      "features": 51
+    }
+  ]
+}

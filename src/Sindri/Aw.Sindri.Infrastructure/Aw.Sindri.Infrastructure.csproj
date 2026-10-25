@@ -12,15 +12,30 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="ModelContextProtocol.Core" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Ledger/Migrations/*.sql" />
     <EmbeddedResource Include="Views/Migrations/*.sql" />
+    <!-- The Onyx pins (spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6), checked by scripts/onyx-lock.sh. -->
+    <EmbeddedResource Include="../../../context/onyx.lock" LogicalName="onyx.lock" />
     <!-- the built-in agent catalog, once in config/launcher (collector spec CA-0) -->
     <EmbeddedResource Include="../../../config/launcher/builtins.json" LogicalName="builtins.json" Link="Launch/builtins.json" />
     <EmbeddedResource Include="../../../config/launcher/terminals.json" LogicalName="terminals.json" Link="Launch/terminals.json" />
+    <!-- the built-in lens packs (line spec §5.2, LN-PK lite): config/packs/lenses/<id>/..., embedded as lens-packs/<id>/<path> -->
+    <LensPackFile Include="../../../config/packs/lenses/**/*" />
+    <EmbeddedResource Include="@(LensPackFile)" LogicalName="lens-packs/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    <!-- the built-in style packs (line spec §5.1): config/packs/style/<id>/..., embedded as style-packs/<id>/<path> -->
+    <StylePackFile Include="../../../config/packs/style/**/*" />
+    <EmbeddedResource Include="@(StylePackFile)" LogicalName="style-packs/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <!-- An empty glob embeds nothing and every pack lookup fails at run time (a publish copy tree without config/packs did): make it a build error. -->
+  <Target Name="RequireLensPacks" BeforeTargets="BeforeBuild">
+    <Error Condition="'@(LensPackFile)' == ''" Text="No lens pack to embed: ../../../config/packs/lenses/** matched nothing. A publish copy tree must carry config/packs (scripts/lib/sindri-build-inputs.sh)." />
+    <Error Condition="'@(StylePackFile)' == ''" Text="No style pack to embed: ../../../config/packs/style/** matched nothing. A publish copy tree must carry config/packs (scripts/lib/sindri-build-inputs.sh)." />
+  </Target>
 
   <ItemGroup>
     <ProjectReference Include="../Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
@@ -31,6 +46,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
+    <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Testing" />
+    <InternalsVisibleTo Include="sindri" />   <!-- the Host (assembly name sindri): UiLauncher and the wrap launcher start their children through it -->
   </ItemGroup>
 </Project>

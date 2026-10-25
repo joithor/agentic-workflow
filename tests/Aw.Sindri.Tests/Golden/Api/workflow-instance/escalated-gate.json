@@ -8,7 +8,8 @@
     "id": "workflow.triage-alert",
     "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
-    "urgency": "triage"
+    "urgency": "triage",
+    "displayName": "Triage alert"
   },
   "state": "route",
   "since": "2026-10-12T11:02:00.0000000Z",
@@ -155,7 +156,8 @@
           "confirm": "Cancel ITM-01JK6/triage-alert/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JK6/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  escalated: gate  since 11:02 (1h 24m)\n  next      Escalated: gate.severity scored 0.62, below 0.8. Accept to override it (the other checks still run before\n            done), or reject (the Step re-runs within its loop, otherwise this parks).\n  answer    sindri workflow answer ITM-01JK6/triage-alert/1 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n"
+      "text": "ITM-01JK6/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  escalated: gate  since 11:02 (1h 24m)\n  next      Escalated: gate.severity scored 0.62, below 0.8. Accept to override it (the other checks still run before\n            done), or reject (the Step re-runs within its loop, otherwise this parks).\n  answer    sindri workflow answer ITM-01JK6/triage-alert/1 --accept     (at a terminal)\n  commands  answer, takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -239,5 +241,9 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null,
+  "allowedCommands": []
 }

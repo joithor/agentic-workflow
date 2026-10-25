@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sandbox;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Sandbox;
@@ -27,7 +27,7 @@ public sealed class SandboxWireTests
         var started = new LaunchStarted(
             A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, AgentId.From("claude-code"), SessionId.From("0192f0c1-a2b3"), "sindri ITM-1",
             new LaunchViewer("warp", "Warp", ViewerOutcomeKind.Opened, Code: null, Detail: null), ["tmux", "-L", "sindri", "attach-session", "-t", "=snd-x"], CatalogSource.Builtin, "hash",
-            Summary(attended: false));
+            Sandbox: Summary(attended: false));
 
         Match(JsonSerializer.Serialize(started, Json), "launch-started-sandbox.json");
     }
@@ -37,7 +37,7 @@ public sealed class SandboxWireTests
     {
         var started = new LaunchStartedPublic(
             A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, AgentId.From("claude-code"), SessionId: null, "sindri ITM-1",
-            new LaunchViewerPublic("print", "Print", ViewerOutcomeKind.Opened, Code: null), ["tmux", "attach"], CatalogSource.Builtin, "hash", Summary(attended: false));
+            new LaunchViewerPublic("print", "Print", ViewerOutcomeKind.Opened, Code: null), ["tmux", "attach"], CatalogSource.Builtin, "hash", Sandbox: Summary(attended: false));
 
         var json = JsonSerializer.Serialize(started, Json);
 
@@ -48,11 +48,11 @@ public sealed class SandboxWireTests
 
     [Fact, Trait("Lane", "unit")]
     public void A_failed_launch_with_a_reason_has_its_wire_shape() =>
-        Match(JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-017", "The agent's sign-in isn't available for Steps (expired)", Stage: null, Reason: "expired", Source: "separate-login"), Json), "launch-failed-reason.json");
+        Match(JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-017", "The agent's sign-in isn't available for Steps (expired)", Reason: "expired", Source: "separate-login"), Json), "launch-failed-reason.json");
 
     [Fact, Trait("Lane", "unit")]
     public void A_failed_launch_without_a_reason_is_unchanged() =>
-        Assert.DoesNotContain("reason", JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-003", "gone", Stage: null), Json), StringComparison.Ordinal);
+        Assert.DoesNotContain("reason", JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-003", "gone"), Json), StringComparison.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public void An_overflow_denial_has_its_wire_shape() =>
@@ -74,7 +74,7 @@ public sealed class SandboxWireTests
     [Fact, Trait("Lane", "unit")]
     public void An_old_session_ended_payload_still_reads()
     {
-        var read = JsonSerializer.Deserialize<SessionEnded>("{\"launch\":\"" + A.FirstLaunchId.Value + "\",\"reason\":\"lost\",\"exitCode\":null}", Json)!;
+        var read = JsonSerializer.Deserialize<SessionEnded>("{\"launchId\":\"" + A.FirstLaunchId.Value + "\",\"reason\":\"lost\",\"exitCode\":null}", Json)!;
 
         Assert.Equal((SessionEndReason.Lost, null, null), (read.Reason, read.Kind, read.Limit));
     }
@@ -112,7 +112,7 @@ public sealed class SandboxWireTests
     [Fact, Trait("Lane", "unit")]
     public void A_limit_kill_names_its_kind_limit_and_peaks()
     {
-        var ended = new SessionEnded(A.FirstLaunchId, SessionEndReason.Limit, ExitCode: null, LimitKind.Memory, 12_884_901_888, 12_884_901_888, new LimitPeaks(12_884_901_888, 310, 214, 1_900));
+        var ended = new SessionEnded(A.FirstLaunchId, SessionEndReason.Limit, ExitCode: null, Kind: LimitKind.Memory, Limit: 12_884_901_888, Peak: 12_884_901_888, Peaks: new LimitPeaks(12_884_901_888, 310, 214, 1_900));
 
         Match(JsonSerializer.Serialize(ended, Json), "session-ended-limit.json");
     }
@@ -122,7 +122,7 @@ public sealed class SandboxWireTests
     {
         var json = JsonSerializer.Serialize(new SessionEnded(A.FirstLaunchId, SessionEndReason.Exit, 0), Json);
 
-        Assert.Equal("{\"launch\":\"" + A.FirstLaunchId.Value + "\",\"reason\":\"exit\",\"exitCode\":0}", json);
+        Assert.Equal("{\"launchId\":\"" + A.FirstLaunchId.Value + "\",\"reason\":\"exit\",\"exitCode\":0,\"inputTokens\":null,\"outputTokens\":null}", json);
     }
 
     [Fact, Trait("Lane", "unit")]

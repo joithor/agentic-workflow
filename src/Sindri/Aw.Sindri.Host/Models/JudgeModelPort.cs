@@ -10,8 +10,8 @@ namespace Aw.Sindri.Host.Models;
 /// <summary>
 /// The context engine's model port (context spec §4) over Judge's provider catalog: a request goes to the owner's own agent CLIs
 /// (Claude Code, Codex, Cursor) in the catalog's order, never to the remote 'jev' API, because the prompt names files of the owner's
-/// repo. The first provider that answers wins; none answering is an unavailable source, which a map build reports as a degraded
-/// 'labels' pass rather than a failure.
+/// repo. The first provider that answers wins; none answering is SND-CONTEXT-042 (labeling unavailable, naming the fix), which a map
+/// build reports as a degraded note and a sync as queued decisions, never a failure.
 /// </summary>
 /// <param name="catalog">Finds the provider lineup (resolved on the first request).</param>
 internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog) : IModelPort
@@ -49,7 +49,7 @@ internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog) : IModelPor
             }
         }
 
-        return ContextErrors.SourceUnavailable.With("no agent CLI (claude, codex, cursor-agent) answered the labeling request (fix: log in to one of them, or turn 'context.labeling.enabled' off)");
+        return ContextErrors.LabelingUnavailable.With("no agent CLI (claude, codex, cursor-agent) answered the request");
     }
 
     private static int Tokens(string text) => (text.Length + 3) / 4;

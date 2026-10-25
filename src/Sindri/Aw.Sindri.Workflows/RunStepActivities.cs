@@ -17,8 +17,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="catalog">The build's block catalog.</param>
 /// <param name="times">The profile's 'workflow:' times (S1-D11): 'workflow.deskTimeout' and 'workflow.eventHold'.</param>
 /// <param name="blocks">Runs a block-runtime Step (DT-J2).</param>
+/// <param name="agents">Which Steps run on an agent session (engine P8).</param>
 /// <param name="logger">The log the open desk task is recorded in.</param>
-internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, ProfileWorkflowTimes times, BlockStepRunner blocks, ILogger<RunStepActivities> logger)
+internal sealed partial class RunStepActivities(IApprovedRecipes approvals, BlockCatalog catalog, ProfileWorkflowTimes times, BlockStepRunner blocks, AgentStepSelection agents, ILogger<RunStepActivities> logger)
 {
     /// <summary>Reads the approved recipe and the descriptors of its blocks.</summary>
     /// <param name="recipe">The recipe the instance is pinned to.</param>
@@ -42,9 +43,16 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
             .OfType<BlockId>().ToHashSet();
         var workflow = await times.Read(cancel).ConfigureAwait(false);
         var delay = await times.DispatchDelay(cancel).ConfigureAwait(false);   // the approved profile's (S1-D11); a read that fails is retried
-        return delay.IsError
-            ? throw new InvalidOperationException($"{delay.Error.Code}: {delay.Error.Message}")
-            : new LoadedRecipe(found.Value.Version, definition, [.. catalog.Blocks.Where(b => used.Contains(b.Id))], workflow.DeskTimeout, workflow.EventHold, delay.Value, blocks.Registered(used));
+        if (delay.IsError)
+        {
+            throw new InvalidOperationException($"{delay.Error.Code}: {delay.Error.Message}");
+        }
+
+        var descriptors = catalog.Blocks.Where(b => used.Contains(b.Id)).ToList();
+        var agentSteps = await agents.Selected(descriptors, cancel).ConfigureAwait(false);   // the approved profile's workflow.agent.target and the registered launcher (P8 D6)
+        return agentSteps.IsError
+            ? throw new InvalidOperationException($"{agentSteps.Error.Code}: {agentSteps.Error.Message}")
+            : new LoadedRecipe(found.Value.Version, definition, descriptors, workflow.DeskTimeout, workflow.EventHold, delay.Value, blocks.Registered(used), agentSteps.Value);
     }
 
     /// <summary>

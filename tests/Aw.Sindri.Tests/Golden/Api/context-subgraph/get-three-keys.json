@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    "feature:tabs.tab-manager",
+    "feature:tabs.tab-groups"
+  ],
+  "missing": [
+    "feature:nope.x"
+  ],
+  "mapVersion": "v1",
+  "depth": 0,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "bands": {
+    "intent": {
+      "records": [],
+      "decisions": [],
+      "counts": {
+        "records": 0,
+        "decisions": 0,
+        "orphaned": null
+      }
+    },
+    "product": {
+      "own": [
+        {
+          "node": "feature:tabs.tab-manager",
+          "label": "Tab manager",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "feature:tabs.tab-groups",
+          "label": "Tab groups",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "repo": "aw-split-panes",
+          "depth": 0
+        }
+      ],
+      "neighbors": [],
+      "affects": [],
+      "counts": {
+        "own": 2,
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 1
+      },
+      "edges": [
+        {
+          "from": "feature:tabs.tab-groups",
+          "to": "feature:tabs.tab-manager",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:bfde89d5c565ec81",
+          "confirmed": true,
+          "confidence": 1
+        }
+      ]
+    },
+    "code": {
+      "files": [],
+      "symbols": {
+        "state": "unavailable",
+        "reason": "index not built",
+        "items": []
+      },
+      "counts": {
+        "files": 0,
+        "symbols": 0,
+        "featuresWithNoCode": 1
+      }
+    }
+  },
+  "edges": [],
+  "conflicts": [
+    {
+      "kind": "supersedes",
+      "node": "feature:tabs.tab-groups",
+      "decision": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "other": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "summary": "decision:ef895edc supersedes decision:d0363522",
+      "intent": [],
+      "behavior": []
+    }
+  ],
+  "coverage": {
+    "scope": 2,
+    "intent": {
+      "covered": 2,
+      "of": 2
+    },
+    "product": {
+      "confirmed": 2,
+      "of": 2
+    },
+    "code": {
+      "implemented": 1,
+      "of": 2,
+      "level": "file",
+      "suggested": 1
+    },
+    "gaps": [
+      {
+        "node": "feature:tabs.tab-groups",
+        "missing": [
+          "code"
+        ],
+        "note": "has intent; its only implements link is a suggestion"
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/tabs/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 1,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:tabs.tab-manager",
+      "feature:tabs.tab-groups"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": true
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

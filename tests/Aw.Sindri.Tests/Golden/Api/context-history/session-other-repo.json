@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "anchors": [
+    {
+      "key": "feature:layout.split-pane",
+      "label": "Split pane",
+      "kind": "feature",
+      "trust": "trusted"
+    }
+  ],
+  "missingAnchors": [
+    "feature:other.thing"
+  ],
+  "mapVersion": "v1",
+  "draft": false,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "window": {
+    "since": null,
+    "before": null
+  },
+  "records": [],
+  "decisions": [],
+  "changes": [
+    {
+      "key": "commit:ad683496d8de39923e97e02c5936e599ff934050",
+      "repo": "aw-split-panes",
+      "sha": "ad683496d8de39923e97e02c5936e599ff934050",
+      "at": "2026-07-29T09:00:00.0000000Z",
+      "subject": "<untrusted source=\"map\">Merge pull request #5 from fixture-labs/spl-105-pane-resize</untrusted>",
+      "kind": "merge",
+      "branch": "<untrusted source=\"map\">spl-105-pane-resize</untrusted>",
+      "pr": 5,
+      "files": [
+        "src/layout/PaneResize.ts"
+      ],
+      "anchors": [
+        "feature:layout.split-pane"
+      ],
+      "trust": "untrusted"
+    },
+    {
+      "key": "commit:c1c701b9d18e68192d458ce5155bd90ba690ccab",
+      "repo": "aw-split-panes",
+      "sha": "c1c701b9d18e68192d458ce5155bd90ba690ccab",
+      "at": "2026-07-15T09:30:00.0000000Z",
+      "subject": "<untrusted source=\"map\">Merge pull request #3 from fixture-labs/spl-103-toggle-orientation</untrusted>",
+      "kind": "merge",
+      "branch": "<untrusted source=\"map\">spl-103-toggle-orientation</untrusted>",
+      "pr": 3,
+      "files": [
+        "src/layout/SplitPane.ts"
+      ],
+      "anchors": [
+        "feature:layout.split-pane"
+      ],
+      "trust": "untrusted"
+    },
+    {
+      "key": "commit:389b6a7c4c96997911debc29d0aac2bf8ad473c4",
+      "repo": "aw-split-panes",
+      "sha": "389b6a7c4c96997911debc29d0aac2bf8ad473c4",
+      "at": "2026-07-10T11:00:00.0000000Z",
+      "subject": "<untrusted source=\"map\">Merge pull request #2 from fixture-labs/spl-102-split-pane</untrusted>",
+      "kind": "merge",
+      "branch": "<untrusted source=\"map\">spl-102-split-pane</untrusted>",
+      "pr": 2,
+      "files": [
+        "src/layout/SplitPane.ts"
+      ],
+      "anchors": [
+        "feature:layout.split-pane"
+      ],
+      "trust": "untrusted"
+    }
+  ],
+  "incidents": {
+    "state": "not-configured",
+    "reason": "not-configured",
+    "items": []
+  },
+  "edges": [],
+  "counts": {
+    "records": 0,
+    "decisions": 0,
+    "changes": 3,
+    "files": 2,
+    "unlocated": 0,
+    "afterCut": 0
+  },
+  "truncated": {
+    "records": false,
+    "decisions": false,
+    "changes": false,
+    "files": false
+  },
+  "git": [
+    {
+      "repo": "aw-split-panes",
+      "head": "ad68349",
+      "upTo": null,
+      "shallow": false,
+      "files": 2,
+      "changes": 3
+    }
+  ],
+  "coverage": {
+    "scope": 7,
+    "intent": {
+      "covered": 0,
+      "of": 7
+    },
+    "product": {
+      "confirmed": 7,
+      "of": 7
+    },
+    "code": {
+      "implemented": 3,
+      "of": 7,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "feature:layout.pane-resize",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "feature:layout.split-pane",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "feature:layout.split-pane.orientation",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "surface:command/split-vertical",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:command/toggle-orientation",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:keybinding/ctrl+shift+d",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:setting/paneResizeStep",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/layout/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    },
+    "byAnchor": {
+      "feature:layout.split-pane": {
+        "scope": 7,
+        "intent": {
+          "covered": 0,
+          "of": 7
+        },
+        "product": {
+          "confirmed": 7,
+          "of": 7
+        },
+        "code": {
+          "implemented": 3,
+          "of": 7,
+          "level": "file",
+          "suggested": 0
+        },
+        "gaps": [
+          {
+            "node": "feature:layout.pane-resize",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "feature:layout.split-pane",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "feature:layout.split-pane.orientation",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "surface:command/split-vertical",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:command/toggle-orientation",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:keybinding/ctrl+shift+d",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:setting/paneResizeStep",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      }
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:layout.split-pane"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "git-history",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "incidents",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

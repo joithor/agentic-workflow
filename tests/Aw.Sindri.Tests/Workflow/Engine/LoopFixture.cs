@@ -114,7 +114,7 @@ internal static class LoopFixture
                 new(["verify"], "produce", "step.completed", ARecipe.When(OutcomeName.From("rejected")), [], [], [], [new ProducedFact(FactKey.From("fact:findings"), From: null)]),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { [Revisions] = new(3, LoopSpec.DefaultNoProgress) },
-            new BudgetSpec(400_000), Evals: [], Hash: null);
+            new BudgetSpec(400_000), Evals: [], Hash: null, DisplayName: "Test loops");
     }
 
     private static StepUse Step(string use) => new(BlockId.From(use), new Dictionary<string, WithValue>(StringComparer.Ordinal), []);

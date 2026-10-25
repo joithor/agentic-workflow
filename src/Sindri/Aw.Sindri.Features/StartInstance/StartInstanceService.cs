@@ -83,7 +83,7 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
         }
 
         var started = await runtime.Start(
-            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value.Inputs, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value, StartedAt = inputs.Value.StartedAt },
+            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value.Inputs, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value, StartedAt = inputs.Value.StartedAt, StartedBy = inputs.Value.StartedBy, Again = request.Again },
             cancellationToken).ConfigureAwait(false);
         return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }
@@ -148,15 +148,15 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return noRuntime;
         }
 
-        return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing
-            ? SindriErrors.InvalidInput.With($"{recipe.Value.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
-            : (item.Value, recipe.Value);
+        return InputRefusal(request, recipe.Value) is { } refusal ? refusal : (item.Value, recipe.Value);
     }
 
-    /// <summary>
-    /// RCP-CAP-003 at start: a pinned hash that was revoked is SND-RECIPE-005, a recipe registered before input kinds SND-RECIPE-001
-    /// (before drift: re-approving it can't fix it), pins that drifted from this build SND-RECIPE-006.
-    /// </summary>
+    /// <summary>A missing input, or, before any claim, attempt or instance, a seeded fact a registered check finds wrong.</summary>
+    private Error? InputRefusal(StartInstanceRequest request, ApprovedRecipe recipe) =>
+        recipe.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing
+            ? SindriErrors.InvalidInput.With($"{recipe.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
+            : facts.Validate(request, recipe.Recipe);
+
     private static Error? Refusal(ApprovedRecipe approved, ApprovalCheck check)
     {
         var recipe = approved.Version;

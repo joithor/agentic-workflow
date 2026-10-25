@@ -27,8 +27,38 @@ internal static class StepPolicyFile
             directories = [path];
         }
 
-        var permissions = new ClaudePermissions(allow) { DefaultMode = policy.Mode == StepPermissionMode.Default ? null : "plan", AdditionalDirectories = directories };
-        return [.. AwJson.Serialize(new ClaudeSettingsDocument(permissions), _json), .. "\n"u8];
+        var deny = new List<string>();
+        foreach (var denied in policy.DeniedPaths ?? [])
+        {
+            deny.AddRange([$"Read(/{denied}/**)", $"Edit(/{denied}/**)"]);
+        }
+
+        foreach (var readOnly in policy.ReadOnlyPaths ?? [])
+        {
+            deny.Add($"Edit(/{readOnly}/**)");   // readable through the directory, never edited
+            directories = [.. directories ?? [], readOnly];
+        }
+
+        var permissions = new ClaudePermissions(allow)
+        {
+            Deny = deny.Count == 0 ? null : [.. deny],
+            DefaultMode = policy.Mode == StepPermissionMode.Default ? null : "plan",
+            AdditionalDirectories = directories,
+        };
+        return [.. AwJson.Serialize(new ClaudeSettingsDocument(permissions, TurnHooks()), _json), .. "\n"u8];
+    }
+
+    // The Step's session tells Sindri when its turn ends (the Stop hook touches launches/<launch>.turn-ended) and starts (a prompt or a tool call deletes the file), so a session that ends its turn with no report
+    // can be ended as idle. The commands never print, never fail the hook, and do nothing outside a launch (no AW_SINDRI_LAUNCH or AW_SINDRI_HOME).
+    private static ClaudeHooks TurnHooks()
+    {
+        const string TurnFile = "\"$AW_SINDRI_HOME/" + LaunchFiles.Directory + "/$AW_SINDRI_LAUNCH" + LaunchFiles.TurnEndedSuffix + "\"";
+        const string Guard = "if [ -n \"$AW_SINDRI_LAUNCH\" -a -n \"$AW_SINDRI_HOME\" ]; then ";
+        ClaudeHookGroup[] restart = [new ClaudeHookGroup([new ClaudeHookCommand("command", Guard + "rm -f " + TurnFile + "; fi; exit 0")])];
+        return new ClaudeHooks(
+            [new ClaudeHookGroup([new ClaudeHookCommand("command", Guard + "mkdir -p \"$AW_SINDRI_HOME/" + LaunchFiles.Directory + "\"; touch " + TurnFile + "; fi; exit 0")])],
+            restart,
+            restart);
     }
 
     /// <summary>Where the launch's settings file lives under <paramref name="directory"/>.</summary>
@@ -53,5 +83,5 @@ internal static class StepPolicyFile
     /// <summary>Deletes the launch's file; a missing one is fine.</summary>
     /// <param name="directory">The launcher's policy directory.</param>
     /// <param name="launch">The launch.</param>
-    internal static void Delete(string directory, LaunchId launch) => File.Delete(PathFor(directory, launch));
+    internal static void Delete(string directory, LaunchId launch) => _ = OwnerOnly.TryDelete(PathFor(directory, launch));
 }

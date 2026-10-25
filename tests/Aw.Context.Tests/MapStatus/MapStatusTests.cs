@@ -71,7 +71,7 @@ public sealed class MapStatusTests : IDisposable
         _ = await _world.ImportYaml(MapWorld.TabsMap);
 
         var status = (await _world.Map.MapStatus("feature:tabs.tab-manager", MapWorld.Human, MapWorld.None)).Value;
-        var lenses = (await _world.Engine.Lenses("feature:tabs.tab-manager", draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:tabs.tab-manager", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.NotNull(status.Coverage);
         Assert.Equivalent(lenses.Coverage with { Map = null }, status.Coverage);

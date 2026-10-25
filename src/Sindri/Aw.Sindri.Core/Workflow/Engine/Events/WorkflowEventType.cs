@@ -33,4 +33,8 @@ public enum WorkflowEventType
     /// <summary>Dispatch refused an effect of an instance that had already ended (with a needs-me notice).</summary>
     [JsonStringEnumMemberName("workflow.effect-refused")]
     EffectRefused = 7,
+
+    /// <summary>The instance took or gave up a heavy-job slot (LN-WF3): 'heavy.held' or 'heavy.released'.</summary>
+    [JsonStringEnumMemberName("workflow.heavy")]
+    Heavy = 8,
 }

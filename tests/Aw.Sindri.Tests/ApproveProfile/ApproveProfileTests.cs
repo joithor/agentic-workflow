@@ -3,18 +3,20 @@ using Aw.Context.Testing.Engine;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
 
@@ -26,7 +28,7 @@ public sealed class ApproveProfileTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private ApproveProfileService Service() => new(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
+    private ApproveProfileService Service() => new(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
 
     [Fact, Trait("Lane", "unit")]
     public async Task ApproveProfile_without_a_hash_shows_the_hash_and_changes_and_records_nothing()
@@ -60,57 +62,47 @@ public sealed class ApproveProfileTests
         Assert.Equal(recorded.Sequence, approved.Sequence);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("wrong-hash", true, "SND-PROFILE-003")]
-    [InlineData("live", false, "SND-PROFILE-004")]
-    public async Task ApproveProfile_refuses_a_stale_hash_or_a_missing_confirmation(string which, bool confirmed, string code)
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approving_the_profile_also_records_the_consent_to_the_automatic_setup_steps_for_that_hash()
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
-        var hash = which == "live" ? live.Hash : SliceHarness.Profile("9s").Hash;
+        using var caller = _h.Callers.EnterService("test");
 
-        var refused = await Service().Handle(new ApproveProfileRequest(hash, confirmed ? _h.Confirm(hash) : null), Token);
+        _ = await Service().Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token);
 
-        Assert.Equal(code, refused.Error.Code);
-        Assert.Null((await _h.Profiles.Latest(Token)).Value);
-        Assert.Empty(_h.Store.Events);
+        var consent = Assert.Single(_h.Store.Events, static e => e.Envelope.Type == EventTypes.SetupConsentGiven);
+        Assert.Equal($"setup.consent.given:{live.Hash.Value}", consent.IdempotencyKey);
+        Assert.Contains("\"mcp\"", consent.Envelope.Payload, StringComparison.Ordinal);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("mistyped")]
-    [InlineData("expired")]
-    [InlineData("used")]
-    public async Task ApproveProfile_with_a_stale_challenge_is_SND_PROFILE_004_and_records_nothing(string how)
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_with_the_live_hash_and_no_challenge_approves()
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
-        var answer = _h.Confirm(live.Hash);
-        answer = how switch
-        {
-            "mistyped" => answer with { Typed = live.Hash.Abbreviated },
-            "expired" => Expire(answer),
-            _ => Use(answer),
-        };
 
-        var refused = await Service().Handle(new ApproveProfileRequest(live.Hash, answer), Token);
+        var approved = await Service().Handle(new ApproveProfileRequest(live.Hash), Token);
 
-        Assert.Equal(SindriErrors.ProfileNeedsTerminal.Code, refused.Error.Code);
+        Assert.True(approved.IsSuccess && approved.Value.Approved);
+        Assert.Equal(live.Hash, (await _h.Profiles.Latest(Token)).Value!.Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task ApproveProfile_refuses_a_stale_hash()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        var hash = SliceHarness.Profile("9s").Hash;
+
+        var refused = await Service().Handle(new ApproveProfileRequest(hash), Token);
+
+        Assert.Equal("SND-PROFILE-003", refused.Error.Code);
         Assert.Null((await _h.Profiles.Latest(Token)).Value);
         Assert.Empty(_h.Store.Events);
-    }
-
-    private ChallengeAnswer Expire(ChallengeAnswer answer)
-    {
-        _h.Clock.Advance(IssuedChallenge.Lifetime);
-        return answer;
-    }
-
-    private ChallengeAnswer Use(ChallengeAnswer answer)
-    {
-        _ = _h.Challenges.Redeem(answer, ChallengeAction.ApproveProfile(_h.Profiles.Live.Value.Hash), ChallengeSubject.ForProfile(_h.Profiles.Live.Value.Hash), SindriErrors.ProfileNeedsTerminal);
-        return answer;
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -143,7 +135,7 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
         var approvals = new ReadFailingApprovals(_h.Profiles);
-        var service = new ApproveProfileService(_h.Profiles, approvals, _h.Held, _h.Store, _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
+        var service = new ApproveProfileService(_h.Profiles, approvals, _h.Held, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
 
         var preview = await service.Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token);
         var approved = await service.Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token);
@@ -161,7 +153,7 @@ public sealed class ApproveProfileTests
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
-        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
+        var service = new ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, new ReadFailingLedger(_h.Store), _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
 
         var refused = await service.Handle(new ApproveProfileRequest(approving ? live.Hash : null, approving ? _h.Confirm(live.Hash) : null), Token);
 
@@ -199,7 +191,7 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = live;
         _ = await _h.HoldLease();
         var flaky = new SaveFailsOnce(_h.Profiles);
-        var service = new ApproveProfileService(_h.Profiles, flaky, _h.Held, _h.Store, _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
+        var service = new ApproveProfileService(_h.Profiles, flaky, _h.Held, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
         var request = new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash));
 
         var first = await service.Handle(request, Token);
@@ -236,7 +228,7 @@ public sealed class ApproveProfileTests
         _h.Profiles.Live = a;
         _ = await Service().Handle(new ApproveProfileRequest(a.Hash, _h.Confirm(a.Hash)), Token);
         _h.Profiles.Live = b;
-        var flaky = new ApproveProfileService(_h.Profiles, new SaveFailsOnce(_h.Profiles), _h.Held, _h.Store, _h.Events, _h.Challenges, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
+        var flaky = new ApproveProfileService(_h.Profiles, new SaveFailsOnce(_h.Profiles), _h.Held, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog()));
         Assert.Equal(SindriErrors.ApprovalsUnavailable.Code, (await flaky.Handle(new ApproveProfileRequest(b.Hash, _h.Confirm(b.Hash)), Token)).Error.Code);
 
         _h.Profiles.Live = a;   // edited back: A is still the saved approval, but B's event is the latest recorded one
@@ -254,10 +246,10 @@ public sealed class ApproveProfileTests
     private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated, CheckState Doctor, string Summary)> Surfaces()
     {
         var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
-        var status = (await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
+        var status = (await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new HealthServiceRows(new InMemoryViewStore(SliceHarness.Json), []), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, new LedgerFacts(_h.Store, new InMemoryViewStore(SliceHarness.Json)), new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events,
-            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(new MapPublishStatusReader(FakeContextEngine.Instance, new NoIndexOutlooks(), _h.Store, _h.Clock), _h.Clock), new LinearDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Features.CodeIndexJobs.CodeIndexDoctor(new CodeIndex.Testing.FakeCodeIndex(), new CodeIndex.Testing.FakeRepoHeads(), new InMemoryJobViews(), new CodeIndex.Testing.FakeEmbedder(), new CodeIndex.Testing.FakePins(), _h.Clock, _h.Profiles))), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
             .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");
         var summary = SummaryText.Render(status, new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 1, 1), ui: null)
             .Split('\n').Single(l => l.TrimStart().StartsWith("profile ", StringComparison.Ordinal))["  profile   ".Length..].TrimEnd('\r');

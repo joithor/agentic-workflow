@@ -45,7 +45,8 @@ internal sealed class AuditingService<TRequest, TResponse>(IService<TRequest, TR
             return result;
         }
 
-        var recorded = await audit.Record(caller, row, outcome, result.IsError ? result.Error.Code : null, cancellationToken).ConfigureAwait(false);
+        // The command has run: its row is written even when a stop cancelled the request meanwhile, so no effect goes unaudited.
+        var recorded = await audit.Record(caller, row, outcome, result.IsError ? result.Error.Code : null, CancellationToken.None).ConfigureAwait(false);
         if (recorded.IsSuccess)
         {
             return result;

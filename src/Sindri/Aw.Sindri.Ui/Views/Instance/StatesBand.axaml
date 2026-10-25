@@ -7,9 +7,9 @@
        never starts a line with a link; a branch sits under its source. The current state reads stronger; a glyph is never the only sign
        (the name carries the words). -->
   <Border x:Name="InstanceBand" Classes="frame-panel">
+    <Expander x:Name="BandDisclosure" Header="{Binding Heading}" IsExpanded="False">
     <StackPanel Spacing="8">
       <StackPanel Orientation="Horizontal" Spacing="12">
-        <TextBlock Classes="eyebrow" Text="{Binding Heading}" />
         <TextBlock x:Name="BandOrderNote" Classes="caption subtle" Text="{Binding OrderNote}" IsVisible="{Binding HasOrderNote}"
                    AutomationProperties.Name="{Binding OrderNote}" />
       </StackPanel>
@@ -40,5 +40,6 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
     </StackPanel>
+    </Expander>
   </Border>
 </UserControl>

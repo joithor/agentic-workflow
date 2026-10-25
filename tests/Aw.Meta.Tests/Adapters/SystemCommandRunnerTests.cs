@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Infrastructure.Processes;
 
@@ -88,8 +89,7 @@ public sealed class SystemCommandRunnerTests : IDisposable
     {
         var scripts = Directory.CreateDirectory(Path.Combine(_dir.Path, "scripts")).FullName;
         var script = Path.Combine(scripts, "mine.sh");
-        await File.WriteAllTextAsync(script, "#!/bin/sh\necho from-the-tree\n", TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(script, "echo from-the-tree\n");
         var request = new CommandRequest(["scripts/mine.sh"], TimeSpan.FromSeconds(20)) { Cwd = _dir.Path };
 
         var result = await new SystemCommandRunner().Run(request, CancellationToken.None);

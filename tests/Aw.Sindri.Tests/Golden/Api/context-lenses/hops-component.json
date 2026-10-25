@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "anchor": {
+    "key": "feature:share.sharing",
+    "label": "Sharing",
+    "kind": "feature",
+    "trust": "trusted"
+  },
+  "mapVersion": "v1",
+  "draft": false,
+  "depth": 1,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "bands": {
+    "intent": {
+      "records": [],
+      "decisions": [],
+      "counts": {
+        "records": 0,
+        "decisions": 0,
+        "orphaned": null
+      }
+    },
+    "product": {
+      "own": [
+        {
+          "node": "feature:share.sharing",
+          "label": "Sharing",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "repo": "aw-split-panes"
+        }
+      ],
+      "neighbors": [],
+      "affects": [
+        {
+          "node": "feature:share.export",
+          "label": "Export",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "depth": 1,
+          "path": [
+            "feature:share.sharing",
+            "component code:src/share/Share.ts",
+            "implements feature:share.export"
+          ],
+          "repo": "aw-split-panes"
+        }
+      ],
+      "counts": {
+        "own": 1,
+        "affects": 1,
+        "neighbors": 0,
+        "edges": 0
+      },
+      "edges": []
+    },
+    "code": {
+      "files": [
+        {
+          "path": "src/share/Share.ts",
+          "implements": [
+            "feature:share.sharing"
+          ],
+          "tests": [],
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "suggested": false,
+          "linkId": null,
+          "label": "src/share/Share.ts",
+          "kind": "code",
+          "trust": "trusted",
+          "repo": "aw-split-panes"
+        }
+      ],
+      "symbols": {
+        "state": "unavailable",
+        "reason": "index not built",
+        "items": [],
+        "code": "SND-CODEIDX-013"
+      },
+      "counts": {
+        "files": 1,
+        "symbols": 0,
+        "featuresWithNoCode": 0
+      }
+    }
+  },
+  "edges": [
+    {
+      "from": "code:src/share/Share.ts",
+      "to": "feature:share.export",
+      "type": "implements",
+      "provenance": "human",
+      "link": "edge:44dd110a98ca10d3",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:src/share/Share.ts",
+      "to": "feature:share.sharing",
+      "type": "implements",
+      "provenance": "human",
+      "link": "edge:756eae929955670f",
+      "confirmed": true,
+      "confidence": 1
+    }
+  ],
+  "conflicts": [],
+  "coverage": {
+    "scope": 1,
+    "intent": {
+      "covered": 0,
+      "of": 1
+    },
+    "product": {
+      "confirmed": 1,
+      "of": 1
+    },
+    "code": {
+      "implemented": 1,
+      "of": 1,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "feature:share.sharing",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/share/"
+      ],
+      "truncated": false,
+      "files": 0,
+      "unmapped": 0,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:share.sharing"
+    ],
+    "mapVersion": "v1",
+    "depth": 1,
+    "hops": [
+      "state",
+      "dependency",
+      "flow",
+      "component"
+    ],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

@@ -27,7 +27,7 @@ public sealed class OutboxRefusalTests
         var parked = Parked(Decide(Claimed(), Item, Refused("SND-RECIPE-005"), rules: EngineRules.Default));
 
         Assert.Equal((ParkReason.SpecConflict, ParkKind.Revoked, ResumeKind.None), Of(parked));
-        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Item, Resume()).Error.Code);
+        Assert.Equal("SND-WF-003", AnswerFit.Check(parked, Resume()).Error.Code);
         Assert.Equal("cancelled", Assert.IsType<Applied>(Decide(parked, Item, Cancel(), rules: EngineRules.Default)).Changes[0].After.State);
     }
 
@@ -71,6 +71,37 @@ public sealed class OutboxRefusalTests
         Assert.Contains(Cause, parked.Suspension!.Question, StringComparison.Ordinal);
         Assert.DoesNotContain("allowlist", parked.Suspension.Question, StringComparison.Ordinal);
         Assert.Equal(_claim, Assert.Single(resumed.Effects).Identity);
+    }
+
+    /// <summary>The park carries the typed code of the refusal that made it (q65), so a reader never parses the question.</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("SND-WF-010")]
+    [InlineData("SND-WF-011")]
+    [InlineData("SND-RECIPE-005")]
+    [InlineData("SND-RECIPE-006")]
+    public void A_refusal_park_carries_the_refusals_code(string code)
+    {
+        var parked = Parked(Decide(Claimed(), Item, new OutboxRefused(Dispatcher, _claimRef, code, Sequence: 96, "the cause"), rules: EngineRules.Default));
+
+        Assert.Equal(code, parked.Suspension!.Code);
+    }
+
+    /// <summary>The park's transition records the refusal (code and message) so the needs-you row can say why.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void A_refusal_park_records_the_code_and_message_as_the_transitions_reason()
+    {
+        const string Cause = "fact:nextPhase must be { phase, attempt, packet, base, stackParent } with a lowercase phase id and an attempt from 1";
+        var applied = Assert.IsType<Applied>(Decide(Claimed(), Item, new OutboxRefused(Dispatcher, _claimRef, "SND-WF-010", Sequence: 95, Cause), rules: EngineRules.Default));
+
+        Assert.Equal("SND-WF-010: " + Cause, applied.Changes[0].Event.Trigger.Reason);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_refusal_park_without_a_message_records_just_the_code()
+    {
+        var applied = Assert.IsType<Applied>(Decide(Claimed(), Item, Refused("SND-WF-011"), rules: EngineRules.Default));
+
+        Assert.Equal("SND-WF-011", applied.Changes[0].Event.Trigger.Reason);
     }
 
     [Fact, Trait("Lane", "unit")]

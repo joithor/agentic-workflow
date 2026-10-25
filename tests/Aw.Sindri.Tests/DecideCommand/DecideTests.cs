@@ -6,6 +6,8 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Text;
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.Decide;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Views;
@@ -68,6 +70,30 @@ public sealed class DecideTests
     }
 
     [Fact]
+    public async Task A_session_Sindri_launched_cant_decide_and_records_nothing()
+    {
+        await Pending();
+        using var entered = _h.Slice.Callers.Enter(A.Caller().Session().Build() with { Launch = LaunchId.From("LCH-00000000000000000000000000000001") });
+
+        var result = await Service().Handle(A.DecideRequest().Choosing(_accept).Build(), Token);
+
+        Assert.Equal("SND-AUTH-002", result.IsError ? result.Error.Code : "accepted");
+        Assert.Empty(_h.Slice.Store.Events);
+    }
+
+    [Fact]
+    public async Task An_owner_started_session_can_decide()
+    {
+        await Pending();
+        using var entered = _h.Slice.Callers.Enter(A.Caller().Session().Build());
+
+        var result = await Service().Handle(A.DecideRequest().Choosing(_accept).Build(), Token);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        _ = Assert.Single(_h.Slice.Store.Events);
+    }
+
+    [Fact]
     public async Task Decline_is_an_option_and_a_decision_about_no_item_has_no_item_on_the_event()
     {
         await Pending();
@@ -96,12 +122,12 @@ public sealed class DecideTests
     }
 
     [Fact]
-    public async Task A_note_over_2000_characters_is_SND_DEC_001()
+    public async Task A_note_over_65536_characters_is_SND_DEC_001()
     {
         await Pending();
         using var entered = Human();
 
-        var result = await Service().Handle(A.DecideRequest().WithNote(new string('n', 2001)).Build(), Token);
+        var result = await Service().Handle(A.DecideRequest().WithNote(new string('n', DecisionRules.NoteMax + 1)).Build(), Token);
 
         Expect.Equal(SindriErrors.DecisionInvalid.Code, result.Error.Code);
         Assert.Empty(_h.Slice.Store.Events);
@@ -128,18 +154,6 @@ public sealed class DecideTests
         using var entered = Human();
 
         var result = await Service().Handle(A.DecideRequest().ForDecision(DecisionId.From("DEC-" + new string('9', 32))).Build(), Token);
-
-        Expect.Equal(SindriErrors.DecisionNotFound.Code, result.Error.Code);
-        Assert.Empty(_h.Slice.Store.Events);
-    }
-
-    [Fact]
-    public async Task A_session_outside_the_decisions_repo_gets_404_with_no_hint()
-    {
-        await Pending(A.FirstItemId, "api");
-        using var entered = _h.Slice.Callers.Enter(A.Caller().Session().InRepo("web").Build());
-
-        var result = await Service().Handle(A.DecideRequest().Build(), Token);
 
         Expect.Equal(SindriErrors.DecisionNotFound.Code, result.Error.Code);
         Assert.Empty(_h.Slice.Store.Events);

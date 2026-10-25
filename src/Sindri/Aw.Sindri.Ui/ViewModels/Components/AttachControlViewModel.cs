@@ -38,7 +38,7 @@ internal sealed class AttachControlViewModel : ObservableObject
     public bool IsPending => IsAgent && !_input.AttachReady;
 
     /// <summary>The chip that stands in for Attach while it is pending.</summary>
-    public string PendingChip => Labels.AvailableWithP10a;
+    public string PendingChip => _input.PendingReason ?? Labels.AvailableWithP10a;
 
     /// <summary>True when the Attach note shows: under a live Attach button, not under a chip or Open instance.</summary>
     public bool HasNote => IsAgent && _input.AttachReady;
@@ -68,7 +68,7 @@ internal sealed class AttachControlViewModel : ObservableObject
     public string KeepLabel => Labels.KeepStep;
 
     /// <summary>The pending chip's accessible name: the main action it stands for and what it waits for.</summary>
-    public string PendingChipName => Labels.AttachPendingName(_input.Address);
+    public string PendingChipName => Labels.AttachPendingName(_input.Address, PendingChip);
 
     /// <summary>The Keep button's accessible name.</summary>
     public string KeepButtonName => Labels.KeepName(_input.Address);
@@ -91,7 +91,7 @@ internal sealed class AttachControlViewModel : ObservableObject
         var moved = !string.Equals(_input.Address, input.Address, StringComparison.Ordinal);
         _input = input;
         Menu = MenuFor(input);
-        foreach (var name in (string[])[nameof(PendingChipName), nameof(PrimaryLabel), nameof(PrimaryName), nameof(PrimaryAction), nameof(IsPending), nameof(IsPrimaryShown), nameof(HasNote), nameof(ChevronName), nameof(ConfirmLine), nameof(ConfirmButtonName), nameof(KeepButtonName)])
+        foreach (var name in (string[])[nameof(PendingChipName), nameof(PendingChip), nameof(PrimaryLabel), nameof(PrimaryName), nameof(PrimaryAction), nameof(IsPending), nameof(IsPrimaryShown), nameof(HasNote), nameof(ChevronName), nameof(ConfirmLine), nameof(ConfirmButtonName), nameof(KeepButtonName)])
         {
             OnChanged(name);
         }

@@ -11,10 +11,10 @@ namespace Aw.Context.Infrastructure.Intent;
 internal static class IntentMappers
 {
     private static readonly string[] _verdicts = ["contradicts", "agrees", "supersedes", "unread", "refused"];
-    private static readonly string[] _rules = ["issue-key", "url", "path", "identifier", "quoted-title"];
+    private static readonly string[] _rules = ["issue-key", "url", "path", "identifier", "quoted-title", "name"];
 
     internal static IRowMapper<IntentRecord> Record { get; } = new Mapper<IntentRecord>(r =>
-        new(RecordKey.From(r.GetString(0)), SourceId.From(r.GetString(1)), r.GetString(2), r.GetString(3), Split(r.GetString(4))));
+        new(RecordKey.From(r.GetString(0)), SourceId.From(r.GetString(1)), r.GetString(2), r.GetString(3), Split(r.GetString(4))) { CreatedAt = r.IsDBNull(5) ? null : SqliteRead.GetTimestamp(r, 5), FetchedAt = SqliteRead.GetTimestamp(r, 6) });
 
     internal static IRowMapper<IntentLink> Link { get; } = new Mapper<IntentLink>(r =>
         new(RecordKey.From(r.GetString(0)), NodeKey.From(r.GetString(1)), RuleOf(r.GetString(2)), r.GetDouble(3), r.GetString(4)));
@@ -33,6 +33,10 @@ internal static class IntentMappers
     internal static IRowMapper<IntentSourceState> State { get; } = new Mapper<IntentSourceState>(r =>
         new(r.IsDBNull(0) ? null : r.GetString(0), r.IsDBNull(1) ? null : SqliteRead.GetTimestamp(r, 1), r.IsDBNull(2) ? null : r.GetString(2),
             r.GetInt32(3), r.GetInt32(4), r.GetInt32(5), r.GetInt32(6)));
+
+    /// <summary>Binds a record's creation instant as UTC round-trip text, or NULL when the source gave none.</summary>
+    internal static SqliteCommand BindCreated(this SqliteCommand command, DateTimeOffset? at) =>
+        at is { } value ? command.Bind("@created", value) : command.Bind("@created", (string?)null);
 
     internal static string Of(ConflictVerdict verdict) => _verdicts[(int)verdict];
 

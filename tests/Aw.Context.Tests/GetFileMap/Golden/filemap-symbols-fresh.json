@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "repo": "aw-split-panes",
+  "sha": "0a1b2c3",
+  "mapVersion": "v1",
+  "draft": false,
+  "path": "src/tabs/",
+  "entries": [
+    {
+      "name": "TabGroups.ts",
+      "path": "src/tabs/TabGroups.ts",
+      "type": "file",
+      "status": "unmapped",
+      "files": 1,
+      "features": [],
+      "intent": null
+    },
+    {
+      "name": "TabManager.ts",
+      "path": "src/tabs/TabManager.ts",
+      "type": "file",
+      "status": "unmapped",
+      "files": 1,
+      "features": [],
+      "intent": null
+    }
+  ],
+  "unmapped": [
+    {
+      "path": "src/tabs/TabGroups.ts",
+      "files": 1
+    },
+    {
+      "path": "src/tabs/TabManager.ts",
+      "files": 1
+    }
+  ],
+  "suggested": [],
+  "totals": {
+    "files": 2,
+    "mapped": 0,
+    "suggested": 0,
+    "unmapped": 2
+  },
+  "symbols": {
+    "state": "ok",
+    "reason": null,
+    "items": [],
+    "files": [
+      {
+        "path": "src/tabs/TabGroups.ts",
+        "symbols": [
+          {
+            "ref": "src/tabs/TabGroups.ts#group",
+            "name": "group",
+            "kind": "function",
+            "path": "src/tabs/TabGroups.ts",
+            "startLine": 1,
+            "endLine": 3,
+            "signature": null,
+            "exported": false
+          }
+        ],
+        "commit": "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+        "asOfCommit": null,
+        "state": "ok"
+      },
+      {
+        "path": "src/tabs/TabManager.ts",
+        "symbols": [
+          {
+            "ref": "src/tabs/TabManager.ts#restoreLayout",
+            "name": "restoreLayout",
+            "kind": "method",
+            "path": "src/tabs/TabManager.ts",
+            "startLine": 4,
+            "endLine": 20,
+            "signature": "restoreLayout(): void",
+            "exported": true
+          }
+        ],
+        "commit": "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567",
+        "asOfCommit": null,
+        "state": "ok"
+      }
+    ],
+    "implements": [],
+    "commit": "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567"
+  },
+  "nextCursor": null,
+  "total": 2
+}

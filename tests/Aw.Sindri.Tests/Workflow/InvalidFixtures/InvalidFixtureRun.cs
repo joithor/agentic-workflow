@@ -45,6 +45,7 @@ internal static class InvalidFixtureRun
             FixtureSetup.Capability => await Service(reader, files, CapabilityRecipe.Catalog, path, cancellationToken),
             FixtureSetup.CapabilityWithBase => await WithContext(reader, files, path, CapabilityRecipe.Catalog, RecipeProfileFacts.None, Base(reader), registry: null, cancellationToken),
             FixtureSetup.EffectAllowlist => await WithContext(reader, files, path, WiringCatalog.WithTestBlocks, ClaimOnly, baseRecipe: null, registry: null, cancellationToken),
+            FixtureSetup.HumanTrigger => await WithContext(reader, files, path, WiringCatalog.WithTestBlocks, MergeOnly, baseRecipe: null, registry: null, cancellationToken),
             FixtureSetup.Registry => await WithContext(reader, files, path, provider.GetRequiredService<BlockCatalog>(), RecipeProfileFacts.None, baseRecipe: null, Registry, cancellationToken),
             FixtureSetup.CapabilityWithUnapprovedBase => await WithContext(reader, files, path, CapabilityRecipe.Catalog, RecipeProfileFacts.None, Base(reader), Registry, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(setup), setup, "Not a fixture setup."),
@@ -58,6 +59,8 @@ internal static class InvalidFixtureRun
             ?? throw new InvalidOperationException("The base fixture doesn't bind.");
 
     private static RecipeProfileFacts ClaimOnly { get; } = new(new HashSet<BlockId> { BlockId.From("effect.claim.ref") });
+
+    private static RecipeProfileFacts MergeOnly { get; } = new(new HashSet<BlockId> { BlockId.From("effect.test.merge") });
 
     /// <summary>
     /// The registry the registry fixtures are validated against: workflow.version-taken 1 and workflow.version-behind 1
@@ -99,7 +102,7 @@ internal static class InvalidFixtureRun
 
     /// <summary>
     /// The fixture, a 'workflow.step' child that needs no inputs (RCP-TIME-002's and the capability fixtures'), and the
-    /// chain workflow.depth-1 -> ... -> workflow.depth-5 that RCP-CHILD-003's workflow.depth-0 starts.
+    /// chain workflow.depth-1 -> ... -> workflow.depth-11 that RCP-CHILD-003's workflow.depth-0 starts.
     /// </summary>
     private static InMemoryRecipeFiles Files(string file, string text)
     {
@@ -107,12 +110,12 @@ internal static class InvalidFixtureRun
             .With(Path.Combine(Directory, file), text)
             .With(Path.Combine(Directory, "workflow.step.yaml"), Leaf("workflow.step"))
             .With(Path.Combine(Directory, "workflow.dev-child-summary.yaml"), ShippedRecipes.Read("dev/workflow.dev-child-summary.yaml"));
-        for (var level = 1; level < 5; level++)
+        for (var level = 1; level < 11; level++)
         {
             _ = files.With(Path.Combine(Directory, Depth(level) + ".yaml"), Parent(Depth(level), Depth(level + 1)));
         }
 
-        return files.With(Path.Combine(Directory, Depth(5) + ".yaml"), Leaf(Depth(5)));
+        return files.With(Path.Combine(Directory, Depth(11) + ".yaml"), Leaf(Depth(11)));
     }
 
     private static string Depth(int level) => "workflow.depth-" + level.ToString(CultureInfo.InvariantCulture);

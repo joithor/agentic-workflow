@@ -68,6 +68,10 @@ META="${AW_META_BIN:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/bin/aw-meta}"
 own_agent || pass        # a nested agent instance inside the lane is not the lane
 # A lane name becomes a path component (the reply marker): letters, digits, '.', '_' and '-', and not only dots.
 { [[ "$AW_META_LANE" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$AW_META_LANE" =~ [^.] ]]; } || { failopen lane-name-invalid; pass; }
+# The team's meta lane (AW_META_LANE is the metaLane of the team config AW_META_CONFIG names, "meta" when it names none) has no lane
+# inbox: its mail comes another way (a later change). Until then it passes straight through and runs no lane command.
+if [ -n "${AW_META_CONFIG:-}" ] && [ -f "$AW_META_CONFIG" ] && command -v jq > /dev/null 2>&1 \
+  && [ "$(jq -r '.metaLane // "meta"' "$AW_META_CONFIG" 2> /dev/null)" = "$AW_META_LANE" ]; then pass; fi
 LANE_DIR="${AW_META_DIR:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta}/lane-sessions"
 REPLIED="$LANE_DIR/$AW_META_LANE.replied"   # the checksum of the reply last recorded
 OWED="$LANE_DIR/$AW_META_LANE.owed"         # the checksum of the owed list the last block showed

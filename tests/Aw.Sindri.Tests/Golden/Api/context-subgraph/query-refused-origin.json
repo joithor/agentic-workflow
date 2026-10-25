@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+  "title": "SND-API-008",
+  "status": 403,
+  "detail": "QUERY /sindri/context/subgraph: a body query from a foreign Origin is refused (fix: call it from the sindri CLI or the Sindri app)",
+  "traceId": "<trace>"
+}

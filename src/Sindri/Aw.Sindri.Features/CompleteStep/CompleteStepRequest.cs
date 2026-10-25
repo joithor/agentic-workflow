@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -13,9 +15,20 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="Outcome">One of the Step's declared outcomes.</param>
 /// <param name="Outputs">Each output fact's content.</param>
 /// <param name="Nonce">The command's nonce; null to have one issued.</param>
+/// <param name="LaunchSecret">The launch secret an agent session proves its run with (header X-Sindri-Launch-Secret, never part of the body or any log); null for a desk report.</param>
 public sealed record CompleteStepRequest(
     string Instance,
     RunToken Run,
     OutcomeName Outcome,
     IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs,
-    CommandNonce? Nonce = null) : ICommand<CompleteStepResponse>;
+    CommandNonce? Nonce = null,
+    [property: JsonIgnore] LaunchSecret? LaunchSecret = null) : ICommand<CompleteStepResponse>, IClassifiedCommand
+{
+    /// <summary>The catalog variant (API spec §2.1): a report carrying a launch secret is 'CompleteStep:report', a session's step-report; any other is the desk row 'CompleteStep'.</summary>
+    [JsonIgnore]
+    public string? Variant => LaunchSecret is null ? null : "report";
+
+    /// <summary>Never: a launch secret is not a protected field.</summary>
+    [JsonIgnore]
+    public bool CarriesProtectedFields => false;
+}

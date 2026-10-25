@@ -1,4 +1,5 @@
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.CompleteStep;
 
@@ -12,9 +13,13 @@ internal static class CompleteStepEndpoint
 {
     internal static RouteGroupBuilder MapCompleteStep(this RouteGroupBuilder group)
     {
-        _ = group.MapPost("/workflow/instances/{instanceId}/runs/{run}/complete", static async (string instanceId, string run, CompleteStepRequest request,
+        _ = group.MapPost("/workflow/instances/{instanceId}/runs/{run}/complete", static async (string instanceId, string run, CompleteStepRequest request, HttpRequest http,
                 IService<CompleteStepRequest, CompleteStepResponse> service, CancellationToken ct)
-            => (await service.Handle(request with { Instance = InstanceRoute.Id(instanceId), Run = RunToken.From(run) }, ct).ConfigureAwait(false)).ToHttpResult());
+            => (await service.Handle(request with { Instance = InstanceRoute.Id(instanceId), Run = RunToken.From(run), LaunchSecret = Secret(http) }, ct).ConfigureAwait(false)).ToHttpResult());
         return group;
     }
+
+    /// <summary>The launch secret the session's call carries (API spec §8.1); null when the header is missing or empty (a desk report).</summary>
+    private static LaunchSecret? Secret(HttpRequest http) =>
+        http.Headers[SindriHeaders.LaunchSecret].ToString() is { Length: > 0 } value ? new LaunchSecret(value) : null;
 }

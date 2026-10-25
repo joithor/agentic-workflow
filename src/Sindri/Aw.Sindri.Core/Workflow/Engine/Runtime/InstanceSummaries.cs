@@ -16,12 +16,12 @@ public static class InstanceSummaries
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, context.NotStarted || view.State == InstanceViews.StartingState);
+        var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, view.Outcome, context.NotStarted || view.State == InstanceViews.StartingState);
         return new InstanceSummary(
             view.Address,
             view.Id,
             view.ItemId,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName),
             view.State,
             chip,
             view.Since,
@@ -31,12 +31,19 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view));
+            [.. StatusRecords.ActionIds(view), .. Reruns.Of(view)],
+            view.StartedBy,
+            view.StartedAt,
+            context.LineStage,
+            RootOf(view.Address),
+            RowSentences.IsUnavailable(view) ? WaitingOn.Engine : WaitingOn.Of(chip, deskOpen: view.Task is not null, agentRunOpen: view.AgentRun is not null, ended: view.Outcome is not null),   // a down dependency waits on nobody here: health shows it
+            view.EngineOwned is { Kind: EngineOwnedKind.TakenOver } ? view.TakenOverBy : null,
+            view.Again);
     }
 
     /// <summary>
     /// The subject the list row and the detail show: the view's, with an item's title in place of its id when the subject is the
-    /// item, the recipe declares no name and the caller knows the title; an empty rendered name shows the instance address. A view
+    /// item, the recipe declares no name and the caller knows the title; a subject labelled by nothing but its fact key ('fact:scopeInput') shows the item's title when there is one; an empty rendered name shows the instance address. A view
     /// with no subject yet (a starting instance) is about the item itself: kind 'item', the item's id as the key, its title (else the address) as the label.
     /// </summary>
     /// <param name="view">The instance view.</param>
@@ -49,10 +56,16 @@ public static class InstanceSummaries
         {
             null => new("item", view.ItemId?.Value ?? string.Empty, itemTitle is { Length: > 0 } ? itemTitle : view.Address.Value, Href: null),
             { Kind: "item" } item when view.Name is null && itemTitle is { Length: > 0 } && item.Key == view.ItemId?.Value => item with { Label = itemTitle },
+            { } keyed when itemTitle is { Length: > 0 } && keyed.Label == keyed.Key && keyed.Key.StartsWith("fact:", StringComparison.Ordinal) => keyed with { Label = itemTitle },
             { Label.Length: 0 } unnamed => unnamed with { Label = view.Address.Value },
             { } subject => subject,
         };
     }
+
+    /// <summary>The root instance's address: the first three segments ('T-3/item/1'); a root's own.</summary>
+    /// <param name="address">An instance address.</param>
+    /// <returns>The root's address.</returns>
+    public static string RootOf(InstanceAddress address) => string.Join('/', address.Value.Split('/').Take(3));
 
     /// <summary>The text cut to <see cref="NowLength"/> with the ellipsis inside it, never between the two halves of a surrogate pair.</summary>
     private static string Cut(string sentence)

@@ -47,9 +47,10 @@ internal static class JobHost
     /// <param name="idScope">The scope of the ids; a restart takes another.</param>
     /// <param name="pump">Whether the views follow the ledger by themselves (the goldens drive the projector step by step instead).</param>
     /// <returns>The started host.</returns>
-    public static async Task<GoldenHost> Start(CancellationToken ct, string? home = null, uint idScope = 0, bool pump = true)
+    /// <param name="more">More registrations (a test replaces a port with its fake), made after the host's own.</param>
+    public static async Task<GoldenHost> Start(CancellationToken ct, string? home = null, uint idScope = 0, bool pump = true, Action<IServiceCollection>? more = null)
     {
-        var host = await GoldenHost.Start(temporary: true, ct, ProfileYaml, extra: Register, map: Map, home: home, idScope: idScope);
+        var host = await GoldenHost.Start(temporary: true, ct, ProfileYaml, extra: services => { Register(services); more?.Invoke(services); }, map: Map, home: home, idScope: idScope);
         if (pump)
         {
             host.Own(new ViewsPump(host));
@@ -79,7 +80,10 @@ internal static class JobHost
     /// <summary>A hang guard on the real clock for what a job or the views should do at once: the host's own clock is fake and would never fire it.</summary>
     public static readonly TimeSpan Hang = TimeSpan.FromSeconds(10);
 
-    /// <summary>Waits until every job this host started has ended and its last event is appended, then lets the views catch up. A job that does not end fails the wait by name after <see cref="Hang"/>.</summary>
+    /// <summary>The hang guard for a job that does real work (a sources sync against a fake Onyx, a map build) to end: a loaded gate box ran one past <see cref="Hang"/>, so this one is longer but stays under the shortest test timeout (30 s) that waits on it, and its named failure still comes first.</summary>
+    public static readonly TimeSpan SettleHang = TimeSpan.FromSeconds(20);
+
+    /// <summary>Waits until every job this host started has ended and its last event is appended, then lets the views catch up. A job that does not end fails the wait by name after <see cref="SettleHang"/>.</summary>
     /// <param name="host">The host.</param>
     /// <param name="ct">Cancellation.</param>
     /// <returns>A task that completes then.</returns>
@@ -88,11 +92,11 @@ internal static class JobHost
         var runner = host.App.Services.GetRequiredService<JobRunner>();
         try
         {
-            await runner.Idle().WaitAsync(Hang, TimeProvider.System, ct);
+            await runner.Idle().WaitAsync(SettleHang, TimeProvider.System, ct);
         }
         catch (TimeoutException e)
         {
-            throw new TimeoutException($"jobs still running {Hang.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", runner.Active)}", e);
+            throw new TimeoutException($"jobs still running {SettleHang.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s after the test asked them to end: {string.Join(", ", runner.Active)}", e);
         }
 
         await ViewScenarios.CatchUp(host, ct);

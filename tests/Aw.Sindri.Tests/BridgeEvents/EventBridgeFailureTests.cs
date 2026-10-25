@@ -27,7 +27,7 @@ namespace Aw.Sindri.Tests.BridgeEvents;
 [Lane(TestLane.Integration)]
 public sealed class EventBridgeFailureTests : IDisposable
 {
-    private const string Router = "router.stub";
+    private const string Router = "service:router-stub";
     private readonly WorkflowsHarness _harness = new();
     private int _events;
     private FakeInstances? _instances;

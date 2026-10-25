@@ -94,7 +94,12 @@ public sealed class NavTabClickTests : IDisposable
         var shown = _pages
             .Where(n => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == n).IsEffectivelyVisible).ToList();
         Assert.Equal([Own(target)], shown);
-        if (target is not (PageId.Work or PageId.Workflows) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2) and Workflows the list (U8), not placeholders
+        if (target == PageId.Context)   // a pointer opening (not an arrow) puts focus in the anchor box
+        {
+            Assert.Equal("AnchorBox", (window.FocusManager?.GetFocusedElement() as Control)?.Name);
+        }
+
+        if (target is not (PageId.Work or PageId.Workflows or PageId.Context or PageId.Agents) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2), Workflows the list (U8) and Context the page (U9), Agents the sessions (U11a), not placeholders
         {
             var page = window.GetVisualDescendants().OfType<PlaceholderPage>().Single(p => p.Name == Own(target));
             Assert.Equal(arrives, page.Note);
@@ -127,6 +132,7 @@ public sealed class NavTabClickTests : IDisposable
         PageId.Context => "ContextPage",
         PageId.Agents => "AgentsPage",
         PageId.System => "HealthPage",
+        PageId.Jobs => "JobsPage",
         PageId.Settings => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };

@@ -27,7 +27,7 @@ public abstract class ClaudeCliContract
     [Fact]
     public async Task Arguments_arrive_unsplit_in_the_directory()
     {
-        string[] arguments = ["mcp", "add", "--header", "X-Sindri-Repo: demo repo", "sindri"];
+        string[] arguments = ["mcp", "add", "sindri", "--header", "X-Sindri-Repo: demo repo"];
         var run = await Create(0, string.Empty).Run(arguments, Directory(), Token);
 
         Expect.Equal(0, run!.ExitCode);   // why: the CLI started

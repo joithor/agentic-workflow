@@ -16,11 +16,39 @@ public sealed class FakeClusterSource : IClusterSource
     /// <summary>The repos asked about, in order.</summary>
     public IList<string> Asked { get; } = [];
 
+    /// <summary>The limits each call was given, in order.</summary>
+    public IList<ClusterLimits> AskedLimits { get; } = [];
+
+    /// <summary>When set, every call waits for it before answering (a build held mid-way).</summary>
+    public Task? Hold { get; set; }
+
+    /// <summary>How many calls are inside right now.</summary>
+    public int Active { get; private set; }
+
+    /// <summary>The most calls that were inside at once.</summary>
+    public int MostActive { get; private set; }
+
     /// <inheritdoc/>
-    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(limits);
+        AskedLimits.Add(limits);
         Asked.Add($"{repo.Name.Value}@{commit}");
-        return ValueTask.FromResult<Result<ClusterSet>>(Failure is { } failure ? failure : Set);
+        Active++;
+        MostActive = Math.Max(MostActive, Active);
+        try
+        {
+            if (Hold is { } hold)
+            {
+                await hold.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return Failure is { } failure ? failure : Set;
+        }
+        finally
+        {
+            Active--;
+        }
     }
 }

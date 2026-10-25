@@ -1,0 +1,601 @@
+{
+  "schemaVersion": 2,
+  "anchors": [
+    {
+      "key": "feature:tabs.tab-manager",
+      "label": "Tab manager",
+      "kind": "feature",
+      "trust": "trusted"
+    },
+    {
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups",
+      "kind": "feature",
+      "trust": "trusted"
+    }
+  ],
+  "missingAnchors": [],
+  "mapVersion": "v1",
+  "draft": false,
+  "depth": 2,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "bands": {
+    "intent": {
+      "records": [
+        {
+          "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+          "label": "Tab manager spec",
+          "source": "linear",
+          "mentions": [
+            "feature:tabs.tab-manager"
+          ],
+          "trust": "untrusted",
+          "state": "unchecked",
+          "cites": [],
+          "kind": "record",
+          "anchors": [
+            "feature:tabs.tab-manager"
+          ],
+          "depth": 0
+        }
+      ],
+      "decisions": [
+        {
+          "node": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+          "text": "A tab group collapses to one tab in the strip.",
+          "decides": [
+            "feature:tabs.tab-groups"
+          ],
+          "supersedes": [],
+          "quotes": null,
+          "provenance": "human",
+          "confirmed": true,
+          "trust": "trusted",
+          "at": "2026-07-10T10:00:00.0000000Z",
+          "quote": {
+            "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000201",
+            "text": "a tab group collapses to a single tab in the strip",
+            "trust": "untrusted"
+          },
+          "label": "A tab group collapses to one tab in the strip.",
+          "kind": "decision",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "depth": 0
+        },
+        {
+          "node": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+          "text": "A tab group stays expanded; collapsing is a per-user setting.",
+          "decides": [
+            "feature:tabs.tab-groups"
+          ],
+          "supersedes": [
+            "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b"
+          ],
+          "quotes": null,
+          "provenance": "human",
+          "confirmed": true,
+          "trust": "trusted",
+          "at": "2026-07-20T10:00:00.0000000Z",
+          "quote": {
+            "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000202",
+            "text": "a tab group stays expanded; collapsing is a per-user setting",
+            "trust": "untrusted"
+          },
+          "label": "A tab group stays expanded; collapsing is a per-user setting.",
+          "kind": "decision",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "depth": 0
+        }
+      ],
+      "counts": {
+        "records": 1,
+        "decisions": 2,
+        "orphaned": null
+      }
+    },
+    "product": {
+      "own": [
+        {
+          "node": "action:tab-groups.group-selected",
+          "label": "Group the selected tabs",
+          "kind": "action",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "action:tab-manager.restore-layout",
+          "label": "Restore a tab's pane layout",
+          "kind": "action",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "feature:tabs.tab-groups",
+          "label": "Tab groups",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "feature:tabs.tab-manager",
+          "label": "Tab manager",
+          "kind": "feature",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "surface:command/group-tabs",
+          "label": "Group tabs (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "node": "surface:command/switch-tab",
+          "label": "Switch tab (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        }
+      ],
+      "neighbors": [],
+      "affects": [],
+      "counts": {
+        "own": 6,
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 5
+      },
+      "edges": [
+        {
+          "from": "feature:tabs.tab-groups",
+          "to": "feature:tabs.tab-manager",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:bfde89d5c565ec81",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "surface:command/group-tabs",
+          "to": "feature:tabs.tab-groups",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:2262bc3d8f1df276",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "surface:command/switch-tab",
+          "to": "feature:tabs.tab-manager",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:e77c6359aafbc814",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "action:tab-groups.group-selected",
+          "to": "surface:command/group-tabs",
+          "type": "on",
+          "provenance": "human",
+          "link": "edge:f507f71370a5f7c3",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "action:tab-manager.restore-layout",
+          "to": "surface:command/switch-tab",
+          "type": "on",
+          "provenance": "human",
+          "link": "edge:9b9cd5139939b8bd",
+          "confirmed": true,
+          "confidence": 1
+        }
+      ]
+    },
+    "code": {
+      "files": [
+        {
+          "path": "src/tabs/TabGroups.ts",
+          "implements": [
+            "feature:tabs.tab-groups"
+          ],
+          "tests": [],
+          "provenance": "model",
+          "confidence": 0.74,
+          "confirmed": false,
+          "suggested": true,
+          "linkId": "edge:402b8bed42f6611c",
+          "label": "src/tabs/TabGroups.ts",
+          "kind": "code",
+          "trust": "untrusted",
+          "anchors": [
+            "feature:tabs.tab-manager",
+            "feature:tabs.tab-groups"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        },
+        {
+          "path": "src/tabs/TabManager.ts",
+          "implements": [
+            "action:tab-manager.restore-layout",
+            "feature:tabs.tab-manager"
+          ],
+          "tests": [],
+          "provenance": "deterministic",
+          "confidence": 1,
+          "confirmed": true,
+          "suggested": false,
+          "linkId": null,
+          "label": "src/tabs/TabManager.ts",
+          "kind": "code",
+          "trust": "trusted",
+          "anchors": [
+            "feature:tabs.tab-manager"
+          ],
+          "repo": "aw-split-panes",
+          "depth": 0
+        }
+      ],
+      "symbols": {
+        "state": "unavailable",
+        "reason": "index not built",
+        "items": []
+      },
+      "counts": {
+        "files": 2,
+        "symbols": 0,
+        "featuresWithNoCode": 1
+      }
+    }
+  },
+  "edges": [
+    {
+      "from": "code:src/tabs/TabGroups.ts",
+      "to": "feature:tabs.tab-groups",
+      "type": "implements",
+      "provenance": "model",
+      "link": "edge:402b8bed42f6611c",
+      "confirmed": false,
+      "confidence": 0.74
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "action:tab-manager.restore-layout",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:276346e72063de79",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:src/tabs/TabManager.ts",
+      "to": "feature:tabs.tab-manager",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:c04aa2c293906910",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides",
+      "provenance": "human",
+      "link": "edge:0cb7bdbdede8a5e8",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides",
+      "provenance": "human",
+      "link": "edge:a41786149bc2d1d5",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+      "to": "feature:tabs.tab-manager",
+      "type": "mentions",
+      "provenance": "human",
+      "link": "edge:c4f857aa3fe4e2ab",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "type": "supersedes",
+      "provenance": "human",
+      "link": "edge:9408121fe4ae3d76",
+      "confirmed": true,
+      "confidence": 1
+    }
+  ],
+  "conflicts": [
+    {
+      "kind": "supersedes",
+      "node": "feature:tabs.tab-groups",
+      "decision": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "other": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "summary": "decision:ef895edc supersedes decision:d0363522",
+      "intent": [],
+      "behavior": []
+    }
+  ],
+  "coverage": {
+    "scope": 6,
+    "intent": {
+      "covered": 2,
+      "of": 6
+    },
+    "product": {
+      "confirmed": 6,
+      "of": 6
+    },
+    "code": {
+      "implemented": 2,
+      "of": 6,
+      "level": "file",
+      "suggested": 1
+    },
+    "gaps": [
+      {
+        "node": "action:tab-groups.group-selected",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "action:tab-manager.restore-layout",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "feature:tabs.tab-groups",
+        "missing": [
+          "code"
+        ],
+        "note": "has intent; its only implements link is a suggestion"
+      },
+      {
+        "node": "surface:command/group-tabs",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:command/switch-tab",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/tabs/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 1,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    },
+    "byAnchor": {
+      "feature:tabs.tab-manager": {
+        "scope": 6,
+        "intent": {
+          "covered": 2,
+          "of": 6
+        },
+        "product": {
+          "confirmed": 6,
+          "of": 6
+        },
+        "code": {
+          "implemented": 2,
+          "of": 6,
+          "level": "file",
+          "suggested": 1
+        },
+        "gaps": [
+          {
+            "node": "action:tab-groups.group-selected",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "action:tab-manager.restore-layout",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "feature:tabs.tab-groups",
+            "missing": [
+              "code"
+            ],
+            "note": "has intent; its only implements link is a suggestion"
+          },
+          {
+            "node": "surface:command/group-tabs",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:command/switch-tab",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      },
+      "feature:tabs.tab-groups": {
+        "scope": 3,
+        "intent": {
+          "covered": 1,
+          "of": 3
+        },
+        "product": {
+          "confirmed": 3,
+          "of": 3
+        },
+        "code": {
+          "implemented": 0,
+          "of": 3,
+          "level": "file",
+          "suggested": 1
+        },
+        "gaps": [
+          {
+            "node": "action:tab-groups.group-selected",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "feature:tabs.tab-groups",
+            "missing": [
+              "code"
+            ],
+            "note": "has intent; its only implements link is a suggestion"
+          },
+          {
+            "node": "surface:command/group-tabs",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      }
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:tabs.tab-manager",
+      "feature:tabs.tab-groups"
+    ],
+    "mapVersion": "v1",
+    "depth": 2,
+    "hops": [
+      "state",
+      "dependency",
+      "flow"
+    ],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": false
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

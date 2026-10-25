@@ -1,0 +1,79 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- The setup checklist (setup spec §2.4): one panel of six rows on a hairline, a 4 px strip of segments, a meter, an error panel. Tokens only; the state words carry the
+       meaning, the colours only back them. -->
+  <Style Selector="Border.setup-seg">
+    <Setter Property="Height" Value="4" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+  </Style>
+  <Style Selector="Border.setup-seg.working">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimaryHoverFill}" />
+  </Style>
+  <Style Selector="Border.setup-seg.done">
+    <Setter Property="Background" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="Border.setup-line">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+  </Style>
+  <Style Selector="Button.setup-link">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="40" />
+  </Style>
+  <Style Selector="Border.setup-panel">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+  </Style>
+  <Style Selector="Border.run-line">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
+  <Style Selector="Border.step-number">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.error-panel">
+    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSoft}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="Padding" Value="12,8" />
+  </Style>
+  <Style Selector="Expander.setup-step">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ProgressBar.map-meter">
+    <Setter Property="Height" Value="6" />
+    <Setter Property="MinHeight" Value="6" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHoverFill}" />
+  </Style>
+  <Style Selector="ProgressBar.map-meter.failed">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="Border.agent-line">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+</Styles>

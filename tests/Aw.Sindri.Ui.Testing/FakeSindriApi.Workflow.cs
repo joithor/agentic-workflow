@@ -9,6 +9,12 @@ internal sealed partial class FakeSindriApi
     /// <summary>When set, every workflow read answers this instead of the golden (a refusal, an odd body).</summary>
     public RouteAnswer? WorkflowAnswer { get; set; }
 
+    /// <summary>When set, the answer of the instance list alone (the detail route keeps the goldens).</summary>
+    public RouteAnswer? InstancesBody { get; set; }
+
+    /// <summary>When set, the answer of an instance read, or null for the golden's own (the list route keeps the goldens).</summary>
+    public Func<string, RouteAnswer?>? InstanceBody { get; set; }
+
     private int _instancesCalls;
     private readonly List<InstanceQuery> _instanceQueries = [];
 
@@ -51,11 +57,15 @@ internal sealed partial class FakeSindriApi
     public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
 
-    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
+    public async Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
     {
         LastRecipeRead = (recipe, hash);
-        return Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+        await WaitFor(RecipeGate, cancellationToken).ConfigureAwait(false);   // the gate is read when the call starts, so a test can hand each call its own
+        return Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash));
     }
+
+    /// <summary>Held open until set: a recipe read that started while it was set waits for it.</summary>
+    public TaskCompletionSource? RecipeGate { get; set; }
 
     /// <summary>The recipe and hash of the latest recipe read; null before the first.</summary>
     public (string Recipe, string? Hash)? LastRecipeRead { get; private set; }
@@ -63,24 +73,37 @@ internal sealed partial class FakeSindriApi
     /// <summary>What GET /workflow/instances answers for a query.</summary>
     /// <param name="query">The query.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer InstancesAnswer(InstanceQuery query) => WorkflowAnswer ?? WorkflowAnswers.Instances(query);
+    internal RouteAnswer InstancesAnswer(InstanceQuery query)
+    {
+        var answer = InstancesBody ?? WorkflowAnswer ?? WorkflowAnswers.Instances(query);
+        return InstancesRewrite is { } rewrite ? answer with { Body = rewrite(answer.Body) } : answer;
+    }
+
+    /// <summary>When set, the body of every instance-list answer passes through it (a test turns the golden's rows into the line workflow's).</summary>
+    public Func<string, string>? InstancesRewrite { get; set; }
 
     /// <summary>What GET /workflow/instances/{id} answers.</summary>
     /// <param name="id">The id.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer InstanceAnswer(string id) => WorkflowAnswer ?? WorkflowAnswers.Instance(id);
+    internal RouteAnswer InstanceAnswer(string id) => InstanceBody?.Invoke(id) ?? WorkflowAnswer ?? WorkflowAnswers.Instance(id);
 
     /// <summary>What GET /workflow/instances/{id}/facts/{key} answers.</summary>
     /// <param name="id">The id.</param>
     /// <param name="key">The key.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer FactAnswer(string id, string key) => WorkflowAnswer ?? WorkflowAnswers.Fact(id, key);
+    internal RouteAnswer FactAnswer(string id, string key) => FactBody?.Invoke(id, key) ?? WorkflowAnswer ?? WorkflowAnswers.Fact(id, key);
+
+    /// <summary>When set, answers a fact read before the shared workflow answer does; return null to fall through.</summary>
+    public Func<string, string, RouteAnswer?>? FactBody { get; set; }
 
     /// <summary>What GET /workflow/recipes/{recipe} answers.</summary>
     /// <param name="recipe">The recipe id.</param>
     /// <param name="hash">The hash named, or null.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
+    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => RecipeBody?.Invoke(recipe) ?? WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
+
+    /// <summary>When set, answers a recipe read by id before the shared workflow answer does; return null to fall through.</summary>
+    public Func<string, RouteAnswer?>? RecipeBody { get; set; }
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.

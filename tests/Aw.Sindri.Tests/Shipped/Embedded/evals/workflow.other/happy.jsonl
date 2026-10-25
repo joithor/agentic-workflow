@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:spec":"Add a flag."}}}
+{"trigger":{"kind":"step.completed","outcome":"done","outputs":{"fact:output":"Added it."}},"expect":{"state":"done","outcome":"resolved"}}

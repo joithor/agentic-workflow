@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -29,6 +30,8 @@ public abstract class FrameHost : IDisposable
     private protected FakeTimeProvider Clock { get; } = new(A.Noon);
 
     private protected FakeMotionPreference Motion { get; } = new();
+
+    private protected FakeFilePicker Files { get; } = new();
 
     private protected static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -66,10 +69,13 @@ public abstract class FrameHost : IDisposable
                 return true;
             }, Token);
 
+    /// <summary>The folder chooser the shell is given: available unless a test turns it off.</summary>
+    private protected FakeFolderPicker Folders { get; } = new();
+
     private protected async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool>? ready = null, double? width = null, double? height = null)
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion);
+        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion, new WindowPorts(NullLauncher.Instance, Files, Folders));
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         if (width is { } w)
@@ -87,6 +93,20 @@ public abstract class FrameHost : IDisposable
         _ = shell.Run(_stop.Token);
         await Until(window, () => shell.State == ShellState.Normal && !shell.Queue.IsLoading && (ready?.Invoke(shell) ?? true));
         return (window, shell);
+    }
+
+    // The frame's disclosures are closed until asked for; a test that reads what is inside opens them first.
+    private protected static void OpenDisclosures(Window window)
+    {
+        for (var pass = 0; pass < 3; pass++)   // an opened disclosure may hold another
+        {
+            foreach (var expander in window.GetVisualDescendants().OfType<Expander>().ToList())
+            {
+                expander.IsExpanded = true;
+            }
+
+            Settle(window);
+        }
     }
 
     private protected static void Settle(Window window)

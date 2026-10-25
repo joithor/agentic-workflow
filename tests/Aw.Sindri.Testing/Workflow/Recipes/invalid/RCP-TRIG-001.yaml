@@ -14,3 +14,4 @@ states:
 transitions:
   - { from: produce, to: done, on: wait.satisfied }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

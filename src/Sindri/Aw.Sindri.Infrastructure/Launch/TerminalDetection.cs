@@ -10,7 +10,7 @@ internal static class TerminalDetection
     internal static async ValueTask<DetectedTerminal> Detect(DetectionInputs inputs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputs);
-        if (!ViewerProcess.HasGuiSession(inputs.GetEnv))
+        if (!ViewerProcess.HasGuiSession(inputs.GetEnv, inputs.IsMac))
         {
             return new DetectedTerminal("print", "print", Template: null, "no GUI session");
         }

@@ -15,6 +15,9 @@ internal sealed class StepSpec
     private readonly Capability _capabilities;
     private FactKey[] _inputs = [];
     private OutcomeName[] _outcomes = [];
+    private ParameterSpec[] _parameters = [];
+    private TimeSpan? _maxDuration;
+    private ReviewSpec[]? _reviews;
 
     private StepSpec(string id, BlockRuntime runtime, bool humanOnly, Capability capabilities)
     {
@@ -59,12 +62,27 @@ internal sealed class StepSpec
     /// <returns>The output.</returns>
     public static OutputSpec Every(string fact) => new(FactKey.From(fact), RequiredOn: [], Every: true);
 
+    /// <summary>A text 'with:' parameter (a literal, a fact or a profile key).</summary>
+    /// <param name="name">The parameter's name.</param>
+    /// <param name="required">Whether a recipe must give it.</param>
+    /// <returns>The parameter.</returns>
+    public static ParameterSpec Text(string name, bool required = false) => new(name, ParameterType.Text, required, IsCapabilityField: false);
+
     /// <summary>The facts the Step reads.</summary>
     /// <param name="facts">The fact keys.</param>
     /// <returns>The builder.</returns>
     public StepSpec Reads(params string[] facts)
     {
         _inputs = [.. facts.Select(FactKey.From)];
+        return this;
+    }
+
+    /// <summary>The 'with:' parameters the Step takes.</summary>
+    /// <param name="parameters">The parameters.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Takes(params ParameterSpec[] parameters)
+    {
+        _parameters = parameters;
         return this;
     }
 
@@ -77,10 +95,37 @@ internal sealed class StepSpec
         return this;
     }
 
+    /// <summary>
+    /// A long block Step (line spec LN-WF7): the engine ends it as step.failed 'timeout' only after <paramref name="maxDuration"/>, not after the two-minute default. The activity heartbeats, so a
+    /// cancel or a takeover still reaches it. The state's own timeout must be longer (RCP-TIME-003).
+    /// </summary>
+    /// <param name="maxDuration">The longest the Step may run; the profile's 'workflow.steps.longMax' (default 2h) is the cap.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Long(TimeSpan maxDuration)
+    {
+        _maxDuration = maxDuration;
+        return this;
+    }
+
+    /// <summary>What a desk of this Step has its person review (q65): each fact and its kind. Not part of the descriptor's hash.</summary>
+    /// <param name="reviews">The facts reviewed.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Reviewing(params ReviewSpec[] reviews)
+    {
+        _reviews = reviews;
+        return this;
+    }
+
+    /// <summary>One thing reviewed: <paramref name="fact"/> of the given <paramref name="kind"/>.</summary>
+    /// <param name="fact">The fact key.</param>
+    /// <param name="kind">What it is.</param>
+    /// <returns>The review.</returns>
+    public static ReviewSpec ReviewOf(string fact, DeskReviewKind kind) => new(FactKey.From(fact), kind);
+
     /// <summary>The facts the Step writes, and the descriptor.</summary>
     /// <param name="outputs">The outputs.</param>
     /// <returns>The descriptor.</returns>
     public BlockDescriptor Writes(params OutputSpec[] outputs) => new(
-        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: [], Rung: null, DeskCapable: true,
-        HumanOnly: _humanOnly ? true : null, Runtime: _runtime);
+        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: _parameters, Rung: null, DeskCapable: true,
+        HumanOnly: _humanOnly ? true : null, Runtime: _runtime, MaxDuration: _maxDuration, Reviews: _reviews);
 }

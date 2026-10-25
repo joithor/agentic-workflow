@@ -17,3 +17,4 @@ transitions:
   - { from: produce, to: produce, on: step.failed }
 loops: { revisions: { cap: 3, noProgress: [] } }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

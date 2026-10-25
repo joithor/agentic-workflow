@@ -10,8 +10,8 @@ namespace Aw.Context.Core.Engine;
 /// <param name="Node">A graph node key, name or alias, or null.</param>
 /// <param name="Item">A Sindri item id or tracker key, or null.</param>
 /// <param name="Symbol">A file path or symbol, or null.</param>
-/// <param name="Depth">The cascade depth (at most 4), or null for the profile's.</param>
-/// <param name="Budget">The token budget, or null for the default; capped at 'context.maxBudget'.</param>
+/// <param name="Depth">The cascade depth (a depth past 8 is read as 8), or null for the profile's.</param>
+/// <param name="Budget">Retired: the answer holds the whole ranked result set, so a budget is read and ignored (old clients may still send one).</param>
 /// <param name="Draft">True to read the draft map instead of the current one.</param>
 /// <param name="Diff">A commit range (two shas): the files changed from their merge base to the second, mapped to nodes (the diff shape), or null. Left out of JSON when null.</param>
 /// <param name="Repo">The repo a diff is read in; only valid with <paramref name="Diff"/>, and optional when the caller's scope holds one repo. Left out of JSON when null.</param>
@@ -29,4 +29,8 @@ public sealed record ContextQuery(
     /// <summary>Read the graph as of a retained map version ('v3', '3' or 'v3@a41b07d'); null for the current one. Left out of JSON when null; not valid with Draft.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? MapVersion { get; init; }
+
+    /// <summary>The cascade hops as a comma list ('state,flow,dependency,component'); null for the default three. Left out of JSON when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Hops { get; init; }
 }

@@ -40,14 +40,16 @@ public sealed class LauncherInitTests : IDisposable
     [Fact]
     public async Task Detection_under_fake_PATH_and_TERM_PROGRAM_and_no_gui()
     {
-        var no_gui = await TerminalDetection.Detect(Detection(new Dictionary<string, string>(StringComparer.Ordinal) { ["TERM_PROGRAM"] = "kitty" }, "kitty"), CancellationToken.None);
+        var no_gui = await TerminalDetection.Detect(Detection(new Dictionary<string, string>(StringComparer.Ordinal) { ["TERM_PROGRAM"] = "kitty" }, "kitty") with { IsMac = false }, CancellationToken.None);
         var term = await TerminalDetection.Detect(new DetectionInputs(n => n == "DISPLAY" ? ":97" : n == "TERM_PROGRAM" ? "kitty" : null, (_, _) => ValueTask.FromResult(false), _ => ValueTask.FromResult(false), TerminalTemplates.Load()), CancellationToken.None);
         var warp = await TerminalDetection.Detect(Detection(_gui, "kitty") with { WarpPresent = _ => ValueTask.FromResult(true) }, CancellationToken.None);
         var first = await TerminalDetection.Detect(Detection(_gui, "xterm", "kitty"), CancellationToken.None);
+        var macNoDisplay = await TerminalDetection.Detect(Detection(new Dictionary<string, string>(StringComparer.Ordinal), "kitty") with { IsMac = true }, CancellationToken.None);
         var onlyXterm = await TerminalDetection.Detect(Detection(_gui, "xterm"), CancellationToken.None);
         var nothing = await TerminalDetection.Detect(Detection(_gui), CancellationToken.None);
 
         Expect.Equal("print", no_gui.Kind);
+        Expect.Equal("kitty", macNoDisplay.Template?.Id);   // macOS always has a GUI session
         Expect.Equal("kitty", term.Template?.Id);
         Expect.Equal("warp", warp.Kind);
         Expect.Equal("kitty", first.Template?.Id);   // terminals.json order, not PATH order

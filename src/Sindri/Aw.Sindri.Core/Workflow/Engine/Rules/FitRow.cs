@@ -22,6 +22,7 @@ internal sealed record FitRow(string Shown, string Fix)
         ParkReason.Budget => new("parked (budget)", FitRefusals.Answer(address, "--grant-tokens <n>")),
         ParkReason.NeedsAnswer => NeedsAnswer(suspension, address),
         ParkReason.Timeout => new("parked (timeout)", FitRefusals.Answer(address, "--resume")),
+        ParkReason.Unavailable => new("parked (unavailable)", FitRefusals.Answer(address, "--resume") + " once the dependency is back"),
         ParkReason.NoRuntime => new("parked (SND-WF-010)", FitRefusals.Answer(address, "--resume") + " in a build that has the runtime"),
         ParkReason.SpecConflict or _ => SpecConflict(suspension, address, recipe),
     };

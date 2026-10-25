@@ -25,15 +25,16 @@ internal static class TemporalReads
     /// <typeparam name="T">What the read returns.</typeparam>
     /// <param name="read">The read, from the RPC options to use; it must be safe to run again from the start.</param>
     /// <param name="cancellationToken">The caller's token.</param>
+    /// <param name="timeout">The per-attempt deadline of each RPC, or null for the call's default.</param>
     /// <returns>What the read returned.</returns>
-    internal static async Task<T> Run<T>(Func<RpcOptions, Task<T>> read, CancellationToken cancellationToken)
+    internal static async Task<T> Run<T>(Func<RpcOptions, Task<T>> read, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(read);
         for (var attempt = 0; ; attempt++)
         {
             try
             {
-                return await read(Rpc(cancellationToken)).ConfigureAwait(false);
+                return await read(Rpc(cancellationToken, timeout)).ConfigureAwait(false);
             }
             catch (RpcException e) when (Transient(e.Code) && attempt < Pauses.Count) // boundary: the frontend may be coming back
             {
@@ -50,8 +51,9 @@ internal static class TemporalReads
     /// <param name="query">The visibility query.</param>
     /// <param name="match">Which execution is wanted.</param>
     /// <param name="cancellationToken">The caller's token.</param>
+    /// <param name="timeout">The per-attempt deadline of each RPC, or null for the call's default.</param>
     /// <returns>The execution, or null when none matches.</returns>
-    internal static Task<WorkflowExecution?> Find(ITemporalClient client, string query, Func<WorkflowExecution, bool> match, CancellationToken cancellationToken)
+    internal static Task<WorkflowExecution?> Find(ITemporalClient client, string query, Func<WorkflowExecution, bool> match, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(match);
@@ -66,15 +68,16 @@ internal static class TemporalReads
             }
 
             return null;
-        }, cancellationToken);
+        }, cancellationToken, timeout);
     }
 
     /// <summary>The executions of a visibility query, listed whole by <see cref="Run{T}"/>.</summary>
     /// <param name="client">The client.</param>
     /// <param name="query">The visibility query.</param>
     /// <param name="cancellationToken">The caller's token.</param>
+    /// <param name="timeout">The per-attempt deadline of each RPC, or null for the call's default.</param>
     /// <returns>Each execution's id and start time with its search attributes, as the caller reads them.</returns>
-    internal static Task<List<WorkflowExecution>> List(ITemporalClient client, string query, CancellationToken cancellationToken)
+    internal static Task<List<WorkflowExecution>> List(ITemporalClient client, string query, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(client);
         return Run(async rpc =>
@@ -86,6 +89,6 @@ internal static class TemporalReads
             }
 
             return found;
-        }, cancellationToken);
+        }, cancellationToken, timeout);
     }
 }

@@ -36,7 +36,7 @@ internal static class EvalFormat
         Assert.Subset(Set("trigger", "gates", "expect"), Names(root));
 
         var trigger = root.GetProperty("trigger");
-        Assert.Subset(Set("kind", "outcome", "outputs", "park", "variant", "amount", "reason"), Names(trigger));
+        Assert.Subset(Set("kind", "outcome", "outputs", "park", "variant", "amount", "reason", "tokens"), Names(trigger));
         Assert.Equal(JsonValueKind.String, trigger.GetProperty("kind").ValueKind);
         if (trigger.TryGetProperty("park", out _))
         {

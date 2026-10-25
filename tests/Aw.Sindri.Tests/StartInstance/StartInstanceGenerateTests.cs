@@ -9,8 +9,10 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.StartInstance;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Workflow.Registry;
+using Aw.Sindri.Tests.ListInstances;
 
 namespace Aw.Sindri.Tests.StartInstance;
 
@@ -53,6 +55,28 @@ public sealed class StartInstanceGenerateTests
         Assert.Equal(new DateTimeOffset(2026, 10, 15, 23, 59, 59, TimeSpan.Zero), start.StartedAt);
         Assert.Equal("run 2026-10-15 23:59", Encoding.UTF8.GetString(facts.Stored[start.Inputs[_run].Value.Sha256]));
         Assert.Equal(1, clock.Reads);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_start_records_the_calling_actor_as_who_started_it()
+    {
+        var runtime = new Capturing();
+        var caller = new FixedCaller(new CallerContextBuilder().Human().Build());
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(new InMemoryFactStore(), new FixedClock(), new StepInputRuntimes([]), caller), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
+
+        _ = await service.Handle(new StartInstanceRequest("workflow.gen", "T-1", NextAttempt: false, Item()), Token);
+
+        Assert.Equal(caller.Current!.Actor, Assert.IsType<InstanceStart>(runtime.Started).StartedBy);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_start_outside_any_call_records_nobody()
+    {
+        var (service, _, runtime) = Service();
+
+        _ = await service.Handle(new StartInstanceRequest("workflow.gen", "T-1", NextAttempt: false, Item()), Token);
+
+        Assert.Null(Assert.IsType<InstanceStart>(runtime.Started).StartedBy);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -60,9 +60,10 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
     {
         var cursor = request.After;
         var lastWrite = clock.GetTimestamp();
+        var scan = ScanOf(request, out var derived);
         while (!cancellationToken.IsCancellationRequested)
         {
-            var next = await NextPage(service, request with { After = cursor }, cancellationToken).ConfigureAwait(false);
+            var next = await NextPage(service, scan with { After = cursor }, cancellationToken).ConfigureAwait(false);
             if (next.IsError)
             {
                 await writer.Event(id: null, "error", Text(new StreamErrorFrame(next.Error.Code, next.Error.Message)), cancellationToken).ConfigureAwait(false);
@@ -70,10 +71,19 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
             }
 
             var (page, head) = next.Value;
-            foreach (var e in page.Events)
+            foreach (var e in page.Events.Where(e => request.Types?.Matches(e.Type) ?? true))
             {
                 await Send(writer, e, cancellationToken).ConfigureAwait(false);
                 lastWrite = clock.GetTimestamp();
+            }
+
+            if (derived)
+            {
+                foreach (var changed in Changed(page.Events))
+                {
+                    await writer.Event(id: null, InstanceChanged.Type, Text(changed), cancellationToken).ConfigureAwait(false);
+                    lastWrite = clock.GetTimestamp();
+                }
             }
 
             cursor = Math.Max(cursor, page.ScannedTo);
@@ -83,6 +93,27 @@ internal sealed partial class EventPump(ILedgerReader ledger, ILedgerSignal sign
             }
         }
     }
+
+    /// <summary>
+    /// The read a request that names 'workflow.instance-changed' makes: that type is no ledger row, so its glob is swapped for the 'workflow.*'
+    /// rows it is derived from, and the loop sends a raw row only when the caller's own types match it. A request that doesn't name it reads as asked.
+    /// </summary>
+    private static StreamEventsRequest ScanOf(StreamEventsRequest request, out bool derived)
+    {
+        derived = request.Types?.Globs.Contains(InstanceChanged.Type, StringComparer.Ordinal) ?? false;
+        if (request.Types is not { } types || !derived)
+        {
+            return request;
+        }
+
+        var globs = types.Globs.Select(g => string.Equals(g, InstanceChanged.Type, StringComparison.Ordinal) ? "workflow.*" : g).Distinct(StringComparer.Ordinal);
+        return request with { Types = TypeFilter.Parse(string.Join(',', globs)).Value };
+    }
+
+    /// <summary>One change per instance in <paramref name="page"/>, at its newest row, oldest first: a burst, or a replay from an old cursor, is one frame to re-query on.</summary>
+    private static IEnumerable<InstanceChanged> Changed(IReadOnlyList<PublicEvent> page) =>
+        page.Select(InstanceChanged.From).OfType<InstanceChanged>()
+            .GroupBy(static c => c.Instance, StringComparer.Ordinal).Select(static g => g.Last()).OrderBy(static c => c.Cursor);
 
     /// <summary>Best effort: the client may be gone, and the stop that ended the stream may have fired.</summary>
     private async ValueTask TellInternalError(SseWriter writer)

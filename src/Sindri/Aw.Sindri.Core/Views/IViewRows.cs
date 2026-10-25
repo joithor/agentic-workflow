@@ -40,4 +40,10 @@ public interface IViewRows
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>Success.</returns>
     public ValueTask<Result<Unit>> Delete(string view, string key, CancellationToken cancellationToken);
+
+    /// <summary>Removes every row of <paramref name="view"/>.</summary>
+    /// <param name="view">A <see cref="ViewNames"/> name.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>Success.</returns>
+    public ValueTask<Result<Unit>> Clear(string view, CancellationToken cancellationToken);
 }

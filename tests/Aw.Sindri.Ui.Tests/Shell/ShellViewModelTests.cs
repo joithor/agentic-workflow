@@ -70,9 +70,7 @@ public sealed class ShellViewModelTests
     // Screens spec §4.8: a page whose phase hasn't landed says which phase brings it and the API it waits for, never faked content.
     [Theory]
     [InlineData(PageId.Work, "arrives with U3' and the workflow routes (API P11)")]
-    [InlineData(PageId.Recipes, "arrives with U10 and the recipe stats (API P12)")]
     [InlineData(PageId.Context, "arrives with U9 and the context lens routes (CTX phase 4)")]
-    [InlineData(PageId.Agents, "arrives with U11 and the launch targets (API P10a)")]
     internal async Task Unbuilt_pages_show_arrives_with_their_phase(PageId page, string words)
     {
         await Task.CompletedTask;
@@ -80,6 +78,8 @@ public sealed class ShellViewModelTests
         Assert.Equal(words, Labels.ArrivesWith(page));
         Assert.Null(Labels.ArrivesWith(PageId.Home));
         Assert.Null(Labels.ArrivesWith(PageId.Workflows));   // built in U8
+        Assert.Null(Labels.ArrivesWith(PageId.Recipes));
+        Assert.Null(Labels.ArrivesWith(PageId.Agents));   // built in U11a
         Assert.Null(Labels.ArrivesWith(PageId.System));
     }
 
@@ -153,12 +153,23 @@ public sealed class ShellViewModelTests
         Assert.Equal(PageId.Home, shell.CurrentPage);
     }
 
+    [Fact]
+    public async Task A_context_item_link_opens_the_context_page_without_a_sheet()
+    {
+        var shell = await Shell();
+        Assert.True(DeepLink.TryParse("context?item=ITM-01JC8", out var link));
+
+        shell.Navigate(link);
+
+        Assert.Equal((PageId.Context, false), (shell.CurrentPage, shell.IsSheetOpen));
+    }
+
     [Theory]
     [InlineData("workflow/INC-14", DeepLinkKind.Workflow, PageId.Workflows)]
     [InlineData("workflow/ITM-01JC8/step", DeepLinkKind.Workflow, PageId.Workflows)]
     [InlineData("recipe/workflow.project-build", DeepLinkKind.Recipe, PageId.Recipes)]
     [InlineData("node/feature:tabs.tab-manager", DeepLinkKind.Node, PageId.Context)]
-    [InlineData("session/snd-01JE7.2", DeepLinkKind.Session, PageId.Agents)]
+    [InlineData("session/codex/snd-01JE7.2", DeepLinkKind.Session, PageId.Agents)]
     [InlineData("system/temporal", DeepLinkKind.System, PageId.System)]
     internal async Task A_rev8_link_opens_its_page_and_the_sheet(string text, DeepLinkKind kind, PageId page)
     {

@@ -25,6 +25,9 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     /// <summary>The per-start human token (0600, in an 'auth' folder that is 0700).</summary>
     public string TokenPath => Path.Combine(Home, "auth", "human.token");
 
+    /// <summary>How this Sindri is deployed (AW_SINDRI_DEPLOY): the desktop unless it says pod.</summary>
+    public DeployMode Deploy { get; init; } = DeployMode.Desktop;
+
     /// <summary>The temp directory ($TMPDIR, else the platform's), for the prover rule.</summary>
     public string TempDirectory { get; init; } = Path.GetTempPath();
 

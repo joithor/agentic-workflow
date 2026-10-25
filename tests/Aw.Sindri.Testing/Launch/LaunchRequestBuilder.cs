@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -10,6 +11,12 @@ public sealed class LaunchRequestBuilder
     private AgentId _agent = AgentId.From("claude-code");
     private bool _attended = true;
     private StepArgs? _step;
+    private LaunchMode _mode = LaunchMode.Open;
+    private SessionId? _resume;
+    private InstanceAddress? _instance;
+    private RunToken? _run;
+    private EvaluatorLaunch? _evaluator;
+    private string _directory = "/work/repo";
 
     /// <summary>Sets the launch id.</summary>
     /// <param name="value">The id.</param>
@@ -39,8 +46,47 @@ public sealed class LaunchRequestBuilder
         return this;
     }
 
+    /// <summary>Says which workflow instance and Step run the launch belongs to.</summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="run">The Step run's token.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder OnInstance(InstanceAddress instance, RunToken run)
+    {
+        _instance = instance;
+        _run = run;
+        return this;
+    }
+
+    /// <summary>Makes it the holdout evaluator's launch (LN-LCH2).</summary>
+    /// <param name="value">What the evaluator runs against and may touch.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder AsEvaluator(EvaluatorLaunch value)
+    {
+        _evaluator = value;
+        return this;
+    }
+
+    /// <summary>Makes it a Resume of this session.</summary>
+    /// <param name="value">The session id to resume.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder Resuming(SessionId value)
+    {
+        _mode = LaunchMode.Resume;
+        _resume = value;
+        return this;
+    }
+
+    /// <summary>Sets the repo directory the launch works in. A launch of an unattended Step makes its output folder there, so a test that launches one passes a real directory.</summary>
+    /// <param name="value">The directory.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder InDirectory(string value)
+    {
+        _directory = value;
+        return this;
+    }
+
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
     public LaunchRequest Build() =>
-        new(_launch, A.FirstItemId, _agent, LaunchMode.Open, _attended, "/work/repo", Instance: null, Worktree: null, _step, Run: null);
+        new(_launch, A.FirstItemId, _agent, _mode, _attended, _directory, _instance, Worktree: null, _step, _run, _resume, _evaluator);
 }

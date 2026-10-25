@@ -225,9 +225,29 @@ $OUT"
   echo "PASS: test_sindri_integration_budget_is_120_s"
 }
 
+test_a_listed_test_project_is_its_own_row_outside_the_package_sum() {
+  local d="$WORK/engine"; make_fixture "$d"
+  local p
+  for p in Aw.Sindri.Tests Aw.Sindri.Engine.Tests; do
+    mkdir -p "$d/tests/$p"; echo '<Project />' > "$d/tests/$p/$p.csproj"
+    perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/'"$p"'/'"$p"'.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
+  done
+  printf '  - id: Sindri\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri\n' >> "$d/deps.yaml"
+  # Each project is under its own limit; a Sindri sum would count both.
+  STUB_Aw_Sindri_Tests_integration=1 STUB_Aw_Sindri_Engine_Tests_integration=1 run_check "$d"
+  printf '%s\n' "$OUT" | has -E '^ok +Sindri +integration +[0-9.]+ s +limit 120 s +\(1 project\)' || fail "Aw.Sindri.Tests is the Sindri row on its own (owner, 2026-10-18):
+$OUT"
+  printf '%s\n' "$OUT" | has -E '^ok +Aw\.Sindri\.Engine\.Tests +integration +[0-9.]+ s +limit 120 s +\(1 project\)' || fail "Aw.Sindri.Engine.Tests is a row of its own, kept out of the Sindri sum (owner, 2026-10-18):
+$OUT"
+  printf '%s\n' "$OUT" | has -E '^ok +Aw\.Sindri\.Engine\.Tests +unit +[0-9.]+ s +limit 10 s' || fail "the project row keeps the unit limit:
+$OUT"
+  echo "PASS: test_a_listed_test_project_is_its_own_row_outside_the_package_sum"
+}
+
 test_sums_each_package_and_passes_under_budget
 test_sindri_ui_integration_budget_is_90_s
 test_sindri_integration_budget_is_120_s
+test_a_listed_test_project_is_its_own_row_outside_the_package_sum
 test_a_package_over_budget_fails_with_the_rule_id
 test_a_failing_test_run_fails_the_check
 test_tool_errors_exit_2

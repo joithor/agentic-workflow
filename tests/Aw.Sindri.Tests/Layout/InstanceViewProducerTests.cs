@@ -107,8 +107,8 @@ public sealed class InstanceViewProducerTests
     {
         var produce = Produce().States[0];
 
-        Assert.Equal(new Round(1, 3), produce.Round);
-        Assert.Equal([new LoopPair("verify", 0, 3), new LoopPair("checks", 0, 3)], produce.Loops);
+        Assert.Equal(new Round(1, 5), produce.Round);
+        Assert.Equal([new LoopPair("verify", 0, 5), new LoopPair("checks", 0, 5)], produce.Loops);
         Assert.True(produce.Desk);
         Assert.False(produce.Child);
         Assert.Null(produce.Badge);
@@ -117,11 +117,11 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void A_loop_pair_counts_the_rounds_completed_so_far()
     {
-        var view = Produce(i => i with { Loops = new Dictionary<string, Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 3, Last: null) } });
+        var view = Produce(i => i with { Loops = new Dictionary<string, Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 5, Last: null) } });
 
-        Assert.Equal(new Round(3, 3), view.States[0].Round);
-        Assert.Equal([new LoopPair("verify", 2, 3), new LoopPair("checks", 2, 3)], view.States[0].Loops);
-        Assert.Equal([new LoopPair("produce", 2, 3)], view.States[1].Loops);
+        Assert.Equal(new Round(3, 5), view.States[0].Round);
+        Assert.Equal([new LoopPair("verify", 2, 5), new LoopPair("checks", 2, 5)], view.States[0].Loops);
+        Assert.Equal([new LoopPair("produce", 2, 5)], view.States[1].Loops);
     }
 
     [Fact]
@@ -130,6 +130,49 @@ public sealed class InstanceViewProducerTests
         var view = InstanceViews.Of(EngineFixture.At(_incident.Recipe, "verify"), _incident, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.Equal([StateGlyph.Done, StateGlyph.Done, StateGlyph.Active, StateGlyph.Pending], view.States.Select(static c => c.Glyph));
+    }
+
+    [Fact]
+    public void An_instance_parked_on_a_branch_state_after_a_loop_shows_every_state_it_visited_as_done()
+    {
+        var branching = Branching();
+        var instance = EngineFixture.At(branching.Recipe, "review") with { Visited = ["produce", "checks", "verify", "review"] };   // produce, checks, verify, back to produce, checks, then the branch
+
+        var view = InstanceViews.Of(instance, branching, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(
+            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Done), ("review", StateGlyph.Active), ("done", StateGlyph.Pending)],
+            view.States.Select(static c => (c.State, c.Glyph)));
+    }
+
+    private static InterpretedRecipe Branching()
+    {
+        var plain = _incident.Recipe;
+        return _incident with
+        {
+            Recipe = plain with
+            {
+                States = new Dictionary<string, RecipeState>(plain.States, StringComparer.Ordinal) { ["review"] = plain.States["checks"] },
+                Transitions = [.. plain.Transitions, plain.Transitions[0] with { From = ["checks"], To = "review" }],
+            },
+        };
+    }
+
+    [Fact]
+    public void A_finished_instance_that_visited_a_branch_state_shows_it_done_and_the_main_path_states_it_skipped_pending()
+    {
+        var branching = Branching();
+        var instance = EngineFixture.At(branching.Recipe, "done") with
+        {
+            Outcome = OutcomeName.From("resolved"),
+            Visited = ["produce", "checks", "review", "done"],
+        };
+
+        var view = InstanceViews.Of(instance, branching, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(
+            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Pending), ("review", StateGlyph.Done), ("done", StateGlyph.Done)],
+            view.States.Select(static c => (c.State, c.Glyph)));
     }
 
     [Fact]
@@ -237,9 +280,9 @@ public sealed class InstanceViewProducerTests
 
         Assert.Equal([new StatusInput("fact:spec", "spec.md", $"sha256:{EngineFixture.Fact("the spec").Sha256}")], status.Inputs);
         Assert.Equal(new StatusTimeout(TimeoutKind.Parks, 3 * 3600, "produce"), status.Timeout);
-        Assert.Equal(new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000)), status.Budget);
+        Assert.Equal(new StatusBudget("state", 0, 5_000_000, new BudgetFigures(0, Limit: null)), status.Budget);
         Assert.Contains("  timeout   parks in 3h 0m (desk)\n".Replace("0m (desk)", "(desk)", StringComparison.Ordinal), status.Text, StringComparison.Ordinal);
-        Assert.Contains("tokens 0 / 200k (state), 0 / 400k (instance)", status.Text, StringComparison.Ordinal);
+        Assert.Contains("tokens 0 / 5M (state)", status.Text, StringComparison.Ordinal);
         Assert.Null(status.Answer);
         Assert.Equal("CompleteStep", status.Commands[0].ActionId.Value);
     }
@@ -249,7 +292,7 @@ public sealed class InstanceViewProducerTests
     {
         var parked = InstanceViews.Status(StatusCases.View("parked-budget"), StatusCases.Now);
 
-        Assert.Contains("200k", parked.Text, StringComparison.Ordinal);
+        Assert.Contains("5M", parked.Text, StringComparison.Ordinal);
         Assert.Equal("1.5k", StatusText.Tokens(1500));
     }
 
@@ -280,12 +323,13 @@ public sealed class InstanceViewProducerTests
     [Theory]
     [InlineData("parked-rounds", AnswerKind.Grant, "ApplyCommand:answer-grant", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant 1", true)]
     [InlineData("parked-no-progress-child", AnswerKind.Grant, "ApplyCommand:answer-grant", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant 1", true)]
-    [InlineData("parked-budget", AnswerKind.GrantTokens, "ApplyCommand:answer-grant-tokens", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant-tokens 100k", true)]
+    [InlineData("parked-budget", AnswerKind.GrantTokens, "ApplyCommand:answer-grant-tokens", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant-tokens 5M", true)]
     [InlineData("escalated-gate", AnswerKind.Accept, "ApplyCommand:answer-accept", ActionClass.Protected, "sindri workflow answer T-3/step/1 --accept", true)]
     [InlineData("parked-needs-answer-step", AnswerKind.Text, "ApplyCommand:answer-text", ActionClass.Desk, "sindri workflow answer T-3/step/1 --text <answer>", false)]
     [InlineData("parked-needs-answer-wait", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume [--text <answer>]", false)]
     [InlineData("parked-timeout", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
     [InlineData("parked-no-runtime", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
+    [InlineData("parked-unavailable-step", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume", false)]
     [InlineData("parked-revoked", AnswerKind.CancelOnly, "ApplyCommand:cancel", ActionClass.Desk, "sindri workflow cancel T-3/step/1", false)]
     public void The_answer_line_is_the_kind_the_catalog_action_and_the_command_the_text_prints(string name, AnswerKind kind, string action, ActionClass actionClass, string cli, bool atTerminal)
     {

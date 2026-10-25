@@ -5,12 +5,18 @@ using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
@@ -27,6 +33,9 @@ using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Challenges;
+using Aw.Sindri.Testing.Checks;
+using Aw.Sindri.Testing.Packets;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.Server;
@@ -64,15 +73,15 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<IRecipeApprovals>(Approvals)
             .AddSingleton<IChallenges>(Challenges)
             .AddSingleton<IRecipeWake>(Wake)
-            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceDirectory>(_instances)
-            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceRuntime>(_instances)
-            .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceReader>(_instances)
+            .AddSingleton<IInstanceDirectory>(_instances)
+            .AddSingleton<IInstanceRuntime>(_instances)
+            .AddSingleton<IInstanceReader>(_instances)
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddEffectPorts(H)
             .AddRecipeBlocks()
             .AddSingleton<BlockCatalog>().AddSingleton<StepInputRuntimes>()
-            .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>()
+            .AddScoped<RecipeApprovalPlanner>().AddScoped<Core.Workflow.ApproveAll.ShippedApprovalPlans>().AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton(Workflow.RecipeReaderTests.Reader)
@@ -83,12 +92,14 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>()
             .AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>()
             .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>()
-            .AddSingleton<Core.Workflow.Engine.Runtime.IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json));
+            .AddSingleton<IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json, Renewals(sp)));
         configure?.Invoke(services);
         _provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
     public IServiceProvider Services => _provider;
+
+    private Core.Events.PinRenewals Renewals(IServiceProvider sp) => new(Approvals, sp.GetRequiredService<Core.Events.RecipeEvents>(), Wake, H.Callers, H.Ids, H.Clock);
 
     public SliceHarness H { get; } = new();
 
@@ -147,6 +158,13 @@ internal sealed class RegistryHarness : IAsyncDisposable
     /// <summary>Asks for a challenge for <paramref name="action"/> as <paramref name="caller"/> (a human at a terminal by default).</summary>
     public Task<Result<IssueChallengeResponse>> Issue(string action, CallerContext? caller = null) =>
         Run<IssueChallengeRequest, IssueChallengeResponse>(new IssueChallengeRequest(action), caller ?? Human);
+
+    /// <summary>The approval check of <paramref name="recipe"/> against this build's blocks, as a running instance's next step asks it.</summary>
+    public async Task<Result<Core.Workflow.Engine.Decisions.ApprovalCheck>> Check(RegisteredRecipe recipe)
+    {
+        using var entered = H.Callers.Enter(Human);
+        return await _provider.GetRequiredService<IApprovedRecipes>().Check(new RecipeVersion(recipe.Id, recipe.Version, recipe.Hash), TestContext.Current.CancellationToken);
+    }
 
     /// <summary>Approves <paramref name="recipe"/> as a human would: a challenge, its action typed back.</summary>
     public async Task<Result<ApproveRecipeResponse>> Approve(RegisteredRecipe recipe)
@@ -209,9 +227,23 @@ file static class EffectPortRegistrations
 {
     public static IServiceCollection AddEffectPorts(this IServiceCollection services, SliceHarness h) => services
         .AddSingleton<IApprovedProfile>(h.Profiles)
-        .AddSingleton<Core.Workflow.Engine.Effects.IWorkflowClaims>(new InMemoryWorkflowClaims())
-        .AddSingleton<Core.Workflow.Engine.Effects.IClaimRefs>(new InMemoryClaimRefs())
-        .AddSingleton<Core.Workflow.Engine.Runtime.IInstanceLiveness>(new FakeInstanceLiveness())
-        .AddSingleton<Core.Workflow.Engine.Runtime.IFactContents>(new InMemoryFactStore())
-        .AddSingleton<Core.Workflow.Engine.Effects.IDeskNotices>(new InMemoryDeskNotices());
+        .AddSingleton<IWorkflowClaims>(new InMemoryWorkflowClaims())
+        .AddSingleton<IClaimRefs>(new InMemoryClaimRefs())
+        .AddSingleton<IPhaseStarts>(new FakePhaseStarts())
+        .AddSingleton<IInstanceLiveness>(new FakeInstanceLiveness())
+        .AddSingleton<InMemoryFactStore>().AddSingleton<IFactContents>(sp => sp.GetRequiredService<InMemoryFactStore>()).AddSingleton<IFactStore>(sp => sp.GetRequiredService<InMemoryFactStore>())
+        .AddSingleton<IDeskNotices>(new InMemoryDeskNotices())
+        .AddSingleton<Core.LensPacks.IChangedPaths>(new Testing.LensPacks.FakeChangedPaths())
+        .AddSingleton<IDiffContent>(new FakeDiffContent())
+        .AddSingleton<Core.Scoping.IBriefFiles>(new InMemoryBriefFiles())
+        .AddSingleton<Core.Scoping.IRepoCheckouts>(new InMemoryRepoCheckouts())
+        .AddSingleton<IPullRequests>(new Testing.Forge.FakePullRequests(["forge.test"]))
+        .AddSingleton<IRunDiff>(new FakeRunDiff())
+        .AddSingleton<IWorkspaceRebase>(new FakeWorkspaceRebase())
+        .AddSingleton<IRunArea>(new InMemoryRunArea())
+        .AddSingleton<IPrCommentMarks>(new InMemoryPrCommentMarks())
+        .AddSingleton<IForgeRepos>(new FakeForgeRepos())
+        .AddSingleton<IBranchChanges>(new InMemoryBranchChanges())
+        .AddSingleton<IPacketFiles>(new InMemoryPacketFiles())
+        .AddSingleton<ITextScrubber>(new PassThroughScrubber());
 }

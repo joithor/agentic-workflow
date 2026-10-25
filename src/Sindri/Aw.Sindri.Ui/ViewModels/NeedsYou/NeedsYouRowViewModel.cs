@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
@@ -8,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// what the side bar did). A pulse row is tinted and pulses until seen, then its tint clears; under reduced motion it keeps
 /// a static outline and the word "new" until seen instead. A failure row keeps a steady tint, a calm row a subtle one.
 /// </summary>
-internal sealed class NeedsYouRowViewModel : ObservableObject
+internal sealed partial class NeedsYouRowViewModel : ObservableObject
 {
     private bool _seen;
     private bool _reduced;
@@ -21,7 +22,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         _clock = clock;
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
         Controls = BuildControls();
+        ChildAnswer = ChildAnswerOf(entry);
     }
+
+    /// <summary>The "Answer in the child" control of a row whose answer a child decides (the row's served via); null for any other row.</summary>
+    public ChildAnswerViewModel? ChildAnswer { get; private set; }
+
+    private static ChildAnswerViewModel? ChildAnswerOf(NeedsYouEntry entry) =>
+        InstanceRules.IsChildVia(entry.Via) ? ChildAnswerViewModel.ForNeedsYouRow(entry.Id, entry.ShownId.Length > 0 ? entry.ShownId : entry.Id, entry.Child) : null;
 
     /// <summary>The row's chip as served, the one chip control draws it; null for none.</summary>
     public StateChip? Chip => Entry.Chip;
@@ -72,6 +80,15 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     /// <summary>Where Enter and a click on the title go: the row's own sheet, keyed on the row id (never the subject).</summary>
     public DeepLink SheetLink => new(DeepLinkKind.NeedsYou, Entry.Id);
 
+    /// <summary>
+    /// Where a click on the row goes, from Home, the inbox or the tray: a nested park (via child, with the child's address) opens the child's workflow frame
+    /// at once, where the answer is; every other row opens its own sheet.
+    /// </summary>
+    public DeepLink OpenLink => RouteLink ?? (ChildAnswer is { OpensChild: true, Link: { } child } ? child : SheetLink);
+
+    /// <summary>True when a click on the row opens a child's frame instead of its sheet.</summary>
+    public bool OpensChild => OpenLink.Kind == DeepLinkKind.Workflow;
+
     /// <summary>True when the row names an item, so it offers Open.</summary>
     public bool CanOpenItem => Entry.ItemId is not null;
 
@@ -101,6 +118,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         {
             var before = (Tint, HasOutline, SlidesIn, HasNewWord);
             Entry = entry;
+            ChildAnswer = ChildAnswerOf(entry);
             foreach (var name in _content)
             {
                 OnChanged(name);
@@ -137,13 +155,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         {
             IsSelected = selected;
             OnChanged(nameof(IsSelected));
+            OnChanged(nameof(InboxName));
         }
     }
 
     private static readonly string[] _content =
     [
-        nameof(Chip), nameof(Details), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
-        nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
+        nameof(Chip), nameof(Details), nameof(PrimaryDetails), nameof(MoreDetails), nameof(HasMoreDetails), nameof(ShowsCliUpFront), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
+        nameof(CanOpenItem), nameof(ItemLink), nameof(OpenLabel), nameof(HasPr), nameof(OpenPrText), nameof(ChildAnswer), nameof(Notice), nameof(HasNotice), nameof(InboxLine), nameof(InboxName),
     ];
 
     private bool _rebuilding;
@@ -175,7 +194,6 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     private static string Tooltip(NeedsYouAction action, bool rebuilding) => action.Readiness switch
     {
         ActionReadiness.Ready when rebuilding => Labels.RetryAfterRebuild,
-        ActionReadiness.CliOnly => Labels.WithHint(Labels.ProtectedTooltip, action.FillInHint),
         ActionReadiness.Pending => Labels.WithHint(action.Cli, action.FillInHint),
         _ => "",
     };
@@ -254,6 +272,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         if (before.Tint != Tint)
         {
             OnChanged(nameof(AccessibleName));
+            OnChanged(nameof(InboxName));
             OnChanged(nameof(Tint));
             OnChanged(nameof(IsPulsing));
             OnChanged(nameof(IsSteady));

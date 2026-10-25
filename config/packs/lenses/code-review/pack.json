@@ -1,0 +1,25 @@
+{
+  "kind": "lenses",
+  "id": "code-review",
+  "version": 1,
+  "applies": "review",
+  "lenses": [
+    { "id": "correctness", "title": "Correctness", "prompt": "lenses/correctness.md", "when": "always" },
+    { "id": "security", "title": "Security", "prompt": "lenses/security.md", "when": "always" },
+    { "id": "performance", "title": "Performance", "prompt": "lenses/performance.md", "when": "always" },
+    { "id": "architecture", "title": "Architecture and maintainability", "prompt": "lenses/architecture.md", "when": "always" },
+    { "id": "tests", "title": "Tests", "prompt": "lenses/tests.md", "when": "always" },
+    {
+      "id": "data-integrity", "title": "Data integrity and migrations", "prompt": "lenses/data-integrity.md",
+      "when": { "paths": ["**/migrations/**", "**/migration/**", "**/*.sql", "**/schema/**", "**/schema.*", "**/*.prisma"] }
+    },
+    {
+      "id": "accessibility", "title": "Accessibility", "prompt": "lenses/accessibility.md",
+      "when": { "paths": ["**/*.html", "**/*.htm", "**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.razor", "**/*.css", "**/*.scss"] }
+    },
+    {
+      "id": "ui-races", "title": "Interface timing and races", "prompt": "lenses/ui-races.md",
+      "when": { "paths": ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.js", "**/*.ts", "**/*.razor"] }
+    }
+  ]
+}

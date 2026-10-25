@@ -21,6 +21,9 @@ internal sealed class NoSessionHost : ISessionHost
     public ValueTask<Result<Unit>> Stop(HostRef host, CancellationToken cancellationToken) => ValueTask.FromResult<Result<Unit>>(Unit.Value);
 
     /// <inheritdoc/>
+    public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => ValueTask.FromResult(false);
+
+    /// <inheritdoc/>
     public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => ValueTask.FromResult(0);
 
     /// <inheritdoc/>

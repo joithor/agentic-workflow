@@ -10,7 +10,8 @@ namespace Aw.Sindri.Testing;
 /// <summary>View tables in memory: each row is its JSON text, ordered by key, as the SQLite views store keeps it.</summary>
 /// <param name="tables">The tables, by view name.</param>
 /// <param name="options">The package's AwJson options.</param>
-internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<string, string>> tables, JsonSerializerOptions options) : IViewRows
+/// <param name="unreadable">When given, a stored row that can't be deserialized reads as absent and is counted here; when null it is an error.</param>
+internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<string, string>> tables, JsonSerializerOptions options, UnreadableRows? unreadable = null) : IViewRows
 {
     /// <summary>Empty tables for every view.</summary>
     /// <returns>The tables.</returns>
@@ -37,6 +38,12 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         }
 
         var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(text), options);
+        if (row.IsError && unreadable is not null)
+        {
+            unreadable.Note();
+            return ValueTask.FromResult<Result<TRow?>>((TRow?)null);
+        }
+
         return ValueTask.FromResult(row.IsError ? row.Error : Found(row.Value));
     }
 
@@ -117,6 +124,12 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         foreach (var text in texts)
         {
             var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(text), options);
+            if (row.IsError && unreadable is not null)
+            {
+                unreadable.Note();
+                continue;
+            }
+
             if (row.IsError)
             {
                 return row.Error;
@@ -148,6 +161,17 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         }
 
         _ = table.Remove(key);
+        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+    }
+
+    public ValueTask<Result<Unit>> Clear(string view, CancellationToken cancellationToken)
+    {
+        if (!tables.TryGetValue(view, out var table))
+        {
+            return ValueTask.FromResult<Result<Unit>>(Unknown(view));
+        }
+
+        table.Clear();
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 

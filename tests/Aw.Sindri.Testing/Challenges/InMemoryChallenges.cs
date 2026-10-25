@@ -15,12 +15,20 @@ public sealed class InMemoryChallenges(TimeProvider clock) : IChallenges
     private int _next;
 
     /// <inheritdoc/>
-    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject)
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject) => Issue(action, subject, ChallengeMode.Typed, ChallengeChannel.Terminal);
+
+    /// <inheritdoc/>
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject, ChallengeMode mode, ChallengeChannel channel)
     {
         lock (_gate)
         {
             var id = ChallengeId.For(new Guid(++_next, 0, 0, new byte[8]));
-            var issued = new IssuedChallenge(id, action, subject, clock.GetUtcNow() + IssuedChallenge.Lifetime);
+            var issued = new IssuedChallenge(id, action, subject, clock.GetUtcNow() + IssuedChallenge.Lifetime, mode, channel);
+            foreach (var gone in _open.Values.Where(c => c.Action == action && c.Channel == channel).Select(static c => c.Id).ToList())
+            {
+                _ = _open.Remove(gone);
+            }
+
             _open[id] = issued;
             return issued;
         }
@@ -33,17 +41,27 @@ public sealed class InMemoryChallenges(TimeProvider clock) : IChallenges
         ArgumentNullException.ThrowIfNull(stale);
         lock (_gate)
         {
+            if (_open.TryGetValue(answer.Challenge, out var open) && clock.GetUtcNow() < open.ExpiresAt && ChallengeConfirmation.Refusal(open, answer, clock.GetUtcNow()) is { } unconfirmed)
+            {
+                return unconfirmed;
+            }
+
             if (!_open.Remove(answer.Challenge, out var issued))
             {
                 return stale.With("That challenge is unknown or was already used; run it again");
             }
 
-            var why = clock.GetUtcNow() >= issued.ExpiresAt ? "expired"
-                : issued.Action != expected ? $"was for '{issued.Action.Text}', not '{expected.Text}'"
-                : !string.Equals(answer.Typed.Trim(), issued.Action.Text, StringComparison.Ordinal) ? $"needed '{issued.Action.Text}' typed exactly"
-                : issued.Subject != current ? "has a subject that changed since the preview"
-                : null;
+            var why = Refusal(issued, answer, expected, current);
             return why is null ? issued : stale.With($"The challenge {why}; run it again and re-read the preview");
         }
     }
+
+    private string? Refusal(IssuedChallenge issued, ChallengeAnswer answer, ChallengeAction expected, ChallengeSubject current) => true switch
+    {
+        _ when clock.GetUtcNow() >= issued.ExpiresAt => "expired",
+        _ when issued.Action != expected => $"was for '{issued.Action.Text}', not '{expected.Text}'",
+        _ when answer.HeldMs is null && !string.Equals(answer.Typed.Trim(), issued.Action.Text, StringComparison.Ordinal) => $"needed '{issued.Action.Text}' typed exactly",
+        _ when issued.Subject != current => "has a subject that changed since the preview",
+        _ => null,
+    };
 }

@@ -31,7 +31,9 @@ internal sealed partial class WorkflowsViewModel
     // Every row the page holds, and the rows J / K walk: those drawn (a collapsed group's are not).
     private IEnumerable<InstanceRowViewModel> Shown => Groups.SelectMany(g => g.Rows).Concat(DoneRows);
 
-    private List<InstanceRowViewModel> Walk => [.. Groups.Where(g => g.IsExpanded).SelectMany(g => g.Rows), .. IsDoneExpanded ? DoneRows : []];
+    private List<InstanceRowViewModel> Walk => ViewMode == WorkflowViewMode.Board
+        ? [.. Lanes.SelectMany(l => l.Cards)]
+        : [.. Groups.Where(g => g.IsExpanded).SelectMany(g => g.Rows), .. IsDoneExpanded ? DoneRows : []];
 
     /// <summary>Selects a row by its address.</summary>
     /// <param name="address">The instance's address.</param>
@@ -61,12 +63,21 @@ internal sealed partial class WorkflowsViewModel
         Mark();
     }
 
+    /// <summary>The Start button's words (the catalog's label for StartInstance).</summary>
+    public string StartLabel { get; } = Labels.StartWorkflow;
+
+    /// <summary>Raised when the human asks to start a workflow (N, the head's Start button): the shell opens the Start form.</summary>
+    internal event EventHandler? StartRequested;
+
+    /// <summary>Asks for the Start form.</summary>
+    internal void RequestStart() => StartRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>One single key on the page.</summary>
     /// <param name="key">J, K, Enter, A, X, B or N.</param>
     /// <returns>True when the key was used.</returns>
     internal bool Press(string key)
     {
-        if (key is not ("B" or "N"))
+        if (key is not "B")
         {
             ClearNote();
         }
@@ -76,13 +87,31 @@ internal sealed partial class WorkflowsViewModel
             case "J" or "K":
                 return Move(key == "J" ? 1 : -1);
             case "N":
-                Say(Labels.StartArrives);
+                RequestStart();
                 return true;
             case "B":
                 Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is
                 return true;
             default:
-                return SelectedRow is { } row && PressOn(row, key);
+                return PressOnPage(key) || (SelectedRow is { } row && PressOn(row, key));
+        }
+    }
+
+    // V switches the view and / goes to the search box: keys of the page, whatever is selected.
+    private bool PressOnPage(string key)
+    {
+        switch (key)
+        {
+            case "V":
+                ToggleView();
+                return true;
+            case "/":
+                SearchFocusRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            case "Esc":
+                return CloseInspector();
+            default:
+                return false;
         }
     }
 
@@ -92,7 +121,7 @@ internal sealed partial class WorkflowsViewModel
         switch (key)
         {
             case "Enter":
-                OpenRequested?.Invoke(this, new OpenRequestedEventArgs(row.Link));
+                EnterOn(row);
                 return true;
             case "A" when row.Protected is { } locked:
                 locked.SetOpen(open: true);
@@ -185,6 +214,7 @@ internal sealed partial class WorkflowsViewModel
 
     private void Mark()
     {
+        FollowInspector();
         foreach (var row in Shown)
         {
             row.IsSelected = string.Equals(row.Address, SelectedAddress, StringComparison.Ordinal);

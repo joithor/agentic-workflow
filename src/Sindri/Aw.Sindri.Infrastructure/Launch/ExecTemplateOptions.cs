@@ -10,4 +10,10 @@ internal sealed record ExecTemplateOptions(string Name, IReadOnlyList<string> Ar
 
     /// <summary>Reads an environment variable of this process (the GUI-session check); the real environment when null.</summary>
     public Func<string, string?>? GetEnv { get; init; }
+
+    /// <summary>True on macOS, which always has a GUI session; this OS when not set (tests pin it).</summary>
+    public bool IsMac { get; init; } = OperatingSystem.IsMacOS();
+
+    /// <summary>Answers whether a program resolves on the login path; <c lang="text">ViewerProcess.OnLoginPath</c> (a real login shell) when null.</summary>
+    public Func<string, CancellationToken, ValueTask<bool>>? OnPath { get; init; }
 }

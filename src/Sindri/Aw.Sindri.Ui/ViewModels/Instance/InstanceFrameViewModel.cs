@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Facts;
 
@@ -19,6 +20,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
 {
     private readonly ILauncher _launcher = launcher ?? NullLauncher.Instance;
     private Uri? _url;
+    private NeedsYou.InstanceCommander? _commander;
     private string? _id;
     private int _generation;
     private (string Address, FrameIntent Intent, string? Key)? _intent;
@@ -76,7 +78,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     /// <summary>"since 09:14 (3h 12m)".</summary>
     public string SinceText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The header's identity line: recipe@hash, version, state (with its detail) and since.</summary>
+    /// <summary>The header's line under the title: the workflow's name, the stage (with its detail) and since.</summary>
     public string Identity { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The subject line; null before a read.</summary>
@@ -87,6 +89,9 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
 
     /// <summary>The expanded state; null before a read.</summary>
     public ExpandedStateViewModel? Expanded { get; private set => Set(ref field, value); }
+
+    /// <summary>The Step runs; null before a read.</summary>
+    public StepRunsViewModel? StepRuns { get; private set => Set(ref field, value); }
 
     /// <summary>The sentence a refusal or an unreadable answer shows.</summary>
     public string ProblemText { get; private set => Set(ref field, value); } = string.Empty;
@@ -179,6 +184,8 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         if (answer.IsSuccess)
         {
             Show(answer.Value);
+            await ReadRun(answer.Value, generation, cancellationToken).ConfigureAwait(true);
+            await ReadNames(url, answer.Value, generation, cancellationToken).ConfigureAwait(true);
         }
         else
         {
@@ -217,16 +224,23 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var header = detail.Current.Status.Header;
         var local = TimeZoneInfo.ConvertTime(header.Since, clock.LocalTimeZone);
         Address = detail.Address;
+        _shown = detail;
+        _state = detail.State;
         (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{header.Version}"));
-        (StateText, Detail) = (header.State, header.Detail ?? string.Empty);
+        Detail = header.Detail ?? string.Empty;
         OnChanged(nameof(RecipeSubject));
         OnChanged(nameof(HasRecipeLink));
         OnChanged(nameof(RecipeLinkName));
         SinceText = $"since {local.ToString("HH:mm", CultureInfo.InvariantCulture)} ({Labels.Duration(header.AgeSeconds)})";
-        Identity = $"{Recipe}@{Hash12} · {Version} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
-        Note = detail.States.Any(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal)) ? Labels.InstanceDone : string.Empty;
+        WorkflowName = WorkflowNameOf(detail);
+        DetailsText = Labels.DetailsBlock(detail.Address, Recipe, Hash12, Version);
+        AddressCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(detail.Address));
+        ShowIdentity(detail);
+        var terminal = detail.States.FirstOrDefault(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal));
+        Note = terminal is null ? string.Empty : Labels.InstanceFinished(terminal.Outcome);
         ProblemText = string.Empty;
         ShowParts(detail);
+        ShowGrant(detail);
         Phase = FramePhase.Shown;
         ApplyIntent();
     }
@@ -240,17 +254,21 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
             Subject = subject;
         }
 
-        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State);
+        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State, NameOf);
         if (Band is null || !string.Equals(Band.Signature, band.Signature, StringComparison.Ordinal))
         {
             Band = band;
         }
 
         ShowPanels(detail);
-        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock);
+        ShowStepRuns(detail);
+        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock, NameOf) { Commander = _commander ??= new NeedsYou.InstanceCommander(api, () => _url), InstanceId = detail.Id, Launcher = _launcher };
         if (Expanded is null || !string.Equals(Expanded.Signature, expanded.Signature, StringComparison.Ordinal))
         {
             expanded.ChildRequested += (_, e) => OpenRequested?.Invoke(this, e);
+            expanded.SessionRequested += (_, e) => SessionRequested?.Invoke(this, e);
+            expanded.FactRequested += (_, e) => ShowFact(e.Fact);
+            expanded.ChildrenRequested += (_, _) => Focus(ChildrenFocus, key: null);
             Expanded = expanded;
         }
         else
@@ -262,9 +280,13 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     private void Clear()
     {
         _generation++;
+        _shown = null;
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Subject, Band, Expanded) = (null, null, null);
+        (WorkflowName, DetailsText, AddressCopy) = (string.Empty, string.Empty, null);
+        (Subject, Band, Expanded, StepRuns) = (null, null, null, null);
+        (Grant, _grantSignature) = (null, string.Empty);
         ClearPanels();
+        (_eventsFor, _eventRows) = (null, []);
         WantedFocus = null;
         Phase = FramePhase.Empty;
     }

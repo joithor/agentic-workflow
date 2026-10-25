@@ -205,18 +205,6 @@ public sealed class TransitionDecisionTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Step_failed_without_a_transition_parks_needs_answer()
-    {
-        var failed = new StepFailed("human:thor", RunToken.For(1, 1), "The build broke.", Tokens: 300, Sha("failed"));
-
-        var applied = Assert.IsType<Applied>(Decide(At(Step, "produce"), Step, failed));
-
-        var after = applied.Changes[0].After;
-        Assert.Equal((EngineStates.Parked, ParkReason.NeedsAnswer), (after.State, after.Park));
-        Assert.Equal((ParkKind.Step, ResumeKind.Rerun), (after.Suspension?.ParkKind, after.Suspension?.Resume.Kind));
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public void Human_trigger_on_revoked_recipe_gets_005_and_records_nothing()
     {
         var revoked = EngineFixture.Context() with { Approval = ApprovalCheck.Revoked };

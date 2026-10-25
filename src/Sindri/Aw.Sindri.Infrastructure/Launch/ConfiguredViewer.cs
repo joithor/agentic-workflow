@@ -27,22 +27,31 @@ internal sealed class ConfiguredViewer(ReloadingAgentCatalog catalog, Func<Viewe
     /// <inheritdoc/>
     public async ValueTask<ViewerOutcome> Open(ViewerRequest request, CancellationToken cancellationToken)
     {
-        var (viewer, _) = await Current(cancellationToken).ConfigureAwait(false);
-        return await viewer.Open(request, cancellationToken).ConfigureAwait(false);
+        var (viewer, _, name) = await Current(cancellationToken).ConfigureAwait(false);
+        var outcome = await viewer.Open(request, cancellationToken).ConfigureAwait(false);
+        return outcome with { ViewerKind = viewer.Kind, ViewerLabel = LabelOf(viewer.Kind, name) };   // the viewer that opened names itself: no second probe after the window is up
     }
 
     /// <inheritdoc/>
     public async ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken)
     {
         var config = catalog.Current;
-        var (viewer, source) = await Current(cancellationToken).ConfigureAwait(false);
+        var (viewer, source, _) = await Current(cancellationToken).ConfigureAwait(false);
         var facts = await viewer.Probe(cancellationToken).ConfigureAwait(false);
         var invalid = config.Unusable || config.AttendedProblems.Count > 0;
-        var detail = invalid ? (config.ProblemLine > 0 ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"line {config.ProblemLine}: ") : string.Empty) + (config.Problem ?? (config.AttendedProblems.Count > 0 ? config.AttendedProblems[0] : null)) : facts.Detail;
+        var reason = config.Problem ?? (config.AttendedProblems.Count > 0 ? config.AttendedProblems[0] : null);
+        var detail = invalid && reason is not null ? new TerminalDetail(config.ProblemLine > 0 ? config.ProblemLine : null, reason) : invalid ? null : facts.Detail;
         return facts with { Source = source, ConfigPath = catalog.Path, Problem = invalid ? "config-invalid" : facts.Problem, Detail = detail };
     }
 
-    private async ValueTask<(ITerminalViewer Viewer, string Source)> Current(CancellationToken cancellationToken)
+    private static string? LabelOf(string kind, string? name) => kind switch
+    {
+        "warp" => "Warp",
+        "exec-template" => name,
+        _ => null,
+    };
+
+    private async ValueTask<(ITerminalViewer Viewer, string Source, string? Name)> Current(CancellationToken cancellationToken)
     {
         var config = catalog.Current;
         if (config.Viewer is { } section && !config.Unusable && config.AttendedProblems.Count == 0)
@@ -52,7 +61,7 @@ internal sealed class ConfiguredViewer(ReloadingAgentCatalog catalog, Func<Viewe
                 _file = (section, create(section));
             }
 
-            return (_file.Value.Viewer, "file");
+            return (_file.Value.Viewer, "file", section.Name);
         }
 
         await _detecting.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -66,7 +75,7 @@ internal sealed class ConfiguredViewer(ReloadingAgentCatalog catalog, Func<Viewe
                     : create(new ViewerSection(chosen.Kind)));
             }
 
-            return (_detected.Value.Viewer, "detected");
+            return (_detected.Value.Viewer, "detected", _detected.Value.Chosen.Template?.Name);
         }
         finally
         {

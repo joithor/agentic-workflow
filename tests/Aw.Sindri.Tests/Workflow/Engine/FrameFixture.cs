@@ -39,7 +39,7 @@ internal static class FrameFixture
     public static DecisionContext Context() => new(
         ApprovalCheck.Holds,
         new BlockCatalog([TestBlocks.Step("step.produce"), TestBlocks.Step("step.check"), TestBlocks.Gate("gate.verify.judge")], []),
-        new HashSet<BlockId> { Produce }, InMemoryChildRecipes.None);
+        new Dictionary<BlockId, StepRuntime> { [Produce] = StepRuntime.Agent }, InMemoryChildRecipes.None);
 
     /// <summary>An instance at entry 3 in 'produce', run '3.1' on the agent.</summary>
     public static WorkflowInstance Producing() => Instance(new Frame(
@@ -100,7 +100,7 @@ internal static class FrameFixture
                 new(["await"], "done", "wait.satisfied", When: null, [], [], [], []),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { ["fix"] = new(3, LoopSpec.DefaultNoProgress) },
-            new BudgetSpec(400_000), Evals: [], Hash: null);
+            new BudgetSpec(400_000), Evals: [], Hash: null, DisplayName: "Test frames");
     }
 
     private static StepUse Step(BlockId use) => new(use, new Dictionary<string, WithValue>(StringComparer.Ordinal), []);

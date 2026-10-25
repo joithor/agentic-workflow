@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CODEIDX-012",
+  "status": 400,
+  "detail": "'not a ref' is not a symbol ref ('<repo>:<path>#<name>', or '<path>#<name>' with --repo)",
+  "traceId": "<trace>"
+}

@@ -7,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The sheet's note when a re-read no longer finds the recipe it shows.</summary>
-    internal const string RecipeGone = "This recipe is no longer served; what is shown was its last state.";
+    internal const string RecipeGone = "This workflow is no longer served; what is shown was its last state.";
 
     /// <summary>A recipe hash as the CLI shows it: its first twelve hex digits, without the scheme (the API serves the whole hash on a recipe).</summary>
     /// <param name="hash">The hash as served, sha256: and 64 hex digits.</param>
@@ -30,7 +30,7 @@ internal static partial class Labels
     };
 
     /// <summary>The outputs section's sentence for a recipe that declares none.</summary>
-    internal const string NoOutputs = "This recipe declares no outputs.";
+    internal const string NoOutputs = "This workflow doesn't produce anything.";
 
     /// <summary>The mark between two neighbouring states that loop into each other, with the loop's name (when it has one) and cap.</summary>
     /// <param name="name">The loop's name, or null.</param>
@@ -96,27 +96,30 @@ internal static partial class Labels
     internal static string GenerateLine(string template) => $"generated: {template}";
 
     /// <summary>The inputs section's heading.</summary>
-    internal const string InputsHeading = "Inputs";
+    internal const string InputsHeading = "What it needs";
 
     /// <summary>The outputs section's heading.</summary>
-    internal const string OutputsHeading = "Outputs";
+    internal const string OutputsHeading = "What it produces";
 
     /// <summary>The sheet's skeleton while the recipe is read.</summary>
-    internal const string LoadingRecipe = "Reading the recipe…";
+    internal const string LoadingRecipe = "Reading the workflow…";
 
     /// <summary>The recipe's name template, labelled.</summary>
     /// <param name="template">The template as served.</param>
     /// <returns>The line.</returns>
     internal static string NameTemplateLine(string template) => $"name {template}";
 
+    /// <summary>The recipe sheet's disclosure.</summary>
+    internal const string RecipeDetails = "Details";
+
     /// <summary>The link from an instance frame or a Workflows group head to the recipe sheet.</summary>
-    internal const string RecipeLink = "Recipe ▸";
+    internal const string RecipeLink = "How it works ▸";
 
     /// <summary>The recipe link's accessible name: the visible word first, then which recipe (and version) it opens.</summary>
     /// <param name="subject">The recipe link's subject, "id" or "id@hash12".</param>
     /// <returns>The words.</returns>
-    internal static string OpenRecipeName(string subject) => $"Recipe {subject}, open";
+    internal static string OpenRecipeName(string subject) => $"How it works: {subject}";
 
     /// <summary>What the recipe sheet says when the recipe's answer is in a shape this build can't read.</summary>
-    internal const string RecipeUnreadable = "This recipe's answer can't be read by this build of the app.";
+    internal const string RecipeUnreadable = "This app can't read this workflow's answer.";
 }

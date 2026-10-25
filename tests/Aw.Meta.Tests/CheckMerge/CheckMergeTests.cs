@@ -311,6 +311,60 @@ public sealed class CheckMergeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_with_a_per_assembly_summary_and_error_noise_is_accepted_when_its_one_failure_is_a_flake()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit(await Golden("mtp-one-failed-assembly-summary.log"), ("Stderr_output_does_not_hide_the_version", FlakeVerdict.Flake));
+        Script();
+
+        var accepted = await Check();
+
+        Assert.True(accepted.Ready, string.Join("; ", accepted.Checks.Where(c => !c.Ok).Select(c => c.Detail)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_whose_log_is_larger_than_four_mebibytes_is_still_read_in_full()
+    {
+        await _world.ReadyWithGate();
+        var noise = string.Concat(Enumerable.Repeat("  time=2026-10-18T14:07:00.419 level=ERROR msg=\"Operation failed with internal error.\" error=\"CreateTaskQueue operation failed.\"\n", 40_000));
+        await SaveRedUnit(noise + await Golden("mtp-one-failed-assembly-summary.log") + noise, ("Stderr_output_does_not_hide_the_version", FlakeVerdict.Flake));
+        Script();
+
+        var accepted = await Check();
+
+        Assert.True(accepted.Ready, string.Join("; ", accepted.Checks.Where(c => !c.Ok).Select(c => c.Detail)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_whose_assembly_failed_with_no_test_line_stays_unvouchable()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("/g/bin/Aw.Sindri.Tests.dll (net10.0|x64) failed with 1 error(s) (1s 2ms)\nTest run summary: Failed!\n  /g/bin/Aw.Sindri.Tests.dll (net10.0|x64) failed with 1 error(s) (1s 2ms)\nExit code: 2\n", ("Eval_runs", FlakeVerdict.Flake));
+        Script();
+
+        var refused = await Check();
+
+        Assert.Equal(["gate-result"], Failed(refused));
+        Assert.Contains("could not list its failing tests", refused.Checks.Single(c => c.Name == "gate-result").Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_red_step_whose_assembly_summary_counts_more_errors_than_failed_lines_is_refused_with_the_counts()
+    {
+        await _world.ReadyWithGate();
+        await SaveRedUnit("failed Spike.Tests.Eval_runs (20ms)\n/g/bin/A.dll (net10.0|x64) failed with 1 error(s) (1s)\n/g/bin/B.dll (net10.0|x64) failed with 1 error(s) (1s)\n", ("Eval_runs", FlakeVerdict.Flake));
+        Script();
+
+        var refused = await Check();
+
+        Assert.Equal(["gate-result"], Failed(refused));
+        Assert.Contains("2 failed", refused.Checks.Single(c => c.Name == "gate-result").Detail, StringComparison.Ordinal);
+    }
+
+    private static Task<string> Golden(string name) =>
+        File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Gate", "Golden", name), TestContext.Current.CancellationToken);
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_bash_suite_flake_vouched_by_a_rerun_is_accepted()
     {
         await _world.ReadyWithGate();

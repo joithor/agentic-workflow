@@ -14,12 +14,14 @@ public sealed class BlockCatalog
     /// <summary>Builds the catalog. A duplicate id or kind, or a descriptor whose kind isn't its id's prefix, is a registration bug and throws.</summary>
     /// <param name="blocks">Every registered block descriptor.</param>
     /// <param name="events">Every registered event descriptor.</param>
-    public BlockCatalog(IEnumerable<BlockDescriptor> blocks, IEnumerable<EventDescriptor> events)
+    /// <param name="sentences">The plain sentences; each descriptor without one of its own takes the sentence of its id. Null leaves every sentence as the descriptor has it.</param>
+    public BlockCatalog(IEnumerable<BlockDescriptor> blocks, IEnumerable<EventDescriptor> events, IBlockSentences? sentences = null)
     {
         ArgumentNullException.ThrowIfNull(blocks);
         ArgumentNullException.ThrowIfNull(events);
-        foreach (var block in blocks)
+        foreach (var described in blocks)
         {
+            var block = described.Sentence is null && sentences?.For(described.Id) is { } sentence ? described with { Sentence = sentence } : described;
             if (BlockKinds.Of(block.Id) != block.Kind)
             {
                 throw new InvalidOperationException($"Block {block.Id.Value} is declared as {block.Kind}, but its prefix names {BlockKinds.Of(block.Id)}.");

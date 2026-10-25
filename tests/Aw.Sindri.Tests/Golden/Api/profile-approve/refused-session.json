@@ -1,7 +1,0 @@
-{
-  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
-  "title": "SND-AUTH-002",
-  "status": 403,
-  "detail": "ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>]",
-  "traceId": "<trace>"
-}

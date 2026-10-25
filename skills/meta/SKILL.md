@@ -59,7 +59,7 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    through its hooks` (the hooks come from `scripts/install-meta.sh --provider codex|cursor`) or, for a CLI with no
    hook system, `lane <l>: <agent>, launch-only: no obligations`: don't message a lane marked launch-only.
    `aw-meta-launch` refuses while the team's lanes still run on tmux's default socket (the pre-switch team). The meta
-   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they are for the owner only. Tell the owner.
+   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they skip the check that stops a second agent on the same transcripts. Tell the owner.
    The team runs on its own tmux socket, named after the team, so attach with `tmux -L <team> attach -t =<team>-<lane>`
    (for example `tmux -L sindri attach -t sindri-ideas`), and list its sessions with `tmux -L <team> ls`. A bare
    `tmux attach` looks at tmux's default socket, which the team no longer uses. A team launched before this change
@@ -210,6 +210,21 @@ background job is running (`/clear` cuts them off) and everything is pushed. Whe
 `aw-meta lane-recycle <lane> --digest <path>` (`--dry-run` shows the steps). It clears the lane, waits for the new session, records it so a
 relaunch resumes it, and has the lane read the digest and continue. Exit 1 means it refused (stale or empty digest, or no live Claude session in the lane's pane) or the new session never
 appeared (nothing more was sent; the error prints the command to send the line by hand). Never recycle the meta lane this way.
+
+## Usage limits
+
+A Claude usage limit stops every lane and your own subagents at once ("You've hit your session limit · resets 2:50am",
+"weekly limit · resets Oct 19, 10pm"). `aw-meta usage` shows who is `limited` (kind and reset) and `watch` prints
+`USAGE LIMITED <lane|meta> <kind> resets <time>` once per stop.
+
+- On `USAGE LIMITED`: don't fight it and don't retry in a loop; the lanes cannot work and neither can you. Note it in the digest
+  (which lanes, which limit, the reset time) and run `aw-meta usage-wait` in the background (`run_in_background`): it blocks
+  until the reset plus a margin and its exit wakes you. If you are the one limited, the watch's `USAGE OK meta` line wakes you too.
+- On `USAGE OK <lane>`: the watch types the resume line into the idle lanes itself (`usage.autoResume`); a busy lane is
+  never typed into. You don't message them.
+- On `USAGE OK meta` (or the `usage-wait` exit): resume your own subagents with SendMessage (their ids are in your digest), re-arm
+  `aw-meta watch`, then run `aw-meta usage` and confirm every lane is `ok`. A lane still `limited` after the reset
+  (`USAGE RESUME FAILED`, or it was busy or had a draft in its box) needs a nudge: SendMessage it (`aw-meta lane-send` only for a non-Claude lane; it refuses a Claude lane, AW-META-017).
 
 ## The running log
 

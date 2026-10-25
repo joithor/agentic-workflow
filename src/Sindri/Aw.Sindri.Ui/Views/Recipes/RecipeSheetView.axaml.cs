@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Aw.Sindri.Ui.ViewModels.Recipes;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Views.Recipes;
@@ -13,4 +14,18 @@ internal sealed partial class RecipeSheetView : UserControl
     }
 
     private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
+
+#pragma warning disable MA0155 // why: an Avalonia RoutedEvent handler returns void, so it can only be async void
+    private async void OnStatsWindow(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is RecipeSheetViewModel sheet && sender is Control { DataContext: WindowChoiceViewModel choice })
+        {
+            await sheet.ChooseStatsWindow(choice.Window, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+#pragma warning restore MA0155
+
+    private void OnCopyHash(object? sender, RoutedEventArgs e) => _ = (DataContext as RecipeSheetViewModel)?.CopyHash(CancellationToken.None);
+
+    private void OnCopyApprove(object? sender, RoutedEventArgs e) => _ = (DataContext as RecipeSheetViewModel)?.CopyApprove(CancellationToken.None);
 }

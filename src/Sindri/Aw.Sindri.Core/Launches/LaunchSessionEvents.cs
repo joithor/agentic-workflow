@@ -1,8 +1,8 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Launches;
@@ -21,6 +21,9 @@ namespace Aw.Sindri.Core.Launches;
 public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liveness, ReportedIdAdmission admission, HeldLease held,
     ILedgerStore ledger, EventFactory events, TimeProvider clock)
 {
+    /// <summary>How long the end of a session waits for the token totals before it ends without them.</summary>
+    public static TimeSpan FinalTokensBudget { get; } = TimeSpan.FromSeconds(5);
+
     /// <summary>Checks a call's secret against the launch's stored hash.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="secret">The secret the call carried.</param>
@@ -34,15 +37,29 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
     /// <returns>Success, or why the ledger refused.</returns>
     public async ValueTask<Result<Unit>> Beat(LaunchId launch, SessionId? reported, CancellationToken cancellationToken)
     {
-        liveness.Beat(launch, clock.GetUtcNow());
-        return await Report(launch, reported, cancellationToken).ConfigureAwait(false);
+        var reports = await Report(launch, reported, cancellationToken).ConfigureAwait(false);
+        if (reports.IsSuccess || IsPatternTimeout(reports.Error))
+        {
+            liveness.Beat(launch, clock.GetUtcNow());   // after the report: a heartbeat that comes back as an error doesn't restart the silence clock; a pattern timeout says nothing about the agent
+        }
+
+        return reports;
+    }
+
+    /// <summary>Whether <paramref name="error"/> says only that the session id pattern timed out (the launch itself is fine).</summary>
+    /// <param name="error">The error from <see cref="Report"/>.</param>
+    /// <returns>True for SND-LAUNCH-028.</returns>
+    public static bool IsPatternTimeout(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return string.Equals(error.Code, SindriErrors.LaunchSessionIdTimedOut.Code, StringComparison.Ordinal);
     }
 
     /// <summary>Records the agent's session id as 'launch.session-reported', once, when the entry's pattern accepts it.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="reported">The agent's session id, or null.</param>
     /// <param name="cancellationToken">Cancels the append.</param>
-    /// <returns>Success, or why the ledger refused.</returns>
+    /// <returns>Success, SND-LAUNCH-028 when the entry's pattern timed out on the id (nothing is recorded), or why the ledger refused.</returns>
     public async ValueTask<Result<Unit>> Report(LaunchId launch, SessionId? reported, CancellationToken cancellationToken)
     {
         if (reported is not { } id || liveness.IsReported(launch))
@@ -56,6 +73,11 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         }
 
         var admitted = await admission.Admit(launch, id, cancellationToken).ConfigureAwait(false);
+        if (admitted.TimedOut)
+        {
+            return SindriErrors.LaunchSessionIdTimedOut.With("the entry's sessionIdPattern timed out on the reported session id, so no id is recorded (the heartbeat still counts)");
+        }
+
         if (!admitted.Accepted)
         {
             return Unit.Value;   // the entry's pattern refuses it: the heartbeat still counts, the id isn't recorded
@@ -98,7 +120,8 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
 
         var launch = ended.Launch;
         var admitted = await admission.Admit(launch, id: null, cancellationToken).ConfigureAwait(false);
-        var entry = events.Entry(EventTypes.SessionEnded, ended, $"{EventTypes.SessionEnded}:{launch.Value}", admitted.Item);
+        var (input, output) = await TokensWithin(launch, cancellationToken).ConfigureAwait(false);
+        var entry = events.Entry(EventTypes.SessionEnded, ended with { InputTokens = input, OutputTokens = output }, $"{EventTypes.SessionEnded}:{launch.Value}", admitted.Item);
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         if (appended.IsError)
         {
@@ -108,6 +131,21 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         files.Forget(launch);
         liveness.End(launch);
         return Unit.Value;
+    }
+
+    /// <summary>The final token totals, best effort: a read that takes longer than <see cref="FinalTokensBudget"/> gives none, so the end of the session never waits on a transcript.</summary>
+    private async ValueTask<(long? Input, long? Output)> TokensWithin(LaunchId launch, CancellationToken cancellationToken)
+    {
+        using var bound = new CancellationTokenSource(FinalTokensBudget, clock);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
+        try
+        {
+            return await admission.FinalTokens(launch, linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return (null, null);
+        }
     }
 
     /// <summary>Appends one private 'session.usage' sample.</summary>

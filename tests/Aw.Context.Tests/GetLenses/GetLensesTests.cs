@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
@@ -19,7 +20,7 @@ public sealed class GetLensesTests : IDisposable
         _ = await _world.ImportYaml(MapWorld.TabsMap);
 
     private ValueTask<Kernel.Result<LensesView>> Ask(string anchor, ContextScope? scope = null, bool draft = false, int? depth = null) =>
-        _world.Engine.Lenses(anchor, draft, depth, scope ?? MapWorld.Human, MapWorld.None);
+        _world.Engine.Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope ?? MapWorld.Human, MapWorld.None);
 
     private async Task ImportFencedCase() =>
         _ = await _world.ImportYaml(MapWorld.Yaml(
@@ -47,7 +48,7 @@ public sealed class GetLensesTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_depth_defaults_to_the_profile_and_a_value_outside_0_to_4_is_006()
+    public async Task The_depth_defaults_to_the_profile_a_deep_one_is_read_up_to_8_and_a_negative_one_is_006()
     {
         await ImportTabs();
 
@@ -58,13 +59,14 @@ public sealed class GetLensesTests : IDisposable
 
         Assert.Equal(2, defaulted.Depth);
         Assert.Equal(0, zero.Depth);
-        Assert.Equal((ContextErrors.QueryInvalid.Code, ContextErrors.QueryInvalid.Code), (tooDeep.Error.Code, negative.Error.Code));
+        Assert.True(tooDeep.IsSuccess);   // the old cap of 4 was raised to 8 and clamps (owner q93, 2026-10-23)
+        Assert.Equal(ContextErrors.QueryInvalid.Code, negative.Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Lenses_depth_outside_0_to_4_is_006_before_any_map_is_read()
+    public async Task A_negative_lenses_depth_is_006_before_any_map_is_read()
     {
-        var none = await Ask(Anchor, depth: 9);
+        var none = await Ask(Anchor, depth: -2);
 
         Assert.Equal(ContextErrors.QueryInvalid.Code, none.Error.Code);
     }

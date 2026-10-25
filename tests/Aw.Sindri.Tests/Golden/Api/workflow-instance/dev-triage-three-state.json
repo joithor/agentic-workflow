@@ -6,9 +6,10 @@
   "title": "Three-state triage",
   "recipe": {
     "id": "workflow.dev-triage-three-state",
-    "hash": "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002",
-    "version": 2,
-    "urgency": "triage"
+    "hash": "sha256:b77152c8613ea86d8a64fdf9e9a140c23b1c9352fc06fcebe5c1254ca5e2ad93",
+    "version": 3,
+    "urgency": "triage",
+    "displayName": "Dev triage three state"
   },
   "state": "desk",
   "since": "2026-10-12T12:00:00.0000000Z",
@@ -90,8 +91,8 @@
       "header": {
         "address": "ITM-01JL2/dev-triage-three-state/1",
         "recipe": "workflow.dev-triage-three-state",
-        "hash12": "94c0c28e21ca",
-        "version": 2,
+        "hash12": "b77152c8613e",
+        "version": 3,
         "state": "desk",
         "detail": "desk task",
         "since": "2026-10-12T12:00:00.0000000Z",
@@ -143,7 +144,8 @@
           "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@94c0c28e21ca  v2  desk: desk task  since 12:00 (26m)\n  name      Crash on launch - 2026-10-12\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:scope  scope.txt  sha256:2e04...\n            fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@b77152c8613e  v3  desk: desk task  since 12:00 (26m)\n  name      Crash on launch - 2026-10-12\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:scope  scope.txt  sha256:2e04...\n            fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -232,5 +234,27 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [
+    {
+      "state": "desk",
+      "needs": [],
+      "produces": [
+        {
+          "name": null,
+          "size": null,
+          "hash": null,
+          "path": null,
+          "itemId": null,
+          "url": null,
+          "host": null,
+          "title": null,
+          "factKey": "fact:output"
+        }
+      ]
+    }
+  ],
+  "startedBy": null,
+  "allowedCommands": []
 }

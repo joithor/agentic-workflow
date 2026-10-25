@@ -2,7 +2,9 @@ using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Events;
 
@@ -28,8 +30,10 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Refusal">What followed a refusal.</param>
 /// <param name="Effects">The identities of the effects the decision runs for this instance, as '{instance}:{entry}:{index}'.</param>
 /// <param name="Delta">The post-state delta.</param>
-/// <param name="Via">'block' for a Step the engine ran on the block runtime; null otherwise.</param>
+/// <param name="Via">'block' for a Step the engine ran on the block runtime, 'agent' for one an agent session ran; null otherwise (a desk report writes none).</param>
 /// <param name="Decision">The Judge decision id of a block Step's result; null otherwise.</param>
+/// <param name="OnBehalfOf">The parent instance an answer was forwarded from (engine spec §5.8), on the child's row; null otherwise.</param>
+/// <param name="Injection">On a 'workflow.injection' row: the sections the run's Step inputs filled (name, input, size, digest; never text); null otherwise.</param>
 public sealed record WorkflowEventDetail(
     TriggerKey TriggerId,
     string TriggerActor,
@@ -47,8 +51,43 @@ public sealed record WorkflowEventDetail(
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OnBehalfOf = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<InjectionEntry>? Injection = null)
 {
+    /// <summary>The tokens an agent run spent; null for any other event. Not written when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Tokens { get; init; }
+
+    /// <summary>
+    /// The detail with its opened run described (actor, attempt, max attempts), for a row whose frame opens a Step run; any other detail comes back unchanged.
+    /// </summary>
+    /// <param name="after">The instance after the row.</param>
+    /// <param name="recipe">Its recipe, which names the state's loop.</param>
+    /// <returns>The detail the ledger row carries.</returns>
+    public WorkflowEventDetail WithRunOpening(WorkflowInstance after, Recipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        ArgumentNullException.ThrowIfNull(recipe);
+        if (Delta.Frame is not { Run: not null } frame || after.Frame.Run is not { } open)
+        {
+            return this;
+        }
+
+        var loop = recipe.States.TryGetValue(after.Frame.State, out var state) && state.Loop is { } name && after.Loops.TryGetValue(name, out var counter) ? counter : null;
+        var opened = frame with { Actor = OpenerOf(after, open), Attempt = loop?.Round, MaxAttempts = loop?.Allowed };
+        return this with { Delta = Delta with { Frame = opened } };
+    }
+
+    // The agent's launch id (the session is not started yet when the row is written; the id is a pure function of the instance and the run), 'block', or the human desk.
+    private string OpenerOf(WorkflowInstance after, OpenRun open) => open.Runtime switch
+    {
+        StepRuntime.Agent => AgentLaunches.LaunchIdFor(after.Id, open.Token).Value,
+        StepRuntime.Block => "block",
+        StepRuntime.Desk => TriggerActor.StartsWith("human:", StringComparison.Ordinal) ? TriggerActor : "human",
+        _ => throw new ArgumentOutOfRangeException(nameof(open), open.Runtime, "an unknown runtime"),
+    };
+
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
     /// (its key and actor, a wait's source sequence) and the instance's suspension after the row, and nothing else.
@@ -116,6 +155,10 @@ public sealed record WorkflowEventDetail(
             [.. recorded.Effects.Select(e => e.Text)],
             WorkflowEventDelta.Of(recorded.Delta),
             recorded.Trigger.Via,
-            recorded.Trigger.Decision);
+            recorded.Trigger.Decision,
+            answer?.Forwarded?.Parent.Value)
+        {
+            Tokens = recorded.Trigger.Tokens,
+        };
     }
 }

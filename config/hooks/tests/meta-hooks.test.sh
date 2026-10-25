@@ -313,4 +313,40 @@ check "judge child: nothing written" "$(test -e "$LS/judge" && echo written || e
 OUT="$(printf '%s' '{"hook_event_name":"sessionStart","conversation_id":"cur-1"}' | AW_META_TEAM=t1 AW_META_LANE=cur bash "$CURSOR" "$HOOKS/session-id-report.sh")"; RC=$?
 check "through the cursor adapter: conversation_id is the id, the output is {}" "$RC:$OUT:$(cat "$LS/cur")" "0:{}:cur-1"
 
+# --- a Codex meta lane (the team's metaLane): its role is registered once its id is reported; the lane commands do not run ---
+# The lane's agent gets AW_META_CONFIG from scripts/meta-lane.sh; the hooks read metaLane from it.
+printf '%s' '{"team":"t1","metaLane":"meta","lanes":["api"]}' > "$WORK/team.json"
+unlink "$LS/meta" 2> /dev/null; : > "$CALLS"
+AW_META_CONFIG="$WORK/team.json" LANE_NAME=meta bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-own.json"
+check "meta lane: session-id-report records the id and registers the role under the team-lane name" "$(cat "$LS/meta" 2>/dev/null):$(cat "$CALLS")" "agent-own-1:role-set --session agent-own-1 --name t1-meta"
+: > "$CALLS"
+AW_META_CONFIG="$WORK/team.json" LANE_NAME=api bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-own.json"
+check "another lane of the same team registers no role" "$(cat "$CALLS")" ""
+: > "$CALLS"
+AW_META_CONFIG="$WORK/team.json" NESTED=1 LANE_NAME=meta bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-nested.json"
+check "an instance the meta's agent started registers no role" "$(cat "$CALLS")" ""
+: > "$CALLS"
+LANE_NAME=meta bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-own.json"
+check "no team config (AW_META_CONFIG unset): the id is recorded and no role is registered" "$(cat "$LS/meta"):$(cat "$CALLS")" "agent-own-1:"
+printf '%s' '{"team":"t1","lanes":["api"]}' > "$WORK/team-default.json"
+: > "$CALLS"
+AW_META_CONFIG="$WORK/team-default.json" LANE_NAME=meta bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-own.json"
+check "a team config without metaLane: the meta lane is named meta" "$(cat "$CALLS")" "role-set --session agent-own-1 --name t1-meta"
+: > "$CALLS"; unlink "$AW_STATE_DIR/logs/failopen.log" 2> /dev/null
+STUB_RC=1 AW_META_CONFIG="$WORK/team.json" LANE_NAME=meta bash "$WORK/lane-script.sh" "$HOOKS/session-id-report.sh" "$WORK/start-own.json"; RC=$?
+check "role-set failing: the hook still exits 0 and the id stays recorded" "$RC:$(cat "$LS/meta")" "0:agent-own-1"
+grep -q '"hook":"session-id-report","cause":"role-set-exit-1"' "$AW_STATE_DIR/logs/failopen.log" 2> /dev/null
+check "role-set failing: the cause is logged" "$?" "0"
+
+: > "$CALLS"
+OUT="$(AW_META_CONFIG="$WORK/team.json" LANE_NAME=meta STUB_OUT="a message" bash "$WORK/lane-script.sh" "$HOOKS/meta-lane-gate.sh" "$WORK/ups.json")"
+check "meta lane: UserPromptSubmit runs no lane command and prints nothing" "$OUT:$(cat "$CALLS")" ":"
+printf '%s' '{"hook_event_name":"Stop","session_id":"s-9","stop_hook_active":false,"last_assistant_message":"REPLY TO META: ok"}' > "$WORK/stop-meta.json"
+: > "$CALLS"
+AW_META_CONFIG="$WORK/team.json" LANE_NAME=meta STUB_RC=1 STUB_OUT="owes" bash "$WORK/lane-script.sh" "$HOOKS/meta-lane-gate.sh" "$WORK/stop-meta.json" 2> "$WORK/err"; RC=$?
+check "meta lane: Stop runs no lane-reply or lane-stop-check and never blocks" "$RC:$(cat "$CALLS"):$(cat "$WORK/err")" "0::"
+: > "$CALLS"
+OUT="$(AW_META_CONFIG="$WORK/team.json" LANE_NAME=api STUB_OUT="a message" bash "$WORK/lane-script.sh" "$HOOKS/meta-lane-gate.sh" "$WORK/ups.json")"
+check "another lane of the same team keeps its inbox" "$OUT:$(cat "$CALLS")" "a message:lane-inbox"
+
 exit $fail

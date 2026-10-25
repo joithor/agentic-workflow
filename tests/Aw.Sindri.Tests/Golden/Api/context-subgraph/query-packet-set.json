@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    "surface:command/switch-tab",
+    "code:src/tabs/TabManager.ts",
+    "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b"
+  ],
+  "missing": [
+    "feature:nope.x"
+  ],
+  "mapVersion": "v1",
+  "depth": 0,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "bands": {
+    "intent": {
+      "records": [],
+      "decisions": [
+        {
+          "node": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+          "text": "A tab group collapses to one tab in the strip.",
+          "decides": [],
+          "supersedes": [],
+          "quotes": null,
+          "provenance": "human",
+          "confirmed": true,
+          "trust": "trusted",
+          "at": "2026-07-10T10:00:00.0000000Z",
+          "quote": {
+            "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000201",
+            "text": "a tab group collapses to a single tab in the strip",
+            "trust": "untrusted"
+          },
+          "label": "A tab group collapses to one tab in the strip.",
+          "kind": "decision",
+          "depth": 0
+        }
+      ],
+      "counts": {
+        "records": 0,
+        "decisions": 1,
+        "orphaned": null
+      }
+    },
+    "product": {
+      "own": [
+        {
+          "node": "surface:command/switch-tab",
+          "label": "Switch tab (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "repo": "aw-split-panes",
+          "depth": 0
+        }
+      ],
+      "neighbors": [],
+      "affects": [],
+      "counts": {
+        "own": 1,
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 0
+      },
+      "edges": []
+    },
+    "code": {
+      "files": [
+        {
+          "path": "src/tabs/TabManager.ts",
+          "implements": [],
+          "tests": [],
+          "provenance": "deterministic",
+          "confidence": 1,
+          "confirmed": true,
+          "suggested": false,
+          "linkId": null,
+          "label": "src/tabs/TabManager.ts",
+          "kind": "code",
+          "trust": "trusted",
+          "repo": "aw-split-panes",
+          "depth": 0
+        }
+      ],
+      "symbols": {
+        "state": "unavailable",
+        "reason": "index not built",
+        "items": []
+      },
+      "counts": {
+        "files": 1,
+        "symbols": 0,
+        "featuresWithNoCode": 0
+      }
+    }
+  },
+  "edges": [],
+  "conflicts": [],
+  "coverage": {
+    "scope": 1,
+    "intent": {
+      "covered": 0,
+      "of": 1
+    },
+    "product": {
+      "confirmed": 1,
+      "of": 1
+    },
+    "code": {
+      "implemented": 0,
+      "of": 1,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "surface:command/switch-tab",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/tabs/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 1,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    }
+  },
+  "searched": {
+    "anchors": [
+      "surface:command/switch-tab",
+      "code:src/tabs/TabManager.ts",
+      "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": false
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

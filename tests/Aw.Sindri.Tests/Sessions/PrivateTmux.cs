@@ -9,37 +9,53 @@ namespace Aw.Sindri.Tests.Sessions;
 /// </summary>
 internal sealed class PrivateTmux : IDisposable
 {
-    private readonly string _name = Name();
+    private readonly string _name;
 
-    private PrivateTmux(string socket)
+    private PrivateTmux(string name, string socket, string pane)
     {
+        _name = name;
         Socket = socket;
+        Pane = pane;
     }
 
     /// <summary>The absolute path of the private server's socket.</summary>
     public string Socket { get; }
 
+    /// <summary>The id ('%n') of the pane of the server's one session.</summary>
+    public string Pane { get; }
+
     /// <summary>Starts the private server.</summary>
+    /// <param name="tag">Makes the server's name its own, so two test classes never share (and kill) one server.</param>
     /// <returns>The server; null when tmux isn't installed or the server didn't start.</returns>
-    public static PrivateTmux? Start()
+    public static PrivateTmux? Start(string tag = "")
     {
-        var name = Name();
+        var name = Name(tag);
         if (Run(name, "new-session", "-d", "-s", "co2b", "sleep 300") is null)
         {
             return null;
         }
 
         var socket = Run(name, "display-message", "-p", "#{socket_path}")?.Trim();
-        if (socket is { Length: > 0 } && Path.IsPathRooted(socket))
+        var pane = Run(name, "display-message", "-p", "-t", "co2b", "#{pane_id}")?.Trim();
+        if (socket is { Length: > 0 } && Path.IsPathRooted(socket) && pane is { Length: > 0 })
         {
-            return new PrivateTmux(socket);
+            return new PrivateTmux(name, socket, pane);
         }
 
         _ = Run(name, "kill-server");
         return null;
     }
 
-    private static string Name() => string.Create(CultureInfo.InvariantCulture, $"aw-co2b-{Environment.ProcessId}");
+    private static string Name(string tag) => string.Create(CultureInfo.InvariantCulture, $"aw-co2b-{Environment.ProcessId}") + (tag.Length == 0 ? string.Empty : "-" + tag);
+
+    /// <summary>Opens a window that runs <paramref name="shellCommand"/> (through sh -c) and says which pane and process it is.</summary>
+    /// <param name="shellCommand">The command.</param>
+    /// <returns>The pane id and its first process; null when tmux refused.</returns>
+    public (string Pane, int PanePid)? NewPane(string shellCommand)
+    {
+        var made = Run(_name, "new-window", "-d", "-P", "-F", "#{pane_id} #{pane_pid}", "-t", "co2b:", shellCommand)?.Trim().Split(' ');
+        return made is [var pane, var pid] && int.TryParse(pid, CultureInfo.InvariantCulture, out var number) ? (pane, number) : null;
+    }
 
     public void Dispose() => _ = Run(_name, "kill-server");   // this -L socket only
 

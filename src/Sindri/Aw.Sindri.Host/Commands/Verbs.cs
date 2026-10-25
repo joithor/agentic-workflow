@@ -1,14 +1,15 @@
 using System.Globalization;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Features.InitProfile;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.StopProcess;
@@ -85,6 +86,20 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             : await output.Text($"Profile valid: {valid.Value.Source}\nhash {valid.Value.Hash.Value}, {state}\n", valid.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
+    /// <summary>'profile init [--json]': writes the default profile when none exists and says what comes next; local, like validate. It never approves and never replaces a file.</summary>
+    internal async Task<int> InitProfile(bool json, CancellationToken ct)
+    {
+        var written = await scope.GetRequiredService<IService<InitProfileRequest, InitProfileResponse>>().Handle(new InitProfileRequest(), ct).ConfigureAwait(false);
+        if (written.IsError)
+        {
+            return await output.Error(written.Error).ConfigureAwait(false);
+        }
+
+        return json
+            ? await output.Json(written.Value, 0).ConfigureAwait(false)
+            : await output.Text($"Profile written: {written.Value.Path}\nnext: sindri repo add <path>, then sindri profile approve\n", 0).ConfigureAwait(false);
+    }
+
     internal async Task<int> Doctor(bool json, CancellationToken ct, Func<CancellationToken, ValueTask<IReadOnlyList<DoctorCheck>>>? harnesses = null)
     {
         var report = (await scope.GetRequiredService<IService<RunDoctorRequest, RunDoctorResponse>>().Handle(new RunDoctorRequest(), ct).ConfigureAwait(false)).Value;
@@ -103,61 +118,68 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         return await output.Text(string.Join('\n', lines) + "\n", report.ExitCode).ConfigureAwait(false);
     }
 
-    internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
+    internal async Task<int> OnyxStatus(bool json, CancellationToken ct)
+    {
+        var answer = await scope.GetRequiredService<IService<OnyxStatusRequest, OnyxStatusResponse>>().Handle(new OnyxStatusRequest(), ct).ConfigureAwait(false);
+        if (answer.IsError)
+        {
+            return await OnyxVerbs.Fail(output, answer.Error).ConfigureAwait(false);
+        }
+
+        var status = answer.Value;
+        if (json)
+        {
+            return await output.Json(status, status.ExitCode).ConfigureAwait(false);
+        }
+
+        var rows = new List<string> { $"{"onyx",-10}{OnyxStateText(status)}" };
+        if (status.Url is not null)
+        {
+            rows.Add($"{"url",-10}{status.Url}");
+            rows.Add($"{"running",-10}{status.RunningVersion}");
+        }
+
+        rows.Add($"{"pinned",-10}{status.PinnedVersion} ({status.PinnedCommit[..7]})");
+        rows.AddRange(status.Checks.Select(c => $"{c.Name,-10}{Word(c.State)} {c.Detail}{(c.Problem is null ? string.Empty : $" ({c.Problem.Code}: {c.Problem.Message})")}"));
+        return await output.Text(string.Join('\n', rows) + "\n", status.ExitCode).ConfigureAwait(false);
+    }
+
+    private static string OnyxStateText(OnyxStatusResponse status) => status.State switch
+    {
+        OnyxState.NotSetUp => "not set up (run `sindri onyx up`)",
+        OnyxState.Stopped => "stopped (run `sindri onyx up` to start it)",
+        OnyxState.Running => "running",
+        OnyxState.Unknown => $"unknown (Docker isn't usable here: {status.Checks.FirstOrDefault(static c => c.Name == "docker")?.Detail})",
+        _ => status.State.ToString(),
+    };
+
+    internal async Task<int> Approve(string? hashText, CancellationToken ct)
     {
         ProfileHash? hash = hashText is not null && ProfileHash.TryFrom(hashText, out var parsed) ? parsed : null;
-        if (Precheck(hashText, hash, interactive) is { } refused)
+        if (Precheck(hashText, hash) is { } refused)
         {
             return await output.Error(refused).ConfigureAwait(false);
         }
 
-        var answer = await BeforeTheCall(hash, input, ct).ConfigureAwait(false);
-        if (answer.IsError)
+        var down = await StartIfAllowed(ct).ConfigureAwait(false);
+        if (down is not null)
         {
-            return await output.Error(answer.Error).ConfigureAwait(false);
+            return await output.Error(down).ConfigureAwait(false);
         }
 
-        var approved = await client.Post<ApproveProfileRequest, ApproveProfileResponse>("/sindri/profile/approve", new ApproveProfileRequest(hash, answer.Value), ct).ConfigureAwait(false);
+        var approved = await client.Post<ApproveProfileRequest, ApproveProfileResponse>("/sindri/profile/approve", new ApproveProfileRequest(hash), ct).ConfigureAwait(false);
         return approved.IsError ? await output.Error(approved.Error).ConfigureAwait(false) : await output.Text(ApprovalText(approved.Value.Value, hash is null), approved.Value.Value.Approved ? 0 : 1).ConfigureAwait(false);
     }
 
-    /// <summary>A malformed hash, or a hash without a terminal: refused before any call, and before starting anything.</summary>
-    private static Kernel.Error? Precheck(string? hashText, ProfileHash? hash, bool interactive) => (hashText, hash) switch
+    /// <summary>A malformed hash: refused before any call, and before starting anything.</summary>
+    private static Kernel.Error? Precheck(string? hashText, ProfileHash? hash) => (hashText, hash) switch
     {
         ({ } text, null) => SindriErrors.InvalidInput.With($"'{text}' is not a profile hash (64 hex digits)"),
-        (_, { }) when !interactive => SindriErrors.ProfileNeedsTerminal.With("approving needs an interactive terminal: run it yourself and type the action the challenge asks for"),
         _ => null,
     };
 
-    /// <summary>
-    /// Starts the control plane if this CLI may (API spec §7), then, to approve, asks for the 'approve profile &lt;hash6&gt;'
-    /// challenge and reads what the human types (S1-D5). A session gets no challenge: it sends the bare request, and the
-    /// command chain refuses it with SND-AUTH-002 naming ApproveProfile.
-    /// </summary>
-    private async Task<Kernel.Result<ChallengeAnswer?>> BeforeTheCall(ProfileHash? hash, TextReader input, CancellationToken ct)
-    {
-        var down = ensureRunning is null ? null : await ensureRunning(ct).ConfigureAwait(false);
-        if (down is not null)
-        {
-            return down;
-        }
-
-        if (hash is not { } h || client.SessionReason is not null)
-        {
-            return Kernel.Results.Success<ChallengeAnswer?>(value: null);
-        }
-
-        var issued = await client.Post<IssueChallengeRequest, IssueChallengeResponse>("/sindri/workflow/challenges",
-            new IssueChallengeRequest(ChallengeAction.ApproveProfile(h).Text), ct).ConfigureAwait(false);
-        if (issued.IsError)
-        {
-            return issued.Error;
-        }
-
-        await output.Out.WriteAsync($"Type '{issued.Value.Value.Action}' to approve it: ").ConfigureAwait(false);
-        var typed = (await input.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
-        return new ChallengeAnswer(issued.Value.Value.Challenge, typed);
-    }
+    /// <summary>Starts the control plane if this CLI may (API spec §7); no typed challenge follows (owner decision q93).</summary>
+    private async Task<Kernel.Error?> StartIfAllowed(CancellationToken ct) => ensureRunning is null ? null : await ensureRunning(ct).ConfigureAwait(false);
 
     private static string ApprovalText(ApproveProfileResponse a, bool preview) => (preview, a.Approved) switch
     {

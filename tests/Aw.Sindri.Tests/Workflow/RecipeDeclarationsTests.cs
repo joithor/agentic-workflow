@@ -66,29 +66,9 @@ public sealed class RecipeDeclarationsTests
         Assert.Contains(lines, l => l.Contains("RCP-SCHEMA-001", StringComparison.Ordinal) && l.Contains("outputs[0].color", StringComparison.Ordinal));
     }
 
-    /// <summary>The long form of the legacy recipe as the registry stored it: today's JSON (with its null 'hash') without the declarations P2b added (urgency, outputs, kind) and the two P4c added (name, generate).</summary>
-    internal static JsonObject LegacyJson(string yaml)
-    {
-        var node = JsonNode.Parse(AwJson.Serialize(RecipeReaderTests.Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
-        _ = node.Remove("urgency");
-        _ = node.Remove("outputs");
-        _ = node.Remove("name");
-        foreach (var input in node["inputs"]!.AsArray())
-        {
-            _ = input!.AsObject().Remove("kind");
-            _ = input.AsObject().Remove("generate");
-        }
+    internal static JsonObject LegacyJson(string yaml) => LegacyRecipeRows.Json(yaml);
 
-        return node;
-    }
-
-    /// <summary>The hash the legacy recipe was registered under: sha256 over the canonical legacy form without 'hash'.</summary>
-    internal static Core.Workflow.Ids.RecipeHash LegacyHash(string yaml)
-    {
-        var node = LegacyJson(yaml);
-        _ = node.Remove("hash");
-        return Core.Workflow.Ids.RecipeHash.Of(CanonicalJson.Of(node));
-    }
+    internal static Core.Workflow.Ids.RecipeHash LegacyHash(string yaml) => LegacyRecipeRows.Hash(yaml);
 
     [Fact, Trait("Lane", "unit")]
     public void Legacy_stored_text_without_the_declarations_reads_with_their_defaults()
@@ -110,7 +90,7 @@ public sealed class RecipeDeclarationsTests
         var legacy = LegacyJson(yaml);
         var current = JsonNode.Parse(AwJson.Serialize(RecipeReaderTests.Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
 
-        Assert.Equal(["name", "outputs", "urgency"], current.Select(p => p.Key).Except(legacy.Select(p => p.Key), StringComparer.Ordinal).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["displayName", "name", "outputs", "urgency"], current.Select(p => p.Key).Except(legacy.Select(p => p.Key), StringComparer.Ordinal).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.NotEqual(LegacyHash(yaml), RecipeHashing.Of(RecipeReaderTests.Bind(yaml), SliceHarness.Json));
     }
 }

@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:wf="using:Aw.Sindri.Ui.ViewModels.Workflows"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:wf2="using:Aw.Sindri.Ui.Views.Workflows"
              xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:Class="Aw.Sindri.Ui.Views.Workflows.StripRow"
              x:DataType="wf:StripRowViewModel">
   <!-- One line of Home's Workflows strip (screens spec §4.1): the glyph, the served chip, the subject (a button: it opens the
@@ -13,13 +15,18 @@
           AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
     <Grid x:Name="StripGrid" ColumnDefinitions="Auto,Auto,2*,3*,Auto,Auto" VerticalAlignment="Center">
       <TextBlock Classes="body-strong" Text="{Binding Glyph}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AccessibilityView="Raw" />
-      <ctl:StateChipView x:Name="StripChip" Grid.Column="1" Chip="{Binding Chip}" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <Button x:Name="StripTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding AccessibleName}">
+      <!-- The shared status badge (F3 home spec Q3): a glyph and a sentence-case word, never colour alone. -->
+      <StackPanel x:Name="StripStatus" Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,8,0"
+                  AutomationProperties.Name="{Binding StatusName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <icons:StateIcon Icon="{Binding Status.Icon}" Foreground="{DynamicResource Brush.InkMuted}" VerticalAlignment="Center" />
+        <TextBlock Classes="caption" Text="{Binding StatusName}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+      </StackPanel>
+      <Button x:Name="StripTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
         <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
       </Button>
       <!-- Wide: the recipe, the stage tag, the badge and the served "now" sentence sit on the row's line. Narrow page (UI spec §3.2): they drop to a second line. -->
       <WrapPanel x:Name="StripDetail" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
-        <TextBlock Classes="caption subtle mono" Text="{Binding Recipe}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Recipe}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Workflow}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Workflow}" />
         <TextBlock Classes="caption subtle mono" Text="{Binding Stage}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Stage}" />
         <TextBlock x:Name="StripBadge" Classes="caption" Text="{Binding Badge}" IsVisible="{Binding HasBadge}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Badge}" />
         <TextBlock x:Name="StripNow" Classes="caption subtle" Text="{Binding Now}" AutomationProperties.Name="{Binding Now}" />
@@ -28,6 +35,7 @@
       <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
         <Button x:Name="StripAnswer" Classes="command-control primary" Click="OnAnswer" IsVisible="{Binding CanAnswer}"
                 Content="{Binding AnswerText}" AutomationProperties.Name="{Binding AnswerName}" />
+        <wf2:ChildAnswerButton x:Name="StripChildAnswer" DataContext="{Binding ChildAnswer}" IsVisible="{Binding $parent[UserControl].((wf:StripRowViewModel)DataContext).ChildAnswer, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <comp:ProtectedActionButton x:Name="StripProtected" DataContext="{Binding Protected}" IsVisible="{Binding $parent[UserControl].((wf:StripRowViewModel)DataContext).Protected, Converter={x:Static ObjectConverters.IsNotNull}}" />
       </StackPanel>
     </Grid>

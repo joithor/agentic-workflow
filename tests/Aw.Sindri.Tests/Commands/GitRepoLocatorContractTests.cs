@@ -26,8 +26,8 @@ public sealed class GitRepoLocatorContractTests : RepoLocatorContract, IDisposab
         var main = Path.Combine(_temp.Path, "main");
         var worktree = Path.Combine(_temp.Path, "wt-x");   // outside the main checkout: only the common dir can name 'main'
         _ = Directory.CreateDirectory(main);
-        await Git(main, "init", "-q");
-        await Git(main, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init");
+        await Git(main, IsolatedGit.Init());
+        await Git(main, [.. IsolatedGit.NoHooks, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init"]);
         await Git(main, "worktree", "add", "-q", worktree);
         var inside = Path.Combine(worktree, "src");
         _ = Directory.CreateDirectory(inside);

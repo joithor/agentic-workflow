@@ -29,7 +29,7 @@ public static class MapAccess
     /// <param name="callerScope">False to apply the deny globs only, for a decision the engine doesn't scope to the caller's repo (a review, a proposal's status).</param>
     /// <returns>The visible view, or SND-CONTEXT-001 for an invalid section, or SND-CONTEXT-003 when a session's repo implements nothing in the map.</returns>
     public static Result<MapView> View(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending, bool callerScope = true) =>
-        Merged(graph, overrides, scope, (pending, callerScope), intent: null);
+        Merged(graph, overrides, scope, (pending, callerScope, EmptyIsError: true), intent: null);
 
     /// <summary>The view with the synced intent layer merged into the graph before the cut (spec §3 Repo scope, §6.2): its records, decisions and links meet the deny globs and a session's scope like any node.</summary>
     /// <param name="intent">The synced layer.</param>
@@ -39,11 +39,24 @@ public static class MapAccess
     /// <param name="pending">True when a 'propose' row's node is part of the map (a draft).</param>
     /// <returns>The visible view, or SND-CONTEXT-001/003.</returns>
     public static Result<MapView> ViewWithIntent(IntentLayer intent, GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending) =>
-        Merged(graph, overrides, scope, (pending, CallerScope: true), intent);
+        Merged(graph, overrides, scope, (pending, CallerScope: true, EmptyIsError: true), intent);
 
-    private static Result<MapView> Merged(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, (bool Pending, bool CallerScope) mode, IntentLayer? intent)
+    /// <summary>
+    /// <see cref="ViewWithIntent"/> for a read whose question names its nodes (the subgraph): a session whose repo implements nothing sees an empty map, so every key it asks for is
+    /// simply missing, the same answer as for a key the map doesn't hold, instead of SND-CONTEXT-003.
+    /// </summary>
+    /// <param name="intent">The synced layer.</param>
+    /// <param name="graph">The stored graph of the version.</param>
+    /// <param name="overrides">The version's overrides.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="pending">True when a 'propose' row's node is part of the map (a draft).</param>
+    /// <returns>The visible view (empty for such a session), or SND-CONTEXT-001.</returns>
+    public static Result<MapView> ViewWithIntentOrEmpty(IntentLayer intent, GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, bool pending) =>
+        Merged(graph, overrides, scope, (pending, CallerScope: true, EmptyIsError: false), intent);
+
+    private static Result<MapView> Merged(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, ContextScope scope, (bool Pending, bool CallerScope, bool EmptyIsError) mode, IntentLayer? intent)
     {
-        var (pending, callerScope) = mode;
+        var (pending, callerScope, emptyIsError) = mode;
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(overrides);
         ArgumentNullException.ThrowIfNull(scope);
@@ -68,19 +81,19 @@ public static class MapAccess
         var (cutGraph, cutOverrides) = (cut.Apply(merged), cut.Apply(overrides));
         var applied = OverrideApplier.Apply(cutGraph, pending ? cutOverrides : [.. cutOverrides.Where(o => o.Action != OverrideAction.Propose)]).Graph;
         var view = new MapView(cutGraph, applied, cutOverrides, cut);
-        if (!callerScope || scope.Caller.Kind != ContextCallerKind.Session)
-        {
-            return view;
-        }
+        return !callerScope || scope.Caller.Kind != ContextCallerKind.Session ? view : ForSession(view, scope.Caller, emptyIsError);
+    }
 
-        var scopedApplied = scope.Caller.Repo is { } repo ? view.Applied.ScopedTo(repo) : GraphSnapshot.Empty;
-        if (scopedApplied.Nodes.Count == 0)
+    private static Result<MapView> ForSession(MapView view, ContextCaller caller, bool emptyIsError)
+    {
+        var scopedApplied = caller.Repo is { } repo ? view.Applied.ScopedTo(repo) : GraphSnapshot.Empty;
+        if (scopedApplied.Nodes.Count == 0 && emptyIsError)
         {
             return ContextErrors.UnknownAnchor.With("no map nodes are implemented in this session's repo (X-Sindri-Repo)");
         }
 
         // Both scopings run the same repo scope over graphs that differ only by the overrides applied; status counts come from scopedGraph and reads from scopedApplied.
-        var scopedGraph = scope.Caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
+        var scopedGraph = caller.Repo is { } own ? view.Graph.ScopedTo(own) : GraphSnapshot.Empty;
         return view.Scoped(scopedGraph, scopedApplied, [.. view.Overrides.Where(o => scopedGraph.Resolve(o.Target) is not null)]);
     }
 

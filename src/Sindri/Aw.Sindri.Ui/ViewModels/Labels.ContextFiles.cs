@@ -1,0 +1,146 @@
+using System.Globalization;
+
+namespace Aw.Sindri.Ui.ViewModels;
+
+/// <summary>The app's own copy (<see cref="Labels"/>, continued): the Context page's Files view and its states (F3 spec 1, slice 4). Plain words; never a served sentence.</summary>
+internal static partial class Labels
+{
+    /// <summary>The files table's first column.</summary>
+    internal const string ContextFilesColFile = "File";
+
+    /// <summary>The files table's second column.</summary>
+    internal const string ContextFilesColFor = "What it is for";
+
+    /// <summary>The top folder of the repo in the breadcrumb, as a terminal writes home.</summary>
+    internal const string ContextFilesTop = "~";
+
+    /// <summary>The breadcrumb's accessible name.</summary>
+    internal const string ContextFilesCrumbsName = "Folder path";
+
+    /// <summary>The page's repo picker, by name.</summary>
+    internal const string ContextRepoName = "Repository";
+
+    /// <summary>The filter box's hint.</summary>
+    internal const string ContextFilesFilter = "Filter by name";
+
+    /// <summary>The note while a filter waits for the rest of a big folder to arrive.</summary>
+    /// <param name="loaded">How many entries are read.</param>
+    /// <param name="total">How many there are.</param>
+    /// <returns>"Still reading this folder: the filter covers 400 of 27000 so far."</returns>
+    internal static string ContextFilesFilterPartial(int loaded, int total) =>
+        string.Create(CultureInfo.InvariantCulture, $"Still reading this folder: the filter covers {loaded} of {total} so far.");
+
+    /// <summary>The word while a folder is read.</summary>
+    internal const string ContextFilesLoading = "Reading the files...";
+
+    /// <summary>The word for a folder with nothing in it.</summary>
+    internal const string ContextFilesEmpty = "Nothing in this folder.";
+
+    /// <summary>What a file with no feature says.</summary>
+    internal const string ContextFilesNoFeature = "Not linked to a feature yet";
+
+    /// <summary>What a file with no ticket or decision says.</summary>
+    internal const string ContextFilesIntentNone = "None";
+
+    /// <summary>The word for a file the tool suggests a link for.</summary>
+    internal const string ContextFilesSuggested = "Suggested, not confirmed";
+
+    /// <summary>The word for a file with no link.</summary>
+    internal const string ContextFilesUnmapped = "Not in the map";
+
+    /// <summary>How many files a folder holds.</summary>
+    /// <param name="files">The count.</param>
+    /// <returns>"4 files".</returns>
+    internal static string ContextFilesCount(int files) => Count(files, "file", "files");
+
+    /// <summary>A row's tickets and decisions.</summary>
+    /// <param name="records">How many tickets.</param>
+    /// <param name="decisions">How many decisions.</param>
+    /// <returns>"1 ticket · 2 decisions", or <see cref="ContextFilesIntentNone"/>.</returns>
+    internal static string ContextFilesIntent(int records, int decisions) => records == 0 && decisions == 0
+        ? ContextFilesIntentNone
+        : Dots(records > 0 ? Count(records, "ticket", "tickets") : null, decisions > 0 ? Count(decisions, "decision", "decisions") : null);
+
+    /// <summary>The totals line over the table.</summary>
+    /// <param name="files">All files.</param>
+    /// <param name="mapped">Files in the map.</param>
+    /// <param name="suggested">Files with a suggested link.</param>
+    /// <param name="unmapped">Files not in the map.</param>
+    /// <returns>"3 files · 1 in the map · 1 suggested · 1 not in the map".</returns>
+    internal static string ContextFilesTotals(int files, int mapped, int suggested, int unmapped) => Dots(
+        Count(files, "file", "files"),
+        string.Create(CultureInfo.InvariantCulture, $"{mapped} in the map"),
+        string.Create(CultureInfo.InvariantCulture, $"{suggested} suggested"),
+        string.Create(CultureInfo.InvariantCulture, $"{unmapped} not in the map"));
+
+    /// <summary>A feature key as a person reads it.</summary>
+    /// <param name="key">The key, "feature:tabs.tab-groups".</param>
+    /// <returns>"tabs.tab-groups" (the key without its kind word).</returns>
+    internal static string ContextFilesFeature(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        var colon = key.IndexOf(':', StringComparison.Ordinal);
+        return colon >= 0 && colon < key.Length - 1 ? key[(colon + 1)..] : key;
+    }
+
+    /// <summary>The words for a row's status; a status this build does not know shows as served.</summary>
+    /// <param name="status">The status as served.</param>
+    /// <returns>The words.</returns>
+    internal static string ContextFilesStatus(string status) => status switch
+    {
+        "mapped" => ContextMapInMap,
+        "suggested" => ContextFilesSuggested,
+        "unmapped" => ContextFilesUnmapped,
+        _ => status,
+    };
+
+    /// <summary>The Building state's title.</summary>
+    internal const string ContextStateBuilding = "Building the map for this item...";
+
+    /// <summary>The Building state's body.</summary>
+    internal const string ContextStateBuildingBody = "Reading the ticket, the product map and the code. This usually takes under a minute.";
+
+    /// <summary>The No map state's title.</summary>
+    internal const string ContextStateEmptyTitle = "No map for this item yet";
+
+    /// <summary>The No map state's body.</summary>
+    internal const string ContextStateEmptyBody = "Build it to see why this work exists and what it touches.";
+
+    /// <summary>The whole map's Building overlay when the API says how far it is: the parts it knows, joined.</summary>
+    /// <param name="parts">The parts that are known ("3 of 7 sources", "started 4 min ago").</param>
+    /// <returns>"Building the map · 3 of 7 sources · started 4 min ago".</returns>
+    internal static string ContextBuildingLine(IEnumerable<string> parts) => string.Join(" · ", ((string[])["Building the map"]).Concat(parts));
+
+    /// <summary>How far a build has read.</summary>
+    /// <param name="done">Sources read.</param>
+    /// <param name="total">Sources to read.</param>
+    /// <returns>"3 of 7 sources".</returns>
+    internal static string ContextBuildingSources(int done, int total) => string.Create(CultureInfo.InvariantCulture, $"{done} of {total} {(total == 1 ? "source" : "sources")}");
+
+    /// <summary>When a build started.</summary>
+    /// <param name="age">How long ago.</param>
+    /// <returns>"started 4 min ago".</returns>
+    internal static string ContextBuildingStarted(TimeSpan age) => "started " + ContextAgo(age);
+
+    /// <summary>When the map that is being replaced was last synced.</summary>
+    /// <param name="age">How long ago.</param>
+    /// <returns>"last map 2 h ago".</returns>
+    internal static string ContextLastMap(TimeSpan age) => "last map " + ContextAgo(age);
+
+    /// <summary>The button that opens the build's job.</summary>
+    internal const string ContextBuildingJob = "View build job";
+
+    /// <summary>The No map overlay's title when the API names the repositories.</summary>
+    /// <param name="repos">How many repositories.</param>
+    /// <returns>"No map yet for 2 repositories".</returns>
+    internal static string ContextNoMapRepos(int repos) => string.Create(CultureInfo.InvariantCulture, $"No map yet for {repos} {(repos == 1 ? "repository" : "repositories")}");
+
+    // A short age in the Context page's words.
+    private static string ContextAgo(TimeSpan age) => age.TotalMinutes switch
+    {
+        < 1 => "just now",
+        < 60 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalMinutes} min ago"),
+        < 1440 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalHours} h ago"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays} d ago"),
+    };
+}

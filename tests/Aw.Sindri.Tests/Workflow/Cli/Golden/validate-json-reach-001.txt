@@ -3,7 +3,7 @@ exit 1
 --- stdout
 {
   "passed": false,
-  "hash": "sha256:5762407d6fea0ed6f351b88559a6f13a8fbba098d613f88ff5192d5904ed5d46",
+  "hash": "sha256:74ee1aa700535be671d44802ea2003d5ee0d314e4ea93a0dcc7c67fffc04f1cc",
   "findings": [
     {
       "code": "RCP-REACH-001",
@@ -101,7 +101,8 @@ exit 1
     ],
     "loops": {},
     "budget": null,
-    "evals": []
+    "evals": [],
+    "displayName": "Test recipe"
   }
 }
 --- stderr

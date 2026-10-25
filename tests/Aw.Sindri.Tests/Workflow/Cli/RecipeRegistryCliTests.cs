@@ -58,7 +58,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
         Assert.Equal($"{name} unapproved\n", listOut);
         Assert.StartsWith($"{name}\nurgency: work\ninput: fact:spec type=text kind=text\n", showOut, StringComparison.Ordinal);
         Assert.Contains("order: path\nstate: produce order=1\nstate: checks order=2\nstate: verify order=3\nstate: done order=4\n", showOut, StringComparison.Ordinal);
-        Assert.Contains("loop: revisions verify -> produce cap=3\nloop: revisions checks -> produce cap=3\n", showOut, StringComparison.Ordinal);
+        Assert.Contains("loop: revisions verify -> produce cap=5\nloop: revisions checks -> produce cap=5\n", showOut, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -189,7 +189,7 @@ public sealed class RecipeRegistryCliTests : IDisposable
 
     private async Task<int> Run(WebApplication app, CancellationToken ct, params string[] args)
     {
-        var session = new AgentSession(Signal: null, Terminal: true, Prover: false);
+        var session = new AgentSession(Terminal: true, Prover: false);
         using var client = new ControlPlaneClient(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
             CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
         var desk = new RecipeDesk(client, new StringReader(string.Empty), static _ => Task.FromResult<Error?>(null));

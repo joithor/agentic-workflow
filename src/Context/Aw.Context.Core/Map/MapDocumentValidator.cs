@@ -57,6 +57,11 @@ public static class MapDocumentValidator
             problems.Invalid("mapVersion", Fmt($"{document.MapVersion} isn't a map version (1 or more)"));
         }
 
+        if (document.Commit is { } commit && !MapHead.IsCommit(commit))
+        {
+            problems.Invalid("commit", "is not a commit: 7 to 40 lowercase hex characters");
+        }
+
         if (document.KeyVersion < 1 || document.KeyVersion > keyVersion)
         {
             problems.Invalid("keyVersion", Fmt($"{document.KeyVersion} isn't supported (1 to {keyVersion})"));

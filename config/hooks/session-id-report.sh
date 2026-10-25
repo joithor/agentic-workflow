@@ -4,6 +4,9 @@
 # own id instead of guessing from file timing (launcher spec section 4):
 #   AW_META_TEAM + AW_META_LANE  ->  ${AW_META_DIR:-$AW_STATE_DIR/meta}/lane-sessions/<lane>          (scripts/meta-lane.sh waits for it)
 #   AW_SINDRI_LAUNCH             ->  $AW_SINDRI_HOME/launches/<launchId>.session-id    (Sindri's launcher)
+# In the team's meta lane (AW_META_LANE is the metaLane of the team config AW_META_CONFIG names) it also registers the session as the
+# meta role (`aw-meta role-set --session <id> --name <team>-<lane>`), which meta-lane.sh cannot do for an agent that reports its id
+# after it starts. Here, not in the launcher's id watcher, so a later session of the same lane (a new id) takes the role too.
 # The key is a variable the host set on that one session, so two sessions started together can't swap ids. Outside a lane or a
 # Sindri launch it exits 0 at once, writing nothing. The id is written atomically and 0600. Reads the id from `session_id`
 # (cursor.sh maps Cursor's conversation_id to it). Prints nothing; any problem fails open.
@@ -88,6 +91,13 @@ if [ "$lane_mode" = 1 ]; then
   write_id "${AW_META_DIR:-$STATE/meta}/lane-sessions" "$AW_META_LANE" || failopen write-failed
   # a new session starts with no reply marker or owed checksum (meta-lane-gate.sh)
   unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
+  META_LANE=""   # unknown without the team config: no role is registered
+  if [ -n "${AW_META_CONFIG:-}" ] && [ -f "$AW_META_CONFIG" ]; then META_LANE="$(jq -r '.metaLane // "meta"' "$AW_META_CONFIG" 2> /dev/null)"; fi
+  META="${AW_META_BIN:-$STATE/bin/aw-meta}"
+  if [ -n "$META_LANE" ] && [ "$AW_META_LANE" = "$META_LANE" ] && [ -x "$META" ]; then
+    AW_LOG_LEVEL=none "$META" role-set --session "$ID" --name "$AW_META_TEAM-$AW_META_LANE" > /dev/null 2>&1; rrc=$?
+    [ "$rrc" = 0 ] || failopen "role-set-exit-$rrc"
+  fi
 fi
 if [ -n "${AW_SINDRI_LAUNCH:-}" ]; then
   if safe_name "$AW_SINDRI_LAUNCH"; then

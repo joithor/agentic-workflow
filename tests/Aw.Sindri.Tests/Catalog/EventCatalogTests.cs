@@ -56,6 +56,7 @@ public sealed class EventCatalogTests
     [InlineData(WorkflowEventType.Shifted, "workflow.shifted")]
     [InlineData(WorkflowEventType.Notified, "workflow.notified")]
     [InlineData(WorkflowEventType.Expired, "workflow.expired")]
+    [InlineData(WorkflowEventType.Heavy, "workflow.heavy")]
     public void Every_type_the_interpreter_mirrors_is_catalogued_under_the_engines_name(WorkflowEventType type, string name)
     {
         var mirrored = RecipeWorkflow.TypeOf(type);

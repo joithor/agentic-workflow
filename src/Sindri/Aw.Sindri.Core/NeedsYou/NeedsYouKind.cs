@@ -22,4 +22,12 @@ public enum NeedsYouKind
     /// <summary>The live profile changed since approval.</summary>
     [JsonStringEnumMemberName("profile")]
     Profile,
+
+    /// <summary>A setup step that waits for the owner or failed (setup-once spec §7.3).</summary>
+    [JsonStringEnumMemberName("setup")]
+    Setup,
+
+    /// <summary>A changed workflow that waits for its own approval (setup-once spec §5.3, §7.3).</summary>
+    [JsonStringEnumMemberName("recipe")]
+    Recipe,
 }

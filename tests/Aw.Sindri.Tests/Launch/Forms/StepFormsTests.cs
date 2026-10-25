@@ -1,6 +1,6 @@
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Launch;
 
@@ -21,6 +21,25 @@ public sealed class StepFormsTests
 
     private static StepArgs Policy(StepPermissionMode mode, string? writable = "/work/repo/.claude/worktrees/sindri-1") =>
         new(Model: null, new StepPolicy(["Read", "Grep"], mode, writable), _ref);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_codex_entry_refuses_denied_paths_it_cannot_express()
+    {
+        var step = new StepArgs(Model: null, new StepPolicy([], StepPermissionMode.Default, WritablePath: null, ["/work/other"]), _ref);
+
+        var built = ArgvBuilder.Build(AgentEntries.Codex, LaunchMode.Open, Inputs(step));
+
+        Assert.True(built.IsError);
+        Assert.Equal("SND-LAUNCH-013", built.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_claude_entry_accepts_denied_paths_through_its_settings_file()
+    {
+        var step = new StepArgs(Model: null, new StepPolicy([], StepPermissionMode.Default, WritablePath: null, ["/work/other"]), _ref);
+
+        Assert.False(ArgvBuilder.Build(AgentEntries.ClaudeCode, LaunchMode.Open, Inputs(step, Settings)).IsError);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Forms_add_arguments_only_when_unattended()

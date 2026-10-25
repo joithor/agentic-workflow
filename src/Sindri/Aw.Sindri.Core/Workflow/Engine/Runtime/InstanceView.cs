@@ -60,6 +60,14 @@ public sealed record InstanceView(
     /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
     public TimeSpan? Paused { get; init; }
 
+    /// <summary>Who took the instance over (the takeover suspension's actor); null when it is not taken over.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TakenOverBy { get; init; }
+
+    /// <summary>The open run when an agent session runs it (its token and the launch that proves it); null for a desk or block run. What authorizes a session's report (API spec §4.2).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Instances.OpenRun? AgentRun { get; init; }
+
     /// <summary>The runs of non-desk steps now executing, which a cancel stops (the cancel confirmation counts them; a desk run is not a running step).</summary>
     public int RunningSteps { get; init; }
 
@@ -121,6 +129,21 @@ public sealed record InstanceView(
 
     /// <summary>One row per input and output the recipe declares, in declaration order.</summary>
     public IReadOnlyList<FactRow> Facts { get; init; } = [];
+
+    /// <summary>When the instance started; null for one that began before the start was stamped.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? StartedAt { get; init; }
+
+    /// <summary>Who started the instance, in the actor form of the step runs ('human:prover'); null when nobody is recorded (a child, an automated start, an older instance).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StartedBy { get; init; }
+
+    /// <summary>The instance this one reruns (its address); null for any other. Recorded at start, so it survives a restart.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public InstanceAddress? Again { get; init; }
+
+    /// <summary>What each Step state reads and produces (the detail's 'steps'), in the recipe's state order.</summary>
+    public IReadOnlyList<StateStep> Steps { get; init; } = [];
 
     /// <summary>The children, one group per state that declares child or runs step.children; empty until engine P7.</summary>
     public IReadOnlyList<ChildGroup> ChildGroups { get; init; } = [];

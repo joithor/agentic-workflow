@@ -102,13 +102,15 @@ that graph plus rank fusion across adapters.
   Integration tests assert both checks for `/sindri/mcp` and for each POST route.
 - **MCP registration is per work repo, never user-wide:** one Sindri MCP endpoint serves these tools and the API
   spec's `sindri_*` tools (API §8). `sindri mcp register` prints, or with `--apply` runs, `claude mcp add --transport
-  http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp` inside the work repo
-  so personal-repo sessions (where Prism is registered) never see work context. Codex and Cursor are never
-  registered: `ILauncher` passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
+  http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header "X-Sindri-Repo: <name>"` inside the work repo
+  so personal-repo sessions (where Prism is registered) never see work context. With `--providers claude,codex,cursor|all` it
+  also writes the checkout's `.cursor/mcp.json` and `.codex/config.toml` (and Codex's project trust row in its user config), and
+  `scripts/sindri-app.sh` runs that once the control plane's port is known; `ILauncher` still passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
   any user-wide `sindri` entry in `~/.claude.json`, `~/.codex/config.toml` or `~/.cursor/mcp.json`. S-1M, which
   creates `/sindri/mcp`, ships this check, `sindri mcp register`, and the probe of whether Claude Code's local scope
   reaches the repo's worktree sessions.
 - **Decisions stay human (README X63):** a map review decision is made by a person, never a session, and there is no
+  **(SO-14, owner rule 2026-10-19)** One exception: map promote has no manual step. The built-in `context-map-refresh` service builds, runs a cleanup agent and promotes through the engine directly (`Who = service:context-map-refresh`), bypassing the protected command by design; each accept is a reversible override with that actor. The cleanup agent runs read-only with no tools on scrubbed input, its output is schema-checked, a per-run removal ceiling parks the run instead of promoting, and its model calls have a daily cap per repo with a machine ceiling. The manual protected promote stays. See `2026-10-19-sindri-setup-once-design.md` §5.5.
   review tool over MCP. The classes follow how far a decision reaches. A single accept, reject, rename or move, the
   bulk deterministic accept, `--undo`, and the orphan repoint and drop are `desk` actions: the terminal or the app may run
   them, each is one reversible `map_override` row, and Undo is the recovery. `map review --apply <file>`, merge, add,
@@ -118,7 +120,7 @@ that graph plus rank fusion across adapters.
   session caller on the whole-map paths (bulk accept, `--apply`, export, promote, build) and leaves a single decision to
   the class check.
 - **Session reads, any transport.** `context.sessions.enabled` gates every `session`-class context read: MCP, the CLI
-  run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected.
+  run inside an agent session, and plain HTTP. Off, they answer `SND-CONTEXT-020`; `human` reads are unaffected. **Amended per owner q93 (2026-10-23):** the key defaults to on (the owner may turn it off); sessions also build, back-test, measure, read the repo heads, review, promote and preview a map, and search the intent sources (no `context.repoTeams` needed); map import, export, hold, release, eval purge and profile approval stay with a human or the service, and the typed confirmation stays on import. The "Decisions stay human (X63)" rule below is superseded for review and promote.
 - **Denied paths.** The profile's `index.denyPaths` (added to the built-in secret globs) hide a path from every read of the map as soon as the profile with the glob is approved: its code nodes, the edges touching them, the features only they made, the surfaces only they produced and any evidence that names them are left out of lenses, file maps, queries, export, `map status`, the review queue (its counts, the bulk accept and the promote check), the history and a run's proposal statuses, for every caller. The decision is made once, on the map with the overrides applied, so a feature a person accepted goes with its only file. The path leaves the stored map when a draft is promoted, whether the draft came from a build or from a proposal.
 - **Repo scope.** A `session` caller sees only records reachable from its `X-Sindri-Repo`: that repo's files and code,
   graph nodes the repo implements and their cascade, and intent records linked to those nodes or from the Linear teams
@@ -413,12 +415,12 @@ No model call happens on the query path unless rerank is on.
 
 ### 8.3 Budgets and packing
 
-The request carries `budget` (tokens, capped at `context.maxBudget`, default 32 000) and optional per-section caps
+The request carries `budget` (tokens, capped at `context.maxBudget`, default 200 000; raised from 32 000 per owner q93, 2026-10-23) and optional per-section caps
 (the §17.8 injection plan). Sections, in fill order: `graph` (anchor facts, never cut mid-item), `affects` (the
 cascade with paths), `decisions`, `code` (refs and signatures, not bodies), `records` (snippets). Within a section
 items are filled greedily by score; overflow is listed as refs only ("+12 more"). **Conflicts and `degraded` sit
 outside the budget and are always returned in full.** Tokens are estimated as UTF-8 characters / 4 and labeled
-`estimate`. Server-side caps: depth ≤ 4, `path` length ≤ 8, `Limit` ≤ 200, record text ≤ 64 KB per record, one map
+`estimate`. Server-side caps: depth ≤ 8 (a deeper ask is read as 8; was 4), `path` length unlimited (was 8), no `Limit` ceiling (was 200), a question has no length limit and keeps up to 64 terms (was 2000 characters, 16 terms), the 20-item fused cap is gone (all removed or raised per owner q93, 2026-10-23), record text ≤ 64 KB per record, one map
 build at a time.
 
 ### 8.4 Result
@@ -509,7 +511,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
-| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
+| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name; or the commit a `mapVersion=` read's as-of map names is not in the clone (the `git-history` row of a history answer, reason `commit-not-held`) (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
 | `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 
 `lenses` and `filemap` reuse `SND-CONTEXT-003` for an anchor, node or path that is not in the map (UI E-26's "anchor not found"; a second code for the same condition would duplicate it), with `suggestedAnchors` in the problem details.
@@ -572,6 +574,33 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
   surface has no node key, because the key is built from that text. Both maps are read through the one view every read uses
   (§3 "Denied paths"), so a surface only a denied file evidences reads as unmapped.
 
+### 8.7a Publishing a refreshed map (owner decision, 2026-10-20: the map and the code index publish together)
+
+*Approved by the owner on 2026-10-20 with every default as written (15-minute wait, setting 0 to 240; a manual promote does not wait; a go-ahead shows on Health and map status, no needs-you row; each repo's commit kept per map version; the first map and a repo's first index do not wait), relayed by sindri-meta.*
+
+The decision and its numbers are the code index spec's (`2026-10-19-sindri-code-index-design.md`, revision 4, CI13 and §6.4: the pure
+`MapPublishDecision`, its inputs and outputs, the wait bound, the supersede rules, the words and events). This subsection is the
+map side's contract of record: what the store holds and what each actor may do. (`docs/csharp/sindri-context.md` is the as-built
+record and gets this section's F1P text when it is built; it has no F1 section today, so this is where the contract lives.)
+
+- **A held version is a `draft`.** `MapVersionStatus` does not change (`building`, `draft`, `current`, `retained`). The F1 refresh (the
+  service-run `RefreshContextMap` job: build, cleanup agent, promote) now promotes only when `MapPublishDecision` says `Publish`; when it says
+  `Wait` the draft stays the latest draft, ready to promote, and the previous version stays `current`, answering every read.
+- **The hold is stored with the draft** in `context.db`: `map_hold` (one row: `version` referencing `map_version` with `ON DELETE CASCADE`, so the hold goes with the draft it describes), `map_publish_chain` (one row: `since`, the start of the wait; **not** tied to a draft, so it survives a rebuild; set when the first hold of a chain is written, cleared by any promote) and `map_version_head(version, repo, commit, on_default)` (the commit each mapped repo was at when the build read it, written by the build from `MapBuildReport.Heads`, cascade-deleted with the version; a commit is 7 to 40 lowercase hex or refused). The hold's heads *are* its version's `map_version_head` rows. The calls go through `IContextEngine` (which inherits `IContextMap`; Sindri holds no context port):
+  `ValueTask<Result<MapPublishState>> Held(ContextScope, ct)` returning `MapPublishState(MapHold? Hold, int? LatestDraft, int? Current, IReadOnlyList<MapHead> CurrentHeads)`, `ValueTask<Result<MapHold>> Hold(MapHold, ContextScope, ct)`, `ValueTask<Result<Unit>> Release(int version, ContextScope, ct)` (all three service-only), and the read for everyone else, `ValueTask<Result<MapPublishView>> PublishStatus(ContextScope, ct)`, scoped to the caller's repos (no other repo's name, commit or count), which is what `context map status`, the Health card and a session read.
+  `Release` is `DELETE … WHERE version = ?`; `Hold` refuses a version that is not the latest draft and reads `since` from the chain row in one transaction (`MapHold.NextSince`, in Context). **Every promote deletes the hold and the chain row** in its transaction, including one that renumbers the draft: `ReplaceDraft` (accepted proposals or a deny cut renumber the draft to N+1) and `OpenDraft` copy the source's `map_version_head` rows to the new number; an import keeps whatever it names (none for a null commit, which keeps today's rule: the repo's head, and `MappedHeads` reads it as none so one refresh runs). Retention removes a version's heads and hold with it, and a retained version keeps its heads for as-of reads. `SaveDraft` (a build) drops the old draft and with it the hold; the chain row stays.
+  `Promote`, `CleanDraft` and `AppendOverrides` gain `int? expectedVersion = null` (null is today's behavior and the human path passes null; non-null is refused with **`SND-CONTEXT-190`** when the latest draft is another number, bound to the draft read at the start of the call; `SND-CONTEXT-046` keeps its meaning: no draft, or undecided items). The cleanup passes check the draft number on every pass read and `AppendOverrides` checks it in its own transaction, because the overrides layer is shared across versions: a person's `map build` during a pass must not receive the model's rejects for the old draft. A named migration creates the three tables, with a test that an old `context.db` opens and gets them.
+- **Only the automatic path waits.** `map promote` (protected, typed challenge) promotes the latest draft whether or not it is held, and `map review` and
+  `map build` work on a held draft as on any (a build replaces it and the next tick drops the stale hold). A scoping proposal joins a held draft like any draft
+  (§8.7), which is why the publish job runs the cleanup pass again before promoting.
+- **Profile.** `context.publish.waitForIndexMinutes` (int 0 to 240, default 15; 0 turns the wait off). Out of range is `SND-CONTEXT-001` with the key path;
+  `profile validate` and `docs/csharp/sindri-profile.md` list it (the §8.8 block above gains `publish: { waitForIndexMinutes: 15 }`).
+- **Errors.** `SND-CONTEXT-190` (Conflict): `expectedVersion` was given and the latest draft is another number (a rebuild replaced the draft, or it was promoted); the publish job maps it to a quiet `Succeeded` result and drops the hold. The range
+  `190..194` is reserved here for the map's publish rules; the explain spec owns `180..189`; the range row of the code ranges list in the phases section is updated to say so. `SND-CONTEXT-046` names a hold in its message when one existed.
+- **Events.** `context.map.held`, `context.map.published`, `context.map.hold.dropped` and a `held` field on `context.map.refreshed` (payloads in the code index spec §6.4);
+  `context.map.promoted` is unchanged and still follows every committed promote, which is what the explain carry listens to.
+- **Reads.** A lens, query or code read is unchanged: they read `current`. What a published map's code rows say about the index's commit is the code index spec §7.3 (`stale`, both commits named, derived at read time).
+
 ### 8.8 Profile and setup
 
 ```yaml
@@ -590,6 +619,7 @@ context:
     linear: { token: "keychain:linear/work-read", teams: [ENG, APP] }   # url: Linear's API host (or loopback, tests)
     onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "<pinned tag>" }
   eval: { adjudicator: false }
+  publish: { waitForIndexMinutes: 15 }   # how long a refreshed map waits for the code index of its commit (§8.7a); 0: don't wait
 services:                                 # S1's map; the engine's services run only when named here
   context-docs-refresh: { every: 5m }
   context-sync: { every: 15m }
@@ -917,7 +947,7 @@ HIGHs, fixed:
 
 Also fixed: a stage-owner brief overriding `/specToProvenPR`'s epic defaults (devex); owners stay assigned until merge
 and do their own rebases; the lead is the only `stages.md` writer; caps on ready-unmerged PRs and stack depth; a token
-budget per stage; S-2W as its own stage, merging before S-5A; `context.sessions.enabled` defaults to false; MCP usage
+budget per stage; S-2W as its own stage, merging before S-5A; `context.sessions.enabled` defaults to false (on since owner q93, 2026-10-23); MCP usage
 counts in `sources status` (P-4); every-source-down is exit 2 (`SND-CONTEXT-011`); `scrub-blocked` as a citation state;
 stale review files refused (`SND-CONTEXT-043`), resume after quit, `--undo`; cascade behaviour after ascend; truth
 mapped through the sample's as-of map; as-of maps deterministic-only and cached; Linear canonical keys on the UUID; the
@@ -1171,7 +1201,7 @@ team ever reads work data:
 |---|---|
 | `context.db` migrations | **Named, not pre-numbered.** A stage's migration file is `NNNN_<stage>_<name>.sql` (the loader's form: four digits, letters, digits and
 `_` only, e.g. `0003_s5a_linear_cursor.sql`) with `NNNN` set to the next free number **on the branch it sits on**, and renumbered when it rebases onto a new base (a stage's migrations stay contiguous on top of its base, as `Aw.Kernel.Data`'s gap check requires). Number and content freeze at merge. Only throwaway homes ever ran an unmerged migration, so renumbering never touches a real `context.db` |
-| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`, S-D `110–119` (S-LB 120–129, S-SK 130–139, S-CH 140–149, S-CL 150–159, S-H 160–169, S-TR 170–179 are booked for the scoping-station stages). §8.6 follows these ranges |
+| `SND-CONTEXT-*` codes | Ranges per stage: S-1A `001–019`, S-1M `020–029`, S-3a `030–034` (030 "No map yet" is defined in S-3a; S-3b reuses it), S-3b/S-3M `035–039`, S-4 `040–049`, S-5A/B (Onyx) `050–069`, S-6 (native Linear) `070–079`, S-7A/B `080–089`, S-8 `090–099`, S-CF `100–109`, S-D `110–119` (S-LB 120–129, S-SK 130–139, S-CH 140–149, S-CL 150–159, S-H 160–169, S-TR 170–179 are booked for the scoping-station stages; explain 180–189; the map's publish rules 190–194, §8.7a; the whole-map read 200–209, `SND-CONTEXT-200` "No such area in this map", Part D of the deployable-context spec). §8.6 follows these ranges |
 | `deps.yaml`, `Directory.Packages.props`, `AgenticWorkflow.slnx`, `.env.example` | Append-only edits within the stage's own block; the later PR's rebase resolves conflicts |
 | `PublicAPI.Unshipped.txt`, Sindri's `EndpointTable`, `CommandTable`, JSON context, MCP tool list | One line or one block per slice; the later rebase keeps both |
 | `docs/sindri/context.md`, `docs/csharp/sindri-context.md` | One section per stage, headed by the stage id |

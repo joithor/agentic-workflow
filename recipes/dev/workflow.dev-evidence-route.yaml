@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-evidence-route
-version: 1
+version: 2
 description: "Route a change to the evidence that proves it: a judge picks one of six branches, and a person picks at the desk when it is unsure or fails (decision-tree recipes, DT-V1)."
+displayName: "Route a change to the proof that fits"
 name: "evidence route - {start:date} {start:time}"
 inputs:
   - { key: fact:change, label: "Change", type: text, kind: text }

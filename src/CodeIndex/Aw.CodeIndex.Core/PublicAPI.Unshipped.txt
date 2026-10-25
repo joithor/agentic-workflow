@@ -1,0 +1,1435 @@
+#nullable enable
+Aw.CodeIndex.Core.CodeIndexCoreServiceCollectionExtensions
+Aw.CodeIndex.Core.CodeIndexErrors
+Aw.CodeIndex.Core.CodeIndexRules
+Aw.CodeIndex.Core.CodeIndexSettings
+Aw.CodeIndex.Core.CodeIndexSettings.<Clone>$() -> Aw.CodeIndex.Core.CodeIndexSettings!
+Aw.CodeIndex.Core.CodeIndexSettings.CodeIndexSettings(System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, System.Collections.Generic.IReadOnlyList<string!>! UtilityGlobs, int MaxFileKB, int MaxTotalMB, Aw.CodeIndex.Core.Model.EmbeddingsSettings! Embeddings, Aw.CodeIndex.Core.Model.GraphSettings! Graph) -> void
+Aw.CodeIndex.Core.CodeIndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>! UtilityGlobs, out int MaxFileKB, out int MaxTotalMB, out Aw.CodeIndex.Core.Model.EmbeddingsSettings! Embeddings, out Aw.CodeIndex.Core.Model.GraphSettings! Graph) -> void
+Aw.CodeIndex.Core.CodeIndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.CodeIndexSettings.DenyPaths.init -> void
+Aw.CodeIndex.Core.CodeIndexSettings.Embeddings.get -> Aw.CodeIndex.Core.Model.EmbeddingsSettings!
+Aw.CodeIndex.Core.CodeIndexSettings.Embeddings.init -> void
+Aw.CodeIndex.Core.CodeIndexSettings.Equals(Aw.CodeIndex.Core.CodeIndexSettings? other) -> bool
+Aw.CodeIndex.Core.CodeIndexSettings.Graph.get -> Aw.CodeIndex.Core.Model.GraphSettings!
+Aw.CodeIndex.Core.CodeIndexSettings.Graph.init -> void
+Aw.CodeIndex.Core.CodeIndexSettings.MaxFileKB.get -> int
+Aw.CodeIndex.Core.CodeIndexSettings.MaxFileKB.init -> void
+Aw.CodeIndex.Core.CodeIndexSettings.MaxTotalMB.get -> int
+Aw.CodeIndex.Core.CodeIndexSettings.MaxTotalMB.init -> void
+Aw.CodeIndex.Core.CodeIndexSettings.SnapshotLimits() -> Aw.CodeIndex.Core.Model.SnapshotLimits!
+Aw.CodeIndex.Core.CodeIndexSettings.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.CodeIndexSettings.UtilityGlobs.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput
+Aw.CodeIndex.Core.CodeIndexSettingsInput.<Clone>$() -> Aw.CodeIndex.Core.CodeIndexSettingsInput!
+Aw.CodeIndex.Core.CodeIndexSettingsInput.CodeIndexSettingsInput(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, bool? EmbeddingsEnabled = null, string? EmbeddingsUrl = null, string? EmbeddingsModel = null, bool? GraphEnabled = null, int? GraphMaxMB = null) -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out bool? EmbeddingsEnabled, out string? EmbeddingsUrl, out string? EmbeddingsModel, out bool? GraphEnabled, out int? GraphMaxMB) -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.DenyPaths.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsEnabled.get -> bool?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsEnabled.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsModel.get -> string?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsModel.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsUrl.get -> string?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsUrl.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.Equals(Aw.CodeIndex.Core.CodeIndexSettingsInput? other) -> bool
+Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphEnabled.get -> bool?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphEnabled.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxMB.get -> int?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxMB.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxFileKB.get -> int?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxFileKB.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxTotalMB.get -> int?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxTotalMB.init -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.CodeIndex.Core.CodeIndexSettingsInput.UtilityGlobs.init -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp
+Aw.CodeIndex.Core.Facade.AnswerStamp.<Clone>$() -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.AnswerStamp.AnswerStamp(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Values.CommitSha Commit, System.DateTimeOffset BuiltAt, Aw.CodeIndex.Core.Model.IndexState State, Aw.CodeIndex.Core.Facade.LayerStatus! Layer) -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.BuiltAt.get -> System.DateTimeOffset
+Aw.CodeIndex.Core.Facade.AnswerStamp.BuiltAt.init -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha
+Aw.CodeIndex.Core.Facade.AnswerStamp.Commit.init -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Values.CommitSha Commit, out System.DateTimeOffset BuiltAt, out Aw.CodeIndex.Core.Model.IndexState State, out Aw.CodeIndex.Core.Facade.LayerStatus! Layer) -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.Equals(Aw.CodeIndex.Core.Facade.AnswerStamp? other) -> bool
+Aw.CodeIndex.Core.Facade.AnswerStamp.Layer.get -> Aw.CodeIndex.Core.Facade.LayerStatus!
+Aw.CodeIndex.Core.Facade.AnswerStamp.Layer.init -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.AnswerStamp.Repo.init -> void
+Aw.CodeIndex.Core.Facade.AnswerStamp.State.get -> Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Facade.AnswerStamp.State.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport
+Aw.CodeIndex.Core.Facade.BuildReport.<Clone>$() -> Aw.CodeIndex.Core.Facade.BuildReport!
+Aw.CodeIndex.Core.Facade.BuildReport.AmbiguousShare.get -> double
+Aw.CodeIndex.Core.Facade.BuildReport.AmbiguousShare.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.BuildReport(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Values.CommitSha? Commit, Aw.CodeIndex.Core.Model.BuildOutcome Outcome, Aw.CodeIndex.Core.Model.IndexCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>! Layers, double UnresolvedShare, double AmbiguousShare, int Embedded, int Embeddable, bool Incremental, long Milliseconds) -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha?
+Aw.CodeIndex.Core.Facade.BuildReport.Commit.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Counts.get -> Aw.CodeIndex.Core.Model.IndexCounts!
+Aw.CodeIndex.Core.Facade.BuildReport.Counts.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Values.CommitSha? Commit, out Aw.CodeIndex.Core.Model.BuildOutcome Outcome, out Aw.CodeIndex.Core.Model.IndexCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>! Layers, out double UnresolvedShare, out double AmbiguousShare, out int Embedded, out int Embeddable, out bool Incremental, out long Milliseconds) -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Embeddable.get -> int
+Aw.CodeIndex.Core.Facade.BuildReport.Embeddable.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Embedded.get -> int
+Aw.CodeIndex.Core.Facade.BuildReport.Embedded.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Equals(Aw.CodeIndex.Core.Facade.BuildReport? other) -> bool
+Aw.CodeIndex.Core.Facade.BuildReport.Incremental.get -> bool
+Aw.CodeIndex.Core.Facade.BuildReport.Incremental.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Layers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>!
+Aw.CodeIndex.Core.Facade.BuildReport.Layers.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Milliseconds.get -> long
+Aw.CodeIndex.Core.Facade.BuildReport.Milliseconds.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Outcome.get -> Aw.CodeIndex.Core.Model.BuildOutcome
+Aw.CodeIndex.Core.Facade.BuildReport.Outcome.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.BuildReport.Repo.init -> void
+Aw.CodeIndex.Core.Facade.BuildReport.UnresolvedShare.get -> double
+Aw.CodeIndex.Core.Facade.BuildReport.UnresolvedShare.init -> void
+Aw.CodeIndex.Core.Facade.CallCoverage
+Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.One = 1 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Four = 4 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Five = 5 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Six = 6 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Seven = 7 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Eight = 8 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Three = 3 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Two = 2 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDirection
+Aw.CodeIndex.Core.Facade.CallDirection.Callees = 1 -> Aw.CodeIndex.Core.Facade.CallDirection
+Aw.CodeIndex.Core.Facade.CallDirection.Callers = 0 -> Aw.CodeIndex.Core.Facade.CallDirection
+Aw.CodeIndex.Core.Facade.CallEdge
+Aw.CodeIndex.Core.Facade.CallEdge.<Clone>$() -> Aw.CodeIndex.Core.Facade.CallEdge!
+Aw.CodeIndex.Core.Facade.CallEdge.Basis.get -> Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.CodeIndex.Core.Facade.CallEdge.Basis.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.CallEdge(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, int Line, int Candidates, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Candidates.get -> int
+Aw.CodeIndex.Core.Facade.CallEdge.Candidates.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Confidence.get -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Facade.CallEdge.Confidence.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out int Line, out int Candidates, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Equals(Aw.CodeIndex.Core.Facade.CallEdge? other) -> bool
+Aw.CodeIndex.Core.Facade.CallEdge.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Facade.CallEdge.Kind.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Level.get -> int
+Aw.CodeIndex.Core.Facade.CallEdge.Level.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Line.get -> int
+Aw.CodeIndex.Core.Facade.CallEdge.Line.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Name.get -> string!
+Aw.CodeIndex.Core.Facade.CallEdge.Name.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Other.get -> Aw.CodeIndex.Core.Facade.SymbolHit?
+Aw.CodeIndex.Core.Facade.CallEdge.Other.init -> void
+Aw.CodeIndex.Core.Facade.CallerKind
+Aw.CodeIndex.Core.Facade.CallerKind.Human = 0 -> Aw.CodeIndex.Core.Facade.CallerKind
+Aw.CodeIndex.Core.Facade.CallerKind.Service = 1 -> Aw.CodeIndex.Core.Facade.CallerKind
+Aw.CodeIndex.Core.Facade.CallerKind.Session = 2 -> Aw.CodeIndex.Core.Facade.CallerKind
+Aw.CodeIndex.Core.Facade.CallsAnswer
+Aw.CodeIndex.Core.Facade.CallsAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.CallsAnswer!
+Aw.CodeIndex.Core.Facade.CallsAnswer.CallsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
+Aw.CodeIndex.Core.Facade.CallsAnswer.Edges.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Equals(Aw.CodeIndex.Core.Facade.CallsAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.CallsAnswer.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.CallsAnswer.Stamp.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Subject.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Facade.CallsAnswer.Subject.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Truncated.get -> bool
+Aw.CodeIndex.Core.Facade.CallsAnswer.Truncated.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.UnresolvedCount.get -> int
+Aw.CodeIndex.Core.Facade.CallsAnswer.UnresolvedCount.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexCaller
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.<Clone>$() -> Aw.CodeIndex.Core.Facade.CodeIndexCaller!
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.CodeIndexCaller(Aw.CodeIndex.Core.Facade.CallerKind Kind, Aw.CodeIndex.Core.Values.RepoName? Repo) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Deconstruct(out Aw.CodeIndex.Core.Facade.CallerKind Kind, out Aw.CodeIndex.Core.Values.RepoName? Repo) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Equals(Aw.CodeIndex.Core.Facade.CodeIndexCaller? other) -> bool
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Kind.get -> Aw.CodeIndex.Core.Facade.CallerKind
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Kind.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Repo.get -> Aw.CodeIndex.Core.Values.RepoName?
+Aw.CodeIndex.Core.Facade.CodeIndexCaller.Repo.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexRepo
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.<Clone>$() -> Aw.CodeIndex.Core.Facade.CodeIndexRepo!
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.CodeIndexRepo(Aw.CodeIndex.Core.Values.RepoName Name, string! Path, Aw.CodeIndex.Core.CodeIndexSettings! Settings) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Name, out string! Path, out Aw.CodeIndex.Core.CodeIndexSettings! Settings) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Equals(Aw.CodeIndex.Core.Facade.CodeIndexRepo? other) -> bool
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Name.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Name.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Path.get -> string!
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Path.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Settings.get -> Aw.CodeIndex.Core.CodeIndexSettings!
+Aw.CodeIndex.Core.Facade.CodeIndexRepo.Settings.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexScope
+Aw.CodeIndex.Core.Facade.CodeIndexScope.<Clone>$() -> Aw.CodeIndex.Core.Facade.CodeIndexScope!
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Caller.get -> Aw.CodeIndex.Core.Facade.CodeIndexCaller!
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Caller.init -> void
+Aw.CodeIndex.Core.Facade.CodeIndexScope.CodeIndexScope(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CodeIndexRepo!>! Repos, Aw.CodeIndex.Core.Facade.CodeIndexCaller! Caller) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CodeIndexRepo!>! Repos, out Aw.CodeIndex.Core.Facade.CodeIndexCaller! Caller) -> void
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Equals(Aw.CodeIndex.Core.Facade.CodeIndexScope? other) -> bool
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CodeIndexRepo!>!
+Aw.CodeIndex.Core.Facade.CodeIndexScope.Repos.init -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.FileSymbolsAnswer!
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.FileSymbolsEntry!>! Files) -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Equals(Aw.CodeIndex.Core.Facade.FileSymbolsAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.FileSymbolsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.FileSymbolsEntry!>! Files) -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.FileSymbolsEntry!>!
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Files.init -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Stamp.init -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.<Clone>$() -> Aw.CodeIndex.Core.Facade.FileSymbolsEntry!
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Deconstruct(out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Symbols) -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Equals(Aw.CodeIndex.Core.Facade.FileSymbolsEntry? other) -> bool
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.FileSymbolsEntry(string! Path, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Symbols) -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Path.get -> string!
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Path.init -> void
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Symbols.init -> void
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.FindSymbolsAnswer!
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Hits, out bool Truncated) -> void
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Equals(Aw.CodeIndex.Core.Facade.FindSymbolsAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.FindSymbolsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Hits, bool Truncated) -> void
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Hits.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Hits.init -> void
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Stamp.init -> void
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Truncated.get -> bool
+Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Truncated.init -> void
+Aw.CodeIndex.Core.Facade.ICodeIndex
+Aw.CodeIndex.Core.Facade.ICodeIndex.Build(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.RepoName repo, Aw.CodeIndex.Core.Values.CommitSha commit, System.IProgress<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.BuildReport!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Callees(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.SymbolRef symbol, Aw.CodeIndex.Core.Facade.CallDepth depth, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.CallsAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Callers(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.SymbolRef symbol, Aw.CodeIndex.Core.Facade.CallDepth depth, bool includeImplementations, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.CallsAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.FileSymbols(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.FileSymbolsAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.FindSymbols(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Facade.SymbolQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.FindSymbolsAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Heads(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RecordedHead!>!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Neighbors(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.RepoName repo, string! text, int k, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.NeighborsAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.ProbeLayers(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerProbe!>!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Similar(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.SymbolRef symbol, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.SimilarAnswer!>!>
+Aw.CodeIndex.Core.Facade.ICodeIndex.Status(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.StatusAnswer!>!>
+Aw.CodeIndex.Core.Facade.LayerProbe
+Aw.CodeIndex.Core.Facade.LayerProbe.<Clone>$() -> Aw.CodeIndex.Core.Facade.LayerProbe!
+Aw.CodeIndex.Core.Facade.LayerProbe.Buildable.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerName>!
+Aw.CodeIndex.Core.Facade.LayerProbe.Buildable.init -> void
+Aw.CodeIndex.Core.Facade.LayerProbe.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerName>! Buildable) -> void
+Aw.CodeIndex.Core.Facade.LayerProbe.Equals(Aw.CodeIndex.Core.Facade.LayerProbe? other) -> bool
+Aw.CodeIndex.Core.Facade.LayerProbe.LayerProbe(Aw.CodeIndex.Core.Values.RepoName Repo, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerName>! Buildable) -> void
+Aw.CodeIndex.Core.Facade.LayerProbe.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.LayerProbe.Repo.init -> void
+Aw.CodeIndex.Core.Facade.LayerStatus
+Aw.CodeIndex.Core.Facade.LayerStatus.<Clone>$() -> Aw.CodeIndex.Core.Facade.LayerStatus!
+Aw.CodeIndex.Core.Facade.LayerStatus.Code.get -> string?
+Aw.CodeIndex.Core.Facade.LayerStatus.Code.init -> void
+Aw.CodeIndex.Core.Facade.LayerStatus.Deconstruct(out Aw.CodeIndex.Core.Model.LayerName Layer, out Aw.CodeIndex.Core.Model.LayerState State, out string? Code, out string! Detail) -> void
+Aw.CodeIndex.Core.Facade.LayerStatus.Detail.get -> string!
+Aw.CodeIndex.Core.Facade.LayerStatus.Detail.init -> void
+Aw.CodeIndex.Core.Facade.LayerStatus.Equals(Aw.CodeIndex.Core.Facade.LayerStatus? other) -> bool
+Aw.CodeIndex.Core.Facade.LayerStatus.Layer.get -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Facade.LayerStatus.Layer.init -> void
+Aw.CodeIndex.Core.Facade.LayerStatus.LayerStatus(Aw.CodeIndex.Core.Model.LayerName Layer, Aw.CodeIndex.Core.Model.LayerState State, string? Code, string! Detail) -> void
+Aw.CodeIndex.Core.Facade.LayerStatus.State.get -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Facade.LayerStatus.State.init -> void
+Aw.CodeIndex.Core.Facade.NearClone
+Aw.CodeIndex.Core.Facade.NearClone.<Clone>$() -> Aw.CodeIndex.Core.Facade.NearClone!
+Aw.CodeIndex.Core.Facade.NearClone.Deconstruct(out Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, out double Similarity) -> void
+Aw.CodeIndex.Core.Facade.NearClone.Equals(Aw.CodeIndex.Core.Facade.NearClone? other) -> bool
+Aw.CodeIndex.Core.Facade.NearClone.NearClone(Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, double Similarity) -> void
+Aw.CodeIndex.Core.Facade.NearClone.Similarity.get -> double
+Aw.CodeIndex.Core.Facade.NearClone.Similarity.init -> void
+Aw.CodeIndex.Core.Facade.NearClone.Symbol.get -> Aw.CodeIndex.Core.Facade.SymbolHit!
+Aw.CodeIndex.Core.Facade.NearClone.Symbol.init -> void
+Aw.CodeIndex.Core.Facade.Neighbor
+Aw.CodeIndex.Core.Facade.Neighbor.<Clone>$() -> Aw.CodeIndex.Core.Facade.Neighbor!
+Aw.CodeIndex.Core.Facade.Neighbor.Deconstruct(out Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, out double Score) -> void
+Aw.CodeIndex.Core.Facade.Neighbor.Equals(Aw.CodeIndex.Core.Facade.Neighbor? other) -> bool
+Aw.CodeIndex.Core.Facade.Neighbor.Neighbor(Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, double Score) -> void
+Aw.CodeIndex.Core.Facade.Neighbor.Score.get -> double
+Aw.CodeIndex.Core.Facade.Neighbor.Score.init -> void
+Aw.CodeIndex.Core.Facade.Neighbor.Symbol.get -> Aw.CodeIndex.Core.Facade.SymbolHit!
+Aw.CodeIndex.Core.Facade.Neighbor.Symbol.init -> void
+Aw.CodeIndex.Core.Facade.NeighborsAnswer
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.NeighborsAnswer!
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.Neighbor!>! Neighbors) -> void
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Equals(Aw.CodeIndex.Core.Facade.NeighborsAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Neighbors.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.Neighbor!>!
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Neighbors.init -> void
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.NeighborsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.Neighbor!>! Neighbors) -> void
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.NeighborsAnswer.Stamp.init -> void
+Aw.CodeIndex.Core.Facade.RecordedHead
+Aw.CodeIndex.Core.Facade.RecordedHead.<Clone>$() -> Aw.CodeIndex.Core.Facade.RecordedHead!
+Aw.CodeIndex.Core.Facade.RecordedHead.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha?
+Aw.CodeIndex.Core.Facade.RecordedHead.Commit.init -> void
+Aw.CodeIndex.Core.Facade.RecordedHead.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Values.CommitSha? Commit) -> void
+Aw.CodeIndex.Core.Facade.RecordedHead.Equals(Aw.CodeIndex.Core.Facade.RecordedHead? other) -> bool
+Aw.CodeIndex.Core.Facade.RecordedHead.RecordedHead(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Values.CommitSha? Commit) -> void
+Aw.CodeIndex.Core.Facade.RecordedHead.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.RecordedHead.Repo.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus
+Aw.CodeIndex.Core.Facade.RepoStatus.<Clone>$() -> Aw.CodeIndex.Core.Facade.RepoStatus!
+Aw.CodeIndex.Core.Facade.RepoStatus.BuiltAt.get -> System.DateTimeOffset?
+Aw.CodeIndex.Core.Facade.RepoStatus.BuiltAt.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha?
+Aw.CodeIndex.Core.Facade.RepoStatus.Commit.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.Counts.get -> Aw.CodeIndex.Core.Model.IndexCounts?
+Aw.CodeIndex.Core.Facade.RepoStatus.Counts.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Model.IndexState State, out Aw.CodeIndex.Core.Values.CommitSha? Commit, out System.DateTimeOffset? BuiltAt, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>! Layers, out Aw.CodeIndex.Core.Model.IndexCounts? Counts) -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.Equals(Aw.CodeIndex.Core.Facade.RepoStatus? other) -> bool
+Aw.CodeIndex.Core.Facade.RepoStatus.Layers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>!
+Aw.CodeIndex.Core.Facade.RepoStatus.Layers.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.RepoStatus.Repo.init -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.RepoStatus(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Model.IndexState State, Aw.CodeIndex.Core.Values.CommitSha? Commit, System.DateTimeOffset? BuiltAt, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.LayerStatus!>! Layers, Aw.CodeIndex.Core.Model.IndexCounts? Counts) -> void
+Aw.CodeIndex.Core.Facade.RepoStatus.State.get -> Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Facade.RepoStatus.State.init -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer
+Aw.CodeIndex.Core.Facade.SimilarAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.SimilarAnswer!
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Equals(Aw.CodeIndex.Core.Facade.SimilarAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Exact.init -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Near.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>!
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Near.init -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer.SimilarAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Stamp.init -> void
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Subject.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Facade.SimilarAnswer.Subject.init -> void
+Aw.CodeIndex.Core.Facade.StatusAnswer
+Aw.CodeIndex.Core.Facade.StatusAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.StatusAnswer!
+Aw.CodeIndex.Core.Facade.StatusAnswer.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>! Repos) -> void
+Aw.CodeIndex.Core.Facade.StatusAnswer.Equals(Aw.CodeIndex.Core.Facade.StatusAnswer? other) -> bool
+Aw.CodeIndex.Core.Facade.StatusAnswer.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>!
+Aw.CodeIndex.Core.Facade.StatusAnswer.Repos.init -> void
+Aw.CodeIndex.Core.Facade.StatusAnswer.StatusAnswer(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>! Repos) -> void
+Aw.CodeIndex.Core.Facade.SymbolHit
+Aw.CodeIndex.Core.Facade.SymbolHit.<Clone>$() -> Aw.CodeIndex.Core.Facade.SymbolHit!
+Aw.CodeIndex.Core.Facade.SymbolHit.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Ref, out Aw.CodeIndex.Core.Model.SymbolKind Kind, out string! Name, out string! File, out int StartLine, out int EndLine, out string! Signature, out bool Exported) -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.EndLine.get -> int
+Aw.CodeIndex.Core.Facade.SymbolHit.EndLine.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Equals(Aw.CodeIndex.Core.Facade.SymbolHit? other) -> bool
+Aw.CodeIndex.Core.Facade.SymbolHit.Exported.get -> bool
+Aw.CodeIndex.Core.Facade.SymbolHit.Exported.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.File.get -> string!
+Aw.CodeIndex.Core.Facade.SymbolHit.File.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Kind.get -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Facade.SymbolHit.Kind.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Name.get -> string!
+Aw.CodeIndex.Core.Facade.SymbolHit.Name.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Ref.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Facade.SymbolHit.Ref.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Signature.get -> string!
+Aw.CodeIndex.Core.Facade.SymbolHit.Signature.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.StartLine.get -> int
+Aw.CodeIndex.Core.Facade.SymbolHit.StartLine.init -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.SymbolHit(Aw.CodeIndex.Core.Values.SymbolRef Ref, Aw.CodeIndex.Core.Model.SymbolKind Kind, string! Name, string! File, int StartLine, int EndLine, string! Signature, bool Exported) -> void
+Aw.CodeIndex.Core.Facade.SymbolHit.Untrusted.get -> bool
+Aw.CodeIndex.Core.Facade.SymbolHit.Untrusted.init -> void
+Aw.CodeIndex.Core.Facade.SymbolMatch
+Aw.CodeIndex.Core.Facade.SymbolMatch.Exact = 0 -> Aw.CodeIndex.Core.Facade.SymbolMatch
+Aw.CodeIndex.Core.Facade.SymbolMatch.Prefix = 1 -> Aw.CodeIndex.Core.Facade.SymbolMatch
+Aw.CodeIndex.Core.Facade.SymbolQuery
+Aw.CodeIndex.Core.Facade.SymbolQuery.<Clone>$() -> Aw.CodeIndex.Core.Facade.SymbolQuery!
+Aw.CodeIndex.Core.Facade.SymbolQuery.Deconstruct(out string! Text, out Aw.CodeIndex.Core.Facade.SymbolMatch Match, out Aw.CodeIndex.Core.Values.RepoName? Repo, out int Limit) -> void
+Aw.CodeIndex.Core.Facade.SymbolQuery.Equals(Aw.CodeIndex.Core.Facade.SymbolQuery? other) -> bool
+Aw.CodeIndex.Core.Facade.SymbolQuery.Limit.get -> int
+Aw.CodeIndex.Core.Facade.SymbolQuery.Limit.init -> void
+Aw.CodeIndex.Core.Facade.SymbolQuery.Match.get -> Aw.CodeIndex.Core.Facade.SymbolMatch
+Aw.CodeIndex.Core.Facade.SymbolQuery.Match.init -> void
+Aw.CodeIndex.Core.Facade.SymbolQuery.Repo.get -> Aw.CodeIndex.Core.Values.RepoName?
+Aw.CodeIndex.Core.Facade.SymbolQuery.Repo.init -> void
+Aw.CodeIndex.Core.Facade.SymbolQuery.SymbolQuery(string! Text, Aw.CodeIndex.Core.Facade.SymbolMatch Match, Aw.CodeIndex.Core.Values.RepoName? Repo, int Limit = 200) -> void
+Aw.CodeIndex.Core.Facade.SymbolQuery.Text.get -> string!
+Aw.CodeIndex.Core.Facade.SymbolQuery.Text.init -> void
+Aw.CodeIndex.Core.InputRules
+Aw.CodeIndex.Core.Model.BuildOutcome
+Aw.CodeIndex.Core.Model.BuildOutcome.NotOnMain = 1 -> Aw.CodeIndex.Core.Model.BuildOutcome
+Aw.CodeIndex.Core.Model.BuildOutcome.Published = 0 -> Aw.CodeIndex.Core.Model.BuildOutcome
+Aw.CodeIndex.Core.Model.CallSite
+Aw.CodeIndex.Core.Model.CallSite.<Clone>$() -> Aw.CodeIndex.Core.Model.CallSite!
+Aw.CodeIndex.Core.Model.CallSite.Arity.get -> int
+Aw.CodeIndex.Core.Model.CallSite.Arity.init -> void
+Aw.CodeIndex.Core.Model.CallSite.CallSite(Aw.CodeIndex.Core.Model.EdgeKind Kind, string! Name, int Arity, string! Receiver, int Line) -> void
+Aw.CodeIndex.Core.Model.CallSite.Deconstruct(out Aw.CodeIndex.Core.Model.EdgeKind Kind, out string! Name, out int Arity, out string! Receiver, out int Line) -> void
+Aw.CodeIndex.Core.Model.CallSite.Equals(Aw.CodeIndex.Core.Model.CallSite? other) -> bool
+Aw.CodeIndex.Core.Model.CallSite.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Model.CallSite.Kind.init -> void
+Aw.CodeIndex.Core.Model.CallSite.Line.get -> int
+Aw.CodeIndex.Core.Model.CallSite.Line.init -> void
+Aw.CodeIndex.Core.Model.CallSite.Name.get -> string!
+Aw.CodeIndex.Core.Model.CallSite.Name.init -> void
+Aw.CodeIndex.Core.Model.CallSite.Receiver.get -> string!
+Aw.CodeIndex.Core.Model.CallSite.Receiver.init -> void
+Aw.CodeIndex.Core.Model.CallSiteRow
+Aw.CodeIndex.Core.Model.CallSiteRow.<Clone>$() -> Aw.CodeIndex.Core.Model.CallSiteRow!
+Aw.CodeIndex.Core.Model.CallSiteRow.CallSiteRow(Aw.CodeIndex.Core.Values.SymbolRef Caller, Aw.CodeIndex.Core.Model.CallSite! Site) -> void
+Aw.CodeIndex.Core.Model.CallSiteRow.Caller.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.CallSiteRow.Caller.init -> void
+Aw.CodeIndex.Core.Model.CallSiteRow.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Caller, out Aw.CodeIndex.Core.Model.CallSite! Site) -> void
+Aw.CodeIndex.Core.Model.CallSiteRow.Equals(Aw.CodeIndex.Core.Model.CallSiteRow? other) -> bool
+Aw.CodeIndex.Core.Model.CallSiteRow.Site.get -> Aw.CodeIndex.Core.Model.CallSite!
+Aw.CodeIndex.Core.Model.CallSiteRow.Site.init -> void
+Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.Confidence.Ambiguous = 2 -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.Confidence.Certain = 0 -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.Confidence.Likely = 1 -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.Confidence.Unresolved = 3 -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Full = 0 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Partial = 1 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Unavailable = 2 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.DefaultBranchCheck
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.<Clone>$() -> Aw.CodeIndex.Core.Model.DefaultBranchCheck!
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.Contains.get -> bool
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.Contains.init -> void
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.Deconstruct(out string! DefaultBranch, out bool Contains) -> void
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.DefaultBranch.get -> string!
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.DefaultBranch.init -> void
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.DefaultBranchCheck(string! DefaultBranch, bool Contains) -> void
+Aw.CodeIndex.Core.Model.DefaultBranchCheck.Equals(Aw.CodeIndex.Core.Model.DefaultBranchCheck? other) -> bool
+Aw.CodeIndex.Core.Model.DepRecord
+Aw.CodeIndex.Core.Model.DepRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.DepRecord!
+Aw.CodeIndex.Core.Model.DepRecord.Deconstruct(out string! Manifest, out string! Name, out string! Version, out string! Kind, out string! Tags) -> void
+Aw.CodeIndex.Core.Model.DepRecord.DepRecord(string! Manifest, string! Name, string! Version, string! Kind, string! Tags) -> void
+Aw.CodeIndex.Core.Model.DepRecord.Equals(Aw.CodeIndex.Core.Model.DepRecord? other) -> bool
+Aw.CodeIndex.Core.Model.DepRecord.Kind.get -> string!
+Aw.CodeIndex.Core.Model.DepRecord.Kind.init -> void
+Aw.CodeIndex.Core.Model.DepRecord.Manifest.get -> string!
+Aw.CodeIndex.Core.Model.DepRecord.Manifest.init -> void
+Aw.CodeIndex.Core.Model.DepRecord.Name.get -> string!
+Aw.CodeIndex.Core.Model.DepRecord.Name.init -> void
+Aw.CodeIndex.Core.Model.DepRecord.Tags.get -> string!
+Aw.CodeIndex.Core.Model.DepRecord.Tags.init -> void
+Aw.CodeIndex.Core.Model.DepRecord.Version.get -> string!
+Aw.CodeIndex.Core.Model.DepRecord.Version.init -> void
+Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.CodeIndex.Core.Model.EdgeBasis.Graphify = 1 -> Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.CodeIndex.Core.Model.EdgeBasis.Syntax = 0 -> Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Model.EdgeKind.Calls = 0 -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Model.EdgeKind.Inherits = 1 -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Model.EdgeRecord
+Aw.CodeIndex.Core.Model.EdgeRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.EdgeRecord!
+Aw.CodeIndex.Core.Model.EdgeRecord.Basis.get -> Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.CodeIndex.Core.Model.EdgeRecord.Basis.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Candidates.get -> int
+Aw.CodeIndex.Core.Model.EdgeRecord.Candidates.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Confidence.get -> Aw.CodeIndex.Core.Model.Confidence
+Aw.CodeIndex.Core.Model.EdgeRecord.Confidence.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Source, out Aw.CodeIndex.Core.Values.SymbolRef? Target, out string! TargetName, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out int Line, out int Candidates) -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.EdgeRecord(Aw.CodeIndex.Core.Values.SymbolRef Source, Aw.CodeIndex.Core.Values.SymbolRef? Target, string! TargetName, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, int Line, int Candidates) -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Equals(Aw.CodeIndex.Core.Model.EdgeRecord? other) -> bool
+Aw.CodeIndex.Core.Model.EdgeRecord.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.CodeIndex.Core.Model.EdgeRecord.Kind.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Line.get -> int
+Aw.CodeIndex.Core.Model.EdgeRecord.Line.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Source.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.EdgeRecord.Source.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.Target.get -> Aw.CodeIndex.Core.Values.SymbolRef?
+Aw.CodeIndex.Core.Model.EdgeRecord.Target.init -> void
+Aw.CodeIndex.Core.Model.EdgeRecord.TargetName.get -> string!
+Aw.CodeIndex.Core.Model.EdgeRecord.TargetName.init -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate
+Aw.CodeIndex.Core.Model.EmbedCandidate.<Clone>$() -> Aw.CodeIndex.Core.Model.EmbedCandidate!
+Aw.CodeIndex.Core.Model.EmbedCandidate.Body.get -> string!
+Aw.CodeIndex.Core.Model.EmbedCandidate.Body.init -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Symbol, out string! Name, out string! Signature, out string! Body) -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate.EmbedCandidate(Aw.CodeIndex.Core.Values.SymbolRef Symbol, string! Name, string! Signature, string! Body) -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate.Equals(Aw.CodeIndex.Core.Model.EmbedCandidate? other) -> bool
+Aw.CodeIndex.Core.Model.EmbedCandidate.Name.get -> string!
+Aw.CodeIndex.Core.Model.EmbedCandidate.Name.init -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate.Signature.get -> string!
+Aw.CodeIndex.Core.Model.EmbedCandidate.Signature.init -> void
+Aw.CodeIndex.Core.Model.EmbedCandidate.Symbol.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.EmbedCandidate.Symbol.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress
+Aw.CodeIndex.Core.Model.EmbeddingProgress.<Clone>$() -> Aw.CodeIndex.Core.Model.EmbeddingProgress!
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Deconstruct(out int Embedded, out int Embeddable) -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Embeddable.get -> int
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Embeddable.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Embedded.get -> int
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Embedded.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.EmbeddingProgress(int Embedded, int Embeddable) -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Equals(Aw.CodeIndex.Core.Model.EmbeddingProgress? other) -> bool
+Aw.CodeIndex.Core.Model.EmbeddingRecord
+Aw.CodeIndex.Core.Model.EmbeddingRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.EmbeddingRecord!
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Symbol, out string! Model, out System.ReadOnlyMemory<float> Vector) -> void
+Aw.CodeIndex.Core.Model.EmbeddingRecord.EmbeddingRecord(Aw.CodeIndex.Core.Values.SymbolRef Symbol, string! Model, System.ReadOnlyMemory<float> Vector) -> void
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Equals(Aw.CodeIndex.Core.Model.EmbeddingRecord? other) -> bool
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Model.get -> string!
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Model.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Symbol.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Symbol.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Vector.get -> System.ReadOnlyMemory<float>
+Aw.CodeIndex.Core.Model.EmbeddingRecord.Vector.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingsSettings
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.<Clone>$() -> Aw.CodeIndex.Core.Model.EmbeddingsSettings!
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Deconstruct(out bool Enabled, out string! Url, out string? Model) -> void
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.EmbeddingsSettings(bool Enabled, string! Url, string? Model) -> void
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Enabled.get -> bool
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Enabled.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Equals(Aw.CodeIndex.Core.Model.EmbeddingsSettings? other) -> bool
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Model.get -> string?
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Model.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Url.get -> string!
+Aw.CodeIndex.Core.Model.EmbeddingsSettings.Url.init -> void
+Aw.CodeIndex.Core.Model.FileRecord
+Aw.CodeIndex.Core.Model.FileRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.FileRecord!
+Aw.CodeIndex.Core.Model.FileRecord.Blob.get -> string!
+Aw.CodeIndex.Core.Model.FileRecord.Blob.init -> void
+Aw.CodeIndex.Core.Model.FileRecord.Deconstruct(out string! Path, out string! Blob, out long Size, out string! Language, out bool Parsed, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SymbolRecord!>! Symbols) -> void
+Aw.CodeIndex.Core.Model.FileRecord.Equals(Aw.CodeIndex.Core.Model.FileRecord? other) -> bool
+Aw.CodeIndex.Core.Model.FileRecord.FileRecord(string! Path, string! Blob, long Size, string! Language, bool Parsed, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SymbolRecord!>! Symbols) -> void
+Aw.CodeIndex.Core.Model.FileRecord.Language.get -> string!
+Aw.CodeIndex.Core.Model.FileRecord.Language.init -> void
+Aw.CodeIndex.Core.Model.FileRecord.Parsed.get -> bool
+Aw.CodeIndex.Core.Model.FileRecord.Parsed.init -> void
+Aw.CodeIndex.Core.Model.FileRecord.Path.get -> string!
+Aw.CodeIndex.Core.Model.FileRecord.Path.init -> void
+Aw.CodeIndex.Core.Model.FileRecord.Size.get -> long
+Aw.CodeIndex.Core.Model.FileRecord.Size.init -> void
+Aw.CodeIndex.Core.Model.FileRecord.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SymbolRecord!>!
+Aw.CodeIndex.Core.Model.FileRecord.Symbols.init -> void
+Aw.CodeIndex.Core.Model.GraphEdge
+Aw.CodeIndex.Core.Model.GraphEdge.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphEdge!
+Aw.CodeIndex.Core.Model.GraphEdge.Confidence.get -> string!
+Aw.CodeIndex.Core.Model.GraphEdge.Confidence.init -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Deconstruct(out string! Source, out string! Target, out string! Relation, out string! Confidence, out int? Line) -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Equals(Aw.CodeIndex.Core.Model.GraphEdge? other) -> bool
+Aw.CodeIndex.Core.Model.GraphEdge.GraphEdge(string! Source, string! Target, string! Relation, string! Confidence, int? Line = null) -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Line.get -> int?
+Aw.CodeIndex.Core.Model.GraphEdge.Line.init -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Relation.get -> string!
+Aw.CodeIndex.Core.Model.GraphEdge.Relation.init -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Source.get -> string!
+Aw.CodeIndex.Core.Model.GraphEdge.Source.init -> void
+Aw.CodeIndex.Core.Model.GraphEdge.Target.get -> string!
+Aw.CodeIndex.Core.Model.GraphEdge.Target.init -> void
+Aw.CodeIndex.Core.Model.GraphNode
+Aw.CodeIndex.Core.Model.GraphNode.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphNode!
+Aw.CodeIndex.Core.Model.GraphNode.Community.get -> int?
+Aw.CodeIndex.Core.Model.GraphNode.Community.init -> void
+Aw.CodeIndex.Core.Model.GraphNode.Deconstruct(out string! NodeKey, out string? File, out string? Name, out int? Line, out int? Community, out bool IsClass) -> void
+Aw.CodeIndex.Core.Model.GraphNode.Equals(Aw.CodeIndex.Core.Model.GraphNode? other) -> bool
+Aw.CodeIndex.Core.Model.GraphNode.File.get -> string?
+Aw.CodeIndex.Core.Model.GraphNode.File.init -> void
+Aw.CodeIndex.Core.Model.GraphNode.GraphNode(string! NodeKey, string? File, string? Name, int? Line, int? Community, bool IsClass = false) -> void
+Aw.CodeIndex.Core.Model.GraphNode.IsClass.get -> bool
+Aw.CodeIndex.Core.Model.GraphNode.IsClass.init -> void
+Aw.CodeIndex.Core.Model.GraphNode.Line.get -> int?
+Aw.CodeIndex.Core.Model.GraphNode.Line.init -> void
+Aw.CodeIndex.Core.Model.GraphNode.Name.get -> string?
+Aw.CodeIndex.Core.Model.GraphNode.Name.init -> void
+Aw.CodeIndex.Core.Model.GraphNode.NodeKey.get -> string!
+Aw.CodeIndex.Core.Model.GraphNode.NodeKey.init -> void
+Aw.CodeIndex.Core.Model.GraphSettings
+Aw.CodeIndex.Core.Model.GraphSettings.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphSettings!
+Aw.CodeIndex.Core.Model.GraphSettings.Deconstruct(out bool Enabled, out int MaxMegabytes) -> void
+Aw.CodeIndex.Core.Model.GraphSettings.Enabled.get -> bool
+Aw.CodeIndex.Core.Model.GraphSettings.Enabled.init -> void
+Aw.CodeIndex.Core.Model.GraphSettings.Equals(Aw.CodeIndex.Core.Model.GraphSettings? other) -> bool
+Aw.CodeIndex.Core.Model.GraphSettings.GraphSettings(bool Enabled, int MaxMegabytes) -> void
+Aw.CodeIndex.Core.Model.GraphSettings.MaxMegabytes.get -> int
+Aw.CodeIndex.Core.Model.GraphSettings.MaxMegabytes.init -> void
+Aw.CodeIndex.Core.Model.GraphSnapshot
+Aw.CodeIndex.Core.Model.GraphSnapshot.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphSnapshot!
+Aw.CodeIndex.Core.Model.GraphSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphEdge!>! Edges, out int Dropped) -> void
+Aw.CodeIndex.Core.Model.GraphSnapshot.Dropped.get -> int
+Aw.CodeIndex.Core.Model.GraphSnapshot.Dropped.init -> void
+Aw.CodeIndex.Core.Model.GraphSnapshot.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphEdge!>!
+Aw.CodeIndex.Core.Model.GraphSnapshot.Edges.init -> void
+Aw.CodeIndex.Core.Model.GraphSnapshot.Equals(Aw.CodeIndex.Core.Model.GraphSnapshot? other) -> bool
+Aw.CodeIndex.Core.Model.GraphSnapshot.GraphSnapshot(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphEdge!>! Edges, int Dropped = 0) -> void
+Aw.CodeIndex.Core.Model.GraphSnapshot.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphNode!>!
+Aw.CodeIndex.Core.Model.GraphSnapshot.Nodes.init -> void
+Aw.CodeIndex.Core.Model.IndexCounts
+Aw.CodeIndex.Core.Model.IndexCounts.<Clone>$() -> Aw.CodeIndex.Core.Model.IndexCounts!
+Aw.CodeIndex.Core.Model.IndexCounts.Deconstruct(out int Files, out int Symbols, out int Edges) -> void
+Aw.CodeIndex.Core.Model.IndexCounts.Edges.get -> int
+Aw.CodeIndex.Core.Model.IndexCounts.Edges.init -> void
+Aw.CodeIndex.Core.Model.IndexCounts.Equals(Aw.CodeIndex.Core.Model.IndexCounts? other) -> bool
+Aw.CodeIndex.Core.Model.IndexCounts.Files.get -> int
+Aw.CodeIndex.Core.Model.IndexCounts.Files.init -> void
+Aw.CodeIndex.Core.Model.IndexCounts.IndexCounts(int Files, int Symbols, int Edges) -> void
+Aw.CodeIndex.Core.Model.IndexCounts.Symbols.get -> int
+Aw.CodeIndex.Core.Model.IndexCounts.Symbols.init -> void
+Aw.CodeIndex.Core.Model.IndexHeader
+Aw.CodeIndex.Core.Model.IndexHeader.<Clone>$() -> Aw.CodeIndex.Core.Model.IndexHeader!
+Aw.CodeIndex.Core.Model.IndexHeader.Deconstruct(out Aw.CodeIndex.Core.Model.IndexMeta! Meta, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! Layers) -> void
+Aw.CodeIndex.Core.Model.IndexHeader.Equals(Aw.CodeIndex.Core.Model.IndexHeader? other) -> bool
+Aw.CodeIndex.Core.Model.IndexHeader.IndexHeader(Aw.CodeIndex.Core.Model.IndexMeta! Meta, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! Layers) -> void
+Aw.CodeIndex.Core.Model.IndexHeader.Layers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>!
+Aw.CodeIndex.Core.Model.IndexHeader.Layers.init -> void
+Aw.CodeIndex.Core.Model.IndexHeader.Meta.get -> Aw.CodeIndex.Core.Model.IndexMeta!
+Aw.CodeIndex.Core.Model.IndexHeader.Meta.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta
+Aw.CodeIndex.Core.Model.IndexMeta.<Clone>$() -> Aw.CodeIndex.Core.Model.IndexMeta!
+Aw.CodeIndex.Core.Model.IndexMeta.BuiltAt.get -> System.DateTimeOffset
+Aw.CodeIndex.Core.Model.IndexMeta.BuiltAt.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha
+Aw.CodeIndex.Core.Model.IndexMeta.Commit.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.Counts.get -> Aw.CodeIndex.Core.Model.IndexCounts!
+Aw.CodeIndex.Core.Model.IndexMeta.Counts.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.Deconstruct(out Aw.CodeIndex.Core.Values.CommitSha Commit, out string! DefaultBranch, out System.DateTimeOffset BuiltAt, out int Schema, out string! ParserVersion, out string? LockSha, out Aw.CodeIndex.Core.Model.IndexCounts! Counts) -> void
+Aw.CodeIndex.Core.Model.IndexMeta.DefaultBranch.get -> string!
+Aw.CodeIndex.Core.Model.IndexMeta.DefaultBranch.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.Equals(Aw.CodeIndex.Core.Model.IndexMeta? other) -> bool
+Aw.CodeIndex.Core.Model.IndexMeta.IndexMeta(Aw.CodeIndex.Core.Values.CommitSha Commit, string! DefaultBranch, System.DateTimeOffset BuiltAt, int Schema, string! ParserVersion, string? LockSha, Aw.CodeIndex.Core.Model.IndexCounts! Counts) -> void
+Aw.CodeIndex.Core.Model.IndexMeta.LockSha.get -> string?
+Aw.CodeIndex.Core.Model.IndexMeta.LockSha.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.ParserVersion.get -> string!
+Aw.CodeIndex.Core.Model.IndexMeta.ParserVersion.init -> void
+Aw.CodeIndex.Core.Model.IndexMeta.Schema.get -> int
+Aw.CodeIndex.Core.Model.IndexMeta.Schema.init -> void
+Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Model.IndexState.Damaged = 2 -> Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Model.IndexState.Missing = 0 -> Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Model.IndexState.Ok = 1 -> Aw.CodeIndex.Core.Model.IndexState
+Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerName.Clones = 1 -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerName.Deps = 2 -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerName.Embeddings = 4 -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerName.Graph = 3 -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerName.Structure = 0 -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerRecord
+Aw.CodeIndex.Core.Model.LayerRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.LayerRecord!
+Aw.CodeIndex.Core.Model.LayerRecord.BuiltAt.get -> System.DateTimeOffset
+Aw.CodeIndex.Core.Model.LayerRecord.BuiltAt.init -> void
+Aw.CodeIndex.Core.Model.LayerRecord.Code.get -> string?
+Aw.CodeIndex.Core.Model.LayerRecord.Code.init -> void
+Aw.CodeIndex.Core.Model.LayerRecord.Deconstruct(out Aw.CodeIndex.Core.Model.LayerName Layer, out string! Stamp, out Aw.CodeIndex.Core.Model.LayerState State, out string? Code, out string! Detail, out System.DateTimeOffset BuiltAt) -> void
+Aw.CodeIndex.Core.Model.LayerRecord.Detail.get -> string!
+Aw.CodeIndex.Core.Model.LayerRecord.Detail.init -> void
+Aw.CodeIndex.Core.Model.LayerRecord.Equals(Aw.CodeIndex.Core.Model.LayerRecord? other) -> bool
+Aw.CodeIndex.Core.Model.LayerRecord.Layer.get -> Aw.CodeIndex.Core.Model.LayerName
+Aw.CodeIndex.Core.Model.LayerRecord.Layer.init -> void
+Aw.CodeIndex.Core.Model.LayerRecord.LayerRecord(Aw.CodeIndex.Core.Model.LayerName Layer, string! Stamp, Aw.CodeIndex.Core.Model.LayerState State, string? Code, string! Detail, System.DateTimeOffset BuiltAt) -> void
+Aw.CodeIndex.Core.Model.LayerRecord.Stamp.get -> string!
+Aw.CodeIndex.Core.Model.LayerRecord.Stamp.init -> void
+Aw.CodeIndex.Core.Model.LayerRecord.State.get -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.LayerRecord.State.init -> void
+Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.LayerState.Disabled = 2 -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.LayerState.Ok = 0 -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.LayerState.Pending = 3 -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.LayerState.Unavailable = 1 -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Model.ParseOutcome
+Aw.CodeIndex.Core.Model.ParseOutcome.<Clone>$() -> Aw.CodeIndex.Core.Model.ParseOutcome!
+Aw.CodeIndex.Core.Model.ParseOutcome.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ParsedSymbol!>! Symbols, out string? Skip) -> void
+Aw.CodeIndex.Core.Model.ParseOutcome.Equals(Aw.CodeIndex.Core.Model.ParseOutcome? other) -> bool
+Aw.CodeIndex.Core.Model.ParseOutcome.ParseOutcome(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ParsedSymbol!>! Symbols, string? Skip = null) -> void
+Aw.CodeIndex.Core.Model.ParseOutcome.Skip.get -> string?
+Aw.CodeIndex.Core.Model.ParseOutcome.Skip.init -> void
+Aw.CodeIndex.Core.Model.ParseOutcome.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ParsedSymbol!>!
+Aw.CodeIndex.Core.Model.ParseOutcome.Symbols.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol
+Aw.CodeIndex.Core.Model.ParsedSymbol.<Clone>$() -> Aw.CodeIndex.Core.Model.ParsedSymbol!
+Aw.CodeIndex.Core.Model.ParsedSymbol.Arity.get -> int
+Aw.CodeIndex.Core.Model.ParsedSymbol.Arity.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Body.get -> string?
+Aw.CodeIndex.Core.Model.ParsedSymbol.Body.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.CallSites.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>!
+Aw.CodeIndex.Core.Model.ParsedSymbol.CallSites.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Complexity.get -> int
+Aw.CodeIndex.Core.Model.ParsedSymbol.Complexity.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Deconstruct(out string! Name, out string! Qualified, out Aw.CodeIndex.Core.Model.SymbolKind Kind, out int Arity, out string! ParameterTypesText, out int StartLine, out int EndLine, out bool Exported, out string! Signature, out string! ShapeHash, out int Complexity, out System.Collections.Generic.IReadOnlyList<string!>! Tokens, out string? Body, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>! CallSites) -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.EndLine.get -> int
+Aw.CodeIndex.Core.Model.ParsedSymbol.EndLine.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Equals(Aw.CodeIndex.Core.Model.ParsedSymbol? other) -> bool
+Aw.CodeIndex.Core.Model.ParsedSymbol.Exported.get -> bool
+Aw.CodeIndex.Core.Model.ParsedSymbol.Exported.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Kind.get -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.ParsedSymbol.Kind.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Name.get -> string!
+Aw.CodeIndex.Core.Model.ParsedSymbol.Name.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.ParameterTypesText.get -> string!
+Aw.CodeIndex.Core.Model.ParsedSymbol.ParameterTypesText.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.ParsedSymbol(string! Name, string! Qualified, Aw.CodeIndex.Core.Model.SymbolKind Kind, int Arity, string! ParameterTypesText, int StartLine, int EndLine, bool Exported, string! Signature, string! ShapeHash, int Complexity, System.Collections.Generic.IReadOnlyList<string!>! Tokens, string? Body, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>! CallSites) -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Qualified.get -> string!
+Aw.CodeIndex.Core.Model.ParsedSymbol.Qualified.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.ShapeHash.get -> string!
+Aw.CodeIndex.Core.Model.ParsedSymbol.ShapeHash.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Signature.get -> string!
+Aw.CodeIndex.Core.Model.ParsedSymbol.Signature.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.StartLine.get -> int
+Aw.CodeIndex.Core.Model.ParsedSymbol.StartLine.init -> void
+Aw.CodeIndex.Core.Model.ParsedSymbol.Tokens.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Model.ParsedSymbol.Tokens.init -> void
+Aw.CodeIndex.Core.Model.RepoHead
+Aw.CodeIndex.Core.Model.RepoHead.<Clone>$() -> Aw.CodeIndex.Core.Model.RepoHead!
+Aw.CodeIndex.Core.Model.RepoHead.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Values.CommitSha? Head, out bool OnDefaultBranch) -> void
+Aw.CodeIndex.Core.Model.RepoHead.Equals(Aw.CodeIndex.Core.Model.RepoHead? other) -> bool
+Aw.CodeIndex.Core.Model.RepoHead.Head.get -> Aw.CodeIndex.Core.Values.CommitSha?
+Aw.CodeIndex.Core.Model.RepoHead.Head.init -> void
+Aw.CodeIndex.Core.Model.RepoHead.OnDefaultBranch.get -> bool
+Aw.CodeIndex.Core.Model.RepoHead.OnDefaultBranch.init -> void
+Aw.CodeIndex.Core.Model.RepoHead.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Model.RepoHead.Repo.init -> void
+Aw.CodeIndex.Core.Model.RepoHead.RepoHead(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Values.CommitSha? Head, bool OnDefaultBranch) -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol
+Aw.CodeIndex.Core.Model.ResolutionSymbol.<Clone>$() -> Aw.CodeIndex.Core.Model.ResolutionSymbol!
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Arity.get -> int
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Arity.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Ref, out string! File, out string! Name, out string! Qualified, out Aw.CodeIndex.Core.Model.SymbolKind Kind, out int Arity, out int StartLine, out int EndLine) -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.EndLine.get -> int
+Aw.CodeIndex.Core.Model.ResolutionSymbol.EndLine.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Equals(Aw.CodeIndex.Core.Model.ResolutionSymbol? other) -> bool
+Aw.CodeIndex.Core.Model.ResolutionSymbol.File.get -> string!
+Aw.CodeIndex.Core.Model.ResolutionSymbol.File.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Kind.get -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Kind.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Name.get -> string!
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Name.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Qualified.get -> string!
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Qualified.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Ref.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.ResolutionSymbol.Ref.init -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.ResolutionSymbol(Aw.CodeIndex.Core.Values.SymbolRef Ref, string! File, string! Name, string! Qualified, Aw.CodeIndex.Core.Model.SymbolKind Kind, int Arity, int StartLine, int EndLine) -> void
+Aw.CodeIndex.Core.Model.ResolutionSymbol.StartLine.get -> int
+Aw.CodeIndex.Core.Model.ResolutionSymbol.StartLine.init -> void
+Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.Denied = 2 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.Missing = 5 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.Submodule = 1 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.Symlink = 0 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.TooLarge = 3 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SkipReason.UnsafePath = 4 -> Aw.CodeIndex.Core.Model.SkipReason
+Aw.CodeIndex.Core.Model.SnapshotFile
+Aw.CodeIndex.Core.Model.SnapshotFile.<Clone>$() -> Aw.CodeIndex.Core.Model.SnapshotFile!
+Aw.CodeIndex.Core.Model.SnapshotFile.Blob.get -> string!
+Aw.CodeIndex.Core.Model.SnapshotFile.Blob.init -> void
+Aw.CodeIndex.Core.Model.SnapshotFile.Deconstruct(out string! Path, out string! Blob, out long Size) -> void
+Aw.CodeIndex.Core.Model.SnapshotFile.Equals(Aw.CodeIndex.Core.Model.SnapshotFile? other) -> bool
+Aw.CodeIndex.Core.Model.SnapshotFile.Path.get -> string!
+Aw.CodeIndex.Core.Model.SnapshotFile.Path.init -> void
+Aw.CodeIndex.Core.Model.SnapshotFile.Size.get -> long
+Aw.CodeIndex.Core.Model.SnapshotFile.Size.init -> void
+Aw.CodeIndex.Core.Model.SnapshotFile.SnapshotFile(string! Path, string! Blob, long Size) -> void
+Aw.CodeIndex.Core.Model.SnapshotInventory
+Aw.CodeIndex.Core.Model.SnapshotInventory.<Clone>$() -> Aw.CodeIndex.Core.Model.SnapshotInventory!
+Aw.CodeIndex.Core.Model.SnapshotInventory.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha
+Aw.CodeIndex.Core.Model.SnapshotInventory.Commit.init -> void
+Aw.CodeIndex.Core.Model.SnapshotInventory.Deconstruct(out Aw.CodeIndex.Core.Values.CommitSha Commit, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Files, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.SkipReason, int>! Skipped) -> void
+Aw.CodeIndex.Core.Model.SnapshotInventory.Equals(Aw.CodeIndex.Core.Model.SnapshotInventory? other) -> bool
+Aw.CodeIndex.Core.Model.SnapshotInventory.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Model.SnapshotInventory.Files.init -> void
+Aw.CodeIndex.Core.Model.SnapshotInventory.Skipped.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.SkipReason, int>!
+Aw.CodeIndex.Core.Model.SnapshotInventory.Skipped.init -> void
+Aw.CodeIndex.Core.Model.SnapshotInventory.SnapshotInventory(Aw.CodeIndex.Core.Values.CommitSha Commit, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Files, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.SkipReason, int>! Skipped) -> void
+Aw.CodeIndex.Core.Model.SnapshotLimits
+Aw.CodeIndex.Core.Model.SnapshotLimits.<Clone>$() -> Aw.CodeIndex.Core.Model.SnapshotLimits!
+Aw.CodeIndex.Core.Model.SnapshotLimits.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, out long MaxFileBytes, out long MaxTotalBytes) -> void
+Aw.CodeIndex.Core.Model.SnapshotLimits.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Model.SnapshotLimits.DenyPaths.init -> void
+Aw.CodeIndex.Core.Model.SnapshotLimits.Equals(Aw.CodeIndex.Core.Model.SnapshotLimits? other) -> bool
+Aw.CodeIndex.Core.Model.SnapshotLimits.MaxFileBytes.get -> long
+Aw.CodeIndex.Core.Model.SnapshotLimits.MaxFileBytes.init -> void
+Aw.CodeIndex.Core.Model.SnapshotLimits.MaxTotalBytes.get -> long
+Aw.CodeIndex.Core.Model.SnapshotLimits.MaxTotalBytes.init -> void
+Aw.CodeIndex.Core.Model.SnapshotLimits.SnapshotLimits(System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, long MaxFileBytes, long MaxTotalBytes) -> void
+Aw.CodeIndex.Core.Model.StoredFile
+Aw.CodeIndex.Core.Model.StoredFile.<Clone>$() -> Aw.CodeIndex.Core.Model.StoredFile!
+Aw.CodeIndex.Core.Model.StoredFile.Blob.get -> string!
+Aw.CodeIndex.Core.Model.StoredFile.Blob.init -> void
+Aw.CodeIndex.Core.Model.StoredFile.Deconstruct(out string! Path, out string! Blob, out bool Parsed) -> void
+Aw.CodeIndex.Core.Model.StoredFile.Equals(Aw.CodeIndex.Core.Model.StoredFile? other) -> bool
+Aw.CodeIndex.Core.Model.StoredFile.Parsed.get -> bool
+Aw.CodeIndex.Core.Model.StoredFile.Parsed.init -> void
+Aw.CodeIndex.Core.Model.StoredFile.Path.get -> string!
+Aw.CodeIndex.Core.Model.StoredFile.Path.init -> void
+Aw.CodeIndex.Core.Model.StoredFile.StoredFile(string! Path, string! Blob, bool Parsed) -> void
+Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Accessor = 3 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Class = 6 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Constructor = 2 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Enum = 10 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Function = 0 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.GraphSymbol = 11 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Interface = 9 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Lambda = 5 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.LocalFunction = 4 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Method = 1 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Record = 7 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolKind.Struct = 8 -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolRecord
+Aw.CodeIndex.Core.Model.SymbolRecord.<Clone>$() -> Aw.CodeIndex.Core.Model.SymbolRecord!
+Aw.CodeIndex.Core.Model.SymbolRecord.Arity.get -> int
+Aw.CodeIndex.Core.Model.SymbolRecord.Arity.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.BandKeys.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Model.SymbolRecord.BandKeys.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Body.get -> string?
+Aw.CodeIndex.Core.Model.SymbolRecord.Body.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.CallSites.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>!
+Aw.CodeIndex.Core.Model.SymbolRecord.CallSites.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Complexity.get -> int
+Aw.CodeIndex.Core.Model.SymbolRecord.Complexity.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Deconstruct(out Aw.CodeIndex.Core.Values.SymbolRef Ref, out string! Name, out string! Qualified, out Aw.CodeIndex.Core.Model.SymbolKind Kind, out int Arity, out int StartLine, out int EndLine, out bool Exported, out bool Utility, out string! Signature, out string! ShapeHash, out int TokenCount, out int Complexity, out System.ReadOnlyMemory<byte> MinHash, out System.Collections.Generic.IReadOnlyList<string!>! BandKeys, out string? Body, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>! CallSites) -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.EndLine.get -> int
+Aw.CodeIndex.Core.Model.SymbolRecord.EndLine.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Equals(Aw.CodeIndex.Core.Model.SymbolRecord? other) -> bool
+Aw.CodeIndex.Core.Model.SymbolRecord.Exported.get -> bool
+Aw.CodeIndex.Core.Model.SymbolRecord.Exported.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Kind.get -> Aw.CodeIndex.Core.Model.SymbolKind
+Aw.CodeIndex.Core.Model.SymbolRecord.Kind.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.MinHash.get -> System.ReadOnlyMemory<byte>
+Aw.CodeIndex.Core.Model.SymbolRecord.MinHash.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Name.get -> string!
+Aw.CodeIndex.Core.Model.SymbolRecord.Name.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Qualified.get -> string!
+Aw.CodeIndex.Core.Model.SymbolRecord.Qualified.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Ref.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Model.SymbolRecord.Ref.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.ShapeHash.get -> string!
+Aw.CodeIndex.Core.Model.SymbolRecord.ShapeHash.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Signature.get -> string!
+Aw.CodeIndex.Core.Model.SymbolRecord.Signature.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.StartLine.get -> int
+Aw.CodeIndex.Core.Model.SymbolRecord.StartLine.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.SymbolRecord(Aw.CodeIndex.Core.Values.SymbolRef Ref, string! Name, string! Qualified, Aw.CodeIndex.Core.Model.SymbolKind Kind, int Arity, int StartLine, int EndLine, bool Exported, bool Utility, string! Signature, string! ShapeHash, int TokenCount, int Complexity, System.ReadOnlyMemory<byte> MinHash, System.Collections.Generic.IReadOnlyList<string!>! BandKeys, string? Body, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.CallSite!>! CallSites) -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.TokenCount.get -> int
+Aw.CodeIndex.Core.Model.SymbolRecord.TokenCount.init -> void
+Aw.CodeIndex.Core.Model.SymbolRecord.Utility.get -> bool
+Aw.CodeIndex.Core.Model.SymbolRecord.Utility.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry
+Aw.CodeIndex.Core.Model.TreeEntry.<Clone>$() -> Aw.CodeIndex.Core.Model.TreeEntry!
+Aw.CodeIndex.Core.Model.TreeEntry.Blob.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Blob.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Deconstruct(out string! Mode, out string! Path, out string! Blob, out long? Size) -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Equals(Aw.CodeIndex.Core.Model.TreeEntry? other) -> bool
+Aw.CodeIndex.Core.Model.TreeEntry.Mode.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Mode.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Path.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Path.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Size.get -> long?
+Aw.CodeIndex.Core.Model.TreeEntry.Size.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.TreeEntry(string! Mode, string! Path, string! Blob, long? Size) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan
+Aw.CodeIndex.Core.Planning.BuildPlan.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlan!
+Aw.CodeIndex.Core.Planning.BuildPlan.BuildPlan(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, System.Collections.Generic.IReadOnlyList<string!>! ToDrop, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, out System.Collections.Generic.IReadOnlyList<string!>! ToDrop, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Equals(Aw.CodeIndex.Core.Planning.BuildPlan? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>!
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput
+Aw.CodeIndex.Core.Planning.BuildPlanInput.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlanInput!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.BuildPlanInput(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(Aw.CodeIndex.Core.Planning.BuildPlanInput? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanner
+Aw.CodeIndex.Core.Planning.StructureStamp
+Aw.CodeIndex.Core.Ports.CallWalk
+Aw.CodeIndex.Core.Ports.CallWalk.<Clone>$() -> Aw.CodeIndex.Core.Ports.CallWalk!
+Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
+Aw.CodeIndex.Core.Ports.CallWalk.Edges.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Equals(Aw.CodeIndex.Core.Ports.CallWalk? other) -> bool
+Aw.CodeIndex.Core.Ports.CallWalk.Truncated.get -> bool
+Aw.CodeIndex.Core.Ports.CallWalk.Truncated.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.get -> int
+Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates
+Aw.CodeIndex.Core.Ports.CloneCandidates.<Clone>$() -> Aw.CodeIndex.Core.Ports.CloneCandidates!
+Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>!
+Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.CloneCandidates(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.ReadOnlyMemory<byte> SubjectMinHash, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.ReadOnlyMemory<byte> SubjectMinHash, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.Equals(Aw.CodeIndex.Core.Ports.CloneCandidates? other) -> bool
+Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.get -> System.ReadOnlyMemory<byte>
+Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.init -> void
+Aw.CodeIndex.Core.Ports.GraphRequest
+Aw.CodeIndex.Core.Ports.GraphRequest.<Clone>$() -> Aw.CodeIndex.Core.Ports.GraphRequest!
+Aw.CodeIndex.Core.Ports.GraphRequest.Blobs.get -> Aw.CodeIndex.Core.Ports.IBlobReader!
+Aw.CodeIndex.Core.Ports.GraphRequest.Blobs.init -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.Commit.get -> Aw.CodeIndex.Core.Values.CommitSha
+Aw.CodeIndex.Core.Ports.GraphRequest.Commit.init -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out Aw.CodeIndex.Core.Values.CommitSha Commit, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Files, out Aw.CodeIndex.Core.Ports.IBlobReader! Blobs, out Aw.CodeIndex.Core.Model.GraphSettings! Settings) -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.Equals(Aw.CodeIndex.Core.Ports.GraphRequest? other) -> bool
+Aw.CodeIndex.Core.Ports.GraphRequest.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Ports.GraphRequest.Files.init -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.GraphRequest(Aw.CodeIndex.Core.Values.RepoName Repo, Aw.CodeIndex.Core.Values.CommitSha Commit, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Files, Aw.CodeIndex.Core.Ports.IBlobReader! Blobs, Aw.CodeIndex.Core.Model.GraphSettings! Settings) -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Ports.GraphRequest.Repo.init -> void
+Aw.CodeIndex.Core.Ports.GraphRequest.Settings.get -> Aw.CodeIndex.Core.Model.GraphSettings!
+Aw.CodeIndex.Core.Ports.GraphRequest.Settings.init -> void
+Aw.CodeIndex.Core.Ports.IBlobReader
+Aw.CodeIndex.Core.Ports.IBlobReader.Read(string! blob, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<byte[]?>!>
+Aw.CodeIndex.Core.Ports.IBodyScrubber
+Aw.CodeIndex.Core.Ports.IBodyScrubber.Scrub(string! text, int maxCharacters) -> string!
+Aw.CodeIndex.Core.Ports.IEmbedder
+Aw.CodeIndex.Core.Ports.IEmbedder.Embed(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Collections.Generic.IReadOnlyList<string!>! texts, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<float>>!>!>
+Aw.CodeIndex.Core.Ports.IEmbedder.ModelFor(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> string!
+Aw.CodeIndex.Core.Ports.IEmbedder.Probe(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IGraphRunner
+Aw.CodeIndex.Core.Ports.IGraphRunner.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IGraphRunner.Run(Aw.CodeIndex.Core.Ports.GraphRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.GraphSnapshot!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild
+Aw.CodeIndex.Core.Ports.IIndexBuild.AddEdges(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>! edges, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.ClearEdges(Aw.CodeIndex.Core.Model.EdgeBasis basis, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.CountEmbeddings(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.EmbedCandidates(int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EmbedCandidate!>!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.Incremental.get -> bool
+Aw.CodeIndex.Core.Ports.IIndexBuild.Previous.get -> Aw.CodeIndex.Core.Model.IndexHeader?
+Aw.CodeIndex.Core.Ports.IIndexBuild.Publish(Aw.CodeIndex.Core.Model.IndexMeta! meta, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.IndexHeader!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.ReadCallSites(System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Aw.CodeIndex.Core.Model.CallSiteRow!>!
+Aw.CodeIndex.Core.Ports.IIndexBuild.ReadSymbols(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ResolutionSymbol!>!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.RemoveFiles(System.Collections.Generic.IReadOnlyList<string!>! paths, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.ReplaceDeps(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.DepRecord!>! deps, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.ReplaceGraph(Aw.CodeIndex.Core.Model.GraphSnapshot! graph, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.SetLayer(Aw.CodeIndex.Core.Model.LayerRecord! layer, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.StoredFiles(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>!>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.WriteEmbeddings(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EmbeddingRecord!>! vectors, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexBuild.WriteFiles(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.FileRecord!>! files, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IIndexReader
+Aw.CodeIndex.Core.Ports.IIndexReader.CloneCandidates(Aw.CodeIndex.Core.Values.SymbolRef symbol, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.CloneCandidates!>!>
+Aw.CodeIndex.Core.Ports.IIndexReader.FileSymbols(System.Collections.Generic.IReadOnlyList<string!>! paths, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.FileSymbolsEntry!>!>!>
+Aw.CodeIndex.Core.Ports.IIndexReader.FindSymbols(Aw.CodeIndex.Core.Facade.SymbolQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.SymbolPage!>!>
+Aw.CodeIndex.Core.Ports.IIndexReader.Header.get -> Aw.CodeIndex.Core.Model.IndexHeader!
+Aw.CodeIndex.Core.Ports.IIndexReader.Nearest(System.ReadOnlyMemory<float> vector, int k, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.Neighbor!>!>!>
+Aw.CodeIndex.Core.Ports.IIndexReader.Walk(Aw.CodeIndex.Core.Values.SymbolRef symbol, Aw.CodeIndex.Core.Facade.CallDirection direction, Aw.CodeIndex.Core.Facade.CallDepth depth, bool includeImplementations, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.CallWalk!>!>
+Aw.CodeIndex.Core.Ports.IIndexStore
+Aw.CodeIndex.Core.Ports.IIndexStore.BeginBuild(Aw.CodeIndex.Core.Values.RepoName repo, bool incremental, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.IIndexBuild!>!>
+Aw.CodeIndex.Core.Ports.IIndexStore.OpenRead(Aw.CodeIndex.Core.Values.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.IIndexReader!>!>
+Aw.CodeIndex.Core.Ports.IIndexStore.ReadHeader(Aw.CodeIndex.Core.Values.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.IndexHeader?>!>
+Aw.CodeIndex.Core.Ports.IIndexStore.Sweep(Aw.CodeIndex.Core.Values.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.CodeIndex.Core.Ports.IManifestReader
+Aw.CodeIndex.Core.Ports.IManifestReader.Handles(string! path) -> bool
+Aw.CodeIndex.Core.Ports.IManifestReader.Read(string! path, string! text) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.DepRecord!>!
+Aw.CodeIndex.Core.Ports.IParseQuarantine
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Begin(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Contains(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> bool
+Aw.CodeIndex.Core.Ports.IParseQuarantine.End(Aw.CodeIndex.Core.Values.RepoName repo) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Keep(Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlySet<string!>! blobsInHead) -> int
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Recover(Aw.CodeIndex.Core.Values.RepoName repo) -> int
+Aw.CodeIndex.Core.Ports.IRepoHeads
+Aw.CodeIndex.Core.Ports.IRepoHeads.Heads(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CodeIndexRepo!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.RepoHead!>!>!>
+Aw.CodeIndex.Core.Ports.IRepoHeads.OnDefaultBranch(Aw.CodeIndex.Core.Facade.CodeIndexRepo! repo, Aw.CodeIndex.Core.Values.CommitSha commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.DefaultBranchCheck!>!>
+Aw.CodeIndex.Core.Ports.IRepoSnapshot
+Aw.CodeIndex.Core.Ports.IRepoSnapshot.Inventory(Aw.CodeIndex.Core.Facade.CodeIndexRepo! repo, Aw.CodeIndex.Core.Values.CommitSha commit, Aw.CodeIndex.Core.Model.SnapshotLimits! limits, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.SnapshotInventory!>!>
+Aw.CodeIndex.Core.Ports.IRepoSnapshot.OpenBlobs(Aw.CodeIndex.Core.Facade.CodeIndexRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Ports.IBlobReader!>!>
+Aw.CodeIndex.Core.Ports.ISymbolParser
+Aw.CodeIndex.Core.Ports.ISymbolParser.Handles(string! path) -> bool
+Aw.CodeIndex.Core.Ports.ISymbolParser.Parse(string! path, string! text, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.CodeIndex.Core.Model.ParseOutcome!>!
+Aw.CodeIndex.Core.Ports.MinHashCandidate
+Aw.CodeIndex.Core.Ports.MinHashCandidate.<Clone>$() -> Aw.CodeIndex.Core.Ports.MinHashCandidate!
+Aw.CodeIndex.Core.Ports.MinHashCandidate.Deconstruct(out Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, out System.ReadOnlyMemory<byte> MinHash) -> void
+Aw.CodeIndex.Core.Ports.MinHashCandidate.Equals(Aw.CodeIndex.Core.Ports.MinHashCandidate? other) -> bool
+Aw.CodeIndex.Core.Ports.MinHashCandidate.MinHash.get -> System.ReadOnlyMemory<byte>
+Aw.CodeIndex.Core.Ports.MinHashCandidate.MinHash.init -> void
+Aw.CodeIndex.Core.Ports.MinHashCandidate.MinHashCandidate(Aw.CodeIndex.Core.Facade.SymbolHit! Symbol, System.ReadOnlyMemory<byte> MinHash) -> void
+Aw.CodeIndex.Core.Ports.MinHashCandidate.Symbol.get -> Aw.CodeIndex.Core.Facade.SymbolHit!
+Aw.CodeIndex.Core.Ports.MinHashCandidate.Symbol.init -> void
+Aw.CodeIndex.Core.Ports.SymbolPage
+Aw.CodeIndex.Core.Ports.SymbolPage.<Clone>$() -> Aw.CodeIndex.Core.Ports.SymbolPage!
+Aw.CodeIndex.Core.Ports.SymbolPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Hits, out bool Truncated) -> void
+Aw.CodeIndex.Core.Ports.SymbolPage.Equals(Aw.CodeIndex.Core.Ports.SymbolPage? other) -> bool
+Aw.CodeIndex.Core.Ports.SymbolPage.Hits.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Ports.SymbolPage.Hits.init -> void
+Aw.CodeIndex.Core.Ports.SymbolPage.SymbolPage(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Hits, bool Truncated) -> void
+Aw.CodeIndex.Core.Ports.SymbolPage.Truncated.get -> bool
+Aw.CodeIndex.Core.Ports.SymbolPage.Truncated.init -> void
+Aw.CodeIndex.Core.Resolution.CallResolver
+Aw.CodeIndex.Core.Resolution.CallResolver.CallResolver(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ResolutionSymbol!>! symbols, System.Collections.Generic.IReadOnlyCollection<string!>! projectDirectories) -> void
+Aw.CodeIndex.Core.Resolution.CallResolver.Resolve(System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.CallSiteRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>!
+Aw.CodeIndex.Core.Similarity.CloneTokenizer
+Aw.CodeIndex.Core.Similarity.Clones
+Aw.CodeIndex.Core.Similarity.SimilarClones
+Aw.CodeIndex.Core.Similarity.SimilarClones.<Clone>$() -> Aw.CodeIndex.Core.Similarity.SimilarClones!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.Equals(Aw.CodeIndex.Core.Similarity.SimilarClones? other) -> bool
+Aw.CodeIndex.Core.Similarity.SimilarClones.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Exact.init -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.Near.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Near.init -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.SimilarClones(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+Aw.CodeIndex.Core.Values.CommitSha
+Aw.CodeIndex.Core.Values.CommitSha.CommitSha() -> void
+Aw.CodeIndex.Core.Values.CommitSha.Equals(Aw.CodeIndex.Core.Values.CommitSha other) -> bool
+Aw.CodeIndex.Core.Values.CommitSha.Equals(Aw.CodeIndex.Core.Values.CommitSha other, System.Collections.Generic.IEqualityComparer<Aw.CodeIndex.Core.Values.CommitSha>! comparer) -> bool
+Aw.CodeIndex.Core.Values.CommitSha.GetTypeCode() -> System.TypeCode
+Aw.CodeIndex.Core.Values.CommitSha.IsInitialized() -> bool
+Aw.CodeIndex.Core.Values.CommitSha.ToString(System.IFormatProvider? provider) -> string!
+Aw.CodeIndex.Core.Values.CommitSha.Value.get -> string!
+Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Values.RepoName.Equals(Aw.CodeIndex.Core.Values.RepoName other) -> bool
+Aw.CodeIndex.Core.Values.RepoName.Equals(Aw.CodeIndex.Core.Values.RepoName other, System.Collections.Generic.IEqualityComparer<Aw.CodeIndex.Core.Values.RepoName>! comparer) -> bool
+Aw.CodeIndex.Core.Values.RepoName.GetTypeCode() -> System.TypeCode
+Aw.CodeIndex.Core.Values.RepoName.IsInitialized() -> bool
+Aw.CodeIndex.Core.Values.RepoName.RepoName() -> void
+Aw.CodeIndex.Core.Values.RepoName.ToString(System.IFormatProvider? provider) -> string!
+Aw.CodeIndex.Core.Values.RepoName.Value.get -> string!
+Aw.CodeIndex.Core.Values.SymbolRef
+Aw.CodeIndex.Core.Values.SymbolRef.Equals(Aw.CodeIndex.Core.Values.SymbolRef other) -> bool
+Aw.CodeIndex.Core.Values.SymbolRef.Equals(Aw.CodeIndex.Core.Values.SymbolRef other, System.Collections.Generic.IEqualityComparer<Aw.CodeIndex.Core.Values.SymbolRef>! comparer) -> bool
+Aw.CodeIndex.Core.Values.SymbolRef.GetTypeCode() -> System.TypeCode
+Aw.CodeIndex.Core.Values.SymbolRef.IsInitialized() -> bool
+Aw.CodeIndex.Core.Values.SymbolRef.SymbolRef() -> void
+Aw.CodeIndex.Core.Values.SymbolRef.ToString(System.IFormatProvider? provider) -> string!
+Aw.CodeIndex.Core.Values.SymbolRef.Value.get -> string!
+const Aw.CodeIndex.Core.CodeIndexRules.EmbedBatchSize = 32 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.EmbedTextMaxCharacters = 6000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.FileBatchSize = 200 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxAmbiguousEdges = 64 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxClones = 1000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxCallSitesPerFile = 500000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxEdgesPerLevel = 1000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxEmbeddedPerBuild = 4096 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxQuarantined = 100 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.DefaultSymbolHits = 200 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxSymbolsPerFile = 100000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MinCloneTokens = 30 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MinHashBands = 16 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MinHashLength = 64 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.NearCloneThreshold = 0.8 -> double
+const Aw.CodeIndex.Core.CodeIndexRules.SchemaVersion = 1 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.SignatureMaxCharacters = 2000 -> int
+const Aw.CodeIndex.Core.CodeIndexSettings.DefaultEmbeddingsUrl = "http://127.0.0.1:11434" -> string!
+override Aw.CodeIndex.Core.CodeIndexSettings.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.CodeIndexSettings.GetHashCode() -> int
+override Aw.CodeIndex.Core.CodeIndexSettings.ToString() -> string!
+override Aw.CodeIndex.Core.CodeIndexSettingsInput.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.CodeIndexSettingsInput.GetHashCode() -> int
+override Aw.CodeIndex.Core.CodeIndexSettingsInput.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.AnswerStamp.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.AnswerStamp.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.AnswerStamp.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.BuildReport.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.BuildReport.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.BuildReport.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.CallEdge.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.CallEdge.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.CallEdge.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.CallsAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.CallsAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.CallsAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.CodeIndexCaller.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.CodeIndexCaller.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.CodeIndexCaller.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.CodeIndexRepo.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.CodeIndexRepo.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.CodeIndexRepo.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.CodeIndexScope.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.CodeIndexScope.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.CodeIndexScope.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.FileSymbolsEntry.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.FileSymbolsEntry.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.FileSymbolsEntry.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.LayerProbe.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.LayerProbe.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.LayerProbe.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.LayerStatus.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.LayerStatus.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.LayerStatus.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.NearClone.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.NearClone.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.NearClone.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.Neighbor.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.Neighbor.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.Neighbor.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.NeighborsAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.NeighborsAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.NeighborsAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.RecordedHead.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.RecordedHead.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.RecordedHead.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.RepoStatus.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.RepoStatus.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.RepoStatus.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.SimilarAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.SimilarAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.SimilarAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.StatusAnswer.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.StatusAnswer.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.StatusAnswer.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.SymbolHit.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.SymbolHit.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.SymbolHit.ToString() -> string!
+override Aw.CodeIndex.Core.Facade.SymbolQuery.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.SymbolQuery.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.SymbolQuery.ToString() -> string!
+override Aw.CodeIndex.Core.Model.CallSite.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.CallSite.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.CallSite.ToString() -> string!
+override Aw.CodeIndex.Core.Model.CallSiteRow.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.CallSiteRow.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.CallSiteRow.ToString() -> string!
+override Aw.CodeIndex.Core.Model.DefaultBranchCheck.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.DefaultBranchCheck.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.DefaultBranchCheck.ToString() -> string!
+override Aw.CodeIndex.Core.Model.DepRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.DepRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.DepRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.EdgeRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.EdgeRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.EdgeRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.EmbedCandidate.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.EmbedCandidate.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.EmbedCandidate.ToString() -> string!
+override Aw.CodeIndex.Core.Model.EmbeddingProgress.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.EmbeddingProgress.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.EmbeddingProgress.ToString() -> string!
+override Aw.CodeIndex.Core.Model.EmbeddingRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.EmbeddingRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.EmbeddingRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.EmbeddingsSettings.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.EmbeddingsSettings.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.EmbeddingsSettings.ToString() -> string!
+override Aw.CodeIndex.Core.Model.FileRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.FileRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.FileRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.GraphEdge.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.GraphEdge.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.GraphEdge.ToString() -> string!
+override Aw.CodeIndex.Core.Model.GraphNode.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.GraphNode.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.GraphNode.ToString() -> string!
+override Aw.CodeIndex.Core.Model.GraphSettings.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.GraphSettings.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.GraphSettings.ToString() -> string!
+override Aw.CodeIndex.Core.Model.GraphSnapshot.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.GraphSnapshot.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.GraphSnapshot.ToString() -> string!
+override Aw.CodeIndex.Core.Model.IndexCounts.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.IndexCounts.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.IndexCounts.ToString() -> string!
+override Aw.CodeIndex.Core.Model.IndexHeader.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.IndexHeader.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.IndexHeader.ToString() -> string!
+override Aw.CodeIndex.Core.Model.IndexMeta.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.IndexMeta.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.IndexMeta.ToString() -> string!
+override Aw.CodeIndex.Core.Model.LayerRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.LayerRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.LayerRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.ParseOutcome.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.ParseOutcome.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.ParseOutcome.ToString() -> string!
+override Aw.CodeIndex.Core.Model.ParsedSymbol.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.ParsedSymbol.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.ParsedSymbol.ToString() -> string!
+override Aw.CodeIndex.Core.Model.RepoHead.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.RepoHead.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.RepoHead.ToString() -> string!
+override Aw.CodeIndex.Core.Model.ResolutionSymbol.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.ResolutionSymbol.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.ResolutionSymbol.ToString() -> string!
+override Aw.CodeIndex.Core.Model.SnapshotFile.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.SnapshotFile.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.SnapshotFile.ToString() -> string!
+override Aw.CodeIndex.Core.Model.SnapshotInventory.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.SnapshotInventory.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.SnapshotInventory.ToString() -> string!
+override Aw.CodeIndex.Core.Model.SnapshotLimits.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.SnapshotLimits.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.SnapshotLimits.ToString() -> string!
+override Aw.CodeIndex.Core.Model.StoredFile.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.StoredFile.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.StoredFile.ToString() -> string!
+override Aw.CodeIndex.Core.Model.SymbolRecord.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.SymbolRecord.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.SymbolRecord.ToString() -> string!
+override Aw.CodeIndex.Core.Model.TreeEntry.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.TreeEntry.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.TreeEntry.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlan.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlan.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlan.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.ToString() -> string!
+override Aw.CodeIndex.Core.Ports.CallWalk.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Ports.CallWalk.GetHashCode() -> int
+override Aw.CodeIndex.Core.Ports.CallWalk.ToString() -> string!
+override Aw.CodeIndex.Core.Ports.CloneCandidates.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Ports.CloneCandidates.GetHashCode() -> int
+override Aw.CodeIndex.Core.Ports.CloneCandidates.ToString() -> string!
+override Aw.CodeIndex.Core.Ports.GraphRequest.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Ports.GraphRequest.GetHashCode() -> int
+override Aw.CodeIndex.Core.Ports.GraphRequest.ToString() -> string!
+override Aw.CodeIndex.Core.Ports.MinHashCandidate.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Ports.MinHashCandidate.GetHashCode() -> int
+override Aw.CodeIndex.Core.Ports.MinHashCandidate.ToString() -> string!
+override Aw.CodeIndex.Core.Ports.SymbolPage.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Ports.SymbolPage.GetHashCode() -> int
+override Aw.CodeIndex.Core.Ports.SymbolPage.ToString() -> string!
+override Aw.CodeIndex.Core.Similarity.SimilarClones.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Similarity.SimilarClones.GetHashCode() -> int
+override Aw.CodeIndex.Core.Similarity.SimilarClones.ToString() -> string!
+override Aw.CodeIndex.Core.Values.CommitSha.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Values.CommitSha.GetHashCode() -> int
+override Aw.CodeIndex.Core.Values.CommitSha.ToString() -> string!
+override Aw.CodeIndex.Core.Values.RepoName.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Values.RepoName.GetHashCode() -> int
+override Aw.CodeIndex.Core.Values.RepoName.ToString() -> string!
+override Aw.CodeIndex.Core.Values.SymbolRef.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Values.SymbolRef.GetHashCode() -> int
+override Aw.CodeIndex.Core.Values.SymbolRef.ToString() -> string!
+static Aw.CodeIndex.Core.CodeIndexCoreServiceCollectionExtensions.AddCodeIndexCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.CodeIndex.Core.CodeIndexErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.CodeIndex.Core.CodeIndexSettings.Create(Aw.CodeIndex.Core.CodeIndexSettingsInput? input) -> Aw.Kernel.Result<Aw.CodeIndex.Core.CodeIndexSettings!>!
+static Aw.CodeIndex.Core.CodeIndexSettings.Default.get -> Aw.CodeIndex.Core.CodeIndexSettings!
+static Aw.CodeIndex.Core.CodeIndexSettings.operator !=(Aw.CodeIndex.Core.CodeIndexSettings? left, Aw.CodeIndex.Core.CodeIndexSettings? right) -> bool
+static Aw.CodeIndex.Core.CodeIndexSettings.operator ==(Aw.CodeIndex.Core.CodeIndexSettings? left, Aw.CodeIndex.Core.CodeIndexSettings? right) -> bool
+static Aw.CodeIndex.Core.CodeIndexSettingsInput.operator !=(Aw.CodeIndex.Core.CodeIndexSettingsInput? left, Aw.CodeIndex.Core.CodeIndexSettingsInput? right) -> bool
+static Aw.CodeIndex.Core.CodeIndexSettingsInput.operator ==(Aw.CodeIndex.Core.CodeIndexSettingsInput? left, Aw.CodeIndex.Core.CodeIndexSettingsInput? right) -> bool
+static Aw.CodeIndex.Core.Facade.AnswerStamp.operator !=(Aw.CodeIndex.Core.Facade.AnswerStamp? left, Aw.CodeIndex.Core.Facade.AnswerStamp? right) -> bool
+static Aw.CodeIndex.Core.Facade.AnswerStamp.operator ==(Aw.CodeIndex.Core.Facade.AnswerStamp? left, Aw.CodeIndex.Core.Facade.AnswerStamp? right) -> bool
+static Aw.CodeIndex.Core.Facade.BuildReport.operator !=(Aw.CodeIndex.Core.Facade.BuildReport? left, Aw.CodeIndex.Core.Facade.BuildReport? right) -> bool
+static Aw.CodeIndex.Core.Facade.BuildReport.operator ==(Aw.CodeIndex.Core.Facade.BuildReport? left, Aw.CodeIndex.Core.Facade.BuildReport? right) -> bool
+static Aw.CodeIndex.Core.Facade.CallCoverage.Of(Aw.CodeIndex.Core.Model.Coverage subject, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Facade.CallEdge!>! edges) -> Aw.CodeIndex.Core.Model.Coverage
+static Aw.CodeIndex.Core.Facade.CallEdge.operator !=(Aw.CodeIndex.Core.Facade.CallEdge? left, Aw.CodeIndex.Core.Facade.CallEdge? right) -> bool
+static Aw.CodeIndex.Core.Facade.CallEdge.operator ==(Aw.CodeIndex.Core.Facade.CallEdge? left, Aw.CodeIndex.Core.Facade.CallEdge? right) -> bool
+static Aw.CodeIndex.Core.Facade.CallsAnswer.operator !=(Aw.CodeIndex.Core.Facade.CallsAnswer? left, Aw.CodeIndex.Core.Facade.CallsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.CallsAnswer.operator ==(Aw.CodeIndex.Core.Facade.CallsAnswer? left, Aw.CodeIndex.Core.Facade.CallsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexCaller.operator !=(Aw.CodeIndex.Core.Facade.CodeIndexCaller? left, Aw.CodeIndex.Core.Facade.CodeIndexCaller? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexCaller.operator ==(Aw.CodeIndex.Core.Facade.CodeIndexCaller? left, Aw.CodeIndex.Core.Facade.CodeIndexCaller? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexRepo.operator !=(Aw.CodeIndex.Core.Facade.CodeIndexRepo? left, Aw.CodeIndex.Core.Facade.CodeIndexRepo? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexRepo.operator ==(Aw.CodeIndex.Core.Facade.CodeIndexRepo? left, Aw.CodeIndex.Core.Facade.CodeIndexRepo? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexScope.operator !=(Aw.CodeIndex.Core.Facade.CodeIndexScope? left, Aw.CodeIndex.Core.Facade.CodeIndexScope? right) -> bool
+static Aw.CodeIndex.Core.Facade.CodeIndexScope.operator ==(Aw.CodeIndex.Core.Facade.CodeIndexScope? left, Aw.CodeIndex.Core.Facade.CodeIndexScope? right) -> bool
+static Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.operator !=(Aw.CodeIndex.Core.Facade.FileSymbolsAnswer? left, Aw.CodeIndex.Core.Facade.FileSymbolsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.FileSymbolsAnswer.operator ==(Aw.CodeIndex.Core.Facade.FileSymbolsAnswer? left, Aw.CodeIndex.Core.Facade.FileSymbolsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.FileSymbolsEntry.operator !=(Aw.CodeIndex.Core.Facade.FileSymbolsEntry? left, Aw.CodeIndex.Core.Facade.FileSymbolsEntry? right) -> bool
+static Aw.CodeIndex.Core.Facade.FileSymbolsEntry.operator ==(Aw.CodeIndex.Core.Facade.FileSymbolsEntry? left, Aw.CodeIndex.Core.Facade.FileSymbolsEntry? right) -> bool
+static Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.operator !=(Aw.CodeIndex.Core.Facade.FindSymbolsAnswer? left, Aw.CodeIndex.Core.Facade.FindSymbolsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.FindSymbolsAnswer.operator ==(Aw.CodeIndex.Core.Facade.FindSymbolsAnswer? left, Aw.CodeIndex.Core.Facade.FindSymbolsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.LayerProbe.operator !=(Aw.CodeIndex.Core.Facade.LayerProbe? left, Aw.CodeIndex.Core.Facade.LayerProbe? right) -> bool
+static Aw.CodeIndex.Core.Facade.LayerProbe.operator ==(Aw.CodeIndex.Core.Facade.LayerProbe? left, Aw.CodeIndex.Core.Facade.LayerProbe? right) -> bool
+static Aw.CodeIndex.Core.Facade.LayerStatus.operator !=(Aw.CodeIndex.Core.Facade.LayerStatus? left, Aw.CodeIndex.Core.Facade.LayerStatus? right) -> bool
+static Aw.CodeIndex.Core.Facade.LayerStatus.operator ==(Aw.CodeIndex.Core.Facade.LayerStatus? left, Aw.CodeIndex.Core.Facade.LayerStatus? right) -> bool
+static Aw.CodeIndex.Core.Facade.NearClone.operator !=(Aw.CodeIndex.Core.Facade.NearClone? left, Aw.CodeIndex.Core.Facade.NearClone? right) -> bool
+static Aw.CodeIndex.Core.Facade.NearClone.operator ==(Aw.CodeIndex.Core.Facade.NearClone? left, Aw.CodeIndex.Core.Facade.NearClone? right) -> bool
+static Aw.CodeIndex.Core.Facade.Neighbor.operator !=(Aw.CodeIndex.Core.Facade.Neighbor? left, Aw.CodeIndex.Core.Facade.Neighbor? right) -> bool
+static Aw.CodeIndex.Core.Facade.Neighbor.operator ==(Aw.CodeIndex.Core.Facade.Neighbor? left, Aw.CodeIndex.Core.Facade.Neighbor? right) -> bool
+static Aw.CodeIndex.Core.Facade.NeighborsAnswer.operator !=(Aw.CodeIndex.Core.Facade.NeighborsAnswer? left, Aw.CodeIndex.Core.Facade.NeighborsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.NeighborsAnswer.operator ==(Aw.CodeIndex.Core.Facade.NeighborsAnswer? left, Aw.CodeIndex.Core.Facade.NeighborsAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.RecordedHead.operator !=(Aw.CodeIndex.Core.Facade.RecordedHead? left, Aw.CodeIndex.Core.Facade.RecordedHead? right) -> bool
+static Aw.CodeIndex.Core.Facade.RecordedHead.operator ==(Aw.CodeIndex.Core.Facade.RecordedHead? left, Aw.CodeIndex.Core.Facade.RecordedHead? right) -> bool
+static Aw.CodeIndex.Core.Facade.RepoStatus.operator !=(Aw.CodeIndex.Core.Facade.RepoStatus? left, Aw.CodeIndex.Core.Facade.RepoStatus? right) -> bool
+static Aw.CodeIndex.Core.Facade.RepoStatus.operator ==(Aw.CodeIndex.Core.Facade.RepoStatus? left, Aw.CodeIndex.Core.Facade.RepoStatus? right) -> bool
+static Aw.CodeIndex.Core.Facade.SimilarAnswer.operator !=(Aw.CodeIndex.Core.Facade.SimilarAnswer? left, Aw.CodeIndex.Core.Facade.SimilarAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.SimilarAnswer.operator ==(Aw.CodeIndex.Core.Facade.SimilarAnswer? left, Aw.CodeIndex.Core.Facade.SimilarAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.StatusAnswer.operator !=(Aw.CodeIndex.Core.Facade.StatusAnswer? left, Aw.CodeIndex.Core.Facade.StatusAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.StatusAnswer.operator ==(Aw.CodeIndex.Core.Facade.StatusAnswer? left, Aw.CodeIndex.Core.Facade.StatusAnswer? right) -> bool
+static Aw.CodeIndex.Core.Facade.SymbolHit.operator !=(Aw.CodeIndex.Core.Facade.SymbolHit? left, Aw.CodeIndex.Core.Facade.SymbolHit? right) -> bool
+static Aw.CodeIndex.Core.Facade.SymbolHit.operator ==(Aw.CodeIndex.Core.Facade.SymbolHit? left, Aw.CodeIndex.Core.Facade.SymbolHit? right) -> bool
+static Aw.CodeIndex.Core.Facade.SymbolQuery.operator !=(Aw.CodeIndex.Core.Facade.SymbolQuery? left, Aw.CodeIndex.Core.Facade.SymbolQuery? right) -> bool
+static Aw.CodeIndex.Core.Facade.SymbolQuery.operator ==(Aw.CodeIndex.Core.Facade.SymbolQuery? left, Aw.CodeIndex.Core.Facade.SymbolQuery? right) -> bool
+static Aw.CodeIndex.Core.InputRules.Apply(Aw.CodeIndex.Core.Values.CommitSha commit, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.TreeEntry!>! entries, Aw.CodeIndex.Core.Model.SnapshotLimits! limits) -> Aw.Kernel.Result<Aw.CodeIndex.Core.Model.SnapshotInventory!>!
+static Aw.CodeIndex.Core.InputRules.IsDenied(string! path, System.Collections.Generic.IReadOnlyList<string!>! addedGlobs) -> bool
+static Aw.CodeIndex.Core.InputRules.IsSafePath(string! path) -> bool
+static Aw.CodeIndex.Core.InputRules.SecretGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Model.CallSite.operator !=(Aw.CodeIndex.Core.Model.CallSite? left, Aw.CodeIndex.Core.Model.CallSite? right) -> bool
+static Aw.CodeIndex.Core.Model.CallSite.operator ==(Aw.CodeIndex.Core.Model.CallSite? left, Aw.CodeIndex.Core.Model.CallSite? right) -> bool
+static Aw.CodeIndex.Core.Model.CallSiteRow.operator !=(Aw.CodeIndex.Core.Model.CallSiteRow? left, Aw.CodeIndex.Core.Model.CallSiteRow? right) -> bool
+static Aw.CodeIndex.Core.Model.CallSiteRow.operator ==(Aw.CodeIndex.Core.Model.CallSiteRow? left, Aw.CodeIndex.Core.Model.CallSiteRow? right) -> bool
+static Aw.CodeIndex.Core.Model.DefaultBranchCheck.operator !=(Aw.CodeIndex.Core.Model.DefaultBranchCheck? left, Aw.CodeIndex.Core.Model.DefaultBranchCheck? right) -> bool
+static Aw.CodeIndex.Core.Model.DefaultBranchCheck.operator ==(Aw.CodeIndex.Core.Model.DefaultBranchCheck? left, Aw.CodeIndex.Core.Model.DefaultBranchCheck? right) -> bool
+static Aw.CodeIndex.Core.Model.DepRecord.operator !=(Aw.CodeIndex.Core.Model.DepRecord? left, Aw.CodeIndex.Core.Model.DepRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.DepRecord.operator ==(Aw.CodeIndex.Core.Model.DepRecord? left, Aw.CodeIndex.Core.Model.DepRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.EdgeRecord.operator !=(Aw.CodeIndex.Core.Model.EdgeRecord? left, Aw.CodeIndex.Core.Model.EdgeRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.EdgeRecord.operator ==(Aw.CodeIndex.Core.Model.EdgeRecord? left, Aw.CodeIndex.Core.Model.EdgeRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbedCandidate.operator !=(Aw.CodeIndex.Core.Model.EmbedCandidate? left, Aw.CodeIndex.Core.Model.EmbedCandidate? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbedCandidate.operator ==(Aw.CodeIndex.Core.Model.EmbedCandidate? left, Aw.CodeIndex.Core.Model.EmbedCandidate? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingProgress.operator !=(Aw.CodeIndex.Core.Model.EmbeddingProgress? left, Aw.CodeIndex.Core.Model.EmbeddingProgress? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingProgress.operator ==(Aw.CodeIndex.Core.Model.EmbeddingProgress? left, Aw.CodeIndex.Core.Model.EmbeddingProgress? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingRecord.operator !=(Aw.CodeIndex.Core.Model.EmbeddingRecord? left, Aw.CodeIndex.Core.Model.EmbeddingRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingRecord.operator ==(Aw.CodeIndex.Core.Model.EmbeddingRecord? left, Aw.CodeIndex.Core.Model.EmbeddingRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingsSettings.operator !=(Aw.CodeIndex.Core.Model.EmbeddingsSettings? left, Aw.CodeIndex.Core.Model.EmbeddingsSettings? right) -> bool
+static Aw.CodeIndex.Core.Model.EmbeddingsSettings.operator ==(Aw.CodeIndex.Core.Model.EmbeddingsSettings? left, Aw.CodeIndex.Core.Model.EmbeddingsSettings? right) -> bool
+static Aw.CodeIndex.Core.Model.FileRecord.operator !=(Aw.CodeIndex.Core.Model.FileRecord? left, Aw.CodeIndex.Core.Model.FileRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.FileRecord.operator ==(Aw.CodeIndex.Core.Model.FileRecord? left, Aw.CodeIndex.Core.Model.FileRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphEdge.operator !=(Aw.CodeIndex.Core.Model.GraphEdge? left, Aw.CodeIndex.Core.Model.GraphEdge? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphEdge.operator ==(Aw.CodeIndex.Core.Model.GraphEdge? left, Aw.CodeIndex.Core.Model.GraphEdge? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphNode.operator !=(Aw.CodeIndex.Core.Model.GraphNode? left, Aw.CodeIndex.Core.Model.GraphNode? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphNode.operator ==(Aw.CodeIndex.Core.Model.GraphNode? left, Aw.CodeIndex.Core.Model.GraphNode? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphSettings.operator !=(Aw.CodeIndex.Core.Model.GraphSettings? left, Aw.CodeIndex.Core.Model.GraphSettings? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphSettings.operator ==(Aw.CodeIndex.Core.Model.GraphSettings? left, Aw.CodeIndex.Core.Model.GraphSettings? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphSnapshot.operator !=(Aw.CodeIndex.Core.Model.GraphSnapshot? left, Aw.CodeIndex.Core.Model.GraphSnapshot? right) -> bool
+static Aw.CodeIndex.Core.Model.GraphSnapshot.operator ==(Aw.CodeIndex.Core.Model.GraphSnapshot? left, Aw.CodeIndex.Core.Model.GraphSnapshot? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexCounts.operator !=(Aw.CodeIndex.Core.Model.IndexCounts? left, Aw.CodeIndex.Core.Model.IndexCounts? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexCounts.operator ==(Aw.CodeIndex.Core.Model.IndexCounts? left, Aw.CodeIndex.Core.Model.IndexCounts? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexHeader.operator !=(Aw.CodeIndex.Core.Model.IndexHeader? left, Aw.CodeIndex.Core.Model.IndexHeader? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexHeader.operator ==(Aw.CodeIndex.Core.Model.IndexHeader? left, Aw.CodeIndex.Core.Model.IndexHeader? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexMeta.operator !=(Aw.CodeIndex.Core.Model.IndexMeta? left, Aw.CodeIndex.Core.Model.IndexMeta? right) -> bool
+static Aw.CodeIndex.Core.Model.IndexMeta.operator ==(Aw.CodeIndex.Core.Model.IndexMeta? left, Aw.CodeIndex.Core.Model.IndexMeta? right) -> bool
+static Aw.CodeIndex.Core.Model.LayerRecord.operator !=(Aw.CodeIndex.Core.Model.LayerRecord? left, Aw.CodeIndex.Core.Model.LayerRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.LayerRecord.operator ==(Aw.CodeIndex.Core.Model.LayerRecord? left, Aw.CodeIndex.Core.Model.LayerRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.ParseOutcome.operator !=(Aw.CodeIndex.Core.Model.ParseOutcome? left, Aw.CodeIndex.Core.Model.ParseOutcome? right) -> bool
+static Aw.CodeIndex.Core.Model.ParseOutcome.operator ==(Aw.CodeIndex.Core.Model.ParseOutcome? left, Aw.CodeIndex.Core.Model.ParseOutcome? right) -> bool
+static Aw.CodeIndex.Core.Model.ParsedSymbol.operator !=(Aw.CodeIndex.Core.Model.ParsedSymbol? left, Aw.CodeIndex.Core.Model.ParsedSymbol? right) -> bool
+static Aw.CodeIndex.Core.Model.ParsedSymbol.operator ==(Aw.CodeIndex.Core.Model.ParsedSymbol? left, Aw.CodeIndex.Core.Model.ParsedSymbol? right) -> bool
+static Aw.CodeIndex.Core.Model.RepoHead.operator !=(Aw.CodeIndex.Core.Model.RepoHead? left, Aw.CodeIndex.Core.Model.RepoHead? right) -> bool
+static Aw.CodeIndex.Core.Model.RepoHead.operator ==(Aw.CodeIndex.Core.Model.RepoHead? left, Aw.CodeIndex.Core.Model.RepoHead? right) -> bool
+static Aw.CodeIndex.Core.Model.ResolutionSymbol.operator !=(Aw.CodeIndex.Core.Model.ResolutionSymbol? left, Aw.CodeIndex.Core.Model.ResolutionSymbol? right) -> bool
+static Aw.CodeIndex.Core.Model.ResolutionSymbol.operator ==(Aw.CodeIndex.Core.Model.ResolutionSymbol? left, Aw.CodeIndex.Core.Model.ResolutionSymbol? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotFile.operator !=(Aw.CodeIndex.Core.Model.SnapshotFile? left, Aw.CodeIndex.Core.Model.SnapshotFile? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotFile.operator ==(Aw.CodeIndex.Core.Model.SnapshotFile? left, Aw.CodeIndex.Core.Model.SnapshotFile? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotInventory.operator !=(Aw.CodeIndex.Core.Model.SnapshotInventory? left, Aw.CodeIndex.Core.Model.SnapshotInventory? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotInventory.operator ==(Aw.CodeIndex.Core.Model.SnapshotInventory? left, Aw.CodeIndex.Core.Model.SnapshotInventory? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotLimits.operator !=(Aw.CodeIndex.Core.Model.SnapshotLimits? left, Aw.CodeIndex.Core.Model.SnapshotLimits? right) -> bool
+static Aw.CodeIndex.Core.Model.SnapshotLimits.operator ==(Aw.CodeIndex.Core.Model.SnapshotLimits? left, Aw.CodeIndex.Core.Model.SnapshotLimits? right) -> bool
+static Aw.CodeIndex.Core.Model.StoredFile.operator !=(Aw.CodeIndex.Core.Model.StoredFile? left, Aw.CodeIndex.Core.Model.StoredFile? right) -> bool
+static Aw.CodeIndex.Core.Model.StoredFile.operator ==(Aw.CodeIndex.Core.Model.StoredFile? left, Aw.CodeIndex.Core.Model.StoredFile? right) -> bool
+static Aw.CodeIndex.Core.Model.SymbolRecord.operator !=(Aw.CodeIndex.Core.Model.SymbolRecord? left, Aw.CodeIndex.Core.Model.SymbolRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.SymbolRecord.operator ==(Aw.CodeIndex.Core.Model.SymbolRecord? left, Aw.CodeIndex.Core.Model.SymbolRecord? right) -> bool
+static Aw.CodeIndex.Core.Model.TreeEntry.operator !=(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+static Aw.CodeIndex.Core.Model.TreeEntry.operator ==(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator !=(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator ==(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator !=(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator ==(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanner.Plan(Aw.CodeIndex.Core.Planning.BuildPlanInput! input) -> Aw.CodeIndex.Core.Planning.BuildPlan!
+static Aw.CodeIndex.Core.Planning.StructureStamp.Compute(string! parserVersion, System.Collections.Generic.IReadOnlyList<string!>! utilityGlobs, System.Collections.Generic.IReadOnlyList<string!>! scrubPatterns) -> string!
+static Aw.CodeIndex.Core.Ports.CallWalk.operator !=(Aw.CodeIndex.Core.Ports.CallWalk? left, Aw.CodeIndex.Core.Ports.CallWalk? right) -> bool
+static Aw.CodeIndex.Core.Ports.CallWalk.operator ==(Aw.CodeIndex.Core.Ports.CallWalk? left, Aw.CodeIndex.Core.Ports.CallWalk? right) -> bool
+static Aw.CodeIndex.Core.Ports.CloneCandidates.operator !=(Aw.CodeIndex.Core.Ports.CloneCandidates? left, Aw.CodeIndex.Core.Ports.CloneCandidates? right) -> bool
+static Aw.CodeIndex.Core.Ports.CloneCandidates.operator ==(Aw.CodeIndex.Core.Ports.CloneCandidates? left, Aw.CodeIndex.Core.Ports.CloneCandidates? right) -> bool
+static Aw.CodeIndex.Core.Ports.GraphRequest.operator !=(Aw.CodeIndex.Core.Ports.GraphRequest? left, Aw.CodeIndex.Core.Ports.GraphRequest? right) -> bool
+static Aw.CodeIndex.Core.Ports.GraphRequest.operator ==(Aw.CodeIndex.Core.Ports.GraphRequest? left, Aw.CodeIndex.Core.Ports.GraphRequest? right) -> bool
+static Aw.CodeIndex.Core.Ports.MinHashCandidate.operator !=(Aw.CodeIndex.Core.Ports.MinHashCandidate? left, Aw.CodeIndex.Core.Ports.MinHashCandidate? right) -> bool
+static Aw.CodeIndex.Core.Ports.MinHashCandidate.operator ==(Aw.CodeIndex.Core.Ports.MinHashCandidate? left, Aw.CodeIndex.Core.Ports.MinHashCandidate? right) -> bool
+static Aw.CodeIndex.Core.Ports.SymbolPage.operator !=(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
+static Aw.CodeIndex.Core.Ports.SymbolPage.operator ==(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
+static Aw.CodeIndex.Core.Resolution.CallResolver.RankText(int rank, int candidates) -> string!
+static Aw.CodeIndex.Core.Similarity.CloneTokenizer.Tokenize(string! text) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.CloneTokenizer.TokenizeLines(string! text, int startLine, int endLine) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.Clones.BandKeys(System.ReadOnlySpan<byte> signature) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.Clones.Find(Aw.CodeIndex.Core.Values.SymbolRef subject, Aw.CodeIndex.Core.Ports.CloneCandidates! candidates) -> Aw.CodeIndex.Core.Similarity.SimilarClones!
+static Aw.CodeIndex.Core.Similarity.Clones.Signature(System.Collections.Generic.IReadOnlyList<string!>! tokens) -> byte[]!
+static Aw.CodeIndex.Core.Similarity.Clones.Similarity(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) -> double
+static Aw.CodeIndex.Core.Similarity.SimilarClones.operator !=(Aw.CodeIndex.Core.Similarity.SimilarClones? left, Aw.CodeIndex.Core.Similarity.SimilarClones? right) -> bool
+static Aw.CodeIndex.Core.Similarity.SimilarClones.operator ==(Aw.CodeIndex.Core.Similarity.SimilarClones? left, Aw.CodeIndex.Core.Similarity.SimilarClones? right) -> bool
+static Aw.CodeIndex.Core.Values.CommitSha.From(string! value) -> Aw.CodeIndex.Core.Values.CommitSha
+static Aw.CodeIndex.Core.Values.CommitSha.Parse(string! s, System.IFormatProvider? provider) -> Aw.CodeIndex.Core.Values.CommitSha
+static Aw.CodeIndex.Core.Values.CommitSha.TryFrom(string? value, out Aw.CodeIndex.Core.Values.CommitSha vo) -> bool
+static Aw.CodeIndex.Core.Values.CommitSha.TryParse(string? s, System.IFormatProvider? provider, out Aw.CodeIndex.Core.Values.CommitSha result) -> bool
+static Aw.CodeIndex.Core.Values.CommitSha.operator !=(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
+static Aw.CodeIndex.Core.Values.CommitSha.operator ==(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
+static Aw.CodeIndex.Core.Values.RepoName.From(string! value) -> Aw.CodeIndex.Core.Values.RepoName
+static Aw.CodeIndex.Core.Values.RepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.CodeIndex.Core.Values.RepoName
+static Aw.CodeIndex.Core.Values.RepoName.TryFrom(string? value, out Aw.CodeIndex.Core.Values.RepoName vo) -> bool
+static Aw.CodeIndex.Core.Values.RepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.CodeIndex.Core.Values.RepoName result) -> bool
+static Aw.CodeIndex.Core.Values.RepoName.operator !=(Aw.CodeIndex.Core.Values.RepoName left, Aw.CodeIndex.Core.Values.RepoName right) -> bool
+static Aw.CodeIndex.Core.Values.RepoName.operator ==(Aw.CodeIndex.Core.Values.RepoName left, Aw.CodeIndex.Core.Values.RepoName right) -> bool
+static Aw.CodeIndex.Core.Values.SymbolRef.From(string! value) -> Aw.CodeIndex.Core.Values.SymbolRef
+static Aw.CodeIndex.Core.Values.SymbolRef.Parse(string! s, System.IFormatProvider? provider) -> Aw.CodeIndex.Core.Values.SymbolRef
+static Aw.CodeIndex.Core.Values.SymbolRef.TryFrom(string? value, out Aw.CodeIndex.Core.Values.SymbolRef vo) -> bool
+static Aw.CodeIndex.Core.Values.SymbolRef.TryParse(string? s, System.IFormatProvider? provider, out Aw.CodeIndex.Core.Values.SymbolRef result) -> bool
+static Aw.CodeIndex.Core.Values.SymbolRef.operator !=(Aw.CodeIndex.Core.Values.SymbolRef left, Aw.CodeIndex.Core.Values.SymbolRef right) -> bool
+static Aw.CodeIndex.Core.Values.SymbolRef.operator ==(Aw.CodeIndex.Core.Values.SymbolRef left, Aw.CodeIndex.Core.Values.SymbolRef right) -> bool
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.BuildFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingServerFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingTargetRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.GraphUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexDamaged -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBehind -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexNotBuilt -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.InputTooLarge -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.NoSandbox -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.PinMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.QueryInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.RepoNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.SettingsInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.SymbolNotFound -> Aw.Kernel.ErrorDefinition!
+Aw.CodeIndex.Core.Planning.LanguageTable
+Aw.CodeIndex.Core.Planning.ProjectManifests
+Aw.CodeIndex.Core.Ports.ISymbolParser.Version.get -> string!
+static Aw.CodeIndex.Core.InputRules.MatchesAny(string! path, System.Collections.Generic.IEnumerable<string!>! globs) -> bool
+static Aw.CodeIndex.Core.Planning.LanguageTable.Of(string! path) -> string?
+static Aw.CodeIndex.Core.Planning.ProjectManifests.Directories(System.Collections.Generic.IEnumerable<string!>! paths) -> System.Collections.Generic.IReadOnlySet<string!>!
+Aw.CodeIndex.Core.Graph.GraphMerge
+Aw.CodeIndex.Core.Graph.GraphMerged
+Aw.CodeIndex.Core.Graph.GraphMerged.<Clone>$() -> Aw.CodeIndex.Core.Graph.GraphMerged!
+Aw.CodeIndex.Core.Graph.GraphMerged.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.FileRecord!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>! Edges, out int Dropped) -> void
+Aw.CodeIndex.Core.Graph.GraphMerged.Dropped.get -> int
+Aw.CodeIndex.Core.Graph.GraphMerged.Dropped.init -> void
+Aw.CodeIndex.Core.Graph.GraphMerged.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>!
+Aw.CodeIndex.Core.Graph.GraphMerged.Edges.init -> void
+Aw.CodeIndex.Core.Graph.GraphMerged.Equals(Aw.CodeIndex.Core.Graph.GraphMerged? other) -> bool
+Aw.CodeIndex.Core.Graph.GraphMerged.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.FileRecord!>!
+Aw.CodeIndex.Core.Graph.GraphMerged.Files.init -> void
+Aw.CodeIndex.Core.Graph.GraphMerged.GraphMerged(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.FileRecord!>! Files, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>! Edges, int Dropped) -> void
+override Aw.CodeIndex.Core.Graph.GraphMerged.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Graph.GraphMerged.GetHashCode() -> int
+override Aw.CodeIndex.Core.Graph.GraphMerged.ToString() -> string!
+static Aw.CodeIndex.Core.Graph.GraphMerge.Plan(Aw.CodeIndex.Core.Values.RepoName repo, Aw.CodeIndex.Core.Model.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! files) -> Aw.CodeIndex.Core.Graph.GraphMerged!
+static Aw.CodeIndex.Core.Graph.GraphMerged.operator !=(Aw.CodeIndex.Core.Graph.GraphMerged? left, Aw.CodeIndex.Core.Graph.GraphMerged? right) -> bool
+static Aw.CodeIndex.Core.Graph.GraphMerged.operator ==(Aw.CodeIndex.Core.Graph.GraphMerged? left, Aw.CodeIndex.Core.Graph.GraphMerged? right) -> bool
+Aw.CodeIndex.Core.Embedding.EmbedText
+Aw.CodeIndex.Core.EmbeddingTarget
+static Aw.CodeIndex.Core.Embedding.EmbedText.Of(Aw.CodeIndex.Core.Model.EmbedCandidate! candidate) -> string!
+static Aw.CodeIndex.Core.EmbeddingTarget.Check(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> Aw.Kernel.Error?
+static Aw.CodeIndex.Core.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool
+Aw.CodeIndex.Core.Ports.ICodeIndexPins
+Aw.CodeIndex.Core.Ports.ICodeIndexPins.Check() -> Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Ports.LockState.Matches = 3 -> Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Ports.LockState.Mismatch = 2 -> Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Ports.LockState.Missing = 0 -> Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Ports.LockState.Unparsable = 1 -> Aw.CodeIndex.Core.Ports.LockState
+Aw.CodeIndex.Core.Graph.GraphBodies
+const Aw.CodeIndex.Core.Graph.GraphBodies.RawSpanMaxCharacters = 64000 -> int
+static Aw.CodeIndex.Core.Graph.GraphBodies.Attach(Aw.CodeIndex.Core.Model.FileRecord! file, string! text, System.Func<string!, string!>! scrub) -> Aw.CodeIndex.Core.Model.FileRecord!
+Aw.CodeIndex.Core.Ports.IRepoIndexLock
+Aw.CodeIndex.Core.Ports.IRepoIndexLock.Take(Aw.CodeIndex.Core.Values.RepoName repo, System.TimeSpan maxWait, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexRules.IndexLockWait -> System.TimeSpan
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.EmbeddingsLayer(Aw.CodeIndex.Core.Ports.IEmbedder! embedder, System.TimeProvider! clock) -> void
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Run(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.IProgress<string!>! progress, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Record(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Facade.EmbedReport
+Aw.CodeIndex.Core.Facade.EmbedReport.<Clone>$() -> Aw.CodeIndex.Core.Facade.EmbedReport!
+Aw.CodeIndex.Core.Facade.EmbedReport.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out int Embedded, out int Embeddable, out int Carried, out int Made, out Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.EmbedReport(Aw.CodeIndex.Core.Values.RepoName Repo, int Embedded, int Embeddable, int Carried, int Made, Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddable.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddable.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embedded.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Embedded.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddings.get -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddings.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Equals(Aw.CodeIndex.Core.Facade.EmbedReport? other) -> bool
+Aw.CodeIndex.Core.Facade.EmbedReport.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.EmbedReport.Repo.init -> void
+override Aw.CodeIndex.Core.Facade.EmbedReport.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.EmbedReport.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.EmbedReport.ToString() -> string!
+static Aw.CodeIndex.Core.Facade.EmbedReport.operator !=(Aw.CodeIndex.Core.Facade.EmbedReport? left, Aw.CodeIndex.Core.Facade.EmbedReport? right) -> bool
+static Aw.CodeIndex.Core.Facade.EmbedReport.operator ==(Aw.CodeIndex.Core.Facade.EmbedReport? left, Aw.CodeIndex.Core.Facade.EmbedReport? right) -> bool
+Aw.CodeIndex.Core.Facade.ICodeIndex.Embed(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.RepoName repo, System.IProgress<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.EmbedReport!>!>
+Aw.CodeIndex.Core.Facade.EmbedReport.Carried.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Made.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Carried.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Made.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Carried.get -> int
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Made.get -> int
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Carried.init -> void
+Aw.CodeIndex.Core.Model.EmbeddingProgress.Made.init -> void
+Aw.CodeIndex.Core.Ports.IIndexBuild.FilesWithoutBodiesOrVectors(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>

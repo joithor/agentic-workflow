@@ -1,16 +1,23 @@
 using System.Text.Json;
+using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Trust;
+using Aw.Context.Core.WholeMap;
+using Aw.Context.Features.MapHeads;
 using Aw.Context.Features.QueryContext;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -27,7 +34,8 @@ internal sealed class ContextEngine(
     IScrubberFactory scrubbers,
     IContextMap map,
     ContextGraph graph,
-    ContextEval eval) : IContextEngine
+    ContextEval eval,
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -37,6 +45,9 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) =>
         sources.Status(scope, cancellationToken);
+
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken) =>
+        sources.HasSyncGap(scope, cancellationToken);
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         sources.Refresh(scope, cancellationToken);
@@ -51,6 +62,9 @@ internal sealed class ContextEngine(
     public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken) => eval.Map(request, cancellationToken);
 
     public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) => eval.Purge(request, cancellationToken);
+
+    public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.History(anchors, window, read, scope, cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
 
@@ -95,7 +109,20 @@ internal sealed class ContextEngine(
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ApplyReviewFile(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => map.Promote(scope, cancellationToken);
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.Promote(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.CleanDraft(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) => map.Held(scope, cancellationToken);
+
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken) => map.Hold(hold, scope, cancellationToken);
+
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken) => map.Release(version, scope, cancellationToken);
+
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken) => map.PublishStatus(scope, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
+        heads.Handle(new MapHeadsRequest(scope), cancellationToken);
 
     public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
         map.Propose(proposal, scope, cancellationToken);
@@ -108,9 +135,30 @@ internal sealed class ContextEngine(
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         graph.LensesOf(anchors, read, depth, scope, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        graph.Lenses(anchor, draft, depth, scope, cancellationToken);
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Subgraph(query, scope, cancellationToken);
+
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Code(anchors, draft, mapVersion, scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Lenses(anchor, read, range, scope, cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.LensesOf(anchors, read, range, scope, cancellationToken);
+
+    public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.WholeMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Search(query, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.ConceptMembers(query, scope, cancellationToken);
 }

@@ -15,9 +15,11 @@ public static class ThresholdChecks
         return resources.DiskFloorGb < 0 ? Message("resources.diskFloorGb", "0 or more", resources.DiskFloorGb)
             : resources.MemFloorGb < 0 ? Message("resources.memFloorGb", "0 or more", resources.MemFloorGb)
             : resources.SwapHighPct is < 1 or > 100 ? Message("resources.swapHighPct", "1 to 100", resources.SwapHighPct)
-            : builders.MaxPerLane < 1 ? Message("builders.maxPerLane", "1 or more", builders.MaxPerLane)
+            : builders.MaxPerLane is < 1 ? Message("builders.maxPerLane", "1 or more", builders.MaxPerLane.GetValueOrDefault())
             : builders.WorktreeGb < 0 ? Message("builders.worktreeGb", "0 or more", builders.WorktreeGb)
             : team.Context.RecycleAt < 1 ? Message("context.recycleAt", "1 or more", team.Context.RecycleAt)
+            : team.Usage.ResumeMarginSeconds < 0 ? Message("usage.resumeMarginSeconds", "0 or more", team.Usage.ResumeMarginSeconds)
+            : team.Usage.ProbeMinutes < 1 ? Message("usage.probeMinutes", "1 or more", team.Usage.ProbeMinutes)
             : heavy.Cap < 1 ? Message("heavy.cap", "1 or more", heavy.Cap)
             : null;
     }

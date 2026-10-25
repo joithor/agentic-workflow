@@ -11,8 +11,6 @@ namespace Aw.Sindri.Features.ListCommands;
 /// <param name="catalog">The command catalog.</param>
 internal sealed class ListCommandsService(ICommandCatalog catalog) : IService<ListCommandsRequest, ListCommandsResponse>
 {
-    private const string HumanAtTerminal = "human+terminal";
-
     public ValueTask<Result<ListCommandsResponse>> Handle(ListCommandsRequest request, CancellationToken cancellationToken)
     {
         IReadOnlyList<CommandListRow> rows = [.. catalog.Rows.OrderBy(static row => row.Action.Value, StringComparer.Ordinal).Select(Listed)];
@@ -20,12 +18,6 @@ internal sealed class ListCommandsService(ICommandCatalog catalog) : IService<Li
     }
 
     private static CommandListRow Listed(CommandRow row) =>
-        new(row.Action, row.Class, Callers(row), row.NeedsTerminal, row.Method, row.Route, row.Cli.Text, row.Ui, row.Destructive,
-            row.ReadsViews, row.Shortcut);
-
-    private static IReadOnlyList<string> Callers(CommandRow row)
-    {
-        var callers = Authorization.CallersFor(row.Class, row.ServiceGrants);
-        return row.NeedsTerminal ? [.. callers.Where(static c => string.Equals(c, HumanAtTerminal, StringComparison.Ordinal))] : callers;
-    }
+        new(row.Action, row.Class, Authorization.CallersFor(row), row.NeedsTerminal, row.Method, row.Route, row.Cli.Text, row.Ui, row.Destructive,
+            row.ReadsViews, row.Shortcut, row.Confirm);
 }

@@ -6,6 +6,7 @@ using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Workflows;
@@ -38,6 +39,7 @@ public sealed class WorkflowsKeysTests
         _ = shell.Run(Token);
         await ShellWait.Until(shell, () => shell.State == ShellState.Normal && shell.Workflows.Groups.Count > 0, Token);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list: the keys walk its groups
         return shell;
     }
 
@@ -52,7 +54,9 @@ public sealed class WorkflowsKeysTests
         Assert.True(shell.Press("J"));
         var address = Flat(shell)[0];
 
-        Assert.True(shell.Press("Enter"));
+        Assert.True(shell.Press("Enter"));   // the first Enter opens the run drawer, nothing else
+        Assert.False(shell.IsInstanceSheet);
+        Assert.True(shell.Press("Enter"));   // the second opens the run
         await ShellWait.Until(shell, () => Reached(shell), Token);
 
         Assert.Equal((address, address, true), (shell.Instance.Address, shell.OpenerWorkflow, shell.IsInstanceSheet));
@@ -113,15 +117,13 @@ public sealed class WorkflowsKeysTests
     }, Token);
 
     [Fact]
-    public Task B_and_N_say_arrive_with_their_phase() => UiThread.Run(async () =>
+    public Task B_says_it_arrives_with_its_phase() => UiThread.Run(async () =>
     {
         var shell = await OnWorkflows();
         Assert.True(shell.Workflows.Select(Plain.Address));
 
         Assert.True(shell.Press("B"));
         Assert.Equal(Labels.HandBackArrives, shell.Workflows.KeyNote);
-        Assert.True(shell.Press("N"));
-        Assert.Equal(Labels.StartArrives, shell.Workflows.KeyNote);
         Assert.False(shell.IsSheetOpen);
 
         Assert.True(shell.Press("J"));
@@ -247,7 +249,8 @@ public sealed class WorkflowsKeysTests
         Assert.Equal(string.Empty, shell.Workflows.KeyNote);
 
         shell.GoTo(PageId.Workflows);
-        Assert.True(shell.Press("N"));
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list: the keys walk its groups
+        Assert.True(shell.Press("B"));
         shell.OpenInstance(Detail(Plain).Address, Detail(Plain).Id);
 
         Assert.Equal((string.Empty, false), (shell.Workflows.KeyNote, shell.Workflows.KeyNoteVoice.IsAnnouncing));

@@ -1,6 +1,8 @@
 using Aw.Kernel.Ids;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Testing;
@@ -13,6 +15,7 @@ public sealed class ListServicesTests
 {
     private readonly ViewsHarness _v = new();
     private readonly InMemoryJobViews _jobs = new();
+    private readonly List<BuiltInService> _builtIns = [];
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -58,6 +61,20 @@ public sealed class ListServicesTests
         var list = (await Service().Handle(new ListServicesRequest(), Token)).Value;
 
         Assert.Equal(["heartbeat"], list.Services.Select(s => s.Name.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_built_in_is_listed_with_its_cadence_and_a_profile_entry_of_its_name_sets_the_cadence()
+    {
+        _builtIns.AddRange([new BuiltInService(ServiceName.From("sync-gaps"), new Cadence(TimeSpan.FromMinutes(1))), new BuiltInService(ServiceName.From("heartbeat"), new Cadence(TimeSpan.FromMinutes(9)))]);
+        await Approve(("heartbeat", "30s"));
+        await Ran("sync-gaps", _v.Slice.Clock.GetUtcNow(), ServiceOutcome.Failed, "SND-X-001");
+
+        var list = (await Service().Handle(new ListServicesRequest(), Token)).Value;
+
+        Assert.Equal([("heartbeat", "30s"), ("sync-gaps", "1m")], list.Services.Select(s => (s.Name.Value, s.Every)));
+        Assert.Equal("SND-X-001", list.Services[1].LastRun!.Code);
+        Assert.Null(list.Empty);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -139,7 +156,23 @@ public sealed class ListServicesTests
         Assert.Null(list.Services.Single(s => s.Name.Value == "digest").Job);
     }
 
-    private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress, _jobs);
+    [Fact, Trait("Lane", "unit")]
+    public async Task Actions_name_what_the_server_would_allow_for_each_service()
+    {
+        await Approve(("heartbeat", "30s"), ("digest", "5m"));
+        _builtIns.Add(new BuiltInService(ServiceName.From("workflow-events"), new Cadence(TimeSpan.FromSeconds(5))));
+        await _v.Fold(EventTypes.ServicePaused, new ServicePaused(_v.Slice.Ids.New<CommandId>(), ServiceName.From("digest")));
+        _jobs.Put(A.Job().Build());   // a running RunService job for heartbeat
+
+        var list = (await Service().Handle(new ListServicesRequest(), Token)).Value;
+
+        Assert.Equal(
+            ["digest: run,resume", "heartbeat: pause", "workflow-events: run"],
+            list.Services.Select(s => $"{s.Name.Value}: {string.Join(',', s.Actions)}"),
+            StringComparer.Ordinal);
+    }
+
+    private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress, _jobs, _builtIns);
 
     private async Task Approve(params (string Name, string Every)[] services) =>
         _ = (await _v.Slice.Profiles.Save(SliceHarness.ProfileOf("thor", services), Token)).Value;

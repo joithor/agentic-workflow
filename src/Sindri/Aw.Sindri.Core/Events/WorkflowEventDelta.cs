@@ -33,6 +33,14 @@ public sealed record WorkflowEventDelta(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] EventSubject? Subject = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Producers = null)
 {
+    /// <summary>The recipe's id; only workflow.started carries it, so the recipe stats can tell whose run a row belongs to. Not written when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Recipe { get; init; }
+
+    /// <summary>The recipe's hash; only workflow.started carries it. Not written when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? RecipeHash { get; init; }
+
     /// <summary>The public projection of <paramref name="delta"/>.</summary>
     /// <param name="delta">The decision's delta.</param>
     /// <returns>The delta the row carries.</returns>
@@ -54,5 +62,5 @@ public sealed record WorkflowEventDelta(
     /// <param name="s">The suspension, or none.</param>
     /// <returns>The summary, or none.</returns>
     internal static SuspensionSummary? Summary(Suspension? s) =>
-        s is null ? null : new SuspensionSummary(s.Kind, s.Reason, s.ParkKind, s.Escalation, s.Mirrors?.Value);
+        s is null ? null : new SuspensionSummary(s.Kind, s.Reason, s.ParkKind, s.Escalation, s.Mirrors?.Value, MirroredParkKind: s.MirroredParkKind, MirroredEscalation: s.MirroredEscalation);
 }

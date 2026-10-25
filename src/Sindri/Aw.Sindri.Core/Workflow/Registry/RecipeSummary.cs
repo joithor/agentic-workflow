@@ -5,6 +5,7 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 
 /// <summary>One recipe line (engine spec §6.3 'recipe list'; README X34: with its inputs, for the app's start form).</summary>
 /// <param name="Id">The recipe's id.</param>
+/// <param name="DisplayName">The name shown instead of the id (setup-once spec §7.7); null, and left out of the JSON, when the engine knows none yet (the field is required on a recipe file once RCP-DISPLAY-001 lands). The app makes the id readable itself.</param>
 /// <param name="Version">Its version.</param>
 /// <param name="Hash">Its hash.</param>
 /// <param name="Standing">Unapproved, approved or revoked.</param>
@@ -17,4 +18,34 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="States">Every state with its path order and branch (spec §3.10, UI E-20); computed, never hashed.</param>
 /// <param name="Loops">The loop edges of the path walk (spec §3.10).</param>
 /// <param name="Name">The recipe's name template as written, or null (spec §3.11).</param>
-public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs, string Urgency, IReadOnlyList<RecipeOutput> Outputs, string OrderedBy, IReadOnlyList<StatePlace> States, IReadOnlyList<PathLoop> Loops, string? Name = null);
+public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, RecipeStanding Standing, ApprovalVia? Via, IReadOnlyList<StaleReason> Stale, IReadOnlyList<RecipeInput> Inputs, string Urgency, IReadOnlyList<RecipeOutput> Outputs, string OrderedBy, IReadOnlyList<StatePlace> States, IReadOnlyList<PathLoop> Loops, string? Name = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null)
+{
+    /// <summary>The version the recipe was last approved at, which is an older one than <see cref="Version"/> when a newer shipped version waits for its approval; null, and left out of the JSON, when it was never approved.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? ApprovedVersion { get; init; }
+
+    /// <summary>The hash the recipe was last approved at; null, and left out of the JSON, when it was never approved.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public RecipeHash? ApprovedHash { get; init; }
+
+    /// <summary>The list's status word (API spec §3.8, E-25): 'approved', 'changed', 'draft' or 'revoked'; set by the list, null and left out of the JSON elsewhere.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? Status { get; init; }
+
+    /// <summary>What changed, for a 'changed' recipe; left out of the JSON otherwise.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? StatusDetail { get; init; }
+
+    /// <summary>True for a recipe that only ever runs as a child; set by the list, left out of the JSON elsewhere.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public bool? ChildOnly { get; init; }
+
+    /// <summary>The recipe's stats at the list's window; left out of the JSON for a draft, a child-only recipe and a list read without them.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public Stats.RecipeListStats? Stats { get; init; }
+
+    /// <summary>True for a shipped version that waits for its own typed approval because it gains a capability (approve-all leaves it out); null, and left out of the JSON, otherwise.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public bool? GainsCapability { get; init; }
+}

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:inst="using:Aw.Sindri.Ui.ViewModels.Instance"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
              x:Class="Aw.Sindri.Ui.Views.Instance.ExpandedStateView"
              x:DataType="inst:ExpandedStateViewModel">
@@ -17,30 +18,74 @@
         <TextBlock x:Name="ExpandedCopyAnnouncement" Grid.Column="1" Classes="caption live-region" Classes.live="{Binding StatusCopy.IsAnnouncing}" Width="0" Opacity="0"
                    IsHitTestVisible="False" Text="{Binding StatusCopy.Announcement}" />
       </Grid>
-      <TextBlock x:Name="ExpandedStep" Classes="caption mono" Text="{Binding StepLine}" IsVisible="{Binding HasStep}" TextWrapping="Wrap" />
-      <ItemsControl x:Name="ExpandedGates" ItemsSource="{Binding Gates}" IsVisible="{Binding HasGates}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="x:String">
-            <TextBlock Classes="caption mono subtle" Text="{Binding}" TextWrapping="Wrap" />
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
       <TextBlock x:Name="ExpandedNext" Classes="body" Text="{Binding Next}" IsVisible="{Binding HasNext}" TextWrapping="Wrap" />
-      <TextBlock x:Name="ExpandedBudget" Classes="caption mono" Text="{Binding BudgetLine}" IsVisible="{Binding HasBudget}" TextWrapping="Wrap" />
-      <TextBlock x:Name="ExpandedTimeout" Classes="caption mono" Text="{Binding TimeoutLine}" IsVisible="{Binding HasTimeout}" TextWrapping="Wrap" />
       <TextBlock x:Name="ExpandedPaused" Classes="caption mono" Text="{Binding PausedLine}" IsVisible="{Binding IsPaused}" TextWrapping="Wrap" />
       <TextBlock x:Name="ExpandedDrift" Classes="caption mono" Text="{Binding DriftLine}" IsVisible="{Binding HasDrift}" TextWrapping="Wrap" />
       <Button x:Name="ExpandedChild" Content="{Binding Child.Text}" Click="OnChild" HorizontalAlignment="Left"
               IsVisible="{Binding Child, Converter={x:Static ObjectConverters.IsNotNull}}" AutomationProperties.Name="{Binding Child.Name}" />
-      <Border x:Name="ExpandedAttach" Classes="pending-chip" HorizontalAlignment="Left" IsVisible="{Binding HasAttach}"
-              AutomationProperties.Name="{Binding AttachName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-        <TextBlock x:Name="ExpandedAttachChip" Classes="caption subtle" Text="{Binding AttachChip}" AutomationProperties.AccessibilityView="Raw" />
+      <Button x:Name="ExpandedAnswerInChild" Content="{Binding AnswerInChildText}" Click="OnAnswerInChild" HorizontalAlignment="Left"
+              IsVisible="{Binding AnswersInChild}" AutomationProperties.Name="{Binding AnswerInChildName}" />
+      <Border x:Name="ExpandedRun" IsVisible="{Binding HasRun}" HorizontalAlignment="Left" VerticalAlignment="Center" AutomationProperties.Name="{Binding RunName}"
+              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock x:Name="ExpandedRunLine" Classes="body" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
+      <TextBlock x:Name="ExpandedReason" Classes="body" Text="{Binding ReasonLine}" IsVisible="{Binding HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ReasonLine}" />
+      <ItemsControl x:Name="ExpandedReviews" ItemsSource="{Binding Reviews}" IsVisible="{Binding HasReviews}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="comps:DeskReviewViewModel">
+            <Button Classes="row-title" Margin="0,0,8,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button x:Name="ExpandedSession" Classes="row-title" HorizontalAlignment="Left" Content="{Binding SessionLinkText}" Click="OnSession" IsVisible="{Binding HasSession}"
+              AutomationProperties.Name="{Binding SessionLinkName}" />
+      <TextBlock x:Name="ExpandedLaunch" Classes="caption" Text="{Binding LaunchLine}" IsVisible="{Binding HasLaunchLine}" TextWrapping="Wrap"
+                 AutomationProperties.Name="{Binding LaunchLine}" />
+      <Panel x:Name="ExpandedAttachPanel" HorizontalAlignment="Left" IsVisible="{Binding HasAttach}">
+        <comp:AttachButton x:Name="ExpandedAttach" DataContext="{Binding Attach}" />
+      </Panel>
+      <TextBlock x:Name="ExpandedAttachOutcome" Classes="caption" Text="{Binding AttachOutcomeLine}" TextWrapping="Wrap"
+                 IsVisible="{Binding AttachOutcomeLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding AttachOutcomeLine}" />
+      <WrapPanel x:Name="ExpandedAttachCommandRow" Orientation="Horizontal" IsVisible="{Binding HasAttachCommand}">
+        <TextBlock x:Name="ExpandedAttachCommand" Classes="caption mono" Text="{Binding AttachCommand}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
+                   AutomationProperties.Name="{Binding AttachCommand}" />
+        <Button x:Name="ExpandedAttachCopy" Classes="copy" Content="{Binding AttachCommandCopy.Label}" Click="OnCopyAttach" AutomationProperties.Name="{Binding CopyAttachName}" />
+        <TextBlock x:Name="ExpandedAttachCopyAnnouncement" Classes="caption live-region" Classes.live="{Binding AttachCommandCopy.IsAnnouncing}" Width="0" Opacity="0"
+                   IsHitTestVisible="False" Text="{Binding AttachCommandCopy.Announcement}" />
+      </WrapPanel>
+      <ItemsControl x:Name="ExpandedRunEvents" ItemsSource="{Binding RunEvents}" IsVisible="{Binding HasRunEvents}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Classes="caption" Text="{Binding}" TextWrapping="Wrap" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Expander x:Name="ExpandedDetails" Header="{Binding DetailsHeading}" IsExpanded="False" IsVisible="{Binding HasStageDetails}">
+        <StackPanel Spacing="4">
+        <TextBlock x:Name="ExpandedStep" Classes="caption mono" Text="{Binding StepLine}" IsVisible="{Binding HasStep}" TextWrapping="Wrap" />
+        <ItemsControl x:Name="ExpandedGates" ItemsSource="{Binding Gates}" IsVisible="{Binding HasGates}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Classes="caption mono subtle" Text="{Binding}" TextWrapping="Wrap" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="ExpandedBudget" Classes="caption mono" Text="{Binding BudgetLine}" IsVisible="{Binding HasBudget}" TextWrapping="Wrap" />
+        <TextBlock x:Name="ExpandedTimeout" Classes="caption mono" Text="{Binding TimeoutLine}" IsVisible="{Binding HasTimeout}" TextWrapping="Wrap" />
+          <TextBlock x:Name="ExpandedRunDetail" Classes="caption mono subtle" Text="{Binding RunDetail}" IsVisible="{Binding HasRun}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Expander>
       <ItemsControl x:Name="ExpandedCommands" ItemsSource="{Binding Commands}" IsVisible="{Binding HasCommands}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="inst:ExpandedCommandViewModel">
             <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
               <Button Name="CommandAsk" IsVisible="{Binding IsCancel}" Content="{Binding Label}" Click="OnAsk" Margin="0,0,8,0" AutomationProperties.Name="{Binding Name}" />
+              <Button Name="CommandHandBack" IsVisible="{Binding IsHandBack}" Content="{Binding Label}" Click="OnHandBack" Margin="0,0,8,0" AutomationProperties.Name="{Binding Name}" />
               <Border Name="CommandLabelName" IsVisible="{Binding ShowsLabel}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Name}"
                       AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                 <TextBlock Name="CommandLabel" Classes="body-strong" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
@@ -48,7 +93,7 @@
               <Panel IsVisible="{Binding Protected, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,8,0">
                 <comp:ProtectedActionButton DataContext="{Binding Protected}" />
               </Panel>
-              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" VerticalAlignment="Center" Margin="0,0,8,0"
+              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
                          AutomationProperties.Name="{Binding Cli}" />
               <Button Name="CommandCopy" Classes="copy" Content="{Binding CliCopy.Label}" IsVisible="{Binding ShowsCli}" Click="OnCopyCommand" Margin="0,0,8,0"
                       AutomationProperties.Name="{Binding CopyName}" />

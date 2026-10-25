@@ -28,6 +28,7 @@ internal sealed partial class HomePage : UserControl
         AddHandler(StripRow.OpenEvent, OnStripOpen);
         AddHandler(StripRow.SelectEvent, OnStripSelect);
         AddHandler(StripRow.AnswerEvent, OnStripAnswer);
+        AddHandler(ChildAnswerButton.FollowEvent, OnChildAnswer);
     }
 
     /// <inheritdoc />
@@ -40,20 +41,20 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
-    // Below 1000 px the two panel columns become one (proof B8): Running over Queued, each the page's full width.
+    // Below 1100 px the two columns become one (F3 home spec §2): Needs you over Running over Queued, each the page's full width.
     private void Stack(bool stacked)
     {
-        var grid = this.FindControl<Grid>("PanelGrid");
-        var queued = this.FindControl<Border>("QueuedPanel");
-        if (grid is null || queued is null)
+        var columns = this.FindControl<Grid>("HomeColumns");
+        var right = this.FindControl<StackPanel>("HomeRight");
+        if (columns is null || right is null)
         {
             return;
         }
 
-        grid.ColumnDefinitions = stacked ? [new ColumnDefinition(GridLength.Star)] : [new ColumnDefinition(GridLength.Star), new ColumnDefinition(16, GridUnitType.Pixel), new ColumnDefinition(GridLength.Star)];
-        grid.RowDefinitions = stacked ? [new RowDefinition(GridLength.Auto), new RowDefinition(16, GridUnitType.Pixel), new RowDefinition(GridLength.Auto)] : [];
-        Grid.SetColumn(queued, stacked ? 0 : 2);
-        Grid.SetRow(queued, stacked ? 2 : 0);
+        columns.ColumnDefinitions = stacked ? [new ColumnDefinition(GridLength.Star)] : [new ColumnDefinition(GridLength.Star), new ColumnDefinition(16, GridUnitType.Pixel), new ColumnDefinition(GridLength.Star)];
+        columns.RowDefinitions = stacked ? [new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Auto)] : [];
+        Grid.SetColumn(right, stacked ? 0 : 2);
+        Grid.SetRow(right, stacked ? 1 : 0);
     }
 
     private void OnHealthStrip(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.GoTo(PageId.System);
@@ -71,7 +72,7 @@ internal sealed partial class HomePage : UserControl
 
     private void OnUndoSeen(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.Seen.Undo();
 
-    private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowAll();
+    private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenNeedsYouInbox();
 
     private void OnShowNeedsYouHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowHeld();
 
@@ -101,6 +102,12 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
+    private void OnSetupLink(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.RequestChecklist();
+
+    private void OnSetupContinue(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.Continue();
+
+    private void OnStart(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenStart();
+
     private void OnWorkflowsMore(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Strip.OpenWorkflows();
 
     // Focus arriving on a strip row selects it, and the other lists' selections give way: one selection on Home.
@@ -118,6 +125,24 @@ internal sealed partial class HomePage : UserControl
         {
             shell.SelectStripRow(row.Address);
             shell.OpenStripRow(row.Address);
+        }
+    }
+
+    // "Answer in the child" on a strip or needs-you row: the row is selected and stays the opener, like its other buttons.
+    private void OnChildAnswer(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is not ChildAnswerButton { Answer: { } answer } button || DataContext is not ShellViewModel shell)
+        {
+            return;
+        }
+
+        if (button.FindAncestorOfType<StripRow>() is { Address.Length: > 0 } strip)
+        {
+            shell.FollowChildAnswerFromStrip(strip.Address, answer);
+        }
+        else if (button.FindAncestorOfType<NeedsYouRow>() is { RowId.Length: > 0 } needsYou)
+        {
+            shell.FollowChildAnswerFromNeedsYou(needsYou.RowId, answer);
         }
     }
 

@@ -8,7 +8,8 @@
       "form": "ears",
       "surfaces": [
         "S4",
-        "S2"
+        "S2",
+        "S22"
       ],
       "citations": [
         "L-code-4",
@@ -24,7 +25,8 @@
       "text": "When someone opens a link after its expiry time, the system shall show that the link has expired and shall not return the note.",
       "form": "ears",
       "surfaces": [
-        "S3"
+        "S3",
+        "S23"
       ],
       "citations": [
         "L-code-3",

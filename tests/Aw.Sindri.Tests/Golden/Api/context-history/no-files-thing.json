@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "anchors": [
+    {
+      "key": "thing:pane-layout",
+      "label": "Pane layout",
+      "kind": "thing",
+      "trust": "trusted"
+    }
+  ],
+  "missingAnchors": [],
+  "mapVersion": "v1",
+  "draft": false,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "window": {
+    "since": null,
+    "before": null
+  },
+  "records": [],
+  "decisions": [],
+  "changes": [],
+  "incidents": {
+    "state": "not-configured",
+    "reason": "not-configured",
+    "items": []
+  },
+  "edges": [],
+  "counts": {
+    "records": 0,
+    "decisions": 0,
+    "changes": 0,
+    "files": 0,
+    "unlocated": 0,
+    "afterCut": 0
+  },
+  "truncated": {
+    "records": false,
+    "decisions": false,
+    "changes": false,
+    "files": false
+  },
+  "git": [],
+  "coverage": {
+    "scope": 1,
+    "intent": {
+      "covered": 0,
+      "of": 1
+    },
+    "product": {
+      "confirmed": 1,
+      "of": 1
+    },
+    "code": {
+      "implemented": 0,
+      "of": 1,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "thing:pane-layout",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [],
+      "truncated": false,
+      "files": 0,
+      "unmapped": 0,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    },
+    "byAnchor": {
+      "thing:pane-layout": {
+        "scope": 1,
+        "intent": {
+          "covered": 0,
+          "of": 1
+        },
+        "product": {
+          "confirmed": 1,
+          "of": 1
+        },
+        "code": {
+          "implemented": 0,
+          "of": 1,
+          "level": "file",
+          "suggested": 0
+        },
+        "gaps": [
+          {
+            "node": "thing:pane-layout",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      }
+    }
+  },
+  "searched": {
+    "anchors": [
+      "thing:pane-layout"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "git-history",
+        "state": "ok",
+        "reason": "no-files",
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "incidents",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": true
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

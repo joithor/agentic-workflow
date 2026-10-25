@@ -27,7 +27,8 @@
     ],
     "hostKinds": [
       "tmux",
-      "none"
+      "none",
+      "t3"
     ],
     "agent": [
       "override",
@@ -328,7 +329,8 @@
         "kind": {
           "enum": [
             "tmux",
-            "none"
+            "none",
+            "t3"
           ]
         }
       }
@@ -395,6 +397,7 @@
           ]
         },
         "sessionIdPattern": {
+          "description": "A regular expression the whole session id must match: Sindri anchors it at both ends (\\A(?:pattern)\\z), so 'ses_[a-z0-9]{8}' does not accept 'xses_12345678y'. Run non-backtracking with a 100 ms timeout; a pattern that doesn't compile matches nothing.",
           "type": [
             "string",
             "null"

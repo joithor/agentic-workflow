@@ -1,5 +1,7 @@
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launch.Argv;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -19,9 +21,9 @@ internal sealed class SessionIdFiles(string home) : ISessionIdSource
     {
         var directory = Path.Combine(home, LaunchFiles.Directory);
         var rule = ReadRule(Path.Combine(directory, LaunchFiles.CaptureName(launch)));
-        if (ReadHook(Path.Combine(directory, LaunchFiles.SessionIdName(launch)), rule) is { } reported)
+        if (ReadHook(Path.Combine(directory, LaunchFiles.SessionIdName(launch)), rule) is { } hook)
         {
-            return ValueTask.FromResult(new SessionIdScan(reported, Ambiguous: false));
+            return ValueTask.FromResult(hook);
         }
 
         if (elapsed < HookGrace || rule?.NewestFile is not { } glob)
@@ -40,14 +42,14 @@ internal sealed class SessionIdFiles(string home) : ISessionIdSource
             var read = File.Exists(path) ? AwJson.Deserialize<CaptureRule>(File.ReadAllBytes(path), _json) : null;
             return read is { IsSuccess: true } ? read.Value : null;
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return null;
         }
     }
 
     /// <summary>Reads the hook's file once and deletes it; an id that breaks the bound or the entry's pattern is dropped with it.</summary>
-    private static SessionId? ReadHook(string path, CaptureRule? rule)
+    private static SessionIdScan? ReadHook(string path, CaptureRule? rule)
     {
         string text;
         try
@@ -60,12 +62,23 @@ internal sealed class SessionIdFiles(string home) : ISessionIdSource
             text = File.ReadAllText(path).Trim();
             File.Delete(path);
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return null;
         }
 
-        return SessionId.TryFrom(text, out var id) && SessionIdCapture.Accepts(rule?.SessionIdPattern, id) ? id : null;
+        if (!SessionId.TryFrom(text, out var id))
+        {
+            return null;
+        }
+
+        return SessionIdCapture.Check(rule?.SessionIdPattern, id) switch
+        {
+            PatternOutcome.Matched => new SessionIdScan(id, Ambiguous: false),
+            PatternOutcome.TimedOut => new SessionIdScan(Id: null, Ambiguous: false, TimedOut: true),   // the hook's file is gone; the scan says why no id was recorded
+            PatternOutcome.NoMatch => null,
+            _ => null,
+        };
     }
 
     private static HashSet<string> ClaimedByOthers(string directory, LaunchId own)
@@ -82,7 +95,7 @@ internal sealed class SessionIdFiles(string home) : ISessionIdSource
             {
                 _ = claimed.Add(File.ReadAllText(file).Trim());
             }
-            catch (IOException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 // a file that vanished claims nothing
             }

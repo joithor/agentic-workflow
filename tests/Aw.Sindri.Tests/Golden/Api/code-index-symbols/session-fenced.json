@@ -1,0 +1,28 @@
+{
+  "stamp": {
+    "repo": "demo",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "builtAt": "2026-10-20T12:00:00.0000000Z",
+    "state": "ok",
+    "layer": {
+      "layer": "graph",
+      "state": "ok",
+      "code": null,
+      "detail": "ok"
+    }
+  },
+  "hits": [
+    {
+      "ref": "demo:src/Worker.cs#Worker.Run",
+      "kind": "method",
+      "name": "<untrusted source=\"code-index\">Worker.Run</untrusted>",
+      "file": "<untrusted source=\"code-index\">src/Worker.cs</untrusted>",
+      "startLine": 10,
+      "endLine": 20,
+      "signature": "<untrusted source=\"code-index\">void Worker.Run()</untrusted>",
+      "exported": true,
+      "untrusted": true
+    }
+  ],
+  "truncated": false
+}

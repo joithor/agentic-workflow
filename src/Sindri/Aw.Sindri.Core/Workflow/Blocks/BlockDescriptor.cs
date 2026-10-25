@@ -23,6 +23,9 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// <param name="HumanOnly">True when only a human may report this Step's run (DT spec §8.5); written only when true, never false, so a descriptor without it hashes as before.</param>
 /// <param name="Runtime">Null, or where the Step runs by default (DT spec §8.2). Written only when set.</param>
 /// <param name="MaxDuration">Null, or the longest a block-runtime Step may run before the engine ends it as step.failed 'timeout' (DT spec §8.2). Written only when set, as a duration string ('2m', '90s').</param>
+/// <param name="HumanTrigger">True on an effect that acts with a human's authority (PB spec W23): the validator refuses it except on a command, out of a human-only Step, or behind a fact only such a transition produces (RCP-HUMAN-001). Written only when true; false reads as absent, so a descriptor without it hashes as before.</param>
+/// <param name="Sentence">Null, or the block's plain sentence (setup-once spec §5.3.1), set by the <see cref="BlockCatalog"/> from <see cref="IBlockSentences"/>. Never written to JSON, so it is not part of the descriptor hash an approval pins.</param>
+/// <param name="Reviews">Null, or what a desk Step of this block has its person review (q65): each fact and its kind, which the instance view serves on the open desk. Never written to JSON, so it is not part of the descriptor hash an approval pins.</param>
 public sealed record BlockDescriptor(
     BlockId Id,
     BlockKind Kind,
@@ -38,4 +41,12 @@ public sealed record BlockDescriptor(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InputsFrom = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? HumanOnly = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BlockRuntime? Runtime = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull), JsonConverter(typeof(BlockDurationJsonConverter))] TimeSpan? MaxDuration = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull), JsonConverter(typeof(BlockDurationJsonConverter))] TimeSpan? MaxDuration = null,
+    bool? HumanTrigger = null,
+    [property: JsonIgnore] string? Sentence = null,
+    [property: JsonIgnore] IReadOnlyList<ReviewSpec>? Reviews = null)
+{
+    /// <summary>True or null: a stray false would be written and move the block's hash, so it reads as absent.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? HumanTrigger { get; init => field = value == true ? true : null; } = HumanTrigger == true ? true : null;
+}

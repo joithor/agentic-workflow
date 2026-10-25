@@ -27,7 +27,6 @@ public sealed class DeepLinkTests
     [InlineData("workflow/ITM-01JC8/step", nameof(DeepLinkKind.Workflow), "ITM-01JC8/step")]
     [InlineData("recipe/workflow.project-build", nameof(DeepLinkKind.Recipe), "workflow.project-build")]
     [InlineData("node/feature:tabs.tab-manager", nameof(DeepLinkKind.Node), "feature:tabs.tab-manager")]
-    [InlineData("session/snd-01JE7.2", nameof(DeepLinkKind.Session), "snd-01JE7.2")]
     [InlineData("system/temporal", nameof(DeepLinkKind.System), "temporal")]
     public void Deep_links_parse_workflow_recipe_node_session_system(string text, string kind, string subject)
     {
@@ -35,6 +34,38 @@ public sealed class DeepLinkTests
         Assert.Equal(new DeepLink(Enum.Parse<DeepLinkKind>(kind), subject), link);
         Assert.Equal(text, link.ToString());
     }
+
+    [Fact]
+    public void A_context_link_names_the_item_whose_scope_it_opens()
+    {
+        Assert.True(DeepLink.TryParse("context?item=ITM-01JC8", out var link));
+        Assert.Equal(new DeepLink(DeepLinkKind.ContextItem, "ITM-01JC8"), link);
+        Assert.Equal("context?item=ITM-01JC8", link.ToString());
+        Assert.False(DeepLink.TryParse("context?item=", out _));
+        Assert.False(DeepLink.TryParse("context?item=a/b", out _));
+    }
+
+    [Theory]
+    [InlineData("session/claude-code/aaaaaaaa-0000-4000-8000-000000000001")]
+    [InlineData("session/codex/bbbbbbbb-0000-4000-8000-000000000002")]
+    [InlineData("session/cursor/pid-333-100")]
+    public void Session_link_takes_a_provider_slash_id_ref(string text)
+    {
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal(new DeepLink(DeepLinkKind.Session, text["session/".Length..]), link);
+        Assert.Equal(text, link.ToString());
+    }
+
+    [Theory]
+    [InlineData("session/snd-01JE7.2")]
+    [InlineData("session/claude-code/a/b")]
+    [InlineData("session/claude-code/")]
+    [InlineData("session//a")]
+    [InlineData("session/./a")]
+    [InlineData("session/claude-code/..")]
+    [InlineData("session/claude-code/a b")]
+    public void Session_link_refuses_one_segment_three_segments_and_dot_segments(string text) =>
+        Assert.False(DeepLink.TryParse(text, out _));
 
     [Theory]
     [InlineData("recipe/workflow.project@a8c21e7f0000")]

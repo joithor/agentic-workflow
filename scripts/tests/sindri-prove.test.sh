@@ -120,6 +120,14 @@ check "accepts_a_proof_folder: not another state folder" "$rc" "2"
 prove "$STATE/proof/home" status >/dev/null 2>&1 </dev/null; rc=$?
 check "accepts_a_proof_folder: not a proof folder without a repo slug" "$rc" "2"
 
+# --- marks_only_a_temp_home_as_scratch ---
+[ -f "$T/run1/home/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: a temp home carries the marker" "$marked" "yes"
+[ -e "$STATE/jthorare-agentic-workflow/proof/sindri-api-p1/home/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: a proof folder is not marked" "$marked" "no"
+[ -e "$STATE/sindri-app/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: the refused default home is not touched" "$marked" "no"
+
 H="$T/home"
 mkdir -p "$H/auth"
 
@@ -189,6 +197,33 @@ prove "$H" curl GET /sindri/status >/dev/null 2>"$WORK/err"; rc=$?
 check "curl_mode_reads_url_and_token_and_adds_headers: exit 2 when not running" "$rc" "2"
 contains "curl_mode_reads_url_and_token_and_adds_headers: says why" "$(cat "$WORK/err")" "control.json"
 printf '{"url":"http://127.0.0.1:5555/","pid":4242,"epoch":3}' > "$H/control.json"
+
+# --- publish_reads_the_maps_publish_state_as_the_owner_or_as_a_session ---
+out="$(prove "$H" publish 2>"$WORK/err")"; rc=$?
+log="$(cat "$CURL_LOG")"
+check "publish: body on stdout" "$out" '{"ok":true}'
+check "publish: exit 0 on 2xx" "$rc" "0"
+contains "publish: asks the publish route" "$log" "http://127.0.0.1:5555/sindri/context/map/publish"
+contains "publish: as the owner it carries the human headers" "$log" "X-Sindri-Caller: human"
+contains "publish: as the owner it carries the token" "$log" "X-Sindri-Token: tok-abc"
+out="$(prove "$H" publish --session --repo aw-split-panes 2>"$WORK/err")"; rc=$?
+log="$(cat "$CURL_LOG")"
+check "publish --session: body on stdout" "$out" '{"ok":true}'
+contains "publish --session: HTTP status on stderr" "$(cat "$WORK/err")" "HTTP 200"
+contains "publish --session: asks the publish route" "$log" "http://127.0.0.1:5555/sindri/context/map/publish"
+contains "publish --session: names its repo" "$log" "X-Sindri-Repo: aw-split-panes"
+lacks "publish --session: sends no caller header (the API reads a session)" "$log" "X-Sindri-Caller"
+lacks "publish --session: sends no token" "$log" "X-Sindri-Token"
+prove "$H" publish --session >/dev/null 2>&1; log="$(cat "$CURL_LOG")"
+lacks "publish --session: without --repo sends no repo header" "$log" "X-Sindri-Repo"
+out="$(STUB_STATUS=404 prove "$H" publish --session 2>"$WORK/err")"; rc=$?
+check "publish --session: exit 1 on a non-2xx status" "$rc" "1"
+prove "$H" publish --repo aw-split-panes >/dev/null 2>&1; rc=$?
+check "publish: --repo without --session is a usage error" "$rc" "2"
+prove "$H" publish --bogus >/dev/null 2>&1; rc=$?
+check "publish: an unknown flag is a usage error" "$rc" "2"
+prove "$WORK/elsewhere" publish >/dev/null 2>&1; rc=$?
+check "publish: refused outside a guarded home" "$rc" "2"
 
 # --- curl_flags_drop_terminal_and_token ---
 prove "$H" curl --no-terminal POST /sindri/stop >/dev/null 2>&1

@@ -39,10 +39,37 @@ public sealed class ContextErrorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_S6_Linear_codes_are_070_to_073_and_none_is_attention()
+    {
+        ErrorDefinition[] linear = [ContextErrors.LinearUrlRefused, ContextErrors.LinearKeyRefused, ContextErrors.LinearUnexpectedReply, ContextErrors.LinearRecordNotFound];
+
+        Assert.Equal(["SND-CONTEXT-070", "SND-CONTEXT-071", "SND-CONTEXT-072", "SND-CONTEXT-073"], linear.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal([ErrorKind.Invalid, ErrorKind.Forbidden, ErrorKind.Unavailable, ErrorKind.NotFound], linear.Select(e => e.Kind));
+        Assert.All(linear, e => Assert.Contains(e, ContextErrors.All));
+        Assert.All(linear, e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_S_SK_recognizer_codes_are_130_and_131_and_132_stays_reserved()
     {
         Assert.Equal(["SND-CONTEXT-130", "SND-CONTEXT-131"], new[] { ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap }.Select(e => e.Code), StringComparer.Ordinal);
         Assert.DoesNotContain(ContextErrors.All, e => string.Equals(e.Code, "SND-CONTEXT-132", StringComparison.Ordinal));
         Assert.All([ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap], e => Assert.Equal(ErrorKind.Invalid, e.Kind));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_S_H_history_codes_are_160_and_161_are_searched_row_codes_and_never_attention()
+    {
+        Assert.Equal(["SND-CONTEXT-160", "SND-CONTEXT-161"], new[] { ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced }.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal((ErrorKind.Timeout, ErrorKind.Unavailable), (ContextErrors.HistoryDeadline.Kind, ContextErrors.IntentNotSynced.Kind));
+        Assert.All([ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_graphify_limit_code_is_133_an_invalid_input()
+    {
+        Assert.Equal("SND-CONTEXT-133", ContextErrors.GraphifyLimitInvalid.Code);
+        Assert.Equal(ErrorKind.Invalid, ContextErrors.GraphifyLimitInvalid.Kind);
+        Assert.Contains(ContextErrors.GraphifyLimitInvalid, ContextErrors.All);
     }
 }

@@ -8,13 +8,12 @@ internal static class LensIntent
 {
     /// <summary>Builds the band.</summary>
     /// <param name="scope">The anchor's scope.</param>
-    /// <returns>The band, each list cut at <see cref="LensesBuilder.BandCap"/>.</returns>
+    /// <returns>The band, every record and decision listed.</returns>
     internal static IntentBand Build(LensScope scope)
     {
         var records = Records(scope);
         var decisions = Decisions(scope);
-        var cut = records.Count > LensesBuilder.BandCap || decisions.Count > LensesBuilder.BandCap;
-        return new IntentBand([.. records.Take(LensesBuilder.BandCap)], [.. decisions.Take(LensesBuilder.BandCap)], new IntentCounts(records.Count, decisions.Count, Orphaned: null), cut);
+        return new IntentBand(records, decisions, new IntentCounts(records.Count, decisions.Count, Orphaned: null));
     }
 
     /// <summary>Where a record lives, from its key: 'linear', 'linear:doc', 'slack', 'onyx' or 'repo-doc'.</summary>
@@ -41,12 +40,12 @@ internal static class LensIntent
     internal static List<LensDecision> Decisions(LensScope scope) =>
         [.. scope.IntoScope(EdgeType.Decides).Where(e => scope.Nodes.ContainsKey(e.From.Value))
             .GroupBy(e => e.From.Value, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => Decision(scope, scope.Nodes[g.Key], [.. g.Select(e => e.To).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)]))];
+            .Select(g => Decision(scope.Graph, scope.Nodes[g.Key], [.. g.Select(e => e.To).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)]))];
 
-    private static LensDecision Decision(LensScope scope, GraphNode node, IReadOnlyList<NodeKey> decides)
+    internal static LensDecision Decision(GraphSnapshot graph, GraphNode node, IReadOnlyList<NodeKey> decides)
     {
-        var row = scope.Graph.Decisions.FirstOrDefault(d => d.ToKey().Value == node.Key.Value);
-        var supersedes = scope.Graph.Edges.Where(e => e.Type == EdgeType.Supersedes && e.From.Value == node.Key.Value)
+        var row = graph.Decisions.FirstOrDefault(d => d.ToKey().Value == node.Key.Value);
+        var supersedes = graph.Edges.Where(e => e.Type == EdgeType.Supersedes && e.From.Value == node.Key.Value)
             .Select(e => e.To).OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
         var confirmed = LensScope.Confirmed(node.Provenance);
         return new LensDecision(node.Key, row?.Wording ?? node.Label, decides, supersedes, Quotes: null, node.Provenance, confirmed, TrustPolicy.For(node.Provenance, confirmed),

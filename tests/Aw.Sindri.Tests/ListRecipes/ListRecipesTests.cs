@@ -32,6 +32,7 @@ public sealed class ListRecipesTests
         var listed = await r.List();
 
         Assert.Equal([item.Hash, step.Hash], listed.Select(s => s.Hash));
+        Assert.Equal(["draft", "approved"], listed.Select(s => s.Status), StringComparer.Ordinal);
         var (itemLine, stepLine) = (listed[0], listed[1]);
         Assert.Equal(RecipeStanding.Unapproved, itemLine.Standing);
         Assert.Null(itemLine.Via);
@@ -39,6 +40,27 @@ public sealed class ListRecipesTests
         Assert.Empty(stepLine.Stale);
         Assert.Equal(["fact:item"], itemLine.Inputs.Select(i => i.Key.Value), StringComparer.Ordinal);
         Assert.Equal(["fact:spec"], stepLine.Inputs.Select(i => i.Key.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_recipe_approved_at_an_older_version_lists_the_version_and_hash_it_was_approved_at()
+    {
+        await using var r = new RegistryHarness();
+        _ = await r.H.HoldLease();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        var item = await r.Shipped("sindri/workflow.item.yaml");
+        _ = await r.Approve(step);
+        var step2 = await r.Register(RegistryHarness.Parse(step) with { Version = step.Version + 1 });
+
+        var newer = await r.Line(step2);
+
+        Assert.Equal((RecipeStanding.Unapproved, step2.Version, step2.Hash), (newer.Standing, newer.Version, newer.Hash));
+        Assert.Equal((step.Version, (RecipeHash?)step.Hash), (newer.ApprovedVersion, newer.ApprovedHash));
+        var current = await r.Line(step);
+        Assert.Equal((step.Version, (RecipeHash?)step.Hash), (current.ApprovedVersion, current.ApprovedHash));
+        var never = await r.Line(item);
+        Assert.Null(never.ApprovedVersion);
+        Assert.Null(never.ApprovedHash);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -55,6 +77,7 @@ public sealed class ListRecipesTests
 
         Assert.Equal(RecipeStanding.Approved, line.Standing);
         Assert.Equal([StaleReason.PinDrift], line.Stale);
+        Assert.Equal(("changed", "a pinned block changed"), (line.Status, line.StatusDetail));
         Assert.Equal([step.Hash], stale.Select(s => s.Hash));
     }
 
@@ -86,7 +109,7 @@ public sealed class ListRecipesTests
         var item = await r.Shipped("sindri/workflow.item.yaml");
         _ = await r.Approve(step);
         _ = await r.Approve(item);
-        var step2 = await r.Register(RegistryHarness.Parse(step) with { Version = 3 });
+        var step2 = await r.Register(RegistryHarness.Parse(step) with { Version = 5 });
         Assert.Empty(await r.List(stale: true));
 
         _ = await r.Approve(step2);

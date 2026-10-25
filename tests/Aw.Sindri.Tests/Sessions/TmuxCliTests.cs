@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Sessions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -20,7 +21,6 @@ public sealed class TmuxCliTests : IDisposable
         var script = Path.Combine(_directory, "tmux");
         var lines = new[]
         {
-            "#!/bin/sh",
             $"if [ -f '{_directory}/hang' ]; then : > '{_directory}/started'; exec sleep 30; fi",
             $"{{ printf 'ARGS'; for a in \"$@\"; do printf ' [%s]' \"$a\"; done; echo; env | grep '^TMUX' | sed 's/^/ENV /'; }} >> '{Log}'",
             "case \"$3\" in",
@@ -28,8 +28,7 @@ public sealed class TmuxCliTests : IDisposable
             "  list-clients) printf '777\\t/dev/pts/3\\tapi\\n' ;;",
             "esac",
         };
-        File.WriteAllText(script, string.Join('\n', lines) + "\n");
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(script, string.Join('\n', lines) + "\n");
         return new TmuxCli(_clock, script, _budget);
     }
 

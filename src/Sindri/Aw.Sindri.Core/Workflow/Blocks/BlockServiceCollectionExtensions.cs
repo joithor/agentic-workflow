@@ -10,13 +10,13 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// </summary>
 public static class BlockServiceCollectionExtensions
 {
-    /// <summary>Registers the gate <typeparamref name="T"/>.</summary>
+    /// <summary>Registers the gate <typeparamref name="T"/>, also keyed by its block id (the 'EvaluateGates' activity runs it by id).</summary>
     /// <param name="services">The service collection.</param>
     /// <typeparam name="T">The gate class.</typeparam>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddGate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
         where T : class, IGate, IDescribedBlock
-        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IGate, T>();
+        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IGate, T>().AddKeyedScoped<IGate, T>(T.Descriptor.Id.Value);
 
     /// <summary>Registers the Step <typeparamref name="T"/>.</summary>
     /// <param name="services">The service collection.</param>
@@ -36,6 +36,17 @@ public static class BlockServiceCollectionExtensions
             ? services.AddSingleton(T.Descriptor).AddSingleton(new BlockStepRegistration(T.Descriptor.Id)).AddScoped<T>()
                 .AddScoped<IBlockStep, T>().AddKeyedScoped<IBlockStep, T>(T.Descriptor.Id.Value)
             : throw new InvalidOperationException($"{T.Descriptor.Id.Value} is registered as a block Step but its descriptor's runtime is {T.Descriptor.Runtime}; the engine would open a desk run no one answers.");
+
+    /// <summary>
+    /// Registers the runtime of a block-runtime Step by its id (DT spec §8.2): as itself, as <see cref="IBlockStep"/> and keyed by its id, with its <see cref="BlockStepRegistration"/>. The descriptor is registered
+    /// separately (AddBlockDescriptor); that it exists and says <see cref="BlockRuntime.Block"/> is checked against the shipped catalog by a test, since the Step's code and its descriptor sit in different slices.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <typeparam name="T">The Step class.</typeparam>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddBlockRuntime<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
+        where T : class, IBlockStep, IBlockStepId
+        => services.AddSingleton(new BlockStepRegistration(T.Id, typeof(IRepoStep).IsAssignableFrom(typeof(T)))).AddScoped<T>().AddScoped<IBlockStep, T>().AddKeyedScoped<IBlockStep, T>(T.Id.Value);
 
     /// <summary>Registers the effect <typeparamref name="T"/>, also keyed by its block id (the 'RunEffect' activity runs it by id).</summary>
     /// <param name="services">The service collection.</param>

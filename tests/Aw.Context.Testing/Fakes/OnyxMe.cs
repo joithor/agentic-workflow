@@ -19,13 +19,13 @@ internal static class OnyxMe
 
     private static readonly string[] _basic = ["add:agents", "basic", "read:chat", "read:search", "write:chat"];
 
-    public static JsonObject Info(string accountType, bool admin)
+    public static JsonObject Info(string accountType, bool admin, string? email = null)
     {
         var permissions = admin ? _admin : _basic;
         return new JsonObject
         {
             ["id"] = "0e5a1b00-0000-4000-8000-00000000a001",
-            ["email"] = "sindri-fixture@service-account.invalid",
+            ["email"] = email ?? "sindri-fixture@service-account.invalid",
             ["is_active"] = true,
             ["is_superuser"] = false,
             ["is_verified"] = true,
