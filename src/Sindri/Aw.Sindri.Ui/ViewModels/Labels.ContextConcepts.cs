@@ -15,9 +15,6 @@ internal static partial class Labels
     /// <summary>The button that goes up one layer.</summary>
     internal const string ContextConceptsBack = "Back";
 
-    /// <summary>The name of the concept of the unassigned nodes when the server gives none.</summary>
-    internal const string ContextConceptOtherName = "Other";
-
     /// <summary>The mark on a concept a person set.</summary>
     internal const string ContextConceptSetByPerson = "Set by a person";
 
