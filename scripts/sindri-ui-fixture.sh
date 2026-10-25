@@ -29,6 +29,10 @@
 #   sindri-ui-fixture.sh workflows [--large]
 #                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
 #                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
+#   sindri-ui-fixture.sh park-timeout
+#                                  start workflow.dev-timeout (a desk Step with a 1m timeout that parks) on a new item and print the item; after
+#                                  about a minute the instance is parked by its timeout and offers answer kind resume (ApplyCommand:answer-resume).
+#                                  Run 'up' with FIXTURE_DESK_TIMEOUT=1m first, or the desk floor (default 2d) holds the park back
 #   sindri-ui-fixture.sh incident start|stop
 #                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
 #   sindri-ui-fixture.sh context up|draft|down
@@ -78,6 +82,7 @@
 #                                  down never restarts. Needs jq.
 #
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
+# FIXTURE_DESK_TIMEOUT (up only): writes workflow.deskTimeout into the fixture profile, the floor of every desk Step timeout (park-timeout).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
 # SINDRI_UI_FIXTURE_SQL=python (use python3's sqlite3 module even when the sqlite3 CLI is installed; without the CLI it is
@@ -148,6 +153,10 @@ services:
   heartbeat: { every: 5s }
 api: { port: 0 }
 YAML
+  # The desk floor (workflow.deskTimeout, default 2d) raises every desk Step's timeout; park-timeout needs it low.
+  if [ -n "${FIXTURE_DESK_TIMEOUT:-}" ]; then
+    printf 'workflow:\n  deskTimeout: %s\n' "$FIXTURE_DESK_TIMEOUT" >> "$profile"
+  fi
   approve || return
   "$PROVE" human --headless
 }
@@ -325,6 +334,8 @@ workflows() {
   start_on_new_item workflow.dev-desk-round-trip "Fixture work one" >/dev/null || return
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
 }
+
+park-timeout() { start_on_new_item workflow.dev-timeout "Fixture timeout park"; }
 
 incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
 
@@ -688,6 +699,7 @@ case "$verb" in
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
+  park-timeout) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
   context)
