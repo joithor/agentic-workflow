@@ -52,9 +52,12 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
     {
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a)));
         (string Name, string? Value)[] given = [("depth", o.Depth), ("hops", o.Hops), ("limit", o.Limit), ("offset", o.Offset)];
-        foreach (var (name, value) in given.Where(static g => g.Value is not null))
+        foreach (var (name, value) in given)
         {
-            query += "&" + name + "=" + Uri.EscapeDataString(value!);
+            if (value is not null)
+            {
+                query += "&" + name + "=" + Uri.EscapeDataString(value);
+            }
         }
 
         return query + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
