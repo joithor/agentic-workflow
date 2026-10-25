@@ -29,7 +29,6 @@ public sealed class RecipeQueryRoutesTests : IAsyncLifetime
         var human = Human(_host.Token.Value);
         var body = JsonSerializer.Serialize(new { text = ShippedRecipes.Read("sindri/workflow.step.yaml"), file = "workflow.step.yaml" });
 
-        var session = await _host.Http.Ask(Post("/sindri/workflow/recipes", body, (SindriHeaders.Caller, "session")));
         var registered = await _host.Http.Ask(Post("/sindri/workflow/recipes", body, human));
         var hash = JsonDocument.Parse(registered.Body).RootElement.GetProperty("hash").GetString()!;   // why: a registered response always carries the hash
         var listed = await _host.Http.Ask(Get("/sindri/workflow/recipes", (SindriHeaders.Caller, "session")));
@@ -37,7 +36,6 @@ public sealed class RecipeQueryRoutesTests : IAsyncLifetime
         var shown = await _host.Http.Ask(Get($"/sindri/workflow/recipes/workflow.step@{hash["sha256:".Length..][..12]}", (SindriHeaders.Caller, "session")));
         var missing = await _host.Http.Ask(Get("/sindri/workflow/recipes/workflow.step@0000000000000000", human));
 
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.True(registered.Status == HttpStatusCode.OK, registered.Body);
         Assert.True(listed.Status == HttpStatusCode.OK, listed.Body);
         var recipe = Assert.Single(JsonDocument.Parse(listed.Body).RootElement.GetProperty("recipes").EnumerateArray());

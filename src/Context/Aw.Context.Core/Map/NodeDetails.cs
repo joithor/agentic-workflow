@@ -16,15 +16,18 @@ public sealed class NodeDetails
     private readonly MapText _text;
     private readonly Dictionary<string, GraphNode> _nodes;
     private readonly Dictionary<string, DecisionRow> _decisions;
+    private readonly IReadOnlyDictionary<string, string?> _repos;
 
     /// <summary>Reads the graph's nodes and decisions once, so each edge costs a lookup.</summary>
     /// <param name="graph">The graph the caller sees.</param>
     /// <param name="text">This call's text rules.</param>
-    public NodeDetails(GraphSnapshot graph, MapText text)
+    /// <param name="mapRepo">The repo the map version was built for, or null (<see cref="NodeRepos"/>).</param>
+    public NodeDetails(GraphSnapshot graph, MapText text, string? mapRepo = null)
     {
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(text);
         _text = text;
+        _repos = NodeRepos.Index(graph, mapRepo);
         _nodes = graph.Nodes.GroupBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         _decisions = graph.Decisions.GroupBy(d => d.ToKey().Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
     }
@@ -37,7 +40,7 @@ public sealed class NodeDetails
         ArgumentNullException.ThrowIfNull(node);
         var decision = _decisions.GetValueOrDefault(node.Key.Value);
         var description = decision is null ? null : _text.Excerpt(decision.Quote, Results.Trust.Untrusted, MaxDescription);
-        return NodeDetail.Of(_text.Fact(node), SourceOf(node, decision), description);
+        return NodeDetail.Of(_text.Fact(node) with { Repo = _repos.GetValueOrDefault(node.Key.Value) }, SourceOf(node, decision), description);
     }
 
     /// <summary>The edge with the kind and label of the node at its other end.</summary>

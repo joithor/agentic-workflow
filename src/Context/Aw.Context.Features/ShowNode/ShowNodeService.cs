@@ -21,7 +21,7 @@ internal sealed class ShowNodeService(MapReader reader, IScrubberFactory scrubbe
         var (map, text) = call.Value;
         var key = node.Value.Key.Value;
         var graph = map.Graph;
-        var details = new NodeDetails(graph, text);
+        var details = new NodeDetails(graph, text, map.Snapshot.Version.Repo.Value);
         return new NodeView(map.Snapshot.Label, details.Node(node.Value),
             [.. graph.Aliases.Where(a => a.Target.Value == key).Select(a => a.Alias).OrderBy(a => a.Value, StringComparer.Ordinal)],
             [.. graph.Edges.Where(e => e.From.Value == key).OrderBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => e.Type).Select(e => details.Edge(EdgeFact.Of(e), e.To))],

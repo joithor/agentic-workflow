@@ -32,7 +32,7 @@ internal static class ViewScenarios
         ("services", "unapproved"), ("services", "approved"), ("services", "ran-ok"), ("services", "ran-failed"),
         ("services", "rebuilding"), ("services", "stalled"), ("services", "after-not-reached"), ("services", "after-malformed"),
         ("profile", "unapproved"), ("profile", "approved"), ("profile", "changed"), ("profile", "stalled"), ("profile", "repo-added"),
-        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-session"), ("views-rebuild", "refused-origin"),
+        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-origin"),
         ("status", "views-stalled"), ("status", "views-rebuilding"), ("status", "service-failed"),
     ];
 
@@ -61,7 +61,6 @@ internal static class ViewScenarios
             ("profile", "repo-added") => await RepoAdded(host, ct),
             ("views-rebuild", "accepted") => await Ask(host, Post("/sindri/views/rebuild", json: null, human)),
             ("views-rebuild", "accepted-while-stalled") => await StalledThen(host, Post("/sindri/views/rebuild", json: null, human), ct),
-            ("views-rebuild", "refused-session") => await Ask(host, Post("/sindri/views/rebuild", json: null, Session)),
             ("views-rebuild", "refused-origin") => await Ask(host, Post("/sindri/views/rebuild", json: null, [.. human, ("Origin", "http://localhost:3000")])),
             ("status", "views-stalled") => await Stalled(host, "/sindri/status", ct),
             ("status", "views-rebuilding") => await Rebuilding(host, "/sindri/status", ct),
@@ -70,7 +69,6 @@ internal static class ViewScenarios
         };
     }
 
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     private static async Task<string> Ask(GoldenHost host, HttpRequestMessage request) => (await host.Http.Ask(request)).Body;
 

@@ -13,8 +13,8 @@ using Aw.Sindri.Host.Commands.Recipe;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'recipe approve &lt;file|id@hash&gt;' and 'recipe revoke &lt;id@hash&gt;' (engine spec §4.2, §6.3; protected): ask the
-/// server for a challenge, print its preview, read the action text the human types, and send it back. With a file the CLI
+/// 'recipe approve &lt;file|id@hash&gt;' and 'recipe revoke &lt;id@hash&gt;' (engine spec §4.2, §6.3: read the
+/// server's preview (its challenge is never redeemed: owner decision q93), print it, and call the route. With a file the CLI
 /// first checks it validates and that its eval files are present (SND-RECIPE-008), registers it if the server doesn't
 /// know it, refuses before the preview when its id and version are registered with other content (SND-RECIPE-007), and
 /// refuses with SND-RECIPE-009 if the file changed while the human read the preview.
@@ -52,15 +52,13 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         }
 
         await output.Out.WriteAsync(RecipePreviewText.Approve(preview, file?.Evals)).ConfigureAwait(false);
-        var typed = await Prompt(issued.Value.Action).ConfigureAwait(false);
         var changed = file is null ? null : await LocalRecipe.Changed(file, preview.Hash, services, ct).ConfigureAwait(false);
         if (changed is not null)
         {
             return await output.Error(changed).ConfigureAwait(false);
         }
 
-        var approved = await desk.Client.Post<ChallengeAnswer, ApproveRecipeResponse>(Route(preview.Id, preview.Hash, "approve"),
-            new ChallengeAnswer(issued.Value.Challenge, typed), ct).ConfigureAwait(false);
+        var approved = await desk.Client.Post<ChallengeAnswer, ApproveRecipeResponse>(Route(preview.Id, preview.Hash, "approve"), body: null, ct).ConfigureAwait(false);
         return approved.IsError
             ? await output.Error(approved.Error).ConfigureAwait(false)
             : await output.Text(Approved(approved.Value.Value), 0).ConfigureAwait(false);
@@ -75,9 +73,7 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
         }
 
         await output.Out.WriteAsync(RecipePreviewText.Revoke(preview)).ConfigureAwait(false);
-        var typed = await Prompt(issued.Value.Action).ConfigureAwait(false);
-        var revoked = await desk.Client.Post<ChallengeAnswer, RevokeRecipeResponse>(Route(preview.Id, preview.Hash, "revoke"),
-            new ChallengeAnswer(issued.Value.Challenge, typed), ct).ConfigureAwait(false);
+        var revoked = await desk.Client.Post<ChallengeAnswer, RevokeRecipeResponse>(Route(preview.Id, preview.Hash, "revoke"), body: null, ct).ConfigureAwait(false);
         return revoked.IsError
             ? await output.Error(revoked.Error).ConfigureAwait(false)
             : await output.Text(Revoked(revoked.Value.Value), 0).ConfigureAwait(false);
@@ -129,12 +125,6 @@ internal sealed class RecipeDeskCommands(RecipeDesk desk, IServiceProvider servi
     {
         var answer = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>(Challenges, new IssueChallengeRequest(action), ct).ConfigureAwait(false);
         return answer.IsError ? answer.Error : answer.Value.Value;
-    }
-
-    private async Task<string> Prompt(string action)
-    {
-        await output.Out.WriteAsync($"Type '{action}' to confirm (the challenge lasts 5 minutes): ").ConfigureAwait(false);
-        return (await desk.Input.ReadLineAsync().ConfigureAwait(false))?.Trim() ?? string.Empty;
     }
 
     private static string Route(RecipeId id, RecipeHash hash, string verb) => $"/sindri/workflow/recipes/{id.Value}@{hash.Digest}/{verb}";

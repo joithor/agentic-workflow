@@ -76,7 +76,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "surface:command/group-tabs",
@@ -87,7 +88,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "action:tab-groups.group-selected",
@@ -98,7 +100,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
@@ -131,7 +134,8 @@
       "trust": "trusted",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": false
+      "confirmed": false,
+      "repo": "aw-split-panes"
     }
   ],
   "edges": [
@@ -208,5 +212,11 @@
       }
     }
   },
-  "truncated": false
+  "truncated": false,
+  "repos": [
+    {
+      "name": "aw-split-panes",
+      "nodeCount": 9
+    }
+  ]
 }

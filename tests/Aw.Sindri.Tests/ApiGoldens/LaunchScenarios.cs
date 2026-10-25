@@ -27,7 +27,7 @@ internal static class LaunchScenarios
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
         ("items-id-open", "requested"), ("items-id-open", "in-progress-008"), ("items-id-open", "budget-hard-010"), ("items-id-open", "budget-soft-warning"),
-        ("items-id-open", "bad-target"), ("items-id-open", "closed-item"), ("items-id-open", "attach-no-session-006"), ("items-id-open", "refused-session"),
+        ("items-id-open", "bad-target"), ("items-id-open", "closed-item"), ("items-id-open", "attach-no-session-006"),
         ("items-id-open", "refused-origin"),
         ("launches-id", "requested"), ("launches-id", "started-opened"), ("launches-id", "started-unconfirmed"), ("launches-id", "started-late-attach"),
         ("launches-id", "started-viewer-failed"), ("launches-id", "started-print"), ("launches-id", "failed-host-stage"), ("launches-id", "failed-expired-007"),
@@ -113,8 +113,6 @@ internal static class LaunchScenarios
                 return await Send(host, Post(path, Body(version: 2), human));
             case "attach-no-session-006":
                 return await Send(host, Post(path, Body(mode: "attach"), human));
-            case "refused-session":
-                return await Send(host, Post(path, Body(), ItemScenarios.Session("demo")));
             case "refused-origin":
                 return await Send(host, Post(path, Body(), [.. human, ("Origin", "http://localhost:3000")]));
             default:

@@ -1,12 +1,10 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.ApplyCommand;
-using Aw.Sindri.Features.IssueChallenge;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -15,10 +13,9 @@ namespace Aw.Sindri.Host.Commands;
 /// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;', 'workflow cancel', 'takeover' and 'handback &lt;address&gt;' (the last two also as 'sindri takeover|handback &lt;item-or-address&gt;'), each with '[--nonce
 /// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3), as clients of the API: without '--nonce' the CLI asks the
 /// instance's nonce route for one, then posts the command to its commands route, where the command chain classes the
-/// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
+/// caller. Each prints the new status header and what happened (an answer:
 /// the resume action it ran); a repeated nonce prints 'already applied (…)'. A protected answer (grant, grant-tokens,
-/// accept) asks the server for its challenge, shows the instance and the action to type, and sends what the human types
-/// (§4.2); a session sends none and is refused. Exit 0 applied, 1 not running, 2 invalid, refused or error.
+/// accept) is sent like any other: no typed phrase and no terminal (owner decision q93). Exit 0 applied, 1 not running, 2 invalid, refused or error.
 /// </summary>
 /// <param name="desk">The API client, the terminal and the start rule.</param>
 /// <param name="services">The scope the clock resolves from.</param>
@@ -65,17 +62,6 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
 
         var (variant, text, amount, nonce) = parsed.Value;
         var request = new ApplyCommandRequest(address, ApplyCommandKind.Answer, variant, text, amount, Verb: null, nonce, Challenge: null);
-        if (ApplyCommandChallenge.IsProtected(request.Kind, variant) && desk.Client.SessionReason is null)
-        {
-            var challenge = await Challenge(request, ct).ConfigureAwait(false);
-            if (challenge.IsError)
-            {
-                return await output.Error(challenge.Error).ConfigureAwait(false);
-            }
-
-            request = request with { Challenge = challenge.Value };
-        }
-
         return await Apply(request, json, ct).ConfigureAwait(false);
     }
 
@@ -103,7 +89,7 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
         Bare(args, ApplyCommandKind.Takeover, shortForm ? TakeoverShortUsage : TakeoverUsage, ct);
 
     /// <summary>
-    /// 'workflow handback &lt;address&gt;' (class desk: an agent session is refused SND-AUTH-002), or its short form
+    /// 'workflow handback &lt;address&gt;' (class desk), or its short form
     /// 'sindri handback &lt;item-or-address&gt;' (<paramref name="shortForm"/>; engine spec §6.3): a bare item is the root of its latest attempt.
     /// </summary>
     internal Task<int> Handback(string[] args, CancellationToken ct, bool shortForm = false) =>
@@ -143,47 +129,6 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
         var happened = answer.AlreadyApplied ? $"already applied ({answer.Result.Happened})" : answer.Result.Happened;
         var header = InstanceHeader.Line(answer.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
         return await output.Text($"{header}\n  {happened}\n", 0).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// The §4.2 challenge of a protected answer: the server issues it for the instance as it is now and answers with the
-    /// instance and the action text; the human types the action back at the terminal. The server checks the typed text
-    /// and the subject when the answer arrives.
-    /// </summary>
-    private async Task<Result<ChallengeAnswer>> Challenge(ApplyCommandRequest request, CancellationToken ct)
-    {
-        if (await desk.EnsureRunning(ct).ConfigureAwait(false) is { } down)
-        {
-            return down;
-        }
-
-        var action = ChallengeText(request);
-        var issued = await desk.Client.Post<IssueChallengeRequest, IssueChallengeResponse>("/sindri/workflow/challenges", new IssueChallengeRequest(action), ct)
-            .ConfigureAwait(false);
-        if (issued.IsError)
-        {
-            return issued.Error;
-        }
-
-        var challenge = issued.Value.Value;
-        var header = challenge.Instance is { } view ? InstanceHeader.Line(view, services.GetRequiredService<TimeProvider>().GetUtcNow()) : request.Instance;
-        var question = challenge.Instance?.Question is { } q ? $"\n  {q.Question}" : string.Empty;
-        await output.Out.WriteAsync($"{header}{question}\n  type '{challenge.Action}' to confirm: ").ConfigureAwait(false);
-        await output.Out.FlushAsync(ct).ConfigureAwait(false);
-        var typed = (await desk.Input.ReadLineAsync(ct).ConfigureAwait(false))?.Trim() ?? string.Empty;
-        return new ChallengeAnswer(challenge.Challenge, typed);
-    }
-
-    /// <summary>The action text the server issues a protected answer's challenge for: 'grant n &lt;ref&gt;', 'grant-tokens n &lt;ref&gt;' or 'accept &lt;ref&gt;'.</summary>
-    private static string ChallengeText(ApplyCommandRequest request)
-    {
-        var n = request.Amount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?";
-        return request.Answer switch
-        {
-            AnswerVariant.Grant => $"grant {n} {request.Instance}",
-            AnswerVariant.GrantTokens => $"grant-tokens {n} {request.Instance}",
-            AnswerVariant.Accept or AnswerVariant.Text or AnswerVariant.Reject or AnswerVariant.Resume or null or _ => "accept " + request.Instance,
-        };
     }
 
     /// <summary>The answer's variant and its text or amount, and the optional nonce; exactly one variant, '--resume' may carry '--text'.</summary>

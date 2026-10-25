@@ -132,7 +132,7 @@ public sealed class AgentAttachTests
     [InlineData("closed-item", "SND-ITEM-409")]
     public async Task Each_refusal_reads_as_a_sentence(string scenario, string code)
     {
-        _server.Open = RouteAnswer.Problem("items-id-open", scenario);
+        _server.Open = scenario == "refused-session" ? RouteAnswer.Refused() : RouteAnswer.Problem("items-id-open", scenario);
         var expanded = Ready();
 
         expanded.Attach!.Choose(AttachAction.Attach);

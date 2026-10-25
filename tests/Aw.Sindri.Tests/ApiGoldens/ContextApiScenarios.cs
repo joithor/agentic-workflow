@@ -135,7 +135,7 @@ internal static class ContextApiScenarios
         ("context-query", "hops-component-node", async (s, ct) => await s.Fetch("/sindri/context/query?node=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-node", "tab-manager", async (s, ct) => await s.Fetch($"/sindri/context/node?key={Anchor}", ct)),
         ("context-map-review", "no-draft-044", async (s, ct) => await s.Fetch("/sindri/context/map/review", ct)),
-        ("context-map-review", "session-auth-002", async (s, ct) => await s.SessionReview(ct)),
+        ("context-map-review", "session-accept", async (s, ct) => await s.SessionReview(ct)),
         ("context-map-review", "map-tabs-draft", async (s, ct) => await s.MapTabsDraft(ct)),
         ("context-map-review", "post-accept-link", async (s, ct) => await s.PostAcceptLink(ct)),
         ("context-map-review", "post-undo-list", async (s, ct) => await s.PostUndoList(ct)),
