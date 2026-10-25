@@ -68,7 +68,7 @@ internal static class ConceptNodes
     }
 
     private static GraphNode Other() =>
-        new(NodeKey.From(ConceptKeys.Other), "Other", Provenance.Deterministic, 0.5, null, Attributes("Everything no other concept takes.", "derived", ""));
+        new(NodeKey.From(ConceptKeys.Other), "Other", Provenance.Deterministic, 0.5, Evidence: null, Attributes("Everything no other concept takes.", "derived", ""));
 
     private static GraphEdge Belongs(NodeKey member, GraphNode concept) => new(member, concept.Key, EdgeType.BelongsTo, concept.Provenance, concept.Confidence);
 
