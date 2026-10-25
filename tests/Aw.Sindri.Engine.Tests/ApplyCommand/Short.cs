@@ -20,9 +20,9 @@ internal static class Short
         var stderr = new StringWriter();
         var output = new Output(new StringWriter(), stderr, json);
         var probe = services.GetService<IControlPlaneProbe>() ?? new FakeControlPlaneProbe();
-        var tokens = services.GetService<IHumanTokenStore>() ?? new InMemoryHumanTokenStore();
+        var tokens = signal is null ? services.GetService<IHumanTokenStore>() ?? InMemoryHumanTokenStore.WithToken() : new InMemoryHumanTokenStore();
         using var client = new ControlPlaneClient(probe, json,
-            CallerHeaders.For(new AgentSession(signal, Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult(repo)), TimeSpan.FromSeconds(30));
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult(repo)), TimeSpan.FromSeconds(30));
         var desk = new RecipeDesk(client, new StringReader(string.Empty), static _ => Task.FromResult<Kernel.Error?>(null));
         var exit = await WorkflowCommandTable.RunShort(args, services, output, desk, TestContext.Current.CancellationToken);
         return (exit, stderr.ToString());

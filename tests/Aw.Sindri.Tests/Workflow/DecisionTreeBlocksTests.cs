@@ -27,6 +27,8 @@ public sealed class DecisionTreeBlocksTests
     [InlineData("step.evidence.api-plan", BlockRuntime.Agent, false, "fact:phasePacket,fact:built", "planned,noTarget", "", "fact:evidencePlan=planned;fact:evidenceSummary=noTarget", Capability.Tools)]
     [InlineData("step.evidence.db-plan", BlockRuntime.Agent, false, "fact:phasePacket,fact:built", "planned,noTarget", "", "fact:evidencePlan=planned;fact:evidenceSummary=noTarget", Capability.Tools)]
     [InlineData("step.evidence.ui-run", BlockRuntime.Agent, false, "fact:evidencePlan,fact:built", "passed,failed,broken", "fact:evidenceSummary", "", Capability.Tools)]
+    [InlineData("step.evidence.desktop-run", BlockRuntime.Agent, false, "fact:built", "passed,failed,broken", "fact:evidenceSummary", "", Capability.Tools)]
+    [InlineData("step.evidence.desktop-review", BlockRuntime.Agent, false, "fact:evidenceSummary,fact:built", "match,mismatch", "", "fact:desktopMismatches=mismatch", Capability.Tools)]
     [InlineData("step.evidence.api-run", BlockRuntime.Agent, false, "fact:evidencePlan,fact:built", "passed,failed", "fact:evidenceSummary", "", Capability.Tools)]
     [InlineData("step.evidence.db-run", BlockRuntime.Agent, false, "fact:evidencePlan,fact:built", "passed,failed", "fact:evidenceSummary", "", Capability.Tools)]
     [InlineData("step.evidence.none", BlockRuntime.Block, false, "fact:built", "done", "", "fact:evidenceSummary=done", Capability.None)]

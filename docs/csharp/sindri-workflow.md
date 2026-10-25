@@ -559,6 +559,8 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
 | `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-run` | agent | `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.desktop-review` | agent | `evidenceSummary`, `built` | `match`, `mismatch` | `desktopMismatches` on mismatch |
 | `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
@@ -787,6 +789,8 @@ family and review-loop) are listed with their inputs, outputs and terminals in `
 `issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
 (every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
 `payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
+
+`workflow.evidence-desktop` is the desktop-app leaf the `desktop` choice of `workflow.evidence` waits on. It runs two agent Steps: `step.evidence.desktop-run` follows the state's `next:` text to run the ui-evidence `desktop-run` verb on the repo's screens manifest (exit 0 is `passed`, 2 `failed`, anything else `broken`), then `step.evidence.desktop-review` compares each screen's app frame with its mockup frame, skips the differences the manifest lists as accepted, and reports `match` or `mismatch` (the list goes in `desktopMismatches`). A broken run repairs and reruns at most once (`repairs` cap 2, on purpose: a desktop run launches the real app; `workflow.evidence-ui` allows 4). Both Steps are agent Steps with no runtime of their own, so there is no `deps.yaml` edge. `workflow.evidence` goes to version 3 and the new recipe is version 1, so the owner re-approves with one approve-all.
 
 ## Writing a decision tree
 
