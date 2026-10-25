@@ -101,6 +101,8 @@ The check is committed here; that commit is the **baseline**, and every candidat
    `locked node "$BFS_JS" run-ui --state "$STATE" --check .ui-evidence/<ticket-slug>.json --cwd "$REPO"`
    Evidence = the printed `evidence` path.
 
+**Desktop UI bug** (the repro steps drive a desktop app, per `_shared/platform-detection.md`): the check is the desktop evidence run on the screen that shows the bug, judged against its mockup. Read `$TK/skills/_shared/desktop-evidence.md` for the config; name the affected screen(s) from the repo's screens manifest, which is the check file. Run it on the unfixed code through the helper like a test (`run-test`, the manifest as `--check`, and `ui-evidence desktop-run <manifest> <run-dir> --screens <names>` as the command; use that **exact** command for every later run). Its `summary.json` is the evidence. If the helper refuses the command, stop and tell the user: never run it outside the helper or write the evidence yourself. A bug the mockups do not show (state, not looks) is a regression test under **Anything else** instead.
+
 **Anything else:**
 
 1. **Spawn a subagent** of type `lean-coder` to write **only** a regression test for the expected
