@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// serialized <see cref="FactValue"/>), never the content; so an input that wants the value (anchors, a window) reads it here through the same
 /// <see cref="IFactContents"/> port the effects use, checks it against the reference's SHA-256, and parses it as JSON (a content that isn't JSON is its text).
 /// A '{ profile: key }' argument is resolved here too, against the approved profile snapshot (never in workflow code, which must replay): a key the
-/// snapshot does not hold is SND-WF-021 (see <see cref="Fails"/>), never the open window.
+/// snapshot does not hold (no approved profile, or a key no input can read) is SND-WF-021; a key the profile leaves unset is the open window (see <see cref="Fails"/>), never the open window.
 /// A reference that can't be read is an error that names the argument and the fact (an honest unavailable section); content that isn't what its SHA-256 says is SND-WF-018 (see <see cref="Fails"/>), which fails the fill.
 /// </summary>
 /// <param name="contents">The fact content port.</param>
@@ -94,29 +94,32 @@ internal sealed class ContextInputFacts(IFactContents contents, IApprovedProfile
 
         return Setting(loaded.Profile, key) is { } setting
             ? setting
-            : WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, which the approved profile does not set (fix: add it to the profile and approve it; an empty value is the open window)");
+            : WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, which is not a key a Step input can read");
     }
 
-    /// <summary>The value of a profile key a Step input may name, or null when the profile does not set it or the key is not one.</summary>
+    /// <summary>The value of a profile key a Step input may name, or null when the key is not one a Step input can read. A key the profile leaves unset is the open window.</summary>
     private static JsonElement? Setting(SindriProfile profile, string key)
     {
-        if (!string.Equals(key, "workflow.scoping.historyWindow", StringComparison.Ordinal) || profile.Workflow?.Scoping?.HistoryWindow is not { } window)
+        if (!string.Equals(key, "workflow.scoping.historyWindow", StringComparison.Ordinal))
         {
             return null;
         }
+
+        var since = profile.Workflow?.Scoping?.HistoryWindow?.Since;
+        var before = profile.Workflow?.Scoping?.HistoryWindow?.Before;
 
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
             writer.WriteStartObject();
-            if (window.Since is not null)
+            if (since is not null)
             {
-                writer.WriteString("since", window.Since);
+                writer.WriteString("since", since);
             }
 
-            if (window.Before is not null)
+            if (before is not null)
             {
-                writer.WriteString("before", window.Before);
+                writer.WriteString("before", before);
             }
 
             writer.WriteEndObject();

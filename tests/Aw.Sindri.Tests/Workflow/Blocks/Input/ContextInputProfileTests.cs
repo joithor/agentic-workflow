@@ -56,15 +56,27 @@ public sealed class ContextInputProfileTests
     }
 
     [Fact]
-    public async Task A_profile_without_the_key_fails_the_fill_with_SND_WF_021_and_never_reads_history()
+    public async Task A_profile_without_the_key_reads_the_open_window()
     {
         var history = new ContextHistoryInputTests.StubHistory(() => ContextHistoryTextTests.View());
 
         var filled = await Input(history, WithWindow(window: null)).Fill(Context(), TestContext.Current.CancellationToken);
 
-        Assert.True(filled.IsError);
+        Assert.False(filled.IsError);
+        var (_, window, _) = Assert.Single(history.Calls);
+        Assert.Equal(HistoryWindow.Open, window);
+    }
+
+    [Fact]
+    public async Task A_key_no_input_can_read_fails_the_fill_with_SND_WF_021()
+    {
+        var history = new ContextHistoryInputTests.StubHistory(() => ContextHistoryTextTests.View());
+        var other = Context() with { Arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = JsonSerializer.SerializeToElement(new[] { "feature:a" }), ["window"] = JsonDocument.Parse("{\"profile\":\"workflow.nope\"}").RootElement.Clone() } };
+
+        var filled = await Input(history, WithWindow(window: null)).Fill(other, TestContext.Current.CancellationToken);
+
         Assert.Equal(WorkflowErrors.ProfileKeyMissing.Code, filled.Error.Code);
-        Assert.Contains(Key, filled.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("workflow.nope", filled.Error.Message, StringComparison.Ordinal);
         Assert.Empty(history.Calls);
     }
 
