@@ -16,7 +16,6 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     internal const string Action = "ApproveAllRecipes";
 
     private static readonly TimeSpan _pollEvery = TimeSpan.FromMilliseconds(500);
-    private static readonly TimeSpan _pollFor = TimeSpan.FromMinutes(2);
     private const int ReadFailuresAllowed = 3;
 
     private readonly CatalogViewModel _catalog;

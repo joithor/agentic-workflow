@@ -218,7 +218,9 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
         || OpensForm(control) || (control.IsCopyOnly && control.CanCopy && !NeedsForm(control) && !ItemSheetViewModel.IsSheetAction(control.Action));
 
     // Create item, Start workflow and Approve all are done in a form or dialog of the app: with none to open (no shell) they are not a command to copy here, and not runnable.
-    private static bool NeedsForm(ControlViewModel control) => control.Action is "CreateItem" or "StartInstance" or "ApproveAllRecipes";
+    private static bool NeedsForm(ControlViewModel control) => string.Equals(control.Action, "CreateItem", StringComparison.Ordinal)
+        || string.Equals(control.Action, "StartInstance", StringComparison.Ordinal)
+        || string.Equals(control.Action, "ApproveAllRecipes", StringComparison.Ordinal);
 
     // Create item and Start workflow open their forms (when the shell has them).
     private bool OpensForm(ControlViewModel control) =>
