@@ -46,7 +46,7 @@ public sealed class NeedsYouVerbsTests
 
     private async Task<NeedsYouBarViewModel> Bar()
     {
-        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api));
+        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clock);
         bar.Show(new NeedsYouRowViewModel(NeedsYouRows.Desk(), seen: true, reducedMotion: false, arrived: false, _clock));
         await bar.Loaded;
         return bar;

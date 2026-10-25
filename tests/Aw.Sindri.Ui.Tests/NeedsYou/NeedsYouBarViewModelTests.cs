@@ -19,7 +19,7 @@ public sealed class NeedsYouBarViewModelTests
 
     private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry, bool read = false)
     {
-        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api));
+        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clock);
         bar.DecisionRequested += (_, e) =>
         {
             _decisions.Add(e);

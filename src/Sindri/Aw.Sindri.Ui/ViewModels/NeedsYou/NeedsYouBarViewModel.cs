@@ -25,6 +25,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
     ];
 
     private readonly DeskReporter _desk;
+    private readonly TimeProvider _clock;
     private readonly NeedsYouConfirm? _confirm;
     private NeedsYouRowViewModel? _row;
     private DeskTarget? _target;
@@ -32,10 +33,11 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
     private NeedsYouBarOutcome _done;
 
     /// <param name="desk">Reports an open desk run.</param>
+    /// <param name="clock">Stamps the scoping interview's answers.</param>
     /// <param name="confirm">The three approvals the app does with one click; null offers none.</param>
-    internal NeedsYouBarViewModel(DeskReporter desk, NeedsYouConfirm? confirm = null)
+    internal NeedsYouBarViewModel(DeskReporter desk, TimeProvider clock, NeedsYouConfirm? confirm = null)
     {
-        (_desk, _confirm) = (desk, confirm);
+        (_desk, _clock, _confirm) = (desk, clock, confirm);
         _confirm?.Changed += OnConfirmChanged;
     }
 

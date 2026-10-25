@@ -19,7 +19,7 @@ public sealed class NeedsYouConfirmBarTests
     private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry)
     {
         var confirm = new NeedsYouConfirm(new CatalogViewModel(new FakeClipboard(), _clock), () => _api, _server, _clock);
-        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), confirm);
+        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clock, confirm);
         bar.Show(new NeedsYouRowViewModel(entry, seen: true, reducedMotion: false, arrived: false, _clock));
         await bar.Loaded;
         bar.ReadToEnd = true;
