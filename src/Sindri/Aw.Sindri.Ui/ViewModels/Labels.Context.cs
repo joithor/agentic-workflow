@@ -37,4 +37,21 @@ internal static partial class Labels
 
     /// <summary>The word for an anchor node in a band.</summary>
     internal const string ContextAnchorTag = "topic";
+
+    /// <summary>The note while an item's context is read.</summary>
+    /// <param name="item">The item's id.</param>
+    /// <returns>The note.</returns>
+    internal static string ContextItemLoading(string item) => throw new NotSupportedException(item);
+
+    /// <summary>The note when the item has no frozen scope: the map shown is its repo's.</summary>
+    /// <param name="item">The item's id.</param>
+    /// <param name="repo">The item's repo, or null when it is not known.</param>
+    /// <returns>The note.</returns>
+    internal static string ContextItemUnscoped(string item, string? repo) => throw new NotSupportedException(item + repo);
+
+    /// <summary>The note when the item's context could not be read.</summary>
+    /// <param name="item">The item's id.</param>
+    /// <param name="reason">Why.</param>
+    /// <returns>The note.</returns>
+    internal static string ContextItemFailed(string item, string reason) => throw new NotSupportedException(item + reason);
 }
