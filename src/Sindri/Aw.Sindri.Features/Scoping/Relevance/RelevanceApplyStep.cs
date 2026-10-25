@@ -39,7 +39,7 @@ internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
     {
         if (StepFacts.Read(context, "fact:graph") is not JsonObject graph)
         {
-            return GraphGather.Assemble(null, kept, []);
+            return GraphGather.Assemble(graphView: null, kept, anchors: []);
         }
 
         var left = RelevanceEntries.Of(before).Select(static e => e.Id).Except(RelevanceEntries.Of(kept).Select(static e => e.Id), StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal);
@@ -55,7 +55,7 @@ internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
             ["nodes"] = new JsonArray([.. nodes.Select(static n => n.DeepClone())]),
             ["edges"] = new JsonArray([.. edges.Select(static e => e.DeepClone())]),
             ["limits"] = Limits(graph, nodes, kept),
-        }, kept, []);
+        }, kept, anchors: []);
     }
 
     // The graph's limits, plus one for the lens entries the graph's cap left out: the review saw only the graph, so those have no verdict and stay in, marked unreviewed.
@@ -66,7 +66,7 @@ internal sealed class RelevanceApplyStep : IBlockStep, IBlockStepId
         var outside = RelevanceEntries.Of(kept).Count(e => !shown.Contains(e.Id));
         if (outside > 0)
         {
-            limits.Add(new JsonObject { ["why"] = Unreviewed, ["not"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{outside} lens entries outside the graph cap were not reviewed") });
+            ScopeJson.Append(limits, new JsonObject { ["why"] = Unreviewed, ["not"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{outside} lens entries outside the graph cap were not reviewed") });
         }
 
         return limits;
