@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { boundedInput } from "../question.js";
 import type { Provider, ProviderResult, QuestionRef } from "../types.js";
 import { ALL_CLASSES, childEnv, spawnFailure, strictSchema, toDecided, type ImageInput, type Spawn, type SpawnResult } from "./cli-common.js";
 
@@ -84,7 +85,8 @@ export function makeCodexCliProvider(deps: {
   return {
     name: "codex-cli",
     classes: new Set(ALL_CLASSES),
-    decide: async <O extends string>(question: QuestionRef<O>, input: unknown, budgetMs: number): Promise<ProviderResult<O>> => {
+    decide: async <O extends string>(question: QuestionRef<O>, rawInput: unknown, budgetMs: number): Promise<ProviderResult<O>> => {
+      const input = boundedInput(question, rawInput);
       const cwd = deps.tmpDirFactory();
       const schemaFile = path.join(cwd, "schema.json");
       const images: string[] = [];

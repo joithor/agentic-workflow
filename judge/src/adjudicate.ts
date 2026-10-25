@@ -5,7 +5,7 @@
 // never the decision being scored.
 import { QUESTIONS } from "./commands.js";
 import { nextUnlabeled, recordLabel, type Db } from "./db.js";
-import { toProviderInput, toRef, type QuestionModule } from "./question.js";
+import { toRef, type QuestionModule } from "./question.js";
 import type { Provider } from "./types.js";
 
 export async function adjudicate(
@@ -35,7 +35,7 @@ export async function adjudicate(
     const counts = new Map<string, number>();
     let errors = 0;
     for (let s = 0; s < samples; s++) {
-      const r = await opts.provider.decide(adjRef, toProviderInput(q, parsed.input), Math.max(q.timeBudgetMs, 60000));
+      const r = await opts.provider.decide(adjRef, parsed.input, Math.max(q.timeBudgetMs, 60000));
       if (r.status !== "decided") errors++;
       else if (outputs.includes(r.decision)) counts.set(r.decision, (counts.get(r.decision) ?? 0) + 1);
     }

@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { recordDecision, recordDecisionDetails, recordFailure, type Agreement, type Db, type DecisionOutcome, type SkippedProvider } from "./db.js";
 import type { JudgeConfig } from "./config.js";
 import { providersFor, DEFAULT_CHAIN, type ChainSpec } from "./chain.js";
-import { toProviderInput, toRef, type QuestionModule } from "./question.js";
+import { toRef, type QuestionModule } from "./question.js";
 import { capJsonValue, INPUT_CAP, redactDeep } from "./redact.js";
 import type { Decision, Provider } from "./types.js";
 
@@ -133,7 +133,6 @@ export async function evaluate<I, O extends string>(
     candidates = qConfig.providers.flatMap((n) => available.filter((p) => p.name === n));
   }
   const ref = toRef(question, input);
-  const providerInput = toProviderInput(question, input);
 
   const skipped: SkippedProvider[] = [];
   let lastReason: "no-provider-decided" | "below-threshold" = "no-provider-decided";
@@ -146,7 +145,7 @@ export async function evaluate<I, O extends string>(
     const start = Date.now();
     let result;
     try {
-      result = await provider.decide<O>(ref, providerInput, question.timeBudgetMs);
+      result = await provider.decide<O>(ref, input, question.timeBudgetMs);
     } catch {
       recordFailureSafe(deps.db, question.name, provider.name, "provider-threw");
       skipped.push({ provider: provider.name, reason: "failed" });

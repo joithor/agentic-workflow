@@ -23,13 +23,14 @@ export interface QuestionModule<I, O extends string> {
   criteria?: Readonly<Record<O, string>>;
 }
 
-/** The input as providers see it: bounded when the question says how, else as given. */
-export function toProviderInput<I, O extends string>(q: QuestionModule<I, O>, input: I): unknown {
-  return q.providerInput?.(input) ?? input;
-}
-
 export function toRef<I, O extends string>(q: QuestionModule<I, O>, input: I): QuestionRef<O> {
   const ref: QuestionRef<O> = { name: q.name, outputs: q.outputs, prompt: q.prompt(input), contentClass: q.contentClass };
-  const withExtra = q.extraProperties === undefined ? ref : { ...ref, extraProperties: q.extraProperties };
+  const withBound = q.providerInput === undefined ? ref : { ...ref, providerInput: q.providerInput as (input: unknown) => unknown };
+  const withExtra = q.extraProperties === undefined ? withBound : { ...withBound, extraProperties: q.extraProperties };
   return q.criteria === undefined ? withExtra : { ...withExtra, criteria: q.criteria };
+}
+
+/** The input as a provider may use it: bounded when the question says how, else as given. Every provider calls this first. */
+export function boundedInput<O extends string>(question: QuestionRef<O>, input: unknown): unknown {
+  return question.providerInput?.(input) ?? input;
 }
