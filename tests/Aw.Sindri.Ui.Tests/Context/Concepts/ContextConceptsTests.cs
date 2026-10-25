@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 
@@ -293,7 +294,20 @@ public sealed class ContextConceptsTests
         await page.OpenConcept(page.Concepts.Tiles[0].Id, Token);
 
         Expect.Equal("Tab manager", page.Concepts.Tiles[0].Name);
-        Expect.True(Aw.Sindri.Ui.Api.Context.ContextRoutes.WholeMap(api.WholeMapAsked[^1]).Contains("concept=concept%3Atabs.tab-manager", StringComparison.Ordinal));
+        Expect.True(ContextRoutes.WholeMap(api.WholeMapAsked[^1]).Contains("concept=concept%3Atabs.tab-manager", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_concept_the_map_does_not_hold_shows_the_failure_row_with_retry_and_back()
+    {
+        var api = ConceptPage.Serving(AConcepts.Three());
+        var page = await ConceptPage.Shown(api);
+
+        await page.OpenConcept(ContextAnswers.UnknownConcept, Token);
+
+        Expect.Equal((true, true, true), (page.Whole.IsFailed, page.ShowWholeStatus, page.Whole.HasConcept));
+        Expect.True(page.Up());
+        Expect.Equal((true, null), (page.ShowConcepts, page.OpenedConceptId));
     }
 
     [Fact]
