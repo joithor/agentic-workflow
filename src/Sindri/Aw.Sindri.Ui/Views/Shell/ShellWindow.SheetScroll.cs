@@ -6,8 +6,8 @@ namespace Aw.Sindri.Ui.Views.Shell;
 /// <summary>The sheet starts at its top (<see cref="ShellWindow"/>, continued; #1100).</summary>
 internal sealed partial class ShellWindow
 {
-    // Each kind of sheet has its own scroll viewer, which keeps its offset while it is hidden: a sheet that closes and reopens, or opens
-    // for another subject, would start where it was left. Every viewer goes home as the sheet opens or changes subject, and again once the
+    // Each kind of sheet has its own scroll viewer, which keeps its offset while it is hidden: a sheet that closes and reopens, 
+    // for another subject, would start where it was left. Every viewer goes home as the sheet opens, and again once the
     // new content has laid out (its extent can change after the first pass).
     private void ResetSheetScroll()
     {

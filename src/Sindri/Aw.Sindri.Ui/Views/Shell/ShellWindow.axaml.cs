@@ -180,12 +180,13 @@ internal sealed partial class ShellWindow : Window
             case nameof(ShellViewModel.IsNeedsYouInbox):
                 FollowInbox();
                 break;
-            case nameof(ShellViewModel.SheetSubject):
-                ResetSheetScroll();
-                break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
-                ResetSheetScroll();
+                if (Shell is { IsSheetShown: true })
+                {
+                    ResetSheetScroll();   // a sheet that opens starts at its top; stacking a child and Back change the subject only, so they do not reset
+                }
+
                 Dispatcher.UIThread.Post(Shell is { IsSheetShown: true } ? FocusOpenedSheet : KeepFocus, DispatcherPriority.Loaded);
                 break;
             default:
