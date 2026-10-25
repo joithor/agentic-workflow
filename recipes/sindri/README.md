@@ -44,6 +44,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.verify` | phasePacket, workspace | evidencePack | passed / failed |
 | `workflow.evidence-ui` | phasePacket, built | evidenceSummary | passed / failed (one repair of a broken selector) |
 | `workflow.evidence-api`, `workflow.evidence-db` | phasePacket, built | evidenceSummary | passed / failed |
+| `workflow.evidence-desktop` | phasePacket, built | evidenceSummary | passed / failed (the real desktop app against its mockups, then a screen-by-screen review; one repair of a broken run) |
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
@@ -73,7 +74,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 ### Approval order
 
-Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`, `build`, `ship`, `docs-sync`, `prove-recheck`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
+Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-desktop`, `evidence-other`, `review-loop`, `build`, `ship`, `docs-sync`, `prove-recheck`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
 
 ### Applied from the decision-tree spec
 
