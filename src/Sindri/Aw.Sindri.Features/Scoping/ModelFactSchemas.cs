@@ -7,7 +7,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
-/// The facts a scoping agent writes whose shape a schema closes (#1112): fact:scopeMap and fact:acceptance, the same pair SCP-SCHEMA-001 checks one Step later.
+/// The facts a scoping agent writes whose shape a schema closes (#1112): fact:scopeMap, fact:acceptance, fact:openQuestions and fact:questions (the facts an agent Step writes that have a schema; SCP-SCHEMA-001 checks the first two one Step later).
 /// Checked when the agent reports, so a field its schema does not allow is fixed by the agent that wrote it, in the same run, not by a new drafter after 'check'.
 /// </summary>
 internal static partial class ModelFactSchemas
@@ -16,11 +16,13 @@ internal static partial class ModelFactSchemas
     {
         ["fact:scopeMap"] = "scope-map",
         ["fact:acceptance"] = "acceptance",
+        ["fact:openQuestions"] = "open-questions",
+        ["fact:questions"] = "questions",
     };
 
     /// <summary>Whether <paramref name="fact"/> has a schema checked at report time.</summary>
     /// <param name="fact">The fact.</param>
-    /// <returns>True for scopeMap and acceptance.</returns>
+    /// <returns>True for scopeMap, acceptance, openQuestions and questions.</returns>
     internal static bool Covers(FactKey fact) => _schemas.ContainsKey(fact.Value);
 
     /// <summary>Where each covered fact's schema is, for the Step's instructions.</summary>
