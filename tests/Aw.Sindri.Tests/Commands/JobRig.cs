@@ -59,7 +59,7 @@ internal sealed class JobRig : IDisposable
     public static string Cancelled() => $$"""{"commandId":"00000000-0000-0000-0000-000000000008","job":"{{Id}}","by":"human:local"}""";
 
     public static ControlPlaneClient Client(JobApi api) => new(_probe, SliceHarness.Json,
-        CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+        CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
 
     public Output Output() => new(Out, Error, SliceHarness.Json);
 

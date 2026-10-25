@@ -26,8 +26,13 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false, ConnectTimeout = CliTimeout.Connect }) { Timeout = timeout ?? Timeout.InfiniteTimeSpan };
     private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
-    /// <summary>Why this CLI calls as a session ('CLAUDECODE is set', 'no terminal'), or null when it calls as a human.</summary>
+    /// <summary>Why this CLI calls as a session ('the per-start human token isn't readable'), or null when it calls as a human.</summary>
     public string? SessionReason => _headers.SessionReason;
+
+    /// <summary>Reads the per-start token now and answers <see cref="SessionReason"/>: a human's call carries it, a session's doesn't.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>Why this CLI calls as a session, or null when it calls as a human.</returns>
+    public ValueTask<string?> ResolveSessionReason(CancellationToken cancellationToken) => _headers.Resolve(cancellationToken);
 
     /// <summary>The cap on one call, <see cref="Timeout.InfiniteTimeSpan"/> when none is set (tests: a call's real timeout can't be waited out).</summary>
     internal TimeSpan CallTimeout => _http.Timeout;

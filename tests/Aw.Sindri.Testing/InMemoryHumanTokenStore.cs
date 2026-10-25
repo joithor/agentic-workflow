@@ -10,6 +10,10 @@ public sealed class InMemoryHumanTokenStore : IHumanTokenStore
     private HumanToken? _token;
     private int _minted;
 
+    /// <summary>A store that already holds a token (what a running control plane leaves): the CLI reading it calls as a human.</summary>
+    /// <returns>The store, holding 'token-1'.</returns>
+    public static InMemoryHumanTokenStore WithToken() => new() { _token = new HumanToken("token-1"), _minted = 1 };
+
     /// <inheritdoc/>
     public ValueTask<Result<HumanToken>> Mint(CancellationToken cancellationToken)
     {

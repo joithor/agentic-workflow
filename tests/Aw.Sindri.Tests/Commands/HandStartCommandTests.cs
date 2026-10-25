@@ -206,7 +206,7 @@ public sealed class HandStartCommandTests : IDisposable
     private async Task<int> Run(RoutedApi api, Func<(RecipeDesk Desk, IServiceProvider Services, Output Output), Task<int>> verb)
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
-            CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
         var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Kernel.Error?>(null));
         await using var services = new ServiceCollection().AddSingleton(TimeProvider.System).BuildServiceProvider();
         return await verb((desk, services, new Output(_out, _error, SliceHarness.Json)));

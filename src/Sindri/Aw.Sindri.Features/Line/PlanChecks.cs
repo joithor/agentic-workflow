@@ -18,7 +18,7 @@ internal static partial class PlanChecks
     internal static LineReport Run(JsonNode? design, JsonNode? plan, JsonNode? holdoutSets, bool evidence)
     {
         var c = new PlanContext(design, plan, holdoutSets);
-        IEnumerable<LineFinding> findings = [.. PacketNote(c), .. Trace(c), .. Sizes(c), .. Signals(c), .. Stacks(c)];
+        IEnumerable<LineFinding> findings = [.. PacketNote(c), .. Trace(c), .. Sizes(c), .. Signals(c), .. Stacks(c), .. TestsNamed(c)];
         if (evidence)
         {
             findings = [.. findings, .. Executable(c), .. Holdouts(c)];
