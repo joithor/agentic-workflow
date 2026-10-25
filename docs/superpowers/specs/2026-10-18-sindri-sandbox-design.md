@@ -876,9 +876,9 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
 
 **Open question (rev 7).** Between SB-5b and SB-9 a macOS owner cannot `sindri open` (no Seatbelt adapter, and SB1 allows no unconfined path). Keep macOS opens unconfined, with a visible "not sandboxed" line, until SB-9 lands, or accept the refusal? Until answered the spec's text is the refusal.
 
-**Open wire questions (rev 7, from SB-1's restack; settle before SB-5a reads the events).**
-(a) `launch.failed` carries `Reason` and `Source` as top-level members (the sandbox's, SB-0) and main's `Detail.Reason` (`LaunchFailureDetail.Of` copies *any* error's `reason` extension into it, so a sandbox `-014` to `-021` refusal already lands there). Which does what? Proposal: the sandbox's top-level `Reason` goes away and the sandbox reason travels in `Detail.Reason`; `Source` (the credential source of `-017`) becomes `Detail.Source`, read from the error's `source` extension the same way; the launch row and view read the detail. One place for "why", no second name.
-(b) `sandbox.denied` and `sandbox.limit-hit` serialize the launch as `launch`, while main's launch events use `launchId`. Proposal: rename them to `launchId` now, while nothing ships them, and update the three golden files.
+**Wire decisions (rev 7, from SB-1's restack; the code fixes land in the stack, not in this amendment).**
+(a) **One reason, in `Detail`.** `launch.failed` has main's `Detail` (`LaunchFailureDetail`: `Stage`, `Reason`, `Current`, `Approved`), and `LaunchFailureDetail.Of` already copies any error's `reason` extension into `Detail.Reason`, so a sandbox `-014` to `-021` refusal's reason lands there. The sandbox's top-level `Reason` is folded into it and goes away; the credential source of `-017` becomes `Detail.Source`, read from the error's `source` extension the same way. The launch row and the launch view read the detail. One place for "why".
+(b) **The wire name is `launchId`.** `sandbox.denied` and `sandbox.limit-hit` carry `{launchId, ...}` as §8 already says and as main's launch events do; SB-0's `SandboxDenied` and `SandboxLimitHit` serialize `launch` today and follow the spec (rename, and the three goldens under `Golden/Sandbox/events/`).
 
 The owner answered the fourteen questions of revision 4 on 2026-10-18. None of these fourteen is open; the one question from revision 7, above, is the only open one. The numbers Q1..Q14 are the
 ones the rest of the spec cites. "Accepted" means the default of revision 4 stands as written.
@@ -1034,7 +1034,7 @@ The owner's answers of 2026-10-18 (§13), folded in. No review round; the change
 | O7-3 | **Parallel tracks.** Linux now (SB-0, SB-1, then SB-2 and SB-4a in parallel, then SB-3a and SB-5a) in parallel with a macOS Seatbelt track (SB-9) whose runner the owner assigns later; SB-9 now starts with SB-1 instead of waiting for SB-5a: §12, §12.1 |
 | O7-4 | Box facts that make the Linux track possible (bubblewrap 0.9.0, unprivileged user namespaces on, Ubuntu's AppArmor userns restriction on, #366 passing under it): §12 |
 | O7-5 | #1098 and #1099 reconciled with §3.1 and §3.4: the launch's session home (ro, `gh-config/` rw), the real `launches/` (rw) and `approved/` (ro) binds its links need, a launcher-written `control.json` with the forwarder URL under the sandbox (SB-S1 item 7 stands), `AW_SINDRI_HOME` always the session home, the `net-forward` and `fs-deny` canaries gain the `sindri status` and `human.token` checks, and what still blocks `human.token` once SB-2 runs. Supersedes R2-04 and R2-13 on `launches/` being per-launch |
-| O7-6 | Two wire questions from SB-1's restack are open in §13 (a: `Reason` vs `Detail.Reason`, b: `launch` vs `launchId` on the sandbox events), and SB-5a gets the explicit `LedgerAgentSessions.cs:43` item for `SessionEndReason.Limit` |
+| O7-6 | Items from SB-1's restack: `launch.failed` keeps one reason, in `Detail` (§13); the sandbox events' wire name is `launchId` (§13); SB-5a gets the explicit `LedgerAgentSessions.cs:43` item for `SessionEndReason.Limit` (§12) |
 
 ## 15. Spike record
 
