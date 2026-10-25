@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Checks;
 
 namespace Aw.Sindri.Features.Line;
 
@@ -48,6 +49,24 @@ internal static partial class PlanChecks
         foreach (var phase in c.Phases.Where(p => Depth(c, PlanContext.Id(p), []) > limit))
         {
             yield return DesignContext.Fail("PLN-STACK-001", PlanContext.Id(phase), $"phase {PlanContext.Id(phase)} sits {Depth(c, PlanContext.Id(phase), []).ToString(CultureInfo.InvariantCulture)} deep in a stack; the most is {limit.ToString(CultureInfo.InvariantCulture)}", "Reorder the phases or let one wait for a merge.");
+        }
+    }
+
+    // PLN-TEST-001: BLD-TEST-001 fails a build that changes an existing test its phase doesn't name in testChange, and the builder can't fix that, so the plan names every
+    // existing test file it allows. A path the phase lists is taken as existing; 'new: path' entries and globs are not (the plan can't know what a glob matches).
+    private static IEnumerable<LineFinding> TestsNamed(PlanContext c)
+    {
+        foreach (var phase in c.Phases)
+        {
+            var named = PlanPacket.TestChanges(phase).Select(static t => LineJson.Str(t, "path")).OfType<string>().ToList();
+            var scope = LineJson.Strings(phase, "writeScope").ToList();
+            foreach (var path in (scope.Count > 0 ? scope : [.. LineJson.Strings(phase, "allowedFiles")])
+                .Select(static e => e.Trim())
+                .Where(static e => !e.StartsWith("new:", StringComparison.Ordinal) && e.IndexOfAny(['*', '?']) < 0 && TestPaths.IsTest(e))
+                .Where(e => !named.Contains(e, StringComparer.Ordinal)))
+            {
+                yield return DesignContext.Fail("PLN-TEST-001", PlanContext.Id(phase), $"phase {PlanContext.Id(phase)} allows the existing test {path} but its testChange doesn't name it", $"Add {path} with a reason to the phase's testChange, or write 'new: {path}' if the phase creates it.");
+            }
         }
     }
 
