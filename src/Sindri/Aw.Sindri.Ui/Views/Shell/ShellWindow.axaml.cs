@@ -40,6 +40,7 @@ internal sealed partial class ShellWindow : Window
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        AddHandler(OpenerNote.NotedEvent, NoteInvoker);
         PagePanel.SizeChanged += (_, e) => PageLayout.SetTier(PagePanel, PageLayout.For(e.NewSize.Width));
         WatchNavigationKeys();
     }

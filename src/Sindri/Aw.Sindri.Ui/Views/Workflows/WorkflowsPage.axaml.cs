@@ -5,7 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Workflows;
-using Aw.Sindri.Ui.Views.Shell;
+using Aw.Sindri.Ui.Views.Layout;
 
 namespace Aw.Sindri.Ui.Views.Workflows;
 
@@ -193,7 +193,7 @@ internal sealed partial class WorkflowsPage : UserControl
 
     private void OnStart(object? sender, RoutedEventArgs e)
     {
-        ShellWindow.NoteInvokerFrom(this, sender);
+        OpenerNote.Raise(this, sender);
         List?.RequestStart();
     }
 }
