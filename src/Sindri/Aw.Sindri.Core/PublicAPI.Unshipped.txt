@@ -18615,6 +18615,23 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.ShippedApprovalPlans(Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeRegistration? registration = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Scheduling.MainMoveInput
+Aw.Sindri.Core.Scheduling.MainMoveInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.MainMoveInput!
+Aw.Sindri.Core.Scheduling.MainMoveInput.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! OnDefaultHeads, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? LastSucceededHeads, out bool RulesChanged) -> void
+Aw.Sindri.Core.Scheduling.MainMoveInput.Equals(Aw.Sindri.Core.Scheduling.MainMoveInput? other) -> bool
+Aw.Sindri.Core.Scheduling.MainMoveInput.LastSucceededHeads.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Scheduling.MainMoveInput.LastSucceededHeads.init -> void
+Aw.Sindri.Core.Scheduling.MainMoveInput.MainMoveInput(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! OnDefaultHeads, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? LastSucceededHeads, bool RulesChanged) -> void
+Aw.Sindri.Core.Scheduling.MainMoveInput.OnDefaultHeads.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Scheduling.MainMoveInput.OnDefaultHeads.init -> void
+Aw.Sindri.Core.Scheduling.MainMoveInput.RulesChanged.get -> bool
+Aw.Sindri.Core.Scheduling.MainMoveInput.RulesChanged.init -> void
+override Aw.Sindri.Core.Scheduling.MainMoveInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MainMoveInput.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MainMoveInput.ToString() -> string!
+static Aw.Sindri.Core.Scheduling.MainMoveInput.operator !=(Aw.Sindri.Core.Scheduling.MainMoveInput? left, Aw.Sindri.Core.Scheduling.MainMoveInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MainMoveInput.operator ==(Aw.Sindri.Core.Scheduling.MainMoveInput? left, Aw.Sindri.Core.Scheduling.MainMoveInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MainMoveDecision.Decide(Aw.Sindri.Core.Scheduling.MainMoveInput! input, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MainMoveAction
 Aw.Sindri.Core.Profile.IndexSettings.Ignore.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.IndexSettings.Ignore.init -> void
 Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IReadOnlyList<string!>?
