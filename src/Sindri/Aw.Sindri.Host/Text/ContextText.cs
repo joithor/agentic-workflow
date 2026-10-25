@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 
@@ -44,7 +43,6 @@ internal static class ContextText
             Section(text, section);
         }
 
-        _ = text.AppendLine(Invariant($"budget: {result.Budget.Used} of {result.Budget.Asked} tokens{(result.Budget.Estimate ? " (estimate)" : string.Empty)}{(result.Truncated ? ", truncated" : string.Empty)}"));
         Citations(text, result.Cites);
         return text.ToString();
     }
@@ -57,11 +55,6 @@ internal static class ContextText
         if (diff.Truncated)
         {
             _ = text.AppendLine(Invariant($"  file list truncated to the first {diff.Files.Count}"));
-        }
-
-        if (diff.AnchorsTruncated)
-        {
-            _ = text.AppendLine(Invariant($"  anchors: the first {DiffAnchors.MaxAnchors} of {diff.AnchorsTotal}"));
         }
 
         if (diff.Unmapped.Count > 0)
@@ -97,11 +90,6 @@ internal static class ContextText
         foreach (var item in section.Items)
         {
             Item(text, item);
-        }
-
-        if (section.More.Count > 0)
-        {
-            _ = text.AppendLine(Invariant($"  +{section.More.Count} more (references only): {string.Join(", ", section.More)}"));
         }
 
         _ = text.AppendLine();

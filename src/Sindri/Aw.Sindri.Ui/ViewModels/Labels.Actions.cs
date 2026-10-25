@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Globalization;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -15,26 +14,40 @@ internal static partial class Labels
         ["ApplyCommand:answer-reject"] = "Reject",
         ["ApplyCommand:answer-resume"] = "Resume",
         ["ApplyCommand:answer-text"] = "Answer",
-        ["ApplyCommand:cancel"] = "Cancel instance",
+        ["ApplyCommand:cancel"] = "Cancel run",
         ["ApplyCommand:command"] = "Send workflow command",
         ["ApplyCommand:handback"] = "Hand back",
         ["ApplyCommand:takeover"] = "Take over",
+        ["RerunInstance"] = "Run again",
+        ["AddRepo"] = "Add repo",
+        ["OnboardRepo"] = "Onboard repo",
+        ["InitProfile"] = "Create profile",
         ["ApproveProfile"] = "Approve profile",
+        ["ApproveAllRecipes"] = ApproveAllTitle,
         ["ApproveRecipe"] = "Approve recipe",
+        ["EmbedCodeIndex"] = "Embed code index",
         ["BuildContextMap"] = "Build map",
+        ["RefreshContextMap"] = "Refresh map",
+        ["PublishContextMap"] = "Publish map",
         ["RunContextBacktest"] = "Run map backtest",
         ["CancelJob"] = "Cancel job",
         ["CloseItem:cancelled"] = "Close as cancelled",
         ["CloseItem:done"] = "Close item",
         ["CompleteStep"] = "Complete",
+        ["CompleteStep:report"] = "Report agent run",
+        ["ConnectOnyx"] = "Connect Onyx",
         ["CreateItem"] = "Create item",
+        ["DeferOnyx"] = "Not now",
         ["Decide"] = "Decide",
         ["FileRequest"] = "File a request",
         ["ImportContextMap"] = "Import context map",
+        ["IssueAppChallenge"] = "Ask for a confirmation",
         ["FocusSession"] = "Focus",
         ["IssueChallenge"] = "Get approval challenge",
         ["IssueNonce"] = "Get command nonce",
         ["OpenItem:attach"] = "Attach",
+        ["SetupOnyx"] = "Set up Onyx",
+        ["ShowLineHoldout"] = "Show hidden scenarios",
         ["SessionExit"] = "Report session exit",
         ["SessionHeartbeat"] = "Report session heartbeat",
         ["OpenItem:open"] = "Open",
@@ -45,7 +58,9 @@ internal static partial class Labels
         ["ProbeLaunchTargets"] = "Check launch targets again",
         ["PromoteContextMap"] = "Promote map",
         ["ProposeContextMap"] = "Propose map from scope",
+        ["BuildCodeIndex"] = "Build code index",
         ["RebuildViews"] = "Rebuild views",
+        ["RegisterMcp"] = "Connect agents",
         ["RegisterRecipe"] = "Register recipe",
         ["ResumeService"] = "Resume service",
         ["ReviewContextMap:accept"] = "Accept map suggestion",
@@ -70,7 +85,7 @@ internal static partial class Labels
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>The Health page's catalog section.</summary>
-    internal const string ActionsCard = "ACTIONS";
+    internal const string ActionsCard = "Actions";
 
     /// <summary>The copy button.</summary>
     internal const string Copy = "Copy";
@@ -78,8 +93,8 @@ internal static partial class Labels
     /// <summary>After a copy, for 1.5 s (§4.1, §12.4).</summary>
     internal const string Copied = "Copied";
 
-    /// <summary>The copy block's line (§7, §12.4).</summary>
-    internal const string TypedConfirmation = "Needs a typed confirmation at a terminal.";
+    /// <summary>The button that copies a whole hash where the screen shows its first digits.</summary>
+    internal const string CopyHash = "Copy hash";
 
     /// <summary>An action's label, keyed by its catalog id; an id the app has no label for shows a humanised form of it ("Some new thing"), never the raw "X:y".</summary>
     /// <param name="action">The action id.</param>
@@ -128,8 +143,8 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string DecideLineName(string decisionId, string line) => decisionId + ": " + line;
 
-    /// <summary>A pending control's phase: "arrives in P2".</summary>
-    /// <param name="phase">The phase the catalog names.</param>
+    /// <summary>A spec'd phase that has not shipped: "arrives in U8b".</summary>
+    /// <param name="phase">The phase.</param>
     /// <returns>The words.</returns>
     internal static string Arrives(string phase) => "arrives in " + phase;
 
@@ -142,12 +157,6 @@ internal static partial class Labels
     /// <param name="named">The control's label and subject.</param>
     /// <returns>The question.</returns>
     internal static string ConfirmQuestion(string named) => named + "?";
-
-    /// <summary>Health's line over the pending rows (§4.8): "12 actions arrive in later phases".</summary>
-    /// <param name="count">How many rows are pending.</param>
-    /// <returns>The words.</returns>
-    internal static string PendingSummary(int count) =>
-        string.Create(CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "action arrives" : "actions arrive")} in later phases");
 
     /// <summary>The health pill's word for the status's health.word (E-14); a word this build doesn't know shows as served.</summary>
     /// <param name="word">'healthy', 'degraded', 'stalled' or 'rebuilding'.</param>

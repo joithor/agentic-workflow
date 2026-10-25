@@ -15,9 +15,10 @@ public static class ReviewFileMatcher
         ArgumentNullException.ThrowIfNull(queue);
         var decisions = new List<ReviewDecision>();
         var skipped = new List<string>();
+        var queued = Queued(queue);
         foreach (var entry in file.Entries.Where(e => e.Decision is not null))
         {
-            var decision = Decide(entry, queue);
+            var decision = Decide(entry, queued);
             if (decision.IsSuccess)
             {
                 decisions.Add(decision.Value);
@@ -34,10 +35,10 @@ public static class ReviewFileMatcher
     }
 
     // The error's message is the skipped line; it never leaves this class as an error.
-    private static Result<ReviewDecision> Decide(ReviewFileEntry entry, ReviewQueueView queue)
+    private static Result<ReviewDecision> Decide(ReviewFileEntry entry, HashSet<string> queued)
     {
         var name = NameOf(entry);
-        if (!queue.Entries.Any(q => q.Group != ReviewGroup.Orphaned && Names(entry, q)))
+        if (!queued.Contains(QueuedKey(entry)))
         {
             return ContextErrors.ReviewFileNoMatch.With($"{name}: not in the latest draft's queue");
         }
@@ -52,8 +53,13 @@ public static class ReviewFileMatcher
 
     private static string NameOf(ReviewFileEntry entry) => entry.Link is { } link ? link.Value : entry.Node is { } node ? node.Value : entry.Label;
 
-    private static bool Names(ReviewFileEntry entry, ReviewEntry queued) =>
-        entry.Link is { } link ? queued.Link?.Value == link.Value : queued.Link is null && entry.Node is { } node && queued.Node.Value == node.Value;
+    // What the queue holds, by the key a file entry names it with: a link by its id, a node entry (no link) by its node.
+    private static HashSet<string> Queued(ReviewQueueView queue) =>
+        queue.Entries.Where(q => q.Group != ReviewGroup.Orphaned).Select(q => q.Link is { } link ? "link " + link.Value : "node " + q.Node.Value).ToHashSet(StringComparer.Ordinal);
+
+    // A link entry names the link; otherwise the node (an entry with neither names nothing in the queue).
+    private static string QueuedKey(ReviewFileEntry entry) =>
+        entry.Link is { } link ? "link " + link.Value : entry.Node is { } node ? "node " + node.Value : string.Empty;
 
     // accept and reject for nodes and links; rename, move and merge need a node.
     private static bool Carried(ReviewVerb verb, ReviewFileEntry entry) => verb switch

@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// Doctor's 'context:onyx' check (context spec §8.8): the onyx row of the engine's sources view for the approved profile,
 /// asked as an in-process service, so it shows the source's own probe: the loopback url and pinned version
 /// (SND-CONTEXT-055), whether the key can search (050) and the key's role and account type (053 warns on a person's
-/// admin key). A profile that names no onyx source, or no approved profile, is 'ok: not configured'. Before probing,
+/// admin token: the dedicated user is told by its email, a service account by its type). A profile that names no onyx source, or no approved profile, is 'ok: not configured'. Before probing,
 /// it resolves 'context.sources.onyx.token' through <paramref name="secrets"/>: a pointer that doesn't resolve fails
 /// with its SND-SECRET code, which names the scheme and the target (a variable, a file and its mode), never a value.
 /// The engine sees only "no usable key" (its 002), so this is where the reason is shown.
@@ -85,7 +85,7 @@ internal sealed class OnyxDoctor(IContextEngine engine, ISecretPointers secrets)
     {
         _ when code == ContextErrors.OnyxNotPinnedOrLoopback.Code => $"run the pinned Onyx release on 127.0.0.1, or pin the running one and approve the profile ({Setup})",
         _ when code == ContextErrors.OnyxKeyRefused.Code || code == ContextErrors.OnyxKeyNotServiceAccount.Code
-            => $"create an admin key for a service account Sindri alone uses and store it where context.sources.onyx.token points ({Setup})",
+            => $"use a personal access token of a dedicated admin user (`sindri onyx up` makes sindri@example.com) or a service-account key for Sindri alone, and store it where context.sources.onyx.token points ({Setup})",
         _ when code == ContextErrors.SourceNotConfigured.Code => $"store the Onyx key where context.sources.onyx.token points ({Setup})",
         _ => $"start Onyx and check context.sources.onyx.url ({Setup})",
     };

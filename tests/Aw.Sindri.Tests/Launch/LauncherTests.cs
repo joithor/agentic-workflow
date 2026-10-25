@@ -46,11 +46,74 @@ public sealed class LauncherTests : IDisposable
     {
         var none = new NoSessionHost();
 
-        var result = await Make(attended => attended ? none : _host).Launch(A.LaunchRequest().Unattended(Step()).Build(), CancellationToken.None);
+        var result = await Make(attended => attended ? none : _host).Launch(A.LaunchRequest().InDirectory(_home).Unattended(Step()).Build(), CancellationToken.None);
 
         Expect.True(result is StartedLaunch { Viewer.Kind: ViewerOutcomeKind.Skipped, Host.Kind: HostKind.Tmux });
         Expect.Equal(0, _viewer.Requests.Count);
         Expect.Equal(1, _host.Started.Count);
+    }
+
+    [Fact]
+    public async Task Stop_ends_the_session_through_the_end_seam_after_the_host_stopped_it()
+    {
+        var ended = new List<Core.Workflow.Engine.LaunchId>();
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, _viewer, Options, _clock)
+        {
+            ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null),
+            EndLive = (launch, _) =>
+            {
+                Expect.Equal(0, _host.LiveCount);   // the host stopped it first
+                ended.Add(launch);
+                return ValueTask.CompletedTask;
+            },
+        });
+        var request = A.LaunchRequest().Build();
+        _ = await Drive(launcher.Launch(request, CancellationToken.None));
+
+        _ = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Expect.Equal(request.Launch, Assert.Single(ended));
+    }
+
+    [Fact]
+    public async Task A_failed_host_stop_records_no_end_and_leaves_the_session_to_its_heartbeat()
+    {
+        var ended = 0;
+        var host = new StopFailsHost(_host);
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => host, _viewer, Options, _clock)
+        {
+            ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null),
+            EndLive = (_, _) =>
+            {
+                ended++;
+                return ValueTask.CompletedTask;
+            },
+        });
+        var request = A.LaunchRequest().Build();
+        _ = await Drive(launcher.Launch(request, CancellationToken.None));
+
+        var stopped = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Assert.True(stopped.IsError);   // tmux could not end it: the agent is still running
+        Expect.Equal(0, ended);   // so the row stays live and the files stay
+    }
+
+    private sealed class StopFailsHost(FakeSessionHost inner) : ISessionHost
+    {
+        public HostKind Kind => inner.Kind;
+
+        public ValueTask<Kernel.Result<HostRef>> Start(HostSession session, TimeSpan timeout, CancellationToken cancellationToken) => inner.Start(session, timeout, cancellationToken);
+
+        public ValueTask<Kernel.Result<Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Kernel.Result<Kernel.Unit>>(Kernel.KernelErrors.Unavailable.With("tmux did not answer"));
+
+        public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => inner.Exists(host, cancellationToken);
+
+        public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => inner.AttachedClients(host, cancellationToken);
+
+        public IReadOnlyList<string> AttachArgv(HostRef host) => inner.AttachArgv(host);
+
+        public ValueTask<HostFacts> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
     }
 
     [Fact]
@@ -85,32 +148,64 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
-    public async Task The_secret_hash_is_a_0600_file_deleted_on_stop_and_the_secret_is_only_in_the_env()
+    public async Task The_secret_is_in_a_0600_file_beside_its_hash_and_never_in_what_the_host_is_given()
     {
         var launcher = Make();
         var request = A.LaunchRequest().Build();
 
         var started = (StartedLaunch)await launcher.Launch(request, CancellationToken.None);
 
-        var env = _host.Started.Single().Env;
-        var file = Path.Combine(Options.SecretsDirectory, request.Launch.Value + ".hash");
-        var secret = env["AW_SINDRI_LAUNCH_SECRET"];
-        Expect.Equal("sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret))), (await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).Trim());
-        Expect.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
-        Expect.Equal("1", env["AW_SINDRI_CHILD"]);
-        Expect.Equal(request.Launch.Value, env["AW_SINDRI_LAUNCH"]);
-        Expect.True(!_host.Started.Single().Argv.Any(a => a.Contains(secret, StringComparison.Ordinal)));
+        var session = _host.Started.Single();
+        var hashFile = Path.Combine(Options.SecretsDirectory, request.Launch.Value + ".hash");
+        var secretFile = Path.Combine(Options.SecretsDirectory, request.Launch.Value + ".secret");
+        var secret = (await File.ReadAllTextAsync(secretFile, TestContext.Current.CancellationToken)).Trim();
+        Expect.Equal("sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret))), (await File.ReadAllTextAsync(hashFile, TestContext.Current.CancellationToken)).Trim());
+        Expect.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(secretFile));
+        Expect.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(hashFile));
+        Expect.Equal(secretFile, session.Env["AW_SINDRI_LAUNCH_SECRET_FILE"]);
+        Expect.True(!session.Env.ContainsKey("AW_SINDRI_LAUNCH_SECRET"));
+        Expect.Equal("1", session.Env["AW_SINDRI_CHILD"]);
+        Expect.Equal(request.Launch.Value, session.Env["AW_SINDRI_LAUNCH"]);
+        Expect.True(!session.Argv.Any(a => a.Contains(secret, StringComparison.Ordinal)) && !session.Env.Values.Any(v => v.Contains(secret, StringComparison.Ordinal)));
         Expect.True(!started.ToString().Contains(secret, StringComparison.Ordinal));
 
         _ = await launcher.Stop(request.Launch, CancellationToken.None);
 
-        Expect.True(!File.Exists(file));
+        Expect.True(!File.Exists(hashFile) && !File.Exists(secretFile));
+    }
+
+    [Fact]
+    public async Task A_relaunch_of_a_live_launch_after_a_restart_answers_it_and_leaves_the_session_and_its_hash_alone()
+    {
+        var request = A.LaunchRequest().Build();
+        var first = (StartedLaunch)await Make().Launch(request, CancellationToken.None);
+        var hashFile = LaunchSecrets.PathFor(Options.SecretsDirectory, request.Launch);
+        var hash = await File.ReadAllTextAsync(hashFile, TestContext.Current.CancellationToken);
+
+        var again = await Make().Launch(request, CancellationToken.None);   // a new process: nothing in memory remembers the first
+
+        Expect.True(again is StartedLaunch started && started.Host == first.Host);
+        Expect.Equal(1, _host.LiveCount);   // never stopped
+        Expect.Equal(1, _host.Started.Count);   // never started twice
+        Expect.Equal(hash, await File.ReadAllTextAsync(hashFile, TestContext.Current.CancellationToken));   // the live wrap's secret still proves its heartbeats
+    }
+
+    [Fact]
+    public async Task A_resume_runs_the_resume_template_with_the_session_it_was_given()
+    {
+        var id = Core.Ids.SessionId.From("0b1f6c3e-52d4-4c7a-9a58-3d1e7f9a2b10");
+        var request = A.LaunchRequest().Resuming(id).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        var argv = _host.Started.Single().Argv;
+        Expect.Sequence(["claude", "--resume", id.Value], [.. argv.SkipWhile(a => a != "--").Skip(1).Take(3)]);
     }
 
     [Fact]
     public async Task A_Step_on_an_added_entry_with_no_argvHash_is_Failed_012()
     {
-        var result = await Make(hostFor: null, viewer: null, AgentEntries.Aider).Launch(A.LaunchRequest().WithAgent(AgentId.From("aider")).Unattended(Step()).Build(), CancellationToken.None);
+        var result = await Make(hostFor: null, viewer: null, AgentEntries.Aider).Launch(A.LaunchRequest().InDirectory(_home).WithAgent(AgentId.From("aider")).Unattended(Step()).Build(), CancellationToken.None);
 
         Expect.True(result is FailedLaunch failed && failed.Error.Code == SindriErrors.LaunchNotApproved.Code);
         Expect.Equal(0, _host.LiveCount);
@@ -120,7 +215,7 @@ public sealed class LauncherTests : IDisposable
     public async Task A_Step_policy_file_is_written_0600_passed_as_settings_and_deleted_on_stop()
     {
         var launcher = Make();
-        var request = A.LaunchRequest().Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
 
         _ = await launcher.Launch(request, CancellationToken.None);
 
@@ -135,9 +230,43 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Claude_Step_policy_file_denies_the_holdout_store_under_the_Sindri_home()
+    {
+        var options = new LauncherOptions(_home) { SindriHome = "/sindri/home" };
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, _viewer, options, _clock) { ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null) });
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
+
+        _ = await launcher.Launch(request, CancellationToken.None);
+
+        var argv = _host.Started.Single().Argv;
+        var text = await File.ReadAllTextAsync(argv[argv.ToList().IndexOf("--settings") + 1], TestContext.Current.CancellationToken);
+        Expect.True(text.Contains("Read(//sindri/home/holdout/**)", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Step_brief_is_appended_to_the_seed()
+    {
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent. Report with: sindri workflow complete X.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task A_Step_without_a_brief_keeps_the_plain_seed()
+    {
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step()).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public async Task A_Step_policy_an_entry_cannot_express_is_Failed_013_and_starts_nothing()
     {
-        var request = A.LaunchRequest().WithAgent(AgentId.From("cursor")).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.Plan, WritablePath: null))).Build();
+        var request = A.LaunchRequest().InDirectory(_home).WithAgent(AgentId.From("cursor")).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.Plan, WritablePath: null))).Build();
 
         var result = await Make().Launch(request, CancellationToken.None);
 
@@ -194,7 +323,7 @@ public sealed class LauncherTests : IDisposable
         var rule = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).RootElement;
         Expect.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
         Expect.Equal((codex.SessionIdPattern, codex.ReportedNewestFile, codex.IdCapture), (rule.GetProperty("sessionIdPattern").GetString(), rule.GetProperty("newestFile").GetString(), rule.GetProperty("capture").GetString()));
-        Expect.True(!(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).Contains(_host.Started.Single().Env["AW_SINDRI_LAUNCH_SECRET"], StringComparison.Ordinal));
+        Expect.True(!(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).Contains((await File.ReadAllTextAsync(Options.SecretsDirectory + "/" + request.Launch.Value + ".secret", TestContext.Current.CancellationToken)).Trim(), StringComparison.Ordinal));
 
         _ = await launcher.Stop(request.Launch, CancellationToken.None);
 

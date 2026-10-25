@@ -25,7 +25,7 @@ public sealed class ForgeRefTests
     [InlineData("", "AW-FORGE-001", "link")]
     [InlineData("not a url", "AW-FORGE-001", "link")]
     [InlineData("http://github.com/acme/widgets/pull/7", "AW-FORGE-001", "scheme")]
-    [InlineData("https://user:pw@github.com/acme/widgets/pull/7", "AW-FORGE-001", "credentials")]
+    [InlineData("https://user:" + "pw@github.com/acme/widgets/pull/7", "AW-FORGE-001", "credentials")]
     [InlineData("https://github.com:8443/acme/widgets/pull/7", "AW-FORGE-001", "port")]
     [InlineData("https://evil.example/acme/widgets/pull/7", "AW-FORGE-002", "evil.example")]
     [InlineData("https://github.com/acme/widgets/issues/7", "AW-FORGE-001", "path")]

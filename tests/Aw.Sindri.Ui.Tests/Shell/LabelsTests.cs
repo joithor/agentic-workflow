@@ -20,6 +20,16 @@ public sealed class LabelsTests
     public void Updated_ago_counts_seconds_then_minutes_then_hours(double seconds, string words) =>
         Assert.Equal(words, Labels.UpdatedAgo(TimeSpan.FromSeconds(seconds)));
 
+    // F3/F4: the queue's words are the guide's, never the spec's: stage for step, paused for parked, run for instance.
+    [Fact]
+    public void The_queue_and_item_words_are_plain()
+    {
+        Assert.Equal(["Title", "Repo", "Status", "Stage", "Age"], [Labels.ColumnTitle, Labels.ColumnRepo, Labels.ColumnState, Labels.ColumnStep, Labels.ColumnSince], StringComparer.Ordinal);
+        Assert.Equal(("Paused: needs a decision", "Paused", "paused"), (Labels.ItemState("parked"), Labels.Group("parked"), Labels.ParkedBadge));
+        Assert.Equal(("History", "Run", "Waiting for"), (Labels.Timeline, Labels.Instance, Labels.WaitingOn));
+        Assert.Equal("Cancel run", Labels.Action("ApplyCommand:cancel"));
+    }
+
     [Fact]
     public void The_versions_line_names_both() => Assert.Equal("Sindri speaks API v2; this app speaks v1", Labels.Versions(2, 1));
 

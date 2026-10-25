@@ -282,6 +282,25 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
         Assert.True(File.Exists(inside));
     }
 
+    // A link's target is a path like any other: a directory link inside it (macOS's /var → /private/var is one) is followed too.
+    [Fact]
+    public async Task A_source_linked_through_a_path_that_itself_holds_a_link_is_refused()
+    {
+        var work = _root.Combine("run/db");
+        _ = Directory.CreateDirectory(work);
+        var inside = Path.Combine(work, SqliteDatabaseReader.CopyName);
+        await MakeNotesAsync(inside);
+        _ = Directory.CreateSymbolicLink(_root.Combine("alias"), _root.Combine("run"));
+        _ = Directory.CreateDirectory(_root.Combine("repo"));
+        var source = _root.Combine("repo/linked.db");
+        _ = File.CreateSymbolicLink(source, _root.Combine("alias/db/" + SqliteDatabaseReader.CopyName));
+
+        var opened = await new SqliteDatabaseReader().OpenAsync(new SqliteTarget(source, work), TestContext.Current.CancellationToken);
+
+        Assert.Equal(Core.EvidenceErrors.DatabaseRefused.Code, opened.Error.Code);
+        Assert.True(File.Exists(inside));
+    }
+
     [Fact]
     public async Task A_source_inside_the_work_directory_is_refused_and_not_deleted()
     {

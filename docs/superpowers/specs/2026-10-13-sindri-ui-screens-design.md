@@ -71,7 +71,7 @@ before:
 
 | # | Page | Key | Count in the tab | Detail sheet opens |
 |---|---|---|---|---|
-| 1 | Home (default) | `G H` | — | any row |
+| 1 | Home (default) **(SO-19)**: a Setup card above Needs you until every setup step is done or skipped (three rows and "and N more", so Needs you stays above the fold); chord `G U` and the in-app route `setup` open it (no OS scheme) | `G H` | — | any row |
 | 2 | Workflows | `G W` | open root instances | an instance (§4.2) |
 | 3 | Work | `G Q` | items | an item, in the Workflows frame (§4.7) |
 | 4 | Recipes | `G R` | recipes | a recipe (§4.3) |
@@ -255,7 +255,7 @@ intake.linear        ○ draft      —    —     —     —       —       �
 - Child-only recipes (never a root) show `—` for run stats and say so; their numbers appear under their parents'
   per-state rows.
 - STATUS is the registry's word (WF P2): approved, changed since approval (a pinned block or the file changed,
-  `SND-RECIPE-006`), draft. Re-approval is `protected`: the CLI to copy.
+  `SND-RECIPE-006`), draft. Re-approval is `protected`; **(SO-21)** it is typed in the app (`ApproveRecipe`), and the CLI stays the fallback.
 - **Validate file…** runs the validator on a chosen file in-process (`recipe validate`); **Import** registers a
   file as a draft (an `issue` kind command, X26).
 
@@ -631,7 +631,7 @@ Numbered on from rev 7's E-1…E-19.
 | E-29 | doctor, deps | Each doctor check declares `consumers` (the checks and surfaces that depend on it); `GET /status` returns the dependency graph with health and the impact closure | U12 |
 | E-30 | API, WF | `GET /engine`, `GET /engine/instances`, `GET /engine/instances/{address}/history?page=` served from the Temporal SDK; the ledger mirror records the Temporal event id on each row so history lines link to ledger sequences | U12 |
 | E-31 | CTX, WF | A scoping run's new surfaces are written as draft proposals to the next map version with the run as evidence (R8-11); the scope-map fact carries each surface's graph status | U8, U9 |
-| E-32 | CTX | **New (owner, 2026-10-16; #258 C15):** `GET /sindri/context/subgraph?nodes=&mapVersion=&depth=` (at most 20 keys) and `POST /sindri/context/subgraph` `{ nodes[], mapVersion?, depth? }` (at most 1000 keys): `SubgraphView`, exactly the given node keys (`code:<path>` keys included) and the edges among them, placed in the three bands (each capped at 100, `truncated`) with E-26's parts, at a given map version or the current one, plus `missing[]` (keys the version doesn't hold, or outside a session's scope: one answer); `depth` (0–4, default 0) widens around the set | U9 |
+| E-32 | CTX | **New (owner, 2026-10-16; #258 C15):** `GET /sindri/context/subgraph?nodes=&mapVersion=&depth=` (at most 20 keys) and `QUERY /sindri/context/subgraph` `{ nodes[], mapVersion?, depth? }` (the HTTP QUERY method; `new HttpMethod("QUERY")`) (at most 1000 keys): `SubgraphView`, exactly the given node keys (`code:<path>` keys included) and the edges among them, placed in the three bands (each capped at 100, `truncated`) with E-26's parts, at a given map version or the current one, plus `missing[]` (keys the version doesn't hold, or outside a session's scope: one answer); `depth` (0–4, default 0) widens around the set | U9 |
 
 ## 7. Reference patterns borrowed (ideas only)
 
@@ -656,10 +656,10 @@ running app) and §18.2's proof methods.
 |---|---|---|---|---|---|
 | **U3'** | Needs you, Home with the **Workflows strip**, the pulse, badges, tray (rev 7 U3 plus §4.1) | `Views/Home*`, `Views/NeedsYou*` | M | U2 + API P4 + E-20 (root list) | The strip shows a running incident first; five-second test passes with the strip on the `--large` fixture |
 | **U8** | **Workflows** list and the instance frame (§4.2, §5), the item sheet re-based on it (§4.7), fact viewers for text, file, item, link, payload | `Views/Workflows*`, `Views/Instance*`, `ViewModels/Facts/*` | L | U2 + WF P4 + API P11 + E-20, E-22, E-23 | Two dev recipes (a three-state triage and a desk round trip) render in the same frame; a desk complete with a file output resumes the instance; the item sheet's frames match U2's golden rows |
-| **U5'** | Engine surfaces inside the frame (rev 7 U5: answers, mirrored parks, Start, Complete, Take over, Hand back) | `Views/Park*`, `Views/Answer*` | M | U8 + WF P5, E-9, E-12, E-13 | rev 7 U5's signals, in the band |
+| **U5'** | Engine surfaces inside the frame (rev 7 U5: answers, mirrored parks, Start, Complete, Take over, Hand back). **Start form landed first** (`Views/Start*`, `N`; `docs/csharp/sindri-ui.md` "U5': the Start form"); the rest follows | `Views/Park*`, `Views/Answer*`, `Views/Start*` | M | U8 + WF P5, E-9, E-12, E-13 | rev 7 U5's signals, in the band |
 | **U9** | **Context lens stack** and the file map (§4.4), replacing rev 7 U7. **Amended (owner, 2026-10-16; R8-14, #258 U7):** the page opens on an **anchor set** (one or more node keys) plus an optional **pinned map version** and an optional found-id filter, not only on one anchor; the header names the set and the version ("as of the stop · map v13 · 3 anchors" or "live · map v15 · 3 anchors"); a pinned page draws the packet's frozen lens graph (`lenses.json`, read through #258 API9) with no map call, is read-only (Build draft, Promote, the draft band, Edit and map review read "live only") and carries "◂ Back to the stop"; the live toggle redraws the same ids through E-32's POST at the current map and marks `missing[]` ids "gone since the stop" in words; a scope lens switch sits beside the band toggles; with no set it is today's single-anchor stack | `Views/Context*`, `Views/FileMap*` | L | U8 + CTX phases 3, 4 + E-26, E-27; E-32 for the pinned set | On the fixture map, the stack shows a decision conflict, a model-suggested file link accepted from the tree appears in the next review, and coverage counts match `context map status`; opened on a fixture scope packet, the header reads "as of the stop · map vN · 2 anchors", each scope lens draws its found ids from the packet, and the live toggle redraws at the current map and marks a removed node |
 | **U10** | **Recipes** list with stats and the inspector (§4.3) | `Views/Recipes*` | M | U8 + WF P2, P3 + E-24, E-25 | The inspector places the fixture's open instances on the band; stats equal a SQL count over the fixture ledger; Run evals streams as a job |
-| **U11** | **Agents** (§4.5) with budgets | `Views/Agents*`, `Platform/IDockBadge.cs` | M | U8 + API §11 collector + P10a + E-28 | A session started by the prover appears under its recipe state within 2 s; Attach on it brings Warp forward; a target at its hard limit is refused with `SND-LAUNCH-010` and the bar reads it |
+| **U11** | **Agents** (§4.5) with budgets | `Views/Agents*`, `Platform/IDockBadge.cs` | M | U8 + API §11 collector + P10a + E-28 | A session started by the prover appears under its recipe state within 2 s; Attach on it brings Warp forward; a target at its hard limit is refused with `SND-LAUNCH-010` and the bar reads it. U11a shipped the sessions slice: the page, the session sheet, the tab and tray counts; Focus send is U11a-f (after CO-4a) and the preview is CO-7c |
 | **U12** | **System**: the dependency graph, impact, engine in depth (§4.6) | `Views/System*` | M | U4 + E-29, E-30 | Killing the code index's nightly job turns its node ✕ and lists three consumers; the engine table shows the prover's stalled instance as stuck within 5 min; a history line opens its ledger sequence |
 | **U13** | Fact viewers for `scope-map`, `packet`, `evidence`, `decision`; the scoping round trip end to end | `ViewModels/Facts/*` | M | U8 + the scoping recipe spec + E-31 + `aw-packets` as a block | On the fixture project: scope map with ▣/◇/░ columns, export, import of a packet with one failing `PKT-SCOPE-002`, fix, freeze, builder handoff creates the items under CHILDREN |
 

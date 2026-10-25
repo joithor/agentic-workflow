@@ -14,3 +14,4 @@ states:
 transitions:
   - { from: produce, to: done, on: step.completed, when: { outcome: done }, produces: [{ fact: fact:exported, from: fact:output }] }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

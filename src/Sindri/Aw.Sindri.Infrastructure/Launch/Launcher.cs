@@ -3,10 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Launch.Argv;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
-
 using HostKind = Aw.Sindri.Core.Launch.HostKind;
 
 namespace Aw.Sindri.Infrastructure.Launch;
@@ -16,48 +13,76 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// 4 s, then the viewer window), refuses what SL8 and the config gate refuse, and is idempotent per launch id: a second Launch
 /// returns the first one's <see cref="StartedLaunch"/>.
 /// </summary>
-internal sealed class Launcher(LauncherParts parts) : ILauncher
+internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunchShutdown
 {
     private static readonly TimeSpan _viewerGrace = TimeSpan.FromSeconds(1);
     private static readonly System.Text.Json.JsonSerializerOptions _captureJson = AwJson.CreateOptions(LauncherJsonContext.Default);
     private readonly ConcurrentDictionary<LaunchId, StartedLaunch> _started = new();
-    private readonly ConcurrentDictionary<LaunchId, SemaphoreSlim> _gates = new();
+    private readonly LaunchGates _gates = new();
 
     /// <inheritdoc/>
     public async ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var gate = _gates.GetOrAdd(request.Launch, static _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        using var turn = await _gates.Turn(request.Launch, cancellationToken).ConfigureAwait(false);
+        if (_started.TryGetValue(request.Launch, out var existing))
         {
-            if (_started.TryGetValue(request.Launch, out var existing))
-            {
-                return existing;
-            }
-
-            var result = await Start(request, cancellationToken).ConfigureAwait(false);
-            if (result is StartedLaunch started)
-            {
-                _started[request.Launch] = started;
-            }
-
-            return result;
+            return existing;
         }
-        finally
+
+        var result = await Start(request, cancellationToken).ConfigureAwait(false);
+        if (result is StartedLaunch started)
         {
-            _ = gate.Release();
+            _started[request.Launch] = started;
         }
+
+        return result;
     }
 
     /// <inheritdoc/>
     public async ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken)
     {
+        using var turn = await _gates.Turn(launch, cancellationToken).ConfigureAwait(false);   // a Launch the caller cancelled finishes unwinding first, so it can't re-create the memory this removes
         _ = _started.TryRemove(launch, out _);
-        var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);
-        Cleanup(launch);
-        _ = _gates.TryRemove(launch, out _);
+        var stopped = await StopOnEveryHost(launch, cancellationToken).ConfigureAwait(false);
+        if (stopped.IsSuccess)
+        {
+            await parts.EndLive(launch, cancellationToken).ConfigureAwait(false);   // the session is over (a session tmux no longer has counts as stopped): the row stops being live now, and the lost sweep never marks it
+        }
+
+        await Cleanup(launch).ConfigureAwait(false);
         return stopped;
+    }
+
+    /// <summary>
+    /// Stops the launch's session on the tmux host and on every other host (T3): a launch's row doesn't say which host it used, and a stop of a session a host
+    /// doesn't have is a success. The stop succeeds only when every host could be asked.
+    /// </summary>
+    private async ValueTask<Result<Unit>> StopOnEveryHost(LaunchId launch, CancellationToken cancellationToken)
+    {
+        var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+        foreach (var other in parts.OtherHosts)
+        {
+            var also = await other.Stop(new HostRef(other.Kind, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+            stopped = stopped.IsError ? stopped : also;
+        }
+
+        return stopped;
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask<int> StopAll(CancellationToken cancellationToken)
+    {
+        var ended = 0;
+        foreach (var (launch, started) in _started.ToArray())
+        {
+            if (started.Host.Kind == HostKind.Tmux && (await Stop(launch, cancellationToken).ConfigureAwait(false)).IsSuccess)   // only sessions on Sindri's own tmux socket; a host that can't be asked leaves its row to the sweep
+            {
+                ended++;
+            }
+        }
+
+        return ended;
     }
 
     /// <inheritdoc/>
@@ -103,20 +128,54 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
 
         var entry = resolved.Value;
         var host = parts.HostFor(request.Attended);
-        if (File.Exists(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)))
+        if (await Running(request, entry, host, cancellationToken).ConfigureAwait(false) is { } running)
         {
-            var live = new HostRef(host.Kind, SessionName(request.Launch));   // a launch that was started and not stopped: the same session, never a second
-            return new StartedLaunch(live, ViewerOutcome.Skipped, host.AttachArgv(live), entry.Source, entry.ArgvHash ?? string.Empty);
+            return running;   // before Prepare can rewrite the hash the live wrap's heartbeats are checked against
         }
 
-        var prepared = await Prepare(request, entry, cancellationToken).ConfigureAwait(false);
-        if (prepared.IsError)
+        try
         {
-            Cleanup(request.Launch);
-            return Fail(prepared.Error);
+            var prepared = await Prepare(request, entry, cancellationToken).ConfigureAwait(false);
+            if (prepared.IsError)
+            {
+                await Cleanup(request.Launch).ConfigureAwait(false);
+                return Fail(prepared.Error);
+            }
+
+            return await Run(request, entry, host, prepared.Value, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            _ = await host.Stop(new HostRef(host.Kind, SessionName(request.Launch)), CancellationToken.None).ConfigureAwait(false);   // the caller gave up: nobody will be told a session or its files exist
+            await Cleanup(request.Launch).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>The launch's session when it is already running and this launch's files exist (a relaunch after a restart): answered as started, with nothing rewritten and nothing stopped.</summary>
+    private async ValueTask<StartedLaunch?> Running(LaunchRequest request, AgentEntry entry, ISessionHost host, CancellationToken cancellationToken)
+    {
+        if (host.Kind == HostKind.None)
+        {
+            return null;
         }
 
-        return await Run(request, entry, host, prepared.Value, cancellationToken).ConfigureAwait(false);
+        var session = new HostRef(host.Kind, SessionName(request.Launch));
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(parts.Options.HostDeadline);
+        try
+        {
+            if (!await host.Exists(session, deadline.Token).ConfigureAwait(false) || !File.Exists(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)))
+            {
+                return null;
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;   // the host didn't answer in time: the start that follows has its own bound
+        }
+
+        return new StartedLaunch(session, ViewerOutcome.Skipped, host.AttachArgv(session), entry.Source, entry.ArgvHash ?? string.Empty);
     }
 
     private Error? Refusal(LaunchRequest request)
@@ -154,85 +213,6 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         return StepApproval.Resolve(parts.Catalog, request.Agent, parts.BuiltinHash(request.Agent), approved?.StepArgvHashes(request.Agent) ?? []);   // one entry: the check and the argv use the same one (SL8)
     }
 
-    private async ValueTask<Result<Prepared>> Prepare(LaunchRequest request, AgentEntry entry, CancellationToken cancellationToken)
-    {
-        if (await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing)
-        {
-            return missing;
-        }
-
-        var workDir = request.Worktree ?? request.RepoPath;
-        try
-        {
-            var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
-            if (composed.IsError)
-            {
-                return composed.Error;
-            }
-
-            WriteCaptureRule(request.Launch, entry);
-            var secret = LaunchSecrets.Mint();
-            LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, composed.Value.Argv, Environment(request, secret), composed.Value.Session?.Value);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
-        }
-    }
-
-    private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
-    {
-        var step = request.Attended ? null : request.Step;
-        var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
-            ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
-            : null;
-        var session = PreChosen(entry);
-        var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
-        var (mcpPath, mcpArguments) = McpLaunchConfig.Prepare(entry.McpForm, entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false), parts.Options.LaunchDirectory, request.Launch);
-        var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));
-        if (built.IsError)
-        {
-            return built.Error;
-        }
-
-        IReadOnlyList<string> argv = [.. built.Value, .. mcpArguments];
-        return (argv, session);
-    }
-
-    /// <summary>The session id an entry in 'pre-chosen-uuid' mode is told to use, else none (an id reported later is recorded then, launcher L-9).</summary>
-    private static SessionId? PreChosen(AgentEntry entry) => entry.SessionIdMode == SessionIdMode.PreChosenUuid ? SessionId.From(Guid.NewGuid().ToString("D")) : null;
-
-    /// <summary>The capture rule 'session wrap' reads for an entry whose CLI reports its own id (launcher L-9): 0600, no secret in it.</summary>
-    private void WriteCaptureRule(LaunchId launch, AgentEntry entry)
-    {
-        if (entry.SessionIdMode != SessionIdMode.Reported)
-        {
-            return;
-        }
-
-        OwnerOnly.EnsureDirectory(parts.Options.LaunchesDirectory);
-        var rule = new CaptureRule(entry.SessionIdPattern, entry.ReportedNewestFile, entry.IdCapture);
-        OwnerOnly.WriteAtomically(Path.Combine(parts.Options.LaunchesDirectory, LaunchFiles.CaptureName(launch)), AwJson.Serialize(rule, _captureJson));
-    }
-
-    private Dictionary<string, string> Environment(LaunchRequest request, string secret)
-    {
-        var env = new Dictionary<string, string>(StepEnvironment.For(request), StringComparer.Ordinal)
-        {
-            ["AW_SINDRI_CHILD"] = "1",
-            ["AW_SINDRI_ITEM"] = request.Item.Value,
-            ["AW_SINDRI_LAUNCH"] = request.Launch.Value,
-            ["AW_SINDRI_LAUNCH_SECRET"] = secret,
-        };
-        if (parts.Options.SindriHome is { } home)
-        {
-            env["AW_SINDRI_HOME"] = home;
-        }
-
-        return env;
-    }
-
     private async ValueTask<LaunchResult> Run(LaunchRequest request, AgentEntry entry, ISessionHost host, Prepared prepared, CancellationToken cancellationToken)
     {
         var name = SessionName(request.Launch);
@@ -244,17 +224,35 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             return await RunOnViewer(request, host, (name, prepared.WorkDir, wrapped), (source, prepared.Session), cancellationToken).ConfigureAwait(false);
         }
 
-        var started = await host.Start(new HostSession(name, prepared.WorkDir, wrapped, prepared.Env), parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
+        var session = new HostSession(name, prepared.WorkDir, wrapped, prepared.Env) { RepoPath = request.RepoPath, Seed = prepared.Seed, Title = $"sindri {request.Item.Value}", Agent = request.Agent };
+        var started = await host.Start(session, parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
         if (started.IsError)
         {
+            if (started.Error.Kind == ErrorKind.Conflict)
+            {
+                return Clash(request, entry, host, prepared, started.Error);   // the session is this launch's own, alive: never stopped, its files never deleted
+            }
+
             _ = await host.Stop(new HostRef(host.Kind, name), CancellationToken.None).ConfigureAwait(false);   // a start that completes late must leave no orphan
-            Cleanup(request.Launch);
+            await Cleanup(request.Launch).ConfigureAwait(false);
             return Fail(started.Error);
         }
 
-        var viewer = request.Attended
-            ? await OpenViewer(new ViewerRequest(started.Value, host.AttachArgv(started.Value), $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = prepared.WorkDir }, cancellationToken).ConfigureAwait(false)
-            : ViewerOutcome.Skipped;
+        cancellationToken.ThrowIfCancellationRequested();   // the host's start finished after the caller gave up
+        ViewerOutcome viewer;
+        try
+        {
+            viewer = request.Attended
+                ? await OpenViewer(new ViewerRequest(started.Value, host.AttachArgv(started.Value), $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = prepared.WorkDir }, cancellationToken).ConfigureAwait(false)
+                : await Background(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            _ = await host.Stop(started.Value, CancellationToken.None).ConfigureAwait(false);   // the caller gave up after the session started: nobody will be told it exists
+            await Cleanup(request.Launch).ConfigureAwait(false);
+            throw;
+        }
+
         return new StartedLaunch(started.Value, viewer, host.AttachArgv(started.Value), source.Source, source.Item2) { ChosenSession = prepared.Session };
     }
 
@@ -263,14 +261,14 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         var none = new HostRef(host.Kind, session.Name);
         var outcome = request.Attended
             ? await OpenViewer(new ViewerRequest(none, session.Argv, $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = session.WorkDir }, cancellationToken).ConfigureAwait(false)
-            : ViewerOutcome.Skipped;
+            : await Background(cancellationToken).ConfigureAwait(false);
         if (outcome.Kind != ViewerOutcomeKind.Failed)
         {
             return new StartedLaunch(none, outcome, session.Argv, started.Entry.Source, started.Entry.Hash) { ChosenSession = started.Chosen };
         }
 
         _ = await host.Stop(none, CancellationToken.None).ConfigureAwait(false);   // a viewer that started a thread before failing
-        Cleanup(request.Launch);
+        await Cleanup(request.Launch).ConfigureAwait(false);
         return Fail(ViewerError(outcome));
     }
 
@@ -287,14 +285,4 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             return ViewerOutcome.Failed(SindriErrors.LaunchTimedOut.Code, "the viewer did not return within its window");
         }
     }
-
-    private void Cleanup(LaunchId launch)
-    {
-        LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
-        LaunchFileStore.DeleteFlat(parts.Options, launch);
-        LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));
-        LaunchFileStore.DeleteIn(parts.Options.LaunchDirectory, McpLaunchConfig.PathFor(parts.Options.LaunchDirectory, launch));
-    }
-
-    private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session);
 }

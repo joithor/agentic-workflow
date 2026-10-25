@@ -184,17 +184,15 @@ claude_install_hooks() {
 
   # judge's SessionStart health hook lands after settings.json is seeded.
   if aw_dry; then
-    echo "  [dry-run] would run scripts/install-judge.sh --hook-only"
+    echo "  [dry-run] would run scripts/install-judge-hooks.sh"
   else
-    bash "$TOOLKIT_DIR/scripts/install-judge.sh" --hook-only
+    bash "$TOOLKIT_DIR/scripts/install-judge-hooks.sh"
   fi
-  # sindri's SessionStart nudge (setup.sh --with-sindri).
-  if [ "${WITH_SINDRI:-0}" = "1" ]; then
-    if aw_dry; then
-      echo "  [dry-run] would run scripts/install-sindri.sh --hook-only (sindri-nudge)"
-    else
-      bash "$TOOLKIT_DIR/scripts/install-sindri.sh" --hook-only
-    fi
+  # sindri's SessionStart nudge.
+  if aw_dry; then
+    echo "  [dry-run] would run scripts/install-sindri-hooks.sh (sindri-nudge)"
+  else
+    bash "$TOOLKIT_DIR/scripts/install-sindri-hooks.sh"
   fi
   aw_install_levers claude
 }
@@ -307,7 +305,9 @@ claude_install_agents() {
   echo "  claude: lean agent types → $(claude_agents_dir) (manifest: $manifest)"
 }
 
-# Full Claude install (skills, config, hooks, MCP, plugins). Agents are opt-in
+claude_install_voice() { aw_install_voice "$CLAUDE_DIR/CLAUDE.md"; }
+
+# Full Claude install (skills, config, hooks, voice, MCP, plugins). Agents are opt-in
 # via `setup.sh --install-agents`.
 claude_install() {
   echo ""
@@ -316,6 +316,7 @@ claude_install() {
   claude_install_settings
   claude_install_hooks
   claude_install_shell_integration
+  claude_install_voice
   claude_install_legacy_mcp_json
   claude_register_mcp
   echo "=== Security check ==="

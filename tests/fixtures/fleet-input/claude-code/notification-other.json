@@ -1,0 +1,10 @@
+{
+  "session_id": "3970893f-1c2d-4e5f-8a9b-0c1d2e3f4a5b",
+  "transcript_path": "/home/dev/.claude/projects/-home-dev-repo/3970893f-1c2d-4e5f-8a9b-0c1d2e3f4a5b.jsonl",
+  "cwd": "/home/dev/repo",
+  "scratchpad_dir": "/tmp/claude-1000/-home-dev-repo/3970893f-1c2d-4e5f-8a9b-0c1d2e3f4a5b/scratchpad",
+  "prompt_id": "c542ce4c-1a32-4503-99a1-6501f37c096b",
+  "hook_event_name": "Notification",
+  "message": "Authentication successful",
+  "notification_type": "auth_success"
+}

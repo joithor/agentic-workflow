@@ -31,9 +31,22 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
             var stored = Encoding.UTF8.GetBytes(File.ReadAllText(path).Trim());
             return CryptographicOperations.FixedTimeEquals(stored, Encoding.UTF8.GetBytes(LaunchSecrets.Hash(secret.Value))) ? Unit.Value : refused;
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return refused;
+        }
+    }
+
+    public DateTimeOffset? TurnEndedAt(LaunchId launch)
+    {
+        var path = Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.TurnEndedName(launch));
+        try
+        {
+            return File.Exists(path) ? new DateTimeOffset(File.GetLastWriteTimeUtc(path)) : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return null;   // a file that can't be read says nothing about the turn
         }
     }
 
@@ -49,28 +62,46 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
 
     public IReadOnlyList<LaunchId> Launches()
     {
-        if (!Directory.Exists(options.LaunchesDirectory))
+        var found = new HashSet<LaunchId>();
+        if (Directory.Exists(options.LaunchesDirectory))
         {
-            return [];
+            foreach (var file in Directory.EnumerateFiles(options.LaunchesDirectory))
+            {
+                var match = PerLaunch.Match(Path.GetFileName(file));
+                if (match.Success && LaunchId.TryParse(match.Groups["launch"].Value, provider: null, out var launch))
+                {
+                    _ = found.Add(launch);
+                }
+            }
         }
 
-        var found = new HashSet<LaunchId>();
-        foreach (var file in Directory.EnumerateFiles(options.LaunchesDirectory))
+        AddNamed(found, options.SecretsDirectory, "*.hash");
+        AddNamed(found, options.SecretsDirectory, "*.secret");
+        AddNamed(found, options.PolicyDirectory, "LCH-*.settings.json");
+        return [.. found];
+    }
+
+    private static void AddNamed(HashSet<LaunchId> found, string directory, string pattern)
+    {
+        if (!Directory.Exists(directory))
         {
-            var match = PerLaunch.Match(Path.GetFileName(file));
-            if (match.Success && LaunchId.TryParse(match.Groups["launch"].Value, provider: null, out var launch))
+            return;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(directory, pattern))
+        {
+            var name = Path.GetFileName(file);
+            if (LaunchId.TryParse(name[..name.IndexOf('.', StringComparison.Ordinal)], provider: null, out var launch))
             {
                 _ = found.Add(launch);
             }
         }
-
-        return [.. found];
     }
 
     public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
     {
         ArgumentNullException.ThrowIfNull(live);
-        var removed = McpLaunchConfig.Sweep(options.LaunchDirectory, now, olderThan, live);
+        var removed = McpLaunchConfig.Sweep(options.LaunchDirectory, now, olderThan, live) + SweepSecrets(now, olderThan, live);
         if (!Directory.Exists(options.LaunchesDirectory))
         {
             return removed;
@@ -80,7 +111,7 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         {
             var match = PerLaunch.Match(Path.GetFileName(file));
             if (match.Success && LaunchId.TryParse(match.Groups["launch"].Value, provider: null, out var launch)
-                && now - new DateTimeOffset(File.GetLastWriteTimeUtc(file)) > olderThan && !live(launch) && TryDelete(file))
+                && now - new DateTimeOffset(File.GetLastWriteTimeUtc(file)) > olderThan && !live(launch) && OwnerOnly.TryDelete(file))
             {
                 removed++;
             }
@@ -89,13 +120,38 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         return removed;
     }
 
-    /// <summary>Deletes the launch's capture rule and reported-id file; whatever is gone is fine.</summary>
-    /// <param name="options">Where the files live.</param>
-    /// <param name="launch">The launch.</param>
+    /// <summary>Deletes secret files that no wrap read (it never ran): older than the limit and not of a live launch.</summary>
+    private int SweepSecrets(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live) =>
+        SweepOwned(options.SecretsDirectory, "*.secret", now, olderThan, live)
+        + SweepOwned(options.SecretsDirectory, "*.hash", now, olderThan, live)
+        + SweepOwned(options.PolicyDirectory, "LCH-*.settings.json", now, olderThan, live);
+
+    private static int SweepOwned(string directory, string pattern, DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return 0;
+        }
+
+        var removed = 0;
+        foreach (var file in Directory.EnumerateFiles(directory, pattern))
+        {
+            var name = Path.GetFileName(file);
+            if (LaunchId.TryParse(name[..name.IndexOf('.', StringComparison.Ordinal)], provider: null, out var launch)
+                && now - new DateTimeOffset(File.GetLastWriteTimeUtc(file)) > olderThan && !live(launch) && OwnerOnly.TryDelete(file))
+            {
+                removed++;
+            }
+        }
+
+        return removed;
+    }
+
     internal static void DeleteFlat(LauncherOptions options, LaunchId launch)
     {
-        _ = TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.CaptureName(launch)));
-        _ = TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.SessionIdName(launch)));
+        _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.CaptureName(launch)));
+        _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.SessionIdName(launch)));
+        _ = OwnerOnly.TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.TurnEndedName(launch)));
     }
 
     /// <summary>Deletes <paramref name="file"/> when its <paramref name="directory"/> exists; whatever is gone is fine.</summary>
@@ -105,23 +161,10 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     {
         if (Directory.Exists(directory))
         {
-            File.Delete(file);
+            _ = OwnerOnly.TryDelete(file);
         }
     }
 
-    private static bool TryDelete(string path)
-    {
-        try
-        {
-            File.Delete(path);
-            return true;
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-    }
-
-    [GeneratedRegex("^(?<launch>LCH-[0-9a-f]{32})\\.(?:capture\\.json|session-id)\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^(?<launch>LCH-[0-9a-f]{32})\\.(?:capture\\.json|session-id|turn-ended)\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex PerLaunch { get; }
 }

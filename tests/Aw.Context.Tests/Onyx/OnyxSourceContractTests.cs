@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
+using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
@@ -21,7 +22,7 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
     [Fact]
     public void Describe_says_a_live_local_intent_source_that_cannot_cut_to_a_past_time_and_declares_no_limits()
     {
-        using var harness = new OnyxSourceHarness(new Uri("http://127.0.0.1:3000"), "on_x");
+        using var harness = new OnyxSourceHarness(new Uri("http://127.0.0.1:3189"), "on_x");
 
         var descriptor = harness.Source.Describe();
 
@@ -66,6 +67,8 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
         Assert.True(all.Count > 1);
         Assert.Equal(all[0].Ref, Assert.Single(one).Ref);
         Assert.Equal(2, onyx.Requests.Count);
+        var note = Assert.Single(((ISourceNotes)harness.Source).TakeNotes());   // the first search dropped nothing; the second names the cut
+        Assert.Contains("past the limit of 1", note, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -80,6 +83,9 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
         Assert.NotEmpty(hits);
         Assert.DoesNotContain(hits, h => h.Ref.Id.Value == Spl105);
         Assert.Equal(Enumerable.Range(1, hits.Count), hits.Select(h => h.Rank));
+        var note = Assert.Single(((ISourceNotes)harness.Source).TakeNotes());
+        Assert.Contains("1 hidden by an Onyx admin", note, StringComparison.Ordinal);
+        Assert.Empty(((ISourceNotes)harness.Source).TakeNotes());   // read once
     }
 
     [Fact]
@@ -177,9 +183,24 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
     }
 
     [Fact]
-    public async Task Probe_warns_when_the_admin_key_is_not_a_service_accounts()
+    public async Task Probe_is_ok_for_the_dedicated_sindri_users_admin_token_and_says_so()
     {
-        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD" });
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAccountEmail = OnyxSettings.DedicatedAccountEmail });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+
+        var health = await harness.Source.Probe(TestContext.Current.CancellationToken);
+
+        Assert.Equal(SourceState.Ok, health.State);
+        Assert.Null(health.Code);
+        Assert.Contains("admin, Sindri's dedicated user", health.Detail, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("someone@example.com")]
+    [InlineData(null)]
+    public async Task Probe_warns_when_the_admin_token_is_another_persons_standard_account(string? email)
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAccountEmail = email });
         using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
 
         var health = await harness.Source.Probe(TestContext.Current.CancellationToken);
@@ -187,7 +208,19 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
         Assert.Equal(SourceState.Degraded, health.State);
         Assert.Equal(ContextErrors.OnyxKeyNotServiceAccount.Code, health.Code);
         Assert.Contains("STANDARD", health.Detail, StringComparison.Ordinal);
-        Assert.Contains("service account", health.Detail, StringComparison.Ordinal);
+        Assert.Contains(OnyxSettings.DedicatedAccountEmail, health.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("someone@example.com", health.Detail, StringComparison.Ordinal);   // a person's address is not echoed
+    }
+
+    [Fact]
+    public async Task Probe_matches_the_dedicated_email_without_regard_to_case()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAccountEmail = "Sindri@Example.COM" });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+
+        var health = await harness.Source.Probe(TestContext.Current.CancellationToken);
+
+        Assert.Equal(SourceState.Ok, health.State);
     }
 
     [Fact]

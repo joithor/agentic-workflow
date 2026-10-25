@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -11,4 +12,10 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="Base">The base of a generated recipe, or null.</param>
 /// <param name="Pins">The pins recorded.</param>
 /// <param name="Drift">True for a drift approval (the same hash re-approved with new pins).</param>
-public sealed record RecipeApproved(RecipeId Id, int Version, RecipeHash Hash, ApprovalVia Via, RecipeRef? Base, RecipePins Pins, bool Drift);
+/// <param name="Batch">The approve-all command id when one hold approved this recipe with others (setup-once spec §7.5), else null.</param>
+/// <param name="PlanDigest">The approve-all plan's digest, else null.</param>
+/// <param name="HeldMs">How long the owner held the confirmation for, when it was held, else null.</param>
+public sealed record RecipeApproved(RecipeId Id, int Version, RecipeHash Hash, ApprovalVia Via, RecipeRef? Base, RecipePins Pins, bool Drift,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Batch = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? PlanDigest = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? HeldMs = null);

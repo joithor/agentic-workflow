@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.evidence
-version: 1
-description: "Block recipe: pick the evidence that proves the change (UI, API, database, all three, none or other) and run it as a child."
+version: 3
+description: "Block recipe: pick the evidence that proves the change (UI, API, database, desktop app, all three, none or other) and run it as a child."
+displayName: "Pick and run the proof for a change"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:built, label: "Built change", type: link, kind: link }
@@ -21,6 +22,7 @@ states:
           - "ui: what a user sees or does in a web app changed"
           - "api: an HTTP or CLI contract changed: a route, a verb, an exit code or a response shape"
           - "db: what is persisted changed: a schema, a migration, or the rows a command writes"
+          - "desktop: what a user sees or does in the desktop app changed (screens checked against their mockups)"
           - "all: all three of ui, api and db changed"
           - "none: the always-run checks already prove it (the verify pack, or the frozen bug check)"
           - "other: none of these would prove it"
@@ -58,6 +60,15 @@ states:
         onParked: propagate
     timeout: { after: 2d, then: park }
     next: "Waiting for the database evidence for {item}: run `sindri workflow status {instance}`."
+  evidence-desktop:
+    kind: wait
+    waitFor:
+      child:
+        recipe: workflow.evidence-desktop
+        inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:built": { fact: fact:built } }
+        onParked: propagate
+    timeout: { after: 2d, then: park }
+    next: "Waiting for the desktop evidence for {item}: run `sindri workflow status {instance}`."
   evidence-all:
     kind: wait
     waitFor:
@@ -76,7 +87,7 @@ states:
         onParked: propagate
     timeout: { after: 2d, then: park }
     next: "Waiting for the other evidence for {item}: run `sindri workflow status {instance}`."
-  evidence-none: { kind: active, step: step.evidence.none, timeout: { after: 1h, then: park },
+  evidence-none: { kind: active, step: step.evidence.none, timeout: { after: 4h, then: park },
                    next: "Record that the always-run checks are the evidence for {item}." }
   done:    { kind: terminal, outcome: resolved }
   failed:  { kind: terminal, outcome: unresolved }
@@ -86,17 +97,19 @@ transitions:
   - { from: [route-evidence, route-evidence-desk], to: evidence-ui, on: step.completed, when: { outcome: ui }, produces: [fact:decision] }
   - { from: [route-evidence, route-evidence-desk], to: evidence-api, on: step.completed, when: { outcome: api }, produces: [fact:decision] }
   - { from: [route-evidence, route-evidence-desk], to: evidence-db, on: step.completed, when: { outcome: db }, produces: [fact:decision] }
-  - { from: [route-evidence, route-evidence-desk], to: evidence-all, on: step.completed, when: { outcome: all }, produces: [fact:decision] }
+  - { from: [route-evidence, route-evidence-desk], to: evidence-desktop, on: step.completed, when: { outcome: desktop }, produces: [fact:decision] }
+  - { from: route-evidence, to: evidence-all, on: step.completed, when: { any: [ { outcome: all }, { outcome: uncertain } ] }, produces: [fact:decision] }
+  - { from: route-evidence-desk, to: evidence-all, on: step.completed, when: { outcome: all }, produces: [fact:decision] }
   - { from: [route-evidence, route-evidence-desk], to: evidence-none, on: step.completed, when: { outcome: none }, produces: [fact:decision] }
   - { from: [route-evidence, route-evidence-desk], to: evidence-other, on: step.completed, when: { outcome: other }, produces: [fact:decision] }
-  - { from: route-evidence, to: route-evidence-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
   - { from: route-evidence, to: route-evidence-desk, on: step.failed }
-  - { from: [evidence-ui, evidence-api, evidence-db, evidence-all, evidence-other], to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:evidenceSummary] }
-  - { from: [evidence-ui, evidence-api, evidence-db, evidence-other], to: failed, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:evidenceSummary] }
+  - { from: [evidence-ui, evidence-api, evidence-db, evidence-desktop, evidence-all, evidence-other], to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:evidenceSummary] }
+  - { from: [evidence-ui, evidence-api, evidence-db, evidence-desktop, evidence-other], to: failed, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:evidenceSummary] }
   - { from: evidence-all, to: all-failed, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: evidence-ui, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-api, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-db, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-desktop, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-all, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-other, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-none, to: done, on: step.completed, when: { outcome: done }, produces: [fact:evidenceSummary] }
@@ -105,6 +118,8 @@ evals:
   - evals/workflow.evidence/ui.jsonl
   - evals/workflow.evidence/api.jsonl
   - evals/workflow.evidence/db.jsonl
+  - evals/workflow.evidence/desktop.jsonl
+  - evals/workflow.evidence/desktop-failed.jsonl
   - evals/workflow.evidence/all.jsonl
   - evals/workflow.evidence/none.jsonl
   - evals/workflow.evidence/other.jsonl

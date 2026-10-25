@@ -2,6 +2,8 @@ using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -21,9 +23,26 @@ internal static class EffectContexts
     public static EffectContext Of(EffectRun run)
     {
         var command = run.Command;
-        var facts = run.Facts.ToDictionary(static f => f.Key, static f => Element(f.Value));
+        var facts = Elements(run.Facts);
+        var arguments = Arguments(command.With, run.Facts);
+        return new EffectContext(command.Effect, command.Identity.Text, run.CommandId, command.Origin == CommandOrigin.Engine,
+            run.WorkflowId, run.Item, run.Attempt, arguments, facts, run.Text);
+    }
+
+    /// <summary>The facts as JSON, each the stored reference.</summary>
+    /// <param name="facts">The instance's facts.</param>
+    /// <returns>The facts by key.</returns>
+    public static Dictionary<FactKey, JsonElement> Elements(IReadOnlyDictionary<FactKey, FactValue> facts) =>
+        facts.ToDictionary(static f => f.Key, static f => Element(f.Value));
+
+    /// <summary>The 'with:' arguments resolved to values: a literal as written, a '{ fact }' as the stored fact; a '{ profile }' is left out.</summary>
+    /// <param name="with">The arguments as the recipe wrote them.</param>
+    /// <param name="facts">The instance's facts.</param>
+    /// <returns>The values by parameter name.</returns>
+    public static Dictionary<string, JsonElement> Arguments(IReadOnlyDictionary<string, WithValue> with, IReadOnlyDictionary<FactKey, FactValue> facts)
+    {
         var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        foreach (var (name, value) in command.With)
+        foreach (var (name, value) in with)
         {
             if (value.Literal is { } literal)
             {
@@ -31,12 +50,11 @@ internal static class EffectContexts
             }
             else if (value.Fact is { } fact && facts.TryGetValue(fact, out var stored))
             {
-                arguments[name] = stored;
+                arguments[name] = Element(stored);
             }
         }
 
-        return new EffectContext(command.Effect, command.Identity.Text, run.CommandId, command.Origin == CommandOrigin.Engine,
-            run.WorkflowId, run.Item, run.Attempt, arguments, facts, run.Text);
+        return arguments;
     }
 
     private static JsonElement Element(FactValue value)

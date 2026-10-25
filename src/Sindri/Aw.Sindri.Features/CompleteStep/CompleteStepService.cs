@@ -30,7 +30,7 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
 /// <param name="engineFilled">Which outputs the engine fills, and how it writes them.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
+internal sealed partial class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         }
 
         var outputs = engineFilled.Merge(request.Outputs, filled.Value);
-        return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), read, cancellationToken).ConfigureAwait(false);
+        return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs, located.Value.Via), read, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         if (caller.Class == CallerClass.Human)
         {
-            return new Located(resolved.Value, View: null);
+            return new Located(resolved.Value, View: null, StepRuntime.Desk);
         }
 
         var view = await runtime.Get(resolved.Value, cancellationToken).ConfigureAwait(false);
@@ -97,7 +97,18 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return view.Error;
         }
 
-        return engineFilled.HumanOnlyRefusal(view.Value, request, caller) is { } refusal ? refusal : new Located(resolved.Value, view.Value);
+        var via = engineFilled.Authorize(view.Value, request);
+        if (via.IsError)
+        {
+            return via.Error;
+        }
+
+        if (via.Value == StepRuntime.Agent && await engineFilled.OutputTypeRefusal(view.Value, request, cancellationToken).ConfigureAwait(false) is { } untyped)
+        {
+            return untyped;   // before the nonce is claimed and anything is stored: a refused report consumes nothing
+        }
+
+        return new Located(resolved.Value, view.Value, via.Value);
     }
 
     /// <summary>Checks approval (a fresh claim only, as ApplyCommand does), stores the outputs and sends the report.</summary>
@@ -111,12 +122,12 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return await GiveBack(sentReport.Nonce, sentReport.Claim, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var report = new StepCompleted(step.Actor, step.Request.Run, step.Request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, step.Sha);
+        var report = new StepCompleted(step.Actor, step.Request.Run, step.Request.Outcome, stored.Value, Tokens: 0, step.Via, step.Sha, FindingKeys: FindingKeysOf(step.Outputs));
         return await Send(address, sentReport, report, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>What a report says: the request, the actor reporting, the digest of the caller's outputs and the outputs to store (the caller's plus the engine-filled ones).</summary>
-    private readonly record struct StepReport(CompleteStepRequest Request, string Actor, string Sha, IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs);
+    /// <summary>What a report says: the request, the actor reporting, the digest of the caller's outputs and the outputs to store (the caller's plus the engine-filled ones) and the runtime that reported (agent for a proven launched session, else desk).</summary>
+    private readonly record struct StepReport(CompleteStepRequest Request, string Actor, string Sha, IReadOnlyDictionary<FactKey, ReadOnlyMemory<byte>> Outputs, StepRuntime Via);
 
     private static Error? Refused(CompleteStepRequest request) =>
         request.Outputs.Where(static o => o.Value.Length > IFactStore.MaxBytes).Select(static o => o.Key.Value).FirstOrDefault() is { } large
@@ -163,7 +174,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     }
 
     /// <summary>The instance a request names and, for a session report, the view read to apply the human-only rule (null for a human, whose report reads on demand).</summary>
-    private readonly record struct Located(InstanceAddress Address, InstanceView? View);
+    private readonly record struct Located(InstanceAddress Address, InstanceView? View, StepRuntime Via);
 
     /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
     private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);

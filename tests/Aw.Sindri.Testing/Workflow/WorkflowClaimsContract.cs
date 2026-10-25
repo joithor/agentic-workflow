@@ -106,4 +106,37 @@ public abstract class WorkflowClaimsContract
         Expect.Equal(other, taken.Value);
         Expect.Equal(_first, (await claims.Find(_item, Token)).Value);
     }
+
+    /// <summary>The holder frees its claim, so another instance can take the item.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task The_holder_releases_its_claim()
+    {
+        var claims = Create();
+        _ = await claims.Take(_first, ended: null, Token);
+
+        var released = await claims.Release(_item, _first.Owner, Token);
+        var after = await claims.Find(_item, Token);
+        var taken = await claims.Take(_second, ended: null, Token);
+
+        Expect.True(released.IsSuccess && released.Value);
+        Expect.True(after.Value is null);
+        Expect.Equal(_second, taken.Value);
+    }
+
+    /// <summary>An instance that doesn't hold the claim frees nothing, and an item never claimed has nothing to free.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Another_instance_cannot_release_the_claim()
+    {
+        var claims = Create();
+        var nothing = await claims.Release(_item, _first.Owner, Token);
+        _ = await claims.Take(_first, ended: null, Token);
+
+        var refused = await claims.Release(_item, _second.Owner, Token);
+
+        Expect.True(nothing.IsSuccess && !nothing.Value);
+        Expect.True(refused.IsSuccess && !refused.Value);
+        Expect.Equal(_first, (await claims.Find(_item, Token)).Value);
+    }
 }

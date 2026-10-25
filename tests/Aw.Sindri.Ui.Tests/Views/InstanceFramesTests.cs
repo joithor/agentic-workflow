@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -23,7 +24,7 @@ public sealed class InstanceFramesTests : FrameHost
 
     private static InstanceDetail Detail(string scenario) => FixtureInstances.Detail(scenario);
 
-    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null)
+    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null, bool disclosures = true)
     {
         var (window, shell) = await Connected(width: 1600, height: 1000);
         if (served is not null)
@@ -34,6 +35,11 @@ public sealed class InstanceFramesTests : FrameHost
         shell.OpenInstance(Detail(scenario).Address, Detail(scenario).Id);
         await Until(window, () => shell.Instance.Phase == phase);
         Settle(window);
+        if (disclosures)
+        {
+            OpenDisclosures(window);
+        }
+
         return (window, shell);
     }
 
@@ -55,9 +61,11 @@ public sealed class InstanceFramesTests : FrameHost
     [Fact]
     public Task u8_frame_project_build() => OnUi(async () =>
     {
-        var (window, shell) = await Opened("project-build");
+        var (window, shell) = await Opened("project-build", disclosures: false);
 
         var detail = Detail("project-build");
+        Assert.False(Visible(window, "ExpandedBudget"));   // stage details are closed until asked for
+        OpenDisclosures(window);
         Assert.Equal(detail.States.Count, Texts(window, "StateNodeText").Count);
         Assert.Equal(detail.Current.Status.Next, Named<TextBlock>(window, "ExpandedNext").Text);
         Assert.Equal(shell.Instance.Identity, Named<TextBlock>(window, "InstanceIdentity").Text);
@@ -106,8 +114,13 @@ public sealed class InstanceFramesTests : FrameHost
         await FocusedOn(window, "ExpandedCopyStatus");
 
         Assert.Contains(Texts(window, "StateNodeLink"), t => t.Text == Labels.LoopMark);
-        Assert.Equal(Labels.AvailableWithP10a, Named<TextBlock>(window, "ExpandedAttachChip").Text);
+        Assert.True(Visible(window, "ExpandedAttachPanel"));
+        Assert.DoesNotContain("P10a", Named<Panel>(window, "PendingChip").GetVisualDescendants().OfType<TextBlock>().Single().Text, StringComparison.Ordinal);
         Assert.Empty(Buttons(window, "LockButton"));
+        Assert.All(Texts(window, "CommandCli"), t => Assert.Equal(TextWrapping.Wrap, t.TextWrapping));   // a long CLI wraps inside the frame, never clipped at the right
+        var scrolls = Named<Border>(window, "ExpandedState").GetVisualAncestors().OfType<ScrollViewer>().ToList();
+        Assert.Equal("InstanceSheetScroll", Assert.Single(scrolls, sv => sv.Name?.EndsWith("SheetScroll", StringComparison.Ordinal) == true).Name);   // the frame scrolls once
+        Assert.Empty(Named<Border>(window, "ExpandedState").GetVisualDescendants().OfType<ScrollViewer>());   // and the expanded state has no scroll region of its own
         Frame(window, "incident-loop");
 
         // Esc during the cancel confirm answers Keep and returns focus to the ask, with the sheet still open (V5)
@@ -215,7 +228,7 @@ public sealed class InstanceFramesTests : FrameHost
         Assert.Contains(Labels.Duration(FixtureInstances.Status("taken-over").Paused!.TimeoutLeftSeconds), Named<TextBlock>(window, "ExpandedPaused").Text, StringComparison.Ordinal);
         Expect.Sequence(FixtureInstances.Status("taken-over").Commands.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
         Assert.Equal("taken-over", shell.Instance.StateText);
-        Assert.False(Visible(window, "ExpandedAttachChip"));
+        Assert.False(Visible(window, "ExpandedAttachPanel"));
         Frame(window, "taken-over");
     });
 

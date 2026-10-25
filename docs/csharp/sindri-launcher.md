@@ -30,8 +30,8 @@ machine-wide, needs no profile approval, and never holds secrets. One JSON Schem
 |---|---|
 | `schema` | The format version; this build reads `1`. Required |
 | `viewer` | What a human sees. `warp`, `print` (nothing opens; the attach command is printed) or `exec-template` (`name`, the UI label, and `argv`, both required) |
-| `host` | Who owns the process: `tmux` (default) or `none` (a GUI app that owns its own agent; attended opens only). Unattended Steps always use tmux |
-| `agents.<id>` | An added catalog entry (`label`, `bin`, `open`, `sessionId` required; `sessionIdPattern` required unless `sessionId` is `none`; `reportedId` required for `reported`), or, with `"override": true`, the named fields of a built-in one. Ids match `^[a-z][a-z0-9-]{1,31}$` |
+| `host` | Who owns the process: `tmux` (default), `none` (a GUI app that owns its own agent; attended opens only) or `t3` (a T3 Code thread; attended opens only, see "The t3 host"). Unattended Steps always use tmux |
+| `agents.<id>` | An added catalog entry (`label`, `bin`, `open`, `sessionId` required; `sessionIdPattern` required unless `sessionId` is `none`, and matched against the whole id, as if written `^(…)$`; `reportedId` required for `reported`), or, with `"override": true`, the named fields of a built-in one. Ids match `^[a-z][a-z0-9-]{1,31}$` |
 | `agents.<id>.model`, `.policy` | Decided (owner, 2026-10-16). Per-entry form names, like `mcp`, for an unattended Step's per-run model and policy file; see "Model and policy forms" below. Absent means `none` |
 | `meta` | `lanesAgent` and per-lane `lanes.<lane>` name catalog agents for `aw-meta-launch` |
 | `sessions` | The session collector's settings (`enabled`, `pollSeconds` 1 to 30, `providers`, `tmuxSockets`, `claudeSessionsDir`); optional, and the bash reader accepts and ignores it. See `docs/csharp/sindri-sessions.md` |
@@ -158,17 +158,93 @@ class and `strict: false` (the schema's `x-aw-keys` block, which the bash reader
 set, is an unknown keyword to 2020-12), and `bash scripts/tests/check-launcher.test.sh` proves each kind of drift
 fails. Ajv is a dev dependency of `scripts/` (`npm ci --prefix scripts`; the test installs it when missing).
 
-## T3 Code fallback
+## The t3 host
 
-T3 Code starts and owns its agent process and can't adopt a `claude --session-id` or `codex resume` session, so it is
-not a viewer until the spike (spec §7, phase SL-T) says otherwise. A T3 Code user sets the `print` viewer (or their
-terminal's `exec-template`), and `sindri open ITM-…` prints the `tmux -L sindri-launch attach …` command to run in any terminal,
-including one inside T3 Code if it has one. The session is the normal tmux-hosted CLI, so liveness, usage, budgets and
-takeover all work; T3 Code just isn't the window.
+With `"host": { "kind": "t3" }`, a human open starts a [T3 Code](https://github.com/pingdotgg/t3code) thread instead of a tmux
+session, and the T3 app shows it. Unattended Steps stay on Sindri's tmux server: their scrubbed environment, policy flags and
+approved argv (`argvHash`) need a process Sindri starts itself.
 
 ```json
-{ "schema": 1, "viewer": { "kind": "print" } }
+{ "schema": 1, "viewer": { "kind": "print" }, "host": { "kind": "t3" } }
 ```
+
+- **Start.** The host finds the T3 project the item's repo belongs to, in this order: a project whose folder is the repo or holds it
+  (the deepest); a project whose folder is the repo's main checkout (the repo is a linked worktree); a project T3 knows as the same
+  repository (its `repositoryIdentity.canonicalKey` equals the key of the repo's primary remote, `upstream`, else `origin`, else the
+  first by name, normalized as T3 does: another clone). None: `SND-LAUNCH-026`, fix `t3 project add <repo>`. It then calls T3's
+  `t3_thread_launch` in that project with the item's seed as the first message and `sindri ITM-…` as the title; when the folder the
+  launch runs in isn't the project's own (a worktree, or another clone), `workspaceStrategy: existing_worktree` binds the thread to it. The launch's agent picks the T3 provider:
+  `claude-code` runs on T3's Claude, `codex` on Codex, `cursor` on Cursor, each on the first enabled instance of that driver
+  with its first listed model (T3 lists favourites first; none enabled: `SND-LAUNCH-027`); an added entry T3 has no driver for
+  runs on the project's default. The catalog entry's argv, environment and MCP config are not used, and no `session wrap`
+  runs; the agent reaches Sindri through the repo's own MCP registration (`sindri mcp register`, which the setup service does
+  for every approved repo).
+- **Viewer.** The attach command is `open t3code://threads/<environment>/<thread>` (`xdg-open` on Linux). The launcher runs it
+  without a terminal whichever `viewer` is configured, so the thread opens in the app; `print` prints it. An attach to a live T3
+  session opens the same link.
+- **Liveness.** With no wrap there is no heartbeat, so the T3 host reports its sessions to the silence sweep (`IHostedSessions`):
+  every 10 s a live thread counts as a heartbeat, and an archived or deleted thread ends the session as `exit`. A T3 that can't be
+  asked (closed, restarting for an update) counts as alive, since its threads outlive it; the session ends when you stop it from
+  Sindri or archive the thread.
+- **Stop.** `Launcher.Stop` asks every host, so a T3 launch's stop calls `t3_thread_interrupt` (the running turn stops; the
+  thread stays in T3 for you to continue). `sindri serve` stopping leaves T3 threads alone.
+- **State.** One 0600 file per session under `<home>/launch/t3/` maps the session name to its thread and environment, so a
+  stop, an attach or the sweep finds the thread after a restart.
+- **Reaching T3.** `userdata/server-runtime.json` in T3's home (`T3CODE_HOME`, default `~/.t3`) names the running server; its
+  `/mcp` endpoint takes a bearer token that Sindri mints with `t3 auth session issue --subject mcp-client --scope
+  orchestration:read --scope orchestration:operate --ttl 1h` (`T3CODE_CLI_PATH`, else `~/.t3/bin/t3`, else `t3` on the PATH),
+  holds in memory only, renews before it expires and revokes when it stops. Such a session can't start threads in full-access
+  mode, so a thread asks for approvals in the app. Anything T3 can't do is `SND-LAUNCH-025`.
+
+The `mcp-client` subject is internal to T3. Once `t3 thread start --worktree-path` and `t3 thread interrupt` exist (proposed in
+[pingdotgg/t3code#23945](https://github.com/pingdotgg/t3code/discussions/23945)), the host can call the `t3 thread` CLI instead,
+which signs itself in, and the token handling goes away.
+
+## Background launches and takeover (issue 1004)
+
+A Step the engine launches runs unattended: it opens no window, whatever `viewer` says. `launch.started` says so instead of recording kind `none`: `viewer` is
+`{ kind: <the configured or detected viewer, e.g. "warp">, label, outcome: "skipped", reason: "background: viewer opens on takeover" }` (`reason` is
+additive and omitted when null; the kind is `none` only when no viewer could be probed, with reason `background: no viewer is configured`).
+
+The viewer opens when a person takes the Step over (`sindri workflow takeover`, or the app's Takeover). After the takeover applies, Sindri looks for a live launch
+of that instance (or of an instance under it) and opens its tmux session in the one viewer the launcher uses: `launcher.json`'s `viewer` when it is valid, else the
+terminal the box's detection chose; a T3 session goes to T3. The takeover never waits on this and never fails because of it (the Step is taken over first, the
+viewer gets 10 s). The attempt is recorded as `launch.takeover-opened` (public, key `launch.takeover-opened:<nonce>`, payload
+`{ launchId, item, instance, viewer, attach }`); the launches view takes `viewer` as the launch's latest, so `GET /sindri/launches/{id}` shows it, and the takeover's
+response carries it as `viewer` beside `attach`, with the launch's own viewer record:
+
+```json
+{ "viewer": { "kind": "warp", "label": "Warp", "outcome": "opened|unconfirmed|failed", "code": null, "detail": null, "reason": "…or absent" },
+  "attach": ["tmux", "-L", "sindri-launch", "attach", "-t", "=snd-LCH-…"] }
+```
+
+`outcome` is `failed` with a `reason` when nothing opened: `code` `no-viewer` when no viewer on the box can open a window, `SND-LAUNCH-001` when the viewer was tried and failed, `SND-LAUNCH-009` on a timeout. (`skipped` is only a background launch's.) Both fields are absent when the instance has no live session, and on a repeat of a takeover that had already applied.
+
+## What a launched Step can't do
+
+A Sindri-launched agent Step (an unattended launch; line spec LN-LCH1) can't hold a forge credential or push. Sindri pushes. Three things enforce it,
+all built in one place when the launch is prepared:
+
+| Change | What it is for |
+|--------|----------------|
+| `GH_TOKEN`, `GITHUB_TOKEN` | the GitHub CLI's and API's tokens: set to the empty string (the host only adds variables, it can't remove one) |
+| `GH_ENTERPRISE_TOKEN` | the same for a GitHub Enterprise host |
+| `AW_FORGE_TOKEN` | the forge port's default credential variable (`AW_FORGE_CREDENTIAL` defaults to `env:AW_FORGE_TOKEN`) |
+| `GH_CONFIG_DIR` | an empty directory `launch/<launch>.gh` under the Sindri home, so `gh` finds no stored login; deleted with the launch |
+| `AW_SINDRI_WORKTREE` | the Step's worktree (the phase worktree, else its working directory); the pre-push hook refuses wherever it is set |
+
+The scrub is the pure `LaunchEnvironment.Scrub` in Core. The **pre-push hook** is written to the hooks directory git resolves for the Step's working directory
+(`git rev-parse --git-path hooks`, so `core.hooksPath` and a linked worktree's shared directory are respected). It prints `SND-LAUNCH-023: agent Steps can't push; Sindri pushes`
+and exits 1 where `AW_SINDRI_WORKTREE` is set, and exits 0 otherwise, so the owner's pushes from the same repo pass. It is installed only when missing or ours (marker line
+`# aw-sindri pre-push guard (LN-LCH1)`); a `pre-push` hook that isn't ours refuses the launch with `SND-LAUNCH-022` and is never changed. An attended open gets none of this.
+
+Fact files (engine run-dir facts): before an unattended Step starts, the launcher writes each fact the Step declares as an input and has set into its run directory (`$AW_SINDRI_RUN_DIR`) as `<key without "fact:">.json`, scrubbed and shaped as an API fact read (an object or array as itself, anything else one JSON string); an attended open gets none. When the directory is a git worktree the names are added to that worktree's local `info/exclude` (never the repo's `.gitignore`), and a name git tracks refuses the launch with `SND-LAUNCH-025` (the file is never overwritten; our own untracked file from an earlier attempt is rewritten). The launcher also makes `$AW_SINDRI_RUN_DIR/.sindri-out/` and adds `/.sindri-out/` to the same exclude file: the agent writes each output it reports (`--output fact:x=$AW_SINDRI_RUN_DIR/.sindri-out/x`) there, so outputs never show up as untracked work in `git status`, the clean-tree checks or the worktree removal check.
+
+**Writable and denied paths.** The `claude-settings-file` policy allows `Edit`/`Write` under the policy's writable path (the Step's worktree), and renders
+`StepPolicy.DeniedPaths` as `Read(//path/**)` and `Edit(//path/**)` deny rules. An entry that can't express a denied read (`codex-overrides`, `cursor-config`, `none`)
+refuses a Step whose `DeniedPaths` is non-empty with `SND-LAUNCH-013`. The engine does not fill the list yet: it has no source for other phases' worktrees (the
+sibling worktrees under the line's phase area) or the holdout store's location, so `AgentLaunches.RequestFor` passes none. Plumbing and rendering are in place; the
+engine fills the list when those locations exist.
 
 ## C# ports
 
@@ -189,3 +265,13 @@ viewers, detection, `launch init` and `show`) and `Aw.Sindri.Features/Launching`
   `launcher:adoption` (opens of the last 30 days by viewer and agent).
 - **`profile approve`** previews, for each added or changed `agents.<id>.stepArgvHash`, the entry on this box that has the hash, or "no entry on this box
   has the hash" (L-16).
+
+## Stop ends the session
+
+`Launcher.Stop` kills the tmux session (one already gone counts as stopped), and only then records `session.ended` with reason `exit` (exit code null) through `LaunchStopEnd`, so the launch stops being live at once and the 120 s silence sweep never marks it `lost`. It records nothing when the host stop failed (the agent may still run: its heartbeat or the sweep decides), when the launch's row isn't live (never started, failed, or already ended), or when the sweep ended it first.
+
+When `sindri serve` stops, it ends every session it launched on its own tmux socket (`ILaunchShutdown.StopAll`, bounded to 20 s), each through the same `Stop`, so none outlives the process that supervises it. A host it can't ask (a terminal window) is left to the heartbeat sweep.
+
+## Claude Code's trust prompt
+
+Claude Code stops at "Is this a project you created or one you trust?" in a directory it hasn't seen, and a launched Step has no one to answer. Before a `claude-code` Step starts, the launcher marks its worktree trusted: `projects[<absolute path>].hasTrustDialogAccepted = true` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set). `ClaudeCodeTrust` edits only that key: it takes the advisory lock `.claude.json.sindri.lock`, re-reads the file right before writing (a running Claude rewrites it too), writes a temp file in the same directory and renames it over the original keeping its mode, and writes nothing when the key is already true. A file that doesn't parse, or isn't an object at those keys, is left untouched and the launch fails with SND-LAUNCH-024 (fix: accept the prompt once by hand, or repair the file). When the worktree is removed, its entry is removed the same way. Human opens and other agents trust nothing.

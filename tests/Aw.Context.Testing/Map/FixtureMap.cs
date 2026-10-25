@@ -27,10 +27,11 @@ public static class FixtureMap
     [
         "action:tab-manager.restore-layout", "code:src/layout/PaneResize.ts", "code:src/layout/SplitPane.ts", "code:src/tabs/TabManager.ts",
         "feature:layout.pane-resize", "feature:layout.split-pane", "feature:layout.split-pane.orientation", "feature:tabs.tab-manager",
+        "surface:command/split-vertical", "surface:command/switch-tab", "surface:command/toggle-orientation", "surface:keybinding/ctrl+shift+d", "surface:setting/paneResizeStep",
     ];
 
     /// <summary>The 'implements' edges among a session's scope: file to feature.</summary>
-    public const int ScopedEdges = 7;
+    public const int ScopedEdges = 14;
 
     /// <summary>Writes the YAML to <paramref name="directory"/>/product-map.yaml.</summary>
     /// <param name="directory">An existing directory outside every repo.</param>

@@ -6,6 +6,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
@@ -21,6 +22,7 @@ public sealed class ChildrenFramesTests : FrameHost
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Children is not null && shell.Instance.Address == detail.Address);
         Settle(window);
+        OpenDisclosures(window);
         return (window, shell);
     }
 
@@ -43,7 +45,7 @@ public sealed class ChildrenFramesTests : FrameHost
         Assert.Equal(served.Workstreams.Select(w => Labels.StreamTitle(w.Stream, w.Label)), Texts(window, "ChildStreamTitle").Select(t => t.Text), StringComparer.Ordinal);
         Assert.Equal(FixtureInstances.ChildRows(served).Count(), Buttons(window, "ChildRowOpen").Count);
         _ = Assert.Single(Texts(window, "ChildMirrored"));
-        Assert.Contains(Texts(window, "ChildGroupHeader"), t => t.Text!.Contains(served.Recipe, StringComparison.Ordinal));
+        Assert.Contains(Texts(window, "ChildGroupHeader"), t => t.Text!.Contains(WorkflowNames.Of(served.Recipe, displayName: null), StringComparison.Ordinal) && !t.Text!.Contains(served.Recipe, StringComparison.Ordinal));
         Named<Control>(window, "ChildrenBlock").BringIntoView();
         var title = Buttons(window, "ChildRowOpen")[0];
         var row = (ChildRowViewModel)title.DataContext!;

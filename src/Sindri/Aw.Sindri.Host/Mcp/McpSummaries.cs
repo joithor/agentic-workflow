@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
@@ -32,7 +33,7 @@ internal static class McpSummaries
         var items = result.Sections.Sum(s => s.Items.Count);
         var degraded = result.Degraded.Count == 0 ? "none" : string.Join(", ", result.Degraded.Select(d => d.Source.Value));
         var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"{items} items in {result.Sections.Count} sections; {result.Conflicts.Count} conflicts; degraded: {degraded}"))
-            .AppendLine(result.Truncated ? "; truncated to the budget" : string.Empty)
+            .AppendLine()
             .AppendLine($"anchors: {(result.Anchors.Count == 0 ? "none" : string.Join(", ", result.Anchors))}");
         if (result.Diff is { } diff)
         {
@@ -69,6 +70,39 @@ internal static class McpSummaries
         return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
     }
 
+    /// <summary>context_lenses' summary for several anchors: the keys, the band sizes, the conflicts and the coverage line; never record text.</summary>
+    /// <param name="view">The lenses of the set.</param>
+    /// <returns>The text.</returns>
+    internal static string LensesSet(LensesSetView view)
+    {
+        var bands = view.Bands;
+        var c = view.Coverage;
+        var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture,
+            $"lenses of {string.Join(", ", view.Anchors.Select(a => a.Key.Value))} · map {view.MapVersion}: intent {bands.Intent.Counts.Records} records and {bands.Intent.Counts.Decisions} decisions, product {bands.Product.Counts.Own} own and {bands.Product.Counts.Affects} affected, code {bands.Code.Counts.Files} files\n"));
+        _ = text.AppendLine(view.MissingAnchors.Count == 0 ? "missing anchors: none" : "missing anchors: " + string.Join(", ", view.MissingAnchors));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Conflicts.Count} conflicts"));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
+            $"coverage: {c.Intent.Covered} of {c.Scope} in scope have a record or decision, {c.Product.Confirmed} confirmed, {c.Code.Implemented} implemented in code ({c.Code.Suggested} suggested), {c.Gaps.Count} gaps"));
+        _ = text.AppendLine(view.Degraded.Count == 0 ? "degraded: none" : "degraded: " + string.Join(", ", view.Degraded));
+        return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
+    }
+
+    /// <summary>context_concepts' summary: the page's concept ids with their sizes, what 'other' holds and whether there is a next page; never a name or a summary.</summary>
+    /// <param name="view">The page.</param>
+    /// <returns>The text.</returns>
+    internal static string Concepts(ConceptsView view)
+    {
+        var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"{view.Concepts.Count} concepts on this page · map {view.MapVersion} · state {view.State}\n"));
+        foreach (var concept in view.Concepts)
+        {
+            _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{concept.Id}: {concept.Size.Features} features, {concept.Size.Records} records, {concept.Size.Decisions} decisions, {concept.Size.Code} code"));
+        }
+
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Other.Id}: {view.Other.Size.Features} features, {view.Other.Size.Records} records, {view.Other.Size.Decisions} decisions, {view.Other.Size.Code} code"));
+        _ = text.AppendLine(view.Next is null ? "last page" : "next: " + view.Next);
+        return text.Append("The concepts, their names and summaries fenced as untrusted, are in structuredContent.").ToString();
+    }
+
     /// <summary>context_node's summary: the key, the map version and the edge counts; never a label.</summary>
     /// <param name="view">The node.</param>
     /// <returns>The text.</returns>
@@ -101,13 +135,12 @@ internal static class McpSummaries
 
     /// <summary>sindri_queue's summary: the count and each group's count; never a title.</summary>
     /// <param name="queue">The queue.</param>
-    /// <param name="repo">The session's repo.</param>
     /// <returns>The text.</returns>
-    internal static string Queue(QueueResponse queue, string repo)
+    internal static string Queue(QueueResponse queue)
     {
         var groups = queue.Groups.Where(g => g.Items.Count > 0).Select(g => $"{GroupWord(g.Group)} {g.Items.Count.ToString(CultureInfo.InvariantCulture)}").ToList();
         var total = queue.Groups.Sum(g => g.Items.Count);
-        return string.Create(CultureInfo.InvariantCulture, $"{total} open items in {repo}{(groups.Count == 0 ? string.Empty : ": " + string.Join(", ", groups))}\n{Fenced}");
+        return string.Create(CultureInfo.InvariantCulture, $"{total} open items{(groups.Count == 0 ? string.Empty : ": " + string.Join(", ", groups))}\n{Fenced}");
     }
 
     /// <summary>sindri_item's summary: id, state, repo, version, what it waits on and the actions open to a person.</summary>
@@ -152,6 +185,7 @@ internal static class McpSummaries
         JobState.Succeeded => "succeeded",
         JobState.Failed => "failed",
         JobState.Cancelled => "cancelled",
+        JobState.Waiting => "waiting",
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, "not a job state"),
     };
 

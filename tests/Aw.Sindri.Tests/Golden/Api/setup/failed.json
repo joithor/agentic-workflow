@@ -1,0 +1,109 @@
+{
+  "steps": [
+    {
+      "id": "repo",
+      "title": "Add your repo",
+      "state": "done",
+      "why": "A repo is in your profile.",
+      "detail": "demo",
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": [
+        {
+          "repo": "demo",
+          "state": "done",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "title": "Approve the profile",
+      "state": "done",
+      "why": "Your profile is approved.",
+      "detail": null,
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": []
+    },
+    {
+      "id": "recipes",
+      "title": "Approve the workflows",
+      "state": "done",
+      "why": "Every workflow that ships with Sindri is approved.",
+      "detail": "26 workflows.",
+      "error": null,
+      "action": null,
+      "progress": {
+        "done": 26,
+        "total": 26,
+        "unit": "workflows"
+      },
+      "items": []
+    },
+    {
+      "id": "mcp",
+      "title": "Connect your agents",
+      "state": "done",
+      "why": "Sindri is registered in your repos.",
+      "detail": "Claude Code in demo.",
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": [
+        {
+          "repo": "demo",
+          "state": "done",
+          "detail": "Claude Code",
+          "providers": [
+            {
+              "provider": "claude",
+              "state": "connected",
+              "detail": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "title": "Build the map",
+      "state": "failed",
+      "why": "The last try at building the map didn't finish.",
+      "detail": null,
+      "error": {
+        "code": "SND-CONTEXT-042",
+        "sentence": "The last try at building the map didn't finish."
+      },
+      "action": null,
+      "progress": null,
+      "items": [
+        {
+          "repo": "demo",
+          "state": "failed",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "id": "onyx",
+      "title": "Set up Onyx",
+      "state": "done",
+      "why": "Onyx is running and Sindri can search it.",
+      "detail": "Onyx is up and answering.",
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": []
+    }
+  ],
+  "asOf": {
+    "cursor": 0,
+    "ledgerHead": 0,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false
+  }
+}

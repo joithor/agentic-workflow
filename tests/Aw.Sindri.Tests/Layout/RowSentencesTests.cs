@@ -59,7 +59,7 @@ public sealed class RowSentencesTests
     {
         var row = Row(StatusCases.View("taken-over"));
 
-        Assert.Equal(("WITH YOU", "with you: produce the Step output for T-3 (round 1/3)"), (row.Chip.Word, row.Now));
+        Assert.Equal(("WITH YOU", "with you: produce the Step output for T-3 (round 1/5)"), (row.Chip.Word, row.Now));
     }
 
     [Theory]
@@ -92,6 +92,18 @@ public sealed class RowSentencesTests
         Assert.Equal("queued", Row(Running("step.produce"), new InstanceSummaryContext(StatusCases.Now, NotStarted: true)).Now);
         Assert.Equal(("DONE", "resolved"), (Row(StatusCases.View("done")).Chip.Word, Row(StatusCases.View("done")).Now));
         Assert.Equal("cancelled", Row(StatusCases.View("cancelled")).Now);
+    }
+
+    [Theory]
+    [InlineData("failed", "FAILED", ChipTone.Fail)]
+    [InlineData("unresolved", "DIDN'T WORK OUT", ChipTone.Attn)]
+    [InlineData("cancelled", "CANCELLED", ChipTone.Neutral)]
+    [InlineData("done", "DONE", ChipTone.Neutral)]
+    public void A_finished_row_wears_the_chip_of_its_outcome_and_still_says_the_outcome(string name, string word, ChipTone tone)
+    {
+        var row = Row(StatusCases.View(name));
+
+        Assert.Equal((new StateChip(word, tone), name == "done" ? "resolved" : name), (row.Chip, row.Now));
     }
 
     [Fact]

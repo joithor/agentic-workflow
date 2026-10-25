@@ -27,4 +27,24 @@ public sealed class FailureExcerptTests
 
         Assert.Equal("c\nd\ne\nf\ng", excerpt);
     }
+
+    private const string Suite = "config/hooks/tests/failopen.test.sh";
+    private const string Fail = "FAIL: send-gate: judge missing \u2014 differs from the baseline (origin/main) hook";
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bash_suite_fails_the_same_way_in_the_runner_summary_and_in_its_raw_output()
+    {
+        var gate = $"PASS  ser  scripts/tests/a.test.sh  3s\nFAIL  ser  {Suite}  41s  exit 1\nPASS  ser  b.test.sh  1s\n\n"
+            + $"FAIL  ser  {Suite}  (exit 1, 41s)\n      ! {Fail}\n      | PASS: codex adapter: hook script missing (rc=0)\n      | PASS: cursor adapter: hook exits 3 (rc=0)\n\nslowest suites:\n     41s  ser  {Suite}\n";
+        var raw = $"heavy: waiting for the session lock (1 slot(s))\n{Fail}\n  current:  rc=0 out=x err=\n  baseline: rc=0 out=x err=<stage>/send-gate.sh: line N: printf: write error: Broken pipe\nPASS: send-gate: judge exits 1 (rc=0)\nPASS: x (562 ms vs 569 ms)\nPASS: y (rc=0)\nPASS: z (rc=0)\nPASS: w (rc=0)\nPASS: v (rc=0)\n";
+
+        Assert.Equal(FailureExcerpt.For(gate, Suite), FailureExcerpt.For(raw, Suite));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bash_suite_failing_a_different_check_has_a_different_excerpt() =>
+        Assert.False(string.Equals(
+            FailureExcerpt.For($"{Fail}\nPASS: a\n", Suite),
+            FailureExcerpt.For("FAIL: send-gate: judge garbage\nPASS: a\n", Suite),
+            StringComparison.Ordinal));
 }

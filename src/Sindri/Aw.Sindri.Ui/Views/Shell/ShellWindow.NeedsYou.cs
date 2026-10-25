@@ -54,6 +54,11 @@ internal sealed partial class ShellWindow
         var follows = FocusFollowsSelection(id);
         Dispatcher.UIThread.Post(() =>
         {
+            if (SelectionMovedOn(id))
+            {
+                return;   // the selection moved on before this ran: a stale job would focus its row, select it again and post another, two such jobs ping-pong forever
+            }
+
             if (follows || !HasUsableFocus)
             {
                 (id is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(id)))();
@@ -73,7 +78,7 @@ internal sealed partial class ShellWindow
     private static bool IsInRow(Visual focused, string? rowId) =>
         focused.GetSelfAndVisualAncestors().OfType<NeedsYouRow>().Any(r => string.Equals(r.RowId, rowId, StringComparison.Ordinal));
 
-    // The Undo offer ends (pressed, or ten seconds): a focus on its button moves on.
+    // The Undo offer ends (pressed, or the undo window ends): a focus on its button moves on.
     private void OnSeenChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (string.Equals(e.PropertyName, nameof(NeedsYouSeenViewModel.UndoOffered), StringComparison.Ordinal) && Shell?.NeedsYou.Seen.UndoOffered == false)
@@ -82,8 +87,53 @@ internal sealed partial class ShellWindow
         }
     }
 
+    // Esc closes the sheet over the page first, then the inbox (back to Home).
+    private static bool EscapeSheetOrInbox(ShellViewModel shell)
+    {
+        if (shell.IsSheetShown)
+        {
+            shell.CloseSheet();
+            return true;
+        }
+
+        if (shell.IsNeedsYouInbox && shell.Inbox.Bar.HasOpenQuestion)
+        {
+            shell.Inbox.Bar.Cancel();   // the reason box, the drop question or "Approve?" closes first
+            return true;
+        }
+
+        return shell.LeaveNeedsYouInbox();
+    }
+
+    // The inbox opened or closed: focus goes to the selected row, on the inbox or back on Home, so it is never lost.
+    private void FollowInbox()
+    {
+        var selected = Shell?.NeedsYou.SelectedId;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!SelectionMovedOn(selected))   // a row picked since is the one that takes focus, not the one the inbox opened on
+            {
+                (selected is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(selected)))();
+            }
+        }, DispatcherPriority.Loaded);
+    }
+
+    // True when a focus job was queued for a row that is no longer the selected one.
+    private bool SelectionMovedOn(string? queuedFor) =>
+        queuedFor is not null && !string.Equals(queuedFor, Shell?.NeedsYou.SelectedId, StringComparison.Ordinal);
+
     private void FocusNeedsYouRow(string rowId)
     {
+        if (Shell?.IsNeedsYouInbox == true)
+        {
+            if (!this.Get<NeedsYouPage>("NeedsYouInboxPage").FocusRow(rowId))
+            {
+                KeepFocus();   // the row is not drawn: focus still goes somewhere
+            }
+
+            return;
+        }
+
         var row = this.Get<Border>("Page").GetVisualDescendants().OfType<NeedsYouRow>()
             .FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.RowId, rowId, StringComparison.Ordinal));
         if (row?.IsKeyboardFocusWithin == true)

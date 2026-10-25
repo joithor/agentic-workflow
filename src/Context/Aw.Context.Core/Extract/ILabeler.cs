@@ -3,7 +3,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Core.Extract;
 
-/// <summary>Names clusters with a model (the optional labeling pass; off by default). Over its token cap it answers SND-CONTEXT-042.</summary>
+/// <summary>Names clusters with a model (the optional labeling pass; on unless the profile turns it off). Over its token cap it answers SND-CONTEXT-042.</summary>
 public interface ILabeler
 {
     /// <summary>Names the clusters.</summary>

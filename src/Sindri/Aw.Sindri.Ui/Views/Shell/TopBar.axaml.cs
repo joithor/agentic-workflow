@@ -47,6 +47,7 @@ internal sealed partial class TopBar : UserControl
         Full,
         CompactSearch,
         NoAge,
+        TightNav,
         NoBrandWord,
         NoCounts,
     }
@@ -94,19 +95,21 @@ internal sealed partial class TopBar : UserControl
         var word = _brandWordWidth + Brand.Spacing;
         var padding = Content is Border bar ? bar.Padding.Left + bar.Padding.Right : 0;
         var navigation = NavigationWidthWithCounts;
-        var fixedWidth = padding + Brand.DesiredSize.Width - (BrandWord.IsVisible ? word : 0) + navigation;
-        bool Fits(double brand, double search, double pillAge, Fit step) => fixedWidth + brand + search + pill + pillAge <= width - (step < _fit ? Slack : 0);
+        var fixedWidth = padding + Brand.DesiredSize.Width - (BrandWord.IsVisible ? word : 0);
+        bool Fits(double nav, double brand, double search, double pillAge, Fit step) => fixedWidth + nav + brand + search + pill + pillAge <= width - (step < _fit ? Slack : 0);
 
-        (Fit Step, double Brand, double Search, double PillAge)[] steps =
+        var tight = navigation - TightSaving;
+        (Fit Step, double Nav, double Brand, double Search, double PillAge)[] steps =
         [
-            (Fit.Full, word, SearchMin, age),
-            (Fit.CompactSearch, word, _compactSearch, age),
-            (Fit.NoAge, word, _compactSearch, 0),
-            (Fit.NoBrandWord, 0, _compactSearch, 0),
+            (Fit.Full, navigation, word, SearchMin, age),
+            (Fit.CompactSearch, navigation, word, _compactSearch, age),
+            (Fit.NoAge, navigation, word, _compactSearch, 0),
+            (Fit.TightNav, tight, word, _compactSearch, 0),
+            (Fit.NoBrandWord, tight, 0, _compactSearch, 0),
         ];
-        foreach (var (step, brand, search, pillAge) in steps)
+        foreach (var (step, nav, brand, search, pillAge) in steps)
         {
-            if (Fits(brand, search, pillAge, step))
+            if (Fits(nav, brand, search, pillAge, step))
             {
                 return step;
             }
@@ -128,6 +131,7 @@ internal sealed partial class TopBar : UserControl
         SearchColumn.MaxWidth = compact ? double.PositiveInfinity : SearchMax;
         PillAge.IsVisible = fit < Fit.NoAge;
         BrandWord.IsVisible = fit < Fit.NoBrandWord;
+        NavigationList.Classes.Set("tight", fit >= Fit.TightNav);
         NavigationList.Classes.Set("no-counts", fit == Fit.NoCounts);
     }
 

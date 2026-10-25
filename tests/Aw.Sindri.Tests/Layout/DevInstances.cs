@@ -32,8 +32,8 @@ internal static class DevInstances
             new RecipeVersion(loaded.Recipe.Id, loaded.Recipe.Version, loaded.Hash), loaded.Recipe, EngineFixture.Catalog, Inputs());
         var provenance = Inputs().ToDictionary(static i => i.Key, static _ => new FactProvenance("human:cli", Since));
         var name = InstanceNames.Render(recipe, ItemKey.From(item), new Dictionary<FactKey, string?> { [key] = requestText }, Since);
-        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(Version: 2, provenance, Subject: SubjectRefs.Of(recipe, ItemKey.From(item), requestText, name)));
-        return (view, InstanceViews.Detail(view, new InstanceDetailContext(title, Parent: null, new ViewCounts(2, 0, 0, Context: null), AsOf)));
+        var view = InstanceViews.Of(instance, recipe, Since, Since.AddDays(2), new InstanceViewContext(Version: 3, provenance, Subject: SubjectRefs.Of(recipe, ItemKey.From(item), requestText, name)));
+        return (view, InstanceViews.Detail(view, new InstanceDetailContext(title, Parent: null, new ViewCounts(2, 0, 0, Context: null), AsOf, RecipeDisplayName: Testing.Views.RecipeShape.Named(view.Recipe.Id.Value))));
 
         Dictionary<FactKey, FactValue> Facts() => Inputs().ToDictionary(static i => i.Key, static i => i.Value.Value);
 

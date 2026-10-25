@@ -36,7 +36,8 @@ public static class ARecipe
         Loops: new Dictionary<string, LoopSpec>(StringComparer.Ordinal),
         Budget: null,
         Evals: [],
-        Hash: null);
+        Hash: null,
+        DisplayName: "Produce and finish");
 
     /// <summary><paramref name="recipe"/> with each of its Steps naming the input blocks <paramref name="inputs"/>, in order.</summary>
     /// <param name="recipe">The recipe.</param>

@@ -22,21 +22,22 @@ public sealed class InstanceViewsTests
 
         Assert.Equal(("produce", "desk task"), (view.State, view.Detail));
         Assert.Equal(
-            "Produce the Step output for T-3 (round 1/3), then run:\nsindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=<file>",
+            "Produce the Step output for T-3 (round 1/5), then run:\nsindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=<file>",
             view.Next);
         Assert.Equal("complete, takeover, cancel", StatusLayout.Commands(view));
-        Assert.Equal((0, 200_000, 0, 400_000), (view.Budget!.State, view.Budget.StateCap, view.Budget.Instance, view.Budget.InstanceCap));
+        Assert.Equal((0, 5_000_000, 0, null), (view.Budget!.State, view.Budget.StateCap, view.Budget.Instance, view.Budget.InstanceCap));
         Assert.Null(view.Answer);
     }
 
     [Theory]
     [InlineData("parked-rounds", "rounds", "sindri workflow answer T-3/step/1 --grant 1     (at a terminal)")]
     [InlineData("parked-no-progress-child", "no-progress (child)", "sindri workflow answer T-3/step/1 --grant 1     (at a terminal; forwarded to the child)")]
-    [InlineData("parked-budget", "budget", "sindri workflow answer T-3/step/1 --grant-tokens 100k     (at a terminal; once per park)")]
+    [InlineData("parked-budget", "budget", "sindri workflow answer T-3/step/1 --grant-tokens 5M     (at a terminal; once per park)")]
     [InlineData("parked-needs-answer-step", "needs-answer", "sindri workflow answer T-3/step/1 --text <answer>")]
     [InlineData("parked-needs-answer-wait", "needs-answer", "sindri workflow answer T-3/step/1 --resume [--text <answer>]")]
     [InlineData("parked-timeout", "timeout", "sindri workflow answer T-3/step/1 --resume")]
     [InlineData("parked-no-runtime", "SND-WF-010", "sindri workflow answer T-3/step/1 --resume")]
+    [InlineData("parked-unavailable-step", "unavailable", "sindri workflow answer T-3/step/1 --resume")]
     [InlineData("escalated-gate", "gate", "sindri workflow answer T-3/step/1 --accept     (at a terminal)")]
     public void Each_park_reason_has_its_detail_and_answer_line(string name, string detail, string answer)
     {
@@ -118,8 +119,8 @@ public sealed class InstanceViewsTests
     [Theory]
     [InlineData("parked-rounds", "answer-grant=--grant 1")]
     [InlineData("parked-no-progress-child", "answer-grant=--grant 1", "answer-text=--text <answer>")]
-    [InlineData("parked-budget", "answer-grant-tokens=--grant-tokens 100k")]
-    [InlineData("parked-budget-odd", "answer-grant-tokens=--grant-tokens 12500")]
+    [InlineData("parked-budget", "answer-grant-tokens=--grant-tokens 5M")]
+    [InlineData("parked-budget-odd", "answer-grant-tokens=--grant-tokens 25k")]
     [InlineData("parked-mirrored-rounds", "answer-grant=--grant 1")]
     [InlineData("parked-mirrored-timeout", "answer-resume=--resume")]
     [InlineData("parked-mirrored-no-runtime", "answer-resume=--resume")]
@@ -131,6 +132,7 @@ public sealed class InstanceViewsTests
     [InlineData("parked-needs-answer-wait", "answer-resume=--resume")]
     [InlineData("parked-timeout", "answer-resume=--resume")]
     [InlineData("parked-no-runtime", "answer-resume=--resume")]
+    [InlineData("parked-unavailable-step", "answer-resume=--resume")]
     [InlineData("escalated-gate", "answer-accept=--accept", "answer-reject=--reject")]
     [InlineData("escalated-child")]
     [InlineData("parked-mirrored-needs-answer")]
@@ -178,7 +180,7 @@ public sealed class InstanceViewsTests
                 var answer = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), parsed.Value.Variant, parsed.Value.Text, parsed.Value.Amount, Forwarded: null);
                 foreach (var target in FitTargets(name))
                 {
-                    var fits = AnswerFit.Check(target, recipe, answer);
+                    var fits = AnswerFit.Check(target, answer);
                     Assert.False(fits.IsError, $"{name}: {entry.Cli} is refused by {target.Suspension!.ParkKind}: {(fits.IsError ? fits.Error.Message : string.Empty)}");
                 }
             }
@@ -209,7 +211,7 @@ public sealed class InstanceViewsTests
     {
         var fixes = Enum.GetValues<ParkReason>().Where(r => AnswerVariants.ReasonFixesChildFit(r)).ToArray();
 
-        Assert.Equal([ParkReason.Rounds, ParkReason.NoProgress, ParkReason.Timeout, ParkReason.NoRuntime], fixes);
+        Assert.Equal([ParkReason.Rounds, ParkReason.NoProgress, ParkReason.Timeout, ParkReason.NoRuntime, ParkReason.Unavailable], fixes);
         foreach (var reason in fixes)
         {
             var fits = new ParkKind?[] { null, ParkKind.Loop, ParkKind.Refusal, ParkKind.Step, ParkKind.Wait }.Select(k => AnswerVariants.Fitting(FrameFixture.Park(reason, k, ResumeKind.Transition)).ToArray()).ToList();
@@ -218,8 +220,6 @@ public sealed class InstanceViewsTests
     }
 
     [Theory]
-    [InlineData("parked-mirrored-needs-answer")]
-    [InlineData("parked-mirrored-budget")]
     [InlineData("escalated-child")]
     public void A_mirror_whose_child_decides_points_its_status_line_at_the_child(string name)
     {
@@ -232,11 +232,7 @@ public sealed class InstanceViewsTests
 
     [Theory]
     [InlineData("escalated-child", true)]
-    [InlineData("parked-mirrored-needs-answer", true)]
-    [InlineData("parked-mirrored-needs-answer-wait", true)]
-    [InlineData("parked-mirrored-budget", true)]
     [InlineData("parked-mirrored-spec-conflict", true)]
-    [InlineData("parked-mirrored-two-children", true)]
     [InlineData("parked-mirrored-unlisted-child", true)]
     [InlineData("parked-no-progress-child", false)]
     [InlineData("parked-mirrored-rounds", false)]
@@ -253,13 +249,27 @@ public sealed class InstanceViewsTests
         Assert.Equal(pointsAtChild, answer.Cli.EndsWith("<the child's answer>", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("parked-mirrored-needs-answer", "sindri workflow answer T-3/step/1/step.4 --text <answer>", "ApplyCommand:answer-text", "     (the child's own; T-3/step/1 forwards it)")]
+    [InlineData("parked-mirrored-needs-answer-wait", "sindri workflow answer T-3/step/1/step.4 --resume [--text <answer>]", "ApplyCommand:answer-resume", "     (the child's own; T-3/step/1 forwards it)")]
+    [InlineData("parked-mirrored-budget", "sindri workflow answer T-3/step/1/step.4 --grant-tokens <n>", "ApplyCommand:answer-grant-tokens", "     (at a terminal; once per park; the child's own; T-3/step/1 forwards it)")]
+    [InlineData("parked-mirrored-two-children", "sindri workflow answer T-3/step/1/step.4 --grant-tokens <n>", "ApplyCommand:answer-grant-tokens", "     (at a terminal; once per park; the child's own; T-3/step/1 forwards it)")]
+    public void A_mirror_whose_reason_gives_the_childs_answer_names_the_childs_own_command_keeping_via_and_child(string name, string cli, string action, string note)
+    {
+        var view = StatusCases.View(name);
+        var answer = view.AnswerLine!;
+
+        Assert.Equal((cli, action, "child", "T-3/step/1/step.4"), (answer.Cli, answer.ActionId.Value, answer.Via, answer.Child));
+        Assert.Equal(cli + note, AnswerLine(InstanceViews.Status(view, StatusCases.Now).Text).TrimStart()["answer".Length..].TrimStart());
+    }
+
     [Fact]
     public void The_child_named_is_the_one_the_suspension_mirrors_not_the_first_listed_sibling()
     {
         var view = StatusCases.View("parked-mirrored-two-children");
 
         Assert.Equal("T-3/step/1/step.4", view.AnswerLine!.Child);
-        Assert.Contains("(forwarded to T-3/step/1/step.4)", InstanceViews.Status(view, StatusCases.Now).Text, StringComparison.Ordinal);
+        Assert.Contains("answer T-3/step/1/step.4 --grant-tokens <n>", InstanceViews.Status(view, StatusCases.Now).Text, StringComparison.Ordinal);
         Assert.DoesNotContain("step.2", InstanceViews.Status(view, StatusCases.Now).Text.Split('\n').Single(l => l.TrimStart().StartsWith("answer", StringComparison.Ordinal)), StringComparison.Ordinal);
     }
 

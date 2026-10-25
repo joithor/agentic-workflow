@@ -14,7 +14,7 @@ public sealed class SettingsReaderTests
     {
         var settings = SettingsReader.Read(section: null).Value;
 
-        Assert.Equal((TimeSpan.FromSeconds(4), 32_000, 3, false), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
+        Assert.Equal((TimeSpan.FromSeconds(10), 3, true), (settings.Deadline, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(ContextSettings.DefaultDocGlobs, settings.DocGlobs);
         Assert.Null(settings.Repos);
     }
@@ -31,21 +31,54 @@ public sealed class SettingsReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_cascade_depth_over_4_is_SND_CONTEXT_001_at_its_key()
+    public void A_cascade_depth_over_8_is_SND_CONTEXT_001_at_its_key()
     {
-        var settings = Read("""{"cascadeDepth":5}""");
+        var settings = Read("""{"cascadeDepth":9}""");
 
         Assert.StartsWith("context.cascadeDepth:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, 50)]
+    [InlineData(1, 1)]
+    [InlineData(500, 500)]
+    public void The_component_fan_out_defaults_to_50_and_takes_1_to_500(int? fanOut, int expected)
+    {
+        var settings = fanOut is null ? SettingsReader.Read(section: null) : Read("{\"cascadeComponentFanOut\":" + fanOut.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+
+        Assert.Equal(expected, settings.Value.CascadeComponentFanOut);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0)]
+    [InlineData(501)]
+    public void A_component_fan_out_outside_1_to_500_is_SND_CONTEXT_001_at_its_key(int fanOut)
+    {
+        var settings = Read("{\"cascadeComponentFanOut\":" + fanOut.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+
+        Assert.Equal("SND-CONTEXT-001", settings.Error.Code);
+        Assert.StartsWith("context.cascadeComponentFanOut:", settings.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Every_key_is_read()
     {
-        var settings = Read("""{"repos":["split-panes"],"docs":{"globs":["docs/**/*.md"]},"deadline":"500ms","maxBudget":6000,"minHits":1,"sessions":{"enabled":true}}""").Value;
+        var settings = Read("""{"repos":["split-panes"],"docs":{"globs":["docs/**/*.md"]},"deadline":"500ms","minHits":1,"sessions":{"enabled":false}}""").Value;
 
-        Assert.Equal((TimeSpan.FromMilliseconds(500), 6_000, 1, true), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
+        Assert.Equal((TimeSpan.FromMilliseconds(500), 1, false), (settings.Deadline, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(["docs/**/*.md"], settings.DocGlobs, StringComparer.Ordinal);
         Assert.Equal(["split-panes"], settings.Repos!.Select(r => r.Value), StringComparer.Ordinal);   // why: set above
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"maxBudget":6000,"minHits":1}""")]
+    [InlineData("""{"maxBudget":10}""")]
+    [InlineData("""{"maxBudget":2000000}""")]
+    public void A_retired_maxBudget_in_an_old_profile_still_loads_and_is_ignored(string json)
+    {
+        var settings = Read(json);
+
+        Assert.True(settings.IsSuccess);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -62,8 +95,7 @@ public sealed class SettingsReaderTests
     [InlineData("""{"scrub":{"extra":[]}}""", "context:")]
     [InlineData("""{"scrub":{"extraPatterns":[{"id":"a","pattern":"b","flags":"i"}]}}""", "context:")]
     [InlineData("""{"deadline":"soon"}""", "context.deadline:")]
-    [InlineData("""{"deadline":"90s"}""", "context.deadline:")]
-    [InlineData("""{"maxBudget":10}""", "context.maxBudget:")]
+    [InlineData("""{"deadline":"301s"}""", "context.deadline:")]
     [InlineData("""{"minHits":99}""", "context.minHits:")]
     [InlineData("""{"docs":{"globs":["../etc/*"]}}""", "context.docs.globs:")]
     [InlineData("""{"docs":{"globs":[]}}""", "context.docs.globs:")]
@@ -83,12 +115,13 @@ public sealed class SettingsReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Labeling_is_off_with_a_400000_token_cap_unless_the_profile_says_otherwise()
+    public void Labeling_is_on_with_a_400000_token_cap_unless_the_profile_says_otherwise()
     {
         var settings = SettingsReader.Read(section: null).Value;
 
-        Assert.Equal((false, 400_000), (settings.Labeling.Enabled, settings.Labeling.MaxTokens));
-        Assert.Equal((false, 400_000), (Read("""{"sessions":{"enabled":true}}""").Value.Labeling.Enabled, Read("{}").Value.Labeling.MaxTokens));
+        Assert.Equal((true, 400_000), (settings.Labeling.Enabled, settings.Labeling.MaxTokens));
+        Assert.Equal((true, 400_000), (Read("""{"sessions":{"enabled":true}}""").Value.Labeling.Enabled, Read("{}").Value.Labeling.MaxTokens));
+        Assert.False(Read("""{"labeling":{"enabled":false}}""").Value.Labeling.Enabled);
     }
 
     [Fact, Trait("Lane", "unit")]

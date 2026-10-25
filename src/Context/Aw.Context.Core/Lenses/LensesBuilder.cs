@@ -6,9 +6,6 @@ namespace Aw.Context.Core.Lenses;
 /// <summary>Builds the lenses view around one node (spec §8.9, S-4). Pure over an applied graph.</summary>
 public static class LensesBuilder
 {
-    /// <summary>The cap on each list of a band.</summary>
-    public const int BandCap = 100;
-
     /// <summary>Builds the view.</summary>
     /// <param name="basis">The map read and when.</param>
     /// <param name="graph">The graph a caller may see: overrides applied, a session's scope already cut.</param>
@@ -21,7 +18,7 @@ public static class LensesBuilder
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         var clamped = Math.Clamp(depth, 0, GraphWalk.MaxDepth);
-        if (LensScope.Of(graph, anchor, clamped) is not { } scope)
+        if (LensScope.Of(graph, anchor, clamped, basis.Cascade) is not { } scope)
         {
             return ContextErrors.UnknownAnchor.With($"no node '{(anchor.Value.Length <= 80 ? anchor.Value : "(a long key)")}' in this map (fix: sindri context map status)");
         }
@@ -30,7 +27,7 @@ public static class LensesBuilder
         var (product, productKeys) = LensProduct.Build(scope, clamped);
         var (code, codeKeys) = LensCode.Build(scope);
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
-        var bands = new LensBands(intent, product, code);
+        var bands = LensRepos.Stamp(new LensBands(intent, product, code), graph, basis.MapRepo);
         var coverage = LensCoverageBuilder.Of(scope) with { Map = MapCoverageBuilder.Of(graph, scope.Own, basis) };
         var searched = LensSearchedBuilder.For(basis, [scope.Anchor.Key.Value], clamped, bands);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
@@ -38,6 +35,7 @@ public static class LensesBuilder
             bands, LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), coverage, searched, [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
         {
             MapCommit = basis.MapCommit,
+            SkippedComponents = scope.Cascade.SkippedComponents.Count > 0 ? scope.Cascade.SkippedComponents : null,
         };
     }
 

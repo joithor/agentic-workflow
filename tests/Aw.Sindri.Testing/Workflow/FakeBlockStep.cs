@@ -48,6 +48,16 @@ public sealed class FakeBlockStep(Func<StepContext, CancellationToken, ValueTask
     /// <returns>The Step.</returns>
     public static FakeBlockStep Failing(string reason) => new((_, _) => ValueTask.FromResult(BlockStepResult.Failed(reason)));
 
+    /// <summary>A Step that waits for <paramref name="gate"/> (or its own cancellation) and then reports <paramref name="outcome"/>.</summary>
+    /// <param name="gate">What the Step waits for.</param>
+    /// <param name="outcome">The outcome once the gate is done.</param>
+    /// <returns>The Step.</returns>
+    public static FakeBlockStep Gated(Task gate, string outcome) => new(async (_, ct) =>
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        return Result(outcome);
+    });
+
     /// <summary>A Step that never returns until it is cancelled.</summary>
     /// <returns>The Step.</returns>
     public static FakeBlockStep Hanging() => new(static async (_, ct) =>

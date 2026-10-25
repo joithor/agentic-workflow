@@ -40,7 +40,7 @@ public sealed class FileMetaConfigTests : IDisposable
 
         var loaded = (await config.Load(CancellationToken.None)).Value;
 
-        Assert.Equal((new ResourcesConfig(30, 8, 90), new BuildersConfig(4, 4), true), (loaded.Resources, loaded.Builders, loaded.Heavy.EffectiveReserve.Enabled));
+        Assert.Equal((new ResourcesConfig(30, 8, 90), new BuildersConfig(MaxPerLane: null, WorktreeGb: 4), true), (loaded.Resources, loaded.Builders, loaded.Heavy.EffectiveReserve.Enabled));
         Assert.Equal([3, 5, 7], loaded.Heavy.EffectiveReserve.Tiers.Select(t => t.MinDepth));
     }
 

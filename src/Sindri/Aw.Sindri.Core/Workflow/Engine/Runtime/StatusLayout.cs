@@ -3,7 +3,7 @@ using System.Text;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
-/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
+/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, run (an agent run, P8), child, inputs, injection, drift,
 /// timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
 /// at 120 and every continuation line is indented to the value column. Plain ASCII.
 /// </summary>
@@ -22,8 +22,10 @@ public static class StatusLayout
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
         Labelled(text, "name", NameLines(view));
         Labelled(text, "next", Wrap(view.Next));
+        Labelled(text, "run", view.AgentRun is { } run ? [$"agent {run.Launch}"] : []);
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
         Labelled(text, "inputs", InputLines(view));
+        Labelled(text, "injection", InjectionLines(view));
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
         Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
         Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
@@ -40,7 +42,7 @@ public static class StatusLayout
     {
         ArgumentNullException.ThrowIfNull(view);
         var forwarded = view.Question is not null && view.Children.Count > 0;
-        return string.Join(", ", view.AllowedCommands.Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb).Distinct(StringComparer.Ordinal));
+        return string.Join(", ", view.AllowedCommands.Where(static c => c.Verb is null).Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb).Distinct(StringComparer.Ordinal));
     }
 
     /// <summary>The verb of an action id: 'complete' for 'CompleteStep', 'answer' for every 'answer-&lt;variant&gt;', else what follows the colon.</summary>
@@ -58,6 +60,9 @@ public static class StatusLayout
 
     private static List<string> InputLines(InstanceView view) =>
         view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}{(i.Value.Generated ? " (generated)" : string.Empty)}")] : [];
+
+    private static List<string> InjectionLines(InstanceView view) =>
+        view.Task is { } task ? [.. task.Injection.Select(static i => $"{i.Section}  {i.Input.Value}  sha256:{i.Sha256[..Math.Min(12, i.Sha256.Length)]}  {i.Bytes.ToString(System.Globalization.CultureInfo.InvariantCulture)} B{(i.Replaced is { } replaced ? $" (replaced {replaced.Value})" : string.Empty)}")] : [];
 
     private static void Labelled(StringBuilder text, string label, List<string> lines)
     {
@@ -93,16 +98,17 @@ public static class StatusLayout
 
     private static string Budget(BudgetView budget)
     {
+        var scope = budget.PerRound ? "state, this round" : "state";
         List<string> parts =
         [
             budget.StateCap is { } state
-                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)"
-                : $"{StatusText.Tokens(budget.State)} used (state)",   // no cap: "used" only, never "/ <limit>"
+                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} ({scope})"
+                : $"{StatusText.Tokens(budget.State)} used ({scope})",   // no cap: "used" only, never "/ <limit>"
             budget.InstanceCap is { } instance
                 ? $"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)"
                 : $"{StatusText.Tokens(budget.Instance)} used (instance)",
         ];
 
-        return "tokens " + string.Join(", ", parts);
+        return "tokens " + string.Join(", ", parts) + (budget.Overrun is { } overrun ? $"; over budget: {overrun}" : string.Empty);
     }
 }

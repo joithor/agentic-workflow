@@ -207,7 +207,7 @@ public sealed class FocusRingTests : IDisposable
     {
         FocusRegion(window, region);
 
-        for (var i = 0; i < 20 && Name(Focused(window)) != name; i++)
+        for (var i = 0; i < 40 && Name(Focused(window)) != name; i++)
         {
             Press(window, Key.Tab, PhysicalKey.Tab);
         }

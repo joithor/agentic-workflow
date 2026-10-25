@@ -18,9 +18,9 @@ internal static class WorkflowRoutes
             parts.Add("root=true");
         }
 
-        if (query.Open)
+        if (query.Open is { } open)
         {
-            parts.Add("open=true");
+            parts.Add(open ? "open=true" : "open=false");
         }
 
         Add(parts, "recipe", query.Recipe);
@@ -31,13 +31,55 @@ internal static class WorkflowRoutes
 
     internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
 
+    /// <summary>POST: start the same recipe again for an instance that ended.</summary>
+    internal static string Rerun(string id) => $"{Instance(id)}/rerun";
+
+    /// <summary>POST: the report for an open desk run.</summary>
+    internal static string Complete(string id, string run) => $"{Instance(id)}/runs/{Uri.EscapeDataString(run)}/complete";
+
+    /// <summary>POST: a command on the instance (an answer, a cancel, a hand back).</summary>
+    internal static string Commands(string id) => $"{Instance(id)}/commands";
+
+    internal static string Events(string id) => $"{Instance(id)}/events";
+
     internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";
+
+    /// <summary>GET: the recipe list (every registered recipe).</summary>
+    internal static string Recipes => $"{Root}/recipes";
+
+    /// <summary>GET: the recipe list with its stats at a window ('7d', '30d' or '90d').</summary>
+    /// <param name="window">The window.</param>
+    /// <returns>The path with its query.</returns>
+    internal static string RecipesAt(string window) => $"{Recipes}?window={Uri.EscapeDataString(window)}";
+
+    /// <summary>GET: one recipe's stats at a window, optionally only the runs under a hash (a prefix of eight or more digits).</summary>
+    /// <param name="recipe">The recipe id.</param>
+    /// <param name="window">The window.</param>
+    /// <param name="hash">The hash prefix, or null for every version.</param>
+    /// <returns>The path with its query.</returns>
+    internal static string RecipeStats(string recipe, string window, string? hash)
+    {
+        var path = $"{Root}/recipes/{Uri.EscapeDataString(recipe)}/stats?window={Uri.EscapeDataString(window)}";
+        return string.IsNullOrEmpty(hash) ? path : path + "&hash=" + Uri.EscapeDataString(hash);
+    }
+
+    /// <summary>POST: start an instance.</summary>
+    internal static string Start => $"{Root}/instances";
+
+    /// <summary>GET: the approve-all plan; POST: approve it (a job).</summary>
+    internal static string ApproveAll => $"{Root}/recipes/approve-all";
+
+    /// <summary>GET: one job, which the approval is followed through.</summary>
+    internal static string Job(string id) => $"/sindri/jobs/{Uri.EscapeDataString(id)}";
 
     internal static string Recipe(string recipe, string? hash)
     {
         var path = new StringBuilder(Root).Append("/recipes/").Append(Uri.EscapeDataString(recipe));
         return (string.IsNullOrEmpty(hash) ? path : path.Append('@').Append(Uri.EscapeDataString(hash))).ToString();
     }
+
+    /// <summary>POST: approve one recipe hash (a protected command; the body is the challenge and its typed text).</summary>
+    internal static string ApproveRecipe(string recipe, string hash) => Recipe(recipe, hash) + "/approve";
 
     private static void Add(List<string> parts, string name, string? value)
     {

@@ -41,4 +41,7 @@ public static class KvKeys
 
     /// <summary>The running (or last) merge-train's summary lines, as the status shows them.</summary>
     public const string Train = "train.state";
+
+    /// <summary>The usage-limit stops the watch has announced (so a re-armed watch does not repeat them).</summary>
+    public const string UsageWatch = "usage.watch";
 }

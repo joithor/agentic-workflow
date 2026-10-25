@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.report
-version: 1
+version: 2
 description: "Block recipe: write the bug fix report (resolution.md) for a fixed or an unfixed bug alike. No pull request."
+displayName: "Write up a bug fix"
 inputs:
   - { key: fact:issue, label: "Issue", type: text, kind: text }
 outputs:

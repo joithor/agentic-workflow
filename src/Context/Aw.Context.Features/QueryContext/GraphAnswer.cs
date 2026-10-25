@@ -18,15 +18,21 @@ internal static class GraphAnswer
 {
     internal const string MapMarker = "C1";
 
-    internal static GraphPart Build(VisibleMap map, IReadOnlyList<GraphNode> anchors, IReadOnlyList<NodeKey> suggested, int depth, MapText text)
+    internal static GraphPart Build(VisibleMap map, IReadOnlyList<GraphNode> anchors, IReadOnlyList<NodeKey> suggested, CascadeReach reach, MapText text)
     {
         var graph = map.Graph;
         var nodes = graph.Nodes.ToDictionary(n => n.Key.Value, StringComparer.Ordinal);
         var own = new List<(NodeKey Key, NodeKey Anchor)>();
         var affected = new Dictionary<string, AffectedNode>(StringComparer.Ordinal);
+        var skipped = new Dictionary<string, SkippedComponent>(StringComparer.Ordinal);
         foreach (var anchor in anchors)
         {
-            var cascade = Cascade.Affects(graph, anchor.Key, depth);
+            var cascade = Cascade.Affects(graph, anchor.Key, reach.Depth, reach.Options);
+            foreach (var unit in cascade.SkippedComponents)
+            {
+                skipped[unit.Unit] = unit;
+            }
+
             own.AddRange(cascade.OwnScope.Where(k => !own.Exists(o => o.Key.Value == k.Value)).Select(k => (k, anchor.Key)));
             foreach (var a in cascade.Affected.Where(a => !affected.TryGetValue(a.Node.Value, out var known) || Better(a, known)))
             {
@@ -51,8 +57,11 @@ internal static class GraphAnswer
             cites[MapMarker] = Cite(map, candidates);
         }
 
-        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]) { Conflicts = Conflicts(map, reached, text), DecisionRecords = DecisionRecords(graph, reached), LinkedRecords = LinkedRecords(graph, anchors, reached) };
+        return new GraphPart(candidates, cites, [.. anchors.Select(a => a.Key.Value)], map.Snapshot.Label, [.. suggested.Select(k => k.Value)]) { Conflicts = Conflicts(map, reached, text), DecisionRecords = DecisionRecords(graph, reached), LinkedRecords = LinkedRecords(graph, anchors, reached), RecordSignals = RecordLinks.Of(graph, Depths(own, affected), anchors), SkippedComponents = [.. skipped.Values.OrderBy(u => u.Unit, StringComparer.Ordinal).Select(u => u with { Unit = text.Line(u.Unit) })] };
     }
+
+    private static Dictionary<string, int> Depths(List<(NodeKey Key, NodeKey Anchor)> own, Dictionary<string, AffectedNode> affected) =>
+        own.Select(o => (Node: o.Key.Value, Depth: 0)).Concat(affected.Values.Select(a => (Node: a.Node.Value, a.Depth))).GroupBy(d => d.Node, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Min(d => d.Depth), StringComparer.Ordinal);
 
     private static Dictionary<string, string> DecisionRecords(GraphSnapshot graph, HashSet<string> reached)
     {
@@ -96,7 +105,7 @@ internal static class GraphAnswer
         var facts = graph.Edges.Where(e => e.From.Value == key && e.Type is not EdgeType.Implements and not EdgeType.Tests)
             .Select(e => $"{EdgeRules.Name(e.Type)} {e.To.Value}")
             .Concat(graph.Edges.Where(e => e.To.Value == key && e.Type == EdgeType.Implements).Select(e => $"implemented-by {e.From.Value}"))
-            .Order(StringComparer.Ordinal).Take(12).ToList();
+            .Order(StringComparer.Ordinal).ToList();
         var line = facts.Count == 0 ? null : text.Line(string.Join("; ", facts));
         return new PackCandidate("graph", Item(fact, line, (fact.Provenance, fact.Confirmed, fact.Trust), why), MapMarker);
     }

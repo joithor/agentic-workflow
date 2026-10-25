@@ -1,8 +1,14 @@
+using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Search;
+using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
@@ -20,7 +26,8 @@ internal sealed class ContextGraph(
     IService<FindPathRequest, PathView> path,
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
-    IService<GetFileMapRequest, FileMapView> fileMap) : IContextGraph, IContextLenses
+    IService<GetFileMapRequest, FileMapView> fileMap,
+    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -32,14 +39,38 @@ internal sealed class ContextGraph(
         path.Handle(new FindPathRequest(from, to, scope), cancellationToken);
 
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        lenses.Handle(new GetLensesRequest(anchor, read, depth, scope), cancellationToken);
+        Lenses(anchor, read, new LensRange(depth), scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        lenses.Handle(new GetLensesRequest(anchor, read, range.Depth, scope) { Hops = range.Hops }, cancellationToken);
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        lensesSet.Handle(new GetLensesSetRequest(anchors, read, depth, scope), cancellationToken);
+        LensesOf(anchors, read, new LensRange(depth), scope, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        lensesSet.Handle(new GetLensesSetRequest(anchors, read, range.Depth, scope) { Hops = range.Hops }, cancellationToken);
+
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Subgraph(query, scope, cancellationToken);
+
+    public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.WholeMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Search(query, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Code(anchors, draft, mapVersion, scope, cancellationToken);
+
+    public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.History(anchors, window, read, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.ConceptMembers(query, scope, cancellationToken);
 }

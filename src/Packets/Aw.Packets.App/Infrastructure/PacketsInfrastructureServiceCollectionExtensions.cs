@@ -10,7 +10,7 @@ namespace Aw.Packets.App.Infrastructure;
 internal static class PacketsInfrastructureServiceCollectionExtensions
 {
     /// <summary>How long one git run may take.</summary>
-    internal static readonly TimeSpan GitTimeout = TimeSpan.FromSeconds(30);
+    internal static readonly TimeSpan GitTimeout = TimeSpan.FromSeconds(120);
 
     /// <summary>Adds the Packets adapters (disk, git, the freeze log under packets/) and their settings.</summary>
     /// <param name="services">The service collection.</param>
@@ -23,6 +23,7 @@ internal static class PacketsInfrastructureServiceCollectionExtensions
             .AddSingleton<IScopingPacketSource>(static _ => new FileSystemScopingPacketSource())
             .AddSingleton<ILinePacketSource>(static _ => new FileSystemLinePacketSource())
             .AddSingleton<ISizesSource>(static sp => new FileSystemSizesSource(sp.GetRequiredService<JsonSerializerOptions>()))
+            .AddSingleton<ISealSource>(static _ => new FileSystemSealSource())
             .AddSingleton<IRepoSnapshot>(static _ => new GitRepoSnapshot(GitTimeout))
             .AddSingleton<IFreezeLog>(static sp => new FileFreezeLog(sp.GetRequiredService<PacketsSettings>(), sp.GetRequiredService<JsonSerializerOptions>()));
 }

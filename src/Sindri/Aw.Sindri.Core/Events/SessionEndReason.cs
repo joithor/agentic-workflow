@@ -17,4 +17,7 @@ public enum SessionEndReason
     /// <summary>A sandbox limit killed the session (memory or wall); 'session.ended' names the kind, the limit and the peak. The engine maps it to step.failed(limit).</summary>
     [JsonStringEnumMemberName("limit")]
     Limit,
+    /// <summary>The agent's turn ended with no report, and nothing happened for <see cref="Launches.LaunchRules.IdleAfter"/>.</summary>
+    [JsonStringEnumMemberName("idle")]
+    Idle,
 }

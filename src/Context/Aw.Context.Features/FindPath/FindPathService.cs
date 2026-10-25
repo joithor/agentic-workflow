@@ -12,8 +12,8 @@ internal sealed class FindPathService(MapReader reader, IScrubberFactory scrubbe
     public async ValueTask<Result<PathView>> Handle(FindPathRequest request, CancellationToken cancellationToken)
     {
         var call = await reader.Open(request.Scope, scrubbers, cancellationToken).ConfigureAwait(false);
-        var from = call.Bind(c => AnchorMatch.Resolve(c.Map.Graph, request.From));
-        var to = from.Bind(_ => AnchorMatch.Resolve(call.Value.Map.Graph, request.To));
+        var from = call.Bind(c => AnchorMatch.Resolve(c.Map.Graph, request.From, request.Scope.Repos));
+        var to = from.Bind(_ => AnchorMatch.Resolve(call.Value.Map.Graph, request.To, request.Scope.Repos));
         if (to.IsError)
         {
             return to.Error;
@@ -21,8 +21,9 @@ internal sealed class FindPathService(MapReader reader, IScrubberFactory scrubbe
 
         var (map, text) = call.Value;
         var nodes = map.Graph.Nodes.ToDictionary(n => n.Key.Value, StringComparer.Ordinal);
+        var repoOf = NodeRepos.Index(map.Graph, map.Snapshot.Version.Repo.Value);
         var path = GraphWalk.ShortestPath(map.Graph, from.Value.Key, to.Value.Key);
         return new PathView(map.Snapshot.Label, from.Value.Key, to.Value.Key, path is not null,
-            [.. (path?.Steps ?? []).Select(s => new PathFact(EdgeFact.Of(s.Edge), s.Forward, text.Fact(nodes[s.Node.Value])))]);
+            [.. (path?.Steps ?? []).Select(s => new PathFact(EdgeFact.Of(s.Edge), s.Forward, text.Fact(nodes[s.Node.Value]) with { Repo = repoOf.GetValueOrDefault(s.Node.Value) }))]);
     }
 }

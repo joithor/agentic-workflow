@@ -29,5 +29,5 @@ internal static partial class Labels
     /// <summary>Open in an agent's accessible name, which carries the subject and what it waits for.</summary>
     /// <param name="subject">What it acts on.</param>
     /// <returns>The name.</returns>
-    internal static string OpenInAgentFor(string subject) => $"Open in an agent: {subject}, available with API P10a";
+    internal static string OpenInAgentFor(string subject) => $"Open in an agent: {subject}, not available in the app yet";
 }

@@ -1,0 +1,2425 @@
+{
+  "schemaVersion": 1,
+  "anchors": [
+    {
+      "key": "feature:sharing",
+      "label": "Sharing",
+      "kind": "feature",
+      "trust": "trusted"
+    }
+  ],
+  "missingAnchors": [],
+  "mapVersion": "v1",
+  "draft": false,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "files": [
+    {
+      "path": "src/sharing/links.ts",
+      "label": "src/sharing/links.ts",
+      "kind": "code",
+      "implements": [
+        "feature:sharing"
+      ],
+      "tests": [],
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": true,
+      "suggested": false,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "testedBy": [
+        "tests/edge.test.ts",
+        "tests/gen/g000.test.ts",
+        "tests/gen/g001.test.ts",
+        "tests/gen/g002.test.ts",
+        "tests/gen/g003.test.ts",
+        "tests/gen/g004.test.ts",
+        "tests/gen/g005.test.ts",
+        "tests/gen/g006.test.ts",
+        "tests/gen/g007.test.ts",
+        "tests/gen/g008.test.ts",
+        "tests/gen/g009.test.ts",
+        "tests/gen/g010.test.ts",
+        "tests/gen/g011.test.ts",
+        "tests/gen/g012.test.ts",
+        "tests/gen/g013.test.ts",
+        "tests/gen/g014.test.ts",
+        "tests/gen/g015.test.ts",
+        "tests/gen/g016.test.ts",
+        "tests/gen/g017.test.ts",
+        "tests/gen/g018.test.ts",
+        "tests/gen/g019.test.ts",
+        "tests/gen/g020.test.ts",
+        "tests/gen/g021.test.ts",
+        "tests/gen/g022.test.ts",
+        "tests/gen/g023.test.ts",
+        "tests/gen/g024.test.ts",
+        "tests/gen/g025.test.ts",
+        "tests/gen/g026.test.ts",
+        "tests/gen/g027.test.ts",
+        "tests/gen/g028.test.ts",
+        "tests/gen/g029.test.ts",
+        "tests/gen/g030.test.ts",
+        "tests/gen/g031.test.ts",
+        "tests/gen/g032.test.ts",
+        "tests/gen/g033.test.ts",
+        "tests/gen/g034.test.ts",
+        "tests/gen/g035.test.ts",
+        "tests/gen/g036.test.ts",
+        "tests/gen/g037.test.ts",
+        "tests/gen/g038.test.ts",
+        "tests/gen/g039.test.ts",
+        "tests/gen/g040.test.ts",
+        "tests/gen/g041.test.ts",
+        "tests/gen/g042.test.ts",
+        "tests/gen/g043.test.ts",
+        "tests/gen/g044.test.ts",
+        "tests/gen/g045.test.ts",
+        "tests/gen/g046.test.ts",
+        "tests/gen/g047.test.ts",
+        "tests/gen/g048.test.ts",
+        "tests/gen/g049.test.ts",
+        "tests/gen/g050.test.ts",
+        "tests/gen/g051.test.ts",
+        "tests/gen/g052.test.ts",
+        "tests/gen/g053.test.ts",
+        "tests/gen/g054.test.ts",
+        "tests/gen/g055.test.ts",
+        "tests/gen/g056.test.ts",
+        "tests/gen/g057.test.ts",
+        "tests/gen/g058.test.ts",
+        "tests/gen/g059.test.ts",
+        "tests/gen/g060.test.ts",
+        "tests/gen/g061.test.ts",
+        "tests/gen/g062.test.ts",
+        "tests/gen/g063.test.ts",
+        "tests/gen/g064.test.ts",
+        "tests/gen/g065.test.ts",
+        "tests/gen/g066.test.ts",
+        "tests/gen/g067.test.ts",
+        "tests/gen/g068.test.ts",
+        "tests/gen/g069.test.ts",
+        "tests/gen/g070.test.ts",
+        "tests/gen/g071.test.ts",
+        "tests/gen/g072.test.ts",
+        "tests/gen/g073.test.ts",
+        "tests/gen/g074.test.ts",
+        "tests/gen/g075.test.ts",
+        "tests/gen/g076.test.ts",
+        "tests/gen/g077.test.ts",
+        "tests/gen/g078.test.ts",
+        "tests/gen/g079.test.ts",
+        "tests/gen/g080.test.ts",
+        "tests/gen/g081.test.ts",
+        "tests/gen/g082.test.ts",
+        "tests/gen/g083.test.ts",
+        "tests/gen/g084.test.ts",
+        "tests/gen/g085.test.ts",
+        "tests/gen/g086.test.ts",
+        "tests/gen/g087.test.ts",
+        "tests/gen/g088.test.ts",
+        "tests/gen/g089.test.ts",
+        "tests/gen/g090.test.ts",
+        "tests/gen/g091.test.ts",
+        "tests/gen/g092.test.ts",
+        "tests/gen/g093.test.ts",
+        "tests/gen/g094.test.ts",
+        "tests/gen/g095.test.ts",
+        "tests/gen/g096.test.ts",
+        "tests/gen/g097.test.ts",
+        "tests/gen/g098.test.ts",
+        "tests/gen/g099.test.ts",
+        "tests/gen/g100.test.ts",
+        "tests/gen/g101.test.ts",
+        "tests/gen/g102.test.ts",
+        "tests/gen/g103.test.ts",
+        "tests/gen/g104.test.ts",
+        "tests/links.test.ts"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "src/sharing/routes.ts",
+      "label": "src/sharing/routes.ts",
+      "kind": "code",
+      "implements": [
+        "feature:sharing"
+      ],
+      "tests": [],
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": true,
+      "suggested": false,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "testedBy": [
+        "tests/edge.test.ts",
+        "tests/routes.test.ts"
+      ],
+      "repo": "aw-split-panes"
+    }
+  ],
+  "tests": [
+    {
+      "path": "tests/edge.test.ts",
+      "label": "tests/edge.test.ts",
+      "kind": "code",
+      "basis": "edge",
+      "tests": [
+        "feature:sharing"
+      ],
+      "named": [
+        "src/sharing/links.ts",
+        "src/sharing/routes.ts"
+      ],
+      "confirmed": true,
+      "suggested": false,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g000.test.ts",
+      "label": "tests/gen/g000.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g001.test.ts",
+      "label": "tests/gen/g001.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g002.test.ts",
+      "label": "tests/gen/g002.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g003.test.ts",
+      "label": "tests/gen/g003.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g004.test.ts",
+      "label": "tests/gen/g004.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g005.test.ts",
+      "label": "tests/gen/g005.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g006.test.ts",
+      "label": "tests/gen/g006.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g007.test.ts",
+      "label": "tests/gen/g007.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g008.test.ts",
+      "label": "tests/gen/g008.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g009.test.ts",
+      "label": "tests/gen/g009.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g010.test.ts",
+      "label": "tests/gen/g010.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g011.test.ts",
+      "label": "tests/gen/g011.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g012.test.ts",
+      "label": "tests/gen/g012.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g013.test.ts",
+      "label": "tests/gen/g013.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g014.test.ts",
+      "label": "tests/gen/g014.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g015.test.ts",
+      "label": "tests/gen/g015.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g016.test.ts",
+      "label": "tests/gen/g016.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g017.test.ts",
+      "label": "tests/gen/g017.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g018.test.ts",
+      "label": "tests/gen/g018.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g019.test.ts",
+      "label": "tests/gen/g019.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g020.test.ts",
+      "label": "tests/gen/g020.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g021.test.ts",
+      "label": "tests/gen/g021.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g022.test.ts",
+      "label": "tests/gen/g022.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g023.test.ts",
+      "label": "tests/gen/g023.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g024.test.ts",
+      "label": "tests/gen/g024.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g025.test.ts",
+      "label": "tests/gen/g025.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g026.test.ts",
+      "label": "tests/gen/g026.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g027.test.ts",
+      "label": "tests/gen/g027.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g028.test.ts",
+      "label": "tests/gen/g028.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g029.test.ts",
+      "label": "tests/gen/g029.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g030.test.ts",
+      "label": "tests/gen/g030.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g031.test.ts",
+      "label": "tests/gen/g031.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g032.test.ts",
+      "label": "tests/gen/g032.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g033.test.ts",
+      "label": "tests/gen/g033.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g034.test.ts",
+      "label": "tests/gen/g034.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g035.test.ts",
+      "label": "tests/gen/g035.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g036.test.ts",
+      "label": "tests/gen/g036.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g037.test.ts",
+      "label": "tests/gen/g037.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g038.test.ts",
+      "label": "tests/gen/g038.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g039.test.ts",
+      "label": "tests/gen/g039.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g040.test.ts",
+      "label": "tests/gen/g040.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g041.test.ts",
+      "label": "tests/gen/g041.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g042.test.ts",
+      "label": "tests/gen/g042.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g043.test.ts",
+      "label": "tests/gen/g043.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g044.test.ts",
+      "label": "tests/gen/g044.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g045.test.ts",
+      "label": "tests/gen/g045.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g046.test.ts",
+      "label": "tests/gen/g046.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g047.test.ts",
+      "label": "tests/gen/g047.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g048.test.ts",
+      "label": "tests/gen/g048.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g049.test.ts",
+      "label": "tests/gen/g049.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g050.test.ts",
+      "label": "tests/gen/g050.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g051.test.ts",
+      "label": "tests/gen/g051.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g052.test.ts",
+      "label": "tests/gen/g052.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g053.test.ts",
+      "label": "tests/gen/g053.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g054.test.ts",
+      "label": "tests/gen/g054.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g055.test.ts",
+      "label": "tests/gen/g055.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g056.test.ts",
+      "label": "tests/gen/g056.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g057.test.ts",
+      "label": "tests/gen/g057.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g058.test.ts",
+      "label": "tests/gen/g058.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g059.test.ts",
+      "label": "tests/gen/g059.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g060.test.ts",
+      "label": "tests/gen/g060.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g061.test.ts",
+      "label": "tests/gen/g061.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g062.test.ts",
+      "label": "tests/gen/g062.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g063.test.ts",
+      "label": "tests/gen/g063.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g064.test.ts",
+      "label": "tests/gen/g064.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g065.test.ts",
+      "label": "tests/gen/g065.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g066.test.ts",
+      "label": "tests/gen/g066.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g067.test.ts",
+      "label": "tests/gen/g067.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g068.test.ts",
+      "label": "tests/gen/g068.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g069.test.ts",
+      "label": "tests/gen/g069.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g070.test.ts",
+      "label": "tests/gen/g070.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g071.test.ts",
+      "label": "tests/gen/g071.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g072.test.ts",
+      "label": "tests/gen/g072.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g073.test.ts",
+      "label": "tests/gen/g073.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g074.test.ts",
+      "label": "tests/gen/g074.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g075.test.ts",
+      "label": "tests/gen/g075.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g076.test.ts",
+      "label": "tests/gen/g076.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g077.test.ts",
+      "label": "tests/gen/g077.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g078.test.ts",
+      "label": "tests/gen/g078.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g079.test.ts",
+      "label": "tests/gen/g079.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g080.test.ts",
+      "label": "tests/gen/g080.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g081.test.ts",
+      "label": "tests/gen/g081.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g082.test.ts",
+      "label": "tests/gen/g082.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g083.test.ts",
+      "label": "tests/gen/g083.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g084.test.ts",
+      "label": "tests/gen/g084.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g085.test.ts",
+      "label": "tests/gen/g085.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g086.test.ts",
+      "label": "tests/gen/g086.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g087.test.ts",
+      "label": "tests/gen/g087.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g088.test.ts",
+      "label": "tests/gen/g088.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g089.test.ts",
+      "label": "tests/gen/g089.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g090.test.ts",
+      "label": "tests/gen/g090.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g091.test.ts",
+      "label": "tests/gen/g091.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g092.test.ts",
+      "label": "tests/gen/g092.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g093.test.ts",
+      "label": "tests/gen/g093.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g094.test.ts",
+      "label": "tests/gen/g094.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g095.test.ts",
+      "label": "tests/gen/g095.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g096.test.ts",
+      "label": "tests/gen/g096.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g097.test.ts",
+      "label": "tests/gen/g097.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g098.test.ts",
+      "label": "tests/gen/g098.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g099.test.ts",
+      "label": "tests/gen/g099.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g100.test.ts",
+      "label": "tests/gen/g100.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g101.test.ts",
+      "label": "tests/gen/g101.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g102.test.ts",
+      "label": "tests/gen/g102.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g103.test.ts",
+      "label": "tests/gen/g103.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/gen/g104.test.ts",
+      "label": "tests/gen/g104.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/links.test.ts",
+      "label": "tests/links.test.ts",
+      "kind": "code",
+      "basis": "imports",
+      "tests": [],
+      "named": [
+        "src/sharing/links.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    },
+    {
+      "path": "tests/routes.test.ts",
+      "label": "tests/routes.test.ts",
+      "kind": "code",
+      "basis": "sibling",
+      "tests": [],
+      "named": [
+        "src/sharing/routes.ts"
+      ],
+      "confirmed": false,
+      "suggested": true,
+      "linkId": null,
+      "trust": "trusted",
+      "anchors": [
+        "feature:sharing"
+      ],
+      "repo": "aw-split-panes"
+    }
+  ],
+  "data": {
+    "things": [
+      {
+        "key": "thing:note",
+        "label": "Note",
+        "kind": "thing",
+        "access": "reads",
+        "via": [
+          "action:sharing.resolve-link"
+        ],
+        "searchable": true,
+        "provenance": "human",
+        "confidence": 1,
+        "confirmed": true,
+        "trust": "trusted",
+        "anchors": [
+          "feature:sharing"
+        ]
+      },
+      {
+        "key": "thing:shared-link",
+        "label": "Shared link",
+        "kind": "thing",
+        "access": "both",
+        "via": [
+          "action:sharing.create-link",
+          "action:sharing.resolve-link"
+        ],
+        "searchable": true,
+        "provenance": "human",
+        "confidence": 1,
+        "confirmed": true,
+        "trust": "trusted",
+        "anchors": [
+          "feature:sharing"
+        ]
+      }
+    ],
+    "files": [
+      {
+        "path": "migrations/002_sharing.sql",
+        "label": "migrations/002_sharing.sql",
+        "kind": "code",
+        "thing": "thing:shared-link",
+        "matched": "shared_link",
+        "trust": "trusted",
+        "anchors": [
+          "feature:sharing"
+        ]
+      }
+    ]
+  },
+  "callers": {
+    "state": "unavailable",
+    "reason": "index-not-built",
+    "items": [],
+    "code": "SND-CODEIDX-013"
+  },
+  "callees": {
+    "state": "unavailable",
+    "reason": "index-not-built",
+    "items": [],
+    "code": "SND-CODEIDX-013"
+  },
+  "counts": {
+    "files": 2,
+    "tests": 108,
+    "things": 2,
+    "schemaFiles": 1,
+    "filesWithoutTest": 0,
+    "unlocated": 0
+  },
+  "truncated": {
+    "files": false,
+    "tests": false,
+    "things": false,
+    "schemaFiles": false,
+    "searchedFiles": false
+  },
+  "lexical": [
+    {
+      "repo": "aw-split-panes",
+      "commit": "da2e79d",
+      "searchedFiles": 2,
+      "candidates": 107,
+      "read": 107
+    }
+  ],
+  "edges": [
+    {
+      "from": "action:sharing.resolve-link",
+      "to": "thing:note",
+      "type": "reads",
+      "provenance": "human",
+      "link": "edge:b95dfbe93826f4f9",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "action:sharing.resolve-link",
+      "to": "thing:shared-link",
+      "type": "reads",
+      "provenance": "human",
+      "link": "edge:91260d06b99f9a1b",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "action:sharing.create-link",
+      "to": "thing:shared-link",
+      "type": "writes",
+      "provenance": "human",
+      "link": "edge:ef3ab8d8466df46e",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:src/sharing/links.ts",
+      "to": "feature:sharing",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:f39c103f72567cb1",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:src/sharing/routes.ts",
+      "to": "feature:sharing",
+      "type": "implements",
+      "provenance": "deterministic",
+      "link": "edge:d7e7042b110f6413",
+      "confirmed": true,
+      "confidence": 1
+    },
+    {
+      "from": "code:tests/edge.test.ts",
+      "to": "feature:sharing",
+      "type": "tests",
+      "provenance": "deterministic",
+      "link": "edge:3b0d022f33c33dd0",
+      "confirmed": true,
+      "confidence": 1
+    }
+  ],
+  "coverage": {
+    "scope": 4,
+    "intent": {
+      "covered": 0,
+      "of": 4
+    },
+    "product": {
+      "confirmed": 4,
+      "of": 4
+    },
+    "code": {
+      "implemented": 1,
+      "of": 4,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [
+      {
+        "node": "action:sharing.create-link",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "action:sharing.resolve-link",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "feature:sharing",
+        "missing": [
+          "intent"
+        ],
+        "note": "implemented, no record or decision"
+      },
+      {
+        "node": "surface:screen/share",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      }
+    ],
+    "map": {
+      "paths": [
+        "src/sharing/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    },
+    "byAnchor": {
+      "feature:sharing": {
+        "scope": 4,
+        "intent": {
+          "covered": 0,
+          "of": 4
+        },
+        "product": {
+          "confirmed": 4,
+          "of": 4
+        },
+        "code": {
+          "implemented": 1,
+          "of": 4,
+          "level": "file",
+          "suggested": 0
+        },
+        "gaps": [
+          {
+            "node": "action:sharing.create-link",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "action:sharing.resolve-link",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "feature:sharing",
+            "missing": [
+              "intent"
+            ],
+            "note": "implemented, no record or decision"
+          },
+          {
+            "node": "surface:screen/share",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          }
+        ]
+      }
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:sharing"
+    ],
+    "mapVersion": "v1",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": "SND-CODEIDX-013",
+        "asOf": null
+      },
+      {
+        "id": "lexical-tests",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "lexical-schema",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

@@ -10,18 +10,30 @@ namespace Aw.Context.Core.Onyx;
 /// </summary>
 public sealed partial record OnyxSettings
 {
+    /// <summary>
+    /// The email of the dedicated Onyx user that `sindri onyx up` makes for Sindri (an admin, so the search route works, on its own account rather than a person's). Onyx Community Edition has no service-account keys
+    /// (their route is Business tier), so Sindri's token is a personal access token of this user, and doctor tells it from a person's account by this email. A manual setup names its dedicated user the same.
+    /// It is an example.com address on purpose: RFC 2606 reserves the name, its null MX (RFC 7505) means no mail to it is ever delivered, and nobody can own the mailbox (so Onyx's forgot-password or invite mail can't reach anyone).
+    /// Onyx accepts it: its pinned email-validator 2.2.0 leaves example.com out of its special-use list (`email_validator/__init__.py:66`), whereas `.invalid`, `.test`, `.local` and `.localhost` are rejected.
+    /// </summary>
+    public const string DedicatedAccountEmail = "sindri@example.com";
+
     private const string UrlKey = "context.sources.onyx.url";
     private const string TokenKey = "context.sources.onyx.token";
     private const string VersionKey = "context.sources.onyx.version";
     private const int MaxShown = 64;
     private static readonly HashSet<string> _schemes = new(StringComparer.Ordinal) { "env", "file", "keychain", "op" };
 
-    private OnyxSettings(Uri url, string token, string version)
+    private OnyxSettings(Uri url, string token, string version, bool managed)
     {
         Url = url;
         Token = token;
         Version = version;
+        Managed = managed;
     }
+
+    /// <summary>Gets a value indicating whether Sindri manages this Onyx ('context.sources.onyx.managed'): it stands the stack up, starts it with 'serve' and stops it with 'stop'. Only a managed one has its url on 127.0.0.1.</summary>
+    public bool Managed { get; }
 
     /// <summary>Onyx's base URL (http or https on a loopback host), ending in '/'.</summary>
     public Uri Url { get; }
@@ -39,13 +51,19 @@ public sealed partial record OnyxSettings
     /// <param name="url">'context.sources.onyx.url'.</param>
     /// <param name="token">'context.sources.onyx.token', a secret pointer.</param>
     /// <param name="version">'context.sources.onyx.version', a release tag.</param>
+    /// <param name="managed">'context.sources.onyx.managed': Sindri runs this Onyx, so its url must be http://127.0.0.1:&lt;port&gt;.</param>
     /// <returns>The settings, SND-CONTEXT-055 for a URL or version that breaks the rules, or SND-CONTEXT-002 for no token or one that isn't a secret pointer (never repeated).</returns>
-    public static Result<OnyxSettings> Create(string? url, string? token, string? version)
+    public static Result<OnyxSettings> Create(string? url, string? token, string? version, bool managed = false)
     {
         var baseUrl = CheckUrl(url);
         if (baseUrl.IsError)
         {
             return baseUrl.Error;
+        }
+
+        if (managed && (baseUrl.Value.Scheme != Uri.UriSchemeHttp || baseUrl.Value.Host != "127.0.0.1"))
+        {
+            return NotLoopback("a managed Onyx (managed: true) is reached at http://127.0.0.1:<port> only");
         }
 
         if (string.IsNullOrWhiteSpace(token))
@@ -62,7 +80,7 @@ public sealed partial record OnyxSettings
         }
 
         var pinned = CheckPinned(version);
-        return pinned.IsError ? pinned.Error : new OnyxSettings(baseUrl.Value, token, pinned.Value);
+        return pinned.IsError ? pinned.Error : new OnyxSettings(baseUrl.Value, token, pinned.Value, managed);
     }
 
     /// <summary>Compares the version a running Onyx reports with the pinned one.</summary>
@@ -130,7 +148,7 @@ public sealed partial record OnyxSettings
 
     private static Error NotLoopback(string why) => ContextErrors.OnyxNotPinnedOrLoopback.With(
         $"{UrlKey}: Onyx must be on a loopback address (127.0.0.0/8, [::1] or localhost) over http or https, but {why}. "
-        + "Bind Onyx's published ports to 127.0.0.1 and point the url there, e.g. http://127.0.0.1:3000 (spec §8.8).");
+        + "Bind Onyx's published ports to 127.0.0.1 and point the url there, e.g. http://127.0.0.1:3189 (spec §8.8).");
 
     private static Error NotPinned(string why) => ContextErrors.OnyxNotPinnedOrLoopback.With($"{VersionKey}: {why} (spec §8.8).");
 

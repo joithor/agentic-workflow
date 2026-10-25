@@ -126,7 +126,7 @@ public sealed class LensesSetTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Union_band_over_100_is_truncated_by_min_depth_then_anchor_order()
+    public void Union_band_over_100_lists_every_item_by_min_depth_then_anchor_order()
     {
         var builder = new GraphBuilder().Node("feature:a").Node("feature:b");
         for (var i = 0; i < 70; i++)
@@ -137,8 +137,7 @@ public sealed class LensesSetTests
 
         var product = Set(builder.Build(), ["feature:b", "feature:a"], depth: 0).Bands.Product;
 
-        Assert.True(product.Truncated);
-        Assert.Equal((100, 142), (product.Own.Count, product.Counts.Own));
+        Assert.Equal((142, 142), (product.Own.Count, product.Counts.Own));
         Assert.All(product.Own.Take(71), i => Assert.Equal(["feature:b"], i.Anchors));
         Assert.All(product.Own.Skip(71), i => Assert.Equal(["feature:a"], i.Anchors));
         Assert.Equal(product.Own.Skip(71).Select(i => i.Node.Value).Order(StringComparer.Ordinal), product.Own.Skip(71).Select(i => i.Node.Value), StringComparer.Ordinal);
@@ -187,16 +186,38 @@ public sealed class LensesSetTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void More_than_20_anchors_is_006_and_20_or_the_same_value_repeated_is_not()
+    public void No_anchors_is_006_and_any_number_of_anchors_is_not()
     {
-        var many = Enumerable.Range(0, 21).Select(i => "nope:" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
-        var twenty = Enumerable.Range(0, 20).Select(i => "nope:" + i.ToString(CultureInfo.InvariantCulture)).Append(Manager).Take(20).ToArray();
+        var many = Enumerable.Range(0, 50).Select(i => "nope:" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
 
-        Assert.Equal(ContextErrors.QueryInvalid.Code, LensesBuilder.BuildSet(Basis(), Tabs(), many, 2).Error.Code);
         Assert.Equal(ContextErrors.QueryInvalid.Code, LensesBuilder.BuildSet(Basis(), Tabs(), [], 2).Error.Code);
-        Assert.Null(QueryRules.CheckAnchors(twenty));
-        Assert.NotNull(QueryRules.CheckAnchors(many));
-        Assert.Equal(ContextErrors.UnknownAnchor.Code, LensesBuilder.BuildSet(Basis(), Tabs(), twenty, 2).Error.Code);
+        Assert.Null(QueryRules.CheckAnchors(many, "lenses"));
+        Assert.Equal("a code call takes at least 1 anchor, not 0", QueryRules.CheckAnchors([], "code")?.Message);
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, LensesBuilder.BuildSet(Basis(), Tabs(), many, 2).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Fifty_distinct_anchors_answer_a_full_schema_2_set()
+    {
+        var graph = Tabs();
+        var extra = Enumerable.Range(0, 50 - graph.Nodes.Count).Select(i => new GraphNode(NodeKey.From("thing:cap-" + i.ToString(CultureInfo.InvariantCulture)), "Cap " + i.ToString(CultureInfo.InvariantCulture)));
+        var wide = graph with { Nodes = [.. graph.Nodes, .. extra] };
+        var keys = wide.Nodes.Take(50).Select(n => n.Key.Value).ToArray();
+
+        var view = Set(wide, keys);
+
+        Assert.Equal((2, 50), (view.SchemaVersion, view.Anchors.Count));
+        Assert.Empty(view.MissingAnchors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Map_coverage_counts_the_files_under_the_anchors_paths()
+    {
+        var basis = Basis(["src/tabs/TabManager.ts", "src/tabs/TabGroups.ts", "src/tabs/Pinned.ts", "src/other/Elsewhere.ts"]);
+
+        var map = One(Tabs(), Manager, basis: basis).Coverage.Map!;
+
+        Assert.Equal((3, 1, 1, false), (map.Files, map.Unmapped, map.Suggested, map.Truncated));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -230,8 +251,8 @@ public sealed class LensesSetTests
         var synced = new IntentSourceState("c", _created, LastError: null, 3, 1, 0, 0);
 
         Assert.Equal((SearchedState.NotConfigured, "not-configured", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: false, state: null)));
-        Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, state: null)));
-        Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState(Cursor: null, LastSync: null, LastError: null, Records: 0, Links: 0, Decisions: 0, Queued: 0))));
+        Assert.Equal((SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, state: null)));
+        Assert.Equal((SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState(Cursor: null, LastSync: null, LastError: null, Records: 0, Links: 0, Decisions: 0, Queued: 0))));
         Assert.Equal((SearchedState.Degraded, null, "SND-CONTEXT-010"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-010" })));
         Assert.Equal((SearchedState.Ok, null, "SND-CONTEXT-059"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-059" })));
         var ok = SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced);
@@ -295,7 +316,7 @@ public sealed class LensesSetTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Map_coverage_paths_cap_at_50_with_truncated()
+    public void Map_coverage_lists_every_directory_and_never_cuts()
     {
         var builder = new GraphBuilder().Node("feature:wide");
         var files = new List<string>();
@@ -308,9 +329,9 @@ public sealed class LensesSetTests
 
         var map = One(builder.Build(), "feature:wide", depth: 0, basis: Basis(files)).Coverage.Map!;
 
-        Assert.Equal((50, true), (map.Paths.Count, map.Truncated));
+        Assert.Equal((60, false), (map.Paths.Count, map.Truncated));
         Assert.Equal("src/d00/", map.Paths[0]);
-        Assert.Equal(50, map.Files);
+        Assert.Equal(60, map.Files);
     }
 
     [Fact, Trait("Lane", "unit")]

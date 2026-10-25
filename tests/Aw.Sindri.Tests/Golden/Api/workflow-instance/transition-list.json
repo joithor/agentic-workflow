@@ -8,7 +8,8 @@
     "id": "workflow.fork-demo",
     "hash": "sha256:1f08c6a900000000000000000000000000000000000000000000000000000000",
     "version": 1,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "Fork demo"
   },
   "state": "right",
   "since": "2026-10-12T12:00:00.0000000Z",
@@ -140,7 +141,8 @@
           "confirm": "Cancel ITM-01JL3/fork-demo/1? 1 running step stops; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL3/fork-demo/1  workflow.fork-demo@1f08c6a90000  v1  right  since 12:00 (26m)\n  next      branch.right is running.\n  timeout   parks in 34m (right)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JL3/fork-demo/1  workflow.fork-demo@1f08c6a90000  v1  right  since 12:00 (26m)\n  next      branch.right is running.\n  timeout   parks in 34m (right)\n  commands  takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -170,5 +172,9 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null,
+  "allowedCommands": []
 }

@@ -15,7 +15,7 @@ public sealed class FakeSindriHandlerRoutingTests
     // Each row is a route a GET answers, read from the goldens on disk: only the method keeps a POST out.
     public static TheoryData<string> ServedRoutes() =>
     [
-        "instances",
+        "recipes",   // POST /workflow/instances is StartInstance (U5'), the one workflow write the fake serves; the list of recipes is a read only
         "instances/" + (string)JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!["id"]!, // why: an instance golden has its id
         "recipes/" + WorkflowAnswers.NamedRecipeGoldens.Values.First(),
     ];

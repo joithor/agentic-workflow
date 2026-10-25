@@ -4,16 +4,16 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The main action on a live agent Step.</summary>
-    internal const string Attach = "Attach";
+    internal const string Attach = "Watch the agent";
 
     /// <summary>The main action on a tool or model Step, which has no terminal to join.</summary>
-    internal const string OpenInstance = "Open instance";
+    internal const string OpenInstance = "Open run";
 
     /// <summary>The note under every Attach button (the fixture's sentence).</summary>
-    internal const string AttachNote = "Attach joins the live session; your first keystroke takes it over.";
+    internal const string AttachNote = "Watch the agent's terminal live. Typing takes it over.";
 
     /// <summary>The chip that stands in for Attach until the command catalog says it is ready (API P10a).</summary>
-    internal const string AvailableWithP10a = "Available with API P10a";
+    internal const string AvailableWithP10a = "Not available in the app yet";
 
     /// <summary>The chevron menu's Take over.</summary>
     internal const string TakeOver = "Take over";
@@ -33,17 +33,19 @@ internal static partial class Labels
     /// <summary>Accessible name of the main button of a live agent Step.</summary>
     /// <param name="address">The instance address (opaque).</param>
     /// <returns>The name.</returns>
-    internal static string AttachTo(string address) => $"Attach to {address}";
+    internal static string AttachTo(string address) => $"Watch the agent for {address}";
 
     /// <summary>Accessible name of the pending chip that stands for Attach.</summary>
     /// <param name="address">The instance address (opaque).</param>
+    /// <param name="reason">Why it waits, as drawn in the chip; it reads on after the colon, so its first letter is lowered.</param>
     /// <returns>The name.</returns>
-    internal static string AttachPendingName(string address) => $"Attach to {address}: available with API P10a";
+    internal static string AttachPendingName(string address, string reason) =>
+        reason.Length == 0 ? $"Watch the agent for {address}: " : $"Watch the agent for {address}: {char.ToLowerInvariant(reason[0])}{reason[1..]}";
 
     /// <summary>Accessible name of the main button of a tool or model Step.</summary>
     /// <param name="address">The instance address (opaque).</param>
     /// <returns>The name.</returns>
-    internal static string OpenInstanceName(string address) => $"Open instance {address}";
+    internal static string OpenInstanceName(string address) => $"Open run {address}";
 
     /// <summary>Accessible name of a Workflows row's title button: the visible title first (WCAG 2.5.3, Label in Name), then what it does.</summary>
     /// <param name="subject">The title as drawn.</param>

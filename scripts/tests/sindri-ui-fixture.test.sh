@@ -114,6 +114,7 @@ case "$*" in
     echo "approve-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env"
     [ -n "${STUB_FAIL_APPROVE:-}" ] && { echo "approve refused" >&2; exit 1; }
     cksum < "$AW_SINDRI_HOME/profile/profile.yaml" > "$STUB_LOG.approved" ;;
+  "--headless") echo "headless proc=${AW_SESSIONS_PROC_ROOT:-} claude=${AW_SESSIONS_CLAUDE_DIR:-} fleet=${AW_FLEET_DIR:-} launcher=${AW_LAUNCHER_CONFIG:-}" >> "$STUB_LOG.env" ;;
   "context map status --json") [ -z "${STUB_NO_MAP:-}" ] || exit 1; echo '{"version":{"number":1}}' ;;
   "context map build") echo "build-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env" ;;
   "context map import "*) IFS= read -r line; echo "typed=$line" >> "$STUB_LOG"; echo "import-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env"; [ -z "${STUB_FAIL_IMPORT:-}" ] || { echo "SND-AUTH-002 refused" >&2; exit 1; } ;;
@@ -381,5 +382,185 @@ contains "--help shows FIXTURE_REPO" "$(bash "$FIXTURE" --help)" "FIXTURE_REPO n
 contains "--help shows the environment" "$(bash "$FIXTURE" --help)" "Environment: AW_SINDRI_HOME"
 
 AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1; check "context up works again after down" "$?" "0"
+
+# --- sessions up | ask | end | back | disable | enable | down (the Agents page's data, U11a) ---
+S="$TMPDIR/sess"
+mkdir -p "$S"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1
+for v in "up" "ask 211" "end 211" "back 211" "disable" "enable" "down"; do
+  # shellcheck disable=SC2086
+  AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" sessions $v >/dev/null 2>&1; check "sessions $v refuses an unguarded home" "$?" "2"
+done
+check "the refused sessions verbs wrote nothing" "$(ls -A "$WORK/elsewhere")" ""
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions >/dev/null 2>&1; check "sessions needs a subverb (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions sideways >/dev/null 2>&1; check "sessions refuses another word (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions ask >/dev/null 2>&1; check "sessions ask needs a pid (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions up 1 >/dev/null 2>&1; check "sessions up takes no argument (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 211 >/dev/null 2>&1; check "sessions end before up exits 2" "$?" "2"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask x >/dev/null 2>&1; check "sessions ask refuses a non-pid (exit 2)" "$?" "2"
+
+own="$(jq -r '.ownUid' "$ROOT/tests/fixtures/sessions/manifest.json")"
+if [ "$(id -u)" != "$own" ]; then
+  out="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions up 2>&1)"; check "sessions up refuses another uid" "$?" "2"
+  contains "the refusal names the fixture's uid" "$out" "belong to uid $own"
+  check "the refused sessions up copied nothing" "$([ -e "$S/ui-fixture-sessions" ] && echo yes || echo no)" "no"
+  echo "ok - skipped: the other sessions cases need uid $own (this is $(id -u))"
+else
+  # shellcheck source=scripts/lib/ensure-scripts-deps.sh
+  . "$ROOT/scripts/lib/ensure-scripts-deps.sh"
+  ensure_scripts_deps "$ROOT/scripts" || { echo "not ok - Ajv is needed"; fail=1; }
+  : > "$STUB_LOG"; : > "$STUB_LOG.env"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions up >/dev/null 2>&1; check "sessions up exits 0" "$?" "0"
+  D="$S/ui-fixture-sessions"
+  check "the copy is the fixture's tree" "$(diff -r --no-dereference "$ROOT/tests/fixtures/sessions/proc" "$D/proc" && diff -r "$ROOT/tests/fixtures/sessions/claude-sessions" "$D/claude-sessions" && echo same)" "same"
+  check "the copy's proc keeps a symlink" "$([ -L "$D/proc/211/exe" ] && echo link)" "link"
+  check "the fleet dir is 0700 with the marker" "$(stat -c %a "$D/fleet" 2>/dev/null || stat -f %Lp "$D/fleet"):$([ -f "$D/fleet/.aw-fleet" ] && echo marker)" "700:marker"
+  check "the copy's launcher.json is bare" "$(jq -c . "$D/launcher.json")" '{"schema":1}'
+  check "sessions up stops, then starts headless" "$(tr '\n' ';' < "$STUB_LOG")" "stop;--headless;"
+  check "the control plane starts with the four overrides on the copy" "$(tail -1 "$STUB_LOG.env")" "headless proc=$D/proc claude=$D/claude-sessions fleet=$D/fleet launcher=$D/launcher.json"
+  before="$(cat "$STUB_LOG")"
+  # ask: a schema-valid asking file for pid 211's session, ticks from its stat
+  f="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask 211 2>&1)"; check "sessions ask exits 0" "$?" "0"
+  check "ask prints the file under fleet/claude-code/<session id>.json" "$f" "$D/fleet/claude-code/aaaaaaaa-0000-4000-8000-000000000211.json"
+  check "ask: state, reason, tool, pid, ticks, provider" "$(jq -r '[.state, .reason, .tool, .agentPid, .agentStartTicks, .provider] | join(",")' "$f")" "asking,approval,Bash,211,1100,claude-code"
+  check "ask: mode 0600, dir 0700, marker" "$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f"):$(stat -c %a "$D/fleet/claude-code" 2>/dev/null || stat -f %Lp "$D/fleet/claude-code"):$([ -f "$D/fleet/claude-code/.aw-fleet" ] && echo marker)" "600:700:marker"
+  check "ask leaves no temp file" "$(ls -A "$D/fleet/claude-code" | grep -c '^\.ask\.')" "0"
+  check "ask does not restart the control plane" "$(cat "$STUB_LOG")" "$before"
+  node -e '
+const fs = require("fs"), { createRequire } = require("module");
+const Ajv = createRequire(process.argv[1] + "/package.json")("ajv/dist/2020").default;
+const v = new Ajv({ strict: false }).compile(JSON.parse(fs.readFileSync(process.argv[2], "utf8")));
+process.exit(v(JSON.parse(fs.readFileSync(process.argv[3], "utf8"))) ? 0 : 1);' "$ROOT/scripts" "$ROOT/schemas/fleet-state.schema.json" "$f" 2>/dev/null
+  check "the fleet file validates against fleet-state.schema.json" "$?" "0"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask 212 >/dev/null 2>&1; check "ask refuses a pid with no Claude record (exit 2)" "$?" "2"
+  # end / back
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 311 >/dev/null 2>&1; check "sessions end exits 0" "$?" "0"
+  check "end moves proc/311 out of the tree" "$([ -e "$D/proc/311" ] && echo in || echo out):$([ -d "$D/ended/311" ] && echo kept)" "out:kept"
+  check "end leaves the source fixture alone" "$([ -d "$ROOT/tests/fixtures/sessions/proc/311" ] && echo present)" "present"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 311 >/dev/null 2>&1; check "ending an ended pid exits 2" "$?" "2"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions back 311 >/dev/null 2>&1; check "sessions back exits 0" "$?" "0"
+  check "back restores proc/311" "$(diff -r --no-dereference "$ROOT/tests/fixtures/sessions/proc/311" "$D/proc/311" && echo same)" "same"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions back 311 >/dev/null 2>&1; check "back of a pid not ended exits 2" "$?" "2"
+  # disable / enable
+  : > "$STUB_LOG.env"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions disable >/dev/null 2>&1; check "sessions disable exits 0" "$?" "0"
+  check "disable writes sessions.enabled=false into the copy's launcher.json" "$(jq -c . "$D/launcher.json")" '{"schema":1,"sessions":{"enabled":false}}'
+  check "disable restarts with the overrides" "$(cat "$STUB_LOG.env")" "headless proc=$D/proc claude=$D/claude-sessions fleet=$D/fleet launcher=$D/launcher.json"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions enable >/dev/null 2>&1; check "sessions enable exits 0" "$?" "0"
+  check "enable removes the key again" "$(jq -c . "$D/launcher.json")" '{"schema":1}'
+  # down
+  : > "$STUB_LOG"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions down >/dev/null 2>&1; check "sessions down exits 0" "$?" "0"
+  check "down removes the copy" "$([ -e "$D" ] && echo present || echo gone)" "gone"
+  check "down stops the control plane and never restarts it" "$(cat "$STUB_LOG")" "stop"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions down >/dev/null 2>&1; check "sessions down twice exits 0" "$?" "0"
+  check "the fixture tree in the repo is untouched" "$(git -C "$ROOT" status --porcelain -- tests/fixtures/sessions)" ""
+fi
+
+# --- context publish: the Context map card's six states (F1P-c, code index spec 6.4) ---
+P="$TMPDIR/pub"
+mkdir -p "$P/context"
+migrate "$P/ledger.db" "$ROOT/src/Sindri/Aw.Sindri.Infrastructure/Ledger/Migrations/0001_events.sql"
+migrate "$P/context/context.db" "$ROOT/src/Context/Aw.Context.Infrastructure/Store/Migrations/0002_s3a_graph.sql"
+migrate "$P/context/context.db" "$ROOT/src/Context/Aw.Context.Infrastructure/Store/Migrations/0010_s4p_map_publish.sql"
+CDB="$P/context/context.db"
+sqlq "$P/ledger.db" "INSERT INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
+  VALUES ('e1', 'process.started', 1, '2026-10-12T12:00:00Z', 'host:sindri', 'local', 0, 'c1', 3, 'process.started:3', '{}');"
+pub() { AW_SINDRI_HOME="$P" SINDRI="$STUB" bash "$FIXTURE" context publish "$@"; }
+
+out="$(AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" context publish held 2>&1)"; check "context publish refuses outside a guarded home" "$?" "2"
+contains "the refusal is the prover's" "$out" "sindri-prove:"
+AW_SINDRI_HOME="$P" bash "$FIXTURE" context publish >/dev/null 2>&1; check "context publish needs a state (exit 2)" "$?" "2"
+out="$(AW_SINDRI_HOME="$P" bash "$FIXTURE" context publish sideways 2>&1)"; check "context publish refuses another state (exit 2)" "$?" "2"
+contains "the refusal names the states" "$out" "held, overdue, published, without-waiting, stale, by-hand"
+out="$(pub held 2>&1)"; check "context publish with no store exits 2" "$?" "2"
+contains "it says to run context up" "$out" "run 'context up' first"
+
+sqlq "$CDB" "INSERT INTO map_version (repo, commit_sha, key_version, created, status) VALUES ('aw-split-panes', NULL, 1, '2026-10-01T00:00:00.0000000Z', 'current');"
+sqlq "$CDB" "INSERT INTO map_version_head (version, repo, commit_sha, on_default) VALUES (1, 'aw-split-panes', 'abcdef0', 1);"
+: > "$STUB_LOG"
+out="$(pub held 2>&1)"; check "publish held exits 0" "$?" "0"
+check "held prints its state id" "$out" "held"
+check "held writes a draft headed at the repo's live commit (a stand-in outside a git repo) and a hold on it" "$(sqlq "$CDB" "SELECT d.id, d.status, h.repo, h.commit_sha FROM map_hold m JOIN map_version d ON d.id = m.version JOIN map_version_head h ON h.version = d.id")" "2|draft|aw-split-panes|9999999999999999999999999999999999999999"
+check "held writes the code index at another commit, so the repo waits" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "2"
+check "held starts the wait now" "$(sqlq "$CDB" "SELECT since >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-30 seconds') FROM map_publish_chain")" "1"
+check "held pauses the map service so no tick publishes it" "$(cat "$STUB_LOG")" "services pause context-map-refresh"
+check "held leaves the current version" "$(sqlq "$CDB" "SELECT id, status FROM map_version WHERE status = 'current'")" "1|current"
+pub held >/dev/null 2>&1
+check "a second held writes one draft and one hold" "$(sqlq "$CDB" "SELECT COUNT(*) FROM map_hold") $(sqlq "$CDB" "SELECT COUNT(*) FROM map_version WHERE status = 'draft'") $(sqlq "$CDB" "SELECT COUNT(*) FROM map_version_head")" "1 1 2"
+
+out="$(pub overdue 2>&1)"; check "publish overdue exits 0" "$?" "0"
+check "overdue prints its state id" "$out" "overdue"
+check "overdue starts the wait an hour ago" "$(sqlq "$CDB" "SELECT since <= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-3500 seconds') FROM map_publish_chain")" "1"
+
+: > "$STUB_LOG"
+out="$(pub published 2>&1)"; check "publish published exits 0" "$?" "0"
+check "published prints its state id" "$out" "published"
+check "published drops the hold, the chain and the draft with its heads" "$(sqlq "$CDB" "SELECT (SELECT COUNT(*) FROM map_hold), (SELECT COUNT(*) FROM map_publish_chain), (SELECT COUNT(*) FROM map_version WHERE status = 'draft'), (SELECT COUNT(*) FROM map_version_head)")" "0|0|0|1"
+check "published resumes the map service" "$(cat "$STUB_LOG")" "services resume context-map-refresh"
+
+out="$(pub without-waiting 2>&1)"; check "publish without-waiting exits 0" "$?" "0"
+check "without-waiting prints its state id" "$out" "published-without-waiting"
+check "without-waiting records a FirstMap published event for the current version" "$(sqlq "$P/ledger.db" "SELECT type, actor, json_extract(payload_json, '$.version'), json_extract(payload_json, '$.reason') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")" "context.map.published|service:context-map-refresh|1|FirstMap"
+shape="$(sqlq "$P/ledger.db" "SELECT id, correlation_id, occurred_at FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")"
+IFS='|' read -r row_id row_correlation row_at <<< "$shape"
+[[ "$row_id" =~ $guid ]]; check "the published event's id is a GUID" "$?" "0"
+[[ "$row_correlation" =~ $guid ]]; check "the published event's correlation_id is a GUID" "$?" "0"
+[[ "$row_at" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{7}Z$ ]]; check "the published event's occurred_at has seven fractional digits" "$?" "0"
+pub without-waiting >/dev/null 2>&1
+check "a second without-waiting adds nothing" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")" "1"
+
+out="$(pub by-hand 2>&1)"; check "publish by-hand exits 0" "$?" "0"
+check "by-hand prints its state id" "$out" "published-by-hand"
+check "by-hand records a promoted event by a human for the current version" "$(sqlq "$P/ledger.db" "SELECT type, actor, json_extract(payload_json, '$.version') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:byhand:%'")" "context.map.promoted|human:fixture|1"
+
+out="$(pub stale 2>&1)"; check "publish stale exits 0" "$?" "0"
+check "stale prints its state id" "$out" "published-stale"
+check "stale moves the current version's recorded head off the index's commit" "$(sqlq "$CDB" "SELECT commit_sha FROM map_version_head WHERE version = 1")" "1234567"
+check "stale records a TimedOut published event" "$(sqlq "$P/ledger.db" "SELECT json_extract(payload_json, '$.reason') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "TimedOut"
+IXDB="$P/code-index/aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db"
+check "stale writes the code index file beside the pointer" "$(ls "$P/code-index" | sort | tr '\n' ' ')" "aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db aw-split-panes.current "
+check "the pointer names the file and is private" "$(cat "$P/code-index/aw-split-panes.current") $(stat -c %a "$P/code-index/aw-split-panes.current" 2>/dev/null || stat -f %Lp "$P/code-index/aw-split-panes.current")" "0123456789ABCDEFGHJKMNPQRS 600"
+check "the index header reads back at abcdef0 under schema 1" "$(sqlq "$IXDB" "SELECT value FROM meta WHERE key = 'commit'") $(sqlq "$IXDB" "PRAGMA user_version")" "abcdef0000000000000000000000000000000000 1"
+pub by-hand >/dev/null 2>&1
+pub published >/dev/null 2>&1
+check "published after by-hand leaves no map event, so the newest state is published" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:%'")" "0"
+pub stale >/dev/null 2>&1
+check "stale after published records its TimedOut event again" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "1"
+pub published >/dev/null 2>&1
+check "any other state removes the index file and its pointer" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "0"
+pub stale >/dev/null 2>&1
+printf '%s\n' "OTHERULID" > "$P/code-index/other.current"
+pub by-hand >/dev/null 2>&1
+check "clearing leaves a pointer that is not the fixture's" "$(ls "$P/code-index")" "other.current"
+
+: > "$STUB_LOG"
+pub pause >/dev/null 2>&1; pub resume >/dev/null 2>&1
+check "pause and resume only toggle the service" "$(tr '\n' ';' < "$STUB_LOG")" "services pause context-map-refresh;services resume context-map-refresh;"
+
+# --- context whole over | under: the whole-map fixture (whole-map spec 8) ---
+W="$TMPDIR/ctxw"; mkdir -p "$W"
+AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1
+AW_SINDRI_HOME="$W" bash "$FIXTURE" context whole over >/dev/null 2>&1; check "context whole refuses before context up (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1
+AW_SINDRI_HOME="$W" bash "$FIXTURE" context whole sideways >/dev/null 2>&1; check "context whole refuses another word (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$W" bash "$FIXTURE" context whole >/dev/null 2>&1; check "context whole needs over or under (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" context whole over >/dev/null 2>&1; check "context whole refuses outside a guarded home" "$?" "2"
+: > "$STUB_LOG"
+out="$(AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context whole over 2>/dev/null)"; check "context whole over exits 0" "$?" "0"
+check "context whole over prints its word" "$out" "over"
+contains "context whole over imports the map as the owner" "$(cat "$STUB_LOG")" "context map import"
+M="$W/ui-fixture-context/over-map.json"
+check "the over map has 612 nodes (over the 500-node budget)" "$(jq '.nodes | length' "$M")" "612"
+check "the over map has 12 features" "$(jq '[.nodes[] | select(.key | startswith("feature:"))] | length' "$M")" "12"
+check "every edge of the over map joins two of its nodes" "$(jq '[.nodes[].key] as $k | [.edges[] | select((.from as $f | $k | index($f)) == null or (.to as $t | $k | index($t)) == null)] | length' "$M")" "0"
+check "the over map is for the fixture repo" "$(jq -r .repo "$M")" "aw-split-panes"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context whole over >/dev/null 2>&1
+absent "a repeat of context whole over imports nothing" "$(cat "$STUB_LOG")" "context map import"
+: > "$STUB_LOG"
+out="$(AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context whole under 2>/dev/null)"; check "context whole under exits 0 and prints its word" "$out" "under"
+contains "context whole under imports the tabs map again" "$(cat "$STUB_LOG")" "context map import"
+check "the under map is the tabs map (10 nodes)" "$(jq '.nodes | length' "$W/ui-fixture-context/tabs-map.json")" "10"
 
 exit "$fail"

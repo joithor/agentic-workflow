@@ -20,7 +20,7 @@ public static class LaunchOptions
         var launches = inputs.Launches;
         var inFlight = launches.FirstOrDefault(row => LaunchRules.InFlight(row, inputs.Now));
         var live = launches.FirstOrDefault(static row => row.Live);
-        var lastStarted = launches.FirstOrDefault(static row => row.State == LaunchState.Started);
+        var lastStarted = launches.FirstOrDefault(static row => row.StartedProcess);
         var takenOver = inputs.Item.Engine?.Suspension == SuspensionKind.Takeover;
         var (target, chosenBy) = Choose(inputs);
         var resumable = ResumableFor(inputs, takenOver);
@@ -67,12 +67,16 @@ public static class LaunchOptions
     private static LaunchLastStarted? LastOf(LaunchRow? row) =>
         row is null ? null : new LaunchLastStarted(row.Target, row.RequestedAt, row.TabTitle, Public(row.Viewer), row.Late, row.Attach);
 
-    private static LaunchViewerPublic? Public(LaunchViewer? viewer) => viewer is null ? null : new LaunchViewerPublic(viewer.Kind, viewer.Label, viewer.Outcome, viewer.Code);
+    private static LaunchViewerPublic? Public(LaunchViewer? viewer) => viewer is null ? null : new LaunchViewerPublic(viewer.Kind, viewer.Label, viewer.Outcome, viewer.Code) { Reason = viewer.Reason };
+
+    /// <summary>A blocker's text for a terminal detail: the line it points at, then the reason.</summary>
+    private static string? Sentence(TerminalDetail? detail) =>
+        detail is null ? null : (detail.Line is { } line ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"line {line}: ") : string.Empty) + detail.Reason;
 
     private static LaunchRow? ResumableFor(LaunchOptionInputs inputs, bool takenOver) =>
         inputs.Item.Engine is null || takenOver
             ? null
-            : inputs.Launches.FirstOrDefault(static row => row.State == LaunchState.Started && !row.Live && row.ResumableId is not null);
+            : LaunchRules.ResumeCandidate(inputs.Launches);
 
     private static (AgentId Target, string ChosenBy) Choose(LaunchOptionInputs inputs)
     {
@@ -111,7 +115,7 @@ public static class LaunchOptions
 
     /// <summary>A started launch, or one that was interrupted or timed out (a session or a window may still have opened).</summary>
     private static bool MayHaveASession(LaunchRow row) =>
-        row.State == LaunchState.Started
+        row.StartedProcess
         || (row.State == LaunchState.Failed
             && (string.Equals(row.Code, SindriErrors.LaunchInterrupted.Code, StringComparison.Ordinal) || string.Equals(row.Code, SindriErrors.LaunchTimedOut.Code, StringComparison.Ordinal)));
 
@@ -131,8 +135,8 @@ public static class LaunchOptions
         if (probe.Terminal is { Present: false } terminal)
         {
             blockers.Add(string.Equals(terminal.Problem, "config-invalid", StringComparison.Ordinal)
-                ? new LaunchBlocker(SindriErrors.LauncherInvalid.Code, terminal.Detail ?? "launcher.json isn't valid (fix: sindri launch show)")
-                : new LaunchBlocker(SindriErrors.LaunchNoViewer.Code, terminal.Detail ?? "no terminal viewer is available here (fix: sindri launch init)"));
+                ? new LaunchBlocker(SindriErrors.LauncherInvalid.Code, Sentence(terminal.Detail) ?? "launcher.json isn't valid (fix: sindri launch show)")
+                : new LaunchBlocker(SindriErrors.LaunchNoViewer.Code, Sentence(terminal.Detail) ?? "no terminal viewer is available here (fix: sindri launch init)"));
         }
 
         if (probe.Targets.FirstOrDefault(row => row.Facts.Id == target) is not { } row)

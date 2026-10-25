@@ -42,6 +42,24 @@ public sealed class ParkRowsClearingTests
     }
 
     [Fact]
+    public async Task An_unavailable_park_shows_no_row_and_clears_the_desk_task_it_replaced()
+    {
+        var q = new ItemQueryHarness();
+        await q.Item('1', "the item", repo: "agentic-workflow");
+
+        await Fold(q, EventTypes.WorkflowStarted, Row("produce", new FrameSummary("produce", 1, "1.1", Child: null, StepRuntime.Desk), suspension: null));
+        var desk = await Kinds(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, new SuspensionSummary(SuspensionKind.Park, ParkReason.Unavailable, ParkKind.Step, Escalation: null, Mirrors: null)));
+        var unavailable = await Kinds(q);
+        await Fold(q, EventTypes.WorkflowTransition, Row("produce", frame: null, Parked()));
+        var parked = await Kinds(q);
+
+        Assert.Equal(["desk:"], desk);
+        Assert.Empty(unavailable);   // nobody is asked: the park is in health, not in needs-you
+        Assert.Equal(["park:"], parked);   // a later park a human must answer still shows
+    }
+
+    [Fact]
     public async Task An_item_ended_by_its_workflow_voids_what_it_waited_on_as_a_human_close_does()
     {
         var q = new ItemQueryHarness();

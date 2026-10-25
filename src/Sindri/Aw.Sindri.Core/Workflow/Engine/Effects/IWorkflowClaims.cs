@@ -26,4 +26,14 @@ public interface IWorkflowClaims
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>The claim that holds the item afterwards: <paramref name="claim"/> itself (taken now or before), or another instance's ('claimExists').</returns>
     public ValueTask<Result<WorkflowClaim>> Take(WorkflowClaim claim, InstanceAddress? ended, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Frees <paramref name="item"/>'s claim when <paramref name="owner"/> holds it (engine P7 cleanup, IDEA-033: the engine
+    /// releases a claim when its holder ends); a claim another instance has since taken over is left alone.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="owner">The instance releasing it.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>True when the claim was freed now; false when the item had no claim or another instance holds it.</returns>
+    public ValueTask<Result<bool>> Release(ItemKey item, InstanceAddress owner, CancellationToken cancellationToken);
 }

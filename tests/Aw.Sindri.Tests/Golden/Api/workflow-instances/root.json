@@ -8,7 +8,8 @@
         "id": "workflow.incident-response",
         "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
         "version": 4,
-        "urgency": "incident"
+        "urgency": "incident",
+        "displayName": "Incident response"
       },
       "state": "mitigate",
       "chip": {
@@ -124,7 +125,13 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "engine",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK2/triage-alert/1",
@@ -134,7 +141,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "classify",
       "chip": {
@@ -222,7 +230,13 @@
         "CompleteStep",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "you",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK3/project/1",
@@ -232,7 +246,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "build",
       "chip": {
@@ -363,7 +378,13 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "engine",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK4/project/1",
@@ -373,7 +394,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "design",
       "chip": {
@@ -507,7 +529,13 @@
       "actions": [
         "ApplyCommand:handback",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "you",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK5/project/1",
@@ -517,7 +545,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "scoping",
       "chip": {
@@ -648,7 +677,13 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "engine",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JKC/intake-linear/1",
@@ -658,7 +693,8 @@
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Intake linear"
       },
       "state": "poll",
       "chip": {
@@ -730,7 +766,13 @@
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "engine",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JKB/intake-linear/1",
@@ -740,7 +782,8 @@
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Intake linear"
       },
       "state": "poll",
       "chip": {
@@ -812,7 +855,13 @@
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "engine",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK6/triage-alert/1",
@@ -822,7 +871,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "route",
       "chip": {
@@ -923,7 +973,13 @@
         "ApplyCommand:answer-reject",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "you",
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JKA/triage-alert/1",
@@ -933,7 +989,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1017,7 +1074,13 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": null,
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK9/triage-alert/1",
@@ -1027,7 +1090,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1111,7 +1175,13 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": null,
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK8/triage-alert/1",
@@ -1121,7 +1191,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1205,7 +1276,13 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": null,
+      "takenOverBy": null
     },
     {
       "address": "ITM-01JK7/triage-alert/1",
@@ -1215,7 +1292,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1299,7 +1377,13 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": null,
+      "takenOverBy": null
     }
   ],
   "counts": {

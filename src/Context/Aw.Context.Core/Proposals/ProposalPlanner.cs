@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
@@ -58,6 +59,62 @@ public static class ProposalPlanner
         }
 
         return new ProposalPlan(rows, existing, rejected, unmapped);
+    }
+
+    /// <summary>
+    /// Plans the withdrawal of a run's undecided proposals (scoping spec C9): one 'undo' row for each of its 'propose' rows that no accept, reject, merge or delete has decided since.
+    /// The ones a person accepted, merged, renamed or moved stay (Kept counts them); a rejected one is decided already and needs no row. Pure.
+    /// </summary>
+    /// <param name="run">The scoping run's id; no other run's rows are touched.</param>
+    /// <param name="repo">The run's repo: a run id is the scoping run's own, so only this repo's rows of it are touched.</param>
+    /// <param name="overrides">Every override of the draft, as the caller may see them.</param>
+    /// <param name="who">Who withdraws.</param>
+    /// <param name="at">When.</param>
+    /// <returns>The undo rows and how many accepted proposals stay.</returns>
+    public static (IReadOnlyList<MapOverride> Rows, int Kept) Withdraw(string run, ContextRepoName repo, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(overrides);
+        var active = OverrideLog.Active(overrides);
+        var (rows, kept) = (new List<MapOverride>(), 0);
+        foreach (var proposed in active.Where(o => o.Action == OverrideAction.Propose && string.Equals(o.Proposal?.Run, run, StringComparison.Ordinal) && o.Proposal?.Repo == repo))
+        {
+            var standing = Standing(proposed, active);
+            if (standing == ProposalStanding.Kept)
+            {
+                kept++;
+            }
+            else if (standing == ProposalStanding.Undecided)
+            {
+                rows.Add(new MapOverride(OverrideAction.Undo, proposed.Target, who, at) with { Undoes = proposed.ToId() });
+            }
+        }
+
+        return (rows, kept);
+    }
+
+    private enum ProposalStanding
+    {
+        Undecided,
+        Kept,
+        Closed,
+    }
+
+    // What a person did with a proposal since it was written: accept, merge, rename or move keeps it; reject or delete closed it; nothing leaves it undecided.
+    private static ProposalStanding Standing(MapOverride proposed, IReadOnlyList<MapOverride> active)
+    {
+        var since = active.Where(o => o.Target.Value == proposed.Target.Value && o.At >= proposed.At).Select(o => o.Action).ToList();
+        if (since.Exists(a => a is OverrideAction.Accept or OverrideAction.Merge))
+        {
+            return ProposalStanding.Kept;
+        }
+
+        if (since.Exists(a => a is OverrideAction.Reject or OverrideAction.Delete))
+        {
+            return ProposalStanding.Closed;
+        }
+
+        return since.Exists(a => a is OverrideAction.Rename or OverrideAction.Move) ? ProposalStanding.Kept : ProposalStanding.Undecided;
     }
 
     // A reject names the proposal by the evidence it had when it was written: all of it before a deny glob, what the glob leaves after.

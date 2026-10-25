@@ -17,16 +17,28 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="probe">Finds the running control plane.</param>
 /// <param name="options">The package's AwJson options.</param>
 /// <param name="headers">The caller headers; none (read as a session) when null.</param>
-/// <param name="timeout">How long a call may take (10 s by default).</param>
+/// <param name="timeout">A hard cap on one call (AW_SINDRI_CLI_TIMEOUT); none by default, so a slow but healthy answer completes. Connecting is bounded by <see cref="CliTimeout.Connect"/> instead.</param>
+/// <param name="refusal">A refusal every call answers with instead of calling (a malformed AW_SINDRI_CLI_TIMEOUT), so verbs that never call the control plane aren't affected by it.</param>
 /// <param name="handler">The HTTP handler (tests); a loopback handler without a proxy when null.</param>
 internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options, CallerHeaders? headers = null, TimeSpan? timeout = null,
-    HttpMessageHandler? handler = null) : IDisposable
+    HttpMessageHandler? handler = null, Error? refusal = null) : IDisposable
 {
-    private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
+    private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false, ConnectTimeout = CliTimeout.Connect }) { Timeout = timeout ?? Timeout.InfiniteTimeSpan };
     private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
-    /// <summary>Why this CLI calls as a session ('CLAUDECODE is set', 'no terminal'), or null when it calls as a human.</summary>
+    /// <summary>Why this CLI calls as a session ('the per-start human token isn't readable'), or null when it calls as a human.</summary>
     public string? SessionReason => _headers.SessionReason;
+
+    /// <summary>Reads the per-start token now and answers <see cref="SessionReason"/>: a human's call carries it, a session's doesn't.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>Why this CLI calls as a session, or null when it calls as a human.</returns>
+    public ValueTask<string?> ResolveSessionReason(CancellationToken cancellationToken) => _headers.Resolve(cancellationToken);
+
+    /// <summary>The cap on one call, <see cref="Timeout.InfiniteTimeSpan"/> when none is set (tests: a call's real timeout can't be waited out).</summary>
+    internal TimeSpan CallTimeout => _http.Timeout;
+
+    /// <summary>The refusal every call answers with (a malformed AW_SINDRI_CLI_TIMEOUT), or null; a start checks it before it launches the control plane.</summary>
+    internal Error? SettingRefusal { get; } = refusal;
 
     public void Dispose() => _http.Dispose();
 
@@ -109,6 +121,35 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         return Send<T>(HttpMethod.Post, route, content, after: null, ct);
     }
 
+    /// <summary>QUERY <paramref name="body"/> to a route and read its answer: the HTTP method for a read whose question is too large for a URL (an IETF draft; safe and idempotent, never a command).</summary>
+    /// <param name="route">The route.</param>
+    /// <param name="body">The request record.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <typeparam name="TBody">The request type.</typeparam>
+    /// <typeparam name="T">The response type.</typeparam>
+    /// <returns>The answer, or the API's error.</returns>
+    public Task<Result<ApiAnswer<T>>> Query<TBody, T>(string route, TBody body, CancellationToken ct)
+    {
+#pragma warning disable CA2000 // Send disposes the content, on its failure paths and with the request
+        var content = new ByteArrayContent(AwJson.Serialize(body, options)) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } };
+#pragma warning restore CA2000
+        return Send<T>(HttpMethod.Query, route, content, after: null, ct);
+    }
+
+    /// <summary>The longest query string a GET carries; a longer one (Kestrel's request line is 8 KB) goes as a QUERY with the same fields as the JSON body.</summary>
+    internal const int MaxGetQuery = 4000;
+
+    /// <summary>GET <paramref name="route"/> with <paramref name="query"/>, or QUERY it with <paramref name="body"/> when the query is too long for a request line; one question, two transports.</summary>
+    /// <param name="route">The route.</param>
+    /// <param name="query">The query string, with its leading '?'.</param>
+    /// <param name="body">The same question as the request record.</param>
+    /// <param name="ct">Cancels the call.</param>
+    /// <typeparam name="TBody">The request type.</typeparam>
+    /// <typeparam name="T">The response type.</typeparam>
+    /// <returns>The answer, or the API's error.</returns>
+    public Task<Result<ApiAnswer<T>>> GetOrQuery<TBody, T>(string route, string query, TBody body, CancellationToken ct) =>
+        query.Length > MaxGetQuery ? Query<TBody, T>(route, body, ct) : Get<T>(route + query, ct);
+
     /// <summary>POST <paramref name="body"/> to a route a launch's own proof authorizes (API spec §8.1): sent as the X-Sindri-Launch-Secret header, with the caller headers.</summary>
     /// <param name="route">The route.</param>
     /// <param name="body">The request record.</param>
@@ -128,6 +169,12 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
 
     private async Task<Result<ApiAnswer<T>>> Send<T>(HttpMethod method, string route, HttpContent? content, long? after, CancellationToken ct)
     {
+        if (SettingRefusal is { } refused)
+        {
+            content?.Dispose();
+            return refused;
+        }
+
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsError)
         {
@@ -153,19 +200,34 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
             var value = AwJson.Deserialize<T>(bytes, options);
             return value.IsError ? value.Error : new ApiAnswer<T>(value.Value, bytes);
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (Transport(e, ct))
         {
-            return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
-        }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        {
-            return SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
-                $"{found.Value.Endpoint.Url.Authority} didn't answer {route} within {_http.Timeout.TotalSeconds:0} s"));
+            return Failed(e, found.Value.Endpoint.Url.Authority, $"answer {route}");
         }
     }
 
+    /// <summary>A failure of the call itself: the connection or the cap, not a Ctrl-C (which propagates).</summary>
+    private static bool Transport(Exception e, CancellationToken ct) => e is HttpRequestException || (e is TaskCanceledException && !ct.IsCancellationRequested);
+
+    /// <summary>A refused or broken connection is 'went away'; a connect that timed out and a call over the cap are SND-API-002.</summary>
+    private Error Failed(Exception e, string authority, string doing) => e switch
+    {
+        HttpRequestException { InnerException: TimeoutException } => ConnectTimeout(authority),
+        HttpRequestException => SindriErrors.NotRunning.With($"the control plane went away: {e.Message}"),
+        _ => SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"{authority} didn't {doing} within {_http.Timeout.TotalSeconds:0} s ({CliTimeout.Variable})")),
+    };
+
+    private static Error ConnectTimeout(string authority) => SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+        $"couldn't connect to {authority} within {CliTimeout.Connect.TotalSeconds:0} s"));
+
     private async Task<Result<HttpResponseMessage>> Open(string route, CancellationToken ct)
     {
+        if (SettingRefusal is { } refused)
+        {
+            return refused;
+        }
+
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsError)
         {
@@ -188,9 +250,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
                 return Problem(await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false), (int)response.StatusCode);
             }
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (Transport(e, ct))
         {
-            return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
+            return Failed(e, found.Value.Endpoint.Url.Authority, $"open {route}");
         }
     }
 
@@ -198,7 +260,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     {
         var problem = AwJson.Deserialize<ApiProblem>(bytes, options);
         return problem.IsSuccess && problem.Value.Title is { } code
-            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code) + RunningJob(code, problem.Value.Detail, problem.Value.RunningJob))
+            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code) + RunningJob(code, problem.Value.Detail, problem.Value.RunningJob) + ProblemWords.Of(problem.Value))
             : SindriErrors.ApiNoCode.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the API answered HTTP {status} without an error code"));
     }
 

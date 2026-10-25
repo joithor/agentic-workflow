@@ -1,0 +1,3 @@
+# recipes: notes for the ui lane
+
+Open `recipes.html` (the rail's Recipes). The page title is "Workflows" (templates); the rail's Workflows is runs. URL params: `?state=<populated|reading|empty|nomatch|stale|unreadable>`, `&open=<workflow id>` (default workflow.plan), `&closed=1`, `&filter=look`, `&annot=1`. Data is the shape of `GET /sindri/workflow/recipes`; steps, inputs and outputs are the real recipes from `data/sample.json`; plain names, the two non-approved standings and the fingerprints are mockup-authored. Usage statistics are not served (API P12) and are not drawn. Build spec: `specs/recipes.md`.

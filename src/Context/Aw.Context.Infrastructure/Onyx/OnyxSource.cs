@@ -15,7 +15,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// is discarded, D3), drops documents an Onyx admin hid (admin search includes them; a standard search doesn't), keys
 /// each hit with <see cref="OnyxRecordKeys"/>, marks hits changed after the query's as-of time
 /// leaky, and applies the limit itself (Onyx returns up to 50). Fetch reads 'document-size-info', then 'chunk-info' per
-/// chunk in order, joined with blank lines, up to 64 KB; the title and author come from this source's own earlier hit
+/// chunk in order, joined with blank lines; the title and author come from this source's own earlier hit
 /// for the document (the fetch routes carry neither), else the id and none, and the updated time from the reference's
 /// version. Versions is Unavailable: no v4.9.0 route gives updated_at by id.
 /// </summary>
@@ -23,13 +23,12 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// <param name="teams">The Linear team keys an identifier alias may name.</param>
 /// <param name="clock">The clock: a hit's AsOf is when Onyx answered.</param>
 /// <param name="callDeadline">How long Onyx gets to answer each fetch and probe call.</param>
-internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, TimeProvider clock, TimeSpan callDeadline) : IContextSource
+internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, TimeProvider clock, TimeSpan callDeadline) : IContextSource, ISourceNotes
 {
     private const string SearchRoute = "/api/admin/search";
     private const string SizeRoute = "/api/document/document-size-info";
     private const string ChunkRoute = "/api/document/chunk-info";
     private const string MeRoute = "/api/me";
-    private const int MaxTextBytes = 64 * 1024;
     private const int MaxRemembered = 1024;
     private static readonly SourceId _id = SourceId.From("onyx");
     private static readonly SourceVersion _unversioned = SourceVersion.From("unversioned");
@@ -100,19 +99,26 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             : Role(version.Detail, me.Value);
     }
 
+    // The token's role. Onyx CE has no service-account keys (the route is Business tier), so Sindri's own token is a personal access token of one dedicated admin user, recognised by its email
+    // (OnyxSettings.DedicatedAccountEmail, the user `sindri onyx up` makes). A service-account key (Business tier, or a manual setup) is just as dedicated. Any other account, a person's, is a warning,
+    // and its address is not echoed.
     private static SourceHealth Role(string versionDetail, OnyxMeReply me)
     {
         var admin = me.EffectivePermissions.Contains("admin", StringComparer.Ordinal);
         var serviceAccount = string.Equals(me.AccountType, "SERVICE_ACCOUNT", StringComparison.Ordinal);
+        var dedicatedUser = string.Equals(me.AccountType, "STANDARD", StringComparison.Ordinal)
+            && string.Equals(me.Email, OnyxSettings.DedicatedAccountEmail, StringComparison.OrdinalIgnoreCase);
         var account = Shown(me.AccountType);
-        return (admin, serviceAccount) switch
+        return (admin, serviceAccount, dedicatedUser) switch
         {
-            (false, _) => new SourceHealth(SourceState.Unavailable,
+            (false, _, _) => new SourceHealth(SourceState.Unavailable,
                 $"{versionDetail}; key: {account} account without 'admin', which POST /api/admin/search needs (spec §8.8)", ContextErrors.OnyxKeyRefused.Code),
-            (true, false) => new SourceHealth(SourceState.Degraded,
-                $"{versionDetail}; key: admin, {account} account, not a dedicated service account: create a service account for Sindri alone and use its key (spec §8.8)",
+            (true, false, false) => new SourceHealth(SourceState.Degraded,
+                $"{versionDetail}; key: admin, {account} account, not Sindri's dedicated user ({OnyxSettings.DedicatedAccountEmail}) or a service account: use a token of a dedicated admin user for Sindri alone "
+                + "(`sindri onyx up` makes one; spec §8.8)",
                 ContextErrors.OnyxKeyNotServiceAccount.Code),
-            _ => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, service account", Code: null),
+            (true, true, _) => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, service account", Code: null),
+            _ => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, Sindri's dedicated user", Code: null),
         };
     }
 
@@ -120,20 +126,72 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     {
         var now = clock.GetUtcNow();
         var hits = new List<SourceHit>(Math.Min(query.Limit, documents.Count));
+        var hidden = 0;
+        var unidentified = 0;
+        var overLimit = 0;
         foreach (var document in documents)
         {
-            if (hits.Count >= query.Limit)
+            if (document.Hidden)
             {
-                break;
+                hidden++;
             }
-
-            if (!document.Hidden && Hit(document, hits.Count + 1, now, query.AsOf) is { } hit)
+            else if (hits.Count >= query.Limit)
+            {
+                overLimit++;
+            }
+            else if (Hit(document, hits.Count + 1, now, query.AsOf) is { } hit)
             {
                 hits.Add(hit);
             }
+            else
+            {
+                unidentified++;
+            }
         }
 
+        Note(documents.Count, hits.Count, (hidden, unidentified, overLimit), query.Limit);
         return hits;
+    }
+
+    // Every document Onyx found and this source did not return is counted in a note, so the answer says why it has fewer records (or none).
+    private void Note(int found, int shown, (int Hidden, int Unidentified, int OverLimit) dropped, int limit)
+    {
+        if (found == shown)
+        {
+            return;
+        }
+
+        var parts = new List<string>();
+        if (dropped.Hidden > 0)
+        {
+            parts.Add(string.Create(CultureInfo.InvariantCulture, $"{dropped.Hidden} hidden by an Onyx admin"));
+        }
+
+        if (dropped.Unidentified > 0)
+        {
+            parts.Add(string.Create(CultureInfo.InvariantCulture, $"{dropped.Unidentified} with no usable id or source identity (check the connector that indexed them)"));
+        }
+
+        if (dropped.OverLimit > 0)
+        {
+            parts.Add(string.Create(CultureInfo.InvariantCulture, $"{dropped.OverLimit} past the limit of {limit} hits (narrow the question)"));
+        }
+
+        _notes.Enqueue(string.Create(CultureInfo.InvariantCulture, $"onyx found {found} document(s) and shows {shown}: {string.Join("; ", parts)}"));
+    }
+
+    private readonly ConcurrentQueue<string> _notes = new();
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> TakeNotes()
+    {
+        var taken = new List<string>();
+        while (_notes.TryDequeue(out var note))
+        {
+            taken.Add(note);
+        }
+
+        return taken;
     }
 
     private SourceHit? Hit(OnyxSearchDoc document, int rank, DateTimeOffset now, DateTimeOffset? asOf)
@@ -164,12 +222,11 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
         _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt, document.CreatedAt);
     }
 
-    /// <summary>The document's chunks in order, joined with blank lines; stops fetching once 64 KB are in and cuts there.</summary>
+    /// <summary>The document's chunks in order, joined with blank lines; every chunk, however long: the record is read whole.</summary>
     private async ValueTask<Result<string>> Text(string document, int chunks, CancellationToken cancellationToken)
     {
         var text = new StringBuilder();
-        var bytes = 0;
-        for (var chunk = 0; chunk < chunks && bytes < MaxTextBytes; chunk++)
+        for (var chunk = 0; chunk < chunks; chunk++)
         {
             var call = OnyxCall.Get(ChunkRoute, ("document_id", document), ("chunk_id", chunk.ToString(CultureInfo.InvariantCulture)));
             var reply = await client.Call<OnyxChunkReply>(call, callDeadline, cancellationToken).ConfigureAwait(false);
@@ -180,31 +237,9 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
 
             var part = text.Length == 0 ? reply.Value.Content : "\n\n" + reply.Value.Content;
             _ = text.Append(part);
-            bytes += Encoding.UTF8.GetByteCount(part);
         }
 
-        return Cut(text.ToString());
-    }
-
-    /// <summary>The longest prefix of <paramref name="text"/> within 64 KB of UTF-8, never splitting a surrogate pair.</summary>
-    private static string Cut(string text)
-    {
-        var bytes = 0;
-        var end = 0;
-        while (end < text.Length)
-        {
-            var width = char.IsHighSurrogate(text[end]) && end + 1 < text.Length ? 2 : 1;
-            var size = Encoding.UTF8.GetByteCount(text.AsSpan(end, width));
-            if (bytes + size > MaxTextBytes)
-            {
-                break;
-            }
-
-            bytes += size;
-            end += width;
-        }
-
-        return end == text.Length ? text : text[..end];
+        return text.ToString();
     }
 
     private static DateTimeOffset? UpdatedAt(SourceVersion version) =>

@@ -1,4 +1,8 @@
+using System.Globalization;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -50,7 +54,7 @@ public static partial class InstanceViews
         ArgumentNullException.ThrowIfNull(context);
         var children = context.Children ?? [];
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
-            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
+            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt, context.Injection)
             : null;
         var words = new InstanceWords(instance, recipe, since, MirroredChild(instance, children));
         var view = new InstanceView(
@@ -60,8 +64,8 @@ public static partial class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task, words.GrantTokens()),
-            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
+            Allowed(instance, recipe, task, words.GrantTokens()),
+            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question, ParkCodes.Of(s)) : null,
             task,
             instance.Frame.Run?.Token,
             children,
@@ -74,11 +78,22 @@ public static partial class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            AgentRun = AgentRunOf(instance),
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
+            StartedAt = context.StartedAt,
+            StartedBy = context.StartedBy,
+            Again = context.Again,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
+            TakenOverBy = instance.Suspension is { Kind: SuspensionKind.Takeover } taken ? taken.Actor : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
+
+    /// <summary>The open agent run; one still launching names the launch id it will have (the id is pure), so status never shows a run without one.</summary>
+    private static OpenRun? AgentRunOf(WorkflowInstance instance) =>
+        instance is { Ended: false, Frame.Run: { Runtime: StepRuntime.Agent } agent }
+            ? agent with { Launch = agent.Launch ?? AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(instance.Address), agent.Token).Value }
+            : null;
 
     /// <summary>The stored digest of each fact by key; null when the instance holds none.</summary>
     private static Dictionary<string, string>? ShasOf(WorkflowInstance instance) =>
@@ -92,26 +107,33 @@ public static partial class InstanceViews
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var status = Status(view, context.AsOf);
+        var status = DetailParts.WithSession(Status(view, context.AsOf), context.Session);
         return new InstanceDetail(
             view.Address,
             view.Id,
             context.Parent,
             view.ItemId,
             context.Title,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName),
             view.State,
             view.Since,
             view.EngineOwned,
             InstanceSummaries.SubjectOf(view, context.Title),
             view.OrderedBy,
             view.States,
-            new CurrentState(view.State, view.Step, view.Gates, view.Desk, status),
+            new CurrentState(view.State, view.Step, view.Gates, DetailParts.WithTargets(view.Desk, context.ReviewTargets), status),
             view.Facts,
             view.ChildGroups,
             context.Counts,
-            [.. status.Commands.Select(static c => c.ActionId)],
-            context.AsOf);
+            [.. status.Commands.Select(static c => c.ActionId), .. Reruns.Of(view)],
+            context.StepRuns ?? [],
+            context.AsOf,
+            view.Steps,
+            view.StartedBy)
+        {
+            Again = view.Again,
+            AllowedCommands = [.. view.AllowedCommands.Where(static c => c.Verb is not null)],
+        };
     }
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
@@ -137,6 +159,7 @@ public static partial class InstanceViews
         var badge = from.Words.EngineBadge();
         var legacy = SubjectKinds.Legacy(from.Recipe.Recipe) is not null;   // a pre-P4c row: no kind to name a subject or an input slot by
         var subject = context.Subject ?? (legacy ? InstanceSummaries.SubjectOf(view with { ItemId = from.Instance.Item }, itemTitle: null) : SubjectRefs.Of(from.Recipe, from.Instance.Item));   // never null on the wire: a legacy instance shows the item, as its list row does
+        var facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents);
         var complete = view with
         {
             ItemId = from.Instance.Item,
@@ -146,12 +169,13 @@ public static partial class InstanceViews
             Name = from.Recipe.Recipe.Name is null ? null : subject?.Label,
             Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
-            States = StateCells.Of(from.Instance, from.Recipe, badge),
-            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents),
+            States = StateCells.Of(from.Instance, from.Recipe, badge, context.StateVisits),
+            Facts = facts,
+            Steps = CurrentStates.Steps(from.Recipe, facts),
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),
-            Desk = CurrentStates.Desk(from.Task, from.Recipe),
+            Desk = CurrentStates.Desk(from.Task, from.Recipe, context.Recommendation),
             AnswerLine = from.Words.AnswerLine(),
             ChildPark = from.Words.ChildPark(),
             DriftNote = from.Words.DriftNote(),
@@ -162,17 +186,19 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', 'handback',
+    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', the recipe's verbs, 'handback',
     /// 'takeover', 'cancel' (§6.4). An ended instance accepts none. A park whose only way out is an approval or a
     /// cancel (spec-conflict: revoked, child revoked, drift; §3.8) takes no answer.
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
+    /// <param name="recipe">The recipe it runs: each 'command.&lt;verb&gt;' transition out of the current state is a verb the instance accepts (API18). A taken-over instance accepts none; the human has it.</param>
     /// <param name="task">The open desk task, if any.</param>
     /// <param name="grantTokens">The token amount a budget park's grant offers (the one the status line prints).</param>
     /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, string grantTokens)
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, InterpretedRecipe recipe, DeskTask? task, string grantTokens)
     {
         ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
         if (instance.Ended)
         {
             return [];
@@ -190,6 +216,11 @@ public static partial class InstanceViews
             commands.Add(new("CompleteStep", CompleteCli(address, task)));
         }
 
+        if (instance.Suspension is not { Kind: SuspensionKind.Takeover })
+        {
+            commands.AddRange(VerbCommands(instance, recipe));
+        }
+
         if (instance.Suspension is { Kind: SuspensionKind.Takeover })
         {
             commands.Add(new("ApplyCommand:handback", $"sindri workflow handback {address}"));
@@ -204,11 +235,25 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
+    /// The recipe's verbs out of the current state, one entry per distinct verb in recipe order, all the generic 'ApplyCommand:command' (one desk row serves every verb).
+    /// A verb whose transition carries a human-trigger effect (the babysitter's 'merge') is listed too, marked destructive: the server refuses an agent session's call. 'rework' carries no effect and is not.
+    /// </summary>
+    private static IEnumerable<AllowedCommand> VerbCommands(WorkflowInstance instance, InterpretedRecipe recipe) =>
+        recipe.Recipe.Transitions
+            .Where(t => t.On.StartsWith(TriggerNames.CommandPrefix, StringComparison.Ordinal) && t.From.Contains(instance.State, StringComparer.Ordinal))
+            .GroupBy(static t => t.On[TriggerNames.CommandPrefix.Length..], StringComparer.Ordinal)
+            .Select(verb => new AllowedCommand("ApplyCommand:command", $"sindri workflow command {instance.Address.Value} {verb.Key}")
+            {
+                Verb = verb.Key,
+                Destructive = verb.Any(t => t.Effects.Any(e => recipe.Catalog.Find(e.Use) is { Kind: BlockKind.Effect, HumanTrigger: true })) ? true : null,
+            });
+
+    /// <summary>
+    /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
     /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
     /// </summary>
     private static string CompleteCli(string address, DeskTask task) =>
-        CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+        CompleteCommand.Line(address, task.Run, task.Outcomes, task.Outputs);
 
     /// <summary>The child a suspension mirrors, matched by its instance id (a sibling listed first is not it); none listed means none; with no mirror, the first child.</summary>
     private static ChildView? MirroredChild(WorkflowInstance instance, IReadOnlyList<ChildView> children) =>
@@ -219,13 +264,19 @@ public static partial class InstanceViews
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);
 
-    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt)
+    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt, InjectionPlan? injection)
     {
-        var step = recipe.Recipe.States[state].Step?.Use
+        var use = recipe.Recipe.States[state].Step
             ?? throw new InvalidOperationException($"state {state} has an open run but no Step");
+        var step = use.Use;
         var descriptor = recipe.Catalog.Find(step);
-        return new DeskTask(run, state, step, descriptor?.Outcomes ?? [], descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt);
+        var outcomes = OutcomesOf(descriptor, use, recipe);
+        return new DeskTask(run, state, step, outcomes, descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt, injection?.Entries);
     }
+
+    /// <summary>The outcomes the Step reports, through the one resolver; the descriptor's own for a recipe the validator refuses.</summary>
+    private static IReadOnlyList<OutcomeName> OutcomesOf(BlockDescriptor? descriptor, StepUse use, InterpretedRecipe recipe) =>
+        descriptor is null ? [] : StepOutcomes.Of(descriptor, use, recipe.Recipe) ?? descriptor.Outcomes;
 
     /// <summary>The budgets of the active state and the instance, when either is declared and the instance hasn't ended.</summary>
     private static BudgetView? Budget(WorkflowInstance instance, InterpretedRecipe recipe)
@@ -237,7 +288,13 @@ public static partial class InstanceViews
             return null;
         }
 
-        var spentHere = instance.Spent.ByState.TryGetValue(instance.Frame.State, out var spent) ? spent : 0;
-        return new BudgetView(spentHere, stateCap, instance.Spent.Total, instanceCap);
+        var perRound = instance.Spent.IsPerRound;
+        var spentHere = perRound ? BudgetRules.StateUsed(instance, recipe.Recipe, instance.Frame.State) : instance.Spent.ByState.GetValueOrDefault(instance.Frame.State);
+        var overrun = instance.Spent.Overruns is { Count: > 0 } overruns ? overruns[^1] : null;
+        return new BudgetView(spentHere, stateCap, instance.Spent.Total, instanceCap)
+        {
+            PerRound = perRound,
+            Overrun = overrun is null ? null : $"{overrun.State} round {overrun.Round.ToString(CultureInfo.InvariantCulture)} used {StatusText.Tokens(overrun.Used)} of {StatusText.Tokens(overrun.Allowed)}",
+        };
     }
 }

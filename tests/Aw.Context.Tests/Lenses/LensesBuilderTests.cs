@@ -4,6 +4,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Graph;
 using Aw.Context.Tests.Map;
@@ -116,7 +117,6 @@ public sealed class LensesBuilderTests
         Assert.Equal((Trust.Untrusted, CitationState.Unchecked), (record.Trust, record.State));
         Assert.Empty(record.Cites);
         Assert.Equal((1, 2, null), (intent.Counts.Records, intent.Counts.Decisions, intent.Counts.Orphaned));
-        Assert.False(intent.Truncated);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -166,7 +166,7 @@ public sealed class LensesBuilderTests
         var confirmed = code.Files[1];
         Assert.Equal((true, false, null), (confirmed.Confirmed, confirmed.Suggested, confirmed.LinkId));
         Assert.Equal(["action:tab-manager.restore-layout", Anchor], Keys(confirmed.Implements));
-        Assert.Equal((2, 0, 1, false), (code.Counts.Files, code.Counts.Symbols, code.Counts.FeaturesWithNoCode, code.Truncated));
+        Assert.Equal((2, 0, 1), (code.Counts.Files, code.Counts.Symbols, code.Counts.FeaturesWithNoCode));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -267,7 +267,7 @@ public sealed class LensesBuilderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_list_is_cut_at_100_items_and_says_so_and_the_counts_stay_full()
+    public void A_list_over_100_items_lists_every_item()
     {
         var builder = new GraphBuilder().Node("feature:root");
         for (var i = 0; i < 120; i++)
@@ -277,8 +277,7 @@ public sealed class LensesBuilderTests
 
         var product = Build(builder.Build(), "feature:root", depth: 1).Bands.Product;
 
-        Assert.Equal(LensesBuilder.BandCap, product.Own.Count);
-        Assert.True(product.Truncated);
+        Assert.Equal(121, product.Own.Count);
         Assert.Equal(121, product.Counts.Own);
     }
 

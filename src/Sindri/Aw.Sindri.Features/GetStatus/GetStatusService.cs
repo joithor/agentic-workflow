@@ -13,7 +13,7 @@ using Aw.Sindri.Core.Views;
 namespace Aw.Sindri.Features.GetStatus;
 
 internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, ILedgerReader ledger, EventFactory events,
-    IProjectorStatus projector, IViewReader viewRows, ISessionSnapshot sessions)
+    IProjectorStatus projector, HealthServiceRows healthRows, ISessionSnapshot sessions)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
@@ -50,8 +50,12 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
 
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
-        var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
-        return HealthSummary.For(running, views, rows.IsSuccess ? ApprovedServices.Of(rows.Value, approved) : null, profile.NeedsApproval, profile.ChangedSinceApproval);
+        var rows = await healthRows.Read(approved, cancellationToken).ConfigureAwait(false);
+        var problems = await healthRows.CodeIndexProblems(approved, cancellationToken).ConfigureAwait(false);
+        var standing = profile.ChangedSinceApproval ? ProfileApproval.Changed : profile.NeedsApproval ? ProfileApproval.NeedsApproval : ProfileApproval.Approved;
+        var health = HealthSummary.For(running, views, rows, standing, problems);
+        var stuck = HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
+        return HealthSummary.WithUnavailable(stuck, await healthRows.Unavailable(cancellationToken).ConfigureAwait(false));   // a Step whose dependency is down parks asking no one: health shows it
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

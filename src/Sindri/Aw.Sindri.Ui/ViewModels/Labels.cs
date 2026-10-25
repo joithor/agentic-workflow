@@ -30,7 +30,7 @@ internal static partial class Labels
     internal const string Work = "Work";
 
     /// <summary>The Recipes page.</summary>
-    internal const string Recipes = "Recipes";
+    internal const string Recipes = "Workflow types";
 
     /// <summary>The Context page.</summary>
     internal const string Context = "Context";
@@ -60,7 +60,7 @@ internal static partial class Labels
     internal const string AutomaticWork = "Automatic work";
 
     /// <summary>What a view, panel or menu entry the API doesn't serve yet says (U12, §10.2).</summary>
-    internal const string NotServedYet = "not served yet";
+    internal const string NotServedYet = "coming soon";
 
     /// <summary>The ⌘K field's placeholder (functional from U1).</summary>
     internal const string Search = "Search or run a command";
@@ -89,19 +89,19 @@ internal static partial class Labels
     internal const string HealthPanel = "SINDRI HEALTH";
 
     /// <summary>The Health page's process card.</summary>
-    internal const string ControlPlaneCard = "CONTROL PLANE";
+    internal const string ControlPlaneCard = "Control plane";
 
     /// <summary>The Health page's lease card.</summary>
-    internal const string LeaseCard = "LEASE";
+    internal const string LeaseCard = "Lease";
 
     /// <summary>The Health page's profile card.</summary>
-    internal const string ProfileCard = "PROFILE";
+    internal const string ProfileCard = "Profile";
 
     /// <summary>The Health page's services card.</summary>
-    internal const string ServicesCard = "SERVICES";
+    internal const string ServicesCard = "Services";
 
     /// <summary>The Health page's last-event card.</summary>
-    internal const string LastEventCard = "LAST EVENT";
+    internal const string LastEventCard = "Last event";
 
     /// <summary>The services card with none scheduled.</summary>
     internal const string NoServices = "none scheduled (the approved profile names no services)";
@@ -242,7 +242,7 @@ internal static partial class Labels
     internal const string StaleRecord = "The endpoint record is stale";
 
     /// <summary>
-    /// Not running (SND-UI-002, kill -9 or a crash): nothing answered at the recorded endpoint, or not within 2 s. The
+    /// Not running (SND-UI-002, kill -9 or a crash): nothing answered at the recorded endpoint, or not within 120 s. The
     /// address follows on its own line; the platform's exception text is never shown.
     /// </summary>
     internal const string NothingAnswered = "Nothing answered at the recorded endpoint";

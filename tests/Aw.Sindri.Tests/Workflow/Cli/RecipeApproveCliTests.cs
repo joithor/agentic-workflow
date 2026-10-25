@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Server;
@@ -18,8 +19,7 @@ namespace Aw.Sindri.Tests.Workflow.Cli;
 
 /// <summary>
 /// 'sindri recipe approve' and 'recipe revoke' against the real host (engine spec §4.2, §6.3, Phase 2's signal): the
-/// preview, the typed action, 'approved …' and 'revoked …; N instances parked'; a session is refused with the reason it
-/// called as one; a mistyped action is SND-RECIPE-009; a file whose eval is missing is SND-RECIPE-008.
+/// preview, no typed action, 'approved …' and 'revoked …; N instances parked'; a session may approve too; a file whose eval is missing is SND-RECIPE-008.
 /// </summary>
 public sealed class RecipeApproveCliTests : IDisposable
 {
@@ -42,7 +42,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
 
-        var approved = await Commands(app, human: true, "approve workflow.step 2").Approve(name, ct);
+        var approved = await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct);
         var approveOut = _out.ToString();
         var revoked = await Commands(app, human: true, $"revoke {name}").Revoke(name, ct);
 
@@ -50,7 +50,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Contains("diff against the last approved version: nothing\n", approveOut, StringComparison.Ordinal);
         Assert.Contains("pinned blocks:\n  step.checks sha256:", approveOut, StringComparison.Ordinal);
         Assert.Contains("evals    3 declared: evals/workflow.step/happy.jsonl", approveOut, StringComparison.Ordinal);
-        Assert.Contains("Type 'approve workflow.step 2' to confirm", approveOut, StringComparison.Ordinal);
+        Assert.DoesNotContain("Type '", approveOut, StringComparison.Ordinal);
         Assert.EndsWith($"approved {name}\n", approveOut, StringComparison.Ordinal);
         Assert.True(revoked == 0, _error.ToString());
         Assert.EndsWith($"revoked {name}; 0 instances parked\n", _out.ToString(), StringComparison.Ordinal);
@@ -63,48 +63,27 @@ public sealed class RecipeApproveCliTests : IDisposable
         await using var app = await Started(ct);
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
-        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 2").Approve(name, ct));
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct));
         _out.GetStringBuilder().Clear();
 
-        var again = await Commands(app, human: true, "approve workflow.step 2").Approve(name, ct);
+        var again = await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct);
 
         Assert.True(again == 0, _error.ToString());
         Assert.EndsWith($"already approved {name}; woke 0 open instances\n", _out.ToString(), StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task Session_and_mistyped_approvals_exit_2_and_record_nothing()
+    public async Task A_session_approves_with_no_challenge()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
 
-        var session = await Commands(app, human: false, "approve workflow.step 2").Approve(name, ct);
-        var sessionError = _error.ToString();
-        var mistyped = await Commands(app, human: true, "approve workflow.step").Approve(name, ct);
+        var session = await Commands(app, human: false, "approve workflow.step 4").Approve(name, ct);
 
-        Assert.Equal((2, 2), (session, mistyped));
-        Assert.StartsWith("SND-AUTH-002 IssueChallenge is a human decision", sessionError, StringComparison.Ordinal);
-        Assert.Contains("(this CLI ran as a session: CLAUDECODE is set)", sessionError, StringComparison.Ordinal);
-        Assert.Contains("SND-RECIPE-009 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 2, step.Hash, ct)).Value);
-    }
-
-    /// <summary>PR 232 proof F6: a session told to run the revoke is told it is a revoke (the server names the one command).</summary>
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_session_revoke_is_refused_naming_the_revoke_command()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        await using var app = await Started(ct);
-        var step = await Register(app, ct);
-
-        var session = await Commands(app, human: false, "revoke workflow.step").Revoke($"workflow.step@{step.Hash.Display}", ct);
-
-        Assert.Equal(2, session);
-        Assert.StartsWith("SND-AUTH-002 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("sindri recipe revoke <recipe>", _error.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("recipe approve", _error.ToString(), StringComparison.Ordinal);
+        Assert.True(session == 0, _error.ToString());
+        Assert.NotNull((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 4, step.Hash, ct)).Value);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -115,7 +94,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var file = Path.Combine(_home.Path, "workflow.step.yaml");
         await File.WriteAllTextAsync(file, ShippedRecipes.Read("sindri/workflow.step.yaml"), ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 2").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         Assert.Equal(2, code);
         Assert.StartsWith($"SND-RECIPE-008 {file} declares eval evals/workflow.step/happy.jsonl, which is missing", _error.ToString(), StringComparison.Ordinal);
@@ -130,10 +109,10 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         var file = await EditedCopy(ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 2").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         AssertRefusedAsEdited(step, code);
-        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 2, step.Hash, ct)).Value);
+        Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 3, step.Hash, ct)).Value);
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
@@ -142,12 +121,12 @@ public sealed class RecipeApproveCliTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
         var step = await Register(app, ct);
-        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 2").Approve($"workflow.step@{step.Hash.Display}", ct));
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 4").Approve($"workflow.step@{step.Hash.Display}", ct));
         _out.GetStringBuilder().Clear();
         _error.GetStringBuilder().Clear();
         var file = await EditedCopy(ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 2").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         AssertRefusedAsEdited(step, code);
     }
@@ -157,7 +136,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Equal(2, code);
         Assert.DoesNotContain("Type '", _out.ToString(), StringComparison.Ordinal);
         Assert.StartsWith("SND-RECIPE-007 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains($"RCP-VERSION-001: workflow.step version 2 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains($"RCP-VERSION-001: workflow.step version 4 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>workflow.step's text with one 'next:' line edited and its version left at 2, with its eval files beside it.</summary>
@@ -178,9 +157,9 @@ public sealed class RecipeApproveCliTests : IDisposable
 
     private RecipeDeskCommands Commands(WebApplication app, bool human, string typed)
     {
-        var session = new AgentSession(human ? null : "CLAUDECODE is set", Terminal: true, Prover: false);
+        var session = new AgentSession(Terminal: true, Prover: false);
         var client = new ControlPlaneClient(app.Services.GetRequiredService<IControlPlaneProbe>(), SliceHarness.Json,
-            CallerHeaders.For(session, app.Services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
+            CallerHeaders.For(session, human ? app.Services.GetRequiredService<IHumanTokenStore>() : new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
         var desk = new RecipeDesk(client, new StringReader(typed + "\n"), static _ => Task.FromResult<Error?>(null));
         return new RecipeDeskCommands(desk, app.Services.CreateScope().ServiceProvider, new Output(_out, _error, SliceHarness.Json));
     }

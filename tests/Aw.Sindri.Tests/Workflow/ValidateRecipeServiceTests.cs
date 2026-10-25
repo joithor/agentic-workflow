@@ -35,7 +35,7 @@ public sealed class ValidateRecipeServiceTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task A_valid_recipe_file_validates_to_its_hash()
     {
-        var yaml = RecipeReaderTests.Minimal + "inputs: [{ key: fact:item, type: item, kind: item }]\n";
+        var yaml = RecipeReaderTests.Minimal + "inputs: [{ key: fact:item, type: item, kind: item }]\ndisplayName: Minimal recipe\n";
         var path = _directory.Write("workflow.minimal.yaml", yaml);
         var expected = RecipeReaderTests.Reader.Read(yaml, "x.yaml").Document!.Hash;
 

@@ -92,7 +92,7 @@ internal sealed partial class BlockRules : IRecipeRules
         }
 
         return catalog.Find(reference.Id) is { } descriptor
-            ? Parameters(reference, descriptor, source).Concat(ProviderLists(reference, descriptor, source))
+            ? Parameters(reference, descriptor, source).Concat(ProviderLists(reference, descriptor, source)).Concat(Bundles(reference, descriptor, source))
             : [source.Finding("RCP-BLOCK-001", $"{reference.Path}.use", $"block '{id}' isn't registered", $"name a registered {Word(kind)} block, or fix the id")];
     }
 
@@ -149,13 +149,11 @@ internal sealed partial class BlockRules : IRecipeRules
                     "RCP-EFFECT-001", e.Path, $"effect '{e.Use.Value}' isn't on the profile's effect allowlist",
                     "add it to workflow.effects and approve the profile, or remove it"));
 
-    /// <summary>RCP-RES-001: information, since no resource has an allocator in this build (heavy until the engine's allocator is wired to the heavy-job lock, slot until P7).</summary>
+    /// <summary>RCP-RES-001: information, since the session-slot resource has only a stub allocator in this build (P7); the heavy resource is allocated over the heavy-job lock (LN-WF3).</summary>
     private static IEnumerable<RecipeFinding> Resources(Recipe recipe, RecipeSource source) =>
         recipe.States
-            .Where(s => s.Value.WaitFor?.Resource is ResourceKind.Heavy or ResourceKind.Slot)
-            .Select(s => s.Value.WaitFor?.Resource == ResourceKind.Heavy
-                ? Resource(source, s.Key, "heavy", "it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock")
-                : Resource(source, s.Key, "slot", "it parks with SND-WF-010 until the session-slot stub lands (P7)"));
+            .Where(s => s.Value.WaitFor?.Resource is ResourceKind.Slot)
+            .Select(s => Resource(source, s.Key, "slot", "it parks with SND-WF-010 until the session-slot stub lands (P7)"));
 
     private static RecipeFinding Resource(RecipeSource source, string state, string name, string fix) => source.Finding(
         "RCP-RES-001", $"states.{state}.waitFor.resource", $"resource '{name}' has no allocator in this build", fix, FindingSeverity.Information);

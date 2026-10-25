@@ -7,15 +7,18 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// Bare 'sindri' and 'sindri --headless' (factory addendum §17.29.1): start the control plane if it isn't running
-/// (detached, through the launcher; never from an agent session, <paramref name="session"/>), open the app unless headless (<paramref name="openUi"/> is null), then print the
+/// (detached, through the launcher), open the app unless headless (<paramref name="openUi"/> is null), then print the
 /// banner and the summary. Exit 1 when the profile needs approval, so a script sees the attention; the app never changes
 /// the exit code. The start wait runs on the injected clock: up to <see cref="Budget"/>, probing every <see cref="Poll"/>.
 /// </summary>
 internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
-    AgentSession? session = null, Func<string>? openUi = null)
+    Func<string>? openUi = null)
 {
-    /// <summary>How long a start waits for the control plane to answer.</summary>
-    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+    /// <summary>Gets a step that runs after the banner and before the control plane is looked for or started: the first-run Onyx offer, for bare 'sindri' at a terminal.</summary>
+    internal Func<CancellationToken, Task>? BeforeStart { get; init; }
+
+    /// <summary>How long a start waits for the control plane to answer: a loaded box (CI, a cold disk) can take well over 10 s to bind. A serve that exited ends the wait at once, so a long budget never hides a dead one.</summary>
+    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(30);
 
     /// <summary>How often the start wait probes.</summary>
     internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
@@ -23,6 +26,11 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     internal async Task<int> Run(CancellationToken ct)
     {
         await output.Out.WriteLineAsync(Banner.Text).ConfigureAwait(false);
+        if (BeforeStart is not null)
+        {
+            await BeforeStart(ct).ConfigureAwait(false);   // the first-run Onyx offer, for bare 'sindri' at a terminal
+        }
+
         var found = await FindOrLaunch(ct).ConfigureAwait(false);
         if (found.IsError)
         {
@@ -47,45 +55,35 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
 
     /// <summary>
     /// The running control plane, or the one this call starts. It launches only when nothing runs (SND-API-001), and
-    /// never from an agent session (API spec §7: SND-API-001 asking for the human); one that answers late (SND-API-002)
-    /// is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a concurrent start, so polling goes
+    /// one that answers late (SND-API-002) is reported as it is. A child that exits with SND-LEASE-001 lost the lease to a concurrent start, so polling goes
     /// on until the deadline for the winner to answer.
     /// </summary>
     internal Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> FindOrLaunch(CancellationToken ct) => Find(launch: true, ct);
 
     /// <summary>
-    /// Before a command a human runs (API spec §7): null when the control plane runs, or once this call started it;
-    /// otherwise the error to print. Only a human CLI starts it, and only when <paramref name="launch"/> (no --no-start).
+    /// Before a command that needs the control plane (API spec §7): null when it runs, or once this call started it;
+    /// otherwise the error to print. It starts it only when <paramref name="launch"/> (no --no-start).
     /// </summary>
     /// <param name="launch">False for --no-start.</param>
     /// <param name="ct">Cancels the wait.</param>
     /// <returns>Null, or the error.</returns>
     internal async Task<Error?> EnsureRunning(bool launch, CancellationToken ct)
     {
-        var found = await Find(launch && (session?.Human ?? true), ct).ConfigureAwait(false);
+        var found = await Find(launch, ct).ConfigureAwait(false);
         return found.IsError ? found.Error : null;
     }
 
-    /// <summary>Why 'sindri serve' won't run here: inside an agent session (API §7); null when it may. AW_SINDRI_PROVER=1 has
-    /// already dropped the parent-process signal in <see cref="AgentSession.Detect"/>, never a variable (API §6, P1 plan G6).</summary>
-    /// <param name="session">How the CLI classed itself.</param>
-    /// <returns>The refusal, or null.</returns>
-    internal static Error? ServeRefusal(AgentSession session) =>
-        session is { Signal: { } signal }
-            ? SindriErrors.NotRunning.With($"an agent session never starts Sindri ({signal}); ask the human to run 'sindri'")
-            : null;
-
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Find(bool launch, CancellationToken ct)
     {
+        if (client.SettingRefusal is { } refused)
+        {
+            return refused;   // a malformed setting is refused before a start launches anything
+        }
+
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsSuccess || found.Error.Code != SindriErrors.NotRunning.Code)
         {
             return found;
-        }
-
-        if (session is { Signal: { } signal })
-        {
-            return SindriErrors.NotRunning.With($"Sindri isn't running; ask the human to run 'sindri' (an agent session never starts it: {signal})");
         }
 
         return launch ? await Launch(ct).ConfigureAwait(false) : found;

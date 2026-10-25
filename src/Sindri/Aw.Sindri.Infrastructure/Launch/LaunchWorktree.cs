@@ -7,9 +7,36 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <summary>Creates a Step's worktree when it is missing.</summary>
 internal static class LaunchWorktree
 {
-    internal static async ValueTask<Error?> Ensure(LaunchRequest request, CancellationToken cancellationToken) =>
-        request.Worktree is { } worktree && !Directory.Exists(worktree)
-        && await ViewerProcess.Output("git", ["-C", request.RepoPath, "worktree", "add", "--detach", worktree], cancellationToken).ConfigureAwait(false) is null
-            ? SindriErrors.LaunchRepoMissing.With($"the Step's worktree could not be created at {worktree}")
-            : null;
+    // A checkout of a large repo takes seconds and is never cut off: git killed mid-checkout leaves a locked,
+    // half-checked-out worktree, and the next launch would find the directory and use it. It ends with the launch's own
+    // cancellation.
+    private static readonly TimeSpan _gitBudget = Timeout.InfiniteTimeSpan;
+
+    internal static async ValueTask<Error?> Ensure(LaunchRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Worktree is not { } worktree || Directory.Exists(worktree))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (await ViewerProcess.Output("git", ["-C", request.RepoPath, "worktree", "add", "--detach", worktree], _gitBudget, cancellationToken).ConfigureAwait(false) is not null)
+            {
+                return null;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            await Discard(request.RepoPath, worktree).ConfigureAwait(false);
+            throw;
+        }
+
+        await Discard(request.RepoPath, worktree).ConfigureAwait(false);
+        return SindriErrors.LaunchRepoMissing.With($"the Step's worktree could not be created at {worktree}");
+    }
+
+    // A failed or cancelled add may leave a registered, locked worktree; removing it lets the next launch start clean.
+    private static async ValueTask Discard(string repoPath, string worktree) =>
+        _ = await ViewerProcess.Output("git", ["-C", repoPath, "worktree", "remove", "--force", "--force", worktree], _gitBudget, CancellationToken.None).ConfigureAwait(false);
 }

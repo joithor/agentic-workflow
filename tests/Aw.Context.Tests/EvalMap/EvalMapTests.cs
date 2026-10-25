@@ -82,7 +82,7 @@ public sealed class EvalMapTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task EvalMap_without_map_is_030_and_a_session_is_020()
+    public async Task EvalMap_without_map_is_030_and_a_session_may_measure()
     {
         await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
 
@@ -91,7 +91,7 @@ public sealed class EvalMapTests
         var session = await Measure(world, world.Session());
 
         Assert.Equal(ContextErrors.NoMap.Code, none.Error.Code);
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
+        Assert.True(session.IsSuccess);   // removed per owner q93 (2026-10-23)
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -105,10 +105,8 @@ public sealed class EvalMapTests
 
         var kept = (await world.Engine.EvalPurge(new EvalPurgeRequest(world.Human(), All: false), TestContext.Current.CancellationToken)).Value;
         var all = (await world.Engine.EvalPurge(new EvalPurgeRequest(world.Human(), All: true), TestContext.Current.CancellationToken)).Value;
-        var session = await world.Engine.EvalPurge(new EvalPurgeRequest(world.Session(), All: true), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, kept.Total);   // nothing is 90 days old
         Assert.Equal((1, 0, 1), (all.Reports, all.CacheFiles, all.ProbeReports));
-        Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
     }
 }

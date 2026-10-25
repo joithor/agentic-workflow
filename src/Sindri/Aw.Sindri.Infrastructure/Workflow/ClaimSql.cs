@@ -11,4 +11,7 @@ internal static class ClaimSql
     /// <summary>Takes the claim over from the holder the caller found ended; changes nothing when another instance holds it by now.</summary>
     internal const string ReplaceEndedClaim =
         "UPDATE workflow_claims SET owner = $owner, attempt = $attempt, claimed_at = $claimedAt WHERE item = $item AND owner = $ended";
+
+    /// <summary>Frees the claim when $owner still holds it; changes nothing when another instance took it over.</summary>
+    internal const string ReleaseClaim = "DELETE FROM workflow_claims WHERE item = $item AND owner = $owner";
 }

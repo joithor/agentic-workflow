@@ -1,0 +1,15 @@
+{
+  "sections": [
+    {
+      "id": "sec-1",
+      "title": "Expiry",
+      "covers": [
+        "S1"
+      ],
+      "cites": [
+        "S1",
+        "AC-1"
+      ]
+    }
+  ]
+}

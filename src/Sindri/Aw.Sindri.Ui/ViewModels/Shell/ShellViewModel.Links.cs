@@ -7,8 +7,23 @@ internal sealed partial class ShellViewModel
 {
     /// <summary>Goes where a deep link points: a page, or the detail sheet with its subject.</summary>
     /// <param name="link">The link.</param>
-    internal void Navigate(DeepLink link)
+    internal void Navigate(DeepLink link) => Navigate(link, rowSheet: false);
+
+    /// <summary>
+    /// Goes where a deep link points, opening a Needs-you row's own sheet over the page instead of the inbox: what the strip's
+    /// Answer does, which keeps its row as the opener the sheet's Esc returns to.
+    /// </summary>
+    /// <param name="link">The link.</param>
+    internal void NavigateToRowSheet(DeepLink link) => Navigate(link, rowSheet: true);
+
+    private void Navigate(DeepLink link, bool rowSheet)
     {
+        if (link.Kind == DeepLinkKind.Setup)
+        {
+            GoTo(PageId.Settings);   // the checklist is Settings' first section; ShowPage scrolls to it
+            return;
+        }
+
         if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
         {
             GoTo(PageId.Home);
@@ -16,6 +31,22 @@ internal sealed partial class ShellViewModel
         }
 
         link = Canonical(link);
+        if (link.Kind == DeepLinkKind.NeedsYou && !rowSheet)
+        {
+            if (OpenTargetOf(link.Subject))
+            {
+                return;   // the tray and a needs-you link take a nested park to its child, as a click on its row does
+            }
+
+            OpenNeedsYouInbox(link.Subject);   // a decision row is the decision's own link, so it never gets here
+            return;
+        }
+
+        if (OpenWholePage(link))
+        {
+            return;
+        }
+
         if (PageOf(link.Kind) is { } page)
         {
             GoTo(page);
@@ -26,6 +57,25 @@ internal sealed partial class ShellViewModel
         {
             SelectRowOf(link);
         }
+    }
+
+    // The links that open a whole page of their own, with no sheet: a line run's page, and the Context page for an item (its frozen scope is read as it opens).
+    private bool OpenWholePage(DeepLink link)
+    {
+        if (link.Kind == DeepLinkKind.ContextItem)
+        {
+            GoTo(PageId.Context);
+            _ = Context.OpenForItem(link.Subject!, CancellationToken.None);   // why: a link of this kind always has a subject
+            return true;
+        }
+
+        if (link.Kind == DeepLinkKind.Workflow && IsLineRun(link.Subject))
+        {
+            OpenRunPage(link.Subject!);   // why: IsLineRun is true only for a subject
+            return true;
+        }
+
+        return false;
     }
 
     // One rule for a row's link (the tray, a deep link, a click): a needs-you link whose row is a decision is the decision's own link.
@@ -43,7 +93,8 @@ internal sealed partial class ShellViewModel
         DeepLinkKind.Node => PageId.Context,
         DeepLinkKind.Session => PageId.Agents,
         DeepLinkKind.System => PageId.System,
-        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Job => null,
+        DeepLinkKind.Job => PageId.Jobs,   // System's "View job" and the tray open the page with that job's sheet
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.ContextItem or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Setup => null,
         _ => null,
     };
 }

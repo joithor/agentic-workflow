@@ -8,4 +8,11 @@ namespace Aw.Context.Core.Linking;
 /// <param name="Version">The source's version of the record (an Onyx hit's updated_at).</param>
 /// <param name="Title">The scrubbed one-line title (untrusted).</param>
 /// <param name="Aliases">Other names for it, such as the tracker key 'SPL-103'.</param>
-public sealed record IntentRecord(RecordKey Key, SourceId Source, string Version, string Title, IReadOnlyList<string> Aliases);
+public sealed record IntentRecord(RecordKey Key, SourceId Source, string Version, string Title, IReadOnlyList<string> Aliases)
+{
+    /// <summary>When the source created the record, or null (a row stored before the column existed, or a source that gives none). A 'before' read treats null as leaky.</summary>
+    public DateTimeOffset? CreatedAt { get; init; }
+
+    /// <summary>When the sync last wrote the record (its version moved); set by the store when it reads the row back, null on a record that hasn't been stored.</summary>
+    public DateTimeOffset? FetchedAt { get; init; }
+}

@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api.Workflow;
+
 namespace Aw.Sindri.Ui.Api;
 
 /// <summary>One row of GET /sindri/needs-you (API P4): what waits on the human, in the API's order.</summary>
@@ -19,6 +21,10 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Cli">The one command to copy.</param>
 /// <param name="Chip">The served chip (U3'-API-9); null until the API serves one.</param>
 /// <param name="Via">"child" on a row whose cli points at a child that decides the answer, else null (omitted).</param>
+/// <param name="Child">The deciding child instance's address (what `sindri workflow status` takes); set only on a via child row, else null (omitted).</param>
+/// <param name="Stop">On a desk row, which desk state of its recipe it waits in; null (omitted) otherwise or when the recipe could not be read.</param>
+/// <param name="Timeout">On a desk or park row, the timeout the instance status serves, measured at the response; null (omitted) when there is none.</param>
+/// <param name="Open">The one place the owner acts on the row (q65); the API always serves it, null only for a body from before it.</param>
 internal sealed record NeedsYouRowView(
     string Id,
     string Kind,
@@ -36,5 +42,9 @@ internal sealed record NeedsYouRowView(
     string? PrimaryAction,
     IReadOnlyList<string> Actions,
     string Cli,
-    Workflow.StateChip? Chip = null,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Via = null);
+    StateChip? Chip = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Child = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] NeedsYouStopView? Stop = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusTimeout? Timeout = null,
+    NeedsYouOpenView? Open = null);

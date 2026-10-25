@@ -5,4 +5,5 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Label">The label, or null.</param>
 /// <param name="Outcome">'opened', 'unconfirmed', 'skipped' or 'failed'.</param>
 /// <param name="Code">The failure code, or null.</param>
-internal sealed record LaunchViewerView(string Kind, string? Label, string Outcome, string? Code);
+/// <param name="Detail">The failure sentence, or null.</param>
+internal sealed record LaunchViewerView(string Kind, string? Label, string Outcome, string? Code, string? Detail = null);

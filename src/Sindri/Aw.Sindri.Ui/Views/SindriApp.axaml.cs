@@ -60,7 +60,9 @@ public sealed partial class SindriApp : Application, IDisposable
 #pragma warning disable CA2000 // the shell view model keeps the client for the app's process
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
 #pragma warning restore CA2000
-        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion, launcher), preferences, platform, clock);
+        var folders = new AvaloniaFolderPicker(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
+        var files = new AvaloniaFilePicker(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
+        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion, new WindowPorts(launcher, files, folders)), preferences, platform, clock);
     }
 
     /// <summary>Stops reading the single instance's messages (the app's exit does; a test that starts the app calls it).</summary>
@@ -151,7 +153,7 @@ public sealed partial class SindriApp : Application, IDisposable
         {
             theme(appearance);
             shell.ApplyAppearance(appearance); // the lists' caps follow the text scale (screens §4.1)
-        });
+        }, shell.Setup);
         try
         {
             await settings.Load(CancellationToken.None).ConfigureAwait(true);

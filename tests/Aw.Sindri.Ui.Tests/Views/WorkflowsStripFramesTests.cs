@@ -131,11 +131,11 @@ public sealed class WorkflowsStripFramesTests : FrameHost
         {
             var row = (StripRowViewModel)frame.DataContext!;
             Assert.Equal(row.AccessibleName, AutomationProperties.GetName(frame));
-            Assert.EndsWith(row.Address, AutomationProperties.GetName(frame), StringComparison.Ordinal);
+            Assert.DoesNotContain(row.Address, AutomationProperties.GetName(frame), StringComparison.Ordinal);   // the title says which run; the address lives in Details
             Assert.Equal((AccessibilityView.Control, "ListItem"), (AutomationProperties.GetAccessibilityView(frame), AutomationProperties.GetControlTypeOverride(frame)?.ToString()));
             foreach (var button in frame.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible))
             {
-                Assert.EndsWith(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
+                Assert.DoesNotContain(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
             }
         }
 
@@ -143,12 +143,13 @@ public sealed class WorkflowsStripFramesTests : FrameHost
     });
 
     [Fact]
-    public Task Strip_rows_come_after_needs_you_and_before_running() => OnUi(async () =>
+    public Task Strip_rows_head_the_right_column_beside_needs_you_and_above_running() => OnUi(async () =>
     {
         var (window, _) = await Connected(s => s.Strip.Rows.Count > 0 && s.NeedsYou.Count > 0);
 
         double Top(string name) => Named<Control>(window, name).TranslatePoint(new Point(0, 0), window)!.Value.Y; // why: the panels are in the tree
-        Assert.True(Top("NeedsYouPanel") < Top("WorkflowsPanel") && Top("WorkflowsPanel") < Top("RunningPanel"));
+        double Left(string name) => Named<Control>(window, name).TranslatePoint(new Point(0, 0), window)!.Value.X; // why: the panels are in the tree
+        Assert.True(Left("WorkflowsPanel") > Left("NeedsYouPanel") && Top("WorkflowsPanel") < Top("RunningPanel")); // why: F3 home spec: the strip heads the right column, Running under it
     });
 
     [Fact]

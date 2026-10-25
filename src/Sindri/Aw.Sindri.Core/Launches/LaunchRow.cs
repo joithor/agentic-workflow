@@ -1,7 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Launches;
@@ -31,6 +30,7 @@ namespace Aw.Sindri.Core.Launches;
 /// <param name="CatalogSource">Where the entry came from, once started.</param>
 /// <param name="ArgvHash">The hash of the entry's argv template, once started.</param>
 /// <param name="Ended">How the session ended, or null while it runs.</param>
+/// <param name="Step">Which workflow instance, Step (state id) and attempt the launch belongs to; every member is null for an attended launch and for events recorded before the fields existed.</param>
 /// <param name="Sequence">The ledger sequence that last changed the row.</param>
 public sealed record LaunchRow(
     LaunchId Id,
@@ -54,13 +54,20 @@ public sealed record LaunchRow(
     CatalogSource? CatalogSource,
     string? ArgvHash,
     LaunchEnd? Ended,
+    LaunchStep Step,
     long Sequence)
 {
     /// <summary>The session id a resume uses: the one known at start, else the reported one.</summary>
     public SessionId? ResumableId => SessionId ?? ReportedSessionId;
 
+    /// <summary>True when this row started an agent process: an attach row records the live session's id but starts nothing.</summary>
+    public bool StartedProcess => State == LaunchState.Started && Mode != LaunchMode.Attach;
+
+    /// <summary>True when a resume may address this row: it started a process, has ended, and has an id.</summary>
+    public bool Resumable => StartedProcess && !Live && ResumableId is not null;
+
     /// <summary>True while the session exists: started and not ended.</summary>
-    public bool Live => State == LaunchState.Started && Ended is null;
+    public bool Live => State == LaunchState.Started && Ended is null && Mode != LaunchMode.Attach;
 
     /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021), otherwise null.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]

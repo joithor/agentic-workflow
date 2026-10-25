@@ -10,7 +10,7 @@ public enum ChipTone
     [JsonStringEnumMemberName("attn")]
     Attn = 1,
 
-    /// <summary>Something failed. Reserved: <see cref="StateChip.For"/> produces no failed chip yet (the screens fixture has none); a failed or cancelled terminal state reads DONE until the owner table adds a word.</summary>
+    /// <summary>Something failed. <see cref="StateChip.For"/> gives it to an instance that ended with outcome 'failed' (FAILED).</summary>
     [JsonStringEnumMemberName("fail")]
     Fail = 2,
 

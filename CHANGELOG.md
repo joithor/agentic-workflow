@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-10-19 — headroom as a proxy wrapper
+
+### Added
+
+- `scripts/install-headroom.sh` and the `aw-headroom` launcher: headroom returns as a proxy wrapper only, never an MCP server.
+  `aw-headroom claude|codex [args]` finds the upstream the tool already uses (`$ANTHROPIC_BASE_URL`, then Claude's
+  `settings.json` env, then the official API; for Codex `$OPENAI_BASE_URL`, then the active provider's `base_url` in
+  `config.toml`, then the official API; headroom's own URL is never chosen), starts or reuses a loopback `headroom proxy`
+  with that upstream, and runs the tool with its base URL pointed at the proxy for that run only (a `--settings` overlay for
+  Claude Code, a `-c` override for Codex). So an API gateway such as EasyCLIProxyAPI stays in the chain: client, headroom,
+  gateway, provider. No settings or config file is edited and the auth token is never read or printed. The proxy stops when
+  the last wrapped session ends (`AW_HEADROOM_KEEP=1` keeps it); if headroom is missing or the port is taken the tool runs
+  unwrapped with a warning.
+- `setup.sh` runs the installer per provider (installs the headroom CLI when missing, warns and goes on if it can't); Cursor
+  gets a skip line. `scripts/tests/install-headroom.test.sh` covers it.
+
+### Changed
+
+- headroom stays in `AW_MCP_RETIRED`, so an old `headroom mcp serve` registration is still removed.
+
 ## [Unreleased] - 2026-10-18 — headroom retired
 
 ### Removed

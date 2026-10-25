@@ -34,7 +34,19 @@ public sealed record InstanceStart(
     /// </summary>
     public DateTimeOffset StartedAt { get; init; }
 
-    /// <summary>The workflow id: the instance's address, '{item}/{recipe name}/{attempt}'.</summary>
+    /// <summary>Who started the instance, in the ledger's actor form ('human:prover', 'session:mcp'); null for a child, an automated start, or a history from before this was recorded.</summary>
+    public string? StartedBy { get; init; }
+
+    /// <summary>The address of a child instance, '{parent}/{recipe name}.{entry}' (engine P7 plan D1); null for a root instance, whose address is built from the item, the recipe and the attempt.</summary>
+    public InstanceAddress? ChildAddress { get; init; }
+
+    /// <summary>The parent of a child instance (engine P7 plan D1); null for a root instance.</summary>
+    public WorkflowInstanceId? ParentId { get; init; }
+
+    /// <summary>The instance this one reruns (a 'RerunInstance'); null for any other start. It is workflow input, so it is in the history and survives a restart.</summary>
+    public InstanceAddress? Again { get; init; }
+
+    /// <summary>The workflow id: the instance's address, '{item}/{recipe name}/{attempt}', or a child's own address.</summary>
     /// <returns>The address.</returns>
-    public InstanceAddress WorkflowId() => InstanceAddress.Root(Item, Recipe.Id, Attempt);
+    public InstanceAddress WorkflowId() => ChildAddress ?? InstanceAddress.Root(Item, Recipe.Id, Attempt);
 }

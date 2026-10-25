@@ -26,13 +26,19 @@ Skill text refers to MCP tools as `mcp: <server>/<tool>`; map that to your host'
 | `xcodebuildmcp` | iOS Simulator control — build, launch, snapshot_ui, screenshot, tap, swipe | Manual iOS testing |
 | `prism-mcp` | Persistent memory, semantic search, conversation visualization (Mind Palace) | Manual context passing between sessions |
 
+### headroom is a proxy, not an MCP server
+
+`headroom` is not registered anywhere (it stays in `AW_MCP_RETIRED` in `setup.sh`, so a leftover `headroom mcp serve` entry is
+removed). It comes back only as the `aw-headroom claude|codex` launcher (`scripts/install-headroom.sh`), a loopback proxy chained in
+front of the tool's own upstream.
+
 ### Per-repo servers
 
 Not registered by `setup.sh`, and absent from most sessions.
 
 | Server | Purpose | Registration |
 |--------|---------|--------------|
-| `sindri` | Sindri's `sindri_*` tools (status, queue, item, timeline, pending decisions, job, `sindri_request`) and the `context_*` tools, served by the local Sindri process at `/sindri/mcp`; text in results is fenced as untrusted | The owner runs `sindri mcp register` (or `--apply`) inside a work repo: `claude mcp add --scope local` with an `X-Sindri-Repo` header. Never user-wide; never by `setup.sh` or a provider installer. `sindri doctor` warns on a user-wide entry |
+| `sindri` | Sindri's `sindri_*` tools (status, queue, item, timeline, pending decisions, job, `sindri_request`) and the `context_*` tools, served by the local Sindri process at `/sindri/mcp`; text in results is fenced as untrusted | Registered by the owner running `sindri mcp register --apply --providers all` (a bare `sindri` prints that command once the control plane's port is known) in a work repo, per repo where the provider allows: Claude Code `claude mcp add --scope local`, Cursor the checkout's `.cursor/mcp.json`, Codex the checkout's `.codex/config.toml` (plus a `projects."<checkout>".trust_level = "trusted"` row in the user's Codex config, never overwriting another level); each with an `X-Sindri-Repo` header. Idempotent, re-registered when the port changes. **(SO-22)** Sindri also registers itself, as `service:setup`, in each repo of the *approved* profile snapshot (never a drifted live file) after the owner approves a profile that names the repo; on a box whose profile pre-dates that feature, only after the owner presses "Turn on for your repos" (`setup.consent.given`); that run skips the Codex trust row and is turned off by the profile key `setup.mcp: off` or `AW_SINDRI_APP_NO_MCP=1` (setup-once spec §5.4). Never by `setup.sh` or a provider installer; an agent session is refused (`SND-AUTH-002`). `sindri doctor` warns on a user-wide entry |
 
 ## When to use Serena vs search/read
 

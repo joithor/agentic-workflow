@@ -34,7 +34,7 @@ public sealed class CliClientTests : IDisposable
     public async Task Json_prints_the_api_body_unchanged()
     {
         var h = new SliceHarness();
-        var status = (await new GetStatusService(h.Held, new ProfileReads(h.Profiles, h.Profiles), h.Store, h.Events, new ProjectorProgress(h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
+        var status = (await new GetStatusService(h.Held, new ProfileReads(h.Profiles, h.Profiles), h.Store, h.Events, new ProjectorProgress(h.Clock), new HealthServiceRows(new InMemoryViewStore(SliceHarness.Json), []), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
         var body = "{ " + Encoding.UTF8.GetString(AwJson.Serialize(status, SliceHarness.Json))[1..].Replace(",", ",\n  ", StringComparison.Ordinal);   // spaced as no serializer here would write it
         using var client = Client(new CliStubApi(HttpStatusCode.OK, body));
 
@@ -53,26 +53,22 @@ public sealed class CliClientTests : IDisposable
         Assert.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (stopped.Error.Code, stopped.Error.Kind));
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("CLAUDECODE is set", true)]
-    [InlineData("parent process codex", true)]
-    [InlineData(null, false)]
-    public async Task Refused_command_names_the_agent_signal_it_saw(string? signal, bool terminal)
+    [Fact, Trait("Lane", "unit")]
+    public async Task Refused_command_names_why_the_cli_ran_as_a_session()
     {
-        var session = new AgentSession(signal, terminal, Prover: false);
-        using var client = Client(new CliStubApi(HttpStatusCode.Forbidden, Problem("SND-AUTH-002", Refusal)), session);
+        using var client = Client(new CliStubApi(HttpStatusCode.Forbidden, Problem("SND-AUTH-002", Refusal)), new AgentSession(Terminal: true, Prover: false), human: false);
 
         var code = await Verbs(client).Stop(Token);
 
         Assert.Equal(2, code);
-        Assert.Equal($"SND-AUTH-002 {Refusal} (this CLI ran as a session: {signal ?? "no terminal"})\n", _error.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal($"SND-AUTH-002 {Refusal} (this CLI ran as a session: the per-start human token isn't readable)\n", _error.ToString().ReplaceLineEndings("\n"));
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_refusal_of_a_human_cli_carries_no_session_note()
     {
         using var client = Client(new CliStubApi(HttpStatusCode.Forbidden, Problem("SND-AUTH-001", "A human caller needs the per-start token")),
-            new AgentSession(Signal: null, Terminal: true, Prover: false));
+            new AgentSession(Terminal: true, Prover: false));
 
         var code = await Verbs(client).Stop(Token);
 
@@ -83,7 +79,7 @@ public sealed class CliClientTests : IDisposable
     public async Task Every_api_call_carries_the_caller_headers()
     {
         var api = new CliStubApi(HttpStatusCode.Forbidden, Problem("SND-AUTH-002", Refusal));
-        using var client = Client(api, new AgentSession(Signal: "CLAUDECODE is set", Terminal: true, Prover: false), repo: "demo");
+        using var client = Client(api, new AgentSession(Terminal: true, Prover: false), human: false, repo: "demo");
 
         _ = await Verbs(client).Stop(Token);
 
@@ -93,9 +89,9 @@ public sealed class CliClientTests : IDisposable
 
     private static string Problem(string code, string detail) => $$"""{"type":"about:blank","title":"{{code}}","status":403,"detail":"{{detail}}"}""";
 
-    private static ControlPlaneClient Client(CliStubApi api, AgentSession? session = null, string? repo = null) =>
+    private static ControlPlaneClient Client(CliStubApi api, AgentSession? session = null, bool human = true, string? repo = null) =>
         new(_probe, SliceHarness.Json,
-            session is null ? null : CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult(repo is null ? (RepoName?)null : RepoName.From(repo))),
+            session is null ? null : CallerHeaders.For(session, human ? InMemoryHumanTokenStore.WithToken() : new InMemoryHumanTokenStore(), _ => ValueTask.FromResult(repo is null ? (RepoName?)null : RepoName.From(repo))),
             handler: api);
 
     private Verbs Verbs(ControlPlaneClient client) =>

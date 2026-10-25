@@ -23,9 +23,8 @@ public sealed class ResultJsonTests
             ["rrf:repo-docs#1"], Provenance.Deterministic, Confirmed: false, Trust.Untrusted, ["C1"])
         { Tokens = 12 };
         var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery("split pane"), [], MapVersion: null, at,
-            [new ResultSection("records", [item], [])], [], [],
-            [new DegradedSource(SourceId.From("onyx"), "SND-CONTEXT-010", "Onyx did not answer", at)], Truncated: false,
-            new BudgetUse(6000, 12, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
+            [new ResultSection("records", [item])], [], [],
+            [new DegradedSource(SourceId.From("onyx"), "SND-CONTEXT-010", "Onyx did not answer", at)], new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
 
         var bytes = AwJson.Serialize(result, _json);
         var text = Encoding.UTF8.GetString(bytes);
@@ -63,7 +62,7 @@ public sealed class ResultJsonTests
     {
         var at = new DateTimeOffset(2026, 10, 10, 18, 2, 11, TimeSpan.Zero);
         var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery("split pane"), [], MapVersion: null, at,
-            [], [], [], [], Truncated: false, new BudgetUse(6000, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal));
+            [], [], [], [], new Dictionary<string, Citation>(StringComparer.Ordinal));
 
         var text = Encoding.UTF8.GetString(AwJson.Serialize(result, _json));
 
@@ -79,9 +78,9 @@ public sealed class ResultJsonTests
         var sha = "0123456789abcdef0123456789abcdef01234567";
         var node = new DiffNode("feature:layout.split-pane", Confirmed: true);
         var part = new DiffPart(ContextRepoName.From("aw-split-panes"), sha, sha, sha,
-            [new DiffFile("src/a.ts", ChangeKind.TypeChanged, DiffStatus.Mapped, [node])], [], new DiffCounts(1, 1, 0, 0, 0), Truncated: false, 1, AnchorsTruncated: false);
+            [new DiffFile("src/a.ts", ChangeKind.TypeChanged, DiffStatus.Mapped, [node])], [], new DiffCounts(1, 1, 0, 0, 0), Truncated: false, 1);
         var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery(Text: null, Diff: new DiffRange(sha, sha), Repo: ContextRepoName.From("aw-split-panes")), ["feature:layout.split-pane"],
-            "v1", at, [], [], [], [], Truncated: false, new BudgetUse(6000, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal), part);
+            "v1", at, [], [], [], [], new Dictionary<string, Citation>(StringComparer.Ordinal), part);
 
         var bytes = AwJson.Serialize(result, _json);
         var text = Encoding.UTF8.GetString(bytes);
@@ -89,7 +88,7 @@ public sealed class ResultJsonTests
 
         Assert.Contains($"\"diff\":\"{sha}..{sha}\",\"repo\":\"aw-split-panes\"", text, StringComparison.Ordinal);
         Assert.Contains("\"change\":\"typeChanged\",\"status\":\"mapped\"", text, StringComparison.Ordinal);
-        Assert.Contains("\"anchorsTotal\":1,\"anchorsTruncated\":false", text, StringComparison.Ordinal);
+        Assert.Contains("\"anchorsTotal\":1", text, StringComparison.Ordinal);
         Assert.Contains("\"mergeBase\":\"" + sha + "\"", text, StringComparison.Ordinal);
         Assert.True(back.IsSuccess);
         Assert.Equal(text, Encoding.UTF8.GetString(AwJson.Serialize(back.Value, _json)));

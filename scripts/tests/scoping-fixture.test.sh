@@ -27,6 +27,18 @@ out="$(node "$FX/selfcheck.mjs" 2>&1)"; rc=$?
 check "selfcheck passes" "$rc" "0"
 [ "$rc" = 0 ] || echo "$out"
 node "$FX/selfcheck.mjs" extra >/dev/null 2>&1; check "selfcheck: an unknown argument exits 2" "$?" "2"
+# A loaded gate gives new pipes one 4 KB page (fs.pipe-user-pages-soft): the selfcheck must still print every line, not
+# drop what it hasn't flushed when it exits. Linux only (F_SETPIPE_SZ), and needs python3.
+if [ "$(uname -s)" = Linux ] && command -v python3 >/dev/null; then
+  tail1="$(python3 -I -c '
+import fcntl, os, subprocess, sys, time
+r, w = os.pipe(); fcntl.fcntl(w, 1031, 4096)
+p = subprocess.Popen(["node", sys.argv[1]], stdout=w, stderr=w); os.close(w); time.sleep(1)
+out = b"".join(iter(lambda: os.read(r, 65536), b"")); p.wait()
+print(out.decode().rstrip().splitlines()[-1])' "$FX/selfcheck.mjs")"
+  if [[ "$tail1" =~ ^[0-9]+/[0-9]+\ checks\ pass$ ]]; then echo "ok - through a 4 KB pipe with a slow reader the selfcheck prints every line"; else
+    echo "not ok - through a 4 KB pipe the selfcheck's output was cut: last line '$tail1'"; fail=1; fi
+fi
 printf '["surface:route/links-create"]' > "$WORK/scope.json"
 out="$(node "$FX/selfcheck.mjs" score "$WORK/scope.json" expiry --json 2>&1)"; check "score exits 0" "$?" "0"
 case "$out" in *'"precision":1'*) echo "ok - score: one gold key alone has precision 1" ;; *) echo "not ok - score output: $out"; fail=1 ;; esac

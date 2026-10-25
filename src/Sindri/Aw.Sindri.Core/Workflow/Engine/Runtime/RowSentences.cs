@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>
 /// The list row's own 'now' sentence (API spec §3.8 'now'), one pattern per chip: DECISION 'needs your &lt;answer&gt; (desk answer)',
 /// PARKED and ESCALATED 'needs your answer' (or what the park waits for), WITH YOU 'with you: &lt;task&gt;', RUNNING
-/// '&lt;actor&gt; &lt;verb&gt;ing in &lt;item&gt;', QUEUED 'queued', DONE the outcome. It is not a cut of 'next'.
+/// '&lt;actor&gt; &lt;verb&gt;ing in &lt;item&gt;', QUEUED 'queued', DONE (and FAILED, DIDN'T WORK OUT, CANCELLED) the outcome. It is not a cut of 'next'.
 /// </summary>
 internal static class RowSentences
 {
@@ -13,12 +13,17 @@ internal static class RowSentences
     public static string Now(InstanceView view, StateChip chip) => chip.Word switch
     {
         StateChip.Queued => "queued",
-        StateChip.Done => view.Outcome?.Value ?? "done",
+        StateChip.Done or StateChip.Failed or StateChip.DidntWorkOut or StateChip.Cancelled => view.Outcome?.Value ?? "done",
         StateChip.WithYou => $"with you: {view.Activity ?? view.State}",
         StateChip.Decision => $"needs your {Answer(view)} (desk answer)",
+        StateChip.Parked when IsUnavailable(view) => "waiting on a dependency that is down",
         StateChip.Parked or StateChip.Escalated => view.AnswerLine is not null ? "needs your answer" : $"{chip.Word.ToLowerInvariant()}{(view.Detail is { } detail ? $" ({detail})" : string.Empty)}",
         _ => Running(view),
     };
+
+    /// <summary>Whether the park is a Step whose dependency stayed down: nobody is asked, the engine runs it again on a resume.</summary>
+    internal static bool IsUnavailable(InstanceView view) =>
+        view.EngineOwned is { Kind: EngineOwnedKind.Parked } parked && parked.Reason.StartsWith("unavailable", StringComparison.Ordinal);   // 'unavailable', or 'unavailable (child)' on a mirror
 
     /// <summary>What the open desk task asks for: its first output the report must carry, else the state's name.</summary>
     private static string Answer(InstanceView view) =>

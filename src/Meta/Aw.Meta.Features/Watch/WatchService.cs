@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Usage;
 using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.Watch;
@@ -16,7 +17,8 @@ namespace Aw.Meta.Features.Watch;
 /// <param name="values">Keeps the heartbeat.</param>
 /// <param name="delay">Waits between polls.</param>
 /// <param name="clock">The current time.</param>
-internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyValueStore values, IDelay delay, TimeProvider clock)
+/// <param name="usage">Looks for lanes and the meta stopped at a usage limit, and resumes the idle ones.</param>
+internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyValueStore values, IDelay delay, TimeProvider clock, UsageMonitor usage)
     : IService<WatchRequest, WatchResponse>
 {
     public async ValueTask<Result<WatchResponse>> Handle(WatchRequest request, CancellationToken cancellationToken)
@@ -38,8 +40,11 @@ internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyV
             WatchResources.Parse(reported.IsSuccess ? reported.Value : null),
             // Advisory: if this can't be kept, a re-armed watch announces a standing LOW again.
             async resources => _ = await values.Set(KvKeys.WatchResources, resources.ToString(), cancellationToken).ConfigureAwait(false),
-            ContextWatch.Parse(high.IsSuccess ? high.Value : null),
-            async lanes => _ = await values.Set(KvKeys.WatchContext, ContextWatch.Format(lanes), cancellationToken).ConfigureAwait(false));
+            new ContextReported(
+                ContextWatch.Parse(high.IsSuccess ? high.Value : null),
+                async lanes => _ = await values.Set(KvKeys.WatchContext, ContextWatch.Format(lanes), cancellationToken).ConfigureAwait(false)),
+            // Advisory: a pane or transcript that can't be read leaves usage out of the poll.
+            async () => await usage.Check(team.Value, cancellationToken).ConfigureAwait(false));
         for (var polls = 1; ; polls++)
         {
             await loop.Tick(cancellationToken).ConfigureAwait(false);

@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -14,8 +12,6 @@ namespace Aw.Sindri.Infrastructure.Workflow;
 /// </summary>
 internal sealed class GitClaimRefs : IClaimRefs
 {
-    private static readonly TimeSpan _budget = TimeSpan.FromSeconds(30);
-
     private static readonly string[] _defaultBranches = ["refs/remotes/origin/HEAD", "refs/heads/main", "refs/heads/master", "HEAD"];
 
     public async ValueTask<Result<bool>> Mark(string repository, string reference, CancellationToken cancellationToken)
@@ -42,7 +38,7 @@ internal sealed class GitClaimRefs : IClaimRefs
             return WorkflowErrors.NoRuntime.With($"{repository} has no commit to point {reference} at (fix: commit once on its default branch, then resume the parked instance to send the claim again)");
         }
 
-        var created = await Git(repository, ["update-ref", "-m", "sindri: claim", reference, head, ""], cancellationToken).ConfigureAwait(false);
+        var created = await GitProcess.Run(repository, ["update-ref", "-m", "sindri: claim", reference, head, ""], cancellationToken).ConfigureAwait(false);
         if (created.Exit == 0)
         {
             return true;
@@ -59,56 +55,32 @@ internal sealed class GitClaimRefs : IClaimRefs
             : WorkflowErrors.NoRuntime.With($"git update-ref {reference} failed in {repository}: {created.Error.Trim()} (fix: check the repo, then resume the parked instance to send the claim again)");
     }
 
+    public async ValueTask<Result<bool>> Unmark(string repository, string reference, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(reference);
+        if (await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is not { Exit: 0 })
+        {
+            return false;   // no marker (never made, or an earlier cleanup took it): nothing to do
+        }
+
+        var deleted = await GitProcess.Run(repository, ["update-ref", "-m", "sindri: release claim", "-d", reference], cancellationToken).ConfigureAwait(false);
+        if (deleted.Exit == 0)
+        {
+            return true;
+        }
+
+        if (await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is not { Exit: 0 })
+        {
+            return false;   // deleted by a concurrent cleanup between the check and the write
+        }
+
+        return deleted.Error.Contains(".lock", StringComparison.Ordinal)
+            ? WorkflowErrors.EffectFailed.With($"git update-ref -d {reference} in {repository} is locked: {deleted.Error.Trim()} (retrying)")
+            : WorkflowErrors.NoRuntime.With($"git update-ref -d {reference} failed in {repository}: {deleted.Error.Trim()}");
+    }
+
     /// <summary>The commit <paramref name="name"/> names, if it names one.</summary>
     private static Task<GitRun> Commit(string repository, string name, CancellationToken cancellationToken) =>
-        Git(repository, ["rev-parse", "--verify", "--quiet", name + "^{commit}"], cancellationToken);
-
-    private static async Task<GitRun> Git(string repository, string[] args, CancellationToken cancellationToken)
-    {
-        var start = new ProcessStartInfo("git", ["-C", repository, .. args])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        Process? git;
-        try
-        {
-            git = Process.Start(start);
-        }
-        catch (Win32Exception e) // boundary: no git on PATH is an expected failure the activity retries
-        {
-            return new GitRun(-1, string.Empty, $"git can't run: {e.Message}");
-        }
-
-        using (git)
-        {
-            return git is null ? new GitRun(-1, string.Empty, "git didn't start") : await Answer(git, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private static async Task<GitRun> Answer(Process git, CancellationToken cancellationToken)
-    {
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(_budget);
-        try
-        {
-            var output = git.StandardOutput.ReadToEndAsync(deadline.Token);
-            var error = git.StandardError.ReadToEndAsync(deadline.Token);
-            await git.WaitForExitAsync(deadline.Token).ConfigureAwait(false);
-            return new GitRun(git.ExitCode, (await output.ConfigureAwait(false)).Trim(), await error.ConfigureAwait(false));
-        }
-        catch (OperationCanceledException)
-        {
-            git.Kill();   // the budget or the caller's cancellation: never leave git running
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-
-            return new GitRun(-1, string.Empty, "git didn't answer within 30 s");
-        }
-    }
-
-    private sealed record GitRun(int Exit, string Output, string Error);
+        GitProcess.Run(repository, ["rev-parse", "--verify", "--quiet", name + "^{commit}"], cancellationToken);
 }

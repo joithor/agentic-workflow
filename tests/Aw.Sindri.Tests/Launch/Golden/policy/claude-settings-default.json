@@ -9,5 +9,37 @@
     "additionalDirectories": [
       "/work/repo/.claude/worktrees/sindri-1"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$AW_SINDRI_LAUNCH\" -a -n \"$AW_SINDRI_HOME\" ]; then mkdir -p \"$AW_SINDRI_HOME/launches\"; touch \"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\"; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$AW_SINDRI_LAUNCH\" -a -n \"$AW_SINDRI_HOME\" ]; then rm -f \"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\"; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$AW_SINDRI_LAUNCH\" -a -n \"$AW_SINDRI_HOME\" ]; then rm -f \"$AW_SINDRI_HOME/launches/$AW_SINDRI_LAUNCH.turn-ended\"; fi; exit 0"
+          }
+        ]
+      }
+    ]
   }
 }

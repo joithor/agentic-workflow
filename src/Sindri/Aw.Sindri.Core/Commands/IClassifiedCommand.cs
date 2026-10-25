@@ -6,8 +6,8 @@ namespace Aw.Sindri.Core.Commands;
 /// </summary>
 public interface IClassifiedCommand
 {
-    /// <summary>The variant, for example 'answer-text': the row '&lt;Command&gt;:&lt;Variant&gt;' gives the class.</summary>
-    public string Variant { get; }
+    /// <summary>The variant, for example 'answer-text': the row '&lt;Command&gt;:&lt;Variant&gt;' gives the class. Null selects the command's own row, the one with no variant.</summary>
+    public string? Variant { get; }
 
     /// <summary>True when the request carries a protected field (grant, grantTokens, accept): it is then classified protected.</summary>
     public bool CarriesProtectedFields { get; }

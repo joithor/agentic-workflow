@@ -16,4 +16,11 @@ public interface IRepoLocator
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>The repo's name, or null outside git or outside every repo entry.</returns>
     public ValueTask<RepoName?> Locate(string directory, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken);
+
+    /// <summary>Where <paramref name="directory"/> sits for 'repo status': its repository's top level, and the entry (if any) whose real path is that top level or its main checkout.</summary>
+    /// <param name="directory">The working directory.</param>
+    /// <param name="repos">The profile's repo entries.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The placement, or null outside git (or without git, or when git doesn't answer in time).</returns>
+    public ValueTask<RepoPlacement?> Place(string directory, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken);
 }

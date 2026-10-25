@@ -15,12 +15,7 @@ public sealed class MotionReaderTests : IDisposable
     private string Gsettings(string script)
     {
         var path = Path.Combine(_dir, "gsettings");
-        File.WriteAllText(path, "#!/bin/sh\n" + script + "\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-        return path;
+        return ExecutableScript.Write(path, script + "\n");
     }
 
     [Theory]

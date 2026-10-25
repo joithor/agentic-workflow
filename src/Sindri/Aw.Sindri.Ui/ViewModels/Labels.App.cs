@@ -45,7 +45,8 @@ internal static partial class Labels
         DeepLinkKind.Session => "Session",
         DeepLinkKind.System => "System",
         DeepLinkKind.Service => "Service",
-        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Job => string.Empty,
+        DeepLinkKind.Job => "Job",
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.ContextItem or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Setup => string.Empty,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
     };
 
@@ -61,6 +62,7 @@ internal static partial class Labels
         PageId.Context => Context,
         PageId.Agents => Agents,
         PageId.System => System,
+        PageId.Jobs => JobsPage,
         PageId.Settings => Settings,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
@@ -68,14 +70,8 @@ internal static partial class Labels
     /// <summary>Work's placeholder.</summary>
     internal const string ArrivesWork = "arrives with U3' and the workflow routes (API P11)";
 
-    /// <summary>Recipes' placeholder.</summary>
-    internal const string ArrivesRecipes = "arrives with U10 and the recipe stats (API P12)";
-
     /// <summary>Context's placeholder.</summary>
     internal const string ArrivesContext = "arrives with U9 and the context lens routes (CTX phase 4)";
-
-    /// <summary>Agents' placeholder.</summary>
-    internal const string ArrivesAgents = "arrives with U11 and the launch targets (API P10a)";
 
     /// <summary>What an unbuilt page says it waits for ("arrives with U8 and the workflow routes (API P11)"), or null for a built page.</summary>
     /// <param name="page">The page.</param>
@@ -83,10 +79,8 @@ internal static partial class Labels
     internal static string? ArrivesWith(PageId page) => page switch
     {
         PageId.Work => ArrivesWork,
-        PageId.Recipes => ArrivesRecipes,
         PageId.Context => ArrivesContext,
-        PageId.Agents => ArrivesAgents,
-        PageId.Home or PageId.Workflows or PageId.System or PageId.Settings => null,
+        PageId.Home or PageId.Workflows or PageId.Recipes or PageId.Agents or PageId.System or PageId.Jobs or PageId.Settings => null,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
 
@@ -94,4 +88,33 @@ internal static partial class Labels
     /// <param name="scale">The scale (1.0 is 100%).</param>
     /// <returns>The words.</returns>
     internal static string Percent(double scale) => string.Create(CultureInfo.InvariantCulture, $"{Math.Round(scale * 100, MidpointRounding.AwayFromZero):0}%");
+
+    /// <summary>The System page's sentence while everything is running.</summary>
+    internal const string AllRunning = "Everything is running.";
+
+    /// <summary>The sentence while the status carries no health data yet.</summary>
+    internal const string CheckingHealth = "Checking…";
+
+    /// <summary>The sentence while the profile waits for the person's approval.</summary>
+    internal const string ProfileNeedsApproval = "The profile needs your approval.";
+
+    /// <summary>The sentence when Sindri runs but the status names no problem in words.</summary>
+    internal const string RunningNeedsALook = "Sindri is running, but something needs a look.";
+
+    /// <summary>The sentence when Sindri has stopped answering.</summary>
+    internal const string StoppedAnswering = "Sindri has stopped answering, so what you see may be out of date.";
+
+    /// <summary>The sentence when Sindri isn't running.</summary>
+    internal const string SindriNotRunning = "Sindri isn't running.";
+
+    /// <summary>The sentence when the app can't read Sindri's answer.</summary>
+    internal const string CantReadAnswer = "Sindri is running, but this app can't read its answer.";
+
+    /// <summary>The sentence when Sindri and the app speak different versions.</summary>
+    internal const string DifferentVersions = "Sindri and this app are different versions.";
+
+    /// <summary>The sentence naming what needs a look.</summary>
+    /// <param name="problems">What the status names as wrong, in words.</param>
+    /// <returns>The sentence.</returns>
+    internal static string NeedsALook(string problems) => "Something needs a look: " + problems + ".";
 }

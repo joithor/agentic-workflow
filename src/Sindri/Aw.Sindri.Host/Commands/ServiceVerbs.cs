@@ -69,8 +69,8 @@ internal sealed class ServiceVerbs(ControlPlaneClient client, Output output, Job
 
     private async Task<int> StartRun(ServiceCommandLine command, CancellationToken interrupt, CancellationToken again)
     {
-        var route = $"/sindri/services/{Uri.EscapeDataString(command.Name ?? string.Empty)}/run";   // posted with no token: the client's own 10 s timeout bounds it, and a Ctrl-C that lands meanwhile is the follower's to act on once the job exists
-        var started = await client.Post<RunServiceRequest, JobStartedResponse>(route, body: null, CancellationToken.None).ConfigureAwait(false);
+        var route = $"/sindri/services/{Uri.EscapeDataString(command.Name ?? string.Empty)}/run";   // Ctrl-C ends the POST (nothing else bounds a hung start); the job may already exist on the server, which `sindri jobs` shows
+        var started = await client.Post<RunServiceRequest, JobStartedResponse>(route, body: null, interrupt).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);

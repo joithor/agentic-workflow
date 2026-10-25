@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="Amount">The rounds of '--grant n' or the tokens of '--grant-tokens n'.</param>
 /// <param name="Verb">The recipe verb, for a command.</param>
 /// <param name="Nonce">The command's nonce; null to have one issued.</param>
-/// <param name="Challenge">The challenge and its typed text, for a protected answer (grant, grant-tokens, accept).</param>
+/// <param name="Challenge">Accepted and ignored, so an older client still works (owner decision q93).</param>
 public sealed record ApplyCommandRequest(
     string Instance,
     ApplyCommandKind Kind,
@@ -29,6 +29,10 @@ public sealed record ApplyCommandRequest(
     CommandNonce? Nonce = null,
     ChallengeAnswer? Challenge = null) : ICommand<ApplyCommandResponse>, IClassifiedCommand
 {
+    /// <summary>True when <see cref="Instance"/> is a route segment (a client never sends an address there); set by the endpoint, never by a client: the validator then requires an instance id, after authorization has run.</summary>
+    [JsonIgnore]
+    public bool FromRoute { get; init; }
+
     /// <summary>
     /// The catalog variant (engine spec §6.2, UI spec E-12): 'answer-&lt;variant&gt;' ('answer-text', 'answer-grant' …),
     /// 'command' for every recipe verb, 'cancel', 'takeover' or 'handback'. An answer without a variant is 'answer', which no row names, so it is

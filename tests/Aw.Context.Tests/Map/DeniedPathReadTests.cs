@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.ReviewMap;
@@ -24,11 +25,27 @@ public sealed class DeniedPathReadTests : IDisposable
     {
         _ = await _world.ImportFixture();
 
-        var before = (await _world.Engine.Lenses("feature:layout.split-pane", draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
-        var after = (await _world.Engine.Lenses("feature:layout.split-pane", draft: false, depth: null, Denying(Denied), MapWorld.None)).Value;
+        var before = (await _world.Engine.Lenses("feature:layout.split-pane", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
+        var after = (await _world.Engine.Lenses("feature:layout.split-pane", read: MapRead.Current, depth: null, Denying(Denied), MapWorld.None)).Value;
 
         Assert.Contains(before.Bands.Code.Files, f => string.Equals(f.Path, Denied, StringComparison.Ordinal));
         Assert.DoesNotContain(after.Bands.Code.Files, f => string.Equals(f.Path, Denied, StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("prefix:SplitPane")]
+    [InlineData("suffix:Pane.ts")]
+    [InlineData("regex:^split.*\\.ts$")]
+    [InlineData("**/layout/**")]
+    public async Task A_role_entry_added_after_the_map_exists_filters_its_nodes_at_query_time(string entry)
+    {
+        _ = await _world.ImportFixture();
+
+        var after = (await _world.Engine.Lenses("feature:layout.split-pane", read: MapRead.Current, depth: null, Denying(entry), MapWorld.None)).Value;
+        var query = await _world.Engine.Query(new ContextQuery(Text: null, Symbol: Denied), Denying(entry), MapWorld.None);
+
+        Assert.DoesNotContain(after.Bands.Code.Files, f => string.Equals(f.Path, Denied, StringComparison.Ordinal));
+        Assert.Equal(ContextErrors.UnknownAnchor.Code, query.Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -110,7 +127,7 @@ public sealed class DeniedPathReadTests : IDisposable
         var scope = Denying("private/**");
 
         var status = (await _world.Map.MapStatus("feature:kept", scope, MapWorld.None)).Value;
-        var lenses = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, scope, MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, scope, MapWorld.None)).Value;
         var denied = await _world.Map.MapStatus("code:private/a.ts", scope, MapWorld.None);
 
         Assert.Equivalent(lenses.Coverage with { Map = null }, status.Coverage);

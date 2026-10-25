@@ -4,6 +4,7 @@ using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
@@ -49,7 +50,6 @@ internal sealed class BacktestWorld : IAsyncDisposable
 
     private BacktestWorld(FixtureRepo repo, (FakeOnyxServer Onyx, OnyxSourceHarness Harness) onyx, FakeTimeProvider clock, (Func<IRepoReader, IRepoReader>? Wrap, string? HomeUnder) options)
     {
-        var wrap = options.Wrap;
         _home = Directory.CreateDirectory(Path.Combine(options.HomeUnder ?? Path.GetTempPath(), "aw-backtest-home-" + Path.GetRandomFileName())).FullName;
         Repo = repo;
         (Onyx, Harness) = onyx;
@@ -72,7 +72,8 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
-            .AddSingleton(wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
+            .AddSingleton(options.Wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
+            .AddSingleton<Context.Core.Code.ICodeSearch>(new Testing.Code.FakeCodeSearch(new ContextRepo(ContextRepoName.From("none"), "/none"), "0000000", new Dictionary<string, string>(StringComparer.Ordinal)))   // the backtest never asks the code lens
             .AddSingleton<IIntentStore>(Intents)
             .AddSingleton<IModelPort>(Model)
             .AddSingleton<IClusterSource>(Clusters)
@@ -81,7 +82,8 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IReviewFileStore>(new FakeReviewFileStore())
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddSingleton<IMergeHistory>(new GitMergeHistory(git))
-            .AddSingleton<IBriefSource>(Briefs)
+            .AddSingleton<IFileHistory>(new GitFileHistory(git))
+            .AddSingleton<IBriefSource>(Briefs).AddSingleton<IDefaultBranch>(new FakeDefaultBranch())
             .AddSingleton<IAsOfDocs>(new AsOfDocsFactory(git, Clock))
             .AddSingleton<IEvalStore>(new FileEvalStore(Settings))
             .AddContextFeatures()

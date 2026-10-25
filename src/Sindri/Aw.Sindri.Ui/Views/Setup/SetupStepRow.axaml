@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupStepRow"
+             x:DataType="sv:SetupStepViewModel">
+  <!-- One step of the checklist (setup spec §2.4): the header is the row (a number or a tick, the title, the line under it, the state word) and opens its body, which holds what the
+       step is doing, its error in words, and its one action. A step that needs the person or failed opens by itself. Every named line is a Border wrapper (a TextBlock's peer ignores
+       AutomationProperties.Name). -->
+  <Expander x:Name="SetupStepExpander" Classes="setup-step" IsExpanded="{Binding IsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding Name}">
+    <Expander.Header>
+      <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="64" ColumnSpacing="12">
+        <Border Classes="step-number" AutomationProperties.AccessibilityView="Raw">
+          <TextBlock Classes="caption mono" Text="{Binding NumberText}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock Classes="caption muted" Text="{Binding Sub}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </StackPanel>
+        <controls:StateChipView x:Name="SetupStepChip" Grid.Column="2" Chip="{Binding Chip}" Margin="0,0,8,0" />
+      </Grid>
+    </Expander.Header>
+    <StackPanel x:Name="SetupStepBody" Margin="36,0,0,16" Spacing="8">
+      <Border IsVisible="{Binding HasDetail}" AutomationProperties.Name="{Binding DetailText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption" Text="{Binding DetailText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <StackPanel IsVisible="{Binding HasProgress}" Spacing="4">
+        <ProgressBar x:Name="SetupStepMeter" Classes="map-meter" Classes.failed="{Binding IsMeterFailed}" Minimum="0" Maximum="1" Value="{Binding ProgressFraction}" AutomationProperties.AccessibilityView="Raw" />
+        <Border AutomationProperties.Name="{Binding ProgressText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption mono subtle" Text="{Binding ProgressText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+      </StackPanel>
+      <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:SetupItemViewModel">
+            <Border AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+              <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                <TextBlock Classes="caption subtle" Text="{Binding ChipText}" Width="64" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Classes="caption" Text="{Binding Repo}" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Classes="caption subtle" Text="{Binding DetailText}" IsVisible="{Binding HasDetail}" AutomationProperties.AccessibilityView="Raw" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl x:Name="SetupStepPreview" ItemsSource="{Binding Preview}" IsVisible="{Binding HasPreview}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:SetupPreviewLineViewModel">
+            <Border AutomationProperties.Name="{Binding Text}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+              <TextBlock Classes="caption" Text="{Binding Text}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Border x:Name="SetupStepError" Classes="error-panel" IsVisible="{Binding HasError}" AutomationProperties.Name="{Binding ErrorText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption" Text="{Binding ErrorText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <Border x:Name="SetupStepHint" IsVisible="{Binding HasHint}" AutomationProperties.Name="{Binding HintText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption subtle" Text="{Binding HintText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <sw:SetupAgentList x:Name="SetupStepAgents" DataContext="{Binding}" />
+      <Panel IsVisible="{Binding Repo, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <sw:SetupRepoForm x:Name="SetupStepRepoForm" DataContext="{Binding Repo}" />
+      </Panel>
+      <Panel IsVisible="{Binding Profile.HasContent}">
+        <sw:SetupProfileConfirmView x:Name="SetupStepProfileConfirm" DataContext="{Binding Profile}" />
+      </Panel>
+      <StackPanel x:Name="SetupStepRecipes" Spacing="4" IsVisible="{Binding Recipes.HasLines}">
+        <TextBlock x:Name="SetupStepRecipesHeading" Classes="body-strong" Text="{Binding Recipes.Heading}" IsVisible="{Binding Recipes.HasOutdated}" />
+        <ItemsControl x:Name="SetupStepRecipeLines" ItemsSource="{Binding Recipes.Lines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="sv:SetupRecipeLineViewModel">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2" Focusable="True" AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+                <TextBlock Grid.Column="0" Classes="caption" Text="{Binding Name}" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Status}" Classes.error="{Binding IsOutdated}" AutomationProperties.AccessibilityView="Raw" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <Panel IsVisible="{Binding Workflows, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <sw:SetupWorkflowsConfirmView x:Name="SetupStepWorkflowsConfirm" DataContext="{Binding Workflows}" />
+      </Panel>
+      <Panel IsVisible="{Binding Onyx, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <sw:SetupOnyxForm x:Name="SetupStepOnyxForm" DataContext="{Binding Onyx}" />
+      </Panel>
+      <Border x:Name="SetupStepNote" IsVisible="{Binding HasNote}" AutomationProperties.Name="{Binding Note}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption subtle" Text="{Binding Note}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <Panel IsVisible="{Binding HasAction}">
+        <sw:SetupActionView x:Name="SetupStepAction" DataContext="{Binding Action}" />
+      </Panel>
+    </StackPanel>
+  </Expander>
+</UserControl>

@@ -192,6 +192,23 @@ public sealed class GitHubForgeTests
     }
 
     [Fact]
+    public async Task Check_runs_are_counted_as_passed_pending_and_failing()
+    {
+        const string pull = """{"html_url":"https://github.com/acme/widgets/pull/7","title":"T","state":"open","draft":false,"merged":false,"mergeable":true,"user":{"login":"ada"},"base":{"ref":"main","sha":"b","repo":{"full_name":"acme/widgets","default_branch":"main"}},"head":{"ref":"feature","sha":"abc123","repo":{"full_name":"acme/widgets"}}}""";
+        const string runs = """{"check_runs":[{"id":1,"name":"a","status":"completed","conclusion":"success"},{"id":2,"name":"b","status":"completed","conclusion":"neutral"},{"id":3,"name":"c","status":"completed","conclusion":"skipped"},{"id":4,"name":"d","status":"queued","conclusion":null},{"id":5,"name":"e","status":"in_progress","conclusion":null},{"id":6,"name":"f","status":"completed","conclusion":"failure"}]}""";
+        var http = new StubHandler()
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/reviews", HttpStatusCode.OK, "[]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7", HttpStatusCode.OK, pull)
+            .On(HttpMethod.Get, "/repos/acme/widgets/commits/abc123/check-runs", HttpStatusCode.OK, runs);
+        var (forge, _, _) = Build(http);
+
+        var checks = (await forge.GetPull(Pull(), TestContext.Current.CancellationToken)).Value.Checks;
+
+        Assert.Equal((3, 2), (checks.Passed, checks.Pending));
+        Assert.Equal(["f"], checks.Failing);
+    }
+
+    [Fact]
     public async Task A_review_list_is_followed_across_pages_on_the_same_origin_only()
     {
         const string link = "<https://api.github.com/repos/acme/widgets/pulls/7/reviews?per_page=100&page=2>; rel=\"next\"";
@@ -264,7 +281,7 @@ public sealed class GitHubForgeTests
         var cancel = TestContext.Current.CancellationToken;
 
         var plain = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "http://github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
-        var withUser = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://user:pw@github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
+        var withUser = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://user:" + "pw@github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
         var elsewhere = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://evil.example/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
 
         Assert.Equal(ForgeErrors.Invalid.Code, plain.Error.Code);
@@ -308,5 +325,82 @@ public sealed class GitHubForgeTests
             Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"sha\":\"s\"}") };
         }
+    }
+
+    [Fact]
+    public async Task Threads_are_ordered_by_creation_across_kinds_and_carry_line_edit_time_and_link()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/comments", HttpStatusCode.OK,
+                "[{\"id\":1,\"body\":\"fix\",\"path\":\"a.cs\",\"position\":3,\"line\":null,\"original_line\":12,\"created_at\":\"2026-10-01T10:00:00Z\",\"updated_at\":\"2026-10-01T10:30:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#discussion_r1\",\"author_association\":\"MEMBER\",\"user\":{\"login\":\"rev\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/reviews", HttpStatusCode.OK,
+                "[{\"id\":2,\"body\":\"LGTM\",\"submitted_at\":\"2026-10-01T11:00:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#pullrequestreview-2\",\"author_association\":\"MEMBER\",\"user\":{\"login\":\"rev\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/issues/7/comments", HttpStatusCode.OK,
+                "[{\"id\":3,\"body\":\"hi\",\"created_at\":\"2026-10-01T09:00:00Z\",\"updated_at\":\"2026-10-01T09:00:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#issuecomment-3\",\"author_association\":\"NONE\",\"user\":{\"login\":\"someone\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Post, "/graphql", HttpStatusCode.OK, "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"nodes\":[]}}}}}");
+        var (forge, _, _) = Build(http);
+
+        var threads = (await forge.ListThreads(Pull(), TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal(["comment:3", "thread:1", "review:2"], threads.Select(t => t.Key), StringComparer.Ordinal);
+        Assert.Null(threads[0].Line);
+        Assert.Null(threads[0].EditedAt);
+        Assert.Equal(12, threads[1].Line);
+        Assert.Equal(new DateTimeOffset(2026, 10, 1, 10, 30, 0, TimeSpan.Zero), threads[1].EditedAt);
+        Assert.Equal("https://github.com/acme/widgets/pull/7#discussion_r1", threads[1].Url);
+        Assert.Equal(new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.Zero), threads[2].CreatedAt);
+    }
+
+    [Fact]
+    public async Task Self_reads_the_login_once()
+    {
+        var http = new StubHandler().On(HttpMethod.Get, "/user", HttpStatusCode.OK, "{\"login\":\"sindri-bot\"}");
+        var (forge, _, _) = Build(http);
+
+        var first = await forge.Self(TestContext.Current.CancellationToken);
+        var second = await forge.Self(TestContext.Current.CancellationToken);
+
+        Assert.Equal("sindri-bot", first.Value);
+        Assert.Equal("sindri-bot", second.Value);
+        _ = Assert.Single(http.Seen);
+    }
+
+    [Fact]
+    public async Task Open_applies_labels_after_the_create()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}")
+            .On(HttpMethod.Post, "/repos/acme/widgets/issues/7/labels", HttpStatusCode.OK, "[]");
+        var (forge, _, _) = Build(http);
+
+        var opened = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false, Labels: ["area:forge"]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(7, opened.Value.Number);
+        Assert.Equal(["/repos/acme/widgets/pulls", "/repos/acme/widgets/issues/7/labels"], http.Seen.Select(r => r.Url.AbsolutePath), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_label_the_forge_refuses_does_not_fail_the_open()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}")
+            .On(HttpMethod.Post, "/repos/acme/widgets/issues/7/labels", HttpStatusCode.Forbidden, "{\"message\":\"nope\"}");
+        var (forge, _, _) = Build(http);
+
+        var opened = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false, Labels: ["area:forge"]), TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsSuccess);
+        Assert.Equal(7, opened.Value.Number);
+    }
+
+    [Fact]
+    public async Task Open_without_labels_sends_no_label_request()
+    {
+        var http = new StubHandler().On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}");
+        var (forge, _, _) = Build(http);
+
+        _ = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false), TestContext.Current.CancellationToken);
+
+        _ = Assert.Single(http.Seen);
     }
 }

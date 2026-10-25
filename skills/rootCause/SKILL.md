@@ -1,6 +1,6 @@
 ---
 name: rootCause
-description: 4-phase systematic debugging — investigate, analyze, hypothesize, implement. Auto-freezes scope to the module boundary to prevent scope creep.
+description: Use BEFORE fixing any bug — a failing or flaky test, a bug report or customer complaint, an error, crash or stack trace, a regression, or anything described as broken, wrong or not working, even when the fix looks small. Finds and proves the root cause first (investigate, analyze, hypothesize, then implement) with scope frozen to the module boundary. Not for new features, refactors, or explaining how code works.
 argument-hint: "[--depth N] [--investigate-only] [error-message-or-issue-description | canary incident JSON]"
 allowed-tools: Bash(git *), Bash(npm *), Bash(npx *), Bash(pytest *), Bash(cargo *), Bash(go *), Bash(bundle *), Bash(SHARED_DIR=*), Bash(source *), Bash(mkdir *), Bash(cat *), Agent, Read, Write, Edit, Glob, Grep, Skill, AskUserQuestion, mcp__prism-mcp__session_load_context, mcp__prism-mcp__session_save_ledger, mcp__prism-mcp__session_save_handoff
 ---
@@ -63,7 +63,7 @@ Fix the confirmed cause.
 1. **Implement the fix** for the confirmed hypothesis. All changes MUST stay within the declared module boundary.
 2. **Verify:**
    - If a local failing command exists, re-run it.
-   - If the symptom is production/UI-only (no local failing command), run the app-path check instead: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from Phase 1>`. The fix is verified only on a PASS verdict in the resulting evidence pack.
+   - If the symptom is production/UI-only (no local failing command), run the app-path check instead: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from Phase 1>`. The fix is verified only on a PASS verdict in the resulting evidence pack. For a desktop app that pack comes from `verify-desktop` (the real app on seeded data, screens judged against their mockups).
 3. **If verification still fails**, revert the change, return to Phase 3.5 for the next hypothesis. Repeat up to hypothesis #3.
 4. **If a fix requires changes outside the module boundary**, do NOT make the change. Instead, flag it:
 

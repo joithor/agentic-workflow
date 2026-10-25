@@ -41,7 +41,7 @@ public sealed class ShellRecipeTests
     {
         var shell = await Shell();
 
-        shell.Navigate(Link("recipe/" + Id + "@94c0c28e21ca"));
+        shell.Navigate(Link("recipe/" + Id + "@b77152c8613e"));
 
         Assert.Equal((true, Id), (shell.IsRecipeSheet, shell.Recipe.Id));
     }

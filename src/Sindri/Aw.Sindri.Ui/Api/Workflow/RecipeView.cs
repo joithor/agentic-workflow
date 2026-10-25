@@ -11,6 +11,10 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="OrderedBy">OrderedBy, as served.</param>
 /// <param name="States">States, as served.</param>
 /// <param name="Loops">Loops, as served.</param>
+/// <param name="DisplayName">What the recipe does, in a sentence; read as optional (an older Sindri serves none).</param>
+/// <param name="TransitionLabels">The plain-word label of an edge; read as optional (an older Sindri serves none).</param>
+/// <param name="Why">Why the recipe exists, in a sentence; read as optional.</param>
+/// <param name="Transitions">Every transition in file order; read as optional.</param>
 internal sealed record RecipeView(
     string Id,
     string Hash,
@@ -21,4 +25,8 @@ internal sealed record RecipeView(
     RecipeUrgency Urgency,
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
-    IReadOnlyList<RecipeLoopView> Loops);
+    IReadOnlyList<RecipeLoopView> Loops,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeTransitionLabelView>? TransitionLabels = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Why = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeTransitionView>? Transitions = null);

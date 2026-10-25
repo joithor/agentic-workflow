@@ -20,7 +20,8 @@ set -- ${AW_ARGS[@]+"${AW_ARGS[@]}"}
 
 case "$AW_PROVIDER" in
   claude)
-    PLAIN_EVENTS=(UserPromptSubmit Stop SubagentStop TeammateIdle SubagentStart)
+    # PermissionRequest, Notification, SessionStart and SessionEnd are the aw:fleet hook's events (session collector spec 5.2)
+    PLAIN_EVENTS=(UserPromptSubmit Stop SubagentStop TeammateIdle SubagentStart PermissionRequest Notification SessionStart SessionEnd)
     TOOL_EVENTS=(PreToolUse PostToolUse)
     TOOL_MATCHER='Agent|SendMessage'
     ;;
@@ -121,7 +122,7 @@ case "${1:-}" in
     fi
     drop_backup
     echo "probe: on. Logs go to $LOG_DIR."
-    echo "Leave it on for one working day, then run: scripts/probe.sh$PROVIDER_FLAG off && scorer probe"
+    echo "Leave it on for one working day, then run: scripts/probe.sh$PROVIDER_FLAG off"
     ;;
   off)
     backup_settings

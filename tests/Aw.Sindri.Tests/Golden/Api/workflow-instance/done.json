@@ -8,7 +8,8 @@
     "id": "workflow.triage-alert",
     "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
-    "urgency": "triage"
+    "urgency": "triage",
+    "displayName": "Triage alert"
   },
   "state": "done",
   "since": "2026-10-12T11:58:00.0000000Z",
@@ -103,7 +104,8 @@
       "budget": null,
       "paused": null,
       "commands": [],
-      "text": "ITM-01JK7/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
+      "text": "ITM-01JK7/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n",
+      "injection": []
     }
   },
   "facts": [
@@ -192,5 +194,9 @@
     "context": null
   },
   "actions": [],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null,
+  "allowedCommands": []
 }

@@ -22,7 +22,7 @@ internal static class StageTag
     private static string Parts(StateCell cell, string state) => string.Concat(
         cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $" r{r.N}/{r.Max}") : string.Empty,
         cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $" {c.Done}/{c.Total}") : string.Empty,
-        cell.Desk ? " · desk" : string.Empty,
+        cell.Desk ? $" · {Labels.StageDesk}" : string.Empty,
         cell.Child && cell.Children is null ? " · child" : string.Empty,
         cell.Loops.FirstOrDefault(l => !string.Equals(l.With, state, StringComparison.Ordinal)) is { } loop ? $" ⇄ {loop.With}" : string.Empty);
 }

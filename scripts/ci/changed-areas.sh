@@ -7,38 +7,20 @@
 # touches, so each CI job can decide between real work and a no-op success:
 #   bash=true|false      the bash tests need to run
 #   dotnet=true|false    the .NET solution needs to build (spikes/ never counts)
-#   packages=[...]       JSON array of the TS packages that changed
 #
 # Anything other than a pull_request into the default branch with a known base
 # runs everything: a filter that can't tell must not skip a check. A stacked PR
 # (based on another branch) runs everything too, because when its parent merges
 # GitHub retargets it without a new run, and a narrowed result would carry over.
 
-TS_PACKAGES=(scorer judge sindri skills/ui-evidence skills/bugFixOrchestrator)
-
-# Packages whose tests import another package's source: a change to the key also
-# runs the listed dependents (scorer's tests import judge/src/db.ts).
-dependents_of() {
-  case "$1" in
-    judge) echo scorer ;;
-  esac
-}
-
-json_array() {
-  local out="" item
-  for item in "$@"; do out+="${out:+,}\"$item\""; done
-  printf '[%s]' "$out"
-}
-
 print_all() {
-  printf 'bash=true\ndotnet=true\npackages=%s' "$(json_array "${TS_PACKAGES[@]}")"
+  printf 'bash=true\ndotnet=true'
 }
 
 # Reads changed paths, NUL-separated (git diff -z), on stdin and prints the outputs.
 # NUL separation means no quoting: a non-ASCII or oddly named path arrives verbatim.
 classify_changes() {
-  local bash=false dotnet=false file pkg
-  local -a changed_packages=()
+  local bash=false dotnet=false file
   while IFS= read -r -d '' file || [ -n "$file" ]; do
     [ -n "$file" ] || continue
     case "$file" in
@@ -52,18 +34,20 @@ classify_changes() {
       # the .NET job fetches the pins (sha256 check) and its Temporal tests and the Sindri host smoke run them
       binaries.lock) dotnet=true; bash=true ;;
       scripts/binaries-lock.sh) dotnet=true ;;  # the .NET job fetches with it; its bash test runs below
+      # the Sindri build embeds it (Aw.Sindri.Infrastructure, onyx.lock) and its tests parse it; scripts/tests/onyx-lock.test.sh checks it
+      context/onyx.lock) dotnet=true; bash=true ;;
       # global.json also pins the devcontainer's base image, which a bash suite checks (repo-templates).
       global.json|docs/devcontainer.md) bash=true ;;
     esac
     case "$file" in
-      config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
+      config/*|scripts/*|providers/*|setup.sh|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
         bash=true ;;
       src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols*.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
     esac
     case "$file" in
       # The dotnet job's hook-contract step runs these hooks against the C# judge
-      # (config/lib/tests/judge-cs-hook-surface.test.sh); bash-tests.sh leaves that test to it.
+      # (config/lib/tests/judge-cs-hook-surface.test.sh|config/lib/tests/sindri-cs-hook-surface.test.sh); bash-tests.sh leaves that test to it.
       config/hooks/*|config/statusline.sh|config/lib/failopen.sh|config/lib/locks.sh|config/lib/tests/judge-cs-hook-surface.test.sh)
         dotnet=true ;;
     esac
@@ -85,28 +69,16 @@ classify_changes() {
       tests/fixtures/launcher/*|config/launcher/*|schemas/launcher.schema.json) bash=true ;;
       # scripts/tests/scoping-fixture.test.sh and line-fixture.test.sh build their fixture's history and run its self-check (dotnet comes from tests/*)
       tests/fixtures/scoping/*|tests/fixtures/line/*) dotnet=true; bash=true ;;
+      # scripts/tests/code-index-fixture.test.sh runs the code-index fixture checks (dotnet comes from tests/*)
+      tests/fixtures/code-index/*) bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
       # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
-      tests/fixtures/fleet/*|tests/fixtures/sessions/*) bash=true ;;
+      # config/hooks/tests/fleet-state.test.sh feeds the hook the real payloads under tests/fixtures/fleet-input/
+      tests/fixtures/fleet/*|tests/fixtures/fleet-input/*|tests/fixtures/sessions/*) bash=true ;;
       docs/csharp/sindri-sessions.md) bash=true ;;
     esac
-    for pkg in "${TS_PACKAGES[@]}"; do
-      case "$file" in
-        "$pkg"/*)
-          bash=true
-          local p
-          for p in "$pkg" $(dependents_of "$pkg"); do
-            case " ${changed_packages[*]-} " in
-              *" $p "*) ;;
-              *) changed_packages+=("$p") ;;
-            esac
-          done
-          ;;
-      esac
-    done
   done
-  printf 'bash=%s\ndotnet=%s\npackages=%s' "$bash" "$dotnet" \
-    "$(json_array ${changed_packages[@]+"${changed_packages[@]}"})"
+  printf 'bash=%s\ndotnet=%s' "$bash" "$dotnet"
 }
 
 main() {

@@ -14,16 +14,16 @@ internal static partial class Labels
     internal const string LoopMark = "⇄";
 
     /// <summary>The band's heading.</summary>
-    internal const string StatesHeading = "States";
+    internal const string StatesHeading = "Stages";
 
     /// <summary>The header note of a band whose recipe orders its states by the transition list.</summary>
-    internal const string OrderedByTransitions = "ordered by the transition list, not a path";
+    internal const string OrderedByTransitions = "listed by how they connect, not as one path";
 
     /// <summary>Copies the engine's own status text.</summary>
     internal const string CopyStatus = "Copy status";
 
     /// <summary>A command the app does not send yet.</summary>
-    internal static readonly string AvailableWithU8b = Arrives("U8b");
+    internal const string AvailableWithU8b = "Not available in the app yet";
 
     /// <summary>What a loop mark says in words: the state loops with the next one.</summary>
     /// <param name="next">The state it loops with.</param>
@@ -36,38 +36,49 @@ internal static partial class Labels
     internal static string BranchOf(string source) => $"branch of {source}";
 
     /// <summary>What the frame says after Cancel was confirmed: nothing was sent.</summary>
-    internal static readonly string SendingArrivesNote = $"Sending from the app {Arrives("U8b")}. Copy the command and run it at a terminal.";
+    internal const string SendingArrivesNote = "The app can't send this yet. Copy the command and run it at a terminal.";
 
     /// <summary>The frame's note while its instance is done.</summary>
-    internal const string InstanceDone = "This instance is done.";
+    internal const string InstanceDone = "This run is done.";
+
+    /// <summary>The frame's note while its instance is done: it follows the terminal state's outcome as served, never one "done" for every ending.</summary>
+    /// <param name="outcome">The terminal state cell's outcome (failed, unresolved, cancelled, or any other, or none).</param>
+    /// <returns>The words.</returns>
+    internal static string InstanceFinished(string? outcome) => outcome switch
+    {
+        "failed" => "This run failed.",
+        "unresolved" => "This run didn't work out.",
+        "cancelled" => "This run was cancelled.",
+        _ => InstanceDone,
+    };
 
     /// <summary>The frame's note when a re-read no longer finds the instance it shows.</summary>
-    internal const string InstanceGone = "This instance is no longer served; what is shown was its last state.";
+    internal const string InstanceGone = "This run is no longer available; what is shown was its last stage.";
 
     /// <summary>The subject line's lead word.</summary>
-    internal const string SubjectLead = "subject";
+    internal const string SubjectLead = "linked to";
 
     /// <summary>The paused state's heading word.</summary>
-    internal const string Paused = "paused";
+    internal const string Paused = "taken over";
 
     /// <summary>The line that says the recipe changed under the instance.</summary>
     internal const string NeedsReapproval = "needs re-approval";
 
     /// <summary>The expanded state's heading for the commands.</summary>
-    internal const string CommandsHeading = "commands";
+    internal const string CommandsHeading = "Commands";
 
     /// <summary>A frame that has not read its instance yet.</summary>
-    internal const string LoadingInstance = "Reading the instance…";
+    internal const string LoadingInstance = "Reading this run…";
 
     /// <summary>No instance answers to this address.</summary>
     /// <param name="address">The address asked for.</param>
     /// <returns>The sentence.</returns>
-    internal static string InstanceNotFound(string address) => $"No workflow instance {address}.";
+    internal static string InstanceNotFound(string address) => $"No run found for {address}.";
 
     /// <summary>What the frame says when Sindri refuses or can't answer its read.</summary>
     /// <param name="error">The failure as served (a refusal's code and detail, or the client's own).</param>
     /// <returns>The code and the detail.</returns>
-    internal static string InstanceRefused(Error error) => $"{error.Code}: {error.Message}";
+    internal static string InstanceRefused(Error error) => $"{error.Message} · {error.Code}";
 
     /// <summary>The link to a subject outside the app.</summary>
     /// <param name="host">The link's host.</param>
@@ -85,11 +96,39 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string CopyStatusName(string address) => $"{CopyStatus} of {address}";
 
+    /// <summary>The frame's link to the sheet of the workflow's type.</summary>
+    internal const string FrameTypeLink = "Workflow type ▸";
+
+    /// <summary>That link's accessible name: the visible words first, then which one it opens.</summary>
+    /// <param name="workflowName">The workflow's name.</param>
+    /// <returns>The words.</returns>
+    internal static string FrameTypeLinkName(string workflowName) => $"Workflow type {workflowName}, open";
+
+    /// <summary>The heading of the disclosure that holds a stage's step, gates, budget and timeout.</summary>
+    internal const string StageDetailsHeading = "Stage details";
+
+    /// <summary>The heading of the disclosure that holds the ids.</summary>
+    internal const string DetailsHeading = "Details";
+
+    /// <summary>Copy of the address, in Details.</summary>
+    /// <param name="address">The address.</param>
+    /// <returns>The words.</returns>
+    internal static string CopyAddressName(string address) => $"Copy the address {address}";
+
+    /// <summary>The Details text: the ids a user rarely needs, one per line.</summary>
+    /// <param name="address">The address.</param>
+    /// <param name="recipe">The recipe id.</param>
+    /// <param name="hash12">The recipe hash, shortened.</param>
+    /// <param name="version">The version word.</param>
+    /// <returns>The lines.</returns>
+    internal static string DetailsBlock(string address, string recipe, string hash12, string version) =>
+        $"Address: {address}\nWorkflow id: {recipe}@{hash12}\nVersion: {version}";
+
     /// <summary>The expanded state's accessible name.</summary>
     /// <param name="state">The state.</param>
     /// <param name="address">The instance.</param>
     /// <returns>The words.</returns>
-    internal static string ExpandedName(string state, string address) => $"State {state} of {address}";
+    internal static string ExpandedName(string state, string address) => $"Stage {state} of {address}";
 
     /// <summary>A command's button words.</summary>
     /// <param name="verb">The verb.</param>
@@ -102,7 +141,7 @@ internal static partial class Labels
         StatusVerb.Handback => "Hand back",
         StatusVerb.Takeover => TakeOver,
         StatusVerb.Cancel => CancelStep,
-        StatusVerb.Approve => "Approve recipe",
+        StatusVerb.Approve => "Approve workflow",
         _ => verb.ToString(),
     };
 
@@ -126,9 +165,9 @@ internal static partial class Labels
 
     /// <summary>The budget line.</summary>
     /// <param name="budget">The served figures.</param>
-    /// <returns>"tokens 1.2M / 4M (state), 1.9M / 6M (instance)".</returns>
+    /// <returns>"tokens 1.2M / 4M (state), 1.9M / 6M (instance)"; with no instance cap (the per-round budgets have none), "tokens 1.2M / 1M (state), 1.9M used (instance)".</returns>
     internal static string BudgetLine(StatusBudget budget) =>
-        $"tokens {Figure(budget.Used, budget.Limit)} ({budget.Scope}), {Figure(budget.Instance.Used, budget.Instance.Limit)} (instance)";
+        $"tokens {Figure(budget.Used, budget.Limit)} ({budget.Scope}), {(budget.Instance.Limit is null ? Tokens(budget.Instance.Used) + " used" : Figure(budget.Instance.Used, budget.Instance.Limit))} (instance)";
 
     /// <summary>The timeout line.</summary>
     /// <param name="timeout">The served timeout.</param>
@@ -139,18 +178,26 @@ internal static partial class Labels
     /// <summary>The paused line of a taken-over instance.</summary>
     /// <param name="seconds">How much of the timeout is left.</param>
     /// <returns>The words.</returns>
-    internal static string PausedLine(long seconds) => $"{Paused} · {Duration(seconds)} left on the timeout";
+    internal static string PausedLine(long seconds) => $"{Paused} · timer paused, {Duration(seconds)} left";
 
     /// <summary>The drift line.</summary>
     /// <param name="drift">The served drift.</param>
     /// <returns>The words.</returns>
-    internal static string DriftLine(StatusDrift drift) => $"drift in {drift.Block}{(drift.NeedsReapproval ? " · " + NeedsReapproval : string.Empty)}";
+    internal static string DriftLine(StatusDrift drift) => $"the workflow changed in {drift.Block}{(drift.NeedsReapproval ? " · " + NeedsReapproval : string.Empty)}";
 
     /// <summary>The child pointer's words.</summary>
     /// <param name="child">The served child.</param>
     /// <returns>The words.</returns>
     internal static string ChildLine(StatusChild child) =>
-        $"child {child.Address} · {child.State}{(child.Reason is { Length: > 0 } reason ? ": " + reason : string.Empty)}";
+        $"Child run {child.Address} · {ChildStateWords(child.State)}{(child.Reason is { Length: > 0 } reason ? ": " + reason : string.Empty)}";
+
+    /// <summary>The one child state the engine fixes: a child nobody answers for.</summary>
+    internal const string ChildUnreachable = "unreachable";
+
+    /// <summary>A child's state as drawn: "unreachable" is its own case (a warning mark and the word), any other served state is plain text.</summary>
+    /// <param name="state">The served state, an open recipe-state string.</param>
+    /// <returns>The words.</returns>
+    internal static string ChildStateWords(string state) => string.Equals(state, ChildUnreachable, StringComparison.Ordinal) ? "\u26a0 " + ChildUnreachable : state;
 
     /// <summary>A length of time as the engine says it: days, hours, minutes, leading zeros left out.</summary>
     /// <param name="seconds">The seconds.</param>

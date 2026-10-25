@@ -7,7 +7,37 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>Builders for needs-you rows in the shapes the screens fixture gives (a park, a decision, a failure, a profile drift).</summary>
 internal static class NeedsYouRows
 {
+    internal const string ProfileHash = "932d876195e0684a7eef2cfb155d03297bc90219dd98257fb87549114040c79a";
+
     internal const string Command = "sindri workflow answer ITM-01JC8 --grant 1";
+
+    internal const string DeskInstance = "WFI-44393da815f188cea9c6fe30ae2a30a6";
+
+    /// <summary>An open desk task (a person's approval): the engine's CompleteStep, ready, and the instance it reports on.</summary>
+    internal static NeedsYouEntry Desk(string instance = DeskInstance) => new("desk:" + instance, NeedsYouUrgency.Colour)
+    {
+        Kind = "park",
+        Chip = new StateChip("DESK TASK", ChipTone.Attn),
+        ShownId = "ITM-01JL1",
+        Title = "Try the engine",
+        Repo = "demo",
+        Label = "desk task",
+        Reason = "a desk task is open (ITM-01JL1/dev-desk-round-trip/1)",
+        Since = A.Noon.AddMinutes(-26),
+        PrimaryAction = "CompleteStep",
+        Actions = [new NeedsYouAction("CompleteStep", "Complete", ActionReadiness.Ready, "sindri workflow status ITM-01JL1/dev-desk-round-trip/1", RejectLike: false)],
+        Subject = new NeedsYouSubject("instance", instance),
+        ItemId = "ITM-01JL1",
+        Cli = "sindri workflow status ITM-01JL1/dev-desk-round-trip/1",
+    };
+
+    /// <summary>A paused run whose rounds are used up: "Grant rounds" is protected, so the app shows its command.</summary>
+    internal static NeedsYouEntry Grant(string id = "park:WFI-1") => Park(id) with
+    {
+        PrimaryAction = "ApplyCommand:answer-grant",
+        Actions = [new NeedsYouAction("ApplyCommand:answer-grant", "Grant rounds", ActionReadiness.Ready, "sindri workflow answer ITM-01JC8/step/1 --grant 1", RejectLike: false) { IsProtected = true }],
+        Cli = "sindri workflow answer ITM-01JC8/step/1 --grant 1",
+    };
 
     /// <summary>A parked item: a protected primary and its command.</summary>
     internal static NeedsYouEntry Park(string id = "park:ITM-01JC8", int minutes = 12) => new(id, NeedsYouUrgency.Pulse)
@@ -21,7 +51,7 @@ internal static class NeedsYouRows
         Reason = "checks failed twice with the same findings",
         Since = A.Noon.AddMinutes(-minutes),
         PrimaryAction = "GrantRounds",
-        Actions = [new NeedsYouAction("GrantRounds", "Grant rounds", ActionReadiness.CliOnly, Command, RejectLike: false)],
+        Actions = [new NeedsYouAction("GrantRounds", "Grant rounds", ActionReadiness.Ready, Command, RejectLike: false) { IsProtected = true }],
         Subject = new NeedsYouSubject("item", "ITM-01JC8"),
         ItemId = "ITM-01JC8",
         Cli = Command,
@@ -78,9 +108,45 @@ internal static class NeedsYouRows
         Reason = "1 key path changed: services.scorer.every",
         Since = A.Noon.AddHours(-2),
         PrimaryAction = "ApproveProfile",
-        Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.CliOnly, "sindri profile approve 3f1c09", RejectLike: false)],
+        Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.Ready, "sindri profile approve 3f1c09", RejectLike: false)],
         Subject = subject,
         Cli = "sindri profile approve 3f1c09",
+    };
+
+    /// <summary>The drifted profile with its full hash as the subject and an approve the catalog lets the app confirm.</summary>
+    internal static NeedsYouEntry ProfileReady(string hash = ProfileHash) => Profile(new NeedsYouSubject("profile", hash)) with
+    {
+        Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.Ready, "sindri profile approve " + hash[..6], RejectLike: false)],
+        Cli = "sindri profile approve " + hash[..6],
+    };
+
+    /// <summary>The setup row that waits on approve-all: its primary is ApproveAllRecipes.</summary>
+    internal static NeedsYouEntry SetupRecipes(ActionReadiness readiness = ActionReadiness.Ready) => new("setup:recipes", NeedsYouUrgency.Calm)
+    {
+        Kind = "setup",
+        Chip = new StateChip("SETUP", ChipTone.Attn),
+        Title = "2 new workflows to approve",
+        Label = "setup · workflows",
+        Reason = "2 workflows are new or changed",
+        Since = A.Noon.AddHours(-1),
+        PrimaryAction = "ApproveAllRecipes",
+        Actions = [new NeedsYouAction("ApproveAllRecipes", "Approve all", readiness, "sindri recipe approve-all", RejectLike: false)],
+        Cli = "sindri recipe approve-all",
+    };
+
+    /// <summary>A changed workflow: its single approve is a later slice's, so the bar shows the command only.</summary>
+    internal static NeedsYouEntry Recipe(string id = "workflow.step") => new("recipe:" + id, NeedsYouUrgency.Calm)
+    {
+        Kind = "recipe",
+        Chip = new StateChip("RECIPE", ChipTone.Attn),
+        Title = "One step changed",
+        Label = "workflow · changed",
+        Reason = "the recipe changed since it was approved",
+        Since = A.Noon.AddHours(-1),
+        PrimaryAction = "ApproveRecipe",
+        Actions = [new NeedsYouAction("ApproveRecipe", "Approve", ActionReadiness.Ready, "sindri recipe approve " + id, RejectLike: false)],
+        Subject = new NeedsYouSubject("recipe", id),
+        Cli = "sindri recipe approve " + id,
     };
 
     /// <summary>A pulse row with just an id, for lists that need many.</summary>

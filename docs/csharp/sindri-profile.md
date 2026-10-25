@@ -1,13 +1,13 @@
 # Sindri profile reference
 
 The profile of the C# Sindri app (`src/Sindri`), schema version 1. It documents the keys of `SindriProfile`
-(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaces the reference of the TypeScript profile
-(`sindri/src/profile/schema.ts`), which is generated separately and stays until the switch. Unknown keys are errors;
+(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaced the TypeScript profile
+reference (`sindri/src/profile/schema.ts`, gone), and `docs/sindri/profile.md` points here. Unknown keys are errors;
 new optional keys join version 1, renames and removals bump it. `node scripts/check-profile-doc.mjs` fails when a
 `SindriProfile` key is missing from this page.
 
 The profile is a YAML file, by default `$AW_SINDRI_HOME/profile/profile.yaml` (`AW_SINDRI_PROFILE`). A changed profile
-takes effect only after `sindri profile approve` (a human approval). The machine's terminal and extra agent entries are
+takes effect only after `sindri profile approve` (a human approval), with one exception (owner q102, CIX-L59): the code index also indexes every repo in the live file that the approved profile doesn't name, using the approved `index.denyPaths` and embeddings address (a live-only repo's own `denyPaths` only add to them), so a repo added with `sindri repo add` is indexed at once. The machine's terminal and extra agent entries are
 not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.md`).
 
 ## profile.yaml
@@ -21,10 +21,11 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `services` | map of service name to `ServiceSettings` | no | none | Background services by name, each with its cadence |
 | `api` | `ApiSettings` | no | `{ port: 7410 }` | The local API's settings |
 | `workflow` | `WorkflowSettings` | no | all defaults | The workflow engine's times (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
-| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.extract.recognizers` (array of `{ kind, glob, pattern, keyFrom }`, default none, at most 50, a pattern at most 512 characters) adds surface recognizers to the built-in ones: `kind` is a surface kind, `glob` a repo-relative glob (a denied path is never read), `pattern` a regex whose named group `keyFrom` becomes `surface:<kind>/<name>`; matches are suggested, never confirmed; a bad entry is SND-CONTEXT-130, too many or too long is 131 (scoping station C2, `docs/csharp/sindri-context.md`) |
+| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.sessions.enabled` (bool, default true since owner q93, 2026-10-23; false is the owner's kill switch: every agent-session context read is then SND-CONTEXT-020) lets agent sessions read and work with the context engine. `context.publish.waitForIndexMinutes` (int 0 to 240, default 15; 0 turns the wait off) is how long a refreshed map waits for the code index of its commit before it becomes the current map; outside the range is SND-CONTEXT-001 with the key path (context retrieval spec §8.7a, code index spec §6.4, `docs/csharp/sindri-context.md` F1P). `context.ranker` (S-8, retrieval spec §8.2 steps 5 and 6) holds the query's two optional ranker stages, both off by default until a backtest arm (`sindri context eval backtest --arms ranker`) or the owner turns them on: `context.ranker.features` (bool) re-orders the fused items by five feature scores, `context.ranker.weights` (`cascadeDistance`, `edgeType`, `provenance`, `supersession`, `recency`; each 0 to 10, default 1, 0 turns a feature off) weights them, `context.ranker.rerank` (bool) asks a model to order the top items (the only model call on the query path; a failure leaves the order and lists `rerank` as degraded, SND-CONTEXT-090) and `context.ranker.rerankTop` (int 1 to 50, default 30) is how many it orders; a wrong type or a value outside its range is SND-CONTEXT-001 with the key path. `context.cascadeComponentFanOut` (int 1 to 50, default 5) caps how many features one code unit may implement for the opt-in `component` cascade hop to walk through it; a unit over the cap is skipped and reported in `skippedComponents` (scoping station C4, `docs/csharp/sindri-context.md`). `context.labeling.enabled` (bool, default true since owner decision 2026-10-24; false turns off the cluster-naming pass, which sends file paths to a model, and the per-sync decision extraction) and `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.extract.recognizers` (array of `{ kind, glob, pattern, keyFrom }`, default none, at most 50, a pattern at most 512 characters) adds surface recognizers to the built-in ones: `kind` is a surface kind, `glob` a repo-relative glob (a denied path is never read), `pattern` a regex whose named group `keyFrom` becomes `surface:<kind>/<name>`; matches are suggested, never confirmed; a bad entry is SND-CONTEXT-130, too many or too long is 131 (scoping station C2, `docs/csharp/sindri-context.md`). `context.extract.graphify` (`{ timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB }`, whole numbers, defaults 60, 2048, 16, 256, `0` is no limit; `timeoutMinutes` at most 70,000) bounds the graphify cluster pass of a map build; a negative, fractional or over-the-cap value (`timeoutMinutes` over 70,000, a size over 10,000,000) is SND-CONTEXT-133 at the key path (`docs/sindri/context.md` S-4). `context.code.schemaGlobs` (string[], default migration and schema globs; `[]` turns the schema scan off) and `context.code.testGlobs` (string[], default common test globs) steer the code lens's lexical search (`sindri context code`, context spec S-CL). Globs are repo-relative, at most 50, and never override `denyPaths`. `context.code.deadline` (duration `100ms` to `600s`, default `60s`) is that search's own deadline, apart from the 4s `context.deadline`: it runs one git grep per implementing file and data thing, in turn |
 | `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
 | `launch` | `LaunchSettings` | no | none | The launch targets and the confirm window (UI spec E-4). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 | `agents` | `AgentSettings` | no | none | Per-agent budgets and the argv hashes unattended Steps may run (screens spec E-28, launcher L-11). Left out of the canonical JSON when absent |
+| `setup` | `SetupSettings` | no | none | What Sindri does on its own while the owner sets it up once (setup-once spec §7.1). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 | `sandbox` | `SandboxSettings` | no | built-in defaults | How a Step's session is confined (sandbox spec §9, `docs/csharp/sindri-sandbox.md`). An approved profile with no `sandbox:` section is valid and gets the defaults below. Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 
 ### `repos[]`
@@ -55,8 +56,53 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `eventHold` | duration | no | `24h` | How long a buffered event signal waits for its wait before it is dropped with `workflow.expired` (§5.4) |
 | `effects` | string[] (`effect.*` block ids) | no | none | The effect allowlist (§5.7, RCP-EFFECT-001): the effects a recipe may dispatch. Absent: RCP-EFFECT-001 is skipped and every recipe effect is refused at dispatch (SND-WF-011). An entry that isn't an `effect.*` id is refused before approval |
 | `dispatchDelay` | duration (`5s` to `24h`, unit `s`, `m` or `h`) | no | `10s` | The undo window before each effect's activity runs (§5.7); the dev profile sets `60s` |
+| `agent` | object (`target`) | no | none | The agent runtime (engine spec §6.5, launcher L-14). `agent.target` is the agent a Step whose runtime is `agent` launches: any `AgentId` (pattern `^[a-z][a-z0-9-]{1,31}$`), checked by pattern only, never against the catalog (the catalog is per box). Read from the approved profile when an instance starts. Absent, or with no launcher registered: there is no agent runtime, a deskCapable Step runs at the desk and any other parks with `SND-WF-010`. The per-Step permission mode comes from the Step's policy, so the spec's `workflow.agent.permissionMode` is dropped |
 | `judge` | object (`providers`) | no | none | Which providers a Judge Step (`step.judge.choose`) may ask (DT-J plan Q8). `judge.providers` is a list of `jev`, `claude-cli`, `codex-cli`, `cursor-cli`, `rules`; absent: `claude-cli`, `codex-cli`, `cursor-cli`, `rules`. `jev` runs only when listed, so it is opt-in. `rules` is always kept, last. A recipe's own `providers` list only narrows this one and never adds `jev`. A name that is not one of the five is refused before approval (`workflow.judge.providers[i]`). A repo may set its own list under `repos[].workflow.judge.providers`; it wins over the box's |
 | `forge` | object | no | none | The forge port's settings: `adapter`, `hosts` and `credential` (see `workflow.forge` below) |
+| `pr` | object | no | none | The PR babysitter's settings (see `workflow.pr` below) |
+| `route` | object (`startable`) | no | none | The router stub's setting (engine P7 plan D8; see `workflow.route` below) |
+| `packs` | object | no | none | The style and lens packs a repo uses and their pins (line spec §5; see `workflow.packs` below) |
+| `line` | object | no | none | How many phases run at once, how many pull requests stay open and how deep a stack goes (line spec §8; see `workflow.line` below) |
+| `plan` | object | no | none | The size classes and the largest phase size (line spec §6.3; see `workflow.plan` below) |
+| `prove` | object (`holdoutMin`) | no | none | The hidden-scenario minimum (line spec §7.3; see `workflow.prove` below) |
+| `build` | object (`commands`) | no | none | The commands that check a phase's change (line spec §7.2) |
+| `ship` | object (`draft`) | no | none | Whether the line opens draft pull requests (line spec §7.5) |
+| `design` | object (`models`) | no | none | The design writer and lens models (line spec §4; see `workflow.design` below) |
+| `review` | object (`models`) | no | none | The review lens model (line spec §7.4) |
+| `steps` | object (`longMax`) | no | none | The longest a block Step may declare (line spec LN-WF7) |
+| `docs` | object (`globs`, `sync`) | no | none | Where docs sync may write (line spec §7.6) and whether it runs (`workflow.docs.sync`, below) |
+
+### The line's keys (`workflow.packs`, `.line`, `.plan`, `.prove`, `.build`, `.ship`, `.design`, `.review`, `.steps`, `.docs`)
+
+Line spec Appendix D and LN-WF9. Every key is optional and each is a re-approval: `profile approve` lists the paths that changed. A profile that sets none of them keeps its canonical JSON and its approval. A pack or model id takes the id pattern only (a pack: `^[a-z][a-z0-9-]{1,39}$`; an agent: `^[a-z][a-z0-9-]{1,31}$`), never a catalog.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `workflow.packs.style` | object (`default`, `repos`) | no | `plain` | The style pack the design is written in (line spec §5.1): `default` is the pack id for every repo, `repos` maps a repo name to the pack it uses instead |
+| `workflow.packs.lenses` (`lenses`) | object (`design`, `review`) | no | `design-five`, `code-review` | The lens packs (line spec §5.2): `design` and `review` each take `default` and `repos` as `style` does |
+| `default` | pack id | no | the pack named above | A pack kind's pack for every repo without its own entry (`workflow.packs.style.default`, `.lenses.design.default`, `.lenses.review.default`) |
+| `repos` | map of repo name to pack id | no | none | A repo's pack for that kind (`workflow.packs.style.repos.<repo>` …); a repo name is non-empty text |
+| `workflow.packs.pins` (`pins`) | map of `style/<id>` or `lenses/<id>` to `sha256:` and 64 lower-case hex digits | no | `{}` | The hash a machine or repo pack must have (line spec §5.1); a pack with no pin, or another hash, is `SND-PACK-002` |
+| `workflow.line.parallel` (`parallel`) | integer, 1 or more | no | `2` | How many phases run at once. **Cross-key rule:** a value above the box's heavy-slot cap (`$AW_STATE_DIR/heavy-slots-cap`, else `AW_HEAVY_SLOTS`) is refused by `profile validate` and `profile approve` (`workflow.line.parallel`); a value left out is never held to the cap, and `line doctor` repeats the check when the cap later drops |
+| `workflow.line.maxOpenPrs` (`maxOpenPrs`) | integer, 1 or more | no | `4` | How many pull requests the line keeps open |
+| `workflow.line.maxStack` (`maxStack`) | integer, 1 or more | no | `4` | How deep a stack of phases may go (`PLN-STACK-001`) |
+| `workflow.plan.maxPhaseSize` (`maxPhaseSize`) | `XS`, `S` or `M` | no | `M` | The largest size a phase may be (`PLN-SIZE-001`); a phase larger than `M` is split (LN5) |
+| `workflow.plan.sizes` (`sizes`) | map of `XS`, `S`, `M`, `L`, `XL` to `files`, `items` and `budget` | no | spec Q5 | The limits of each size class, written to the sizes file `aw-packets validate --sizes` reads (`PKT-SIZE-001`, LN-PKT3; `LineProfile.SizesFile`). A size or a field left out takes its default: XS 3 files and 2 items, S 8 and 4, M 20 and 8; L (40, 16) and XL (80, 32) are provisional, and so is every budget (XS 100k tokens, 30 turns, 20 minutes; S 400k, 60, 45; M 800k, 100, 90; L 1.6M, 150, 180; XL 3.2M, 200, 360), tuned after LN-P from the merge records |
+| `files` | integer, 0 or more | no | per size | `workflow.plan.sizes.<size>.files`: the most files a phase's write scope covers |
+| `items` | integer, 0 or more | no | per size | `workflow.plan.sizes.<size>.items`: the most acceptance items a phase holds, hidden scenarios included |
+| `budget` | object (`tokens`, `turns`, `wallMinutes`) | no | per size | `workflow.plan.sizes.<size>.budget`: the most a phase may spend |
+| `tokens` | integer, 0 or more | no | per size | `…budget.tokens` |
+| `turns` | integer, 0 or more | no | per size | `…budget.turns` |
+| `wallMinutes` | integer, 0 or more | no | per size | `…budget.wallMinutes` |
+| `workflow.prove.holdoutMin` | integer, 1 or more | no | `2` | The fewest hidden scenarios a phase needs besides its canary (`PLN-HOLD-003`, `PRV-HOLD-002`) |
+| `workflow.build.commands` | string[] | no | none | The commands that check a phase's change, all in order in the phase worktree, each for at most `workflow.steps.longMax` (and all together within the Step's own 2 h, less 5 min for its report, slot wait included): `step.build.red-check` needs at least one to fail on the red commit, `step.build.checks` and `step.ship.green` need all to pass (green with none listed still greens). Each is one command line of 1 to 1000 characters with no line break, split on spaces and tabs into program and arguments; a "double-quoted" group is one argument; no shell, no escape and no expansion; a quote left open is refused at validation. A list that is there is not empty. `line doctor` asks when it is absent |
+| `workflow.ship.draft` | boolean | no | `false` | Whether `effect.pr.open` opens the pull request as a draft |
+| `workflow.design.models` | object (`writer`, `lens`) | no | profile roles | The agents that write the design (`writer`) and run its lenses (`lens`); `DSN-LENS-002` warns when they are one model |
+| `workflow.review.models` | object (`lens`) | no | profile roles | The agent that runs the review lenses |
+| `workflow.steps.longMax` | duration | no | `2h` | The longest `MaxDuration` a block Step may declare (LN-WF7) |
+| `workflow.docs.globs` | string[] | no | `docs/**`, `*.md` | The paths docs sync may write (BD5): repo-relative globs with `/` separators and no `..`, as `index.denyPaths` takes them |
+
+`workflow.effects` gains no key of its own: the line's effects (`effect.line.start-phase`, `effect.line.report`, `effect.pr.open`) are entries of the allowlist. Code reads the values with their defaults through `LineProfile` (`Aw.Sindri.Core.Profile`).
 
 ### `repos[].workflow`
 
@@ -74,11 +120,117 @@ The forge port's settings (PR babysitter spec W27, §10.2; `docs/csharp/forge.md
 | `hosts` | string[] (host names) | no | none | The forge hosts a link or request may name, such as `github.com`; a host outside the list is refused (`AW-FORGE-002`) before anything is sent |
 | `credential` | `env:NAME` or `command:<argv>` | no | `env:AW_FORGE_TOKEN` | A variable that holds a long-lived token, or a program run per call that prints a token (or JSON with `token` and `expiresAt`); cached until five minutes before the expiry, re-run once after a 401 |
 
+### `workflow.pr`
+
+The PR babysitter's settings (PR babysitter spec W27, §4, §5, §6). A change to any key is a profile change you approve again.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `bots` | string[] (logins) | no | none | The bot logins whose comments are fixed or declined instead of held; any other bot is untrusted (Q2) |
+| `autofixCap` | integer, 1 to 5 | no | `5` | The most CI fixes pushed for one PR; the babysitter stops at the cap (`gate.pr.autofix-cap`) |
+| `pollInterval` | delay (`5s` to `24h`, unit `s`, `m` or `h`) | no | `60s` | How often the PR watcher polls the forge |
+| `remindAfter` | duration (`1m` and up, unit `m`, `h` or `d`) | no | `14d` | How long a PR waits at ready-to-merge before the desk is reminded |
+| `replies` | `desk` or `post` | no | `desk` | Whether the owner sends each reply or Sindri posts it from its account with a footer (Q5) |
+| `mergeMethod` | `squash`, `merge` or `rebase` | no | `squash` | The merge method the merge button uses (Q11) |
+| `heldBlocksMerge` | boolean | no | `false` | Whether held comments make `gate.revision-bound` refuse the merge (Q13) |
+| `docsMergeWait` | duration | no | `30m` | The longest the stacked docs PR is awaited after the merge (BD9) |
+
+The recipes' effects (`effect.pr.push`, `.reply`, `.record`, `.rerun-checks`, `.restack`, `.create-stacked`, `.merge`, `.merge-docs`) must be in `workflow.effects`.
+
+### `workflow.docs.sync`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `sync` | `on` or `off` | no | `on` | `off` opts a repo out: the babysitter skips docs sync (PB spec PB6). `workflow.docs.globs` is in the line's keys above |
+
+### `workflow.route`
+
+What the router stub does with an item it routes (workflow engine spec §12). Real routing replaces it; `gate.route.startable` reads this key.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `startable` | `all` or `none` | no | `all` | `all` lets every routed item start; `none` stops them at the router (the gate fails and the item parks). Any other value is refused before approval (`workflow.route.startable`) |
+
+### `setup`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `mcp` | `auto` or `off` | no | `auto` | `auto` lets Sindri register its MCP server in each repo of the approved profile on its own (local scope, once consent is given); `off` stops that, and the "Connect your agents" button and `sindri mcp register --apply` still work. Any other value is refused before approval (`setup.mcp`) |
+
 ### `index`
 
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `denyPaths` | string[] | no | none | Repo-relative globs map extraction never reads (`private/**`, `**/*.generated.ts`), added to the built-in secret globs and never replacing them (context spec §6.2). A repo's own are added to the profile's |
+| `roles` | map of string to string[] | no | none | File roles of this repo. Their files are denied (not indexed, never cited, as with `denyPaths`) unless `demote` names the role (below): a role name to its repo-relative globs (`cron: ["**/*cron*"]`, `fixture: ["**/fixtures/**"]`; same glob rules as `denyPaths`). The files of a named role are never extracted, clustered, cited or searched, exactly as if their globs were in `denyPaths`; roles are per repo only; a profile-level `index.roles` is refused. A glob that matches a directory covers everything under it (`**/*cron*` denies `src/crons/run.ts`). An entry may instead be `prefix:<text>`, `suffix:<text>` or `regex:<pattern>`, matched against any one path segment (a directory or the file name) ignoring case (`suffix:.generated.ts`, `regex:^v\\d+$`); a bad regex or a `/` in a prefix or suffix is refused with the key path. Roles apply when the map is built and again on every read, so a role added later hides its nodes and evidence at once. There are no built-in roles: without `roles`, nothing extra is hidden |
+| `ignore` | string[] | no | none | Role names (keys of this repo's `roles`) whose files are not indexed and never cited, as for `denyPaths`. A role in neither `ignore` nor `demote` is denied exactly as today (not indexed, never cited), so a profile with `roles` and no lists behaves as before. Per repo only (a profile-level `index.ignore` is refused); a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.ignore[0]`) |
+| `demote` | string[] | no | none | Role names (keys of this repo's `roles`) whose files stay indexed and searchable but are never a feature implementer, anchor or scope surface, and rank last in answers and lenses. Per repo only; a name that is not one of the repo's roles, or is blank, is refused with its key path (`repos.web-app.index.demote[1]`), and a role in both `ignore` and `demote` is refused |
+| `utilityGlobs` | string[] | no | none | Globs (same rules as `denyPaths`) of internal utility modules; the code index flags their exports `utility`. A repo's own are added to the profile's |
+| `maxFileKB` | whole number | no | `4096` | The code index skips larger files as `too-large`. 1 to 102400 |
+| `maxTotalMB` | whole number | no | `4096` | Larger tracked code input (code files only; docs, assets and lockfiles do not count) stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
+| `concepts` | list of mappings | no | none | Concepts you pin for the context map, below. A repo's own are added to the profile's |
+| `embeddings` | mapping | no | none | The code index's embeddings layer, below |
+| `graph` | mapping | no | none | The code index's graph layer, below |
+
+A repo's `index:` replaces each scalar key it names (and each `embeddings` and `graph` key it names) and adds its list keys to the profile's. Unknown keys fail validation, in `embeddings` and `graph` too; a bad value is refused with its key path (`index.graph.maxMB: must be 1 to 4096`).
+
+#### `index.ignore` and `index.demote`
+
+A role names a set of files. `ignore` hides them from the code index and the context map; `demote` keeps them indexed and searchable but out of the product picture: a demoted file keeps its node but implements no feature, is never an anchor or a scope surface, and ranks last in answers and lenses.
+
+```yaml
+repos:
+  - name: web-app
+    path: /work/web-app
+    index:
+      roles:
+        test: ["**/*.test.ts", "**/__tests__/**"]
+        fixture: ["**/fixtures/**"]
+        demo: ["demo/**"]
+        generated: ["**/*.generated.ts"]
+      ignore: [generated]
+      demote: [test, fixture, demo]
+```
+
+
+#### `index.concepts`
+
+Each entry pins one concept: it takes its members first, derived concepts fill the rest from what is left, and `concept:other` keeps the leftovers. An entry with no members still shows, empty. A change is part of the profile hash, so it needs approval, and the next map build or refresh applies it.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `id` | text | no | derived from `name` | The slug of the concept's key (`scheduling` pins `concept:scheduling`): lowercase words of letters and digits joined by single `-` or `.` (`tabs.tab-manager` pins a derived id). `other` is reserved; ids are unique across the profile's list and the repo's |
+| `name` | text | yes | none | What the map shows. Not empty |
+| `summary` | text | no | none | A line about the concept |
+| `features` | string[] | no | none | Feature node keys or key globs (`feature:shifts`, `feature:shifts.*`); each must start with `feature:` |
+| `paths` | string[] | no | none | Repo-relative file globs (same rules as `denyPaths`); the features implemented there belong to the concept |
+
+```yaml
+index:
+  concepts:
+    - id: scheduling
+      name: Self scheduling
+      summary: Shifts, swaps and time off
+      features: ["feature:shifts", "feature:shifts.*"]
+      paths: ["apps/web/src/Schedule/**"]
+```
+
+A bad entry is refused with its key path (`index.concepts[0].features[1]: must be a feature: key or glob, like 'feature:shifts' or 'feature:shifts.*'`).
+
+#### `index.embeddings`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `enabled` | true or false | no | `true` | `false` leaves the embeddings layer `disabled` |
+| `url` | text | no | `http://127.0.0.1:11434` | The embedding server: `http` on `127.0.0.1` or `[::1]`, no credentials (never `localhost`). Anything else is refused (`SND-CODEIDX-005`) |
+| `model` | text | no | the code index lock's model | A local Ollama model; a name containing `cloud` is refused |
+
+#### `index.graph`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `enabled` | true or false | no | `true` | `false` leaves the graph layer `disabled` |
+| `maxMB` | whole number | no | `1024` | The largest graph file read. 1 to 4096 |
 
 ### `launch`
 
@@ -163,14 +315,3 @@ recipe or Step may ask for a stricter source and never a looser one (`owner-copy
 error. The earlier `sandbox.agentHome` key is retired.
 
 `sandbox.attended`: `wall` is `off` (default) or a duration, a wall-clock ceiling for sessions you open yourself.
-
-## Keys specified, not yet in `SindriProfile`
-
-These keys are specified by other lanes' specs and join the profile in their phases. Until then the C# profile
-refuses them as unknown keys. They are listed here so the launcher's files and the profile agree on names. Every key that
-names an agent takes any `AgentId` (pattern `^[a-z][a-z0-9-]{1,31}$`); the profile checks the pattern and never the
-catalog, because the catalog is per box.
-
-| Key | Meaning | Specified in |
-|---|---|---|
-| `workflow.agent.target` | The agent a Step launches | workflow engine spec §6.5 |

@@ -44,7 +44,7 @@ public sealed class ViewsBannerTests
         banner.Show(View("rebuilding"), rebuild: null);
         banner.Show(View("rebuilding") with { Empty = "Rebuilding views (cursor 20 of 42)…" }, rebuild: null);
 
-        Assert.Equal(["Rebuilding views"], heard);
+        Assert.Equal(["Refreshing the lists"], heard);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class ViewsBannerTests
 
         banner.Show(view: null, rebuild: null);
 
-        Assert.Equal(("Sindri", true, "Views are up to date"), (banner.Announcement, banner.IsRecovered, banner.RecoveredAnnouncement));
+        Assert.Equal(("Sindri", true, "Lists are up to date"), (banner.Announcement, banner.IsRecovered, banner.RecoveredAnnouncement));
 
         banner.Show(View("stalled"), rebuild: null);
         Assert.False(banner.IsRecovered);

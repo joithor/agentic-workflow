@@ -50,18 +50,17 @@ public sealed class FactViewerRegistryTests
     }
 
     [Fact]
-    public void Scope_map_packet_evidence_decision_render_as_payload_until_U13()
+    public void Packet_evidence_decision_render_as_payload_until_U13()
     {
         var registry = FactViewerRegistry.CreateDefault();
         FactRow[] rows =
         [
-            FactFixtures.Row("project-build", "fact:scope"),
             FactFixtures.Row("project-build", "fact:packet"),
             FactFixtures.Row("project-build", "fact:evidence"),
             FactFixtures.Row("done", "fact:route"),
         ];
 
-        Assert.Equal([FactType.ScopeMap, FactType.Packet, FactType.Evidence, FactType.Decision], rows.Select(r => r.Type));
+        Assert.Equal([FactType.Packet, FactType.Evidence, FactType.Decision], rows.Select(r => r.Type));
         Assert.All(rows, row =>
         {
             Assert.False(registry.IsRegistered(row.Type), row.Key);
@@ -70,21 +69,33 @@ public sealed class FactViewerRegistryTests
     }
 
     [Fact]
-    public void U13_can_register_a_viewer_without_editing_U8_files()
+    public void Scope_map_has_its_own_viewer_and_view()
     {
         var registry = FactViewerRegistry.CreateDefault();
         var scope = FactFixtures.Row("project-build", "fact:scope");
 
-        registry.Register(FactType.ScopeMap, (row, _) => new ScopeMapViewer(row));
-
+        Assert.Equal(FactType.ScopeMap, scope.Type);
         Assert.True(registry.IsRegistered(FactType.ScopeMap));
         _ = Assert.IsType<ScopeMapViewer>(registry.Create(scope, Context()));
-        _ = Assert.IsType<PayloadFactViewer>(registry.Create(FactFixtures.Row("project-build", "fact:packet"), Context()));
+        Assert.True(FactViewTemplates.HasView(typeof(ScopeMapViewer)));
+    }
+
+    [Fact]
+    public void U13_can_register_a_viewer_without_editing_U8_files()
+    {
+        var registry = FactViewerRegistry.CreateDefault();
+        var packet = FactFixtures.Row("project-build", "fact:packet");
+
+        registry.Register(FactType.Packet, (row, _) => new PacketViewer(row));
+
+        Assert.True(registry.IsRegistered(FactType.Packet));
+        _ = Assert.IsType<PacketViewer>(registry.Create(packet, Context()));
+        _ = Assert.IsType<ScopeMapViewer>(registry.Create(FactFixtures.Row("project-build", "fact:scope"), Context()));
         _ = Assert.IsType<TextFactViewer>(registry.Create(FactFixtures.Row("incident-loop", "fact:severity"), Context()));
     }
 
     // What U13 writes in its own files: a viewer, registered at start-up.
-    private sealed class ScopeMapViewer(FactRow row) : IFactViewer
+    private sealed class PacketViewer(FactRow row) : IFactViewer
     {
         public event PropertyChangedEventHandler? PropertyChanged
         {

@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Map;
 using Aw.Kernel;
@@ -59,7 +60,7 @@ public sealed class SessionDenyAcrossReposTests : IDisposable
 
         void Take(Result<string> r) { if (r.IsError) { codes.Add(r.Error.Code); text.Append(r.Error.Message); } else { text.Append(r.Value); } }
 
-        var lens = await _world.Engine.Lenses("feature:in", draft: false, depth: 3, scope, ct);
+        var lens = await _world.Engine.Lenses("feature:in", read: MapRead.Current, depth: 3, scope, ct);
         Take(lens.Map(l => string.Join(' ', l.Bands.Intent.Records.Select(r => r.Key.Value + r.Label)) + string.Join(' ', l.Bands.Intent.Decisions.Select(d => d.Node.Value + d.Text + d.Quote?.Text))));
         var query = await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:in"), scope, ct);
         Take(query.Map(q => string.Join(' ', q.Sections.SelectMany(s => s.Items).Select(i => i.Node + i.Title + i.Text))));

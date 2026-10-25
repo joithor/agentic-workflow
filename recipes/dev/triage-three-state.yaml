@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-triage-three-state
-version: 2
+version: 3
 description: "A triage item through a desk Step, a question to the human and a terminal: three states, a file output and a decision output (UI screens, E-21 and E-22)."
+displayName: "Triage an item in three states"
 urgency: triage
 name: "{fact:scope} - {start:date}"
 inputs:

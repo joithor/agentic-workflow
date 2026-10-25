@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -40,9 +41,10 @@ internal sealed partial record InstanceWords
         {
             ParkReason.Rounds or ParkReason.NoProgress => $"Parked ({Name(park.Reason.Value)}){where}: {question}.\nGrant more rounds at a terminal, or cancel.",
             ParkReason.Budget => $"Parked (budget){where}: {question}.\nGrant tokens at a terminal, or cancel.",
-            ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"Parked{where}: {question}.\nFix the cause, then resume to check again, or cancel.",
+            ParkReason.NeedsAnswer when (park.ParkKind ?? park.MirroredParkKind) == ParkKind.Wait => $"Parked{where}: {question}.\nFix the cause, then resume to check again, or cancel.",
             ParkReason.NeedsAnswer => $"Parked (needs-answer){where}: {question}.\nAnswer with --text; the Step runs again with your answer.",
             ParkReason.Timeout => $"Parked (timeout): {question}.\nResume to give it the full time again, or cancel.",
+            ParkReason.Unavailable => $"Parked (unavailable){where}: {question}.\nFix the dependency, then resume to run the Step again, or cancel.",
             ParkReason.SpecConflict when park.Mirrors is not null => $"Parked (spec-conflict){where}: {question}.",
             ParkReason.SpecConflict => SpecConflict(park),
             ParkReason.NoRuntime or null or _ => $"No runtime for {Block(question)} in this build.\nCancel, or resume in a build that has it.",
@@ -79,9 +81,9 @@ internal sealed partial record InstanceWords
             ? Recipe.Recipe.Transitions[index].To
             : "the next state";
 
-    /// <summary>The 'workflow complete' line for the task: its first declared outcome and the outputs required on it.</summary>
+    /// <summary>The 'workflow complete' line for the task: its outcome (all of them when there are several) and the outputs required on a single one.</summary>
     private string Complete(DeskTask task) =>
-        CompleteCommand.Line(Address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+        CompleteCommand.Line(Address, task.Run, task.Outcomes, task.Outputs);
 
     /// <summary>The state's recipe 'next' with its variables filled in (§3.7); one the engine can't fill stays as written.</summary>
     private string RecipeNext() =>
@@ -117,7 +119,7 @@ internal sealed partial record InstanceWords
     private string? TokensLeft()
     {
         var cap = Recipe.Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Budget is { } own ? own.Tokens : Recipe.Recipe.Budget?.Tokens;
-        var spent = state?.Budget is not null && Instance.Spent.ByState.TryGetValue(Instance.Frame.State, out var here) ? here : Instance.Spent.Total;
+        var spent = state?.Budget is not null ? BudgetRules.StateUsed(Instance, Recipe.Recipe, Instance.Frame.State) : Instance.Spent.Total;
         return cap is { } tokens ? StatusText.Tokens(Math.Max(0, tokens - spent)) : null;
     }
 

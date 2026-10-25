@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 namespace Aw.Meta.Tests.Cli;
 
 /// <summary>A stand-in for the tmux program that records its arguments and fails: what AW_TMUX points at in every aw-meta test, so none of them can reach the real tmux server.</summary>
@@ -10,8 +11,6 @@ internal static class FailClosedTmux
     internal static string Write(string directory)
     {
         var path = Path.Combine(directory, "tmux-stub");
-        File.WriteAllText(path, $"#!/bin/sh\n{Marker}\necho \"$@\" >> '{Path.Combine(directory, "tmux-stub.log")}'\nexit 1\n");
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        return path;
+        return ExecutableScript.Write(path, $"{Marker}\necho \"$@\" >> '{Path.Combine(directory, "tmux-stub.log")}'\nexit 1\n");
     }
 }

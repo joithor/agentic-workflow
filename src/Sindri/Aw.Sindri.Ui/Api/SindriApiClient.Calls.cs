@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.Api;
 
@@ -31,9 +32,7 @@ internal sealed partial class SindriApiClient
     private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, CallOptions options = default)
     {
         var (view, content) = options;
-        // A read that carries a sequence is held by the server for up to 2 s before it answers SND-API-011, so its
-        // deadline is longer than an ordinary call's.
-        using var timeout = new CancellationTokenSource(view && Volatile.Read(ref _after) > 0 ? _waitingTimeout : _callTimeout, clock);
+        using var timeout = new CancellationTokenSource(CallTimeout, clock);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
@@ -49,7 +48,7 @@ internal sealed partial class SindriApiClient
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return SindriUiErrors.Unreachable.With($"{api.Authority} didn't answer within 2 s");
+            return SindriUiErrors.Unreachable.With(string.Create(CultureInfo.InvariantCulture, $"{api.Authority} didn't answer within {CallTimeout.TotalSeconds:0} s"));
         }
         catch (HttpRequestException)
         {
@@ -96,7 +95,7 @@ internal sealed partial class SindriApiClient
         _ = _unreadable.TryRemove(path, out _);
 
         // An accepted command (CreateItem nests it) is waited for by the next query.
-        if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, RequestFiledView f => f.Accepted.Sequence, _ => (long?)null } is { } sequence)
+        if ((object?)value.Value switch { CommandAcceptedView a => a.Sequence, ItemCreatedView c => c.Accepted.Sequence, RequestFiledView f => f.Accepted.Sequence, RecipeApproved r => r.Accepted.Sequence, _ => (long?)null } is { } sequence)
         {
             _ = Interlocked.Exchange(ref _after, sequence);
         }
@@ -168,9 +167,10 @@ internal sealed partial class SindriApiClient
         }
 
         var detail = problem.Value.Detail;
-        return status == HttpStatusCode.Forbidden
+        var error = status == HttpStatusCode.Forbidden
             ? new Error(code, ErrorKind.Forbidden, detail is { Length: > 0 } ? detail : code)
             : code.StartsWith("SND-", StringComparison.Ordinal) && detail is { Length: > 0 } ? new Error(code, KindOf(status), detail) : null;
+        return error is null ? null : ContextRefusal.Extend(error, body);
     }
 
     private static ErrorKind KindOf(HttpStatusCode status) => (int)status switch

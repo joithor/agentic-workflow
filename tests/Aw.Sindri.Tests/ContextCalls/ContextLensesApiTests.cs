@@ -87,16 +87,16 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Lenses_route_21_anchors_is_006_problem_and_a_draft_with_a_map_version_is_006()
+    public async Task Lenses_route_takes_fifty_anchors_and_a_draft_with_a_map_version_is_006()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var many = await host.Http.Ask(Get(Lenses([.. Enumerable.Range(0, 21).Select(i => A("feature:nope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))]), Terminal(host)));
+        var many = await host.Http.Ask(Get(Lenses([.. Enumerable.Range(0, 50).Select(i => A("feature:nope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))]), Terminal(host)));
         var both = await host.Http.Ask(Get(Lenses(A(Anchor), "draft=true", "mapVersion=v1"), Terminal(host)));
         var malformed = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=latest"), Terminal(host)));
 
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (many.Status, many.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (many.Status, many.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (both.Status, both.Code));
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (malformed.Status, malformed.Code));
     }
@@ -129,6 +129,52 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.False(one.TryGetProperty("anchors", out _));
         Assert.True(one.GetProperty("searched").TryGetProperty("sources", out _));
         Assert.True(one.GetProperty("coverage").TryGetProperty("map", out _));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_and_query_routes_take_hops_echo_it_and_refuse_an_unknown_name_with_140()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var plain = await host.Http.Ask(Get(Lenses(A(Anchor)), Terminal(host)));
+        var hops = await host.Http.Ask(Get(Lenses(A(Anchor), "hops=state,dependency,flow,component"), Terminal(host)));
+        var set = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane"), "hops=component"), Terminal(host)));
+        var bogus = await host.Http.Ask(Get(Lenses(A(Anchor), "hops=bogus"), Terminal(host)));
+        var query = await host.Http.Ask(Get("/sindri/context/query?node=" + Uri.EscapeDataString(Anchor) + "&hops=bogus", Terminal(host)));
+        var queryOk = await host.Http.Ask(Get("/sindri/context/query?node=" + Uri.EscapeDataString(Anchor) + "&hops=component", Terminal(host)));
+
+        Assert.Equal(["state", "dependency", "flow"], Json(plain.Body).GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal(["state", "dependency", "flow", "component"], Json(hops.Body).GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, set.Status);
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-140"), (bogus.Status, bogus.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-140"), (query.Status, query.Code));
+        Assert.Equal(HttpStatusCode.OK, queryOk.Status);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_and_query_over_mcp_take_hops_and_refuse_an_unknown_name_with_140()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
+        var ok = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","hops":"state,component"}""", ct);
+        var bad = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","hops":"bogus"}""", ct);
+        var queryOk = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","hops":"component"}""", ct);
+        var queryBad = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","hops":"bogus"}""", ct);
+
+        foreach (var name in (string[])["context_lenses", "context_query"])
+        {
+            Assert.Equal("string", tools.Single(t => t.Name == name).JsonSchema.GetProperty("properties").GetProperty("hops").GetProperty("type").GetString());
+        }
+
+        Assert.NotEqual(true, ok.IsError);
+        Assert.Equal(["state", "component"], ok.StructuredContent!.Value.GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Contains("SND-CONTEXT-140", bad.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.NotEqual(true, queryOk.IsError);
+        Assert.Contains("SND-CONTEXT-140", queryBad.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -193,10 +239,53 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), (own.GetProperty("label").GetString(), own.GetProperty("trust").GetString()));
     }
 
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_takes_optional_anchors_and_mapVersion_and_a_lone_anchor_stays_schema_1()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tool = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_lenses").JsonSchema;
+        var lone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}"}""", ct);
+        var set = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane","feature:nope.x"]}""", ct);
+        var held = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v1"}""", ct);
+        var gone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var goneSet = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane"],"mapVersion":"v99"}""", ct);
+        var none = await mcp.Call("context_lenses", "{}", ct);
+        var wrongType = await mcp.Call("context_lenses", """{"anchors":"feature:a"}""", ct);
+        var wrongItem = await mcp.Call("context_lenses", """{"anchors":[1]}""", ct);
+
+        Assert.Equal(["anchor", "anchors", "mapVersion", "hops", "limit", "offset"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.False(tool.TryGetProperty("required", out _));
+        Assert.Equal((1, Anchor), (lone.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), lone.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString()));
+        Assert.Equal((2, 2), (set.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), set.StructuredContent!.Value.GetProperty("anchors").GetArrayLength()));
+        Assert.Equal(["feature:nope.x"], set.StructuredContent!.Value.GetProperty("missingAnchors").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal("v1", held.StructuredContent!.Value.GetProperty("mapVersion").GetString());
+        Assert.All([gone, goneSet], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-120", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+        Assert.All([none, wrongType, wrongItem], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-022", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_query_over_mcp_takes_an_optional_mapVersion()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var schema = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_query").JsonSchema;
+        var gone = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var malformed = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"latest"}""", ct);
+
+        Assert.True(schema.GetProperty("properties").TryGetProperty("mapVersion", out _));
+        Assert.Contains("SND-CONTEXT-120", gone.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("SND-CONTEXT-006", malformed.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Lenses_depth_is_0_to_4_and_anything_else_is_006_over_http()
+    public async Task Lenses_depth_is_0_or_more_deeper_than_8_is_read_as_8_and_negative_is_006_over_http()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -205,11 +294,13 @@ public sealed class ContextLensesApiTests : IDisposable
         var zero = await host.Http.Ask(Get(route + "&depth=0", Terminal(host)));
         var four = await host.Http.Ask(Get(route + "&depth=4", Terminal(host)));
         var five = await host.Http.Ask(Get(route + "&depth=5", Terminal(host)));
+        var deep = await host.Http.Ask(Get(route + "&depth=99", Terminal(host)));
         var negative = await host.Http.Ask(Get(route + "&depth=-1", Terminal(host)));
 
         Assert.Equal((HttpStatusCode.OK, 0), (zero.Status, Json(zero.Body).GetProperty("depth").GetInt32()));
         Assert.Equal((HttpStatusCode.OK, 4), (four.Status, Json(four.Body).GetProperty("depth").GetInt32()));
-        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (five.Status, five.Code));
+        Assert.Equal((HttpStatusCode.OK, 5), (five.Status, Json(five.Body).GetProperty("depth").GetInt32()));   // the old cap of 4 was raised to 8 (owner q93, 2026-10-23)
+        Assert.Equal(HttpStatusCode.OK, deep.Status);
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (negative.Status, negative.Code));
     }
 
@@ -285,7 +376,8 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal("Tab manager", Json(first.Body).GetProperty("surfaces")[0].GetProperty("surface").GetString());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(second.Body), StringComparer.Ordinal);   // an idempotent re-run reports the same standing
         Assert.Equal(0, Json(second.Body).GetProperty("result").GetProperty("added").GetInt32());
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
+        Assert.True(session.Status == HttpStatusCode.OK, session.Body);   // a session proposes too (owner q93), and its re-run adds nothing
+        Assert.Equal(0, Json(session.Body).GetProperty("result").GetProperty("added").GetInt32());
         Assert.Equal(["mapped", "new", "unmapped"], Statuses(view.Body), StringComparer.Ordinal);   // every surface of the run, in the order it was submitted: the mapped one and the one with no kind wrote no row
         Assert.Equal(HttpStatusCode.OK, reject.Status);
         Assert.Equal(["mapped", "unmapped", "unmapped"], Statuses((await host.Http.Ask(Get("/sindri/context/map/proposals?run=scope-1", App(host)))).Body), StringComparer.Ordinal);
@@ -363,6 +455,52 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_retry_after_the_withdraw_event_append_failed_records_the_event_exactly_once()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        var ledger = new FlakyLedger();
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); ledger.Wrap(s); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
+
+        ledger.Failing = true;
+        var failed = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        ledger.Failing = false;
+        var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (failed.Status, failed.Code));
+        Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // the rows committed the first time; the retry writes the event they lack
+        Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);   // and only once
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
+        Assert.Equal(1, Json(recorded.Value!.Envelope.Payload).GetProperty("withdrawn").GetInt32());
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Each_withdraw_event_counts_its_own_withdrawal_across_withdraw_repropose_withdraw()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, ct,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Swap","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var first = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var second = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        var events = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 500, ct)).Value.Where(e => e.Envelope.Type == EventTypes.ContextMapProposed)
+            .Select(e => Json(e.Envelope.Payload)).Where(p => p.TryGetProperty("withdrawn", out _)).Select(p => p.GetProperty("withdrawn").GetInt32()).ToList();
+        Assert.Equal((2, 2), (Json(first.Body).GetProperty("result").GetProperty("withdrawn").GetInt32(), Json(second.Body).GetProperty("result").GetProperty("withdrawn").GetInt32()));
+        Assert.Equal([2, 2], events);   // each event says what its own call withdrew, not the run's running total
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task A_draft_opened_from_a_map_imported_without_a_commit_promotes_instead_of_failing()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -370,22 +508,17 @@ public sealed class ContextLensesApiTests : IDisposable
         var body = $$"""{"run":"scope-1","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Tab manager","key":"{{Anchor}}"}]}""";
         Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var shown = Json(preview.Body);
-        var draft = shown.GetProperty("draft").GetString();
-        var challenge = shown.GetProperty("challenge");
-        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft, answer }), Terminal(host)));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
+        var draft = Json(promoted.Body).GetProperty("draft").GetString();
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
-        Assert.True(preview.Status == HttpStatusCode.OK, preview.Body);
         Assert.DoesNotContain('@', draft!);   // why: an imported map has no commit, so its draft's label is a bare 'v<N>'
         Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
         Assert.NotNull(recorded.Value);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task EvalMap_route_answers_numbers_and_refuses_sessions_020()
+    public async Task EvalMap_route_answers_numbers_to_a_human_and_a_session()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -399,7 +532,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.True(run.GetProperty("report").TryGetProperty("nodePrecision", out _));
         Assert.StartsWith("map", Path.GetFileName(run.GetProperty("path").GetString()), StringComparison.Ordinal);
         Assert.Contains(Path.Combine("eval", "map"), run.GetProperty("path").GetString(), StringComparison.Ordinal);
-        Assert.Equal("SND-CONTEXT-020", session.Code);
+        Assert.Equal(HttpStatusCode.OK, session.Status);   // a session may measure the map (owner q93, 2026-10-23)
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

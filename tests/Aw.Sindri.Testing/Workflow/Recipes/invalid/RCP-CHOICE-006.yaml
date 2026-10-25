@@ -33,3 +33,4 @@ transitions:
   - { from: route, to: route-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
   - { from: prove, to: done, on: step.completed, when: { outcome: done }, produces: [fact:output] }
 inputs: [{ key: fact:change, label: "Change", type: text, kind: text }]
+displayName: Test recipe

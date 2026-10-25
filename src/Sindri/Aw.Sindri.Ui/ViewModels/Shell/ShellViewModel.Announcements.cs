@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Aw.Sindri.Ui.ViewModels.Palette;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -71,4 +72,21 @@ internal sealed partial class ShellViewModel
         : Reason.Length > 0 ? $"{word}: {Reason}"
         : current == Labels.Sindri ? word
         : current;
+
+    private void OnPillChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HealthPill.IsNotResponding))
+        {
+            OnChanged(nameof(IsNotRespondingBanner));
+            Announce();
+        }
+    }
+
+    private void Changed(params string[] names)
+    {
+        foreach (var name in names)
+        {
+            OnChanged(name);
+        }
+    }
 }

@@ -1,0 +1,465 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
+             xmlns:nyv="using:Aw.Sindri.Ui.Views.NeedsYou"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.NeedsYou.NeedsYouPage"
+             x:DataType="ny:NeedsYouPageViewModel">
+  <!-- The Needs-you inbox (F3 needs-you spec §2, slice 1): the breadcrumb, then the rows grouped by kind on the left (400 px; 330 under
+       1100) and one request card on the right. Home stays the page behind it; the action bar, the keys beyond J and K, and the answer
+       forms are later slices, so the card carries the row's own controls as Home's row does. Tokens only. -->
+  <Grid x:Name="NeedsYouInbox" RowDefinitions="Auto,*" Background="{DynamicResource Brush.Canvas}">
+    <Border x:Name="NeedsYouCrumb" Classes="crumb">
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Button x:Name="NeedsYouCrumbHome" Classes="copy" Click="OnCrumbHome" AutomationProperties.Name="{Binding CrumbHomeName}">
+          <TextBlock Classes="body muted" Text="{Binding CrumbHome}" AutomationProperties.AccessibilityView="Raw" />
+        </Button>
+        <TextBlock Classes="body subtle" Text="{Binding CrumbSeparator}" AutomationProperties.AccessibilityView="Raw" />
+        <TextBlock x:Name="NeedsYouCrumbHere" Classes="body" Text="{Binding Title}" />
+      </StackPanel>
+    </Border>
+
+    <Grid x:Name="NeedsYouColumns" Grid.Row="1" ColumnDefinitions="400,*">
+      <Border x:Name="NeedsYouInboxColumn" Classes="inbox-column" PointerEntered="OnListEntered" PointerExited="OnListExited"
+              AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+          <Grid ColumnDefinitions="*,Auto" Margin="16,12,16,8">
+            <TextBlock x:Name="NeedsYouInboxTitle" Classes="detail-title" Text="{Binding Title}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Title}" />
+            <TextBlock x:Name="NeedsYouInboxCount" Grid.Column="1" Classes="caption muted" Text="{Binding CountText}" VerticalAlignment="Center" AutomationProperties.Name="{Binding CountText}" />
+          </Grid>
+          <TextBlock x:Name="NeedsYouInboxBanner" Grid.Row="1" Classes="caption" Text="{Binding Banner}" IsVisible="{Binding HasBanner}" Margin="16,0,16,8"
+                     TextWrapping="Wrap" AutomationProperties.Name="{Binding Banner}" />
+          <Button x:Name="NeedsYouInboxHeld" Grid.Row="2" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding HasHeld}" HorizontalAlignment="Center" Margin="0,0,0,8"
+                  AutomationProperties.Name="{Binding HeldText}">
+            <TextBlock Classes="caption" Text="{Binding HeldText}" />
+          </Button>
+          <ctl:StickyGroupList x:Name="NeedsYouGroups" Grid.Row="3" ItemsSource="{Binding Groups}">
+            <ctl:StickyGroupList.HeaderTemplate>
+              <DataTemplate x:DataType="ny:NeedsYouInboxGroup">
+                <Border Classes="group-header" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                    <icons:StateIcon Glyph="Profile" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Attention}" />
+                    <TextBlock Grid.Column="1" Classes="body-strong" Text="{Binding Heading}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Grid.Column="2" Classes="caption muted" Text="{Binding CountText}" AutomationProperties.AccessibilityView="Raw" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ctl:StickyGroupList.HeaderTemplate>
+            <ctl:StickyGroupList.ItemTemplate>
+              <DataTemplate x:DataType="ny:NeedsYouRowViewModel">
+                <nyv:NeedsYouInboxRow />
+              </DataTemplate>
+            </ctl:StickyGroupList.ItemTemplate>
+          </ctl:StickyGroupList>
+          <WrapPanel x:Name="NeedsYouKeyHints" Grid.Row="4" Orientation="Horizontal" ItemSpacing="6" LineSpacing="4" Margin="16,8" AutomationProperties.AccessibilityView="Raw">
+            <Border Classes="kbd"><TextBlock Classes="kbd" Text="J" /></Border>
+            <Border Classes="kbd"><TextBlock Classes="kbd" Text="K" /></Border>
+            <TextBlock Classes="caption subtle" Text="{Binding KeyMoveWord}" VerticalAlignment="Center" />
+            <Border Classes="kbd"><TextBlock Classes="kbd" Text="Enter" /></Border>
+            <TextBlock Classes="caption subtle" Text="{Binding KeyOpenWord}" VerticalAlignment="Center" />
+            <Border Classes="kbd"><TextBlock Classes="kbd" Text="A" /></Border>
+            <TextBlock Classes="caption subtle" Text="{Binding KeyApproveWord}" VerticalAlignment="Center" />
+            <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
+            <TextBlock Classes="caption subtle" Text="{Binding KeySendBackWord}" VerticalAlignment="Center" />
+          </WrapPanel>
+        </Grid>
+      </Border>
+
+      <Grid x:Name="NeedsYouDetail" Grid.Column="1" Classes="detail-canvas" RowDefinitions="*,Auto">
+       <Panel>
+        <TextBlock x:Name="NeedsYouInboxEmpty" Classes="body muted" Text="{Binding EmptyText}" IsVisible="{Binding HasNoRows}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   AutomationProperties.Name="{Binding EmptyText}" />
+        <ScrollViewer x:Name="NeedsYouCardScroll" IsVisible="{Binding HasSelected}" HorizontalScrollBarVisibility="Disabled" ScrollChanged="OnCardScrolled">
+          <Panel>
+          <Border x:Name="NeedsYouCard" Classes="request-card" IsVisible="{Binding ShowsRequest}" AutomationProperties.Name="{Binding CardName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+            <StackPanel>
+              <Grid x:Name="NeedsYouCardHead" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="20,16">
+                <Border Classes="kind-tile large" VerticalAlignment="Top">
+                  <icons:StateIcon Glyph="Profile" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Attention}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock x:Name="NeedsYouCardTitle" Classes="detail-title" Text="{Binding Card.Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  <Button x:Name="NeedsYouCardPr" Classes="row-title" Click="OnPr" IsVisible="{Binding Card.HasPr}" HorizontalAlignment="Left"
+                          AutomationProperties.Name="{Binding Card.OpenPrText}">
+                    <TextBlock Classes="caption muted" Text="{Binding Card.OpenPrText}" AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                  <Button x:Name="NeedsYouCardItem" Classes="row-title" Click="OnItem" IsVisible="{Binding Card.CanOpenItem}" HorizontalAlignment="Left"
+                          AutomationProperties.Name="{Binding OpenItemWord}">
+                    <TextBlock Classes="caption muted" Text="{Binding OpenItemWord}" AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                  <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Reference, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock x:Name="NeedsYouCardReference" Classes="mono subtle" Text="{Binding Reference}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Reference}" />
+                    <Button x:Name="NeedsYouCardCopy" Classes="copy" Click="OnCopyReference" AutomationProperties.Name="{Binding CopyReferenceWord}">
+                      <TextBlock Classes="caption" Text="{Binding CopyWord}" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Right">
+                  <TextBlock x:Name="NeedsYouCardKind" Classes="eyebrow attention" Text="{Binding KindWord}" HorizontalAlignment="Right" AutomationProperties.AccessibilityView="Raw" />
+                  <Button x:Name="NeedsYouMore" Classes="copy" HorizontalAlignment="Right" IsVisible="{Binding Bar.ShowsDrop}" AutomationProperties.Name="{Binding Bar.MoreName}">
+                    <Button.Flyout>
+                      <MenuFlyout Placement="BottomEdgeAlignedRight">
+                        <MenuItem x:Name="NeedsYouDropItem" Click="OnDropItem" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                    <TextBlock Classes="caption" Text="{Binding Bar.MoreWord}" AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                </StackPanel>
+              </Grid>
+              <Border Classes="hairline" />
+              <!-- The row under the card left the list: the card keeps its text and its controls go quiet until the user moves (J, K or a click). -->
+              <TextBlock x:Name="NeedsYouClearedLine" Classes="caption attention" Text="{Binding ClearedText}" IsVisible="{Binding IsCleared}" Margin="20,8"
+                         AutomationProperties.LiveSetting="Polite" />
+              <Border x:Name="NeedsYouWhy" Classes="card-section tinted">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="eyebrow" Text="{Binding WhyCaption}" />
+                  <TextBlock x:Name="NeedsYouWhyText" Classes="body" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Why}" />
+                </StackPanel>
+              </Border>
+              <UniformGrid x:Name="NeedsYouOutcomes" Columns="2" IsVisible="{Binding Bar.HasIfApprove}" Margin="20,8">
+                <Border x:Name="NeedsYouIfApprove" Classes="card-section" IsVisible="{Binding Bar.HasIfApprove}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfApproveCaption}" />
+                    <TextBlock x:Name="NeedsYouIfApproveText" Classes="body" Text="{Binding Bar.IfApprove}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfApprove}" />
+                  </StackPanel>
+                </Border>
+                <Border x:Name="NeedsYouIfSendBack" Classes="card-section" IsVisible="{Binding Bar.HasIfSendBack}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfSendBackCaption}" />
+                    <TextBlock x:Name="NeedsYouIfSendBackText" Classes="body" Text="{Binding Bar.IfSendBack}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfSendBack}" />
+                  </StackPanel>
+                </Border>
+              </UniformGrid>
+              <Border Classes="hairline" />
+              <Border x:Name="NeedsYouMergeCard" Classes="card-section" IsVisible="{Binding Bar.HasMergeCard}">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="eyebrow" Text="{Binding Bar.MergeCard.Heading}" />
+                  <Button x:Name="NeedsYouMergePr" Classes="row-title" HorizontalAlignment="Left" Click="OnOpenPr" IsEnabled="{Binding Bar.MergeCard.CanOpen}"
+                          Content="{Binding Bar.MergeCard.PrText}" AutomationProperties.Name="{Binding Bar.MergeCard.PrName}" />
+                  <ItemsControl x:Name="NeedsYouMergeLines" ItemsSource="{Binding Bar.MergeCard.Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="ny:MergeCardLine">
+                        <Grid ColumnDefinitions="90,*" AutomationProperties.Name="{Binding Name}">
+                          <TextBlock Classes="caption subtle" Text="{Binding Name}" AutomationProperties.AccessibilityView="Raw" />
+                          <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border x:Name="NeedsYouRequest" Classes="card-section" IsVisible="{Binding Question, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="eyebrow" Text="{Binding RequestCaption}" />
+                  <TextBlock x:Name="NeedsYouRequestText" Classes="body" Text="{Binding Question}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Question}" />
+                </StackPanel>
+              </Border>
+              <ItemsControl x:Name="NeedsYouCardDetails" ItemsSource="{Binding Card.PrimaryDetails}" IsVisible="{Binding Card.PrimaryDetails.Count}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ny:SheetDetail">
+                    <Border Classes="card-section">
+                      <StackPanel Spacing="2">
+                        <TextBlock Classes="eyebrow" Text="{Binding Label}" />
+                        <TextBlock Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption subtle" Text="{Binding Hint}" IsVisible="{Binding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border x:Name="NeedsYouCardCliBox" Classes="card-section" IsVisible="{Binding Card.ShowsCliUpFront}">
+                <TextBlock x:Name="NeedsYouCardCli" Classes="mono" Text="{Binding Card.Cli}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Card.Cli}" />
+              </Border>
+              <Expander x:Name="NeedsYouCardMore" Header="{Binding Card.MoreHeading}" IsExpanded="{Binding Card.DetailsOpen, Mode=TwoWay}" IsVisible="{Binding Card.HasMoreDetails}"
+                        Margin="20,0" AutomationProperties.Name="{Binding Card.MoreHeading}">
+                <ItemsControl ItemsSource="{Binding Card.MoreDetails}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="ny:SheetDetail">
+                      <StackPanel Spacing="2" Margin="0,0,0,6">
+                        <TextBlock Classes="caption subtle" Text="{Binding Label}" />
+                        <TextBlock Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Expander>
+              <!-- A failure, and a paused run or settings request the bar has no primary for, keep the row's own controls, as Home's row does: a link to the row still answers it. -->
+              <ItemsControl x:Name="NeedsYouCardControls" ItemsSource="{Binding Card.Controls}" IsEnabled="{Binding !IsCleared}" IsVisible="{Binding Bar.ShowsRowControls}" Margin="20,8">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ny:NeedsYouActionControl">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Button Classes="command-control" Classes.primary="{Binding IsPrimary}" IsEnabled="{Binding IsEnabled}" Content="{Binding Action.Label}"
+                              Click="OnAction" ToolTip.Tip="{Binding Tooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.HelpText="{Binding Tooltip}" AutomationProperties.Name="{Binding Name}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <!-- A paused run's answer form (F3 needs-you spec §3, slice 4): three options and one button; each option is one click. -->
+              <Border x:Name="NeedsYouAnswer" Classes="card-section" IsVisible="{Binding ShowsAnswer}">
+                <StackPanel Spacing="8" DataContext="{Binding Answer}" x:DataType="ny:PausedAnswerViewModel">
+                  <TextBlock Classes="eyebrow" Text="{Binding Caption}" />
+                  <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6">
+                    <Button x:Name="NeedsYouAnswerMoreTries" Classes="bar-button" Classes.primary="{Binding MoreTriesSelected}" IsVisible="{Binding ShowsMoreTries}" Click="OnAnswerMoreTries" AutomationProperties.Name="{Binding MoreTriesWord}">
+                      <TextBlock Text="{Binding MoreTriesWord}" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                    <Button x:Name="NeedsYouAnswerHint" Classes="bar-button" Classes.primary="{Binding HintSelected}" Click="OnAnswerHint" AutomationProperties.Name="{Binding HintWord}">
+                      <TextBlock Text="{Binding HintWord}" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                    <Button x:Name="NeedsYouAnswerStop" Classes="bar-button" Classes.primary="{Binding StopSelected}" Click="OnAnswerStop" AutomationProperties.Name="{Binding StopWord}">
+                      <TextBlock Text="{Binding StopWord}" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                  </WrapPanel>
+                  <TextBlock Classes="caption muted" Text="{Binding MoreTriesHelp}" IsVisible="{Binding MoreTriesSelected}" TextWrapping="Wrap" />
+                  <TextBlock Classes="caption muted" Text="{Binding HintHelp}" IsVisible="{Binding HintSelected}" TextWrapping="Wrap" />
+                  <TextBlock Classes="caption muted" Text="{Binding StopHelp}" IsVisible="{Binding StopSelected}" TextWrapping="Wrap" />
+                  <StackPanel x:Name="NeedsYouAnswerStepper" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowsStepper}">
+                    <TextBlock Classes="body" Text="{Binding ExtraTriesCaption}" VerticalAlignment="Center" />
+                    <Button x:Name="NeedsYouAnswerFewer" Classes="bar-button" Click="OnAnswerFewer" AutomationProperties.Name="{Binding FewerName}"><TextBlock Text="-" AutomationProperties.AccessibilityView="Raw" /></Button>
+                    <TextBlock x:Name="NeedsYouAnswerTries" Classes="mono" Text="{Binding ExtraTries}" VerticalAlignment="Center" />
+                    <Button x:Name="NeedsYouAnswerMore" Classes="bar-button" Click="OnAnswerMore" AutomationProperties.Name="{Binding MoreName}"><TextBlock Text="+" AutomationProperties.AccessibilityView="Raw" /></Button>
+                  </StackPanel>
+                  <TextBox x:Name="NeedsYouAnswerHintBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="120" Text="{Binding HintText, Mode=TwoWay}" PlaceholderText="{Binding HintPlaceholder}"
+                           IsVisible="{Binding ShowsHintBox}" AutomationProperties.Name="{Binding HintPlaceholder}" />
+                  <Button x:Name="NeedsYouAnswerSend" Classes="bar-button primary" HorizontalAlignment="Left" IsEnabled="{Binding CanSend}" Click="OnAnswerSend" AutomationProperties.Name="{Binding SendWord}">
+                    <TextBlock Text="{Binding SendWord}" AutomationProperties.AccessibilityView="Raw" />
+                  </Button>
+                  <TextBlock x:Name="NeedsYouAnswerRefusal" Classes="caption attention" Text="{Binding Refusal}" IsVisible="{Binding HasRefusal}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                  <TextBlock x:Name="NeedsYouAnswerLine" Classes="caption success" Text="{Binding Line}" IsVisible="{Binding HasLine}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                </StackPanel>
+              </Border>
+              <!-- A taken-over run (F3 needs-you spec §3, slice 4): the badge, the clock, the hand-back box, the 2-hour nudge and Cancel run. -->
+              <Border x:Name="NeedsYouTakeover" Classes="card-section" IsVisible="{Binding ShowsTakeover}">
+                <StackPanel Spacing="8" DataContext="{Binding Takeover}" x:DataType="ny:TakeoverViewModel">
+                  <TextBlock x:Name="NeedsYouTakeoverBadge" Classes="eyebrow attention" Text="{Binding Badge}" />
+                  <TextBlock x:Name="NeedsYouTakeoverAt" Classes="caption muted" Text="{Binding TookOverLine}" IsVisible="{Binding HasTookOverLine}" />
+                  <TextBlock x:Name="NeedsYouTakeoverClock" Classes="caption mono" Text="{Binding ClockText}" AutomationProperties.LiveSetting="Polite" />
+                  <TextBlock x:Name="NeedsYouTakeoverBox" Classes="body" Text="{Binding HandBackBox}" TextWrapping="Wrap" />
+                  <Border x:Name="NeedsYouNudge" Classes="card-section tinted" IsVisible="{Binding NudgeVisible}">
+                    <StackPanel Spacing="6">
+                      <TextBlock Classes="body-strong" Text="{Binding NudgeTitle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                      <TextBlock Classes="caption muted" Text="{Binding NudgeBody}" TextWrapping="Wrap" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="NeedsYouNudgeHandBack" Classes="bar-button primary" Click="OnHandBack" AutomationProperties.Name="{Binding HandBackWord}"><TextBlock Text="{Binding HandBackWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                        <Button x:Name="NeedsYouNudgeNotYet" Classes="bar-button" Click="OnNotYet" AutomationProperties.Name="{Binding NotYetWord}"><TextBlock Text="{Binding NotYetWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="NeedsYouHandBack" Classes="bar-button primary" IsEnabled="{Binding IsTakenOver}" Click="OnHandBack" AutomationProperties.Name="{Binding HandBackWord}"><TextBlock Text="{Binding HandBackWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                    <Button x:Name="NeedsYouCancelRun" Classes="bar-button" IsVisible="{Binding !IsAskingCancel}" Click="OnCancelRun" AutomationProperties.Name="{Binding CancelWord}" ToolTip.Tip="{Binding CancelHelp}"><TextBlock Text="{Binding CancelWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                  </StackPanel>
+                  <StackPanel x:Name="NeedsYouCancelAsk" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAskingCancel}">
+                    <TextBlock Classes="body" Text="{Binding CancelAsk}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                    <Button x:Name="NeedsYouCancelConfirm" Classes="bar-button asking" Click="OnCancelConfirm" AutomationProperties.Name="{Binding ConfirmCancelWord}"><TextBlock Text="{Binding ConfirmCancelWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                    <Button x:Name="NeedsYouCancelBackOut" Classes="bar-button" Click="OnCancelBackOut" AutomationProperties.Name="{Binding BackOutWord}"><TextBlock Text="{Binding BackOutWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                  </StackPanel>
+                  <TextBlock x:Name="NeedsYouTakeoverRefusal" Classes="caption attention" Text="{Binding Refusal}" IsVisible="{Binding HasRefusal}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                </StackPanel>
+              </Border>
+              <Border x:Name="NeedsYouFooter" Classes="card-footer" AutomationProperties.Name="{Binding FooterName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <icons:StateIcon Glyph="Stale" Foreground="{DynamicResource Brush.Attention}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="NeedsYouFooterLeft" Classes="caption attention" Text="{Binding FooterLeft}" AutomationProperties.AccessibilityView="Raw" />
+                  </StackPanel>
+                  <TextBlock x:Name="NeedsYouFooterRight" Grid.Column="1" Classes="caption attention mono" Text="{Binding FooterRight}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </Border>
+          <Border x:Name="NeedsYouDone" Classes="request-card" IsVisible="{Binding IsDone}" AutomationProperties.Name="{Binding Bar.DoneTitle}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+            <StackPanel Spacing="4" Margin="20,24">
+              <TextBlock x:Name="NeedsYouDoneTitle" Classes="detail-title" Text="{Binding Bar.DoneTitle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+              <TextBlock x:Name="NeedsYouDoneBody" Classes="body muted" Text="{Binding Bar.DoneBody}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          </Panel>
+        </ScrollViewer>
+        <!-- The quiet toast after a hand back (5 s). -->
+        <Border x:Name="NeedsYouToast" Classes="request-card" IsVisible="{Binding Takeover.ToastVisible}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="300" Margin="16" AutomationProperties.LiveSetting="Polite">
+          <StackPanel Spacing="2" Margin="14,10">
+            <TextBlock Classes="body-strong" Text="{Binding Takeover.ToastTitle}" />
+            <TextBlock Classes="caption muted" Text="{Binding Takeover.ToastBody}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+       </Panel>
+       <!-- The action bar (F3 needs-you spec §2, §5): fixed under the card, outside it, always in view. A and D reach the same methods as its buttons. -->
+       <Border x:Name="NeedsYouActionBar" Grid.Row="1" Classes="action-bar" IsVisible="{Binding Bar.HasBar}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group" AutomationProperties.Name="{Binding Bar.BarName}">
+        <StackPanel MaxWidth="760" Spacing="8">
+          <!-- The ask step (engine 817): every question with its answer field, options as choices; Send answers waits for them all. -->
+          <StackPanel x:Name="NeedsYouQuestions" Spacing="8" IsVisible="{Binding Bar.HasQuestions}">
+            <TextBlock Classes="body-strong" Text="{Binding Bar.QuestionsHeading}" />
+            <ItemsControl x:Name="NeedsYouQuestionList" ItemsSource="{Binding Bar.Questions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:DeskQuestionViewModel">
+                  <StackPanel Spacing="4" Margin="0,0,0,8">
+                    <TextBlock x:Name="NeedsYouQuestionPrompt" Classes="body" Text="{Binding Prompt}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption subtle" Text="{Binding Context}" IsVisible="{Binding HasContext}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding HasOptions}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ny:DeskQuestionOptionViewModel">
+                          <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Text}" Click="OnChooseOption" AutomationProperties.Name="{Binding Text}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox x:Name="NeedsYouQuestionAnswer" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40" MaxHeight="96" Text="{Binding Answer, Mode=TwoWay}"
+                             PlaceholderText="{Binding AnswerPlaceholder}" AutomationProperties.Name="{Binding AnswerName}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NeedsYouQuestionsHint" Classes="caption muted" Text="{Binding Bar.QuestionsHint}" />
+          </StackPanel>
+          <!-- What the step asks the person to read (engine q65): one button each, the agent session behind it, and why the step stands as it does. -->
+          <StackPanel x:Name="NeedsYouReviewRow" Spacing="4" IsVisible="{Binding Bar.HasReviews}">
+            <ItemsControl x:Name="NeedsYouReviews" ItemsSource="{Binding Bar.Reviews}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="comps:DeskReviewViewModel">
+                  <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <TextBlock x:Name="NeedsYouStepReason" Classes="caption muted" Text="{Binding Bar.ReasonLine}" IsVisible="{Binding Bar.HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.ReasonLine}" />
+          <Button x:Name="NeedsYouSession" Classes="bar-button" HorizontalAlignment="Left" Content="{Binding Bar.SessionLinkText}" IsVisible="{Binding Bar.HasSession}" Click="OnSession"
+                  AutomationProperties.Name="{Binding Bar.SessionLinkName}" />
+          <!-- The scoping interview (q65 d): each question a choice among its answers with their reasons, Other with a box, or Skip; Send answers waits for every pick, Done asking stops with what is answered. -->
+          <StackPanel x:Name="NeedsYouScoping" Spacing="8" IsVisible="{Binding Bar.HasScoping}">
+            <TextBlock Classes="body-strong" Text="{Binding Bar.QuestionsHeading}" />
+            <ItemsControl x:Name="NeedsYouScopingList" ItemsSource="{Binding Bar.Scoping}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:ScopingQuestionViewModel">
+                  <StackPanel Spacing="4" Margin="0,0,0,10">
+                    <TextBlock Classes="caption subtle" Text="{Binding Dimension}" IsVisible="{Binding HasDimension}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="NeedsYouScopingPrompt" Classes="body" Text="{Binding Prompt}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Choices}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="ny:ScopingChoiceViewModel">
+                          <Button x:Name="NeedsYouScopingChoice" Classes="segment" Classes.chosen="{Binding IsChosen}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                                  Click="OnScopingChoice" AutomationProperties.Name="{Binding Name}">
+                            <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Classes="body" Text="{Binding Text}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption subtle" Text="{Binding RecommendedWord}" IsVisible="{Binding IsRecommended}" VerticalAlignment="Center" />
+                              </StackPanel>
+                              <TextBlock Classes="caption muted" Text="{Binding Rationale}" IsVisible="{Binding HasRationale}" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox x:Name="NeedsYouScopingOther" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40" MaxHeight="96" Text="{Binding OtherText, Mode=TwoWay}" IsVisible="{Binding IsOther}"
+                             PlaceholderText="{Binding OtherPlaceholder}" AutomationProperties.Name="{Binding OtherName}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NeedsYouScopingHint" Classes="caption muted" Text="{Binding Bar.ScopingHint}" />
+            <Button x:Name="NeedsYouDoneAsking" Classes="bar-button" HorizontalAlignment="Left" Content="{Binding Bar.DoneAskingWord}" IsEnabled="{Binding Bar.DoneAskingEnabled}" Click="OnDoneAsking"
+                    AutomationProperties.Name="{Binding Bar.DoneAskingWord}" />
+          </StackPanel>
+          <WrapPanel x:Name="NeedsYouBarButtons" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" IsVisible="{Binding ShowsBarButtons}">
+            <Button x:Name="NeedsYouApprove" Classes="bar-button primary" Classes.asking="{Binding Bar.IsAsking}" IsVisible="{Binding Bar.ShowsPrimary}" IsEnabled="{Binding Bar.PrimaryEnabled}"
+                    Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
+              <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                <TextBlock Text="{Binding Bar.ApproveWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouApproveSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.ApproveSuggested}" VerticalAlignment="Center" />
+                <Border Classes="kbd"><TextBlock Classes="kbd" Text="A" /></Border>
+              </StackPanel>
+            </Button>
+            <Button x:Name="NeedsYouSendBack" Classes="bar-button" IsVisible="{Binding Bar.ShowsSendBack}" IsEnabled="{Binding Bar.SendBackEnabled}" Click="OnSendBack"
+                    ToolTip.Tip="{Binding Bar.SendBackTooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding Bar.SendBackName}" AutomationProperties.HelpText="{Binding Bar.SendBackTooltip}">
+              <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                <TextBlock Text="{Binding Bar.SendBackWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouSendBackSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.SendBackSuggested}" VerticalAlignment="Center" />
+                <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
+              </StackPanel>
+            </Button>
+            <!-- One button per recipe verb the instance accepts now (stop 3); the merge asks first, in the Destructive style. -->
+            <ItemsControl x:Name="NeedsYouVerbs" ItemsSource="{Binding Bar.Verbs}" IsVisible="{Binding Bar.HasVerbs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:DeskVerbViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="NeedsYouVerb" Classes="bar-button" Classes.destructive="{Binding IsDestructive}" IsVisible="{Binding ShowsButton}" IsEnabled="{Binding IsEnabled}"
+                            Click="OnVerb" AutomationProperties.Name="{Binding Name}">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                    <StackPanel x:Name="NeedsYouVerbAsk" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConfirming}">
+                      <TextBlock x:Name="NeedsYouVerbQuestion" Classes="body" Text="{Binding Question}" VerticalAlignment="Center" />
+                      <Button x:Name="NeedsYouVerbConfirm" Classes="bar-button destructive" Click="OnVerbConfirm" IsEnabled="{Binding IsEnabled}" Content="{Binding ConfirmLabel}" />
+                      <Button x:Name="NeedsYouVerbKeep" Classes="bar-button" Click="OnVerbKeep" Content="{Binding KeepLabel}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- A feature that is not built yet: a dashed chip, not a control (no focus, no key). -->
+            <Panel x:Name="NeedsYouEditChip" IsVisible="{Binding Bar.ShowsEditChip}" Focusable="False" AutomationProperties.AccessibilityView="Content">
+              <Rectangle Classes="chip-dash" RadiusX="6" RadiusY="6" />
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="10,4">
+                <TextBlock Classes="caption muted" Text="{Binding Bar.EditWord}" VerticalAlignment="Center" />
+                <TextBlock Classes="caption subtle" Text="{Binding Bar.NotAvailableWord}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Panel>
+          </WrapPanel>
+          <StackPanel x:Name="NeedsYouReasonBox" Spacing="6" IsVisible="{Binding Bar.IsSendingBack}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="body-strong" Text="{Binding Bar.ReasonLabel}" />
+              <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Bar.ReasonRequired}" />
+            </Grid>
+            <TextBox x:Name="NeedsYouReason" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="120" Text="{Binding Bar.ReasonText, Mode=TwoWay}" PlaceholderText="{Binding Bar.ReasonPlaceholder}"
+                     AutomationProperties.Name="{Binding Bar.ReasonName}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="NeedsYouSend" Classes="bar-button primary" IsEnabled="{Binding Bar.CanSend}" Click="OnSend" AutomationProperties.Name="{Binding Bar.SendWord}">
+                <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                  <TextBlock Text="{Binding Bar.SendWord}" VerticalAlignment="Center" />
+                  <Border Classes="kbd"><TextBlock Classes="kbd" Text="Ctrl" /></Border>
+                  <Border Classes="kbd"><TextBlock Classes="kbd" Text="Enter" /></Border>
+                </StackPanel>
+              </Button>
+              <Button x:Name="NeedsYouCancel" Classes="bar-button" Click="OnCancel" AutomationProperties.Name="{Binding Bar.CancelWord}">
+                <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                  <TextBlock Text="{Binding Bar.CancelWord}" VerticalAlignment="Center" />
+                  <Border Classes="kbd"><TextBlock Classes="kbd" Text="Esc" /></Border>
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel x:Name="NeedsYouDropBox" Orientation="Horizontal" Spacing="8" IsVisible="{Binding Bar.IsConfirmingDrop}">
+            <TextBlock Classes="body" Text="{Binding Bar.DropAsk}" VerticalAlignment="Center" />
+            <Button x:Name="NeedsYouDropConfirm" Classes="bar-button asking" Click="OnDropConfirm" AutomationProperties.Name="{Binding Bar.DropConfirmWord}">
+              <TextBlock Text="{Binding Bar.DropConfirmWord}" AutomationProperties.AccessibilityView="Raw" />
+            </Button>
+            <Button x:Name="NeedsYouDropCancel" Classes="bar-button" Click="OnCancel" AutomationProperties.Name="{Binding Bar.CancelWord}">
+              <TextBlock Text="{Binding Bar.CancelWord}" AutomationProperties.AccessibilityView="Raw" />
+            </Button>
+          </StackPanel>
+          <TextBlock x:Name="NeedsYouBarRefusal" Classes="caption attention" Text="{Binding Bar.Refusal}" IsVisible="{Binding Bar.HasRefusal}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+          <TextBlock x:Name="NeedsYouBarHint" Classes="caption muted" Classes.attention="{Binding Bar.HintIsAttention}" Text="{Binding Bar.Hint}"
+                     IsVisible="{Binding Bar.HasHint}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+        </StackPanel>
+       </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

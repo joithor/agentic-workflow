@@ -38,7 +38,7 @@ internal static class EngineFixture
 
     /// <summary>A context with the recipe approved and no runtimes but those given.</summary>
     public static DecisionContext Context(params string[] runtimes) => new(
-        ApprovalCheck.Holds, Catalog, runtimes.Select(BlockId.From).ToHashSet(), new InMemoryChildRecipes().With(_step.Value));
+        ApprovalCheck.Holds, Catalog, runtimes.ToDictionary(BlockId.From, static _ => StepRuntime.Agent), new InMemoryChildRecipes().With(_step.Value));
 
     /// <summary>An instance of <paramref name="recipe"/> in <paramref name="state"/> at entry <paramref name="entry"/>, its Step on run '{entry}.{run}'.</summary>
     public static WorkflowInstance At(Recipe recipe, string state, int entry = 1, int run = 1)

@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "nodes": [],
+  "missing": [
+    "feature:tabs.tab-manager",
+    "feature:tabs.tab-groups",
+    "feature:nope.x"
+  ],
+  "mapVersion": "v2",
+  "depth": 0,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "bands": {
+    "intent": {
+      "records": [],
+      "decisions": [],
+      "counts": {
+        "records": 0,
+        "decisions": 0,
+        "orphaned": null
+      }
+    },
+    "product": {
+      "own": [],
+      "neighbors": [],
+      "affects": [],
+      "counts": {
+        "own": 0,
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 0
+      },
+      "edges": []
+    },
+    "code": {
+      "files": [],
+      "symbols": {
+        "state": "unavailable",
+        "reason": "index not built",
+        "items": []
+      },
+      "counts": {
+        "files": 0,
+        "symbols": 0,
+        "featuresWithNoCode": 0
+      }
+    }
+  },
+  "edges": [],
+  "conflicts": [],
+  "coverage": {
+    "scope": 0,
+    "intent": {
+      "covered": 0,
+      "of": 0
+    },
+    "product": {
+      "confirmed": 0,
+      "of": 0
+    },
+    "code": {
+      "implemented": 0,
+      "of": 0,
+      "level": "file",
+      "suggested": 0
+    },
+    "gaps": [],
+    "map": {
+      "paths": [],
+      "truncated": false,
+      "files": 0,
+      "unmapped": 0,
+      "suggested": 0,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    }
+  },
+  "searched": {
+    "anchors": [],
+    "mapVersion": "v2",
+    "depth": 0,
+    "hops": [],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": true
+      },
+      "product": {
+        "empty": true
+      },
+      "code": {
+        "empty": true
+      }
+    }
+  },
+  "degraded": [],
+  "cites": {}
+}

@@ -8,7 +8,8 @@
     "id": "workflow.incident-response",
     "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
     "version": 4,
-    "urgency": "incident"
+    "urgency": "incident",
+    "displayName": "Incident response"
   },
   "state": "mitigate",
   "since": "2026-10-12T11:02:00.0000000Z",
@@ -155,7 +156,8 @@
           "confirm": "Cancel ITM-01JK1/incident-response/1? 1 running step stops; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JK1/incident-response/1  workflow.incident-response@5d90e1b20000  v4  mitigate  since 11:02 (1h 24m)\n  next      Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release.\n  timeout   escalates in 2h 36m (mitigate)\n  commands  takeover, cancel\n"
+      "text": "ITM-01JK1/incident-response/1  workflow.incident-response@5d90e1b20000  v4  mitigate  since 11:02 (1h 24m)\n  next      Mitigate the outage in round 1/3: ITM-01JG2 rolls back the last release.\n  timeout   escalates in 2h 36m (mitigate)\n  commands  takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -257,5 +259,9 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "stepRuns": [],
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null,
+  "allowedCommands": []
 }

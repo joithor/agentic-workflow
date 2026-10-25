@@ -1,20 +1,27 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Trust;
+using Aw.Context.Core.WholeMap;
 using Aw.Context.Features;
+using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.History;
 using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
@@ -58,7 +65,7 @@ internal sealed class MapWorld : IDisposable
         ["README.md"] = "# Split panes",
     };
 
-    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null)
+    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null, ICodeSearch? codeSearch = null, IFileHistory? history = null, ICodeSymbolSource? symbols = null, WholeMapRules? wholeMapRules = null)
     {
         Sources = new FixedSourceCatalog(intent is null ? [Docs] : [Docs, intent]);
         Exports = new FakeExportStore(Clock);
@@ -76,13 +83,19 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
             .AddSingleton(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
+            .AddSingleton<IDefaultBranch>(DefaultBranch)
+            .AddSingleton(codeSearch ?? new FakeCodeSearch(Repos[0], Head, BuildFiles))
+            .AddSingleton(symbols ?? new NoCodeSymbolSource())
             .AddSingleton<IIntentStore>(Intents)
+            .AddSingleton(history ?? new FakeFileHistory(Repos[0], new HistoryWorld(Head, [])))
             .AddSingleton<IModelPort>(Model)
             .AddSingleton<IClusterSource>(Clusters)
             .AddSingleton<ILabeler>(Labeler)
             .AddSingleton<IHeavyJobLock>(HeavyLock)
             .AddSingleton<IReviewFileStore>(ReviewFiles)
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
+            .AddSingleton(wholeMapRules ?? WholeMapRules.Default)
+            .AddSingleton<IMapSearchIndexFactory>(new Context.Infrastructure.Search.SqliteMapSearchIndexFactory())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();
@@ -91,6 +104,8 @@ internal sealed class MapWorld : IDisposable
     public FakeTimeProvider Clock { get; } = new(DateTimeOffset.Parse("2026-08-01T12:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
     public FakeGraphStore Store { get; } = new();
+
+    public FakeDefaultBranch DefaultBranch { get; } = new();
 
     public FakeIntentStore Intents { get; } = new();
 
@@ -107,6 +122,12 @@ internal sealed class MapWorld : IDisposable
     public FakeReviewFileStore ReviewFiles { get; } = new();
 
     public FakeMapFileReader Reader { get; } = new();
+
+    /// <summary>How many whole-map answers were built rather than served from the cache.</summary>
+    internal int WholeMapBuilds => _scope.ServiceProvider.GetRequiredService<Features.GetWholeMap.WholeMapCache>().Builds;
+
+    /// <summary>How many search indexes were built rather than served from the cache.</summary>
+    internal int SearchBuilds => _scope.ServiceProvider.GetRequiredService<Features.SearchMap.MapSearchCache>().Builds;
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 

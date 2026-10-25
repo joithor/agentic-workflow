@@ -74,8 +74,7 @@
         "records": 1,
         "decisions": 2,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -86,7 +85,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-groups.group-selected",
@@ -95,7 +95,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-manager.restore-layout",
@@ -104,7 +105,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "feature:tabs.tab-groups",
@@ -113,7 +115,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/group-tabs",
@@ -122,7 +125,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/switch-tab",
@@ -131,14 +135,17 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
       "affects": [],
       "counts": {
         "own": 6,
-        "affects": 0
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 5
       },
       "edges": [
         {
@@ -186,8 +193,7 @@
           "confirmed": true,
           "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [
@@ -204,7 +210,8 @@
           "linkId": "edge:402b8bed42f6611c",
           "label": "src/tabs/TabGroups.ts",
           "kind": "code",
-          "trust": "untrusted"
+          "trust": "untrusted",
+          "repo": "aw-split-panes"
         },
         {
           "path": "src/tabs/TabManager.ts",
@@ -220,20 +227,21 @@
           "linkId": null,
           "label": "src/tabs/TabManager.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {
         "state": "unavailable",
         "reason": "index not built",
-        "items": []
+        "items": [],
+        "code": "SND-CODEIDX-013"
       },
       "counts": {
         "files": 2,
         "symbols": 0,
         "featuresWithNoCode": 1
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [

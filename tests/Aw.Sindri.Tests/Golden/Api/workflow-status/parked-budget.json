@@ -2,19 +2,19 @@
   "header": {
     "address": "ITM-01JH5/step/1",
     "recipe": "workflow.step",
-    "hash12": "1c1173a162a7",
-    "version": 2,
+    "hash12": "f511ce1fc529",
+    "version": 4,
     "state": "parked",
     "detail": "budget",
     "since": "2026-10-12T11:54:00.0000000Z",
     "ageSeconds": 1920
   },
-  "next": "Parked (budget): produce used 200k of 200k tokens.",
+  "next": "Parked (budget): produce used 5M of 5M tokens.",
   "answer": {
     "kind": "grantTokens",
     "actionId": "ApplyCommand:answer-grant-tokens",
     "class": "protected",
-    "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
+    "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 5M",
     "atTerminal": true
   },
   "child": null,
@@ -23,11 +23,11 @@
   "timeout": null,
   "budget": {
     "scope": "state",
-    "used": 200000,
-    "limit": 200000,
+    "used": 5000000,
+    "limit": 5000000,
     "instance": {
-      "used": 200000,
-      "limit": 400000
+      "used": 5000000,
+      "limit": null
     }
   },
   "paused": null,
@@ -36,7 +36,7 @@
       "verb": "answer",
       "actionId": "ApplyCommand:answer-grant-tokens",
       "class": "protected",
-      "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k",
+      "cli": "sindri workflow answer ITM-01JH5/step/1 --grant-tokens 5M",
       "confirm": null
     },
     {
@@ -54,5 +54,6 @@
       "confirm": "Cancel ITM-01JH5/step/1? 0 running steps stop; 0 children are cancelled."
     }
   ],
-  "text": "ITM-01JH5/step/1  workflow.step@1c1173a162a7  v2  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 200k of 200k tokens.\n  budget    tokens 200k / 200k (state), 200k / 400k (instance)\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 100k     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n"
+  "text": "ITM-01JH5/step/1  workflow.step@f511ce1fc529  v4  parked: budget  since 11:54 (32m)\n  next      Parked (budget): produce used 5M of 5M tokens.\n  budget    tokens 5M / 5M (state), 5M used (instance)\n  answer    sindri workflow answer ITM-01JH5/step/1 --grant-tokens 5M     (at a terminal; once per park)\n  commands  answer, takeover, cancel\n",
+  "injection": []
 }

@@ -89,4 +89,13 @@ check "entry() uses \$HOOKS_DIR path when CLAUDE_HOOKS_DIR is set" \
   "$CLAUDE_HOOKS_DIR/probe-log.sh Stop # aw:probe"
 bash "$ROOT/scripts/probe.sh" off >/dev/null
 
+# --- the session collector's events (spec 5.2, CI-6): the probe records them so a payload change is visible ---
+new_env
+bash "$ROOT/scripts/probe.sh" on >/dev/null
+for e in PermissionRequest Notification SessionStart SessionEnd; do
+  check "claude probe hooks $e" "$(jq -r --arg e "$e" '.hooks[$e][0].hooks[0].command' "$CLAUDE_SETTINGS_FILE")" "$CLAUDE_HOOKS_DIR/probe-log.sh $e # aw:probe"
+done
+bash "$ROOT/scripts/probe.sh" off >/dev/null
+check "probe off removes them" "$(jq -r '[.hooks // {} | to_entries[] | select(.key | IN("PermissionRequest","Notification","SessionStart","SessionEnd"))] | length' "$CLAUDE_SETTINGS_FILE")" "0"
+
 exit $fail

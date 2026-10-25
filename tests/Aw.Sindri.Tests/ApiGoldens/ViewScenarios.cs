@@ -5,11 +5,14 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.CheckProfile;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
@@ -28,8 +31,8 @@ internal static class ViewScenarios
     [
         ("services", "unapproved"), ("services", "approved"), ("services", "ran-ok"), ("services", "ran-failed"),
         ("services", "rebuilding"), ("services", "stalled"), ("services", "after-not-reached"), ("services", "after-malformed"),
-        ("profile", "unapproved"), ("profile", "approved"), ("profile", "changed"), ("profile", "stalled"),
-        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-session"), ("views-rebuild", "refused-origin"),
+        ("profile", "unapproved"), ("profile", "approved"), ("profile", "changed"), ("profile", "stalled"), ("profile", "repo-added"),
+        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-origin"),
         ("status", "views-stalled"), ("status", "views-rebuilding"), ("status", "service-failed"),
     ];
 
@@ -55,9 +58,9 @@ internal static class ViewScenarios
             ("profile", "approved") => await Approved(host, "/sindri/profile", ct),
             ("profile", "changed") => await Changed(host, ct),
             ("profile", "stalled") => await Stalled(host, "/sindri/profile", ct),
+            ("profile", "repo-added") => await RepoAdded(host, ct),
             ("views-rebuild", "accepted") => await Ask(host, Post("/sindri/views/rebuild", json: null, human)),
             ("views-rebuild", "accepted-while-stalled") => await StalledThen(host, Post("/sindri/views/rebuild", json: null, human), ct),
-            ("views-rebuild", "refused-session") => await Ask(host, Post("/sindri/views/rebuild", json: null, Session)),
             ("views-rebuild", "refused-origin") => await Ask(host, Post("/sindri/views/rebuild", json: null, [.. human, ("Origin", "http://localhost:3000")])),
             ("status", "views-stalled") => await Stalled(host, "/sindri/status", ct),
             ("status", "views-rebuilding") => await Rebuilding(host, "/sindri/status", ct),
@@ -66,7 +69,6 @@ internal static class ViewScenarios
         };
     }
 
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     private static async Task<string> Ask(GoldenHost host, HttpRequestMessage request) => (await host.Http.Ask(request)).Body;
 
@@ -100,10 +102,23 @@ internal static class ViewScenarios
         return await Read(host, "/sindri/profile");
     }
 
-    /// <summary>Edits the live profile (a second service on top of <paramref name="baseYaml"/>), checks it, and lets the views catch up: the approved profile has drifted.</summary>
-    internal static async Task Drift(GoldenHost host, string baseYaml, CancellationToken ct)
+    /// <summary>A host whose git (a fake) knows /work/demo: 1234 tracked files, 12.6 MB.</summary>
+    public static Task<GoldenHost> StartWithGit(CancellationToken ct) =>
+        GoldenHost.Start(temporary: true, ct, extra: services => services.Replace(ServiceDescriptor.Singleton<IRepoInspector>(new FakeRepoInspector().Has("/work/demo").Weighs("/work/demo", files: 1234, bytes: 13_212_057))));
+
+    private static async Task<string> RepoAdded(GoldenHost host, CancellationToken ct)
     {
-        await File.WriteAllTextAsync(Path.Combine(host.Home, "profile", "profile.yaml"), baseYaml + "  scorer: { every: 1h }\n", ct);
+        await Approve(host, ct);
+        await Check(host, GoldenHost.ProfileYaml + "repos:\n  - name: demo\n    path: /work/demo\n", ct);
+        return await Read(host, "/sindri/profile");
+    }
+
+    /// <summary>Edits the live profile (a second service on top of <paramref name="baseYaml"/>), checks it, and lets the views catch up: the approved profile has drifted.</summary>
+    internal static Task Drift(GoldenHost host, string baseYaml, CancellationToken ct) => Check(host, baseYaml + "  scorer: { every: 1h }\n", ct);
+
+    private static async Task Check(GoldenHost host, string yaml, CancellationToken ct)
+    {
+        await File.WriteAllTextAsync(Path.Combine(host.Home, "profile", "profile.yaml"), yaml, ct);
         await using (var scope = Service(host, out var grant))
         {
             _ = (await scope.ServiceProvider.GetRequiredService<IService<CheckProfileRequest, CheckProfileResponse>>().Handle(new CheckProfileRequest(grant), ct)).Value;

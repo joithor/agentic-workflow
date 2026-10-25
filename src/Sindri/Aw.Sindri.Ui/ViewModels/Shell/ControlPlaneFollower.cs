@@ -163,6 +163,7 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
         var refresher = RefreshOnSignal(url, dirty, stop);
         var watcher = WatchRecord(stop);
         var pinger = PingWhileFollowing(url, stop);
+        var instances = WatchInstances(url, stop);
 #pragma warning restore CA2025
         try
         {
@@ -181,7 +182,7 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
         finally
         {
             await stop.CancelAsync().ConfigureAwait(true);
-            await Task.WhenAll(refresher, watcher, pinger).ConfigureAwait(true);
+            await Task.WhenAll(refresher, watcher, pinger, instances).ConfigureAwait(true);
         }
 
         return events;

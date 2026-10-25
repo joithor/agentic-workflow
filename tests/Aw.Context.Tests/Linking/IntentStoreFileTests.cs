@@ -46,13 +46,37 @@ public sealed class IntentStoreFileTests : IDisposable
 
         var all = await runner.Migrate(ContextDatabase.Migrations, TestContext.Current.CancellationToken);
 
-        Assert.Equal(6, all.Value.ToVersion);
+        Assert.Equal(ContextDatabase.Migrations.Count, all.Value.ToVersion);
         Assert.Equal("0006", ContextDatabase.Migrations[5].Version.ToString("D4", System.Globalization.CultureInfo.InvariantCulture));
         await using var connection = new SqliteConnection("Data Source=" + _settings.DatabasePath + ";Mode=ReadOnly");
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using var tables = connection.CreateCommand();
         tables.CommandText = "SELECT group_concat(name) FROM (SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'intent_%' ORDER BY name)";
         Assert.Equal("intent_conflict,intent_decision,intent_edge,intent_link,intent_record", await tables.ExecuteScalarAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Migration_0007_adds_created_at_over_a_0006_database_holding_rows_and_those_rows_read_null()
+    {
+        var factory = new SqliteConnectionFactory(new SqliteOptions(_settings.DatabasePath));
+        _ = Directory.CreateDirectory(_settings.Home);
+        var runner = new MigrationRunner(factory, new FakeTimeProvider());
+        var six = await runner.Migrate([.. ContextDatabase.Migrations.Take(6)], TestContext.Current.CancellationToken);
+        Assert.Equal(6, six.Value.ToVersion);
+        await using (var connection = new SqliteConnection("Data Source=" + _settings.DatabasePath))
+        {
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+            await using var insert = connection.CreateCommand();
+            insert.CommandText = "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extraction_state) VALUES ('" + _r103.Value + "', 'onyx', '2026-07-23T09:30:00Z', 'Old row', 'SPL-103', '2026-10-12T09:00:00.0000000Z', 'done')";
+            _ = await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var seven = await runner.Migrate([.. ContextDatabase.Migrations.Take(7)], TestContext.Current.CancellationToken);
+
+        Assert.Equal(7, seven.Value.ToVersion);
+        Assert.Equal("0007", ContextDatabase.Migrations[6].Version.ToString("D4", System.Globalization.CultureInfo.InvariantCulture));
+        var record = Assert.Single((await new SqliteIntentStore(_database).Layer(TestContext.Current.CancellationToken)).Value.Records);
+        Assert.Equal(("Old row", null), (record.Title, record.CreatedAt));
     }
 
     [Fact, Trait("Lane", "integration")]

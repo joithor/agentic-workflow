@@ -1,7 +1,13 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Host.Catalog;
+using Aw.Sindri.Host.Onyx;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Host.Shipped;
 
 namespace Aw.Sindri.Host.Registration;
 
@@ -16,8 +22,13 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
+        .AddSingleton<IShippedEffects, EmbeddedShippedEffects>()   // the default profile allows the effects the embedded recipes declare (setup-once §5.1)
+        .AddSingleton<IEmbeddedRecipes>(static _ => new ManifestEmbeddedRecipes(typeof(ManifestEmbeddedRecipes).Assembly))   // the recipes this build ships; nothing at run time reads recipes/sindri from disk
         .AddSingleton<Projector>()
-        .AddSingleton<ScheduleInputs>();
+        .AddSingleton<ScheduleInputs>()
+        .AddScoped<CodeIndexHost.ICodeIndexScopeSource, CodeIndexHost.ProfileCodeIndexScopeSource>()
+        .AddScoped<Context.Core.Symbols.ICodeSymbolSource, CodeIndexHost.CodeIndexSymbolSource>()   // Context reads the index through the CodeIndex facade (S-9); replaces the no-index default (TryAdd in AddContextFeatures)
+        .AddSingleton<IOnyxProgress>(static sp => new JobOnyxProgress(new ConsoleOnyxProgress(Console.Error), sp.GetRequiredService<IJobContextAccessor>()));   // `onyx up`'s lines and dots on standard error, or the Onyx setup job's own lines
 
     /// <summary>
     /// Adds what only 'sindri serve' runs: the port it chooses before it binds (and the check that refuses to start without
@@ -35,6 +46,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddHostedService<SessionUsageHost>()
         .AddHostedService<ProfileWatch>()
         .AddHostedService<SessionCollectorHost>()
+        .AddHostedService<ContextWarmHost>()
         .AddHostedService<LauncherHost>()
         .AddHostedService<LeaseRenewer>();
 }

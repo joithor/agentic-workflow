@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Workflow.Views;
@@ -22,7 +23,11 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Children">Child groups in path order.</param>
 /// <param name="Counts">The tab counts.</param>
 /// <param name="Actions">The action ids allowed now.</param>
+/// <param name="Again">The address of the instance this one reruns; null (left out of the JSON) for any other.</param>
+/// <param name="StepRuns">Every Step run in start order, folded from the instance's ledger events.</param>
 /// <param name="AsOf">When it was read.</param>
+/// <param name="Steps">What each Step state reads and produces, in the recipe's state order.</param>
+/// <param name="StartedBy">Who started the instance, in the actor form of the step runs; null when nobody is recorded.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceDetail(
     InstanceAddress Address,
@@ -42,4 +47,22 @@ public sealed record InstanceDetail(
     IReadOnlyList<ChildGroup> Children,
     ViewCounts Counts,
     IReadOnlyList<ActionId> Actions,
-    DateTimeOffset AsOf);
+    IReadOnlyList<StepRun> StepRuns,
+    DateTimeOffset AsOf,
+    IReadOnlyList<StateStep>? Steps = null,
+    string? StartedBy = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] InstanceAddress? Again = null)
+{
+    /// <summary>
+    /// Where the owner acts on this instance (q65): the 'open' of its own needs-you row ('park:', else 'desk:', else 'takeover:'), joined at read time, so the
+    /// detail opens where the row does (a parked descendant's park opens that child). Null (left out of the JSON) when no row waits on it, or the join can't be read now.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public NeedsYouOpen? Open { get; init; }
+
+    /// <summary>
+    /// The recipe verbs the instance accepts now, one entry per verb in the view's order (<c language="text">{ actionId: "ApplyCommand:command", verb, cli }</c>), so the app can show one button per verb. Always written,
+    /// <c language="text">[]</c> when the state takes none. A verb is listed even when the server refuses an agent session's call of it (merge, rework).
+    /// </summary>
+    public IReadOnlyList<AllowedCommand> AllowedCommands { get; init; } = [];
+}

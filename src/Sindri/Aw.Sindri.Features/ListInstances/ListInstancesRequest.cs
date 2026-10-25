@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="Urgency">Only instances of recipes with this urgency.</param>
 /// <param name="Subject">Only instances whose subject has this key, or whose subject label contains this text.</param>
 /// <param name="Root">'true' for only top-level instances, 'false' for only children; a string for the same reason as <paramref name="NeedsMe"/>.</param>
-/// <param name="Open">'true' to keep only the instances that are not finished (API spec §3.8 'open'); 'false' for no such filter; a string for the same reason as <paramref name="NeedsMe"/>.</param>
+/// <param name="Open">'true' to keep only the instances that are not finished (API spec §3.8 'open'); 'false' for only the finished ones, newest first (the finished-runs list of a recipe); a string for the same reason as <paramref name="NeedsMe"/>.</param>
 /// <param name="Query">A visibility query on the search attributes, ANDed with the rest.</param>
 /// <param name="Address">
 /// A CLI address ('T-3/item/1') or bare item: the one instance it names (spec §6.3 'address'), whose id the CLI then

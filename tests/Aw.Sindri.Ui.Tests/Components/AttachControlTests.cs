@@ -28,8 +28,8 @@ public sealed class AttachControlTests
         var vm = Agent(address);
 
         Assert.True(vm.IsPrimaryShown);
-        Assert.Equal("Attach", vm.PrimaryLabel);
-        Assert.Equal($"Attach to {address}", vm.PrimaryName);
+        Assert.Equal("Watch the agent", vm.PrimaryLabel);
+        Assert.Equal($"Watch the agent for {address}", vm.PrimaryName);
         Assert.Equal(AttachAction.Attach, vm.PrimaryAction);
         Same(["Take over", "File a request", "Cancel"], vm.Menu.Select(m => m.Label));
         Same([$"Take over {address}", $"File a request for {address}", $"Cancel {address}"], vm.Menu.Select(m => m.Name));
@@ -44,7 +44,18 @@ public sealed class AttachControlTests
         var vm = Agent(address);
 
         Assert.True(vm.HasNote);
-        Assert.Equal("Attach joins the live session; your first keystroke takes it over.", vm.Note);
+        Assert.Equal("Watch the agent's terminal live. Typing takes it over.", vm.Note);
+    }
+
+    [Fact]
+    public void A_served_reason_replaces_the_P10a_words_in_the_chip_and_its_name()
+    {
+        var vm = new AttachControlViewModel(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "The agent isn't running, so there's nothing to watch"));
+
+        Assert.Equal("The agent isn't running, so there's nothing to watch", vm.PendingChip);
+        Assert.Equal($"Watch the agent for {Project}: the agent isn't running, so there's nothing to watch", vm.PendingChipName);
+        vm.Update(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "The agent session is still starting"));
+        Assert.Equal("The agent session is still starting", vm.PendingChip);
     }
 
     [Fact]
@@ -57,7 +68,7 @@ public sealed class AttachControlTests
         Assert.True(vm.IsPending);
         Assert.False(vm.IsPrimaryShown);
         Assert.False(vm.HasNote);
-        Assert.Equal("Available with API P10a", vm.PendingChip);
+        Assert.Equal("Not available in the app yet", vm.PendingChip);
         vm.Choose(AttachAction.Attach);
         Assert.Empty(raised);
 
@@ -219,8 +230,8 @@ public sealed class AttachControlTests
         Assert.True(vm.IsPrimaryShown);
         Assert.False(vm.IsPending);
         Assert.False(vm.HasNote);
-        Assert.Equal("Open instance", vm.PrimaryLabel);
-        Assert.Equal($"Open instance {Project}", vm.PrimaryName);
+        Assert.Equal("Open run", vm.PrimaryLabel);
+        Assert.Equal($"Open run {Project}", vm.PrimaryName);
         Assert.Equal(AttachAction.OpenInstance, vm.PrimaryAction);
         Same(["Take over", "Cancel"], vm.Menu.Select(m => m.Label));
     }

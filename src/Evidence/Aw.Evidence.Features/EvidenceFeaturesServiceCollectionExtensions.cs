@@ -1,7 +1,9 @@
 using Aw.Evidence.Features.ApiRun;
 using Aw.Evidence.Features.CheckProvenance;
 using Aw.Evidence.Features.DbRun;
+using Aw.Evidence.Features.DesktopRun;
 using Aw.Evidence.Features.Doctor;
+using Aw.Evidence.Features.GhPublish;
 using Aw.Evidence.Features.InstallBrowser;
 using Aw.Evidence.Features.Parity;
 using Aw.Evidence.Features.ParityComment;
@@ -23,7 +25,7 @@ public static class EvidenceFeaturesServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddEvidenceFeatures(this IServiceCollection services) =>
         services.AddBrowserSlices().AddPublishSlices().AddStackSlices().AddApiSlices()
-            .AddDbSlices();
+            .AddDbSlices().AddDesktopSlices();
 
     private static IServiceCollection AddBrowserSlices(this IServiceCollection services) =>
         services
@@ -78,7 +80,13 @@ public static class EvidenceFeaturesServiceCollectionExtensions
             .AddScoped<IService<PublishPlanRequest, PublishPlanResponse>>(static sp =>
                 new ValidatingService<PublishPlanRequest, PublishPlanResponse>(
                     sp.GetRequiredService<PublishPlanService>(),
-                    sp.GetRequiredService<IValidator<PublishPlanRequest>>()));
+                    sp.GetRequiredService<IValidator<PublishPlanRequest>>()))
+            .AddScoped<GhPublishService>()
+            .AddScoped<IValidator<GhPublishRequest>, GhPublishValidator>()
+            .AddScoped<IService<GhPublishRequest, GhPublishResponse>>(static sp =>
+                new ValidatingService<GhPublishRequest, GhPublishResponse>(
+                    sp.GetRequiredService<GhPublishService>(),
+                    sp.GetRequiredService<IValidator<GhPublishRequest>>()));
 
     private static IServiceCollection AddStackSlices(this IServiceCollection services) =>
         services
@@ -123,4 +131,17 @@ public static class EvidenceFeaturesServiceCollectionExtensions
                 new ValidatingService<DbRunRequest, DbRunResponse>(
                     sp.GetRequiredService<DbRunService>(),
                     sp.GetRequiredService<IValidator<DbRunRequest>>()));
+
+    private static IServiceCollection AddDesktopSlices(this IServiceCollection services) =>
+        services
+            .AddScoped<DesktopPlans>()
+            .AddScoped<DesktopDriving>()
+            .AddScoped<DesktopStack>()
+            .AddScoped<DesktopFrames>()
+            .AddScoped<DesktopRunService>()
+            .AddScoped<IValidator<DesktopRunRequest>, DesktopRunValidator>()
+            .AddScoped<IService<DesktopRunRequest, DesktopRunResponse>>(static sp =>
+                new ValidatingService<DesktopRunRequest, DesktopRunResponse>(
+                    sp.GetRequiredService<DesktopRunService>(),
+                    sp.GetRequiredService<IValidator<DesktopRunRequest>>()));
 }

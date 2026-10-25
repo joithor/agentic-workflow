@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Testing;
@@ -34,7 +35,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<InstanceList> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedCaller(current: null), rowBuilder: new InstanceRows(new FakeTimeProvider()));
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -104,6 +105,85 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task An_open_of_false_lists_only_the_finished_instances_newest_first()
+    {
+        var older = View("done", "T-1/step/1") with { Since = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) };
+        var newer = View("done", "T-2/step/1") with { Since = new DateTimeOffset(2026, 10, 2, 0, 0, 0, TimeSpan.Zero) };
+
+        var (result, port) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true", Open: "false"), older, View("desk-task", "T-3/step/1"), newer);
+
+        Assert.Equal(["T-2/step/1", "T-1/step/1"], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.True(port.Calls[0].Ended);
+    }
+
+    [Fact]
+    public async Task An_absent_open_lists_the_open_and_the_finished_instances()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true"), View("done", "T-1/step/1"), View("desk-task", "T-2/step/1"));
+
+        Assert.Equal(2, result.Value.Instances.Count);
+    }
+
+    private static InstanceView Line(string name, string address) =>
+        View(name, address) with { Recipe = View(name, address).Recipe with { Id = RecipeId.From("workflow.line") } };
+
+    private static async Task<(InstanceList List, FixedReader Reader)> RunLines(InstanceView[] all, params InstanceView[] listed)
+    {
+        var reader = new FixedReader(all);
+        var port = new RecordingInstances([.. listed.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
+        var service = Service(all, new FixedItemViews(failing: false), caller: null, port: port, reader: reader);
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+        return (result.Value, reader);
+    }
+
+    [Fact]
+    public async Task A_root_line_row_reads_its_own_state_as_the_line_stage_without_a_second_read()
+    {
+        var root = Line("desk-task", "T-1/line/1");
+
+        var (list, reader) = await RunLines([root], root);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal(["T-1/line/1"], reader.Reads, StringComparer.Ordinal);   // the one read of the row's view; the root is that view
+    }
+
+    [Fact]
+    public async Task A_child_row_reads_the_state_of_the_line_root_above_it()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var child = View("desk-task", "T-1/line/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], child);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal("T-1/line/1", list.Instances[0].RootAddress);
+    }
+
+    [Fact]
+    public async Task A_row_whose_root_is_not_a_line_instance_has_no_line_stage()
+    {
+        var root = View("desk-task", "T-1/step/1");
+        var child = View("desk-task", "T-1/step/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], root, child);
+
+        Assert.All(list.Instances, static r => Assert.Null(r.LineStage));
+    }
+
+    [Fact]
+    public async Task Rows_that_share_a_root_read_that_root_once()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var first = View("desk-task", "T-1/line/1/phase.2");
+        var second = View("desk-task", "T-1/line/1/phase.3");
+
+        var (list, reader) = await RunLines([root, first, second], first, second);
+
+        Assert.All(list.Instances, r => Assert.Equal(root.State, r.LineStage));
+        Assert.Equal(1, reader.Reads.Count(static a => a == "T-1/line/1"));
+    }
+
+    [Fact]
     public async Task A_needs_me_of_false_is_no_filter_and_a_state_still_lists_ended_instances()
     {
         var (_, port) = await Run(new ListInstancesRequest(NeedsMe: "false", State: "parked"));
@@ -159,9 +239,8 @@ public sealed class ListInstancesServiceTests
             new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
             new EndedInstanceViews(new FixedReader(views)),
             titles,
-            new FixedRepos(),
             new FixedCaller(new CallerContextBuilder().Human().Build()),
-            clock: new FakeTimeProvider());
+            rowBuilder: new InstanceRows(new FakeTimeProvider()));
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
@@ -292,15 +371,14 @@ public sealed class ListInstancesServiceTests
     private static ItemRow Titled(string id, string title, string? repo = null) =>
         new ItemRowBuilder().WithId(ItemId.From(id)).InRepo(repo is null ? null : RepoName.From(repo)).Build() with { Title = title };
 
-    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, FixedRepos? repos = null, RecordingInstances? port = null, FixedReader? reader = null) =>
+    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, RecordingInstances? port = null, FixedReader? reader = null) =>
         new(
             directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
             port ?? new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
             new EndedInstanceViews(reader ?? new FixedReader(views)),
             items,
-            repos ?? new FixedRepos(),
             new FixedCaller(caller),
-            clock: new FakeTimeProvider());
+            rowBuilder: new InstanceRows(new FakeTimeProvider()));
 
     [Fact]
     public async Task A_subject_filter_matches_the_item_title_the_row_shows_and_still_the_id_as_the_key()
@@ -355,23 +433,23 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
-    public async Task A_session_lists_only_its_own_repos_instances_rows_and_counts()
+    public async Task A_session_lists_every_repos_instances_rows_and_counts()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
         var items = new FixedItemViews(failing: false, Titled(ItemA, "Mine", repo: "alpha"), Titled(ItemB, "Theirs", repo: "beta"));
-        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
+        var service = Service(views, items, new CallerContextBuilder().Session().InRepo("alpha").Build());
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
-        Assert.Equal(["Mine"], result.Value.Instances.Select(static r => r.Subject.Label), StringComparer.Ordinal);
-        Assert.Equal(1, result.Value.Counts.Open);   // the other repo's instance isn't in the root set the counts cover
+        Assert.Equal(["Mine", "Theirs"], result.Value.Instances.Select(static r => r.Subject.Label).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(2, result.Value.Counts.Open);
     }
 
     [Fact]
     public async Task A_human_lists_every_repos_instances()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
-        var service = Service(views, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), repos: new FixedRepos((ItemA, "alpha"), (ItemB, "beta")));
+        var service = Service(views, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build());
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
@@ -379,16 +457,15 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
-    public async Task A_session_looking_up_an_address_in_another_repo_gets_item_404_and_its_own_repo_is_served()
+    public async Task A_session_looking_up_an_address_in_another_repo_is_served()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1"), OnItem(ItemB, $"{ItemB}/step/1") };
-        var repos = new FixedRepos((ItemA, "alpha"), (ItemB, "beta"));
         var session = new CallerContextBuilder().Session().InRepo("alpha").Build();
 
-        var theirs = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemB}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemB}/step/1"), CancellationToken.None);
-        var mine = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemA}/step/1", repos: repos).Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
+        var theirs = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemB}/step/1").Handle(new ListInstancesRequest(Address: $"{ItemB}/step/1"), CancellationToken.None);
+        var mine = await Service(views, new FixedItemViews(failing: false), session, directoryAddress: $"{ItemA}/step/1").Handle(new ListInstancesRequest(Address: $"{ItemA}/step/1"), CancellationToken.None);
 
-        Assert.Equal(SindriErrors.ItemNotFound.Code, theirs.Error.Code);
+        Assert.Equal([$"{ItemB}/step/1"], theirs.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
         Assert.Equal([$"{ItemA}/step/1"], mine.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
     }
 
@@ -436,6 +513,29 @@ public sealed class ListInstancesServiceTests
 
         Assert.Equal((1, 3), (result.Value.Counts.Open, result.Value.Counts.Done));
         Assert.Equal(["T-1/step/1"], reader.Reads, StringComparer.Ordinal);   // one Query, for the one running root
+    }
+
+    [Fact]
+    public async Task A_payload_subject_with_no_title_of_its_own_is_labelled_by_the_item_title_not_the_fact_key()
+    {
+        var view = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([view], new FixedItemViews(failing: false, Titled(ItemA, "Toy scoping check")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(new SubjectRef("payload", "fact:scopeInput", "Toy scoping check", Href: null), Assert.Single(result.Value.Instances).Subject);
+    }
+
+    [Fact]
+    public async Task A_payload_subject_keeps_its_own_title_and_falls_back_to_the_key_only_when_there_is_no_title_at_all()
+    {
+        var titled = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "Offline sync brief", Href: null) };
+        var bare = OnItem(ItemB, $"{ItemB}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([titled, bare], new FixedItemViews(failing: false, Titled(ItemA, "Item title")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["Offline sync brief", "fact:scopeInput"], result.Value.Instances.OrderBy(static r => r.Address.Value, StringComparer.Ordinal).Select(static r => r.Subject.Label), StringComparer.Ordinal);
     }
 
     [Fact]

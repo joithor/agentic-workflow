@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -19,8 +20,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="dispatch">Runs a Step by id.</param>
 /// <param name="contents">Reads a stored fact.</param>
 /// <param name="facts">Stores an output.</param>
+/// <param name="contexts">Gives a Step the sections and typed results of its inputs (kept in memory, or run again and checked against the recorded digests).</param>
 /// <param name="approved">The APPROVED profile (never the live file): 'providers' resolves from its 'workflow.judge.providers'.</param>
-internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts, IApprovedProfile approved)
+internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts, IApprovedProfile approved, StepContexts contexts)
 {
     private const string ProvidersArgument = "providers";
 
@@ -39,27 +41,70 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
     public async Task<BlockStepOutcome> Run(BlockStepRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var descriptor = catalog.Find(run.Step);
-        var resolved = await ResolveArguments(descriptor, run, cancellationToken).ConfigureAwait(false);
-        if (resolved.IsError)
+        var seeded = await Seed(run, catalog.Find(run.Step), cancellationToken).ConfigureAwait(false);
+        if (seeded.IsError)
         {
-            return Failed(resolved.Error.Message);
+            return Failed(seeded.Error);
         }
 
-        var arguments = resolved.Value;
-        var named = await ReadFacts(descriptor, arguments, run, cancellationToken).ConfigureAwait(false);
-        if (named.IsError)
+        var seed = seeded.Value;
+        var context = run.Fills is { Count: > 0 } fills
+            ? await contexts.For(new StepRun(fills[0].Request.Address, run.State, run.Token), seed, [.. fills.Select(static f => new InjectionInputSource(f.Recorded, f.Request.Context()))], cancellationToken).ConfigureAwait(false)
+            : Results.Success(seed);
+        if (context.IsError)
         {
-            return Failed(named.Error.Message);
+            return Failed(context.Error);
         }
 
-        var result = await dispatch(run.Step, new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty), cancellationToken).ConfigureAwait(false);
+        var result = await dispatch(run.Step, context.Value, cancellationToken).ConfigureAwait(false);
         return result.Result is not { } done
-            ? Failed(result.Failure ?? "the Step failed")
+            ? Failed(result.Failure ?? "the Step failed") with { Dependency = result.Dependency, Code = result.Code }
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result<Dictionary<string, JsonElement>>> ResolveArguments(BlockDescriptor? descriptor, BlockStepRun run, CancellationToken cancellationToken)
+    // The ledger is asked for a repo the instance does not name only when something reads it: a Step marked IRepoStep, one with Step inputs, or one that takes 'providers'.
+    private bool NeedsRepo(BlockStepRun run, BlockDescriptor? descriptor) =>
+        runtimes.NeedsRepo(run.Step) || run.Fills is { Count: > 0 } || descriptor?.Parameters.Any(static p => p.Name == ProvidersArgument) == true;
+
+    // What the Step starts with, before its inputs: its arguments, the facts it reads and the repo. The repo is resolved first: a Step never learns "no repo" from a repo it could not read.
+    private async Task<Result<StepContext>> Seed(BlockStepRun run, BlockDescriptor? descriptor, CancellationToken cancellationToken)
+    {
+        var repo = await contexts.RepoOf(run.Address, run.Repo, run.RepoUnreadable, cancellationToken, NeedsRepo(run, descriptor)).ConfigureAwait(false);
+        if (repo.IsError)
+        {
+            return repo.Error;
+        }
+
+        var resolved = await ResolveArguments(descriptor, run, repo.Value, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return resolved.Error;
+        }
+
+        var named = await ReadFacts(descriptor, resolved.Value, run, cancellationToken).ConfigureAwait(false);
+        if (named.IsError)
+        {
+            return named.Error;
+        }
+
+        return MissingFact(descriptor, named.Value, run.Step) is { } absent
+            ? WorkflowErrors.BlockFactUnreadable.With(absent)
+            : new StepContext(run.Step, resolved.Value, named.Value, InjectionSections.Empty)
+            {
+                Repo = repo.Value,
+                Address = run.Address,
+                HeavySlotHeld = run.HeavyHeld,
+                LoopCaps = run.LoopCaps ?? new Dictionary<string, int>(StringComparer.Ordinal),
+            };
+    }
+
+    // A Step that reads a fact the instance does not hold would take it for a rule that did not run.
+    private static string? MissingFact(BlockDescriptor? descriptor, Dictionary<FactKey, JsonElement> named, BlockId step) =>
+        descriptor?.Inputs.Where(k => !named.ContainsKey(k)).Select(static k => k.Value).ToList() is { Count: > 0 } missing
+            ? $"{step.Value} needs {string.Join(", ", missing)}, which the instance does not hold"
+            : null;
+
+    private async Task<Result<Dictionary<string, JsonElement>>> ResolveArguments(BlockDescriptor? descriptor, BlockStepRun run, RepoName? repo, CancellationToken cancellationToken)
     {
         var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var (name, value) in run.Arguments)
@@ -82,7 +127,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
 
         if (descriptor?.Parameters.Any(static p => p.Name == ProvidersArgument) == true)
         {
-            var providers = await Providers(run, arguments, cancellationToken).ConfigureAwait(false);
+            var providers = await Providers(run, repo, arguments, cancellationToken).ConfigureAwait(false);
             if (providers.IsError)
             {
                 return providers.Error;
@@ -104,7 +149,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
 
     // The effective provider list (JudgeProviders): the APPROVED profile's, narrowed by the recipe's own literal list; { profile: workflow.judge.providers } narrows nothing.
     // Nothing approved means the defaults (no jev); an approved profile that can't be read fails the run, and the list is never widened.
-    private async Task<Result<JsonElement>> Providers(BlockStepRun run, Dictionary<string, JsonElement> arguments, CancellationToken cancellationToken)
+    private async Task<Result<JsonElement>> Providers(BlockStepRun run, RepoName? repo, Dictionary<string, JsonElement> arguments, CancellationToken cancellationToken)
     {
         if (run.RepoUnreadable)
         {
@@ -121,14 +166,14 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
         IReadOnlyList<string>? literal = arguments.TryGetValue(ProvidersArgument, out var named) && named.ValueKind == JsonValueKind.Array
             ? [.. named.EnumerateArray().Where(static n => n.ValueKind == JsonValueKind.String).Select(static n => n.GetString() ?? string.Empty)]
             : null;
-        return JsonSerializer.SerializeToElement(JudgeProviders.Effective(profile, run.Repo, literal), _json);
+        return JsonSerializer.SerializeToElement(JudgeProviders.Effective(profile, repo?.Value, literal), _json);
     }
 
     private async Task<Result<Dictionary<FactKey, JsonElement>>> ReadFacts(
         BlockDescriptor? descriptor, Dictionary<string, JsonElement> arguments, BlockStepRun run, CancellationToken cancellationToken)
     {
         var named = new Dictionary<FactKey, JsonElement>();
-        foreach (var key in FactsNamed(descriptor, arguments))
+        foreach (var key in (descriptor?.Inputs ?? []).Concat(FactsNamed(descriptor, arguments)).Distinct())
         {
             if (!run.Facts.TryGetValue(key, out var fact))
             {
@@ -165,9 +210,12 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
         return new BlockStepOutcome(done.Outcome, stored, DecisionOf(done.Outputs), Failure: null);
     }
 
+    // An Unavailable error (a fact or the profile can't be read) is infrastructure: the engine retries the Step, then parks it as unavailable.
+    private static BlockStepOutcome Failed(Error error) => Failed(error.Message) with { Dependency = error.Kind == ErrorKind.Unavailable ? "a fact or the profile" : null, Code = error.Kind == ErrorKind.Unavailable ? error.Code : null };
+
     private static BlockStepOutcome Failed(string reason) => new(Outcome: null, Outputs: null, Decision: null, reason);
 
-    // The fact keys the Step's list parameter (InputsFrom, 'facts') names.
+    // The fact keys the Step's list parameter (InputsFrom, 'facts') names; the facts its descriptor reads (Inputs) come with them.
     private static IEnumerable<FactKey> FactsNamed(BlockDescriptor? descriptor, Dictionary<string, JsonElement> arguments) =>
         descriptor?.InputsFrom is { } list && arguments.TryGetValue(list, out var names) && names.ValueKind == JsonValueKind.Array
             ? names.EnumerateArray().Where(static n => n.ValueKind == JsonValueKind.String).Select(static n => FactKey.From(n.GetString() ?? string.Empty))

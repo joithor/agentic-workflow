@@ -1,6 +1,10 @@
 using System.Reflection;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
@@ -24,22 +28,63 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal(
             [
-                "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
-                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
-                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
-                "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
-                "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
-                "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
-                "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
-                "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate", "step.scope.anchor",
-                "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",
-                "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief",
-                "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.review", "step.scope.withdraw", "step.verify",
-                "step.verify.design", "step.verify.journey",
+                "effect.claim.ref", "effect.line.report", "effect.line.start-phase", "effect.notify.desk", "effect.pr.create-stacked", "effect.pr.merge",
+                "effect.pr.merge-docs", "effect.pr.open", "effect.pr.purge-marks", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
+                "evidence.check", "gate.budget.available", "gate.pr.autofix-cap", "gate.pr.base-is-default", "gate.pr.diff-scope",
+                "gate.pr.secret-scan", "gate.revision-bound", "gate.route.startable", "input.context.code", "input.context.history",
+                "input.context.lenses", "input.context.retrieve", "input.handoff-note", "input.phase-packet", "input.pr.context", "step.babysit.watch",
+                "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge", "step.bugfix.recheck",
+                "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.green",
+                "step.build.prepare", "step.build.red", "step.build.red-check", "step.build.scope-desk", "step.checks", "step.design.apply",
+                "step.design.check", "step.design.draft", "step.design.evidence", "step.design.intake", "step.design.lens-desk",
+                "step.design.revise", "step.desk.choose", "step.docs.check", "step.docs.scope", "step.docs.update", "step.evidence.api-plan",
+                "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run", "step.evidence.desk", "step.evidence.desktop-review", "step.evidence.desktop-run",
+                "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run", "step.intake.ticket",
+                "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record", "step.judge.choose",
+                "step.lens.ask", "step.lens.log", "step.lens.round", "step.lens.run", "step.line.decide", "step.line.dispatch", "step.line.seed", "step.owner.decide", "step.phase.decide",
+                "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.exec-review", "step.plan.freeze",
+                "step.plan.graph", "step.plan.holdout", "step.plan.holdout-store", "step.plan.intake", "step.plan.questions", "step.plan.review", "step.plan.settle",
+                "step.pr.ci-fix", "step.pr.ci-log", "step.pr.docs-decide", "step.pr.docs-merge-decide", "step.pr.fix-comment", "step.pr.held-comment",
+                "step.pr.intake", "step.pr.next-comment", "step.pr.owner-comment", "step.pr.ready-check", "step.pr.reply-draft",
+                "step.pr.rework-notes", "step.pr.snapshot", "step.produce", "step.prove.before-after", "step.prove.collect", "step.prove.evidence",
+                "step.prove.fail-log", "step.prove.holdout", "step.prove.holdout-log", "step.prove.intake", "step.prove.rerun-scripts",
+                "step.recheck.log", "step.recheck.plan", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
+                "step.review.apply-answer", "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record",
+                "step.review.round", "step.rootcause.investigate", "step.scope.anchor", "step.scope.challenge", "step.scope.challenge-log",
+                "step.scope.check", "step.scope.draft", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake",
+                "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor",
+                "step.scope.review", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.open", "step.ship.pack",
+                "step.ship.return", "step.verify", "step.verify.design", "step.verify.journey",
             ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(["claim.created", "item.routed", "notify.delivered"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["claim.created", "item.routed", "line.phaseChanged", "notify.delivered", "pr.changed", "pr.docsMerged", "pr.mergeResult", "pr.opened", "pr.pushed", "pr.restacked", "pr.stacked"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    /// <summary>Engine P8 Q4: the produce Step runs on an agent session when the build has the runtime, and stays deskCapable so a box with no agent target runs it at the desk (D7).</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void The_produce_step_runs_on_an_agent_and_stays_desk_capable()
+    {
+        var produce = FixtureCatalog.Shipped().Find(BlockId.From("step.produce"));
+
+        Assert.Equal((BlockRuntime.Agent, true), (produce?.Runtime, produce?.DeskCapable));
+    }
+
+    /// <summary>The Steps that commit (tests, code) or build and run the app in the run's worktree need the policy that lets them write it; WriteScope grants that worktree and nothing else.</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("step.build.red")]
+    [InlineData("step.build.green")]
+    [InlineData("step.prove.holdout")]
+    public void The_agent_steps_that_write_their_worktree_carry_write_scope(string id)
+    {
+        var step = FixtureCatalog.Shipped().Find(BlockId.From(id));
+        var address = InstanceAddress.From("T-1/step/1");
+        var run = new AgentStepRun(WorkflowInstanceId.Of(address), address, RunToken.From("1.1"), new StepRef("s", id), step!.Capabilities.HasFlag(Capability.WriteScope));
+        var target = new AgentStepTarget(ItemId.From("ITM-" + new string('a', 32)), AgentId.From("claude-code"), "/work/app");
+
+        var request = AgentLaunches.RequestFor(run, target);
+
+        Assert.Equal((BlockRuntime.Agent, StepPermissionMode.Default, request.Worktree), (step.Runtime, request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -51,14 +96,14 @@ public sealed class ShippedBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_budget_gate_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
+    public async Task The_gates_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
     {
         await using var provider = Composed();
         await using var scope = provider.CreateAsyncScope();
 
-        _ = Assert.IsType<BudgetAvailableGate>(Assert.Single(scope.ServiceProvider.GetServices<IGate>()));
+        Assert.Equal([typeof(PrDiffScopeGate), typeof(PrSecretScanGate), typeof(BudgetAvailableGate), typeof(RouteStartableGate), typeof(RevisionBoundGate), typeof(PrAutofixCapGate)], scope.ServiceProvider.GetServices<IGate>().Select(static g => g.GetType()));   // engine P7 adds the route stub
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());
-        Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
+        Assert.Equal([typeof(StartPhaseEffect), typeof(ClaimRefEffect), typeof(NotifyDeskEffect), typeof(PrPushEffect), typeof(PrRecordEffect), typeof(PrRerunChecksEffect), typeof(PrMergeEffect), typeof(PrReplyEffect), typeof(PrPurgeMarksEffect), typeof(PrOpenEffect), typeof(PrCreateStackedEffect), typeof(PrMergeDocsEffect), typeof(PrRestackEffect), typeof(LineReportEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -78,14 +123,19 @@ public sealed class ShippedBlocksTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("effect.claim.ref", Capability.Effects | Capability.WriteScope)]
+    [InlineData("effect.line.report", Capability.Effects)]
     [InlineData("effect.notify.desk", Capability.Effects)]
+    [InlineData("effect.pr.push", Capability.Effects)]
+    [InlineData("effect.pr.record", Capability.Effects)]
+    [InlineData("effect.pr.rerun-checks", Capability.Effects)]
+    [InlineData("effect.pr.open", Capability.Effects)]
     [InlineData("gate.budget.available", Capability.None)]
     [InlineData("gate.route.startable", Capability.None)]
     public void Each_block_declares_what_it_reaches(string id, Capability capabilities) =>
         Assert.Equal(capabilities, FixtureCatalog.Shipped().Find(BlockId.From(id))!.Capabilities);   // why: the catalog test pins every shipped id
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("item.routed", "router.stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
+    [InlineData("item.routed", "service:router-stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
     [InlineData("claim.created", "system:dispatcher", EventRoute.Causation, new[] { "created", "claimExists" }, new string[0])]
     [InlineData("notify.delivered", "system:dispatcher", EventRoute.Causation, new[] { "delivered" }, new string[0])]
     public void Each_event_declares_its_producer_route_outcomes_and_facts(string kind, string producer, EventRoute route, string[] outcomes, string[] facts)
@@ -115,11 +165,28 @@ public sealed class ShippedBlocksTests
             Assert.Empty(decision.RequiredOn);
         }
 
-        Assert.True(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // why: the catalog test pins both ids
+        Assert.Null(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // owner q93, 2026-10-23: an agent may answer the desk   // why: the catalog test pins both ids
         Assert.Equal(BlockRuntime.Block, catalog.Find(BlockId.From("step.judge.choose"))!.Runtime);
 
-        Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
-        Assert.Empty(scope.ServiceProvider.GetServices<IBlockStep>());   // none is registered in this build: J3 registers the judge and moves its contract to BlockContract
+        Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // the decision-tree Steps have no desk-runtime Step (step.judge.choose runs on the block runtime, step.desk.choose on the desk)
+        // the scoping station's and the design lens loop's Steps listed here are the block runtimes of this build (BS-1, BS-4); step.judge.choose (DT-J) is one too
+        Assert.Equal(
+            ["step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.design.check", "step.design.evidence", "step.design.intake", "step.docs.check", "step.docs.scope", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.judge.choose", "step.lens.log", "step.lens.round", "step.line.dispatch", "step.line.seed", "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.freeze", "step.plan.holdout-store", "step.plan.intake", "step.plan.questions", "step.plan.settle", "step.pr.ci-log", "step.pr.held-comment", "step.pr.intake", "step.pr.next-comment", "step.pr.ready-check", "step.pr.snapshot", "step.prove.before-after", "step.prove.collect", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout-log", "step.prove.intake", "step.prove.rerun-scripts", "step.recheck.log", "step.recheck.plan", "step.review.log", "step.review.record", "step.review.round", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.pack", "step.ship.return"],
+            provider.GetServices<BlockStepRegistration>().Select(static r => r.Step.Value).Order(StringComparer.Ordinal),
+            StringComparer.Ordinal);
+        Assert.Equal(66, scope.ServiceProvider.GetServices<IBlockStep>().Count());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_block_runtime_registration_names_a_Step_whose_descriptor_says_block()
+    {
+        using var provider = Composed();
+        var catalog = provider.GetRequiredService<BlockCatalog>();
+
+        var registered = provider.GetServices<BlockStepRegistration>().Select(static r => r.Step).ToList();
+
+        Assert.NotEmpty(registered);
+        Assert.All(registered, id => Assert.Equal(BlockRuntime.Block, catalog.Find(id)?.Runtime));   // a Step registered by id (AddBlockRuntime) has its descriptor elsewhere, so this is where a mismatch shows
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -143,7 +210,7 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void A_descriptor_without_the_new_fields_serializes_without_them()
     {
-        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce")), SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.checks")), SliceHarness.Json));
 
         Assert.DoesNotContain("outcomesFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);
@@ -185,6 +252,7 @@ public sealed class ShippedBlocksTests
             .Select(t => ((BlockDescriptor)typeof(DescriptorContract)
                 .GetProperty("Descriptor", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .GetValue(Activator.CreateInstance(t, nonPublic: true))!).Id.Value)
+            .Where(static id => !string.Equals(id, "input.prove.echo", StringComparison.Ordinal) && !string.Equals(id, "step.prove.echo", StringComparison.Ordinal))   // test-only: composed (and catalogued) only under the prove gate
             .ToList();
 
         var withoutContract = catalogIds.Except(contractIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();

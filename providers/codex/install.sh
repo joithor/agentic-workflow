@@ -46,11 +46,9 @@ codex_install_hooks() {
     echo "  (no providers/codex/install-hooks.sh — skipping)"
   fi
   # judge's SessionStart health hook (honors AW_DRY_RUN itself).
-  AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-judge.sh" --hook-only --provider codex
-  # sindri's SessionStart nudge (setup.sh --with-sindri; honors AW_DRY_RUN itself).
-  if [ "${WITH_SINDRI:-0}" = "1" ]; then
-    AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-sindri.sh" --hook-only --provider codex
-  fi
+  AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-judge-hooks.sh" --provider codex
+  # sindri's SessionStart nudge (honors AW_DRY_RUN itself).
+  AW_DRY_RUN="${AW_DRY_RUN:-0}" bash "$TOOLKIT_DIR/scripts/install-sindri-hooks.sh" --provider codex
 }
 
 codex_install_agents() {
@@ -61,11 +59,14 @@ codex_install_agents() {
   echo "  codex: lean agent types → $(codex_agents_dir) (manifest: $manifest)"
 }
 
+codex_install_voice() { aw_install_voice "$CODEX_HOME_DIR/AGENTS.md"; }
+
 codex_install() {
   echo ""
   echo "=== Provider: Codex ==="
   aw_install_skills_into "$(codex_skills_dir)"
   codex_install_hooks
+  codex_install_voice
   aw_install_levers codex
   codex_register_mcp
 }

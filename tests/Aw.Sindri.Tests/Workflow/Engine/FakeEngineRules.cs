@@ -26,7 +26,7 @@ internal sealed class FakeEngineRules : IEngineRules
         var target = recipe.States[state];
         var entry = instance.Frame.Entry + 1;
         var run = target.Step is { } step
-            ? new OpenRun(RunToken.For(entry, 1), context.Runtimes.Contains(step.Use) ? StepRuntime.Agent : StepRuntime.Desk, Launch: null, Task: null)
+            ? new OpenRun(RunToken.For(entry, 1), context.Runtimes.GetValueOrDefault(step.Use, StepRuntime.Desk), Launch: null, Task: null)
             : null;
         return instance with
         {

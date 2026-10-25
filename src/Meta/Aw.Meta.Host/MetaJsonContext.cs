@@ -30,6 +30,7 @@ using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
+using Aw.Meta.Features.Usage;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Features.WorktreeList;
 using Aw.Meta.Features.WorktreeSweep;
@@ -72,6 +73,8 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(LaneInboxResponse))]
 [JsonSerializable(typeof(LaneStopCheckResponse))]
 [JsonSerializable(typeof(LaneReplyResponse))]
+[JsonSerializable(typeof(UsageResponse))]
+[JsonSerializable(typeof(UsageWaitResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]
 internal sealed partial class MetaJsonContext : JsonSerializerContext;

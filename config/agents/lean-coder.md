@@ -11,3 +11,5 @@ that, run the proof command, and report the result plainly (pass/fail with
 the actual output). Do not expand scope beyond the brief. Do not install
 dependencies unless the brief says they're missing. Run at most one heavy
 job (test suite, type-check, install) at a time.
+
+Write your report for the reader the way `$HOME/.agentic-workflow/toolkit/config/voice/joi.md` says: concrete, answer first, no coined terms or internal handles.

@@ -1,6 +1,5 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -29,18 +28,29 @@ internal sealed partial class RecipeWorkflow
     {
         var state = context.Recipe.States[instance.Frame.State];
         var step = state.Step ?? throw new InvalidOperationException($"'{instance.Frame.State}' has a block run but no Step"); // why: only an active state opens a run
-        using var cancel = new CancellationTokenSource();
-        var running = Start(instance, open, state, step, cancel.Token);
-        var (awaited, ended) = await AwaitBlock(instance, open, running, cancel, context).ConfigureAwait(true);
-        if (ended)
+        var filling = await FillInputs(instance, open, state).ConfigureAwait(true);
+        if (filling.Parked is { } parked)
         {
-            return awaited;
+            return parked;
         }
 
-        instance = awaited;
-        var trigger = await Resulting(instance, open, step, running, context).ConfigureAwait(true);
+        using var cancel = new CancellationTokenSource();
+        var trigger = filling.Failed;
+        if (trigger is null)
+        {
+            var running = Start(instance, open, state, step, cancel.Token);
+            var (awaited, ended) = await AwaitBlock(instance, open, running, cancel, context).ConfigureAwait(true);
+            if (ended)
+            {
+                return awaited;
+            }
+
+            instance = awaited;
+            trigger = await Resulting(instance, open, step, running, context).ConfigureAwait(true);
+        }
+
         var decided = instance;
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, trigger).ConfigureAwait(true));
         instance = After(instance, decision);
         if (ReferenceEquals(decided, instance))
         {
@@ -51,6 +61,7 @@ internal sealed partial class RecipeWorkflow
         instance = Enter(instance, trigger.Actor);
         await Mirror(DeskRow(decided, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         Emit(decided, instance, EffectsOf(decision));
+        Spawn(decision);
         return instance;
     }
 
@@ -59,7 +70,7 @@ internal sealed partial class RecipeWorkflow
         _runs++;
         var start = _start ?? throw new InvalidOperationException("the workflow has not begun"); // why: the loop runs only after Begin set it
         var recipe = _recipe ?? throw new InvalidOperationException("the workflow has not begun"); // why: as above
-        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable);
+        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable, _fills.Count == 0 ? null : _fills, HeavyHeld: _heavyLeased, LoopCaps: recipe.Recipe.Loops.ToDictionary(static l => l.Key, l => instance.Loops.GetValueOrDefault(l.Key)?.Allowed ?? l.Value.Cap, StringComparer.Ordinal));
         var bound = Limit(recipe, step);
         return Workflow.ExecuteActivityAsync(
             (RunStepActivities a) => a.RunBlockStepAsync(run),
@@ -125,18 +136,26 @@ internal sealed partial class RecipeWorkflow
             var outcome = await running.ConfigureAwait(true);
             return outcome is { Outcome: { } name, Outputs: { } outputs, Failure: null }
                 ? BlockStepTriggers.Completed(instance, context.Recipe, context.Decisions, new BlockCompletion(step.Use, open.Token, name, outputs, outcome.Decision))
-                : BlockStepTriggers.Failed(step.Use, open.Token, outcome.Failure ?? "the Step returned nothing");
+                : BlockStepTriggers.Failed(step.Use, open.Token, outcome.Failure ?? "the Step returned nothing") with { Dependency = outcome.Dependency, Code = outcome.Code };
         }
         catch (ActivityFailureException failed)
         {
             return BlockStepTriggers.Failed(step.Use, open.Token, failed.InnerException switch
             {
                 TimeoutFailureException => "timeout",
-                ApplicationFailureException application => "failed: " + (application.ErrorType ?? "error"),
+                ApplicationFailureException application => Reason(application),
                 { } other => "failed: " + other.GetType().Name,
                 null => "failed",
             });
         }
+    }
+
+    // The Step's exception type and its message (cut to 200 characters), so the park reason names the cause ("failed: InvalidOperationException" hid
+    // "The scoping schema 'seeds' is not embedded").
+    private static string Reason(ApplicationFailureException failure)
+    {
+        var detail = failure.Message is { Length: > 200 } text ? text[..200] + "…" : failure.Message;
+        return "failed: " + (failure.ErrorType ?? "error") + (string.IsNullOrWhiteSpace(detail) ? string.Empty : ": " + detail);
     }
 
     // Synchronous on purpose: CancelAsync would run the token's callbacks off the workflow scheduler, which Temporal fails the task for.

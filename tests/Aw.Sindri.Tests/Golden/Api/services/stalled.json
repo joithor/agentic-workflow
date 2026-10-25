@@ -1,5 +1,94 @@
 {
-  "services": [],
+  "services": [
+    {
+      "name": "code-index-embed",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "code-index-main-move",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "context-map-refresh",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "context-sync-gaps",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "pr-watch",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "router-stub",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "setup",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
+      "name": "workflow-events",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    }
+  ],
   "empty": "Views are stalled at 2: run `sindri views rebuild`",
   "asOf": {
     "cursor": 1,

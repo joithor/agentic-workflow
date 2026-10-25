@@ -1,3 +1,4 @@
+using Aw.Context.Core.Linear;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Trust;
 
@@ -12,6 +13,10 @@ public sealed record ContextSettings
     /// <summary>The default doc globs.</summary>
     public static IReadOnlyList<string> DefaultDocGlobs { get; } = ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"];
 
+    /// <summary>The default 'context.code.schemaGlobs': the migration and schema files the code lens's data files may name.</summary>
+    public static IReadOnlyList<string> DefaultSchemaGlobs { get; } =
+        ["**/migrations/**", "**/migrate/**", "**/schema/**", "**/schemas/**", "**/*.sql", "**/*.prisma", "**/*.graphql", "**/*.gql", "**/*.proto", "**/*.avsc", "**/*.xsd", "**/*.schema.json"];
+
     /// <summary>The profile repos the engine maps, or null for all of them.</summary>
     public IReadOnlyList<ContextRepoName>? Repos { get; init; }
 
@@ -19,10 +24,10 @@ public sealed record ContextSettings
     public IReadOnlyList<string> DocGlobs { get; init; } = DefaultDocGlobs;
 
     /// <summary>The per-query deadline.</summary>
-    public TimeSpan Deadline { get; init; } = TimeSpan.FromSeconds(4);
+    public TimeSpan Deadline { get; init; } = TimeSpan.FromSeconds(10);
 
-    /// <summary>The largest token budget a request may ask for.</summary>
-    public int MaxBudget { get; init; } = 32_000;
+    /// <summary>The code lens's lexical search deadline: one git grep per implementing file and data thing, run in turn, so it gets longer than a query.</summary>
+    public TimeSpan CodeDeadline { get; init; } = TimeSpan.FromSeconds(180);
 
     /// <summary>Below this many fused items a query reformulates once (Phase 8).</summary>
     public int MinHits { get; init; } = 3;
@@ -30,11 +35,17 @@ public sealed record ContextSettings
     /// <summary>The cascade's depth cap ('context.cascadeDepth', spec §6.1): 0 to 4, default 2; a query's depth overrides it.</summary>
     public int CascadeDepth { get; init; } = 2;
 
+    /// <summary>The component hop's fan-out cap ('context.cascadeComponentFanOut'): 1 to 500, default 50; a code unit implementing more features is skipped and reported.</summary>
+    public int CascadeComponentFanOut { get; init; } = CascadeOptions.DefaultFanOut;
+
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
-    public bool SessionsEnabled { get; init; }
+    public bool SessionsEnabled { get; init; } = true;
 
     /// <summary>The checked 'context.sources.onyx' entry, or null when the profile names no onyx source.</summary>
     public OnyxSettings? Onyx { get; init; }
+
+    /// <summary>The checked 'context.sources.linear' entry for the native Linear adapter (S-6), or null when the profile names no Linear token.</summary>
+    public LinearSettings? Linear { get; init; }
 
     /// <summary>The Linear team keys ('context.sources.linear.teams') an Onyx identifier alias may name; empty for none.</summary>
     public IReadOnlyList<string> LinearTeams { get; init; } = [];
@@ -51,6 +62,21 @@ public sealed record ContextSettings
     /// <summary>'context.eval.adjudicator' (S-7A): whether a backtest asks the model to label surfaces no PR touched, within 1.5M tokens per run. Off by default.</summary>
     public bool Adjudicator { get; init; }
 
+    /// <summary>'context.code.schemaGlobs' (S-CL): repo-relative globs of the migration and schema files the code lens's data files may name; empty turns the schema scan off.</summary>
+    public IReadOnlyList<string> SchemaGlobs { get; init; } = DefaultSchemaGlobs;
+
+    /// <summary>'context.code.testGlobs' (S-CL): repo-relative globs that mark a file as a test for the code lens's lexical tests. There is no built-in list: with none written, no file is a test.</summary>
+    public IReadOnlyList<string> TestGlobs { get; init; } = [];
+
     /// <summary>'context.extract.recognizers' (S-SK): the profile's extra surface recognizers, added to the built-in forms. Empty by default.</summary>
     public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
+
+    /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
+    public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
+
+    /// <summary>'context.publish': when a refreshed map becomes the current one (retrieval spec §8.7a).</summary>
+    public PublishSettings Publish { get; init; } = new();
+
+    /// <summary>'context.ranker': the feature stage and the rerank arm of the query (Phase 8). Both off by default.</summary>
+    public RankerSettings Ranker { get; init; } = new();
 }

@@ -82,5 +82,6 @@
       "to": "scoping",
       "cap": 3
     }
-  ]
+  ],
+  "displayName": "Project"
 }

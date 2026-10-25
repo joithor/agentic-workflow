@@ -17,7 +17,8 @@
         "code:src/tabs/TabGroups.ts"
       ],
       "parent": "feature:tabs.tab-groups",
-      "trust": "untrusted"
+      "trust": "untrusted",
+      "repo": "aw-split-panes"
     },
     {
       "node": "feature:tabs.pinned-tabs",

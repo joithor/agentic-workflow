@@ -8,7 +8,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "intake",
       "chip": {
@@ -143,7 +144,13 @@
         "ApplyCommand:answer-text",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null,
+      "waitingOn": "you",
+      "takenOverBy": null
     }
   ],
   "counts": {

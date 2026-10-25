@@ -114,12 +114,9 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
 
         try
         {
-            var view = await TemporalReads.Run(
-                _ => client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
-                    .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = TemporalReads.Rpc(cancellationToken, QueryPatience) }),
-                cancellationToken).ConfigureAwait(false);
+            var view = await Query(client.Value, address, cancellationToken).ConfigureAwait(false);
             known.Remember(address);   // a read cache for the id-to-address hop, not instance state
-            return view;
+            return await LiveChildren.Of(view, (child, token) => Query(client.Value, child, token), cancellationToken).ConfigureAwait(false);   // engine P7: each child as it answers now (owner answer Q2)
         }
         catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
         {
@@ -142,6 +139,13 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
             return WorkflowErrors.InstanceNotFound.With($"{address.Value} can't be queried yet: {e.Message} (fix: try again in a moment)");
         }
     }
+
+    /// <summary>The 'GetInstance' Query on <paramref name="address"/>, bounded by <see cref="QueryPatience"/>.</summary>
+    private static Task<InstanceView> Query(ITemporalClient client, InstanceAddress address, CancellationToken cancellationToken) =>
+        TemporalReads.Run(
+            _ => client.GetWorkflowHandle<RecipeWorkflow>(address.Value)
+                .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = TemporalReads.Rpc(cancellationToken, QueryPatience) }),
+            cancellationToken);
 
     public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken) => command switch
     {
