@@ -41,7 +41,7 @@ public sealed class ScopedReadsMcpTests : IDisposable
             $"  - {{alias: \"feature:old.in\", target: \"{InGraph}\"}}",
             $"  - {{alias: \"feature:old.out\", target: \"{NotInGraph}\"}}") + "\n", ct);
         await ContextMapApiTests.Import(host, file);
-        using var scope = host.App.Services.CreateScope();
+        await using var scope = host.App.Services.CreateAsyncScope();
         var node = new ScopeGraphNode(ScopeGraphNodeId.From(InGraph), Kind: "feature", Path: null, Symbol: null, Summary: "In scope", Rank: 1, Lens: "product", LensItem: "L-product-1", Band: "own", Citations: []);
         var graph = new ScopeGraphView(Version: 1, MapVersion: "v1", Anchors: [InGraph], Depth: 1, Hops: [], Nodes: [node], Edges: [], Limits: []);
         var kept = await scope.ServiceProvider.GetRequiredService<IContextEngine>().RememberScopeGraph(Instance, graph, ct);
@@ -51,7 +51,7 @@ public sealed class ScopedReadsMcpTests : IDisposable
 
     private static async Task<IReadOnlyList<GraphRead>> Reads(GoldenHost host)
     {
-        using var scope = host.App.Services.CreateScope();
+        await using var scope = host.App.Services.CreateAsyncScope();
         var reads = await scope.ServiceProvider.GetRequiredService<IContextEngine>().GraphReads(Instance, Run, TestContext.Current.CancellationToken);
         Assert.True(reads.IsSuccess, reads.IsError ? reads.Error.Message : null);
         return reads.Value;
@@ -153,6 +153,6 @@ public sealed class ScopedReadsMcpTests : IDisposable
 
         Assert.All([inside, neighbors, query], r => Assert.NotEqual(true, r.IsError));
         Assert.Equal(("SND-CONTEXT-154", "SND-CONTEXT-154"), (Code(outside), Code(queryOutside)));
-        Assert.Equal([InGraph, InGraph, InGraph], (await Reads(host)).Select(r => r.Node));
+        Assert.Equal([InGraph, InGraph, InGraph], (await Reads(host)).Select(r => r.Node), StringComparer.Ordinal);
     }
 }
