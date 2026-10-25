@@ -80,7 +80,7 @@ internal sealed partial class RecipeWorkflow
 
         _fills = fills;
         _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
-        _timings = [.. fills.Where(static f => f.Recorded.DurationMs is not null).Select(static f => new InputTiming(f.Recorded.Input, f.Recorded.DurationMs!.Value))];
+        _timings = [.. fills.Select(static f => f.Recorded.DurationMs is { } ms ? new InputTiming(f.Recorded.Input, ms) : null).OfType<InputTiming>()];
         await MirrorInjection(instance, open).ConfigureAwait(true);
         return default;
     }
@@ -154,8 +154,8 @@ internal sealed partial class RecipeWorkflow
                     return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, requests[i].Input).ConfigureAwait(true));
                 case { InnerException: not CanceledFailureException } failure:
                     return await InputFailed(instance, open, requests[i].Input, failure).ConfigureAwait(true);
-                default:
-                    throw failures[i]!;   // a cancelled fill: the workflow is being cancelled
+                case { } cancelled:
+                    throw cancelled;   // a cancelled fill: the workflow is being cancelled
             }
         }
 

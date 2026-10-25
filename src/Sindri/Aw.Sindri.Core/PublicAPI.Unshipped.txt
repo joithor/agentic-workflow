@@ -18625,3 +18625,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Equals(Aw.Sindri.Core.Workflo
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Input.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Input.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.InputTiming(Aw.Sindri.Core.Workflow.Ids.BlockId Input, long DurationMs) -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? right) -> bool
