@@ -51,7 +51,7 @@ public static class EngineNotices
         {
             { Kind: SuspensionKind.Takeover } when change == WorkflowEventType.Notified =>
                 (NoticeClass.Interrupt, $"hand back {after.Item.Value}? {address} is still taken over"),
-            { Kind: SuspensionKind.Park } park when park != before?.Suspension =>
+            { Kind: SuspensionKind.Park } park when AsksAHuman(park, before) =>
                 (NoticeClass.Interrupt, $"{address} parked ({Reason(park.Reason)}): {park.Question}"),
             { Kind: SuspensionKind.Escalation } escalation when escalation != before?.Suspension =>
                 (NoticeClass.Interrupt, $"{address} escalated: {escalation.Question}"),
@@ -79,6 +79,10 @@ public static class EngineNotices
         };
         return [(new EffectCommand(_notify, EffectIdentity.ForNotice(after.Id, after.Frame.Entry, version), CommandOrigin.Engine, with), kind)];
     }
+
+    // A new park notifies, except one for a dependency that is down: it asks nothing of a human, and health shows it.
+    private static bool AsksAHuman(Suspension park, WorkflowInstance? before) =>
+        park != before?.Suspension && park.Reason != ParkReason.Unavailable;
 
     /// <summary>Whether a change leaving the instance as <paramref name="after"/> sent a desk-task notice (the first one interrupts).</summary>
     /// <param name="after">The instance after the change.</param>
@@ -109,6 +113,7 @@ public static class EngineNotices
         ParkReason.Timeout => "timeout",
         ParkReason.SpecConflict => "spec-conflict",
         ParkReason.NoRuntime => "SND-WF-010",
+        ParkReason.Unavailable => "unavailable",
         _ => "parked",
     };
 }

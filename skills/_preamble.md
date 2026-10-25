@@ -2,7 +2,7 @@
 
 Every skill starts by reading this file and following it. Run **Session Close** at the end of the skill.
 
-> **Agentic Workflow** — 53 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill family). Works in Claude Code, Codex, and Cursor. Run any as `/<name>` (Claude Code, Cursor) or `$<name>` (Codex).
+> **Agentic Workflow** — 55 native skills + 3 fetched external packs (impeccable, emil-design-eng, taste-skill family). Works in Claude Code, Codex, and Cursor. Run any as `/<name>` (Claude Code, Cursor) or `$<name>` (Codex).
 >
 > **Provider tools:** skills name capabilities (**Ask the user**, **Spawn a subagent**, **Dispatch in parallel**, **Invoke skill**, `mcp: <server>/<tool>`). Map each to your host's tool via `$HOME/.agentic-workflow/toolkit/skills/_shared/capabilities.md`.
 >
@@ -40,12 +40,14 @@ Every skill starts by reading this file and following it. Run **Session Close** 
 > | `/design-implement-web` | Generate web production code (CSS/Tailwind/Next.js) |
 > | `/design-implement-ios` | Generate SwiftUI components from design tokens |
 > | `/design-refine` | Dispatch Impeccable refinement commands |
-> | `/design-verify` | Detect web vs iOS, screenshot diff vs mockup (dispatcher) |
+> | `/design-verify` | Detect web vs iOS vs desktop, screenshot diff vs mockup (dispatcher) |
 > | `/design-verify-web` | Playwright screenshot diff vs mockup (web) |
 > | `/design-verify-ios` | Simulator screenshot diff vs mockup (iOS) |
-> | `/verify-app` | Detect web vs iOS, verify running app (dispatcher) |
+> | `/design-verify-desktop` | Real desktop app on seeded data, screen diff vs mockup (desktop) |
+> | `/verify-app` | Detect web vs iOS vs desktop, verify running app (dispatcher) |
 > | `/verify-web` | Playwright browser verification of running web app |
 > | `/verify-ios` | XcodeBuildMCP simulator verification of iOS app |
+> | `/verify-desktop` | Real desktop app on seeded data, checked against its mockups |
 > | `/autoplan` | Plan meta-orchestrator (productReview + archReview + planDesignReview + planDevexReview + cso in parallel) |
 > | `/planDesignReview` | Design-lens review of plan docs |
 > | `/planDevexReview` | DX-lens review of plan docs |
@@ -67,6 +69,10 @@ Every skill starts by reading this file and following it. Run **Session Close** 
 > ### Meta-Orchestration Convention
 >
 > Every native pipeline skill ends its response with a `## Next steps` block listing 1–3 recommended successor skills with one-line reasons. This is the meta-orchestration layer — skills hand off through structured suggestions, not by importing each other's logic. Three stage orchestrators (`/autoplan`, `/design-refine`, `/shipRelease`) fan out subagents in parallel and consolidate findings.
+
+## Reply Voice
+
+Every reply to the user follows `$HOME/.agentic-workflow/toolkit/config/voice/joi.md` (concrete, answer first, in Joi's voice). Read it now, and read `config/voice/joi-examples.md` next to it before a long or complex reply. It covers replies only, not PR bodies, issues, commits or code comments.
 
 ## Codebase Navigation
 
@@ -99,7 +105,7 @@ TOOLKIT="$HOME/.agentic-workflow/toolkit"
 SHARED_DIR="$TOOLKIT/skills/_shared"
 SKILLS_OK=true
 [ -d "$TOOLKIT/skills" ] && [ -s "$HOME/.agentic-workflow/providers" ] || SKILLS_OK=false
-for s in review postReview addressReview enhancePrompt bootstrap rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios verify-app verify-web verify-ios autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator reflect correct new-package new-slice meta; do
+for s in review postReview addressReview enhancePrompt bootstrap rootCause bugHunt bugReport shipRelease syncDocs weeklyRetro officeHours productReview archReview withInterview design-analyze design-analyze-web design-analyze-ios design-language design-evolve design-evolve-web design-evolve-ios design-mockup design-mockup-web design-mockup-ios design-implement design-implement-web design-implement-ios design-refine design-verify design-verify-web design-verify-ios design-verify-desktop verify-app verify-web verify-ios verify-desktop autoplan planDesignReview planDevexReview cso design-shotgun landAndDeploy canary prismStatus specToProvenPR testAudit judge ui-evidence bugFixOrchestrator reflect correct new-package new-slice meta; do
   while read -r _prov _dir; do
     [ -d "$_dir/$s" ] || SKILLS_OK=false
   done < "$HOME/.agentic-workflow/providers" 2>/dev/null

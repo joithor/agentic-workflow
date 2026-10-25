@@ -92,7 +92,7 @@ Write `.agentic-workflow/deploy.json` (create the dir if missing). Exit without 
 11. Run each `deploy.smokeTests[]` command sequentially. Capture each exit code and stdout.
     - Any non-zero → mark deploy DEGRADED.
 
-12. If `deploy.journey` is configured: drive the deployed app — **Invoke skill `verify-app`** with args `--base-url <journey.baseUrl> --yes <journey.args>`. A FAIL verdict → mark deploy DEGRADED and record the evidence-pack path in `deploy.md`.
+12. If `deploy.journey` is configured: drive the deployed app — **Invoke skill `verify-app`** with args `--base-url <journey.baseUrl> --yes <journey.args>`. A deployed desktop app is not driven here (desktop evidence runs on seeded local data, before the release). A FAIL verdict → mark deploy DEGRADED and record the evidence-pack path in `deploy.md`.
 
 13. Write `~/.agentic-workflow/$REPO_SLUG/releases/<release-id>/deploy.md`. When invoked with `--chained-from-ship`, include a `## Ship Phase` subsection at the top from the `.pending-ship.json` metadata. The merge-SHA-based release-id ensures this file lives in the same subdir as `canary.md`, so the full release (ship + deploy + canary + docs-sync) lives under one folder.
     ```markdown

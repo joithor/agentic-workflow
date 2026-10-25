@@ -16,9 +16,14 @@ internal static class RowSentences
         StateChip.Done or StateChip.Failed or StateChip.DidntWorkOut or StateChip.Cancelled => view.Outcome?.Value ?? "done",
         StateChip.WithYou => $"with you: {view.Activity ?? view.State}",
         StateChip.Decision => $"needs your {Answer(view)} (desk answer)",
+        StateChip.Parked when IsUnavailable(view) => "waiting on a dependency that is down",
         StateChip.Parked or StateChip.Escalated => view.AnswerLine is not null ? "needs your answer" : $"{chip.Word.ToLowerInvariant()}{(view.Detail is { } detail ? $" ({detail})" : string.Empty)}",
         _ => Running(view),
     };
+
+    /// <summary>Whether the park is a Step whose dependency stayed down: nobody is asked, the engine runs it again on a resume.</summary>
+    internal static bool IsUnavailable(InstanceView view) =>
+        view.EngineOwned is { Kind: EngineOwnedKind.Parked } parked && parked.Reason.StartsWith("unavailable", StringComparison.Ordinal);   // 'unavailable', or 'unavailable (child)' on a mirror
 
     /// <summary>What the open desk task asks for: its first output the report must carry, else the state's name.</summary>
     private static string Answer(InstanceView view) =>

@@ -64,6 +64,8 @@ Observe actual behavior instead of inferring it from static output:
 
 > **Invoke skill `verify-app`** with args `--yes`
 
+For a desktop app `verify-app` runs `verify-desktop`: each screen that mismatches its mockup becomes a row too.
+
 Fold the resulting evidence pack (`skills/_shared/evidence-pack.md`) into the audit: each FAIL check/journey becomes a Bugs-table row with source `runtime`, and the pack path is cited in the report. Skip this step entirely without the flag.
 
 ## Step 4: Score
