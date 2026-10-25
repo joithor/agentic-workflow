@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Features.GetCode;
 
 namespace Aw.Context.Tests.GetCode;
@@ -16,14 +17,14 @@ public sealed class FanoutTests
         await Fanout.ForEach(_items, async (item, token) =>
         {
             await Task.Delay(TimeSpan.FromMilliseconds((_items.Length - item) * 3), token);
-            return "r" + item;
+            return "r" + item.ToString(CultureInfo.InvariantCulture);
         }, (item, result) =>
         {
             taken.Add((item, result));
             return true;
         }, degree: 4, TestContext.Current.CancellationToken);
 
-        Assert.Equal(_items.Select(i => (i, "r" + i)), taken);
+        Assert.Equal(_items.Select(i => (i, "r" + i.ToString(CultureInfo.InvariantCulture))), taken);
     }
 
     [Fact, Trait("Lane", "unit")]

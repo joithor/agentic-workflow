@@ -13,7 +13,7 @@ public sealed class FillBandsTests
         using var listener = new ActivityListener
         {
             ShouldListenTo = source => source.Name == "Aw.Context",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            Sample = (ref _) => ActivitySamplingResult.AllData,
             ActivityStarted = activity => started.Add(activity.OperationName),
         };
         ActivitySource.AddActivityListener(listener);
@@ -26,7 +26,7 @@ public sealed class FillBandsTests
         {
         }
 
-        Assert.Contains(FillBands.CodeLexical, started);
-        Assert.Contains(FillBands.History, started);
+        Assert.Contains(FillBands.CodeLexical, started, StringComparer.Ordinal);
+        Assert.Contains(FillBands.History, started, StringComparer.Ordinal);
     }
 }
