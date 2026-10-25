@@ -67,11 +67,11 @@ internal static class ScopedReads
     {
         if (!arguments.TryGetValue(ReasonName, out var value) || value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
         {
-            return Results.Success<string?>(value: null);
+            return Aw.Kernel.Results.Success<string?>(value: null);
         }
 
         return value.ValueKind == JsonValueKind.String
-            ? Results.Success<string?>(value.GetString())
+            ? Aw.Kernel.Results.Success<string?>(value.GetString())
             : ContextErrors.McpArgumentsInvalid.With($"{tool}: 'reason' must be a string (fix: see the tool's input schema)");
     }
 
