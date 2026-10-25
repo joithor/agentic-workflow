@@ -39,8 +39,8 @@ public sealed class LabelOutcomesTests
         var result = await Service(store, reader).Handle(A.LabelOutcomesRequest().Build(), _ct);
 
         Assert.Equal(new LabelOutcomesResponse(Labeled: 1, NoSignal: 0), result.Value);
-        var label = Assert.Single(store.Labels);
-        Assert.Equal((store.Candidates[0].Item, LabelSource.Outcome, expected), (label.Item, label.Source, label.Label));
+        var (item, source, label, _) = Assert.Single(store.Labels);
+        Assert.Equal((store.Candidates[0].Item, LabelSource.Outcome, expected), (item, source, label));
     }
 
     [Fact, Trait("Lane", "unit")]

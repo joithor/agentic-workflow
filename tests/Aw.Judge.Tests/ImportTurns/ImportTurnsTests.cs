@@ -53,11 +53,11 @@ public sealed class ImportTurnsTests
     {
         var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))]));
 
-        await harness.Run();
+        _ = await harness.Run();
         var again = await harness.Run();
 
         Assert.Equal(new ImportTurnsResponse(Imported: 0, Skipped: 1, Unreadable: 0), again.Value);
-        Assert.Single(harness.Store.Items);
+        _ = Assert.Single(harness.Store.Items);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -66,11 +66,11 @@ public sealed class ImportTurnsTests
         var kept = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(index: 1, "thanks, now the docs")]));
         var corrected = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "", "int x = 1;\nint y = 2;")), Turn(index: 1, "no, revert that")]));
 
-        await kept.Run();
-        await corrected.Run();
+        _ = await kept.Run();
+        _ = await corrected.Run();
 
-        var label = Assert.Single(kept.Store.Labels);
-        Assert.Equal((TurnOutcomes.Progressing, LabelSource.Outcome), (label.Label, label.Source));
+        var (_, source, label, _) = Assert.Single(kept.Store.Labels);
+        Assert.Equal((TurnOutcomes.Progressing, LabelSource.Outcome), (label, source));
         Assert.Equal(TurnOutcomes.Stalled, Assert.Single(corrected.Store.Labels).Label);
     }
 
@@ -81,8 +81,8 @@ public sealed class ImportTurnsTests
         var open = new Harness(Transcript(turns, end: _start.AddHours(1)), now: _start.AddHours(2));
         var closed = new Harness(Transcript(turns, end: _start.AddHours(1)), now: _start.AddHours(8));
 
-        await open.Run();
-        await closed.Run();
+        _ = await open.Run();
+        _ = await closed.Run();
 
         Assert.Empty(open.Store.Labels);
         Assert.Equal(TurnOutcomes.Progressing, Assert.Single(closed.Store.Labels).Label);
@@ -103,9 +103,9 @@ public sealed class ImportTurnsTests
     public async Task ImportTurns_puts_the_goal_of_the_sessions_task_brief_into_the_problem()
     {
         var harness = new Harness(Transcript([Turn(index: 0, "fix it", Edit("a.cs", "old", "new"))]));
-        await harness.Briefs.Save(A.Brief().WithToolUseId("task:sess-1").Build(), _ct);
+        _ = await harness.Briefs.Save(A.Brief().WithToolUseId("task:sess-1").Build(), _ct);
 
-        await harness.Run();
+        _ = await harness.Run();
 
         var input = JsonNode.Parse(Assert.Single(harness.Store.Items).InputJson)!;
         Assert.Equal("Goal: Fix the failing test\n\nfix it", (string?)input["problem"]);
@@ -118,7 +118,7 @@ public sealed class ImportTurnsTests
         var secret = SampleSecrets.AnthropicKey;
         var harness = new Harness(Transcript([Turn(index: 0, $"use {secret} to log in", Edit($"{secret}.cs", $"old {secret}", $"new {secret}"))]));
 
-        await harness.Run();
+        _ = await harness.Run();
 
         var stored = Assert.Single(harness.Store.Items).InputJson;
         Assert.DoesNotContain(secret, stored, StringComparison.Ordinal);
@@ -149,7 +149,7 @@ public sealed class ImportTurnsTests
             var reader = new InMemoryTranscriptReader();
             if (transcript is not null)
             {
-                reader.Add(_session, Path, transcript);
+                _ = reader.Add(_session, Path, transcript);
             }
 
             Store = new FakeTurnEvalStore { Unavailable = unavailable };

@@ -27,11 +27,11 @@ internal sealed class FakeTurnEvalStore : IEvalStore
 
         if (Items.Exists(i => i.Source == item.Source))
         {
-            return Done(false);
+            return Done(value: false);
         }
 
         Items.Add(item);
-        return Done(true);
+        return Done(value: true);
     }
 
     public ValueTask<Result<Unit>> RecordLabel(EvalItemId item, LabelSource source, string label, DateTimeOffset at, CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ internal sealed class FakeTurnEvalStore : IEvalStore
         }
 
         Labels.Add((item, source, label, at));
-        return Done(Results.Ok());
+        return Done(Unit.Value);
     }
 
     public ValueTask<Result<IReadOnlyList<OutcomeCandidate>>> OutcomeCandidates(CancellationToken cancellationToken) =>
