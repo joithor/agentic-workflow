@@ -98,7 +98,7 @@ public sealed class ConceptGlossaryDeriveTests
 
         var map = ConceptDeriver.Derive(Product(), [pin], names: null, Glossary());
 
-        Assert.Equal(["feature:lone"], Members(map, "concept:dragging"));
+        Assert.Equal(["feature:lone"], Members(map, "concept:dragging"), StringComparer.Ordinal);
         Assert.DoesNotContain("feature:lone", Members(map, "concept:tabs"));
         Assert.Contains("drag", Terms(Concept(map, "concept:dragging")), StringComparer.Ordinal);
     }

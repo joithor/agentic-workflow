@@ -172,6 +172,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<SearchMapRequest, MapSearchView>, SearchMapService>()
         .AddSingleton<MapSearchCache>()
         .AddScoped<LensBasisReader>()
+        .AddScoped<ContextConceptReads>()
         .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()
         .AddScoped<CodeLexicalSearch>()

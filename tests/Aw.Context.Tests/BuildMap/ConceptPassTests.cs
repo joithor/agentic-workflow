@@ -75,7 +75,7 @@ public sealed class ConceptPassTests
 
         var outcome = await Run(down);
 
-        Assert.Equal(["glossary"], outcome.Notes);
+        Assert.Equal(["glossary"], outcome.Notes, StringComparer.Ordinal);
         Assert.Empty(Terms(outcome, "concept:tabs"));
         Assert.True(Belongs(outcome, "feature:lone", "concept:billing"));
     }
@@ -132,7 +132,7 @@ public sealed class ConceptPassTests
     {
         var outcome = await Run(Vectors(), new CapturingNamer { Failure = ContextErrors.SourceUnavailable.With("no model") });
 
-        Assert.Equal(["concepts"], outcome.Notes);
+        Assert.Equal(["concepts"], outcome.Notes, StringComparer.Ordinal);
         Assert.Contains("strip", Terms(outcome, "concept:tabs"), StringComparer.Ordinal);
     }
 

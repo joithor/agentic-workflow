@@ -18,7 +18,7 @@ public sealed class ConceptGlossaryReadTests
     {
         var view = ConceptBuilder.Build(ConceptGraph.Basis, new ConceptsQuery(MapRead.Current, new ConceptPage()), Terms().Build(), ConceptGraph.Text).Value;
 
-        Assert.Equal(["shift", "swap", "roster"], view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Terms);
+        Assert.Equal(["shift", "swap", "roster"], view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Terms, StringComparer.Ordinal);
         Assert.Null(view.Concepts.Single(c => c.Id.Value == "concept:plain").Terms);
     }
 
@@ -29,7 +29,7 @@ public sealed class ConceptGlossaryReadTests
 
         Assert.Equal((1, "v7", ConceptStates.Ok), (view.ApiVersion, view.MapVersion, view.State));
         Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id.Value), StringComparer.Ordinal);
-        Assert.Equal(["shift", "swap", "roster"], view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Terms);
+        Assert.Equal(["shift", "swap", "roster"], view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Terms, StringComparer.Ordinal);
         Assert.Equal(["invoice", "roster", "shift", "swap"], view.Terms.Select(t => t.Term), StringComparer.Ordinal);
         Assert.Equal(["concept:billing", "concept:scheduling"], view.Terms.Single(t => t.Term == "roster").Concepts.Select(c => c.Value), StringComparer.Ordinal);
     }

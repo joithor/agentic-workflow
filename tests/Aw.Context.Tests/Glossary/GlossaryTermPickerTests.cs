@@ -16,7 +16,7 @@ public sealed class GlossaryTermPickerTests
     {
         var top = GlossaryTermPicker.Top(SharedLedger(), ["feature:a", "feature:b"], take: 1);
 
-        Assert.Equal(["ledger"], top);
+        Assert.Equal(["ledger"], top, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -27,7 +27,7 @@ public sealed class GlossaryTermPickerTests
         var all = GlossaryTermPicker.Top(glossary, ["feature:c"], take: 10);
         var capped = GlossaryTermPicker.Top(glossary, ["feature:a", "feature:b"], take: 2);
 
-        Assert.Equal(["roster"], all);
+        Assert.Equal(["roster"], all, StringComparer.Ordinal);
         Assert.Equal(2, capped.Count);
         Assert.DoesNotContain("roster", capped, StringComparer.Ordinal);
     }

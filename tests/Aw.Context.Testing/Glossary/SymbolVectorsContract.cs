@@ -30,7 +30,7 @@ public abstract class SymbolVectorsContract<TSource>
         Check(read.IsSuccess && read.Value.Vectors.Count == 1, "one embedded symbol");
         var vector = read.Value.Vectors[0];
         Check(vector.Path == "src/Shift.cs" && vector.Symbol.Name == "ShiftSwap" && vector.Symbol.Vector.ToArray().SequenceEqual([1f, 0f]), "its name, file and vector");
-        Check(read.Value.Missing.SequenceEqual(["src/None.cs"]), "the file with no vector is missing");
+        Check(read.Value.Missing.SequenceEqual(["src/None.cs"], StringComparer.Ordinal), "the file with no vector is missing");
     }
 
     /// <summary>Only the asked paths are answered.</summary>
