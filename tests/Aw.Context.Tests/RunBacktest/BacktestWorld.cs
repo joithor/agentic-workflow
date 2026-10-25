@@ -87,8 +87,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IFileHistory>(new GitFileHistory(git))
             .AddSingleton<IBriefSource>(Briefs).AddSingleton<IDefaultBranch>(new FakeDefaultBranch())
             .AddSingleton<IAsOfDocs>(new AsOfDocsFactory(git, Clock))
-            .AddSingleton<IEvalStore>(new FileEvalStore(Settings))
-            .AddSingleton<IScopeRunStore>(new FakeScopeRunStore())
+            .AddSingleton<IEvalStore>(new FileEvalStore(Settings)).AddSingleton<IScopeRunStore>(new FakeScopeRunStore())
             .AddContextFeatures()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
         _scope = _provider.CreateScope();

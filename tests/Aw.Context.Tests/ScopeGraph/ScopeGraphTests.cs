@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.ScopeGraph;
@@ -35,7 +36,7 @@ public sealed class ScopeGraphTests : IDisposable
         Assert.Contains(one.Nodes, n => n.Id.Value == Groups);
         Assert.Contains(one.Nodes, n => n.Id.Value == SwitchTab);
         Assert.Contains(wide.Nodes, n => n.Id.Value == PaneLayout);
-        Assert.True(one.Nodes.Count < wide.Nodes.Count, $"{one.Nodes.Count} nodes at depth 1, {wide.Nodes.Count} at depth 4");
+        Assert.True(one.Nodes.Count < wide.Nodes.Count, string.Create(CultureInfo.InvariantCulture, $"{one.Nodes.Count} nodes at depth 1, {wide.Nodes.Count} at depth 4"));
         Assert.Equal((1, 4), (one.Depth, wide.Depth));
     }
 
@@ -55,7 +56,7 @@ public sealed class ScopeGraphTests : IDisposable
 
         var ids = view.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(view.Edges);
-        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value), $"{e.From} {e.Type} {e.To} has an end outside the graph"));
+        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value), string.Create(CultureInfo.InvariantCulture, $"{e.From.Value} {e.Type} {e.To.Value} has an end outside the graph")));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -85,7 +86,7 @@ public sealed class ScopeGraphTests : IDisposable
 
         var worstProduct = view.Nodes.Where(n => !n.Id.Value.StartsWith("code:", StringComparison.Ordinal)).Max(n => n.Rank);
         var bestCode = view.Nodes.Where(n => n.Id.Value.StartsWith("code:", StringComparison.Ordinal)).Min(n => n.Rank);
-        Assert.True(worstProduct < bestCode, $"product ranks end at {worstProduct} but code starts at {bestCode}");
+        Assert.True(worstProduct < bestCode, string.Create(CultureInfo.InvariantCulture, $"product ranks end at {worstProduct} but code starts at {bestCode}"));
     }
 
     [Fact, Trait("Lane", "unit")]

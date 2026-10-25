@@ -1,4 +1,3 @@
-using Aw.Context.Core;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.ScopeGraph;
@@ -13,7 +12,7 @@ public sealed class ScopedGraphReadsTests : IDisposable
     private const string Run = "1.1";
     private const string Manager = "feature:main.core";
     private const string Elsewhere = "feature:other.island";   // joined to nothing, so no graph around the manager holds it
-    private static readonly string Map = MapWorld.Yaml(
+    private static readonly string _map = MapWorld.Yaml(
         "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
         $"  - {{key: \"{Manager}\", label: \"Core\"}}",
         "  - {key: \"feature:main.part\", label: \"Part\"}",
@@ -29,7 +28,7 @@ public sealed class ScopedGraphReadsTests : IDisposable
     {
         if (!_imported)
         {
-            _ = await _world.ImportYaml(Map);
+            _ = await _world.ImportYaml(_map);
             _imported = true;
         }
 
@@ -52,7 +51,7 @@ public sealed class ScopedGraphReadsTests : IDisposable
 
         Assert.True(read.IsSuccess, read.IsError ? read.Error.Message : null);
         var logged = Assert.Single(log.Value);
-        Assert.Equal((Manager, "context_node", false, (string?)null), (logged.Node, logged.Tool, logged.Outside, logged.Reason));
+        Assert.Equal((Manager, "context_node", false, null), (logged.Node, logged.Tool, logged.Outside, logged.Reason));
     }
 
     [Fact, Trait("Lane", "unit")]
