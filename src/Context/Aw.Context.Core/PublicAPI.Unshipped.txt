@@ -7011,3 +7011,48 @@ Aw.Context.Core.Engine.ContextRepo.Concepts.get -> System.Collections.Generic.IR
 Aw.Context.Core.Engine.ContextRepo.Concepts.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>?
 Aw.Context.Core.Engine.ProfileRepoEntry.Concepts.init -> void
+Aw.Context.Core.Concepts.ConceptName
+Aw.Context.Core.Concepts.ConceptName.<Clone>$() -> Aw.Context.Core.Concepts.ConceptName!
+Aw.Context.Core.Concepts.ConceptName.ConceptName(string! Name, string? Summary = null) -> void
+Aw.Context.Core.Concepts.ConceptName.Deconstruct(out string! Name, out string? Summary) -> void
+Aw.Context.Core.Concepts.ConceptName.Equals(Aw.Context.Core.Concepts.ConceptName? other) -> bool
+Aw.Context.Core.Concepts.ConceptName.Name.get -> string!
+Aw.Context.Core.Concepts.ConceptName.Name.init -> void
+Aw.Context.Core.Concepts.ConceptName.Summary.get -> string?
+Aw.Context.Core.Concepts.ConceptName.Summary.init -> void
+Aw.Context.Core.Concepts.ConceptNames
+Aw.Context.Core.Concepts.ConceptNames.<Clone>$() -> Aw.Context.Core.Concepts.ConceptNames!
+Aw.Context.Core.Concepts.ConceptNames.ConceptNames(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Concepts.ConceptName!>! BySeed) -> void
+Aw.Context.Core.Concepts.ConceptNames.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Concepts.ConceptName!>! BySeed) -> void
+Aw.Context.Core.Concepts.ConceptNames.Equals(Aw.Context.Core.Concepts.ConceptNames? other) -> bool
+Aw.Context.Core.Concepts.ConceptNames.BySeed.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Concepts.ConceptName!>!
+Aw.Context.Core.Concepts.ConceptNames.BySeed.init -> void
+Aw.Context.Core.Concepts.ConceptGroup
+Aw.Context.Core.Concepts.ConceptGroup.<Clone>$() -> Aw.Context.Core.Concepts.ConceptGroup!
+Aw.Context.Core.Concepts.ConceptGroup.ConceptGroup(string! Seed, string! Label, System.Collections.Generic.IReadOnlyList<string!>! Features, System.Collections.Generic.IReadOnlyList<string!>! Records) -> void
+Aw.Context.Core.Concepts.ConceptGroup.Deconstruct(out string! Seed, out string! Label, out System.Collections.Generic.IReadOnlyList<string!>! Features, out System.Collections.Generic.IReadOnlyList<string!>! Records) -> void
+Aw.Context.Core.Concepts.ConceptGroup.Equals(Aw.Context.Core.Concepts.ConceptGroup? other) -> bool
+Aw.Context.Core.Concepts.ConceptGroup.Seed.get -> string!
+Aw.Context.Core.Concepts.ConceptGroup.Seed.init -> void
+Aw.Context.Core.Concepts.ConceptGroup.Label.get -> string!
+Aw.Context.Core.Concepts.ConceptGroup.Label.init -> void
+Aw.Context.Core.Concepts.ConceptGroup.Features.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptGroup.Features.init -> void
+Aw.Context.Core.Concepts.ConceptGroup.Records.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptGroup.Records.init -> void
+Aw.Context.Core.Concepts.ConceptDeriver
+Aw.Context.Core.Concepts.IConceptNamer
+Aw.Context.Core.Concepts.IConceptNamer.Name(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptGroup!>! groups, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns, int maxTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptNames!>!>
+static Aw.Context.Core.Concepts.ConceptDeriver.Groups(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>! pins) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptGroup!>!
+static Aw.Context.Core.Concepts.ConceptDeriver.Derive(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptPin!>! pins, Aw.Context.Core.Concepts.ConceptNames? names) -> Aw.Context.Core.Extract.ExtractedMap!
+Aw.Context.Core.Models.ModelPurpose.Concepts = 5 -> Aw.Context.Core.Models.ModelPurpose
+override Aw.Context.Core.Concepts.ConceptName.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptName.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptName.ToString() -> string!
+override Aw.Context.Core.Concepts.ConceptNames.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptNames.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptNames.ToString() -> string!
+override Aw.Context.Core.Concepts.ConceptGroup.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptGroup.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptGroup.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptNames.None.get -> Aw.Context.Core.Concepts.ConceptNames!
