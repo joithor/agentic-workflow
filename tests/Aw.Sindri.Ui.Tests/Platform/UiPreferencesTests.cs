@@ -122,7 +122,7 @@ public sealed class UiPreferencesTests
         var clamped = (UiPreferences.Defaults with { SeenIds = ["", " ", .. many, "r5"] }).Clamp().SeenIds;
 
         Assert.Equal(UiPreferences.MaxSeenIds, clamped.Count);
-        Assert.Equal(("r509", "r5"), (clamped[^2], clamped[^1]));   // a repeat keeps its newest place
+        Assert.Equal(("r" + (UiPreferences.MaxSeenIds + 9).ToString(System.Globalization.CultureInfo.InvariantCulture), "r5"), (clamped[^2], clamped[^1]));   // a repeat keeps its newest place
         Assert.DoesNotContain("", clamped, StringComparer.Ordinal);
         Assert.Equal(clamped.Count, clamped.Distinct(StringComparer.Ordinal).Count());
     }
