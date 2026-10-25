@@ -39,10 +39,13 @@ public sealed class ContextSearchApiTests : IDisposable
 
         var answer = await host.Http.Ask(Get("/sindri/context/search?q=tab+manager&limit=3", Terminal(host)));
 
-        Assert.True(answer.Status == HttpStatusCode.OK, answer.Body);
+        var whole = await host.Http.Ask(Get("/sindri/context/map/whole?detail=nodes", Terminal(host)));
+        var only = await host.Http.Ask(Get("/sindri/context/search?q=manager", Terminal(host)));
+        var seen = $"search: {answer.Body}\nsearch q=manager: {only.Body}\nwhole map nodes: {string.Join(' ', Json(whole.Body).TryGetProperty("nodes", out var nodes) ? nodes.EnumerateArray().Select(static n => n.GetProperty("key").GetString()) : [whole.Body])}";
+        Assert.True(answer.Status == HttpStatusCode.OK, seen);
         var view = Json(answer.Body);
         var hits = view.GetProperty("hits").EnumerateArray().ToList();
-        Assert.True(hits[0].GetProperty("key").GetString() == "feature:tabs.tab-manager", answer.Body);   // the body names every hit, score and matched field
+        Assert.True(hits[0].GetProperty("key").GetString() == "feature:tabs.tab-manager", seen);   // the body names every hit, score and matched field
         Assert.Equal("title", hits[0].GetProperty("matched").GetString());
         Assert.True(hits.Count <= 3);
         Assert.True(view.GetProperty("total").GetInt32() >= hits.Count);
