@@ -24,15 +24,20 @@ if [ "$closed" != 1 ]; then
 fi
 
 dt click --type ListBoxItem --name Work >/dev/null || uxu_die "no Work tab"
-dt wait-for --type ToggleButton --contains "Closed (" --state visible --wait-ms 30000 >/dev/null || uxu_die "the Closed group never showed"
-dt click --type ToggleButton --contains "Closed (" >/dev/null || uxu_die "could not open the Closed group"
+# Before its first opening the fold reads "Closed" (the count comes with the read), so select it by that name.
+dt wait-for --type ToggleButton --name Closed --state visible --wait-ms 30000 >/dev/null || uxu_die "the Closed group never showed"
+dt click --type ToggleButton --name Closed >/dev/null || uxu_die "could not open the Closed group"
 dt wait-for --name QueueClosedRows --state visible --wait-ms 10000 >/dev/null || uxu_die "the Closed rows never showed"
 sleep 2
 
 # $@ = selector args (--name is AutomationProperties.Name first, else x:Name); prints that node's whole subtree as JSON.
 subtree() {
   local id
-  id="$(dt search "$@" | jq -r '.matches[0].id // empty')"
+  if [ "$1" = closed-toggle ]; then   # the fold's own header: its name is "Closed" or "Closed (n)"
+    id="$(dt search --type ToggleButton --limit 200 | jq -r '[.matches[] | select((.name // "") | startswith("Closed"))][0].id // empty')"
+  else
+    id="$(dt search "$@" | jq -r '.matches[0].id // empty')"
+  fi
   [ -n "$id" ] || { echo "no node matching $*" >&2; return 1; }
   dt tree --node-id "$id" --depth 15
 }
@@ -40,7 +45,7 @@ export -f subtree dt
 export UXU_DRIVER AW_UI_DRIVER_DIR
 
 expect "the open Closed group's arrow points down, not right" \
-  bash -c 'out="$(subtree --type ToggleButton --contains "Closed (")" || exit 1; echo "$out" | grep -q "▾" && ! echo "$out" | grep -q "▸"'
+  bash -c 'out="$(subtree closed-toggle)" || exit 1; echo "$out" | grep -q "▾" && ! echo "$out" | grep -q "▸"'
 expect "the Closed rows lie inside the Work card" \
   bash -c 'subtree --type Border --name Work | grep -q "Closed ("'
 expect "a closed item's Stage does not say 'Not started'" \
