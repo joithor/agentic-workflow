@@ -1758,3 +1758,10 @@ static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderExcluded -> Aw.Kernel.E
 static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.UnknownItem -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.NoTranscript -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Transcripts.TurnOutcomes
+const Aw.Judge.Core.Transcripts.TurnOutcomes.Progressing = "progressing" -> string!
+const Aw.Judge.Core.Transcripts.TurnOutcomes.Stalled = "stalled" -> string!
+static Aw.Judge.Core.Transcripts.TurnOutcomes.AskCheckLabel(string! action, System.DateTimeOffset decidedAt, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Transcripts.TranscriptPrompt!>! prompts) -> string?
+static Aw.Judge.Core.Transcripts.TurnOutcomes.IsRealPromptText(string! text) -> bool
+static Aw.Judge.Core.Transcripts.TurnOutcomes.TurnDiff(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Transcripts.TranscriptEdit!>! edits) -> string!
+static Aw.Judge.Core.Transcripts.TurnOutcomes.TurnLabel(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Transcripts.TranscriptTurn!>! session, int index, bool sessionClosed) -> string?
