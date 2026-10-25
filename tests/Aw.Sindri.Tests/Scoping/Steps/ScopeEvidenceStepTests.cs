@@ -250,7 +250,7 @@ public sealed class ScopeEvidenceStepTests
     public async Task Each_agent_run_in_fact_runs_carries_the_graph_nodes_its_session_read_and_the_ones_it_stepped_outside_for()
     {
         var engine = FakeContextEngine.WithProbes(new ProbeSet([]));
-        engine.GraphReadsAnswer = Aw.Kernel.Results.Success<IReadOnlyList<GraphRead>>(
+        engine.GraphReadsAnswer = Kernel.Results.Success<IReadOnlyList<GraphRead>>(
             [
                 new GraphRead("feature:sharing", "context_node", Outside: false, Reason: null, DateTimeOffset.UnixEpoch),
                 new GraphRead("feature:sharing", "context_neighbors", Outside: false, Reason: null, DateTimeOffset.UnixEpoch),
