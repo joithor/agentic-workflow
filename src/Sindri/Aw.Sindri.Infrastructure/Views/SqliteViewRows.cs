@@ -12,7 +12,8 @@ namespace Aw.Sindri.Infrastructure.Views;
 /// <param name="session">The page transaction (or a read session, for reads).</param>
 /// <param name="sequence">The sequence of the event being folded (0 for reads).</param>
 /// <param name="options">The package's AwJson options.</param>
-internal sealed class SqliteViewRows(ISqliteSession session, long sequence, JsonSerializerOptions options) : IViewRows
+/// <param name="unreadable">When given, a stored row that can't be deserialized (written under an older shape) reads as absent and is counted here; when null it is an error.</param>
+internal sealed class SqliteViewRows(ISqliteSession session, long sequence, JsonSerializerOptions options, UnreadableRows? unreadable = null) : IViewRows
 {
     public async ValueTask<Result<TRow?>> Get<TRow>(string view, string key, CancellationToken cancellationToken)
         where TRow : class
@@ -30,12 +31,13 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
         }
 
         var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(rows.Value[0]), options);
-        if (row.IsError)
+        if (row.IsError && unreadable is not null)
         {
-            return row.Error;
+            unreadable.Note();
+            return Results.Success<TRow?>(value: null);
         }
 
-        return Found(row.Value);
+        return row.IsError ? row.Error : Found(row.Value);
     }
 
     /// <summary>Every row of <paramref name="view"/>, ordered by key.</summary>
@@ -107,6 +109,12 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
         foreach (var text in texts.Value)
         {
             var row = AwJson.Deserialize<TRow>(Encoding.UTF8.GetBytes(text), options);
+            if (row.IsError && unreadable is not null)
+            {
+                unreadable.Note();
+                continue;
+            }
+
             if (row.IsError)
             {
                 return row.Error;

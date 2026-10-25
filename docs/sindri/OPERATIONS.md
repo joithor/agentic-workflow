@@ -93,7 +93,7 @@ The order for the line:
 
 ```text
 idea-to-brief
-evidence-api evidence-db evidence-ui evidence-other evidence-all evidence
+evidence-api evidence-db evidence-ui evidence-desktop evidence-other evidence-all evidence
 hand-test verify prove
 build review-loop pr-babysitter ship phase
 design plan docs-sync
