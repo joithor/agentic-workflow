@@ -158,4 +158,10 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<IReadOnlyList<GraphRead>>>(ContextErrors.ScopeGraphUnavailable.With("the engine keeps no graph call log yet"));
+
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, string runToken, ScopeGraphView graph, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("Issue 1005: the run's graph is not stored yet");
+
+    public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("Issue 1005: scoped reads are not checked yet");
 }
