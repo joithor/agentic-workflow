@@ -39,6 +39,7 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
     {
         var (fresh, _, _) = await Box();
 
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));   // the recorded start must be later than the trees' files
         var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
         Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
         var sweep = await _lab.Cli.Run("worktree-sweep");
@@ -52,6 +53,7 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
     {
         var (_, reachable, _) = await Box();
 
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));   // the recorded start must be later than the trees' files
         var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
         Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
         var sweep = await _lab.Cli.Run("worktree-sweep");

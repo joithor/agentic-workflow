@@ -88,6 +88,10 @@ internal static class WorktreeRules
             if (facts.NoPreviousSweep)
             {
                 reasons.Add("no previous sweep to compare with");
+                if (!facts.HeadMerged)
+                {
+                    reasons.Add("not merged into origin/main (no pull request)");
+                }
             }
         }
     }
