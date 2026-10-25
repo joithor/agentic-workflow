@@ -13471,15 +13471,13 @@ Aw.Sindri.Core.Scheduling.IIndexOutlooks.IndexCommits(System.Collections.Generic
 Aw.Sindri.Core.Scheduling.IIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
 Aw.Sindri.Core.Scheduling.IndexAttempt
 Aw.Sindri.Core.Scheduling.IndexAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexAttempt!
-Aw.Sindri.Core.Scheduling.IndexAttempt.Deconstruct(out bool Failed, out bool Deferred, out System.DateTimeOffset EndedAt) -> void
-Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.get -> bool
-Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deconstruct(out bool Failed, out System.DateTimeOffset EndedAt) -> void
 Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.init -> void
 Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(Aw.Sindri.Core.Scheduling.IndexAttempt? other) -> bool
 Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.get -> bool
 Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.init -> void
-Aw.Sindri.Core.Scheduling.IndexAttempt.IndexAttempt(bool Failed, bool Deferred, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.IndexAttempt(bool Failed, System.DateTimeOffset EndedAt) -> void
 Aw.Sindri.Core.Scheduling.IndexOutlook
 Aw.Sindri.Core.Scheduling.IndexOutlook.Absent = 4 -> Aw.Sindri.Core.Scheduling.IndexOutlook
 Aw.Sindri.Core.Scheduling.IndexOutlook.Backoff = 2 -> Aw.Sindri.Core.Scheduling.IndexOutlook
@@ -13598,13 +13596,12 @@ Aw.Sindri.Core.Scheduling.NoIndexOutlooks.NoIndexOutlooks() -> void
 Aw.Sindri.Core.Scheduling.NoIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
 Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.Building = 2 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.None = 0 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 7 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.Queued = 1 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.WaitingForSlot = 3 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 3 -> Aw.Sindri.Core.Scheduling.RepoWait
 abstract Aw.Sindri.Core.Scheduling.MapPublishAction.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishAction!
 const Aw.Sindri.Core.Scheduling.IndexOutlookRules.FailuresToBroken = 3 -> int
 override Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(object? obj) -> bool
@@ -13666,7 +13663,6 @@ static Aw.Sindri.Core.Scheduling.MapRepoHead.operator ==(Aw.Sindri.Core.Scheduli
 static Aw.Sindri.Core.Scheduling.MapWait.operator !=(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
 static Aw.Sindri.Core.Scheduling.MapWait.operator ==(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
 static Aw.Sindri.Core.Scheduling.MappedHeads.Of(Aw.Sindri.Core.Scheduling.MapHoldState? hold, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? currentHeads) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
-static readonly Aw.Sindri.Core.Scheduling.IndexOutlookRules.DeferredSuppress -> System.TimeSpan
 virtual Aw.Sindri.Core.Scheduling.MapPublishAction.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Scheduling.MapPublishAction.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
 virtual Aw.Sindri.Core.Scheduling.MapPublishAction.PrintMembers(System.Text.StringBuilder! builder) -> bool

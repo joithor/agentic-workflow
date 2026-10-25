@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -76,6 +77,34 @@ public sealed class WholeNodePanelTests
         Assert.Contains(panel.Groups[1].Rows, r => r.Key == Surface && r.Text.EndsWith(" · touches", StringComparison.Ordinal) && r.Text.StartsWith("→ ", StringComparison.Ordinal));
         Assert.Equal(["← " + KnownLabel(page, "code:src/tabs/TabManager.ts") + " · implements"], panel.Groups[2].Rows.Select(r => r.Text), StringComparer.Ordinal);   // named by the drawn map ("TabManager.ts"), not by its key
         Assert.Equal(["← mystery:x · relates"], panel.Groups[3].Rows.Select(r => r.Text), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_edge_row_names_the_node_at_its_other_end()
+    {
+        var (page, _, _) = await Open(Served());
+
+        await Click(page, Node);
+
+        var rows = page.Whole.Panel.Groups.SelectMany(g => g.Rows).ToList();
+        Assert.Equal(("decision", "Use tabs"), (rows.First(r => r.Key == "unknown:y").KindText, rows.First(r => r.Key == "unknown:y").LabelText));
+        Assert.Equal(("mystery", "mystery:x"), (rows.First(r => r.Key == "mystery:x").KindText, rows.First(r => r.Key == "mystery:x").LabelText));
+    }
+
+    [Fact]
+    public async Task The_panel_shows_the_node_description_and_source()
+    {
+        var served = JsonNode.Parse(GoldenFiles.Api("context-node", "tab-manager"))!;
+        served["node"]!["description"] = "Keeps the tabs.";
+        served["node"]!["source"] = JsonNode.Parse("""{ "kind": "file", "ref": "src/tabs/TabManager.ts" }""");
+        var (page, _, _) = await Open(served.ToJsonString());
+
+        await Click(page, "feature:tabs.tab-manager");
+
+        var panel = page.Whole.Panel;
+        Assert.Equal(("file: src/tabs/TabManager.ts", "Keeps the tabs."), (panel.SourceText, panel.Description));
+        var group = panel.Groups.SelectMany(g => g.Rows).First(r => string.Equals(r.LabelText, "Tab groups", StringComparison.Ordinal));
+        Assert.Equal("feature", group.KindText);
     }
 
     [Fact]
