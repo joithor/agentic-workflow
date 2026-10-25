@@ -10,7 +10,7 @@ namespace Aw.Sindri.Host.Mcp;
 /// <summary>
 /// The scoped reads of a scoping Step's session (issue 1005): context_node, context_neighbors and context_query check the node they are asked about against the run's graph, which the engine keeps per workflow
 /// instance, and log the read under the run. The session names its run with X-Sindri-Instance and X-Sindri-Run, set when the agent is launched; a call without them reads as it always did.
-/// A node outside the graph is refused (SND-CONTEXT-154) unless the call passes <c>outside: true</c> and a <c>reason</c>.
+/// A node outside the graph is refused (SND-CONTEXT-154) unless the call passes <c lang="text">outside: true</c> and a <c lang="text">reason</c>.
 /// </summary>
 internal static class ScopedReads
 {
@@ -41,22 +41,38 @@ internal static class ScopedReads
         }
 
         var rest = arguments.Where(a => a.Key is not (OutsideName or ReasonName)).ToDictionary(a => a.Key, a => a.Value, StringComparer.Ordinal);
-        var outside = arguments.TryGetValue(OutsideName, out var o) ? o : default;
-        var reason = arguments.TryGetValue(ReasonName, out var r) ? r : default;
-        if (outside.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.True or JsonValueKind.False))
+        var outside = Flag(tool, arguments);
+        var why = Reason(tool, arguments);
+        if (outside.IsError || why.IsError)
         {
-            return ContextErrors.McpArgumentsInvalid.With($"{tool}: 'outside' must be true or false (fix: see the tool's input schema)");
+            return outside.IsError ? outside.Error : why.Error;
         }
 
-        if (reason.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.String))
-        {
-            return ContextErrors.McpArgumentsInvalid.With($"{tool}: 'reason' must be a string (fix: see the tool's input schema)");
-        }
-
-        var why = reason.ValueKind == JsonValueKind.String ? reason.GetString() : null;
-        return outside.ValueKind == JsonValueKind.True && string.IsNullOrWhiteSpace(why)
+        return outside.Value && string.IsNullOrWhiteSpace(why.Value)
             ? ContextErrors.McpArgumentsInvalid.With($"{tool}: 'outside: true' needs a 'reason' (fix: say why the read leaves the scoping graph)")
-            : new Split(rest, outside.ValueKind == JsonValueKind.True, why);
+            : new Split(rest, outside.Value, why.Value);
+    }
+
+    // 'outside' is absent, null, true or false.
+    private static Result<bool> Flag(string tool, IDictionary<string, JsonElement> arguments)
+    {
+        var kind = arguments.TryGetValue(OutsideName, out var value) ? value.ValueKind : JsonValueKind.Undefined;
+        return kind is JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.True or JsonValueKind.False
+            ? kind == JsonValueKind.True
+            : ContextErrors.McpArgumentsInvalid.With($"{tool}: 'outside' must be true or false (fix: see the tool's input schema)");
+    }
+
+    // 'reason' is absent, null or a string.
+    private static Result<string?> Reason(string tool, IDictionary<string, JsonElement> arguments)
+    {
+        if (!arguments.TryGetValue(ReasonName, out var value) || value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        {
+            return Results.Success<string?>(value: null);
+        }
+
+        return value.ValueKind == JsonValueKind.String
+            ? Results.Success<string?>(value.GetString())
+            : ContextErrors.McpArgumentsInvalid.With($"{tool}: 'reason' must be a string (fix: see the tool's input schema)");
     }
 
     /// <summary>Checks a read against the session's run graph and logs it. A session with no run, or an instance with no remembered graph, is not scoped.</summary>

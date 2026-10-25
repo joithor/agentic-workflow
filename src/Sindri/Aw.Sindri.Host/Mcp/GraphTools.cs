@@ -60,7 +60,12 @@ internal static class GraphTools
     internal static async ValueTask<CallToolResult> CallNode(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
         var split = ScopedReads.Separate(Node, arguments);
-        Result<(string Key, string? Depth)> bound = split.IsError ? split.Error : BindKey(Node, split.Value.Rest, withDepth: false);
+        if (split.IsError)
+        {
+            return McpResults.Failure(services, split.Error);
+        }
+
+        var bound = BindKey(Node, split.Value.Rest, withDepth: false);
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
@@ -82,7 +87,12 @@ internal static class GraphTools
     internal static async ValueTask<CallToolResult> CallNeighbors(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
         var split = ScopedReads.Separate(Neighbors, arguments);
-        Result<(string Key, string? Depth)> bound = split.IsError ? split.Error : BindKey(Neighbors, split.Value.Rest, withDepth: true);
+        if (split.IsError)
+        {
+            return McpResults.Failure(services, split.Error);
+        }
+
+        var bound = BindKey(Neighbors, split.Value.Rest, withDepth: true);
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);

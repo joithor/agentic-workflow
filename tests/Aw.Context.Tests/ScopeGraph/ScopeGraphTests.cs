@@ -56,7 +56,7 @@ public sealed class ScopeGraphTests : IDisposable
 
         var ids = view.Nodes.Select(n => n.Id.Value).ToHashSet(StringComparer.Ordinal);
         Assert.NotEmpty(view.Edges);
-        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value), string.Create(CultureInfo.InvariantCulture, $"{e.From.Value} {e.Type} {e.To.Value} has an end outside the graph")));
+        Assert.All(view.Edges, e => Assert.True(ids.Contains(e.From.Value) && ids.Contains(e.To.Value), $"{e.From.Value} {e.Type} {e.To.Value} has an end outside the graph"));
     }
 
     [Fact, Trait("Lane", "unit")]
