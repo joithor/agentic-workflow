@@ -33,6 +33,19 @@ public static class MainMoveDecision
         return failures > 0 && now < finishedNewestFirst[0].EndedAt + SyncGapDecision.Wait(failures) ? MainMoveAction.BackoffNotDue : MainMoveAction.Start;
     }
 
+    /// <summary>Decides, with the rules the last success was built under taken into account.</summary>
+    /// <param name="input">The heads and the rules.</param>
+    /// <param name="running">Whether a job of the kind is running.</param>
+    /// <param name="finishedNewestFirst">The ended jobs, newest first.</param>
+    /// <param name="now">The time.</param>
+    /// <returns>The action.</returns>
+    // Stub (issue 1041, red): RulesChanged is accepted and not yet acted on.
+    public static MainMoveAction Decide(MainMoveInput input, bool running, IReadOnlyList<SyncAttempt> finishedNewestFirst, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return Decide(input.OnDefaultHeads, input.LastSucceededHeads, running, finishedNewestFirst, now);
+    }
+
     /// <summary>The failed jobs at the head of the list, up to the first one that did not fail.</summary>
     /// <param name="finishedNewestFirst">The ended jobs, newest first.</param>
     /// <returns>The count.</returns>

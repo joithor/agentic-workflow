@@ -33,6 +33,14 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     /// <summary>When set, <see cref="Promote"/> fails with it and changes nothing.</summary>
     public Error? PromoteFailure { get; set; }
 
+    /// <summary>Records the map rules the current version was built under (issue 1041: the fake's stand-in for a build that stamps its ruleset).</summary>
+    /// <param name="ruleset">The hash.</param>
+    public void StampCurrentRuleset(string ruleset)
+    {
+        var at = _versions.FindIndex(v => v.Version.Status == MapVersionStatus.Current);
+        _versions[at] = _versions[at] with { Version = _versions[at].Version with { Ruleset = ruleset } };
+    }
+
     /// <inheritdoc/>
     public ValueTask<Result<MapVersion?>> Current(CancellationToken cancellationToken) =>
         Done(() => Results.Success(_versions.Select(v => v.Version).FirstOrDefault(v => v.Status == MapVersionStatus.Current)));
