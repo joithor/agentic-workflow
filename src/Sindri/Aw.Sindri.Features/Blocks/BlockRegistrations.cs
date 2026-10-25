@@ -40,6 +40,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(EvidenceSteps.ApiPlan)
         .AddBlockDescriptor(EvidenceSteps.DbPlan)
         .AddBlockDescriptor(EvidenceSteps.UiRun)
+        .AddBlockDescriptor(EvidenceSteps.DesktopRun)
+        .AddBlockDescriptor(EvidenceSteps.DesktopReview)
         .AddBlockDescriptor(EvidenceSteps.ApiRun)
         .AddBlockDescriptor(EvidenceSteps.DbRun)
         .AddBlockDescriptor(EvidenceSteps.None)

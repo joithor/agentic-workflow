@@ -74,6 +74,8 @@ internal sealed class ShippedBlockSentences : IBlockSentences
         ["step.evidence.db-plan"] = "Starts an AI agent session that plans the proof for the database",
         ["step.evidence.db-run"] = "Runs the planned checks against the database, read only",
         ["step.evidence.desk"] = "Asks you to record proof for a change no automatic check covers",
+        ["step.evidence.desktop-review"] = "Starts an AI agent session that compares each screen of the running app with its mockup and lists the differences",
+        ["step.evidence.desktop-run"] = "Starts an AI agent session that runs the real desktop app on seeded data and captures each screen against its mockup",
         ["step.evidence.none"] = "Records that this change needs no proof",
         ["step.evidence.ui-plan"] = "Starts an AI agent session that plans the proof for the screens",
         ["step.evidence.ui-run"] = "Runs the planned checks in a browser against the running app",
