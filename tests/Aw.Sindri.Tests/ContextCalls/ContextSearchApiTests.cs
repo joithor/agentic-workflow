@@ -108,7 +108,7 @@ public sealed class ContextSearchApiTests : IDisposable
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
-        (string Name, string Value)[] other = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "elsewhere")];
+        (string Name, string Value)[] other = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "other")];
         (string Name, string Value)[] own = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)];
 
         var mine = await host.Http.Ask(Get("/sindri/context/search?q=tab", own));

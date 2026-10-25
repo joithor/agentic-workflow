@@ -13,4 +13,4 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Repo">A human caller's repo when the profile has more than one, or null.</param>
 /// <param name="Draft">True to search the draft map.</param>
 /// <param name="MapVersion">A retained map version ('v3', '3' or 'v3@a41b07d'), or null for the current one; not valid with <paramref name="Draft"/>.</param>
-public sealed record SearchContextMapRequest(string? Q, int? Limit = null, string? Area = null, string? Repo = null, bool Draft = false, string? MapVersion = null) : IQuery<MapSearchView>;
+public sealed record SearchContextMapRequest(string? Q = null, int? Limit = null, string? Area = null, string? Repo = null, bool Draft = false, string? MapVersion = null) : IQuery<MapSearchView>;

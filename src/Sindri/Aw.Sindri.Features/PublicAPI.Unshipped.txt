@@ -4728,7 +4728,7 @@ Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.MapVersion.get -> string
 Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.MapVersion.init -> void
 Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.Deconstruct(out string? Q, out int? Limit, out string? Area, out string? Repo, out bool Draft, out string? MapVersion) -> void
 Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.SearchContextMapRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.SearchContextMapRequest(string? Q, int? Limit = null, string? Area = null, string? Repo = null, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.SearchContextMapRequest(string? Q = null, int? Limit = null, string? Area = null, string? Repo = null, bool Draft = false, string? MapVersion = null) -> void
 override Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.SearchContextMapRequest.ToString() -> string!
