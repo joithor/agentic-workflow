@@ -67,10 +67,14 @@ timeout 120 "$DRIVER" ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the 
 # 3. Open the Agents page and wait for the session rows.
 timeout 120 "$DRIVER" click --type ListBoxItem --name Agents >"$OUT/nav.log" 2>&1 \
   || setup_fail "the Agents nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
-timeout 120 "$DRIVER" wait-for --type Button --contains "pid-411" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "no row for the pid-411 session on the Agents page (see $OUT/app.log)"
-
-names() { timeout 120 "$DRIVER" search --type "$1" 2>"$OUT/search-$1.err" | jq -r ".[]? | .name // empty" 2>/dev/null; }
+names() { timeout 120 "$DRIVER" search --type "$1" --limit 500 2>"$OUT/search-$1.err" | jq -r ".. | objects | select(has(\"name\")) | .name // empty" 2>/dev/null; }
+# The rows come from the fixture's /proc tree after the collector's first pass: poll for the pid-411 row.
+found=0
+for _ in $(seq 1 60); do
+  if names Button | grep -q "pid-411"; then found=1; break; fi
+  sleep 1
+done
+[ "$found" = 1 ] || setup_fail "no row for the pid-411 session on the Agents page (see $OUT/app.log, $OUT/search-Button.err)"
 
 # 4. Assert, in order: no dangling hyphen in a session name; no raw SND- code opening a problem line.
 dangling="$(names Button | grep -E "pid-[0-9]+-([^0-9A-Za-z]|$)" | head -1)"
