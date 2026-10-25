@@ -15,35 +15,31 @@ public static class MainMoveDecision
     /// <param name="finishedNewestFirst">The ended jobs, newest first.</param>
     /// <param name="now">The time.</param>
     /// <returns>The action.</returns>
-    public static MainMoveAction Decide(IReadOnlyDictionary<string, string> onDefaultHeads, IReadOnlyDictionary<string, string>? lastSucceededHeads, bool running, IReadOnlyList<SyncAttempt> finishedNewestFirst, DateTimeOffset now)
+    public static MainMoveAction Decide(IReadOnlyDictionary<string, string> onDefaultHeads, IReadOnlyDictionary<string, string>? lastSucceededHeads, bool running, IReadOnlyList<SyncAttempt> finishedNewestFirst, DateTimeOffset now) =>
+        Decide(new MainMoveInput(onDefaultHeads, lastSucceededHeads, RulesChanged: false), running, finishedNewestFirst, now);
+
+    /// <summary>Decides, with the rules the last success was built under taken into account: a change of rules starts a job although no head moved.</summary>
+    /// <param name="input">The heads and the rules.</param>
+    /// <param name="running">Whether a job of the kind is running.</param>
+    /// <param name="finishedNewestFirst">The ended jobs, newest first.</param>
+    /// <param name="now">The time.</param>
+    /// <returns>The action.</returns>
+    public static MainMoveAction Decide(MainMoveInput input, bool running, IReadOnlyList<SyncAttempt> finishedNewestFirst, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(onDefaultHeads);
+        ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(finishedNewestFirst);
         if (running)
         {
             return MainMoveAction.JobRunning;
         }
 
-        if (onDefaultHeads.Count == 0 || !Moved(onDefaultHeads, lastSucceededHeads))
+        if (input.OnDefaultHeads.Count == 0 || !(input.RulesChanged || Moved(input.OnDefaultHeads, input.LastSucceededHeads)))
         {
             return MainMoveAction.Nothing;
         }
 
         var failures = FailedInARow(finishedNewestFirst);
         return failures > 0 && now < finishedNewestFirst[0].EndedAt + SyncGapDecision.Wait(failures) ? MainMoveAction.BackoffNotDue : MainMoveAction.Start;
-    }
-
-    /// <summary>Decides, with the rules the last success was built under taken into account.</summary>
-    /// <param name="input">The heads and the rules.</param>
-    /// <param name="running">Whether a job of the kind is running.</param>
-    /// <param name="finishedNewestFirst">The ended jobs, newest first.</param>
-    /// <param name="now">The time.</param>
-    /// <returns>The action.</returns>
-    // Stub (issue 1041, red): RulesChanged is accepted and not yet acted on.
-    public static MainMoveAction Decide(MainMoveInput input, bool running, IReadOnlyList<SyncAttempt> finishedNewestFirst, DateTimeOffset now)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-        return Decide(input.OnDefaultHeads, input.LastSucceededHeads, running, finishedNewestFirst, now);
     }
 
     /// <summary>The failed jobs at the head of the list, up to the first one that did not fail.</summary>
