@@ -235,7 +235,7 @@ public sealed class RunInspectorViewModelTests
         instance["itemId"] = null;   // a line run's instance serves no item of its own
         var parked = instance["children"]![0]!["workstreams"]![1]!["rows"]![0]!;
         parked["chip"] = System.Text.Json.Nodes.JsonNode.Parse("""{"word":"PARKED","tone":"neutral"}""");
-        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+        _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
         var inspector = Inspector();
         await inspector.Show(_api, Row(Served(Build) with { Chip = new StateChip("PARKED", ChipTone.Neutral) }), Token);
         var asked = new List<OpenRequestedEventArgs>();
