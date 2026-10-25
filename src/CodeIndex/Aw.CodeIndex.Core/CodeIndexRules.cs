@@ -21,9 +21,6 @@ public static class CodeIndexRules
     /// <summary>Most call sites one file may hold before it is left unparsed.</summary>
     public const int MaxCallSitesPerFile = 500_000;
 
-    /// <summary>The longest a build waits for a heavy-job slot before it ends deferred.</summary>
-    public static readonly TimeSpan HeavySlotWait = TimeSpan.FromMinutes(10);
-
     /// <summary>The longest a build or an embed chunk waits for the repo's index lock before it ends with SND-CODEIDX-016.</summary>
     public static readonly TimeSpan IndexLockWait = TimeSpan.FromMinutes(10);
 

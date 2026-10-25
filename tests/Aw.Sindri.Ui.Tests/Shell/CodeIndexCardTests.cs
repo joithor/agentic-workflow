@@ -71,7 +71,7 @@ public sealed class CodeIndexCardTests
     [InlineData("missing", "repo: first build queued")]
     [InlineData("damaged", "repo: damaged, rebuilding on the next check")]
     [InlineData("building", "repo: building")]
-    [InlineData("waiting", "repo: waiting for a free build slot")]
+    [InlineData("waiting", "repo: waiting to retry")]
     [InlineData("something-new", "repo: something-new")]
     public async Task An_index_with_no_commit_says_its_state_in_words(string state, string expected)
     {
@@ -139,8 +139,8 @@ public sealed class CodeIndexCardTests
     }
 
     [Theory]
-    [InlineData("waiting for a free build slot")]
     [InlineData("retrying in 4 min")]
+    [InlineData("retrying in 1 min")]
     public async Task A_waiting_repo_shows_the_servers_waiting_words(string waiting)
     {
         var card = await ReadWithHealth([Repo("repo", "ok", Sha, 3, Layer("structure", "ok"))], [Health("repo", "waiting", waiting: waiting)]);
