@@ -55,6 +55,20 @@ public sealed class CheckPinTests : IDisposable
         Assert.Equal(2, started.GetProperty("attempt").GetInt32());
     }
 
+    [Fact]
+    public void Start_attempt_abandon_unrun_is_refused_for_a_candidate_that_has_a_run()
+    {
+        var worktree = StartAndMergeMainThatChangesTheCheck();
+        _ = Ok("record-candidate", "--state", _w.State, "--branch", Branch, "--cwd", worktree);
+        var after = Ok("run-test", "--state", _w.State, "--check", Check, "--cwd", worktree, "--", "bash", Check);
+        _ = Ok("record-run", "c1", "--state", _w.State, "--evidence", after.GetProperty("evidence").GetString()!);
+
+        var (exit, _, error) = _w.Run("start-attempt", "--state", _w.State, "--mode", "A", "--abandon-unrun");
+
+        Assert.Equal(3, exit);
+        Assert.Contains("AW-BUGFIX-010", error, StringComparison.Ordinal);
+    }
+
     /// <summary>Reproduces at the baseline, starts a fix branch with the fix committed, advances main with a change to the check file only, and merges main in. Returns the fix worktree.</summary>
     private string StartAndMergeMainThatChangesTheCheck()
     {
