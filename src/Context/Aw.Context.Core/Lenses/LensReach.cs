@@ -28,4 +28,8 @@ public sealed record LensReach(
     /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? Anchors { get; init; }
+
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
 }

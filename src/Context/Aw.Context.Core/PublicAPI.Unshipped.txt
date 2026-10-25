@@ -1227,9 +1227,12 @@ Aw.Context.Core.Extract.LabelPass
 Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
 Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
 Aw.Context.Core.Extract.LabelPass.Complete.init -> void
-Aw.Context.Core.Extract.LabelPass.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, out bool Complete) -> void
+Aw.Context.Core.Extract.LabelPass.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, out bool Complete, out string? Unavailable) -> void
 Aw.Context.Core.Extract.LabelPass.Equals(Aw.Context.Core.Extract.LabelPass? other) -> bool
-Aw.Context.Core.Extract.LabelPass.LabelPass(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, bool Complete = true) -> void
+Aw.Context.Core.Extract.LabelPass.LabelPass(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, bool Complete = true, string? Unavailable = null) -> void
+Aw.Context.Core.Extract.LabelPass.Unavailable.get -> string?
+Aw.Context.Core.Extract.LabelPass.Unavailable.init -> void
+const Aw.Context.Core.Extract.LabelPass.NoModelFix = "log in to an agent CLI (claude, codex or cursor-agent) so Sindri can ask it, or set 'context.labeling.enabled: false' in the profile" -> string!
 Aw.Context.Core.Extract.LabelPass.Labels.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>!
 Aw.Context.Core.Extract.LabelPass.Labels.init -> void
 Aw.Context.Core.Extract.MapExtraction
@@ -2934,6 +2937,7 @@ Aw.Context.Core.Linking.IntentSourceState.Records.init -> void
 Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Identifier = 3 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.IssueKey = 0 -> Aw.Context.Core.Linking.LinkRule
+Aw.Context.Core.Linking.LinkRule.Name = 5 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Path = 2 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.QuotedTitle = 4 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Url = 1 -> Aw.Context.Core.Linking.LinkRule
@@ -3285,7 +3289,7 @@ Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
 Aw.Context.Core.Map.NodeDetails
 Aw.Context.Core.Map.NodeDetails.Edge(Aw.Context.Core.Graph.EdgeFact! edge, Aw.Context.Core.Graph.NodeKey other) -> Aw.Context.Core.Graph.EdgeDetail!
 Aw.Context.Core.Map.NodeDetails.Node(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeDetail!
-Aw.Context.Core.Map.NodeDetails.NodeDetails(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> void
+Aw.Context.Core.Map.NodeDetails.NodeDetails(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text, string? mapRepo = null) -> void
 Aw.Context.Core.Map.ProposedNode
 Aw.Context.Core.Map.ProposedNode.<Clone>$() -> Aw.Context.Core.Map.ProposedNode!
 Aw.Context.Core.Map.ProposedNode.Confidence.get -> double
@@ -6244,7 +6248,7 @@ static Aw.Context.Core.Review.PromoteReadiness.Check(Aw.Context.Core.Review.Revi
 static Aw.Context.Core.Review.QueueCounts.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewEntry!>! entries) -> Aw.Context.Core.Review.QueueCounts!
 static Aw.Context.Core.Review.QueueCounts.operator !=(Aw.Context.Core.Review.QueueCounts? left, Aw.Context.Core.Review.QueueCounts? right) -> bool
 static Aw.Context.Core.Review.QueueCounts.operator ==(Aw.Context.Core.Review.QueueCounts? left, Aw.Context.Core.Review.QueueCounts? right) -> bool
-static Aw.Context.Core.Review.ReviewBacklog.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Review.ReviewQueueView!
+static Aw.Context.Core.Review.ReviewBacklog.Build(string! label, Aw.Context.Core.Graph.GraphSnapshot! draft, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string? mapRepo = null) -> Aw.Context.Core.Review.ReviewQueueView!
 static Aw.Context.Core.Review.ReviewBasis.operator !=(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewDecision.operator !=(Aw.Context.Core.Review.ReviewDecision? left, Aw.Context.Core.Review.ReviewDecision? right) -> bool
@@ -6906,6 +6910,55 @@ Aw.Context.Core.WholeMap.WholeMapView.Deconstruct(out int SchemaVersion, out str
 Aw.Context.Core.WholeMap.WholeMapView.WholeMapView(int SchemaVersion, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, string? Repo, Aw.Context.Core.WholeMap.WholeMapDetail Detail, Aw.Context.Core.WholeMap.WholeMapCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, bool Truncated) -> void
 static Aw.Context.Core.WholeMap.MapAreas.Assign(Aw.Context.Core.Graph.GraphSnapshot! graph, int areaCap) -> Aw.Context.Core.WholeMap.AreaIndex!
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 2147483647 -> int
+Aw.Context.Core.Lenses.LensItem.Repo.get -> string?
+Aw.Context.Core.Lenses.LensItem.Repo.init -> void
+Aw.Context.Core.Lenses.LensFile.Repo.get -> string?
+Aw.Context.Core.Lenses.LensFile.Repo.init -> void
+Aw.Context.Core.Lenses.LensRecord.Repo.get -> string?
+Aw.Context.Core.Lenses.LensRecord.Repo.init -> void
+Aw.Context.Core.Lenses.LensDecision.Repo.get -> string?
+Aw.Context.Core.Lenses.LensDecision.Repo.init -> void
+Aw.Context.Core.Lenses.LensReach.Repo.get -> string?
+Aw.Context.Core.Lenses.LensReach.Repo.init -> void
+Aw.Context.Core.Code.CodeFile.Repo.get -> string?
+Aw.Context.Core.Code.CodeFile.Repo.init -> void
+Aw.Context.Core.Code.CodeTest.Repo.get -> string?
+Aw.Context.Core.Code.CodeTest.Repo.init -> void
+Aw.Context.Core.History.HistoryRecord.Repo.get -> string?
+Aw.Context.Core.History.HistoryRecord.Repo.init -> void
+Aw.Context.Core.History.HistoryDecision.Repo.get -> string?
+Aw.Context.Core.History.HistoryDecision.Repo.init -> void
+Aw.Context.Core.Review.ReviewEntry.Repo.get -> string?
+Aw.Context.Core.Review.ReviewEntry.Repo.init -> void
+Aw.Context.Core.Graph.NodeFact.Repo.get -> string?
+Aw.Context.Core.Graph.NodeFact.Repo.init -> void
+Aw.Context.Core.WholeMap.WholeMapNode.Repo.get -> string?
+Aw.Context.Core.WholeMap.WholeMapNode.Repo.init -> void
+Aw.Context.Core.Lenses.LensBasis.MapRepo.get -> string?
+Aw.Context.Core.Lenses.LensBasis.MapRepo.init -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.WholeMap.WholeMapAsk.Repos.init -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.RepoOf.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>?
+Aw.Context.Core.WholeMap.WholeMapAsk.RepoOf.init -> void
+Aw.Context.Core.WholeMap.WholeMapView.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.WholeMap.WholeMapView.Repos.init -> void
+static Aw.Context.Core.WholeMap.WholeMapBuilder.Repos(System.Collections.Generic.IReadOnlyDictionary<string!, string?>! repoOf) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
+Aw.Context.Core.Graph.NodeRepos
+static Aw.Context.Core.Graph.NodeRepos.Index(Aw.Context.Core.Graph.GraphSnapshot! graph, string? mapRepo) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+Aw.Context.Core.WholeMap.WholeMapRepo
+Aw.Context.Core.WholeMap.WholeMapRepo.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapRepo!
+Aw.Context.Core.WholeMap.WholeMapRepo.Deconstruct(out string! Name, out int NodeCount) -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.Equals(Aw.Context.Core.WholeMap.WholeMapRepo? other) -> bool
+Aw.Context.Core.WholeMap.WholeMapRepo.Name.get -> string!
+Aw.Context.Core.WholeMap.WholeMapRepo.Name.init -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.NodeCount.get -> int
+Aw.Context.Core.WholeMap.WholeMapRepo.NodeCount.init -> void
+Aw.Context.Core.WholeMap.WholeMapRepo.WholeMapRepo(string! Name, int NodeCount) -> void
+override Aw.Context.Core.WholeMap.WholeMapRepo.Equals(object? obj) -> bool
+override Aw.Context.Core.WholeMap.WholeMapRepo.GetHashCode() -> int
+override Aw.Context.Core.WholeMap.WholeMapRepo.ToString() -> string!
+static Aw.Context.Core.WholeMap.WholeMapRepo.operator !=(Aw.Context.Core.WholeMap.WholeMapRepo? left, Aw.Context.Core.WholeMap.WholeMapRepo? right) -> bool
+static Aw.Context.Core.WholeMap.WholeMapRepo.operator ==(Aw.Context.Core.WholeMap.WholeMapRepo? left, Aw.Context.Core.WholeMap.WholeMapRepo? right) -> bool
 Aw.Context.Core.Lenses.FileMapQuery.Cursor.get -> string?
 Aw.Context.Core.Lenses.FileMapQuery.Cursor.init -> void
 Aw.Context.Core.Lenses.FileMapQuery.Limit.get -> int?
@@ -6919,3 +6972,6 @@ Aw.Context.Core.Lenses.RepoTree.RepoTree(System.Collections.Generic.IEnumerable<
 const Aw.Context.Core.Lenses.FileMapBuilder.DefaultLimit = 200 -> int
 const Aw.Context.Core.Lenses.FileMapBuilder.MaxLimit = 1000 -> int
 static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMapBasis! basis, Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Lenses.RepoTree! tree, Aw.Context.Core.Graph.GraphSnapshot! graph) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!
+const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int
+Aw.Context.Core.Graph.NodeDetail.Repo.get -> string?
+Aw.Context.Core.Graph.NodeDetail.Repo.init -> void

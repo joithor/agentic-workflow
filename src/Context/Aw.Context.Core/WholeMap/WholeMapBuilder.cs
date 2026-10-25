@@ -32,10 +32,11 @@ public static class WholeMapBuilder
         {
             MapCommit = basis.MapCommit,
             Located = Located(ask.Locate, areas, text),
+            Repos = ask.Repos,
         };
         if (ask.Area is not null)
         {
-            return Opened(ask.Area, overview, (known, edges), (areas, rules, text));
+            return Opened(ask.Area, overview, (known, edges), (areas, rules, text, ask.RepoOf));
         }
 
         if (ask.Detail == WholeMapDetail.Areas)
@@ -45,11 +46,11 @@ public static class WholeMapBuilder
 
         return known.Count > rules.NodeBudget
             ? overview with { Fallback = OverBudget }
-            : overview with { Detail = WholeMapDetail.Nodes, Nodes = Nodes(known.Values, areas, text), Edges = Edges(edges) };
+            : overview with { Detail = WholeMapDetail.Nodes, Nodes = Nodes(known.Values, areas, text, ask.RepoOf), Edges = Edges(edges) };
     }
 
     // One area on its own: all its nodes in kind and key order, and the edges among them. Nothing is cut.
-    private static Result<WholeMapView> Opened(string key, WholeMapView overview, (Dictionary<string, GraphNode> Known, List<GraphEdge> Edges) graph, (AreaIndex Areas, WholeMapRules Rules, MapText Text) how)
+    private static Result<WholeMapView> Opened(string key, WholeMapView overview, (Dictionary<string, GraphNode> Known, List<GraphEdge> Edges) graph, (AreaIndex Areas, WholeMapRules Rules, MapText Text, IReadOnlyDictionary<string, string?>? RepoOf) how)
     {
         var members = graph.Known.Values.Where(n => how.Areas.ByNode[n.Key.Value].Area == key).ToList();
         if (members.Count == 0)
@@ -63,7 +64,7 @@ public static class WholeMapBuilder
         return overview with
         {
             Detail = WholeMapDetail.Nodes,
-            Nodes = Nodes(shown, how.Areas, how.Text),
+            Nodes = Nodes(shown, how.Areas, how.Text, how.RepoOf),
             Edges = Edges([.. graph.Edges.Where(e => shownKeys.Contains(e.From.Value) && shownKeys.Contains(e.To.Value))]),
             Area = new WholeMapAreaInfo(key, Truncated: false, Counts(members, graph.Edges.Count(e => memberKeys.Contains(e.From.Value) && memberKeys.Contains(e.To.Value)))),
         };
@@ -103,17 +104,26 @@ public static class WholeMapBuilder
             .Select(g => new WholeMapAreaEdge(g.Key.From, g.Key.To, g.Key.Type, g.Count(), g.Count(e => e.Confirmed)))
             .OrderBy(e => EdgeRules.Name(e.Type), StringComparer.Ordinal).ThenBy(e => e.From, StringComparer.Ordinal).ThenBy(e => e.To, StringComparer.Ordinal)];
 
-    private static List<WholeMapNode> Nodes(IEnumerable<GraphNode> nodes, AreaIndex areas, MapText text) =>
+    /// <summary>The repos a node index names, with how many nodes each holds, sorted by name; nodes of no single repo count for none.</summary>
+    /// <param name="repoOf">Each node's repo by node key (<see cref="NodeRepos.Index"/>).</param>
+    /// <returns>The repos.</returns>
+    public static IReadOnlyList<WholeMapRepo> Repos(IReadOnlyDictionary<string, string?> repoOf)
+    {
+        ArgumentNullException.ThrowIfNull(repoOf);
+        return [.. repoOf.Values.OfType<string>().GroupBy(r => r, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => new WholeMapRepo(g.Key, g.Count()))];
+    }
+
+    private static List<WholeMapNode> Nodes(IEnumerable<GraphNode> nodes, AreaIndex areas, MapText text, IReadOnlyDictionary<string, string?>? repoOf) =>
         [.. nodes
             .Select(n => (Node: n, Area: areas.ByNode[n.Key.Value]))
             .OrderBy(p => p.Area.Area, StringComparer.Ordinal).ThenBy(p => p.Node.Key.Kind).ThenBy(p => p.Node.Key.Value, StringComparer.Ordinal)
-            .Select(p => Node(p.Node, p.Area, text))];
+            .Select(p => Node(p.Node, p.Area, text, repoOf?.GetValueOrDefault(p.Node.Key.Value)))];
 
-    private static WholeMapNode Node(GraphNode node, NodeArea area, MapText text)
+    private static WholeMapNode Node(GraphNode node, NodeArea area, MapText text, string? repo)
     {
         var confirmed = node.Provenance == Provenance.Human;
         var trust = TrustPolicy.ForNode(node, confirmed);
-        return new WholeMapNode(node.Key, text.Label(node.Label, trust), node.Key.Kind, area.Area, area.AlsoIn, trust, node.Provenance, node.Confidence, confirmed);
+        return new WholeMapNode(node.Key, text.Label(node.Label, trust), node.Key.Kind, area.Area, area.AlsoIn, trust, node.Provenance, node.Confidence, confirmed) { Repo = repo };
     }
 
     private static List<WholeMapEdge> Edges(List<GraphEdge> edges) =>

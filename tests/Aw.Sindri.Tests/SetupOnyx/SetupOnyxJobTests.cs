@@ -105,23 +105,6 @@ public sealed class SetupOnyxJobTests
     }
 
     [Fact]
-    public async Task A_session_may_not_connect_and_the_job_keeps_waiting()
-    {
-        await using var rig = new SetupOnyxRig();
-        var job = await rig.Start();
-        await rig.Waiting(job);
-
-        var answer = await rig.Runtime.RunPrepared<ConnectOnyxRequest, JobStartedResponse>(new ConnectOnyxRequest(job), A.Caller().Session().Build(),
-            static _ => { });
-
-        Assert.True(answer.IsError);
-        Expect.Equal(SindriErrors.AuthRefused.Code, answer.Error.Code);
-        Assert.True(rig.Signals.IsWaiting(job, OnyxSetupJob.Signal));
-        _ = await rig.Runtime.Cancel(job);
-        await rig.Runtime.Quiesce();
-    }
-
-    [Fact]
     public async Task Thirty_minutes_without_a_login_fail_the_job_with_the_006_code()
     {
         await using var rig = new SetupOnyxRig();

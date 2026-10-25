@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Parent">Parent, as served.</param>
 /// <param name="Trust">Trust, as served.</param>
 /// <param name="Override">Override, as served.</param>
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
 internal sealed record ReviewEntry(
     string Node,
     string? Link,
@@ -25,7 +26,8 @@ internal sealed record ReviewEntry(
     IReadOnlyList<string> Files,
     string? Parent,
     string Trust,
-    string? Override = null)
+    string? Override = null,
+    string? Repo = null)
 {
     /// <summary>Whether the group is one this build knows; any other word is drawn raw.</summary>
     [JsonIgnore]

@@ -49,38 +49,12 @@ public sealed class OnyxUpCommandTests : IDisposable
 
     public void Dispose() => _services.Dispose();
 
-    private static AgentSession Human { get; } = new(Signal: null, Terminal: true, Prover: false);
-
-    private OnyxVerbs Verbs(AgentSession session) => new(_services, new Output(_out, _error, _json), session);
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Up_as_a_session_is_refused_with_SND_AUTH_002_and_calls_nothing()
-    {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Up(json: false, TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("CLAUDECODE is set", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("ask the human to run `sindri onyx up`", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
-        Assert.Equal(string.Empty, _out.ToString());
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Up_without_a_terminal_is_refused()
-    {
-        var code = await Verbs(new AgentSession(Signal: null, Terminal: false, Prover: false)).Up(json: false, TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("no terminal", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
-    }
+    private OnyxVerbs Verbs() => new(_services, new Output(_out, _error, _json));
 
     [Fact, Trait("Lane", "unit")]
     public async Task Up_prints_url_version_and_what_the_account_stage_needs_on_stdout_and_progress_on_stderr()
     {
-        var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
         var lines = _out.ToString().TrimEnd('\n').Split('\n');
@@ -102,10 +76,10 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Up_names_the_skipped_steps_on_a_rerun()
     {
-        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
         _out.GetStringBuilder().Clear();
 
-        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Contains("ran       none", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("skipped   fetch, config, pull, start", _out.ToString(), StringComparison.Ordinal);
@@ -114,7 +88,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Up_json_prints_the_response_only()
     {
-        var code = await Verbs(Human).Up(json: true, TestContext.Current.CancellationToken);
+        var code = await Verbs().Up(json: true, TestContext.Current.CancellationToken);
 
         var summary = AwJson.Deserialize<OnyxUpSummary>(Encoding.UTF8.GetBytes(_out.ToString()), _json).Value;
         Assert.Equal(0, code);
@@ -126,7 +100,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Up_json_documents_steps_as_an_array_of_step_and_outcome()
     {
-        _ = await Verbs(Human).Up(json: true, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: true, TestContext.Current.CancellationToken);
 
         using var document = JsonDocument.Parse(_out.ToString());
         var steps = document.RootElement.GetProperty("up").GetProperty("steps").EnumerateArray().Select(static e => (e.GetProperty("step").GetString(), e.GetProperty("outcome").GetString())).ToArray();
@@ -141,7 +115,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         var needsYou = new OnyxUpResponse(3189, "http://127.0.0.1:3189", "v4.9.0", [], [new OnyxStepResult("fetch", OnyxStepOutcome.Ran), new OnyxStepResult("account", OnyxStepOutcome.NeedsHuman)]);
         await using var provider = new ServiceCollection().AddSingleton<IService<OnyxUpRequest, OnyxUpResponse>>(new StubUp(needsYou)).BuildServiceProvider();
 
-        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json), Human).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json)).Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
         Assert.Contains("needs you: account", _out.ToString(), StringComparison.Ordinal);
@@ -154,7 +128,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
         var approvals = new List<string?>();
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _, _) =>
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), (hash, _, _) =>
         {
             approvals.Add(hash);
             return Task.FromResult(hash is null ? 1 : 0);   // the preview says not approved, then the typed challenge succeeds
@@ -177,7 +151,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (_, _, _) => Task.FromResult(1));
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), (_, _, _) => Task.FromResult(1));
 
         var code = await verbs.Up(json: false, TestContext.Current.CancellationToken);
 
@@ -191,7 +165,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, async (hash, to, ct) =>
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), async (hash, to, ct) =>
         {
             _ = await to.Text(hash is null ? "preview text\n" : "Type 'approve' to approve it: ", 0);
             return hash is null ? 1 : 0;
@@ -212,7 +186,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
         var approvals = new List<string?>();
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _, _) =>
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), (hash, _, _) =>
         {
             approvals.Add(hash);
             return Task.FromResult(0);
@@ -230,7 +204,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
 
-        var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
         Assert.Contains("Linear:", _out.ToString(), StringComparison.Ordinal);
@@ -250,7 +224,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
 
-        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json), Human, (_, _, _) => Task.FromResult(0)).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json), (_, _, _) => Task.FromResult(0)).Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("profile unreadable", _error.ToString(), StringComparison.Ordinal);
@@ -262,7 +236,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         using var source = new CancellationTokenSource();
         _prompts.Interactive = true;
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, async (_, _, _) =>
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), async (_, _, _) =>
         {
             await source.CancelAsync();
             throw new OperationCanceledException(source.Token);
@@ -276,27 +250,17 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Open_as_a_session_is_refused_and_opens_nothing()
-    {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Open(TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_browser.Opened);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Open_before_setup_says_to_run_up_and_after_the_account_opens_the_connectors_page()
     {
-        Assert.Equal(1, await Verbs(Human).Open(TestContext.Current.CancellationToken));
+        Assert.Equal(1, await Verbs().Open(TestContext.Current.CancellationToken));
         Assert.Contains("sindri onyx up", _error.ToString(), StringComparison.Ordinal);
 
         _rig.Workspace.State = new OnyxSetupState(3190, new Dictionary<string, string>(StringComparer.Ordinal));
-        Assert.Equal(0, await Verbs(Human).Open(TestContext.Current.CancellationToken));
+        Assert.Equal(0, await Verbs().Open(TestContext.Current.CancellationToken));
         Assert.Equal("/auth/signup", Assert.Single(_browser.Opened).AbsolutePath);
 
         _rig.Workspace.State = new OnyxSetupState(3190, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Signup] = "x" });
-        _ = await Verbs(Human).Open(TestContext.Current.CancellationToken);
+        _ = await Verbs().Open(TestContext.Current.CancellationToken);
         Assert.Equal("/admin/add-connector", _browser.Opened[^1].AbsolutePath);
         Assert.Equal(3190, _browser.Opened[^1].Port);
     }
@@ -326,7 +290,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         _rig.Probes.FreeBytes = 1L << 30;
 
-        var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("SND-ONYX-003", _error.ToString(), StringComparison.Ordinal);
@@ -339,7 +303,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         using var held = _rig.Workspace.TryLock().Value;
 
-        var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("SND-API-009", _error.ToString(), StringComparison.Ordinal);
@@ -357,7 +321,7 @@ public sealed class OnyxUpCommandTests : IDisposable
             }
         };
 
-        var code = await Verbs(Human).Up(json: false, source.Token);
+        var code = await Verbs().Up(json: false, source.Token);
 
         Assert.Equal(130, code);
         Assert.Contains("interrupted; run `sindri onyx up` again to resume", _error.ToString(), StringComparison.Ordinal);
@@ -381,7 +345,7 @@ public sealed class OnyxUpCommandTests : IDisposable
             }
         };
 
-        _ = await Verbs(Human).Up(json: false, source.Token);
+        _ = await Verbs().Up(json: false, source.Token);
 
         var error = _error.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
         Assert.Contains("...\ninterrupted; run `sindri onyx up` again to resume\n", error, StringComparison.Ordinal);
@@ -390,7 +354,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Down_interrupted_exits_130_and_releases_the_lock()
     {
-        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
         using var source = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         _rig.Runtime.OnCall = operation =>
         {
@@ -400,7 +364,7 @@ public sealed class OnyxUpCommandTests : IDisposable
             }
         };
 
-        var code = await Verbs(Human).Down(json: true, source.Token);
+        var code = await Verbs().Down(json: true, source.Token);
 
         Assert.Equal(130, code);
         Assert.Contains("interrupted", _error.ToString(), StringComparison.Ordinal);
@@ -418,22 +382,12 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Down_as_a_session_is_refused()
-    {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Down(json: false, TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Down_prints_stopped_and_exits_0()
     {
-        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
         _out.GetStringBuilder().Clear();
 
-        var code = await Verbs(Human).Down(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Down(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
         Assert.Contains("Onyx stopped", _out.ToString(), StringComparison.Ordinal);
@@ -443,7 +397,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Down_on_a_box_never_set_up_says_so_and_exits_0()
     {
-        var code = await Verbs(Human).Down(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Down(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, code);
         Assert.Contains("stopped", _out.ToString(), StringComparison.Ordinal);
@@ -453,10 +407,10 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Down_maps_a_remote_docker_to_exit_1()
     {
-        _ = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs().Up(json: false, TestContext.Current.CancellationToken);
         _rig.Runtime.Facts = FakeContainerRuntime.Healthy with { Endpoint = "tcp://10.0.0.5:2375" };
 
-        var code = await Verbs(Human).Down(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs().Down(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("SND-ONYX-010", _error.ToString(), StringComparison.Ordinal);

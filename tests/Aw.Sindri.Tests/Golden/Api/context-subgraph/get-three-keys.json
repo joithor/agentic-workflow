@@ -30,6 +30,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -40,6 +41,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],

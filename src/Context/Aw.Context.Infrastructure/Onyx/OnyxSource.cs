@@ -15,7 +15,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// is discarded, D3), drops documents an Onyx admin hid (admin search includes them; a standard search doesn't), keys
 /// each hit with <see cref="OnyxRecordKeys"/>, marks hits changed after the query's as-of time
 /// leaky, and applies the limit itself (Onyx returns up to 50). Fetch reads 'document-size-info', then 'chunk-info' per
-/// chunk in order, joined with blank lines, whole; the title and author come from this source's own earlier hit
+/// chunk in order, joined with blank lines; the title and author come from this source's own earlier hit
 /// for the document (the fetch routes carry neither), else the id and none, and the updated time from the reference's
 /// version. Versions is Unavailable: no v4.9.0 route gives updated_at by id.
 /// </summary>
@@ -222,7 +222,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
         _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt, document.CreatedAt);
     }
 
-    /// <summary>The document's chunks in order, joined with blank lines; every chunk is read; the text is not cut.</summary>
+    /// <summary>The document's chunks in order, joined with blank lines; every chunk, however long: the record is read whole.</summary>
     private async ValueTask<Result<string>> Text(string document, int chunks, CancellationToken cancellationToken)
     {
         var text = new StringBuilder();

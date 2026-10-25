@@ -1,9 +1,5 @@
-using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Testing.Challenges;
-using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Aw.Sindri.Testing.Workflow.ApproveAll;
@@ -130,9 +126,7 @@ public abstract class ShippedRecipesContract
     private static Task<RedeemedPlan> Redeemed(IShippedRecipes port, ShippedRecipePlan plan)
     {
         ArgumentNullException.ThrowIfNull(port);
-        var challenges = new InMemoryChallenges(new FakeTimeProvider(KnownInstants.Epoch));
-        var issued = challenges.Issue(ChallengeAction.ApproveAll(plan.Digest), ChallengeSubject.ForApproveAll(plan.Digest));
-        return Task.FromResult(RedeemedPlan.Redeem(challenges, new ChallengeAnswer(issued.Id, "approve-all " + plan.Digest), plan, _batch).Value);
+        return Task.FromResult(RedeemedPlan.For(plan, _batch));
     }
 
     private sealed class RecordedProgress : IProgress<string>

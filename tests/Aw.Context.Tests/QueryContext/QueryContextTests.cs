@@ -205,6 +205,18 @@ public sealed class QueryContextTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_session_searches_onyx_like_a_human_and_gets_the_hit_fenced()
+    {
+        var record = FakeContextSource.Doc("linear/SPL-104", "Orientation toggle", "orientation for the toggle", "o9");
+        var onyx = new FakeContextSource(_onyx, [record with { Ref = record.Ref with { Source = _onyx.Id } }]);
+
+        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Session("split-panes", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
+
+        var item = result.Value.Sections.Single().Items.Single();
+        Assert.Equal("<untrusted source=\"onyx\">Orientation toggle</untrusted>", item.Title);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task An_onyx_record_is_scrubbed_with_the_profiles_extra_patterns_in_title_text_alias_and_permalink()
     {
         const string acme = """{"scrub":{"extraPatterns":[{"id":"acme-customer-id","pattern":"ACME-[0-9]{6}"}]}}""";

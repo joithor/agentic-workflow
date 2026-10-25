@@ -203,6 +203,50 @@ public sealed class GetWholeMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Every_node_names_its_repo_and_the_answer_lists_the_repos_with_their_node_counts()
+    {
+        var world = await Imported();
+
+        var view = (await Ask(world)).Value;
+
+        Assert.Equal([new WholeMapRepo("aw-split-panes", 6)], view.Repos);
+        Assert.All(view.Nodes!, n => Assert.Equal("aw-split-panes", n.Repo));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_map_over_two_repos_lists_both_and_a_node_of_no_single_repo_names_none()
+    {
+        var world = new MapWorld();
+        _worlds.Add(world);
+        _ = await world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:web\", label: \"Web\"}", "  - {key: \"feature:api\", label: \"Api\"}", "  - {key: \"feature:shared\", label: \"Shared\"}",
+            "  - {key: \"code:w.ts\", label: \"w.ts\"}", "  - {key: \"code:a.ts\", label: \"a.ts\"}",
+            "edges:",
+            "  - {from: \"code:w.ts\", to: \"feature:web\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/w.ts\"}]}",
+            "  - {from: \"code:a.ts\", to: \"feature:api\", type: implements, provenance: deterministic, evidence: [{key: \"repo:other/a.ts\"}]}",
+            "  - {from: \"code:w.ts\", to: \"feature:shared\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/w.ts\"}]}",
+            "  - {from: \"code:a.ts\", to: \"feature:shared\", type: implements, provenance: deterministic, evidence: [{key: \"repo:other/a.ts\"}]}"));
+
+        var view = (await Ask(world)).Value;
+
+        Assert.Equal([new WholeMapRepo("aw-split-panes", 2), new WholeMapRepo("other", 2)], view.Repos);
+        var repos = view.Nodes!.ToDictionary(n => n.Key.Value, n => n.Repo, StringComparer.Ordinal);
+        Assert.Equal(("aw-split-panes", "other", null), (repos["feature:web"], repos["feature:api"], repos["feature:shared"]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Asking_for_one_repo_still_lists_every_repo_so_the_picker_stays_whole()
+    {
+        var world = await Imported();
+
+        var view = (await Ask(world, repo: "other")).Value;
+
+        Assert.Equal("other", view.Repo);
+        Assert.Equal("aw-split-panes", Assert.Single(view.Repos).Name);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_profile_with_one_repo_names_it_in_the_answer()
     {
         var world = await Imported();

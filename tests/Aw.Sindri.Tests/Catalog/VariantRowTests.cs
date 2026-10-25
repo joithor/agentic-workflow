@@ -21,9 +21,9 @@ public sealed class VariantRowTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("answer-text", false, true, true)]
-    [InlineData("answer-text", true, false, true)]      // a grant field on a desk variant: protected
-    [InlineData("answer-grant", false, false, true)]
-    [InlineData("answer-sideways", false, false, true)] // an unknown variant: protected
+    [InlineData("answer-text", true, true, true)]       // a grant field on a desk variant: protected, but no longer terminal-bound (owner decision q93)
+    [InlineData("answer-grant", false, true, true)]
+    [InlineData("answer-sideways", false, false, true)] // an unknown variant: protected and, unlisted, terminal-bound (fail-closed)
     public void Variant_rows_resolve_through_the_fail_closed_rule(string variant, bool protectedFields, bool app, bool terminal)
     {
         var row = ActionClassifier.Classify(_catalog, new FixtureApply(variant, protectedFields));
@@ -38,12 +38,12 @@ public sealed class VariantRowTests
         var rows = (await new ListCommandsService(_catalog).Handle(new ListCommandsRequest(), TestContext.Current.CancellationToken)).Value.Rows;
 
         Assert.Equal(
-            [("FixtureApply:answer-grant", ActionClass.Protected, "human+terminal"), ("FixtureApply:answer-text", ActionClass.Desk, "human+terminal,human")],
+            [("FixtureApply:answer-grant", ActionClass.Protected, "human+terminal,human,session"), ("FixtureApply:answer-text", ActionClass.Desk, "human+terminal,human,session")],
             rows.Select(r => (r.Action.Value, r.Class, string.Join(',', r.AllowedCallers))));
     }
 
     private static CommandRow Variant(string variant, ActionClass actionClass) =>
         new(ActionId.From("FixtureApply:" + variant), typeof(FixtureApply), variant, actionClass, ServiceGrants: [],
-            NeedsTerminal: actionClass == ActionClass.Protected, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/fixture/apply", CliForm.Parse("sindri fixture apply <instance> --" + variant).Value, "ready");
 }

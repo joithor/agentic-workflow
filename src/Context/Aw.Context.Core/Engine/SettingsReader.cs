@@ -178,7 +178,7 @@ public static partial class SettingsReader
     private static LabelingSettings Labeling(LabelingSection? section) =>
         new()
         {
-            Enabled = section?.Enabled ?? false,
+            Enabled = section?.Enabled ?? new LabelingSettings().Enabled,
             MaxTokens = section?.MaxTokens ?? new LabelingSettings().MaxTokens,
             MaxTokensPerSync = section?.MaxTokensPerSync ?? new LabelingSettings().MaxTokensPerSync,
         };

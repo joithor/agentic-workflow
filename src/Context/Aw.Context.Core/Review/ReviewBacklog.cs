@@ -13,8 +13,9 @@ public static class ReviewBacklog
     /// <param name="label">The draft read ('v14@7c3e1a2').</param>
     /// <param name="draft">The draft as built (before overrides).</param>
     /// <param name="overrides">Every override.</param>
+    /// <param name="mapRepo">The repo the draft was built for, or null; the repo of a proposed node that names none (<see cref="NodeRepos"/>).</param>
     /// <returns>The undecided entries and how many proposals already have a decision.</returns>
-    public static ReviewQueueView Build(string label, GraphSnapshot draft, IReadOnlyList<MapOverride> overrides)
+    public static ReviewQueueView Build(string label, GraphSnapshot draft, IReadOnlyList<MapOverride> overrides, string? mapRepo = null)
     {
         ArgumentNullException.ThrowIfNull(draft);
         ArgumentNullException.ThrowIfNull(overrides);
@@ -24,9 +25,11 @@ public static class ReviewBacklog
         var nodes = graph.Nodes.Where(IsProposal).Select(n => NodeEntry(ends, n));
         var links = graph.Edges.Where(IsSuggestion).Select(e => LinkEntry(ends, e));
         var undecided = nodes.Concat(links).ToList();
+        var repoOf = NodeRepos.Index(graph, mapRepo);
         var ordered = undecided.Where(e => e.Group == ReviewGroup.Deterministic).OrderBy(e => e.Node.Value, StringComparer.Ordinal)
             .Concat(undecided.Where(e => e.Group == ReviewGroup.Model).OrderByDescending(e => e.Impact).ThenBy(e => e.Node.Value, StringComparer.Ordinal).ThenBy(e => e.Link?.Value, StringComparer.Ordinal))
             .Concat(applied.Orphaned.Where(o => o.Action != OverrideAction.Propose).Select(Orphan))
+            .Select(e => e.Group == ReviewGroup.Orphaned ? e : e with { Repo = repoOf.GetValueOrDefault(e.Node.Value) })
             .ToList();
         var counts = QueueCounts.Of(ordered);
         var decided = DecidedProposals(draft, overrides, ordered);

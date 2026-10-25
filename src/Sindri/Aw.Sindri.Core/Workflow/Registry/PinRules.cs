@@ -28,6 +28,16 @@ public static class PinRules
         return DescriptorHash.From(Sha256(descriptor, options));
     }
 
+    /// <summary>The interface hash of <paramref name="descriptor"/>: the descriptor hash with its version left out, so a version bump alone leaves it as it was.</summary>
+    /// <param name="descriptor">The block's descriptor.</param>
+    /// <param name="options">The package's AwJson options.</param>
+    /// <returns>The hash.</returns>
+    public static DescriptorHash Interface(BlockDescriptor descriptor, JsonSerializerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return Hash(descriptor with { Version = 0 }, options);
+    }
+
     /// <summary>
     /// The block pins of <paramref name="recipe"/>: each block it names (its Steps and their inputs, gates, effects, and
     /// the evidence providers of its evidence kinds) with its descriptor hash in <paramref name="catalog"/>, once each,
@@ -50,7 +60,7 @@ public static class PinRules
                 .Select(catalog.Find)
                 .OfType<BlockDescriptor>()
                 .OrderBy(d => d.Id.Value, StringComparer.Ordinal)
-                .Select(d => new BlockPin(d.Id, Hash(d, options))),
+                .Select(d => new BlockPin(d.Id, Hash(d, options), Interface(d, options))),
         ];
     }
 
@@ -116,6 +126,32 @@ public static class PinRules
             _ => ApprovalCheck.Drifted,
         };
     }
+
+    /// <summary>
+    /// Owner q93 (2026-10-23): whether <paramref name="build"/> differs from the pins of <paramref name="approval"/> only by blocks whose
+    /// version moved with their interface (parameters, inputs, outputs, outcomes, capabilities) unchanged, so the approval can be renewed
+    /// against this build without a person. A pin without an interface hash (an approval from before it was pinned), a block that came
+    /// or went, or any changed interface is not compatible.
+    /// </summary>
+    /// <param name="approval">The latest approval of the key.</param>
+    /// <param name="build">This build's block pins for the recipe.</param>
+    /// <returns>True when every pin that moved is a version bump alone.</returns>
+    public static bool Compatible(RecipeApproval approval, IReadOnlyList<BlockPin> build)
+    {
+        ArgumentNullException.ThrowIfNull(approval);
+        ArgumentNullException.ThrowIfNull(build);
+        var before = approval.Pins.Blocks;
+        return before.Count == build.Count
+            && before.Zip(build).All(static pair => pair.First.Block == pair.Second.Block
+                && (pair.First.Hash == pair.Second.Hash || (pair.First.Interface is { } was && pair.Second.Interface is { } now && was == now)));
+    }
+
+    /// <summary>Whether the approval's block pins differ from <paramref name="build"/> by more than a version bump (<see cref="Compatible"/>): the drift that still needs an approval.</summary>
+    /// <param name="approval">The latest approval of the key.</param>
+    /// <param name="build">This build's block pins for the recipe.</param>
+    /// <returns>True when the pins drifted and are not compatible.</returns>
+    public static bool Drifts(RecipeApproval approval, IReadOnlyList<BlockPin> build) =>
+        Check(approval, revocation: null, build) == ApprovalCheck.Drifted && !Compatible(approval, build);
 
     /// <summary>Every block id the recipe names (its Steps and their inputs, gates, effects and evidence providers), each once, in file order.</summary>
     /// <param name="recipe">The recipe.</param>
