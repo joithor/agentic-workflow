@@ -19,7 +19,7 @@ public sealed class ConceptRepoScopeTests
 
         var scoped = graph.ScopedTo(ContextRepoName.From("web"));
 
-        Assert.Equal(["code:src/a/Shifts.cs", "concept:scheduling", "feature:shifts"], scoped.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal));
+        Assert.Equal(["code:src/a/Shifts.cs", "concept:scheduling", "feature:shifts"], scoped.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Contains(scoped.Edges, e => e.Type == EdgeType.BelongsTo);
     }
 }

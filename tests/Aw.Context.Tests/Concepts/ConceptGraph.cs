@@ -20,7 +20,7 @@ internal sealed class ConceptGraph
 
     public ConceptGraph Concept(string key, string name, string? summary = null, string source = "derived", params string[] cites)
     {
-        var attributes = JsonSerializer.SerializeToElement(new Dictionary<string, string?> { ["summary"] = summary, ["source"] = source, ["seed"] = "feature:seed" });
+        var attributes = JsonSerializer.SerializeToElement(new Dictionary<string, string?>(StringComparer.Ordinal) { ["summary"] = summary, ["source"] = source, ["seed"] = "feature:seed" });
         _nodes.Add(new GraphNode(NodeKey.From(key), name, Provenance.Deterministic, 1.0, [.. cites.Select(c => new EvidenceRef(RecordKey.From(c)))], attributes));
         return this;
     }
