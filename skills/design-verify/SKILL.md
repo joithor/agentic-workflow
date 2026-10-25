@@ -1,6 +1,6 @@
 ---
 name: design-verify
-description: Detect web vs iOS automatically and delegate to /design-verify-web (Playwright screenshots) or /design-verify-ios (XcodeBuildMCP screenshots). Diffs against mockup baseline.
+description: Detect web vs iOS vs desktop automatically and delegate to /design-verify-web (Playwright screenshots), /design-verify-ios (XcodeBuildMCP screenshots) or /design-verify-desktop (the real desktop app against its mockups). Diffs against mockup baseline.
 argument-hint: [screen-name]
 allowed-tools: Bash(git *), Bash(ls *), Bash(SHARED_DIR=*), Bash(source *), Glob, Read, AskUserQuestion, Skill, mcp__prism-mcp__session_load_context, mcp__prism-mcp__session_save_ledger, mcp__prism-mcp__session_save_handoff
 ---
@@ -16,9 +16,9 @@ allowed-tools: Bash(git *), Bash(ls *), Bash(SHARED_DIR=*), Bash(source *), Glob
 
 # Design Verify — Platform Dispatcher
 
-Detects whether this is a web or iOS project and delegates to the appropriate screenshot verification skill. Contains no implementation logic.
+Detects whether this is a web, iOS or desktop project and delegates to the appropriate screenshot verification skill. Contains no implementation logic.
 
-> **Tip:** If you already know the platform, invoke directly: `/design-verify-web` or `/design-verify-ios`
+> **Tip:** If you already know the platform, invoke directly: `/design-verify-web`, `/design-verify-ios` or `/design-verify-desktop`
 
 ## Step 1: Platform Detection & Dispatch
 
@@ -36,7 +36,7 @@ dispatch: design-verify-web args=<original args verbatim>
 Invoke skill design-verify-web with args "<original args verbatim>"
 ```
 
-or the same shape with `design-verify-ios`.
+or the same shape with `design-verify-ios` or `design-verify-desktop`.
 
 All user-supplied arguments (e.g., `[screen-name]`) are passed through unchanged. If a required argument is empty, stop and ask — never dispatch blank.
 

@@ -63,7 +63,7 @@ Fix the confirmed cause.
 1. **Implement the fix** for the confirmed hypothesis. All changes MUST stay within the declared module boundary.
 2. **Verify:**
    - If a local failing command exists, re-run it.
-   - If the symptom is production/UI-only (no local failing command), run the app-path check instead: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from Phase 1>`. The fix is verified only on a PASS verdict in the resulting evidence pack.
+   - If the symptom is production/UI-only (no local failing command), run the app-path check instead: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from Phase 1>`. The fix is verified only on a PASS verdict in the resulting evidence pack. For a desktop app that pack comes from `verify-desktop` (the real app on seeded data, screens judged against their mockups).
 3. **If verification still fails**, revert the change, return to Phase 3.5 for the next hypothesis. Repeat up to hypothesis #3.
 4. **If a fix requires changes outside the module boundary**, do NOT make the change. Instead, flag it:
 
