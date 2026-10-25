@@ -24,5 +24,5 @@ public sealed class ScopeRelevanceApplyStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new RelevanceApplyStep().Run(ScopingStepContexts.Of("step.scope.relevance-apply", new ScopingFacts()), cancellationToken);
+        _ = await new RelevanceApplyStep().Run(ScopingStepContexts.Of("step.scope.relevance-apply", []), cancellationToken);
 }

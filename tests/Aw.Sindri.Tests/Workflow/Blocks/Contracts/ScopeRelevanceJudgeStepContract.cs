@@ -26,5 +26,5 @@ public sealed class ScopeRelevanceJudgeStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new RelevanceJudgeStep(new FakeJudgeChoice(), new PassThroughScrubber()).Run(ScopingStepContexts.Of("step.scope.relevance-judge", new ScopingFacts()), cancellationToken);
+        _ = await new RelevanceJudgeStep(new FakeJudgeChoice(), new PassThroughScrubber()).Run(ScopingStepContexts.Of("step.scope.relevance-judge", []), cancellationToken);
 }

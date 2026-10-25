@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Aw.Sindri.Features.Scoping;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Scoping;
 
 namespace Aw.Sindri.Tests.Scoping;
@@ -85,10 +84,10 @@ public sealed class ScopingRelevanceShowTests
         var view = await Show(ScopingFacts.Expiry());
 
         var keys = view.Sections.Single(s => s.Name == "checklist").Rows.Select(r => r.Key).ToList();
-        Assert.Contains("SCP-REL-001", keys);
-        Assert.Contains("SCP-REL-002", keys);
-        Assert.Contains("SCP-GAP-001", keys);
-        Assert.Contains("SCP-GAP-002", keys);
+        Assert.Contains("SCP-REL-001", keys, StringComparer.Ordinal);
+        Assert.Contains("SCP-REL-002", keys, StringComparer.Ordinal);
+        Assert.Contains("SCP-GAP-001", keys, StringComparer.Ordinal);
+        Assert.Contains("SCP-GAP-002", keys, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

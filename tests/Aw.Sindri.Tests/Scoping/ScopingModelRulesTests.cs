@@ -75,7 +75,7 @@ public sealed class ScopingModelRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_run_at_the_desk_warns_that_the_model_is_self_reported()
     {
-        var response = Run(WithRuns(Record("step.scope.draft", "m-1"), Record("step.scope.challenge", null, via: "desk")));
+        var response = Run(WithRuns(Record("step.scope.draft", "m-1"), Record("step.scope.challenge", model: null, via: "desk")));
 
         Assert.Equal(ScopeRuleStatus.Warn, Status(response, "SCP-CHAL-002"));
         Assert.Contains(response.Warnings, w => w.Rule == "SCP-CHAL-002" && w.Message.Contains("desk", StringComparison.Ordinal));

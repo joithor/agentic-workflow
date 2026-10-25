@@ -154,7 +154,7 @@ public sealed class RelevanceJudgeStepTests
     [Fact]
     public async Task An_escalated_answer_is_uncertain()
     {
-        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Escalated, null, "below-threshold", DecisionRef: "JD-0003"));
+        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Escalated, Choice: null, "below-threshold", DecisionRef: "JD-0003"));
 
         var result = await Step(judge).Run(Context(Facts()), TestContext.Current.CancellationToken);
 
@@ -181,7 +181,7 @@ public sealed class RelevanceJudgeStepTests
     public async Task One_failed_call_is_uncertain_with_the_failure_word_and_the_others_stand()
     {
         var judge = new ScriptedJudge(request => AllText(request).Contains("L-code-2", StringComparison.Ordinal)
-            ? new ChooseAnswer(ChooseStatus.Failed, null, "timeout")
+            ? new ChooseAnswer(ChooseStatus.Failed, Choice: null, "timeout")
             : Decided("in"));
 
         var result = await Step(judge).Run(Context(Facts()), TestContext.Current.CancellationToken);
@@ -195,7 +195,7 @@ public sealed class RelevanceJudgeStepTests
     [Fact]
     public async Task Every_call_failing_fails_the_Step()
     {
-        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Failed, null, "boom"));
+        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Failed, Choice: null, "boom"));
 
         var result = await Step(judge).Run(Context(Facts()), TestContext.Current.CancellationToken);
 
@@ -206,12 +206,12 @@ public sealed class RelevanceJudgeStepTests
     [Fact]
     public async Task A_judge_that_did_not_finish_on_the_first_call_fails_the_Step_without_asking_the_rest()
     {
-        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Failed, null, "the judge did not finish"));
+        var judge = new ScriptedJudge(static _ => new ChooseAnswer(ChooseStatus.Failed, Choice: null, "the judge did not finish"));
 
         var result = await Step(judge).Run(Context(Facts()), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
-        Assert.Single(judge.Requests);
+        _ = Assert.Single(judge.Requests);
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public sealed class RelevanceJudgeStepTests
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Step(judge).Run(Context(Facts()), cancelled.Token));
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await Step(judge).Run(Context(Facts()), cancelled.Token));
 
         Assert.Empty(judge.Requests);
     }

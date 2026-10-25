@@ -236,7 +236,7 @@ public sealed class RelevanceApplyTests
 
         var row = applied.Coverage["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "history")!;
         Assert.Equal("not-searched", row["state"]!.GetValue<string>());
-        Assert.Equal(1, row["limits"]!.AsArray().Count);
+        _ = Assert.Single(row["limits"]!.AsArray());
         Assert.Empty(applied.Lenses["history"]!["items"]!.AsArray());
     }
 

@@ -11,7 +11,7 @@ public sealed class RelevanceDescriptorTests
     private static string[] Reads(BlockDescriptor descriptor) => [.. descriptor.Inputs.Select(static i => i.Value)];
 
     private static string[] Writes(BlockDescriptor descriptor, string outcome) =>
-        [.. descriptor.Outputs.Where(o => o.Every || o.RequiredOn.Any(r => r.Value == outcome)).Select(static o => o.Fact.Value).Order(StringComparer.Ordinal)];
+        [.. descriptor.Outputs.Where(o => o.Every == true || o.RequiredOn.Any(r => r.Value == outcome)).Select(static o => o.Fact.Value).Order(StringComparer.Ordinal)];
 
     [Fact]
     public void The_review_agent_reads_exactly_the_brief_the_lenses_the_coverage_and_the_anchors()
