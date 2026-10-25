@@ -66,7 +66,8 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
 
         if (!string.Equals(head.Value, commit, StringComparison.Ordinal))
         {
-            if (string.Equals(head.Value, startHead, StringComparison.Ordinal) && await CleanAt(worktree, head.Value, cancellationToken).ConfigureAwait(false))
+            if (string.Equals(head.Value, startHead, StringComparison.Ordinal) && await CleanAt(worktree, head.Value, cancellationToken).ConfigureAwait(false)
+                && (await diff.ChangedPaths(worktree, commit, cancellationToken).ConfigureAwait(false)).IsError is false)   // the named commit exists
             {
                 return StepFacts.Done("red");
             }
