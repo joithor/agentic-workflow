@@ -41,7 +41,7 @@ public sealed class FoldGlyphTests
 
         group.IsExpanded = false;
         Assert.Equal(Labels.FoldFolded, group.FoldGlyph);
-        Assert.Contains(nameof(QueueGroupViewModel.FoldGlyph), changed);
+        Assert.Contains(nameof(QueueGroupViewModel.FoldGlyph), changed, StringComparer.Ordinal);
 
         group.IsExpanded = true;
         Assert.Equal(Labels.FoldOpen, group.FoldGlyph);
@@ -58,7 +58,7 @@ public sealed class FoldGlyphTests
 
         await queue.ToggleClosed(_api, Token);
         Assert.Equal(Labels.FoldOpen, queue.ClosedGlyph);
-        Assert.Contains(nameof(QueueViewModel.ClosedGlyph), changed);
+        Assert.Contains(nameof(QueueViewModel.ClosedGlyph), changed, StringComparer.Ordinal);
 
         await queue.ToggleClosed(_api, Token);
         Assert.Equal(Labels.FoldFolded, queue.ClosedGlyph);
