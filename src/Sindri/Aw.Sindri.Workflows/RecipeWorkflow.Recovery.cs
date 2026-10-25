@@ -22,9 +22,10 @@ internal sealed partial class RecipeWorkflow
             return null;
         }
 
+        var request = new AgentRecoverRun(worktree, running.Run.Step.Block, running.Open.Token.Value, _launchedAt?.At);   // why: the activity lambda is an expression tree, which takes no '?.'
         try
         {
-            return await Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.RecoverAsync(new AgentRecoverRun(worktree, running.Run.Step.Block, running.Open.Token.Value, _launchedAt?.At)), AgentOptions(_recoverCall, running.Open, running.State, CancellationToken.None)).ConfigureAwait(true);
+            return await Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.RecoverAsync(request), AgentOptions(_recoverCall, running.Open, running.State, CancellationToken.None)).ConfigureAwait(true);
         }
         catch (ActivityFailureException)
         {
