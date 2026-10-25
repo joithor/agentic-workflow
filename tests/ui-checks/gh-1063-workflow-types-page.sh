@@ -67,14 +67,12 @@ APP_WRAPPER_PID=$!
 drv ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never answered (see $OUT/app.log)"
 
 # 3. Open the Workflow types tab.
-tab=""
+nav_ok=0
 for _ in $(seq 1 60); do
-  tab="$(drv search --text "Workflow types" --limit 50 2>/dev/null | jq -r '[.matches[] | select(.type == "Button" or .type == "TabItem" or .type == "ListBoxItem" or .type == "RadioButton" or .type == "ToggleButton")][0].id // empty')"
-  [ -n "$tab" ] && break
+  if drv click --type ListBoxItem --name "Workflow types" >"$OUT/nav.log" 2>&1; then nav_ok=1; break; fi
   sleep 1
 done
-[ -n "$tab" ] || setup_fail "no Workflow types tab (see $OUT/app.log)"
-drv click --node-id "$tab" >/dev/null 2>&1 || setup_fail "the Workflow types tab click was not accepted by the driver"
+[ "$nav_ok" = 1 ] || setup_fail "no Workflow types entry in the top bar (see $OUT/nav.log)"
 drv wait-for --automation-id RecipeRowOpen --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "no workflow row on the Workflow types page (see $OUT/app.log)"
 sleep 1
