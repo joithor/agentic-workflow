@@ -92,7 +92,12 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             .Select(x => new Neighbor(data.Hit(x.e.Symbol)!, x.Score))]);
 
     public ValueTask<Result<IReadOnlyList<SymbolVector>>> SymbolVectors(IReadOnlyList<string> paths, string model, CancellationToken cancellationToken)
-        => throw new NotSupportedException();
+        => Ok<IReadOnlyList<SymbolVector>>([.. paths
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .SelectMany(p => data.Files.TryGetValue(p, out var file) ? file.Symbols.OrderBy(s => s.StartLine).Select(s => (file, s)) : [])
+            .Where(x => data.Embeddings.TryGetValue(x.s.Ref, out var e) && string.Equals(e.Model, model, StringComparison.Ordinal))
+            .Select(x => new SymbolVector(x.s.Ref, x.file.Path, x.s.Name, x.s.Kind, data.Embeddings[x.s.Ref].Vector))]);
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
