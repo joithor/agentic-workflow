@@ -30,7 +30,7 @@ public sealed class SindriApiClientProfileApproveTests
         Assert.Equal((HttpMethod.Post, "/sindri/profile/approve", "human", "ui"), (canned.Method, canned.Path, canned.Caller, canned.Client));
         var body = JsonNode.Parse(canned.Body!)!;
         Assert.Equal(Hash, body["hash"]!.GetValue<string>());
-        Assert.Equal(["hash"], body.AsObject().Select(p => p.Key));   // no challenge, typed or heldMs
+        Assert.Equal(["hash"], body.AsObject().Select(p => p.Key), StringComparer.Ordinal);   // no challenge, typed or heldMs
     }
 
     [Fact]

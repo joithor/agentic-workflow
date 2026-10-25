@@ -61,7 +61,7 @@ public sealed class NeedsYouFramesTests : FrameHost
     {
         var catalog = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;   // an action the catalog does not list is what disables a control
         var rows = catalog["rows"]!.AsArray();
-        rows.Remove(rows.Single(r => (string?)r!["action"] == "ApproveProfile"));
+        _ = rows.Remove(rows.Single(r => (string?)r!["action"] == "ApproveProfile"));
         Server.Catalog = new RouteAnswer(System.Net.HttpStatusCode.OK, catalog.ToJsonString());
         var (window, _) = await Connected(s => s.NeedsYou.Count > 0);
 

@@ -80,7 +80,7 @@ public sealed class PausedAnswerViewModelTests
         await first;
 
         var (instance, body) = Assert.Single(_server.CommandCalls);
-        Assert.Equal((Instance, CommandKind.Answer, (AnswerVariant?)AnswerVariant.Grant, (int?)3, null), (instance, body.Kind, body.Answer, body.Amount, body.Text));
+        Assert.Equal((Instance, CommandKind.Answer, (AnswerVariant?)AnswerVariant.Grant, 3, null), (instance, body.Kind, body.Answer, body.Amount, body.Text));
         Assert.Equal(("Send answer", true), (form.SendWord, form.IsSent));
     }
 

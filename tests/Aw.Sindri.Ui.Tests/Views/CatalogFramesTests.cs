@@ -159,7 +159,7 @@ public sealed class CatalogFramesTests : IDisposable
         Settle(window);
 
         var page = Named<Control>(window, "HealthPage");
-        Assert.Empty(page.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "PendingLine"));
+        Assert.DoesNotContain(page.GetVisualDescendants().OfType<Border>(), b => b.Name == "PendingLine");
         var copies = page.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("copy") && b.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
         Assert.Contains("Copy: Run doctor", copies, StringComparer.Ordinal);
         Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
