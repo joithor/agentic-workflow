@@ -105,7 +105,11 @@ drv screenshot --out "$OUT/inspector.png" >/dev/null 2>&1
 drv click --type Button --name "See its context" >/dev/null 2>&1 || setup_fail "the See its context click was not accepted by the driver"
 shown=""
 for _ in $(seq 1 40); do
-  drv search --limit 500 >"$OUT/context-tree.json" 2>/dev/null
+  # Every page is in the tree and the Context page comes after the others: the search must be whole (the tree had 947 nodes), and a
+  # cut-off one is a broken setup, never a FAIL.
+  drv search --limit 5000 >"$OUT/context-tree.json" 2>/dev/null
+  jq -e '.total <= (.matches | length)' "$OUT/context-tree.json" >/dev/null 2>&1 \
+    || setup_fail "the driver's search was cut off or unreadable ($(jq -c '[.total, (.matches | length)]' "$OUT/context-tree.json" 2>/dev/null) total/returned; see $OUT/context-tree.json)"
   # Only the Context page's own head counts: the search walks every page, and the item's id is also on the Workflows rows and
   # the run page behind it. The head is the title's panel (ContextTitle, ContextHead and the item note share it).
   if jq -e --arg item "$item" '([.. | objects | select((.name // "") == "ContextTitle") | .id] | first // empty) as $title
