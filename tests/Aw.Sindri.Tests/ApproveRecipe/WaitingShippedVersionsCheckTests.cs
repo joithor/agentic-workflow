@@ -3,7 +3,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Features.ApproveAllRecipes;
