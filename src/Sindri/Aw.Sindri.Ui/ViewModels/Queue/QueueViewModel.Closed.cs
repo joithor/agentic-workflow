@@ -11,10 +11,18 @@ internal sealed partial class QueueViewModel
     internal Uri? LastUrl { get; private set; }
 
     /// <summary>True while the fold is open.</summary>
-    public bool IsClosedOpen { get; private set => Set(ref field, value); }
+    public bool IsClosedOpen
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(ClosedGlyph));
+        }
+    }
 
     /// <summary>The Closed header's fold arrow: down while open, right while folded.</summary>
-    public string ClosedGlyph => Labels.FoldFolded;
+    public string ClosedGlyph => IsClosedOpen ? Labels.FoldOpen : Labels.FoldFolded;
 
     /// <summary>"Closed" before the first read, then "Closed (3)".</summary>
     public string ClosedHeader { get; private set => Set(ref field, value); } = Labels.ClosedHeader(count: null);
