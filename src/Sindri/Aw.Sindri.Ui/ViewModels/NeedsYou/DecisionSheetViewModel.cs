@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -185,16 +186,7 @@ internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> 
         {
             if (shown)
             {
-                // Only "decided elsewhere" is put in words; a voided decision or a closed item keeps the sentence the server served.
-                var conflict = string.Equals(answer.Error.Code, Conflict, StringComparison.Ordinal) && answer.Error.Message.Contains(DecidedElsewhere, StringComparison.Ordinal);
-                (RefusalCode, Refusal, IsRefusedAsDecided) = (answer.Error.Code, conflict ? Labels.AlreadyDecidedBare : answer.Error.Message, conflict);
-                Say(Refusal);
-                Raise();
-                Refused?.Invoke(this, EventArgs.Empty);
-                if (conflict)
-                {
-                    await ExplainConflict(id).ConfigureAwait(true);
-                }
+                await Refuse(id, answer.Error).ConfigureAwait(true);
             }
 
             return;
@@ -209,6 +201,20 @@ internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> 
 
         Raise();
         Expiry = DropOutcome(id);
+    }
+
+    // Only "decided elsewhere" is put in words; a voided decision or a closed item keeps the sentence the server served.
+    private async Task Refuse(string id, Error error)
+    {
+        var conflict = string.Equals(error.Code, Conflict, StringComparison.Ordinal) && error.Message.Contains(DecidedElsewhere, StringComparison.Ordinal);
+        (RefusalCode, Refusal, IsRefusedAsDecided) = (error.Code, conflict ? Labels.AlreadyDecidedBare : error.Message, conflict);
+        Say(Refusal);
+        Raise();
+        Refused?.Invoke(this, EventArgs.Empty);
+        if (conflict)
+        {
+            await ExplainConflict(id).ConfigureAwait(true);
+        }
     }
 
     // The refusal says how the decision was answered, in words, once the decided list has it; a voided decision says its served line.
