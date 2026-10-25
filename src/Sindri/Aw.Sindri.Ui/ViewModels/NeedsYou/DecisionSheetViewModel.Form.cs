@@ -31,7 +31,7 @@ internal sealed partial class DecisionSheetViewModel
     internal string ClearedLine => !IsCleared || DecidedLine.Length > 0 || IsRefusedAsDecided ? "" : ServedCleared.Length > 0 ? ServedCleared : Labels.Cleared(DecisionId);
 
     // A stale Decide's refusal already says the decision was answered; the cleared line would say it a second time.
-    private bool IsRefusedAsDecided => Refusal.Length > 0 && string.Equals(RefusalCode, Conflict, StringComparison.Ordinal);
+    private bool IsRefusedAsDecided { get; set; }
 
     /// <summary>The polite live region: set true before the text, spoken once.</summary>
     internal bool IsAnnouncing { get; private set => Set(ref field, value); }

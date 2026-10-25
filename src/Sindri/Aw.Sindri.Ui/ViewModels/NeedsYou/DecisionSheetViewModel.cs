@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, TimeProvider clock, DecisionSender sender, Platform.IClipboard? clipboard = null) : ObservableObject
 {
     private const string Conflict = "SND-ITEM-409";
+    private const string DecidedElsewhere = "decided elsewhere";
     private static readonly TimeSpan _outcomeShown = TimeSpan.FromSeconds(2);
     private NeedsYouRowViewModel? _row;
 
@@ -90,7 +91,7 @@ internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> 
         var id = row.Entry.Subject?.Id ?? row.Id;
         if (!string.Equals(id, DecisionId, StringComparison.Ordinal) || IsCleared)
         {
-            (Note, Refusal, RefusalCode, Outcome, DecidedLine, IsCleared, ServedCleared) = ("", "", "", "", "", false, "");
+            (Note, Refusal, RefusalCode, Outcome, DecidedLine, IsCleared, ServedCleared, IsRefusedAsDecided) = ("", "", "", "", "", false, "", false);
             DecisionId = id;
             OnChanged(nameof(ClearedLine));
         }
@@ -168,7 +169,7 @@ internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> 
 
     private async Task Send(Uri url, string id, string optionId, string label, string note)
     {
-        (RefusalCode, Refusal) = ("", "");
+        (RefusalCode, Refusal, IsRefusedAsDecided) = ("", "", false);
         var sending = sender.Send(url, id, optionId, note);
         Raise();
         OnChanged(nameof(IsSending));
@@ -184,8 +185,9 @@ internal sealed partial class DecisionSheetViewModel(ISindriApi api, Func<Uri?> 
         {
             if (shown)
             {
-                var conflict = string.Equals(answer.Error.Code, Conflict, StringComparison.Ordinal);
-                (RefusalCode, Refusal) = (answer.Error.Code, conflict ? Labels.AlreadyDecidedBare : answer.Error.Message);
+                // Only "decided elsewhere" is put in words; a voided decision or a closed item keeps the sentence the server served.
+                var conflict = string.Equals(answer.Error.Code, Conflict, StringComparison.Ordinal) && answer.Error.Message.Contains(DecidedElsewhere, StringComparison.Ordinal);
+                (RefusalCode, Refusal, IsRefusedAsDecided) = (answer.Error.Code, conflict ? Labels.AlreadyDecidedBare : answer.Error.Message, conflict);
                 Say(Refusal);
                 Raise();
                 Refused?.Invoke(this, EventArgs.Empty);

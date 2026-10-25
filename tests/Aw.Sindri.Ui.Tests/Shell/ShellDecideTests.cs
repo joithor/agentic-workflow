@@ -180,7 +180,7 @@ public sealed class ShellDecideTests
     public Task A_stale_Decide_is_refused_with_one_line_that_has_no_id_and_no_actor() => UiThread.Run(async () =>
     {
         var shell = await WithDecision();
-        _server.DecideAnswers["DEC-1"] = RouteAnswer.Api("decisions-id", "decided-elsewhere");
+        _server.DecideAnswers["DEC-1"] = RouteAnswer.Problem("decisions-id", "decided-elsewhere");
         _server.DecidedDecisions = DecidedThreeMinutesAgo("decided");
         shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
 
