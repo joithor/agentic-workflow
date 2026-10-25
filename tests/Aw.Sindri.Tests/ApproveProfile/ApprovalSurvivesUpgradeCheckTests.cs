@@ -5,8 +5,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.ApproveProfile;
-using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Profile;
 
 namespace Aw.Sindri.Tests.ApproveProfile;
