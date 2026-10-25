@@ -71,7 +71,12 @@ internal sealed class AgentTargetResolver(IApprovedProfile approved, IFactConten
         }
 
         var parsed = AwJson.Deserialize<ItemFact>(bytes.Value.Span, _options);
-        return parsed.IsError || parsed.Value.Repo is not { Length: > 0 }
+        if (parsed.IsError)
+        {
+            return SindriErrors.InvalidInput.With($"the instance's fact:item doesn't read: {parsed.Error.Message} (fix: give '{{ \"id\": …, \"repo\": <a repos key> }}'; \"spec\" is optional)");
+        }
+
+        return parsed.Value.Repo is not { Length: > 0 }
             ? SindriErrors.LaunchRepoMissing.With("the instance's fact:item names no repo")
             : parsed.Value;
     }
