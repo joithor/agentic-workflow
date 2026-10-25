@@ -42,6 +42,6 @@ internal static class RulesRedecide
     private static bool OnlyEngine(IEnumerable<MapOverride> accepts)
     {
         var list = accepts.ToList();
-        return list.Count > 0 && list.All(o => string.Equals(o.Who, MapOverride.EngineWho, StringComparison.Ordinal));
+        return list.Count > 0 && list.TrueForAll(o => string.Equals(o.Who, MapOverride.EngineWho, StringComparison.Ordinal));
     }
 }
