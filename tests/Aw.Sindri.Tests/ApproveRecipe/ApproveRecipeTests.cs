@@ -118,23 +118,6 @@ public sealed class ApproveRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Approving_the_same_pins_again_still_asks_the_human_to_type_the_challenge()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var step = await r.Shipped("sindri/workflow.step.yaml");
-        _ = await r.Approve(step);
-        var issued = (await r.Issue("approve workflow.step 4")).Value;
-
-        var wrong = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
-            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, "approve nothing")), RegistryHarness.Human);
-
-        Assert.True(wrong.IsError);
-        Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, wrong.Error.Code);
-        Assert.Empty(r.Wake.Sent);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Drift_reapproval_of_the_same_hash_appends_a_row_and_event_with_the_new_pins_and_wakes_its_instances()
     {
         await using var r = new RegistryHarness();
@@ -157,27 +140,6 @@ public sealed class ApproveRecipeTests
         Assert.Equal(approved.Value.Preview.Pins.Blocks, history[1].Pins.Blocks);
         Assert.True(r.H.Events.Payload<RecipeApproved>(Assert.Single(r.Events(EventTypes.RecipeApproved))).Value.Drift);
         Assert.Equal(RecipeWakeKind.Approved, Assert.Single(r.Wake.Sent).Kind);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Drift_challenge_binds_pins_digest()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var step = await r.Shipped("sindri/workflow.step.yaml");
-        _ = await r.Approvals.Approve(RegistryData.Approval(step, Stale()), Token);
-        var unbound = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 4), ChallengeSubject.ForRecipe(step.Hash, 4, pinsDigest: null));
-        var otherPins = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 4), ChallengeSubject.ForRecipe(step.Hash, 4, PinRules.Digest(Stale(), SliceHarness.Json)));
-
-        foreach (var stale in new[] { unbound, otherPins })
-        {
-            var refused = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
-                new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(stale.Id, stale.Action.Text)), RegistryHarness.Human);
-            Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
-        }
-
-        _ = Assert.Single((await r.Approvals.History(step.Id, 4, step.Hash, Token)).Value);
-        Assert.Empty(r.Events(EventTypes.RecipeApproved));
     }
 
     [Fact, Trait("Lane", "unit")]

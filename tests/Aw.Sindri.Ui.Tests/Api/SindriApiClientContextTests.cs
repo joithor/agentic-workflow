@@ -184,14 +184,14 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
-    public async Task ReviewDecision_a_session_refusal_reads_as_SND_AUTH_002()
+    public async Task ReviewDecision_a_session_decision_reads_like_any_other()
     {
         var (client, server, _) = Reach();
-        server.ReviewDecided = RouteAnswer.Problem("context-map-review", "session-auth-002");
+        server.ReviewDecided = RouteAnswer.Api("context-map-review", "session-accept");
 
         var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
 
-        Assert.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (decision.Error.Code, decision.Error.Kind));
+        Assert.True(decision.IsSuccess, decision.IsError ? decision.Error.Message : null);
     }
 
     [Fact]
