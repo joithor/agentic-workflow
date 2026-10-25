@@ -89,6 +89,9 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
         return Done();
     }
 
+    public ValueTask<Result<IReadOnlySet<string>>> FilesWithoutBodiesOrVectors(CancellationToken cancellationToken)
+        => Ok<IReadOnlySet<string>>(data.Symbols.Where(x => x.Symbol.Body is null && !data.Embeddings.ContainsKey(x.Symbol.Ref)).Select(x => x.File.Path).ToHashSet(StringComparer.Ordinal));
+
     public ValueTask<Result<IReadOnlyList<EmbedCandidate>>> EmbedCandidates(int limit, CancellationToken cancellationToken)
         => Ok<IReadOnlyList<EmbedCandidate>>([.. data.Symbols
             .Where(x => x.Symbol.Body is not null && !data.Embeddings.ContainsKey(x.Symbol.Ref))

@@ -85,7 +85,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
     {
         var planned = GraphMerge.Plan(request.Repo.Name, graphJson, code);
         var withBodies = await AttachBodies(planned, request, cancellationToken).ConfigureAwait(false);
-        var changed = await ChangedFiles(build, withBodies.Merged, cancellationToken).ConfigureAwait(false);
+        var changed = await ChangedFiles(build, withBodies.Merged, request.Repo.Settings.Embeddings.Enabled, cancellationToken).ConfigureAwait(false);
         if (changed.IsError)
         {
             return changed.Error;
@@ -96,9 +96,10 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
     }
 
     // Writing a file takes its old rows out, and its symbols' vectors with them, so a graph file is written only when its rows would change: it is new, its blob
-    // differs, or the symbols planned for it differ from the stored ones (ref, kind, lines, name). A graph symbol's body is a pure function of its file's text and
+    // differs, or the symbols planned for it differ from the stored ones (ref, kind, lines, name), or, with embeddings on, one of its stored symbols has neither a body nor a vector (embeddings were off
+    // when it was stored, or its blob could not be read). A graph symbol's body is a pure function of its file's text and
     // the symbols' start lines (GraphBodies), so the same blob with the same symbols means the same bodies; they cannot be compared directly, since an embedded symbol's body is dropped.
-    private static async ValueTask<Result<IReadOnlyList<FileRecord>>> ChangedFiles(IIndexBuild build, GraphMerged merged, CancellationToken cancellationToken)
+    private static async ValueTask<Result<IReadOnlyList<FileRecord>>> ChangedFiles(IIndexBuild build, GraphMerged merged, bool embeddings, CancellationToken cancellationToken)
     {
         var files = await build.StoredFiles(cancellationToken).ConfigureAwait(false);
         if (files.IsError)
@@ -112,10 +113,23 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
             return symbols.Error;
         }
 
+        var unembeddable = new HashSet<string>(StringComparer.Ordinal);
+        if (embeddings)
+        {
+            var pending = await build.FilesWithoutBodiesOrVectors(cancellationToken).ConfigureAwait(false);
+            if (pending.IsError)
+            {
+                return pending.Error;
+            }
+
+            unembeddable.UnionWith(pending.Value);
+        }
+
         var blobs = files.Value.ToDictionary(f => f.Path, f => f.Blob, StringComparer.Ordinal);
         var rows = symbols.Value.ToLookup(s => s.File, s => Shape(s.Ref, s.Kind, s.StartLine, s.EndLine, s.Name), StringComparer.Ordinal);
         IReadOnlyList<FileRecord> changed = [.. merged.Files
-            .Where(f => !blobs.TryGetValue(f.Path, out var blob)
+            .Where(f => unembeddable.Contains(f.Path)
+                || !blobs.TryGetValue(f.Path, out var blob)
                 || !string.Equals(blob, f.Blob, StringComparison.Ordinal)
                 || !rows[f.Path].Order(StringComparer.Ordinal).SequenceEqual(f.Symbols.Select(s => Shape(s.Ref, s.Kind, s.StartLine, s.EndLine, s.Name)).Order(StringComparer.Ordinal), StringComparer.Ordinal))];
         return changed;
