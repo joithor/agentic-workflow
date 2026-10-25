@@ -46,7 +46,7 @@ internal sealed class AdjudicateService(IEvalStore store, IProviderCatalog catal
         }
 
         var skipped = new HashSet<EvalItemId>();
-        var (labeled, split, failed) = (0, 0, 0);
+        var counts = new int[3];
         for (var n = 0; n < request.Limit; n++)
         {
             var next = await store.NextUnlabeled(request.Question, LabelSource.Adjudicator, skipped, cancellationToken).ConfigureAwait(false);
@@ -61,33 +61,34 @@ internal sealed class AdjudicateService(IEvalStore store, IProviderCatalog catal
             }
 
             _ = skipped.Add(item.Id);
-            if (Prepared(item) is not { } prepared)
+            var outcome = await Adjudicated(item, adjudicator.Value, cancellationToken).ConfigureAwait(false);
+            if (outcome.IsError)
             {
-                failed++;
-                continue;
+                return Results.Failure<AdjudicateResponse>(outcome.Error);
             }
 
-            switch (await Verdict(adjudicator.Value, prepared, cancellationToken).ConfigureAwait(false))
-            {
-                case { Label: { } label }:
-                    var recorded = await store.RecordLabel(item.Id, LabelSource.Adjudicator, label, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-                    if (recorded.IsError)
-                    {
-                        return Results.Failure<AdjudicateResponse>(recorded.Error);
-                    }
-
-                    labeled++;
-                    break;
-                case { AllErrored: true }:
-                    failed++;
-                    break;
-                default:
-                    split++;
-                    break;
-            }
+            counts[(int)outcome.Value]++;
         }
 
-        return new AdjudicateResponse(labeled, split, failed);
+        return new AdjudicateResponse(counts[(int)Outcome.Labeled], counts[(int)Outcome.Split], counts[(int)Outcome.Failed]);
+    }
+
+    // One item: asked Samples times and, on a strict in-enum majority, labelled.
+    private async ValueTask<Result<Outcome>> Adjudicated(EvalItem item, IModelProvider provider, CancellationToken cancellationToken)
+    {
+        if (Prepared(item) is not { } prepared)
+        {
+            return Outcome.Failed;
+        }
+
+        var verdict = await Verdict(provider, prepared, cancellationToken).ConfigureAwait(false);
+        if (verdict.Label is not { } label)
+        {
+            return verdict.AllErrored ? Outcome.Failed : Outcome.Split;
+        }
+
+        var recorded = await store.RecordLabel(item.Id, LabelSource.Adjudicator, label, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        return recorded.IsError ? Results.Failure<Outcome>(recorded.Error) : Outcome.Labeled;
     }
 
     // The item's input redacted (values and keys), then read as the question's input; null when it is not JSON, doesn't
@@ -105,7 +106,7 @@ internal sealed class AdjudicateService(IEvalStore store, IProviderCatalog catal
             : null;
     }
 
-    private async ValueTask<Verdicts> Verdict(IModelProvider provider, Ask prepared, CancellationToken cancellationToken)
+    private static async ValueTask<Verdicts> Verdict(IModelProvider provider, Ask prepared, CancellationToken cancellationToken)
     {
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         var errors = 0;
@@ -132,6 +133,13 @@ internal sealed class AdjudicateService(IEvalStore store, IProviderCatalog catal
         reference.Criteria is not { Count: > 0 } criteria
             ? reference
             : reference with { Prompt = $"{reference.Prompt}\n\nOptions:\n{string.Join('\n', criteria.Select(pair => $"- {pair.Key}: {pair.Value}"))}" };
+
+    private enum Outcome
+    {
+        Labeled,
+        Split,
+        Failed,
+    }
 
     private sealed record Ask(QuestionRef Reference, JsonNode? Input, TimeSpan TimeBudget);
 
