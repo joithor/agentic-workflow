@@ -2,7 +2,6 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Roles;
 using Aw.Kernel;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Profile;

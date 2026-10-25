@@ -1,7 +1,7 @@
 using System.Globalization;
-using Aw.Context.Core.Map;
+using Aw.Context.Core.Roles;
 
-namespace Aw.Context.Core.Roles;
+namespace Aw.Context.Core.Map;
 
 /// <summary>Doctor 'context:roles': warns when indexed files look like a role but match no glob.</summary>
 public static class RoleHealth
