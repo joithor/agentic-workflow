@@ -1,10 +1,9 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.RegistryWrites;
 
-namespace Aw.Sindri.Features.ApproveRecipe;
+namespace Aw.Sindri.Core.Workflow.ApproveAll;
 
 /// <summary>
 /// Registers a shipped version on its way to an individual approval (#983). A shipped version that gains a capability waits for its own typed approval, and approve-all leaves it out, so
@@ -14,14 +13,14 @@ namespace Aw.Sindri.Features.ApproveRecipe;
 /// <param name="shipped">The shipped recipes.</param>
 /// <param name="registrar">Registers a recipe.</param>
 /// <param name="store">The registered recipes.</param>
-internal sealed class ShippedRecipeRegistration(ShippedRecipeSet shipped, RecipeRegistrar registrar, IRecipeStore store)
+public sealed class ShippedRecipeRegistration(ShippedRecipeSet shipped, RecipeRegistrar registrar, IRecipeStore store)
 {
     /// <summary>Registers the shipped version of <paramref name="id"/> that <paramref name="hash"/> names (whole, or a prefix of 8 or more digits), unless it is registered.</summary>
     /// <param name="id">The recipe id.</param>
     /// <param name="hash">The hash or its prefix.</param>
     /// <param name="cancellationToken">Cancels the reads and writes.</param>
     /// <returns>Success when nothing was needed or the version was registered; the registration's refusal otherwise.</returns>
-    internal ValueTask<Result<bool>> EnsureHash(RecipeId id, string hash, CancellationToken cancellationToken) =>
+    public ValueTask<Result<bool>> EnsureHash(RecipeId id, string hash, CancellationToken cancellationToken) =>
         Ensure(id, file => string.Equals(file.Hash.Value, hash, StringComparison.Ordinal) || file.Hash.MatchesPrefix(hash), cancellationToken);
 
     /// <summary>Registers the shipped version <paramref name="version"/> of <paramref name="id"/>, unless a version of that number is registered.</summary>
@@ -29,7 +28,7 @@ internal sealed class ShippedRecipeRegistration(ShippedRecipeSet shipped, Recipe
     /// <param name="version">The version.</param>
     /// <param name="cancellationToken">Cancels the reads and writes.</param>
     /// <returns>Success when nothing was needed or the version was registered; the registration's refusal otherwise.</returns>
-    internal async ValueTask<Result<bool>> EnsureVersion(RecipeId id, int version, CancellationToken cancellationToken)
+    public async ValueTask<Result<bool>> EnsureVersion(RecipeId id, int version, CancellationToken cancellationToken)
     {
         var registered = await store.Versions(id, cancellationToken).ConfigureAwait(false);
         if (registered.IsError || registered.Value.Any(r => r.Version == version))

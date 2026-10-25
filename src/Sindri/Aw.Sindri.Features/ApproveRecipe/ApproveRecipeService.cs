@@ -3,6 +3,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.RegistryWrites;
@@ -41,7 +42,7 @@ internal sealed class ApproveRecipeService(
             return SindriErrors.AuthRefused.With("ApproveRecipe needs a caller");
         }
 
-        var registered = shipped is null ? false : await shipped.EnsureHash(request.Id, request.Hash.Value, cancellationToken).ConfigureAwait(false);
+        var registered = shipped is null ? Results.Success(false) : await shipped.EnsureHash(request.Id, request.Hash.Value, cancellationToken).ConfigureAwait(false);
         var plan = registered.IsError ? registered.Error : await planner.Approve(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
         if (plan.IsError)
         {

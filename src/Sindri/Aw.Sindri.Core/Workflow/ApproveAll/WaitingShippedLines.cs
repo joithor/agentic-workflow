@@ -2,10 +2,9 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
-using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Registry;
 
-namespace Aw.Sindri.Features.ListRecipes;
+namespace Aw.Sindri.Core.Workflow.ApproveAll;
 
 /// <summary>
 /// The shipped versions that wait for their own approval, in the recipe list (#983): a shipped version that gains a capability is left out of approve-all and is not registered until someone approves it,
@@ -16,13 +15,13 @@ namespace Aw.Sindri.Features.ListRecipes;
 /// <param name="files">The embedded set, for the waiting version's text.</param>
 /// <param name="registry">Reads a recipe's line.</param>
 /// <param name="json">The package's AwJson options (they write the normalized form).</param>
-internal sealed class WaitingShippedLines(IShippedRecipes shipped, ShippedRecipeSet files, RecipeRegistryReader registry, JsonSerializerOptions json)
+public sealed class WaitingShippedLines(IShippedRecipes shipped, ShippedRecipeSet files, RecipeRegistryReader registry, JsonSerializerOptions json)
 {
     /// <summary>The registry's lines with the waiting shipped versions marked, and a line for each that is not registered.</summary>
     /// <param name="registered">The registry's lines.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>The lines, the waiting ones last.</returns>
-    internal async ValueTask<Result<IReadOnlyList<RecipeSummary>>> Merge(IReadOnlyList<RecipeSummary> registered, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<RecipeSummary>>> Merge(IReadOnlyList<RecipeSummary> registered, CancellationToken cancellationToken)
     {
         var plan = await shipped.Plan(cancellationToken).ConfigureAwait(false);
         if (plan.IsError)
