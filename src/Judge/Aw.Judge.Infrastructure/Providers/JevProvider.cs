@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Core.Questions;
 using Aw.Judge.Core.Secrets;
 using Aw.Kernel.Json;
 
@@ -45,6 +46,11 @@ internal sealed partial class JevProvider(HttpClient http, ISecretSource secrets
         if (question.Outputs.Count > MaxOptions)
         {
             return new ProviderErrored(ProviderReasons.TooManyOptions);
+        }
+
+        if (question.ExtraProperties?.ContainsKey(ResolutionCheckQuestion.Reasons) == true)
+        {
+            return new ProviderUnavailable(ProviderReasons.CannotExplain);
         }
 
         // The key read is inside the budget: with no key in the environment it asks the keychain, which can sit on its

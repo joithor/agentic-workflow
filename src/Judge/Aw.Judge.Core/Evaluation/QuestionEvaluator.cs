@@ -192,7 +192,7 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         where TInput : class
     {
         var result = at.Result;
-        switch (StepVerdicts.Of(result, question.Outputs, run.Threshold))
+        switch (StepVerdicts.Of(result, question.Outputs, run.Threshold, lacksReasons: result is ProviderDecided decided && question.LacksReasons(decided)))
         {
             case StepVerdict.Unavailable:
                 run.Skip(at.Name, SkipReason.Unavailable);
@@ -205,6 +205,10 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
             case StepVerdict.OutOfEnum:
                 var code = result is ProviderDecided ? EvaluationReasons.OutOfEnum : result.ReasonCode;
                 await Fail(question.Name, at.Name, code, cancellationToken).ConfigureAwait(false);
+                run.Skip(at.Name, SkipReason.Failed);
+                return null;
+            case StepVerdict.NoReasons:
+                await Fail(question.Name, at.Name, EvaluationReasons.NoReasons, cancellationToken).ConfigureAwait(false);
                 run.Skip(at.Name, SkipReason.Failed);
                 return null;
             case StepVerdict.BelowThreshold:
