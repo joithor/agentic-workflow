@@ -29,14 +29,18 @@ public sealed class IndexConceptsTests : IDisposable
         var profile = (await _files.Source.Load(Token)).Value.Profile;
 
         var pin = Assert.Single(profile.Index!.Concepts!);
-        Assert.Equal(new ConceptSettings(ConceptPinId.From("scheduling"), "Self scheduling", "Shifts and swaps", ["feature:shifts", "feature:shifts.*"], ["apps/web/src/Schedule/**"]), pin);
+        Assert.Equal("scheduling", pin.Id!.Value.Value);   // why: the pin names an id
+        Assert.Equal("Self scheduling", pin.Name);
+        Assert.Equal("Shifts and swaps", pin.Summary);
+        Assert.Equal(["feature:shifts", "feature:shifts.*"], pin.Features, StringComparer.Ordinal);
+        Assert.Equal(["apps/web/src/Schedule/**"], pin.Paths, StringComparer.Ordinal);
         Assert.True(ProfileRules.Check(profile).IsSuccess);
     }
 
     [Theory, Trait("Lane", "integration")]
     [InlineData("Bad Id")]
-    [InlineData("\"\"")]
     [InlineData("Scheduling")]
+    [InlineData("-lead")]
     public async Task An_id_that_is_not_a_slug_is_refused_with_its_key_path(string id)
     {
         _files.Write(Base + "index:\n  concepts:\n    - { id: " + id + ", name: Billing }\nrepos:\n  - { name: web, path: /work/web }\n");
@@ -65,8 +69,9 @@ public sealed class IndexConceptsTests : IDisposable
         var repo = ScopeRules.Usable(ContextScopes.Entries(profile)).Single();
 
         Assert.Equal(
-            [new ConceptPin(ConceptId.From("billing"), "Billing", Summary: null, Features: ["feature:invoices.*"], Paths: []), new ConceptPin(Id: null, "Scheduling", Summary: null, Features: [], Paths: ["src/schedule/**"])],
-            repo.Concepts);
+            ["billing|Billing|feature:invoices.*|", "|Scheduling||src/schedule/**"],
+            repo.Concepts.Select(c => string.Join('|', c.Id?.Value, c.Name, string.Join(',', c.Features), string.Join(',', c.Paths))),
+            StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

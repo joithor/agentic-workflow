@@ -6,4 +6,15 @@ namespace Aw.Context.Core.Engine;
 /// <param name="Summary">A line about it, or null.</param>
 /// <param name="Features">Feature node keys or key globs ('feature:shifts', 'feature:shifts.*') it holds.</param>
 /// <param name="Paths">Repo-relative file globs; the features implemented there belong to it.</param>
-public sealed record ConceptPin(ConceptId? Id, string Name, string? Summary, IReadOnlyList<string> Features, IReadOnlyList<string> Paths);
+public sealed record ConceptPin(ConceptId? Id, string Name, string? Summary, IReadOnlyList<string> Features, IReadOnlyList<string> Paths)
+{
+    /// <summary>A pin from the profile's plain values.</summary>
+    /// <param name="id">The slug, or null.</param>
+    /// <param name="name">The name; none becomes empty (the profile's rules refuse it before this).</param>
+    /// <param name="summary">A line about it, or null.</param>
+    /// <param name="features">Feature keys or key globs, or null for none.</param>
+    /// <param name="paths">File globs, or null for none.</param>
+    /// <returns>The pin; throws when <paramref name="id"/> is not a concept id.</returns>
+    public static ConceptPin Of(string? id, string? name, string? summary, IEnumerable<string>? features, IEnumerable<string>? paths) =>
+        new(id is null ? null : ConceptId.From(id), name ?? string.Empty, summary, [.. features ?? []], [.. paths ?? []]);
+}

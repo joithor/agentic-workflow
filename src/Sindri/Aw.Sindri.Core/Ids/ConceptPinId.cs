@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
 using Vogen;
@@ -12,10 +11,7 @@ namespace Aw.Sindri.Core.Ids;
 public readonly partial struct ConceptPinId : ITypedId<ConceptPinId, string>
 {
     private static Validation Validate(string value) =>
-        Shape.IsMatch(value) ? Validation.Ok : Validation.Invalid("A concept id is 1 to 64 lower-case letters and digits, joined by single '-' (like 'scheduling')");
-
-    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex Shape { get; }
+        value.Length is > 0 and <= 64 && !value.Any(char.IsControl) ? Validation.Ok : Validation.Invalid("A concept id is 1 to 64 characters; the profile's rules check its shape");
 
     private static string NormalizeInput(string input) => input.Length > 64 ? string.Empty : input;
 }

@@ -66,9 +66,17 @@ internal static class IndexRules
             : null;
 
     private static Error? Reserved(string path, ConceptPinId? id) =>
-        id is { } pinned && string.Equals(pinned.Value, ConceptOther, StringComparison.Ordinal)
-            ? Invalid(path, "'other' is reserved for the concept that holds what no other takes")
-            : null;
+        id switch
+        {
+            null => null,
+            { Value: ConceptOther } => Invalid(path, "'other' is reserved for the concept that holds what no other takes"),
+            { } pinned when !IsSlug(pinned.Value) => Invalid(path, "must be a slug of lowercase letters, digits and '-' (like 'scheduling')"),
+            _ => null,
+        };
+
+    private static bool IsSlug(string id) =>
+        id.All(static c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-')
+        && !id.StartsWith('-') && !id.EndsWith('-') && !id.Contains("--", StringComparison.Ordinal);
 
     private static Error? Features(string path, IReadOnlyList<string>? features)
     {
