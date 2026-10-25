@@ -25,15 +25,15 @@ public sealed class ShippedRecipesListedTests : IAsyncLifetime
     {
         await using var scope = _host.App.Services.CreateAsyncScope();
         var plan = (await scope.ServiceProvider.GetRequiredService<IShippedRecipes>().Plan(TestContext.Current.CancellationToken)).Value;
-        var shippedIds = plan.Recipes.Select(r => r.Id.Value).Concat(plan.OwnApproval.Select(o => o.Id.Value)).Distinct().ToList();
+        var shippedIds = plan.Recipes.Select(r => r.Id.Value).Concat(plan.OwnApproval.Select(o => o.Id.Value)).Distinct(StringComparer.Ordinal).ToList();
 
         var listed = await _host.Http.Ask(Get("/sindri/workflow/recipes", (SindriHeaders.Caller, "session")));
 
         Assert.True(listed.Status == HttpStatusCode.OK, listed.Body);
         Assert.NotEmpty(shippedIds);
         var lines = JsonDocument.Parse(listed.Body).RootElement.GetProperty("recipes").EnumerateArray().ToList();
-        var ids = lines.Select(l => l.GetProperty("id").GetString()).ToHashSet();
-        Assert.Empty(shippedIds.Where(id => !ids.Contains(id)));
+        var ids = lines.Select(l => l.GetProperty("id").GetString()).ToHashSet(StringComparer.Ordinal);
+        Assert.DoesNotContain(shippedIds, id => !ids.Contains(id));
         Assert.All(lines, l => Assert.Equal("unapproved", l.GetProperty("standing").GetString()));   // why: nothing is registered or approved in this host
     }
 }
