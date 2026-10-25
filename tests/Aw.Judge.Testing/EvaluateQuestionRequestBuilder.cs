@@ -12,6 +12,9 @@ public sealed class EvaluateQuestionRequestBuilder
     private string _variant = "as-is";
     private LabelSource? _labels;
     private string? _collapse;
+    private string? _record;
+    private string? _replay;
+    private IReadOnlyList<ProviderName>? _providers;
 
     /// <summary>Sets the question.</summary>
     /// <param name="question">The question.</param>
@@ -58,7 +61,34 @@ public sealed class EvaluateQuestionRequestBuilder
         return this;
     }
 
+    /// <summary>Records every provider answer to a file.</summary>
+    /// <param name="file">The file.</param>
+    /// <returns>This builder.</returns>
+    public EvaluateQuestionRequestBuilder Record(string file)
+    {
+        _record = file;
+        return this;
+    }
+
+    /// <summary>Re-scores the answers in a file instead of calling the provider.</summary>
+    /// <param name="file">The file.</param>
+    /// <returns>This builder.</returns>
+    public EvaluateQuestionRequestBuilder Replay(string file)
+    {
+        _replay = file;
+        return this;
+    }
+
+    /// <summary>Limits the providers to an allowlist.</summary>
+    /// <param name="providers">The allowlist.</param>
+    /// <returns>This builder.</returns>
+    public EvaluateQuestionRequestBuilder Allow(params ProviderName[] providers)
+    {
+        _providers = providers;
+        return this;
+    }
+
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
-    public EvaluateQuestionRequest Build() => new(_question, _provider, _variant, _labels, _collapse);
+    public EvaluateQuestionRequest Build() => new(_question, _provider, _variant, _labels, _collapse, _record, _replay, _providers);
 }

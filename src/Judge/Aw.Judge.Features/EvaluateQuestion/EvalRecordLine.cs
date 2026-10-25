@@ -1,0 +1,71 @@
+using System.Text.Json.Nodes;
+using Aw.Judge.Core.Evaluation;
+using Aw.Judge.Core.Providers;
+
+namespace Aw.Judge.Features.EvaluateQuestion;
+
+/// <summary>The --record file's lines: one JSON object per answer, {itemId, label, status, decision, confidence, reasonCode, latencyMs}.</summary>
+internal static class EvalRecordLine
+{
+    private const string Decided = "decided";
+    private const string Unavailable = "unavailable";
+    private const string Errored = "errored";
+
+    internal static JsonObject ToNode(EvalResult row)
+    {
+        var node = new JsonObject { ["itemId"] = row.ItemId, ["label"] = row.Label };
+        switch (row.Answer)
+        {
+            case ProviderDecided decided:
+                node["status"] = Decided;
+                node["decision"] = decided.Decision;
+                node["confidence"] = decided.Confidence;
+                break;
+            case ProviderUnavailable:
+                node["status"] = Unavailable;
+                break;
+            default:
+                node["status"] = Errored;
+                break;
+        }
+
+        node["reasonCode"] = row.Answer.ReasonCode;
+        node["latencyMs"] = row.LatencyMs;
+        return node;
+    }
+
+    /// <summary>Reads one line; null when it isn't a record.</summary>
+    internal static EvalResult? TryRead(string line)
+    {
+        if (!InputJson.TryParse(line, out var parsed) || parsed is not JsonObject node)
+        {
+            return null;
+        }
+
+        try
+        {
+            var itemId = node["itemId"]?.GetValue<string>();
+            var label = node["label"]?.GetValue<string>() ?? "";
+            var reason = node["reasonCode"]?.GetValue<string>() ?? "";
+            var latency = node["latencyMs"]?.GetValue<long>() ?? 0;
+            if (itemId is null)
+            {
+                return null;
+            }
+
+            ProviderResult? answer = node["status"]?.GetValue<string>() switch
+            {
+                Decided when node["decision"]?.GetValue<string>() is { } decision && node["confidence"] is { } confidence =>
+                    new ProviderDecided(decision, confidence.GetValue<double>(), reason),
+                Unavailable => new ProviderUnavailable(reason),
+                Errored => new ProviderErrored(reason),
+                _ => null,
+            };
+            return answer is null ? null : new EvalResult(itemId, label, answer, latency);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or FormatException)
+        {
+            return null;
+        }
+    }
+}

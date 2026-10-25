@@ -891,3 +891,4 @@ override Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse.GetHashCode
 override Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse.ToString() -> string!
 static Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse.operator !=(Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse? left, Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse? right) -> bool
 static Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse.operator ==(Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse? left, Aw.Judge.Features.PromoteScaffolds.PromoteScaffoldsResponse? right) -> bool
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.ToJson() -> System.Text.Json.Nodes.JsonObject!
