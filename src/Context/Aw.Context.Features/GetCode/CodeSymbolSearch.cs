@@ -31,14 +31,15 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
         foreach (var repo in targets)
         {
             var asOf = repo.Name == version.Repo && CodeIndexReading.IsCommit(version.Commit) ? version.Commit : null;
-            await Repo(read, new TrailingCodeSymbolSource(source, repos, repo), repo.Name, asOf, byRepo.GetValueOrDefault(repo.Name.Value) ?? [], cancellationToken).ConfigureAwait(false);
+            await Repo(read, new RepoAsk(new TrailingCodeSymbolSource(source, repos, repo), repo.Name, asOf, byRepo.GetValueOrDefault(repo.Name.Value) ?? []), cancellationToken).ConfigureAwait(false);
         }
 
         return read.Findings();
     }
 
-    private static async ValueTask Repo(SymbolRead read, ICodeSymbolSource source, ContextRepoName repo, string? asOf, List<string> paths, CancellationToken cancellationToken)
+    private static async ValueTask Repo(SymbolRead read, RepoAsk ask, CancellationToken cancellationToken)
     {
+        var (source, repo, asOf, paths) = ask;
         var head = await source.Heads(repo, asOf, cancellationToken).ConfigureAwait(false);
         if (head.IsError)
         {
@@ -79,6 +80,9 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source, IRepoReader rep
             read.UnresolvedCallees += callees.Value.Unresolved;
         }
     }
+
+    /// <summary>What one repo is asked: its source (the pipeline's catching-up wrapper), name, the map's commit and the files to read symbols of.</summary>
+    private sealed record RepoAsk(TrailingCodeSymbolSource Source, ContextRepoName Repo, string? AsOf, List<string> Paths);
 
     /// <summary>What the repos gave so far.</summary>
     private sealed class SymbolRead
