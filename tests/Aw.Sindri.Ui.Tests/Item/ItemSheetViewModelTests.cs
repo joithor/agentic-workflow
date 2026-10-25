@@ -134,7 +134,7 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal(["Close item", "Close as cancelled"], sheet.Actions.Select(a => a.Label), StringComparer.Ordinal);
         Assert.All(sheet.Actions, a => Assert.True(a.CanRun));
-        Assert.Equal((false, true), (sheet.Actions[0].IsDestructive, sheet.Actions[1].IsDestructive));
+        Assert.Equal((true, true), (sheet.Actions[0].IsDestructive, sheet.Actions[1].IsDestructive));   // both close actions ask first (ux-A-3)
         Assert.Equal("Close item " + A.NewItem, sheet.Actions[0].Name);
     }
 
