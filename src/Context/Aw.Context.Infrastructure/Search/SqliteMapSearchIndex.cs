@@ -92,6 +92,8 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         return usable.Count == 0 ? null : string.Join(' ', usable.Select(static t => $"\"{t}\""));
     }
 
+    // Ranked by bm25 rounded to 4 places (on a small map nearly every word is in more than half the documents, bm25 clamps those to ~0 and differences below that are noise), then the shorter title,
+    // then the document id (key order): the same graph and question always give the same order.
     private MapSearchPage Run(string table, string match, string? area, int limit)
     {
         var weights = table == Words ? "10.0, 5.0, 1.0, 0.0" : "10.0, 5.0, 0.0";
@@ -106,7 +108,7 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         }
 
         using var ask = _db.CreateCommand();
-        ask.CommandText = $"SELECT rowid, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY bm25({table}, {weights}), rowid LIMIT $limit";
+        ask.CommandText = $"SELECT rowid, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY round(bm25({table}, {weights}), 4), length(title), rowid LIMIT $limit";
         Bind(ask, match, area);
         _ = ask.Parameters.AddWithValue("$limit", limit);
         var matches = new List<MapSearchMatch>();
