@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
@@ -8,6 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 internal sealed partial class ContextPageViewModel
 {
     private bool _wholeWanted;
+    private int _rereadNumber;
 
     /// <summary>The whole map the page opens on.</summary>
     public WholeMapViewModel Whole { get; } = new();
@@ -35,7 +37,42 @@ internal sealed partial class ContextPageViewModel
         Whole.Panel.Launcher = Ports.Launcher ?? NullLauncher.Instance;
         Whole.Panel.Loader = async (key, cancellationToken) => Ports.ApiUrl() is { } api ? await Ports.Api.Node(api, key, cancellationToken).ConfigureAwait(true) : null;
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
-        Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed && !Concepts.IsOnStage ? (_conceptsRead ? ReadWhole(cancellationToken) : OpenFirst(cancellationToken)) : Task.CompletedTask);
+        Ports.Follow((_, cancellationToken) => FollowWhole(cancellationToken));
+    }
+
+    // After every event: a map not read yet is read; one that is drawn is read again when the stored map moved to another version (an import, a promote).
+    private Task FollowWhole(CancellationToken cancellationToken)
+    {
+        if (!_wholeWanted || Whole.IsLoading || Whole.IsFailed || Concepts.IsOnStage)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Whole.IsReady ? ReadIfNewer(cancellationToken) : _conceptsRead ? ReadWhole(cancellationToken) : OpenFirst(cancellationToken);
+    }
+
+    // The cheap status says which version is current; the map is read again only when that is not the one drawn. A person's own answer (a query, an open feature) is left alone until they are back on the whole map.
+    private async Task ReadIfNewer(CancellationToken cancellationToken)
+    {
+        if (HasStack || Whole.IsZoomed || Whole.IsAreaOpen || Whole.Answer is not { } drawn || Ports.ApiUrl() is not { } api)
+        {
+            return;
+        }
+
+        var status = await Ports.Api.MapStatus(api, anchor: null, cancellationToken).ConfigureAwait(true);
+        if (!status.IsSuccess)
+        {
+            return;
+        }
+
+        var number = status.Value.Version.Number;
+        if (number == _rereadNumber || string.Equals(drawn.MapVersion, string.Create(CultureInfo.InvariantCulture, $"v{number}"), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _rereadNumber = number;   // a repo whose numbers differ from the answer's is read once per version, never in a loop
+        await ReadWhole(cancellationToken).ConfigureAwait(true);
     }
 
     /// <summary>The page was shown: the whole map is read once, with no starting point.</summary>
@@ -44,7 +81,12 @@ internal sealed partial class ContextPageViewModel
     internal Task Opened(CancellationToken cancellationToken = default)
     {
         _wholeWanted = true;
-        return Whole.IsReady || Whole.IsLoading || Concepts.IsOnStage ? Task.CompletedTask : OpenFirst(cancellationToken);
+        if (Whole.IsLoading || Concepts.IsOnStage)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Whole.IsReady ? ReadIfNewer(cancellationToken) : OpenFirst(cancellationToken);
     }
 
     /// <summary>Reads the whole map again (Retry, and when a build has ended).</summary>
