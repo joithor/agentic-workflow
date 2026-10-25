@@ -49,6 +49,7 @@ public sealed class TakeoverViewingTests
         Expect.Equal(("warp", "Warp", ViewerOutcomeKind.Opened, null), (shown!.Viewer.Kind, shown.Viewer.Label, shown.Viewer.Outcome, shown.Viewer.Reason));
         Assert.Equal(_attach, shown.Attach);
         Assert.Equal(_attach, Assert.Single(_rig.Viewer.Requests).AttachArgv);
+        await _rig.Sync();   // the launches view folds the event before it is read
         var recorded = _rig.Payload<LaunchTakeoverOpened>(Assert.Single(_rig.Recorded(EventTypes.LaunchTakeoverOpened)));
         Expect.Equal((_instance, ViewerOutcomeKind.Opened), (recorded.Instance, recorded.Viewer.Outcome));
         Expect.Equal(ViewerOutcomeKind.Opened, (await new LaunchViews(_rig.H.Views).Get(A.FirstLaunchId, Token)).Value!.Viewer!.Outcome);   // the launch read shows the latest outcome after folding the event
