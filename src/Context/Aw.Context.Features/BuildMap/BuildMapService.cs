@@ -23,8 +23,7 @@ namespace Aw.Context.Features.BuildMap;
 internal sealed class BuildMapService(
     IRepoReader repos,
     IClusterSource clusterSource,
-    ILabeler labeler,
-    IConceptNamer conceptNamer,
+    MapNamers namers,
     MapBuildGate gate,
     IDefaultBranch defaults,
     IGraphStore store,
@@ -207,7 +206,7 @@ internal sealed class BuildMapService(
         }
 
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"labeling {clusters.Clusters.Count} clusters"));
-        return await labeler.Label(clusters.Clusters, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
+        return await namers.Labeler.Label(clusters.Clusters, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
     }
 
     private static void Tell(IProgress<string>? progress, int done, int total) =>
@@ -230,7 +229,7 @@ internal sealed class BuildMapService(
         var groups = ConceptDeriver.Groups(joined, pins);
         if (settings.Labeling.Enabled && groups.Count > 0)
         {
-            var named = await conceptNamer.Name(groups, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
+            var named = await namers.Concepts.Name(groups, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
             names = named.IsError ? null : named.Value;
             note = named.IsError ? "concepts" : null;
         }
