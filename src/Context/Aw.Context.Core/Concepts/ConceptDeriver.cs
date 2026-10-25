@@ -30,7 +30,7 @@ public static class ConceptDeriver
         ArgumentNullException.ThrowIfNull(pins);
         var view = new ConceptView(graph);
         var (pinned, derived) = ConceptPlan.Build(graph, pins);
-        if (view.FeatureKeys.Count == 0)
+        if (view.FeatureKeys.Count == 0 && pinned.Count == 0)
         {
             return ExtractedMap.Empty;
         }

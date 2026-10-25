@@ -48,15 +48,28 @@ internal static class ConceptNodes
         }
 
         var other = Other();
+        var hasOther = view.FeatureKeys.Count > 0;
         var edges = concepts.SelectMany(c => c.Plan.Features.Select(f => Belongs(NodeKey.From(f), c.Node))).ToList();
         foreach (var intent in view.Intent)
         {
             var homes = view.FeaturesOf(intent.Key.Value).SelectMany(f => byFeature.GetValueOrDefault(f) ?? []).DistinctBy(c => c.Node.Key.Value, StringComparer.Ordinal).ToList();
-            edges.AddRange(homes.Count == 0 ? [Belongs(intent.Key, other)] : homes.Select(c => Belongs(intent.Key, c.Node)));
+            if (homes.Count > 0)
+            {
+                edges.AddRange(homes.Select(c => Belongs(intent.Key, c.Node)));
+            }
+            else if (hasOther)
+            {
+                edges.Add(Belongs(intent.Key, other));
+            }
         }
 
-        var nodes = concepts.Select(c => WithIntentEvidence(c, edges, view)).Append(other);
-        return new ExtractedMap([.. nodes], edges).Plus(ExtractedMap.Empty);
+        var nodes = concepts.Select(c => WithIntentEvidence(c, edges, view)).ToList();
+        if (hasOther)
+        {
+            nodes.Add(other);
+        }
+
+        return new ExtractedMap(nodes, edges).Plus(ExtractedMap.Empty);
     }
 
     // The records that name a concept are cited on it beside its features' evidence.
