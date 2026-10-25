@@ -38,11 +38,11 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         try
         {
             db.Open();
-            Exec(db, "CREATE VIRTUAL TABLE doc USING fts5(title, path, text, area UNINDEXED, doc UNINDEXED, tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')");
-            Exec(db, "CREATE VIRTUAL TABLE tri USING fts5(title, path, area UNINDEXED, doc UNINDEXED, tokenize = 'trigram')");
+            Exec(db, "CREATE VIRTUAL TABLE doc USING fts5(title, path, text, area UNINDEXED, ident UNINDEXED, tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')");
+            Exec(db, "CREATE VIRTUAL TABLE tri USING fts5(title, path, area UNINDEXED, ident UNINDEXED, tokenize = 'trigram')");
             using var transaction = db.BeginTransaction();
-            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area, doc) VALUES ($id, $title, $path, $text, $area, $id)", text: "$text");
-            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area, doc) VALUES ($id, $title, $path, $area, $id)", text: null);
+            using var words = Insert(db, transaction, "INSERT INTO doc(rowid, title, path, text, area, ident) VALUES ($id, $title, $path, $text, $area, $id)", text: "$text");
+            using var trigrams = Insert(db, transaction, "INSERT INTO tri(rowid, title, path, area, ident) VALUES ($id, $title, $path, $area, $id)", text: null);
             foreach (var doc in docs)
             {
                 Fill(words, doc);
@@ -108,7 +108,7 @@ internal sealed class SqliteMapSearchIndex : IMapSearchIndex, IDisposable
         }
 
         using var ask = _db.CreateCommand();
-        ask.CommandText = $"SELECT doc, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY round(bm25({table}, {weights}), 4), length(title), doc LIMIT $limit";
+        ask.CommandText = $"SELECT ident, -bm25({table}, {weights}) AS score FROM {table} WHERE {table} MATCH $match{filter} ORDER BY round(bm25({table}, {weights}), 4), length(title), ident LIMIT $limit";
         Bind(ask, match, area);
         _ = ask.Parameters.AddWithValue("$limit", limit);
         var matches = new List<MapSearchMatch>();
