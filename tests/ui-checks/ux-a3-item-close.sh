@@ -26,7 +26,11 @@ OUT="${UXA3_OUT:-$(mktemp -d "$TMP_ROOT/uxa3-out-XXXXXX")}"
 mkdir -p "$OUT" || exit 2
 
 APP_WRAPPER_PID=""
-setup_fail() { echo "ux-a3-item-close: setup failed: $*" >&2; exit 2; }
+setup_fail() {
+  "$DRIVER" screenshot --out "$OUT/setup-fail.png" >/dev/null 2>&1 || true
+  echo "ux-a3-item-close: setup failed: $* (screenshot $OUT/setup-fail.png)" >&2
+  exit 2
+}
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 cleanup() {
@@ -71,11 +75,14 @@ APP_WRAPPER_PID=$!
 # --contains matches the text an element shows (the row title), not its accessible name: wait for the exact name.
 open=(--type Button --name "Open $item")
 "$DRIVER" wait-for "${open[@]}" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || { "$DRIVER" screenshot --out "$OUT/work.png" >/dev/null 2>&1; setup_fail "the Work page shows no \"Open $item\" button after the nav click (screenshot $OUT/work.png)"; }
+  || setup_fail "the Work page shows no \"Open $item\" button after the nav click"
 "$DRIVER" click "${open[@]}" >/dev/null 2>&1 || setup_fail "the Open $item click was not accepted"
-close=(--type CommandControl --index 0)   # the sheet's first action: Close item (CloseItem:done)
-"$DRIVER" wait-for "${close[@]}" --state visible --wait-ms 15000 >/dev/null 2>&1 \
-  || setup_fail "the item sheet shows no action control (see $OUT/app.log)"
+# The sheet is up when its Close item button is (a Button named "<label> <id>", ControlViewModel.Name): readiness is the button a user
+# and a screen reader see. The click below goes to the CommandControl itself, the first action of the sheet (CloseItem:done).
+ready=(--type Button --name "Close item $item")
+"$DRIVER" wait-for "${ready[@]}" --state visible --wait-ms 30000 >/dev/null 2>&1 \
+  || setup_fail "the item sheet never showed its \"Close item $item\" button (see $OUT/app.log)"
+close=(--type CommandControl --index 0)
 "$DRIVER" screenshot --out "$OUT/sheet.png" >/dev/null 2>&1
 
 changed() { "$PROVE" human ledger --json --item "$item" --max 1000 2>&1 | tr -d '\r' | grep -o 'item.state-changed' | wc -l; }
