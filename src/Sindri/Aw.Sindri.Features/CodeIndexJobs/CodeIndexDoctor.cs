@@ -23,7 +23,8 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <param name="embedder">Probed for reachability and the model digest: a live check, never a build.</param>
 /// <param name="pins">Reads the lock file and compares it with the build's pins.</param>
 /// <param name="clock">Dates the retry words.</param>
-internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobViews jobs, IEmbedder embedder, ICodeIndexPins pins, TimeProvider clock) : ICodeIndexChecks
+/// <param name="liveProfile">The live profile file: its repos the approved profile doesn't name are checked too (owner q102, CIX-L59).</param>
+internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobViews jobs, IEmbedder embedder, ICodeIndexPins pins, TimeProvider clock, IProfileSource liveProfile) : ICodeIndexChecks
 {
     private const string GraphCheck = "code-index:graphify";
     private const string OllamaCheck = "code-index:ollama";
@@ -41,7 +42,8 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
             return [new DoctorCheck("code-index", CheckState.Ok, "not configured: no approved profile", Fix: null)];
         }
 
-        var scope = CodeIndexJobScopes.For(approved.Profile, caller: null);
+        var file = await liveProfile.Load(cancellationToken).ConfigureAwait(false);
+        var scope = CodeIndexJobScopes.For(approved.Profile, file.IsError ? null : file.Value.Profile, caller: null);
         if (scope.IsError)
         {
             return [new DoctorCheck("code-index", CheckState.Fail, $"{scope.Error.Code}: {scope.Error.Message}", "edit the profile, then sindri profile validate")];

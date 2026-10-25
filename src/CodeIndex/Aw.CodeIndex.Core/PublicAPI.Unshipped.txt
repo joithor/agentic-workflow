@@ -347,7 +347,6 @@ Aw.CodeIndex.Core.Facade.SymbolQuery.Text.get -> string!
 Aw.CodeIndex.Core.Facade.SymbolQuery.Text.init -> void
 Aw.CodeIndex.Core.InputRules
 Aw.CodeIndex.Core.Model.BuildOutcome
-Aw.CodeIndex.Core.Model.BuildOutcome.Deferred = 2 -> Aw.CodeIndex.Core.Model.BuildOutcome
 Aw.CodeIndex.Core.Model.BuildOutcome.NotOnMain = 1 -> Aw.CodeIndex.Core.Model.BuildOutcome
 Aw.CodeIndex.Core.Model.BuildOutcome.Published = 0 -> Aw.CodeIndex.Core.Model.BuildOutcome
 Aw.CodeIndex.Core.Model.CallSite
@@ -884,8 +883,6 @@ Aw.CodeIndex.Core.Ports.IEmbedder.Probe(Aw.CodeIndex.Core.Model.EmbeddingsSettin
 Aw.CodeIndex.Core.Ports.IGraphRunner
 Aw.CodeIndex.Core.Ports.IGraphRunner.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.CodeIndex.Core.Ports.IGraphRunner.Run(Aw.CodeIndex.Core.Ports.GraphRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.GraphSnapshot!>!>
-Aw.CodeIndex.Core.Ports.IHeavyJobLock
-Aw.CodeIndex.Core.Ports.IHeavyJobLock.Take(string! holder, System.TimeSpan maxWait, System.IProgress<string!>? waiting, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
 Aw.CodeIndex.Core.Ports.IIndexBuild
 Aw.CodeIndex.Core.Ports.IIndexBuild.AddEdges(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>! edges, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.CodeIndex.Core.Ports.IIndexBuild.ClearEdges(Aw.CodeIndex.Core.Model.EdgeBasis basis, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -1351,7 +1348,6 @@ static readonly Aw.CodeIndex.Core.CodeIndexErrors.BuildFailed -> Aw.Kernel.Error
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingServerFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingTargetRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.GraphUnavailable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.CodeIndex.Core.CodeIndexErrors.HeavyBusy -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexDamaged -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBehind -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexNotBuilt -> Aw.Kernel.ErrorDefinition!
@@ -1362,7 +1358,6 @@ static readonly Aw.CodeIndex.Core.CodeIndexErrors.QueryInvalid -> Aw.Kernel.Erro
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.RepoNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.SettingsInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.SymbolNotFound -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.CodeIndex.Core.CodeIndexRules.HeavySlotWait -> System.TimeSpan
 Aw.CodeIndex.Core.Planning.LanguageTable
 Aw.CodeIndex.Core.Planning.ProjectManifests
 Aw.CodeIndex.Core.Ports.ISymbolParser.Version.get -> string!
