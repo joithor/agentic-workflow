@@ -53,7 +53,7 @@ internal static class CommandTable
         GetHealthCommand.Name => CommandOutput.Usage("health"),
         BriefCommands.Name => await BriefCommands.Run(rest, services, json).ConfigureAwait(false),
         ConfigCommands.Name => await ConfigCommands.Run(rest, services, json).ConfigureAwait(false),
-        LabelCommand.Name => LabelCommand.Run(),
+        LabelCommand.Name => await LabelCommand.Run(rest, services, json).ConfigureAwait(false),
         AdjudicateCommand.Name => AdjudicateCommand.Run(),
         EvalCommand.Name => EvalCommand.Run(rest),
         PromptSortCommands.Name or TraitCheckCommand.Name => await Sorter(command, rest, flag, services, json).ConfigureAwait(false),
