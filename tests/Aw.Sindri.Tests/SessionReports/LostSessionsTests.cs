@@ -56,10 +56,7 @@ public sealed class LostSessionsTests
     }
 
     [Fact]
-    public async Task A_Step_not_taken_over_ends_as_idle_when_its_instance_is_read()
-    {
-        Expect.Equal(1, await SweepAfterTurnEnded());
-    }
+    public async Task A_Step_not_taken_over_ends_as_idle_when_its_instance_is_read() => Expect.Equal(1, await SweepAfterTurnEnded());
 
     [Fact]
     public async Task A_Step_a_person_took_over_is_never_ended_as_idle()
@@ -73,10 +70,7 @@ public sealed class LostSessionsTests
     }
 
     [Fact]
-    public async Task A_Step_whose_instance_cannot_be_read_is_not_ended_as_idle()
-    {
-        Expect.Equal(0, await SweepAfterTurnEnded(unreadable: true));
-    }
+    public async Task A_Step_whose_instance_cannot_be_read_is_not_ended_as_idle() => Expect.Equal(0, await SweepAfterTurnEnded(unreadable: true));
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

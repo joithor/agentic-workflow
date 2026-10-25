@@ -1,6 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Workflows;
+using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Workflow;
 

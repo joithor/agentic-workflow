@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
-namespace Aw.Sindri.Workflows;
+namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>The reason a Step fails with when its agent's session ended without a report (the word the failed Step, the ledger and the app carry).</summary>
 internal static class AgentEndReasons
@@ -10,8 +10,9 @@ internal static class AgentEndReasons
     /// <returns>'lost', 'idle' or 'exit'.</returns>
     internal static string Of(AgentSessionEnd? ended) => ended switch
     {
+        null or AgentSessionEnd.Exit => "exit",
         AgentSessionEnd.Lost => "lost",
         AgentSessionEnd.Idle => "idle",
-        _ => "exit",
+        _ => throw new ArgumentOutOfRangeException(nameof(ended), ended, "not a way a session ends"),
     };
 }

@@ -38,8 +38,9 @@ internal sealed class LedgerAgentSessions(ILaunchViews views, ILedgerReader ledg
         return payload.IsError ? payload.Error : payload.Value.Reason switch
         {
             SessionEndReason.Exit => new AgentSessionState(AgentSessionEnd.Exit, payload.Value.ExitCode),
+            SessionEndReason.Lost => new AgentSessionState(AgentSessionEnd.Lost, payload.Value.ExitCode),
             SessionEndReason.Idle => new AgentSessionState(AgentSessionEnd.Idle, ExitCode: null, IdleDetail),
-            _ => new AgentSessionState(AgentSessionEnd.Lost, payload.Value.ExitCode),
+            _ => throw new InvalidOperationException($"the ledger holds session.ended reason {payload.Value.Reason}, which this build does not know"),
         };
     }
 
