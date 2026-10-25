@@ -53,7 +53,7 @@ internal static class ConceptTools
     /// <summary>The concepts arguments as a request: 'q', 'cursor', 'mapVersion' (strings) and 'limit' (an integer, its value left to the engine: 006); SND-CONTEXT-022 for anything else. The draft map is never read over MCP.</summary>
     private static Result<GetContextConceptsRequest> BindConcepts(IDictionary<string, JsonElement>? arguments)
     {
-        var args = arguments ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        var args = arguments is null ? new Dictionary<string, JsonElement>(StringComparer.Ordinal) : new Dictionary<string, JsonElement>(arguments, StringComparer.Ordinal);
         var refused = Refusal(args);
         if (refused is not null)
         {
