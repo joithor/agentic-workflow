@@ -101,8 +101,27 @@ internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes
         return null;
     }
 
-    private static string? Text(StepInputContext context, string name) =>
-        context.Arguments.TryGetValue(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    // The brief as prose to rank by: text given as is, or a brief fact's subject and text ({ subject, text, refs }).
+    private static string? Text(StepInputContext context, string name)
+    {
+        if (!context.Arguments.TryGetValue(name, out var value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            return value.GetString();
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var parts = new[] { "subject", "text" }.Select(p => value.TryGetProperty(p, out var part) && part.ValueKind == JsonValueKind.String ? part.GetString() : null).OfType<string>().Where(static s => s.Length > 0);
+        return string.Join("\n\n", parts) is { Length: > 0 } prose ? prose : null;
+    }
 
     private static string? Hops(StepInputContext context) =>
         context.Arguments.TryGetValue("hops", out var hops) && hops.ValueKind == JsonValueKind.Array

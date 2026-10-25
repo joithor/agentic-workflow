@@ -28,7 +28,6 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     private const int Page = 500;
     private const string Agent = "agent";
     private const string Desk = "desk";
-    private const int MaxEntry = 500;
 
     public async ValueTask<Result<IReadOnlyList<ScopeRunRecord>>> Of(InstanceAddress run, CancellationToken cancellationToken)
     {
@@ -56,7 +55,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
             return completed.Error;
         }
 
-        return Results.Success(Assemble(run, states.Value, launches.Value, spent.Value, completed.Value));
+        return Results.Success(Assemble(run, states.Value, launches.Value, spent.Value, completed.Value.Completed, completed.Value.Transitions));
     }
 
     // Launched runs, then the completions that have no launch, in ledger order.
@@ -65,9 +64,10 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
         Dictionary<string, StateAsk> states,
         List<(long Sequence, LaunchStarted Started, string? Item)> launches,
         Dictionary<string, (long Tokens, string? Model)> spent,
-        List<(long Sequence, WorkflowEventPayload Payload)> completed)
+        List<(long Sequence, WorkflowEventPayload Payload)> completed,
+        int transitions)
     {
-        var launched = launches.Select(l => (l.Sequence, Record: AgentRecord(run, l.Started, states[l.Started.State!], spent.GetValueOrDefault(l.Started.Launch.Value))));   // why: Launches keeps only the launches whose state the recipe has
+        var launched = launches.Select(l => (l.Sequence, Record: AgentRecord(run, transitions, l.Started, states[l.Started.State!], spent.GetValueOrDefault(l.Started.Launch.Value))));   // why: Launches keeps only the launches whose state the recipe has
         var launchIds = launches.Select(static l => l.Started.Launch).ToHashSet();
         var atTheDesk = completed
             .Where(c => states.TryGetValue(c.Payload.From, out var ask) && IsAgent(ask) && c.Payload.Run is { } token && !launchIds.Contains(AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(run), RunToken.From(token))))
@@ -75,11 +75,11 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
         return [.. launched.Concat(atTheDesk).OrderBy(static r => r.Sequence).Select(static r => r.Record)];
     }
 
-    private static ScopeRunRecord AgentRecord(InstanceAddress run, LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
-        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value, RunTokenOf(run, started));
+    private static ScopeRunRecord AgentRecord(InstanceAddress run, int transitions, LaunchStarted started, StateAsk ask, (long Tokens, string? Model) spent) => new(
+        ask.Step, started.State!, started.Attempt ?? 1, Agent, spent.Model, ask.Requested, VendorOf(spent.Model), spent.Tokens, started.Launch.Value, RunTokenOf(run, transitions, started));
 
-    // The launch id is a hash of the instance and the run token, and the event keeps only the token's number, so the entry is found by trying the entries a frame can hold.
-    private static string? RunTokenOf(InstanceAddress run, LaunchStarted started)
+    // The launch id is a hash of the instance and the run token, and the event keeps only the token's number. Every frame entry follows a transition the ledger holds for the instance, so the entry is at most that many plus one.
+    private static string? RunTokenOf(InstanceAddress run, int transitions, LaunchStarted started)
     {
         if (started.Attempt is not { } number)
         {
@@ -87,7 +87,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
         }
 
         var instance = WorkflowInstanceId.Of(run);
-        for (var entry = 1; entry <= MaxEntry; entry++)
+        for (var entry = 1; entry <= transitions + 1; entry++)
         {
             var candidate = RunToken.For(entry, number);
             if (AgentLaunches.LaunchIdFor(instance, candidate) == started.Launch)
@@ -198,7 +198,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     }
 
     // Every 'workflow.transition' row the engine mirrored for the instance that completed a Step, oldest first.
-    private async ValueTask<Result<List<(long Sequence, WorkflowEventPayload Payload)>>> Completions(InstanceAddress run, CancellationToken cancellationToken)
+    private async ValueTask<Result<(List<(long Sequence, WorkflowEventPayload Payload)> Completed, int Transitions)>>> Completions(InstanceAddress run, CancellationToken cancellationToken)
     {
         var scanned = await Scan(new LedgerFilter(TypeFilter.Parse(EventTypes.WorkflowTransition).Value, Item: null, Instance: run), cancellationToken).ConfigureAwait(false);
         if (scanned.IsError)
@@ -221,7 +221,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
             }
         }
 
-        return kept;
+        return (kept, scanned.Value.Count);
     }
 
     // All the rows a filter keeps, page by page, oldest first.
