@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Judge;
 using Aw.Sindri.Core.Text;
 
-namespace Aw.Sindri.Features.Scoping;
+namespace Aw.Sindri.Features.Scoping.Relevance;
 
 /// <summary>
 /// What the relevance judge sees of one entry (spec 4.2), built from code and nothing else: the brief's text, the entry's lens, key, kind, label, band and lens item id, and the lens's anchors. It never holds the agent's
@@ -27,11 +27,10 @@ internal static class RelevanceJudgeProjection
     /// <param name="entry">The entry.</param>
     /// <param name="briefText">The brief's text.</param>
     /// <param name="anchors">The anchors of the entry's lens.</param>
-    /// <param name="threshold">The confidence an answer needs.</param>
-    /// <param name="providers">The providers the judge may ask.</param>
+    /// <param name="settings">The threshold and providers of the call.</param>
     /// <param name="scrubber">Redacts the text before it leaves.</param>
     /// <returns>The request.</returns>
-    internal static ChooseRequest Request(RelevanceEntry entry, string briefText, IReadOnlyList<string> anchors, double threshold, IReadOnlyList<string> providers, ITextScrubber scrubber)
+    internal static ChooseRequest Request(RelevanceEntry entry, string briefText, IReadOnlyList<string> anchors, JudgeSettings settings, ITextScrubber scrubber)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(scrubber);
@@ -41,7 +40,7 @@ internal static class RelevanceJudgeProjection
             ["entry"] = Cap(scrubber.Scrub(ScopeJson.Write(Entry(entry)))),
             ["anchors"] = Cap(scrubber.Scrub(ScopeJson.Write(ScopeJson.ToArray(anchors)))),
         };
-        return new ChooseRequest(Prompt, Choices, facts, threshold, providers);
+        return new ChooseRequest(Prompt, Choices, facts, settings.Threshold, settings.Providers);
     }
 
     private static JsonObject Entry(RelevanceEntry entry)
@@ -61,4 +60,9 @@ internal static class RelevanceJudgeProjection
     }
 
     private static string Cap(string text) => text.Length <= TextCap ? text : text[..TextCap];
+
+    /// <summary>What a judge call is asked with besides the entry.</summary>
+    /// <param name="Threshold">The confidence an answer needs.</param>
+    /// <param name="Providers">The providers the judge may ask.</param>
+    internal sealed record JudgeSettings(double Threshold, IReadOnlyList<string> Providers);
 }

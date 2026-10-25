@@ -119,7 +119,8 @@ internal sealed class GapJudgeStep(IJudgeChoice judge, ITextScrubber scrubber) :
             ["reasonCode"] = answer.Status switch
             {
                 ChooseStatus.Failed => "failed",
-                ChooseStatus.Decided when !decided => "invalid-choice",
+                ChooseStatus.Decided => decided ? answer.Reason : "invalid-choice",
+                ChooseStatus.Escalated => answer.Reason,
                 _ => answer.Reason,
             },
         };

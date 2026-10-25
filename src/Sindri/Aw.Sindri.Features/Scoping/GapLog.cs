@@ -5,14 +5,6 @@ using Aw.Sindri.Core;
 
 namespace Aw.Sindri.Features.Scoping;
 
-/// <summary>What one gap-log round decided: the outcome, the cumulative record, the anchors to look at again and the facts only one outcome writes.</summary>
-/// <param name="Outcome">'clear' or 'confirmed'.</param>
-/// <param name="GapSearch">The cumulative record with this round added.</param>
-/// <param name="GapAnchors">The anchors of the confirmed gaps; empty on 'clear'.</param>
-/// <param name="Findings">The findings fact with one SCP-GAP-001 finding per confirmed gap; null on 'clear'.</param>
-/// <param name="Closed">The latch, {"round": n}; null on 'confirmed'.</param>
-internal sealed record GapLogResult(string Outcome, JsonObject GapSearch, JsonArray GapAnchors, JsonArray? Findings, JsonObject? Closed);
-
 /// <summary>The gap log's rule (spec 4.6), pure: pairs the searcher's candidates with the judge's rulings and appends the round.</summary>
 internal static class GapLog
 {
@@ -34,7 +26,7 @@ internal static class GapLog
     /// <returns>The round, or the reason the Step fails.</returns>
     internal static Result<GapLogResult> Apply(JsonNode? gapSearch, JsonNode? candidates, JsonNode? rulings, JsonNode? findings)
     {
-        var paired = Pair(ScopeJson.Items(candidates, "candidates").ToList(), ScopeJson.Items(rulings, "rulings").ToList());
+        var paired = Pair([.. ScopeJson.Items(candidates, "candidates")], [.. ScopeJson.Items(rulings, "rulings")]);
         if (paired.IsError)
         {
             return paired.Error;
@@ -132,7 +124,7 @@ internal static class GapLog
             ["agent"] = new JsonObject { ["reportedModel"] = ScopeJson.Str(candidates, "model") },
             ["judge"] = new JsonObject { ["providers"] = (ScopeJson.Arr(ScopeJson.Obj(rulings, "judge"), "providers") ?? []).DeepClone() },
             ["searches"] = (ScopeJson.Arr(candidates, "searches") ?? []).DeepClone(),
-            ["candidates"] = new JsonArray([.. entries.Select(static e => (JsonNode)e)]),
+            ["candidates"] = new JsonArray([.. entries.Cast<JsonNode>()]),
             ["counts"] = new JsonObject
             {
                 ["found"] = entries.Count,

@@ -76,35 +76,49 @@ internal static partial class ScopePacketChecks
 
         if (!string.Equals(result, "in", StringComparison.Ordinal))
         {
-            Removed(entry, id, result, (agent, judge), known, ids, s);
+            var left = new Left(entry, id, result, agent, judge);
+            if (Settled(left, s))
+            {
+                Cited(left, known, ids, s);
+            }
         }
     }
 
-    private static void Removed(JsonNode entry, string id, string result, (string? Agent, string? Judge) classes, HashSet<string> known, ScopeIds ids, RuleSink s)
+    private const string LeftFix = "An entry leaves the lenses only when the AI and the judge both call it off topic and the AI cites something that resolves.";
+
+    private sealed record Left(JsonNode Entry, string Id, string Result, string? Agent, string? Judge);
+
+    // The AI and the judge both ruled, both called the entry off topic, and the judge's class is the result.
+    private static bool Settled(Left left, RuleSink s)
     {
-        const string fix = "An entry leaves the lenses only when the AI and the judge both call it off topic and the AI cites something that resolves.";
-        if (ScopeJson.Obj(entry, "agent") is null || ScopeJson.Obj(entry, "judge") is null)
+        var id = left.Id;
+        if (ScopeJson.Obj(left.Entry, "agent") is null || ScopeJson.Obj(left.Entry, "judge") is null)
         {
-            s.Fail(id, $"{id} left the lenses without both an AI verdict and a judge ruling", fix);
-            return;
+            s.Fail(id, $"{id} left the lenses without both an AI verdict and a judge ruling", LeftFix);
+            return false;
         }
 
-        if (!OffTopic(classes.Agent) || !OffTopic(classes.Judge))
+        if (!OffTopic(left.Agent) || !OffTopic(left.Judge))
         {
-            s.Fail(id, $"{id} left the lenses although the AI said {classes.Agent ?? "nothing"} and the judge said {classes.Judge ?? "nothing"}", fix);
-            return;
+            s.Fail(id, $"{id} left the lenses although the AI said {left.Agent ?? "nothing"} and the judge said {left.Judge ?? "nothing"}", LeftFix);
+            return false;
         }
 
-        if (!string.Equals(result, classes.Judge, StringComparison.Ordinal))
+        if (!string.Equals(left.Result, left.Judge, StringComparison.Ordinal))
         {
-            s.Fail(id, $"{id} left as {result} but the judge ruled {classes.Judge}", "The judge's class is the entry's result.");
-            return;
+            s.Fail(id, $"{id} left as {left.Result} but the judge ruled {left.Judge}", "The judge's class is the entry's result.");
+            return false;
         }
 
-        var citation = ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "citation");
+        return true;
+    }
+
+    private static void Cited(Left left, HashSet<string> known, ScopeIds ids, RuleSink s)
+    {
+        var citation = ScopeJson.Str(ScopeJson.Obj(left.Entry, "agent"), "citation");
         if (string.IsNullOrWhiteSpace(citation) || !(ids.Resolves(citation) || known.Contains(citation)))
         {
-            s.Fail(id, $"{id} left the lenses with the citation {citation ?? "none"}, which resolves to nothing", fix);
+            s.Fail(left.Id, $"{left.Id} left the lenses with the citation {citation ?? "none"}, which resolves to nothing", LeftFix);
         }
     }
 
