@@ -106,25 +106,25 @@ internal sealed class ProveHoldoutLogStep(IHoldoutStore store, ICommitText commi
         }
 
         results.Add(new JsonObject { ["scenario"] = canary.Key, ["item"] = null, ["kind"] = HoldoutScenario.CanaryKind, ["verdict"] = "pass", ["category"] = HoldoutScenario.CanaryKind, ["observed"] = string.Empty });
-        var recorded = new JsonObject { ["commit"] = (inputs.Report["commit"] ?? inputs.Report["head"])?.DeepClone(), ["canary"] = "clean", ["results"] = new JsonArray([.. results]) };
+        var recorded = new JsonObject { ["commit"] = inputs.Report["head"]?.DeepClone(), ["canary"] = "clean", ["results"] = new JsonArray([.. results]) };
         return failed.Count == 0
             ? StepFacts.Done("passed", ("fact:holdoutResult", recorded))
             : StepFacts.Done("failed", ("fact:holdoutResult", recorded), ("fact:findings", new JsonArray([.. failed.Select(static r => (JsonNode)HoldoutFindings.Failed((string?)r["item"], (string?)r["observed"]))])));
     }
 
     // The report's hidden-scenario results, each checked against the set; a result for the canary is the Step's to write, not the evaluator's. The evaluator's report is
-    // schemas/line/holdout-result.json's ({head, scenarios[{id, ...}]}); the record keeps the shape the proof checks read ({commit, results[{scenario, ...}]}), which a report may use too.
+    // schemas/line/holdout-result.json's ({head, scenarios[{id, ...}]}); the record keeps the shape the proof checks read ({commit, results[{scenario, ...}]}).
     private static (List<JsonObject> Results, string? Refusal) Reported(JsonObject report, HoldoutSet set)
     {
-        if ((report["scenarios"] ?? report["results"]) is not JsonArray listed)
+        if (report["scenarios"] is not JsonArray listed)
         {
-            return ([], "refuses the report: it has no 'scenarios' list of the hidden scenarios' verdicts (schemas/line/holdout-result.json)");
+            return ([], "refuses the report: it has no 'scenarios' list; schemas/line/holdout-result.json wants { \"head\": \"<sha>\", \"scenarios\": [ { \"id\", \"item\", \"verdict\": \"pass|fail\", \"category\", \"observed\" } ] }");
         }
 
         var results = new List<JsonObject>();
         foreach (var entry in listed.OfType<JsonObject>())
         {
-            var key = (string?)(entry["scenario"] ?? entry["id"]);
+            var key = (string?)entry["id"];
             if (key is not null && set.Scenarios.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal)) is { IsCanary: true })
             {
                 continue;

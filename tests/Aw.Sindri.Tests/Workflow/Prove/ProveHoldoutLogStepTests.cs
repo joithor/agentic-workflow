@@ -30,11 +30,11 @@ public sealed class ProveHoldoutLogStepTests
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
     private static JsonObject Verdict(string scenario, string item, string verdict, string observed) =>
-        new() { ["scenario"] = scenario, ["item"] = item, ["verdict"] = verdict, ["category"] = "api", ["observed"] = observed };
+        new() { ["id"] = scenario, ["item"] = item, ["verdict"] = verdict, ["category"] = "api", ["observed"] = observed };
 
     private static Dictionary<string, string> Facts(params JsonObject[] results) => new(StringComparer.Ordinal)
     {
-        ["holdoutResult"] = new JsonObject { ["commit"] = Head, ["results"] = new JsonArray([.. results]) }.ToJsonString(),
+        ["holdoutResult"] = new JsonObject { ["head"] = Head, ["scenarios"] = new JsonArray([.. results]) }.ToJsonString(),
         ["built"] = $$"""{"head":"{{Head}}","commits":[]}""",
         ["phasePacket"] = """{"hash":"sha256:aa","dir":"/packets/p1"}""",
     };
