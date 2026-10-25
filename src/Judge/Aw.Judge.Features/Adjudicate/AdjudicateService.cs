@@ -124,7 +124,7 @@ internal sealed class AdjudicateService(IEvalStore store, IProviderCatalog catal
         }
 
         var top = counts.OrderByDescending(pair => pair.Value).FirstOrDefault();
-        return top.Value * 2 > Samples ? new Verdicts(top.Key, AllErrored: false) : new Verdicts(null, errors == Samples);
+        return (top.Value * 2) > Samples ? new Verdicts(top.Key, AllErrored: false) : new Verdicts(Label: null, errors == Samples);
     }
 
     // The options with what each means, so the stronger model judges by the same criteria the others are scored on.

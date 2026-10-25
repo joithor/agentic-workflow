@@ -51,7 +51,7 @@ internal static class AdjudicateCommand
         {
             if (string.Equals(args[i], LimitFlag, StringComparison.Ordinal))
             {
-                if (limit is not null || i + 1 >= args.Count || !int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 1)
+                if (limit is not null || (i + 1) >= args.Count || !int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 1)
                 {
                     return null;
                 }

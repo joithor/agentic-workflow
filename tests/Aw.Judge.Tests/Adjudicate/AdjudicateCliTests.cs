@@ -76,7 +76,7 @@ public sealed class AdjudicateCliTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task The_summary_is_json_on_stdout_and_the_label_is_stored()
     {
-        var store = new AdjudicateEvalStore().With(new EvalItem(EvalItemId.From("item-a"), "ask-check", """{"transcriptTail":"t"}""", "decision:a", null, DateTimeOffset.UnixEpoch));
+        var store = new AdjudicateEvalStore().With(new EvalItem(EvalItemId.From("item-a"), "ask-check", """{"transcriptTail":"t"}""", "decision:a", modelDecision: null, DateTimeOffset.UnixEpoch));
         var cli = new JudgeCli(_state)
         {
             Providers = [Claude().Decides("ask", 1)],

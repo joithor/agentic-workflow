@@ -109,7 +109,7 @@ public sealed class AdjudicateChildTests
         Assert.Contains("\"alwaysThinkingEnabled\":true", After(request.Arguments, "--settings"), StringComparison.Ordinal);
     }
 
-    private static string After(IReadOnlyList<string> argv, string flag) => argv[argv.ToList().IndexOf(flag) + 1];
+    private static string After(IReadOnlyList<string> argv, string flag) => argv[argv.Index().First(pair => string.Equals(pair.Item, flag, StringComparison.Ordinal)).Index + 1];
 
     private static bool InsideARepository(string directory)
     {
