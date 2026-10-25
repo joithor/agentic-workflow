@@ -15,6 +15,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="Embeddings">The embeddings layer's keys.</param>
 /// <param name="Graph">The graph layer's keys.</param>
 /// <param name="Roles">File roles this repo does not index: a role name to its repo-relative globs ('cron': ['**/*cron*']); roles are per repo only (a profile-level one is refused) and there are no built-in roles; the files they match are never extracted, clustered or cited, as with <c xml:lang="en">denyPaths</c>.</param>
+/// <param name="Concepts">Concepts the owner pins (context concepts note §3); a repo's own are added to the profile's.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record IndexSettings(
     IReadOnlyList<string>? DenyPaths = null,
@@ -23,7 +24,8 @@ public sealed record IndexSettings(
     int? MaxTotalMB = null,
     EmbeddingSettings? Embeddings = null,
     GraphSettings? Graph = null,
-    IReadOnlyDictionary<string, IReadOnlyList<string>>? Roles = null)
+    IReadOnlyDictionary<string, IReadOnlyList<string>>? Roles = null,
+    IReadOnlyList<ConceptSettings>? Concepts = null)
 {
     /// <summary>The default for 'maxFileKB'.</summary>
     public const int DefaultMaxFileKB = 4_096;

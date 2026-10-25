@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
@@ -6,6 +7,8 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.GetCode;
+using Aw.Context.Features.GetConceptMembers;
+using Aw.Context.Features.GetConcepts;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
@@ -19,7 +22,9 @@ internal sealed class ContextCodeHistory(
     IService<GetCodeRequest, CodeView> code,
     IService<GetHistoryRequest, HistoryView> history,
     IService<GetSubgraphRequest, SubgraphView> subgraph,
-    IService<GetWholeMapRequest, WholeMapView> wholeMap) : IContextCode, IContextHistory
+    IService<GetWholeMapRequest, WholeMapView> wholeMap,
+    IService<GetConceptsRequest, ConceptsView> concepts,
+    IService<GetConceptMembersRequest, ConceptMembersView> members) : IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);
@@ -32,4 +37,10 @@ internal sealed class ContextCodeHistory(
 
     public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         wholeMap.Handle(new GetWholeMapRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        concepts.Handle(new GetConceptsRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        members.Handle(new GetConceptMembersRequest(query, scope), cancellationToken);
 }

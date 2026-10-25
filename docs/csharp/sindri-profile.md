@@ -1,8 +1,8 @@
 # Sindri profile reference
 
 The profile of the C# Sindri app (`src/Sindri`), schema version 1. It documents the keys of `SindriProfile`
-(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaces the reference of the TypeScript profile
-(`sindri/src/profile/schema.ts`), which is generated separately and stays until the switch. Unknown keys are errors;
+(`src/Sindri/Aw.Sindri.Core/Profile/`), read through `AwJson`. It replaced the TypeScript profile
+reference (`sindri/src/profile/schema.ts`, gone), and `docs/sindri/profile.md` points here. Unknown keys are errors;
 new optional keys join version 1, renames and removals bump it. `node scripts/check-profile-doc.mjs` fails when a
 `SindriProfile` key is missing from this page.
 
@@ -165,10 +165,35 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | `utilityGlobs` | string[] | no | none | Globs (same rules as `denyPaths`) of internal utility modules; the code index flags their exports `utility`. A repo's own are added to the profile's |
 | `maxFileKB` | whole number | no | `4096` | The code index skips larger files as `too-large`. 1 to 102400 |
 | `maxTotalMB` | whole number | no | `4096` | Larger tracked code input (code files only; docs, assets and lockfiles do not count) stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
+| `concepts` | list of mappings | no | none | Concepts you pin for the context map, below. A repo's own are added to the profile's |
 | `embeddings` | mapping | no | none | The code index's embeddings layer, below |
 | `graph` | mapping | no | none | The code index's graph layer, below |
 
 A repo's `index:` replaces each scalar key it names (and each `embeddings` and `graph` key it names) and adds its list keys to the profile's. Unknown keys fail validation, in `embeddings` and `graph` too; a bad value is refused with its key path (`index.graph.maxMB: must be 1 to 4096`).
+
+#### `index.concepts`
+
+Each entry pins one concept: it takes its members first, derived concepts fill the rest from what is left, and `concept:other` keeps the leftovers. An entry with no members still shows, empty. A change is part of the profile hash, so it needs approval, and the next map build or refresh applies it.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `id` | text | no | derived from `name` | The slug of the concept's key (`scheduling` pins `concept:scheduling`): lowercase letters, digits and `-`. `other` is reserved; ids are unique across the profile's list and the repo's |
+| `name` | text | yes | none | What the map shows. Not empty |
+| `summary` | text | no | none | A line about the concept |
+| `features` | string[] | no | none | Feature node keys or key globs (`feature:shifts`, `feature:shifts.*`); each must start with `feature:` |
+| `paths` | string[] | no | none | Repo-relative file globs (same rules as `denyPaths`); the features implemented there belong to the concept |
+
+```yaml
+index:
+  concepts:
+    - id: scheduling
+      name: Self scheduling
+      summary: Shifts, swaps and time off
+      features: ["feature:shifts", "feature:shifts.*"]
+      paths: ["apps/web/src/Schedule/**"]
+```
+
+A bad entry is refused with its key path (`index.concepts[0].features[1]: must be a feature: key or glob, like 'feature:shifts' or 'feature:shifts.*'`).
 
 #### `index.embeddings`
 
