@@ -15,6 +15,9 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <param name="runner">Runs `claude`.</param>
 internal sealed class ClaudeCliProvider(IProcessRunner runner) : AgentCliProvider(runner, AgentCliName.ClaudeCli)
 {
+    /// <summary>The model, effort and thinking it runs with: <see cref="ClaudeCliOptions.Default"/> (haiku, low) unless set.</summary>
+    internal ClaudeCliOptions Options { get; init; } = ClaudeCliOptions.Default;
+
     private const string TextInstruction = "You answer one classification question. Answer only with the JSON object the schema describes.";
 
     private const string Settings = """{"disableAllHooks":true,"alwaysThinkingEnabled":false}""";
