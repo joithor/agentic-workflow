@@ -44,23 +44,27 @@ internal static class EvalRecordLine
 
         try
         {
-            var itemId = node["itemId"]?.GetValue<string>();
-            var label = node["label"]?.GetValue<string>() ?? "";
-            var reason = node["reasonCode"]?.GetValue<string>() ?? "";
-            var latency = node["latencyMs"]?.GetValue<long>() ?? 0;
-            if (itemId is null)
-            {
-                return null;
-            }
-
-            var answer = Answer(node, reason);
-            return answer is null ? null : new EvalResult(itemId, label, answer, latency);
+            return Read(node);
         }
         catch (Exception exception) when (exception is InvalidOperationException or FormatException)
         {
             return null;
         }
     }
+
+    private static EvalResult? Read(JsonObject node)
+    {
+        if (node["itemId"]?.GetValue<string>() is not { } itemId)
+        {
+            return null;
+        }
+
+        return Answer(node, Text(node, "reasonCode")) is { } answer
+            ? new EvalResult(itemId, Text(node, "label"), answer, node["latencyMs"]?.GetValue<long>() ?? 0)
+            : null;
+    }
+
+    private static string Text(JsonObject node, string name) => node[name]?.GetValue<string>() ?? "";
 
     private static ProviderResult? Answer(JsonObject node, string reason) => node["status"]?.GetValue<string>() switch
     {

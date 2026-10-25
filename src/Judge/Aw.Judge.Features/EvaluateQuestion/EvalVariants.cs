@@ -40,7 +40,7 @@ internal static class EvalVariants
     // A copy of the input as an object (anything else becomes an empty one), with each field set, or removed when null.
     private static JsonObject With(JsonNode? input, params (string Name, string? Value)[] fields)
     {
-        var copy = input is JsonObject obj ? (JsonObject)obj.DeepClone() : new JsonObject();
+        var copy = input is JsonObject obj ? (JsonObject)obj.DeepClone() : [];
         foreach (var (name, value) in fields)
         {
             if (value is null)

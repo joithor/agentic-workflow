@@ -78,8 +78,8 @@ internal sealed class EvaluateQuestionService(
             return labeled;
         }
 
-        IReadOnlyList<LabeledItem> items = EvalVariants.NeedsStoredDiff(request.Question, request.Variant)
-            ? [.. labeled.Value.Where(l => EvalVariants.HasStoredDiff(StoredInput(l.Item)))]
+        var items = EvalVariants.NeedsStoredDiff(request.Question, request.Variant)
+            ? labeled.Value.Where(l => EvalVariants.HasStoredDiff(StoredInput(l.Item))).ToList()
             : labeled.Value;
         return items.Count == 0
             ? JudgeErrors.Invalid.With($"no labeled items for {request.Question} (run: judge label import, judge label outcomes, judge adjudicate {request.Question})")
@@ -127,8 +127,8 @@ internal sealed class EvaluateQuestionService(
             var input = InputJson.TryParse(labeled.Item.InputJson, out var node) ? variant(node) : null;
             var asked = question.Ask(input, json);
             var start = clock.GetTimestamp();
-            ProviderResult answer = asked is null
-                ? new ProviderErrored("invalid-input")
+            var answer = asked is null
+                ? (ProviderResult)new ProviderErrored("invalid-input")
                 : await provider.Decide(asked, input, question.TimeBudget, cancellationToken).ConfigureAwait(false);
             var row = new EvalResult(labeled.Item.Id.Value, labeled.Label, answer, (long)clock.GetElapsedTime(start).TotalMilliseconds);
             results.Add(row);
@@ -149,8 +149,8 @@ internal sealed class EvaluateQuestionService(
         EvaluateQuestionRequest request, PreparedQuestion question, IReadOnlyList<EvalResult> asked, CancellationToken cancellationToken)
     {
         var results = EvalScoring.Collapse(asked, request.Collapse);
-        var name = ProviderNames.Name(request.Provider);
-        var report = EvalScoring.Score(request.Question, name, request.Variant, question.Threshold, results, request.Labels);
+        var setup = new EvalSetup(request.Question, ProviderNames.Name(request.Provider), request.Variant, question.Threshold, request.Collapse);
+        var report = EvalScoring.Score(setup, results, request.Labels);
         var outcome = await store.Labeled(request.Question, LabelSource.Outcome, cancellationToken).ConfigureAwait(false);
         var adjudicator = await store.Labeled(request.Question, LabelSource.Adjudicator, cancellationToken).ConfigureAwait(false);
         if (outcome.IsError || adjudicator.IsError)
@@ -158,7 +158,7 @@ internal sealed class EvaluateQuestionService(
             return Results.Failure<EvaluateQuestionResponse>(outcome.IsError ? outcome.Error : adjudicator.Error);
         }
 
-        report = EvalScoring.WithSources(report, question.Threshold, results, outcome.Value, adjudicator.Value, request.Collapse);
+        report = EvalScoring.WithSources(report, setup, results, outcome.Value, adjudicator.Value);
         var stem = EvalReportText.FileStem(report, clock.GetUtcNow().ToUnixTimeMilliseconds());
         var data = await files.WriteReport($"{stem}.json", Redacted(EvalReportText.ToNode(report)), cancellationToken).ConfigureAwait(false);
         if (data.IsError)

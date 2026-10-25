@@ -34,17 +34,7 @@ internal static class EvalReportText
         };
         if (report.PerSource is { } sources)
         {
-            node["perSource"] = new JsonObject
-            {
-                ["outcome"] = ToNode(sources.Outcome),
-                ["adjudicator"] = ToNode(sources.Adjudicator),
-                ["agreement"] = new JsonObject
-                {
-                    ["shared"] = sources.Agreement.Shared,
-                    ["agreed"] = sources.Agreement.Agreed,
-                    ["rate"] = EvalScoring.Ratio(sources.Agreement.Agreed, sources.Agreement.Shared),
-                },
-            };
+            node["perSource"] = SourcesNode(sources);
         }
 
         if (report.SourceWarning is { } warning)
@@ -55,10 +45,22 @@ internal static class EvalReportText
         return node;
     }
 
+    private static JsonObject SourcesNode(SourcedReports sources) => new()
+    {
+        ["outcome"] = ToNode(sources.Outcome),
+        ["adjudicator"] = ToNode(sources.Adjudicator),
+        ["agreement"] = new JsonObject
+        {
+            ["shared"] = sources.Agreement.Shared,
+            ["agreed"] = sources.Agreement.Agreed,
+            ["rate"] = EvalScoring.Ratio(sources.Agreement.Agreed, sources.Agreement.Shared),
+        },
+    };
+
     internal static string Render(EvalReport report)
     {
-        var lines = new List<string>
-        {
+        List<string> lines =
+        [
             $"# judge eval: {report.Question} / {report.Provider} / {report.Variant}",
             "",
             $"Label source: {Source(report.Labels)}",
@@ -69,7 +71,7 @@ internal static class EvalReportText
             "|---|---|---|",
             .. report.Sweep.Select(s => string.Create(CultureInfo.InvariantCulture, $"| {s.Threshold} | {Percent(s.Coverage)} | {Percent(s.AccuracyCovered)} |")),
             "",
-        };
+        ];
         if (report.PerSource is { } sources)
         {
             var agreement = sources.Agreement;

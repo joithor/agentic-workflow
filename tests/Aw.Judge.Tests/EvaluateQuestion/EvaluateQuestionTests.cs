@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.Judge.Core.Errors;
 using Aw.Judge.Core.Labels;
 using Aw.Judge.Core.Providers;
@@ -142,7 +143,7 @@ public sealed class EvaluateQuestionTests
         var stat = await world.Service.Handle(A.EvaluateQuestionRequest().Question("resolution-check").Variant("stat").Build(), _ct);
 
         Assert.Equal(1, stat.Value.Report.N);   // only the item that stored a diff
-        Assert.False(world.Jev.Calls[0].Input!.AsObject().ContainsKey("diff"));
+        Assert.False(Assert.IsType<JsonObject>(world.Jev.Calls[0].Input).ContainsKey("diff"));
         Assert.DoesNotContain("<diff>", world.Jev.Calls[0].Question.Prompt, StringComparison.Ordinal);
 
         var asIs = await world.Service.Handle(A.EvaluateQuestionRequest().Question("resolution-check").Build(), _ct);
@@ -193,7 +194,7 @@ public sealed class EvaluateQuestionTests
         Assert.Equal(2, calls);
         Assert.Equal(calls, world.Jev.Calls.Count);   // the replay asked nobody
         Assert.Equal(recorded.Value.ToJson().ToJsonString(), replayed.Value.ToJson().ToJsonString());
-        Assert.Equal(2, world.Files.Text(RecordPath)!.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Equal(2, Written(world, RecordPath).Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -251,7 +252,7 @@ public sealed class EvaluateQuestionTests
         var stem = string.Create(CultureInfo.InvariantCulture, $"{InMemoryEvalFiles.ReportsDirectory}/ask-check-jev-as-is-{world.Clock.GetUtcNow().ToUnixTimeMilliseconds()}");
         Assert.Equal(stem + ".md", result.Value.ReportPath);
         Assert.StartsWith("# judge eval: ask-check / jev / as-is", world.Files.Text(stem + ".md"), StringComparison.Ordinal);
-        using var json = JsonDocument.Parse(world.Files.Text(stem + ".json")!);
+        using var json = JsonDocument.Parse(Written(world, stem + ".json"));
         Assert.Equal(1, json.RootElement.GetProperty("n").GetInt32());
         Assert.Equal("any", json.RootElement.GetProperty("labelSource").GetString());
     }
@@ -265,7 +266,7 @@ public sealed class EvaluateQuestionTests
 
         _ = await world.Service.Handle(A.EvaluateQuestionRequest().Record(RecordPath).Build(), _ct);
 
-        var text = world.Files.Text(RecordPath)!;
+        var text = Written(world, RecordPath);
         Assert.DoesNotContain(secret, text, StringComparison.Ordinal);
         Assert.Contains(FakeInputRedactor.Placeholder, text, StringComparison.Ordinal);
     }
@@ -279,13 +280,16 @@ public sealed class EvaluateQuestionTests
 
         var result = await world.Service.Handle(A.EvaluateQuestionRequest().Build(), _ct);
 
-        var markdown = world.Files.Text(result.Value.ReportPath)!;
-        var json = world.Files.Text(result.Value.ReportPath.Replace(".md", ".json", StringComparison.Ordinal))!;
+        var markdown = Written(world, result.Value.ReportPath);
+        var json = Written(world, result.Value.ReportPath.Replace(".md", ".json", StringComparison.Ordinal));
         Assert.DoesNotContain("ask-check", markdown, StringComparison.Ordinal);
         Assert.DoesNotContain("ask-check", json, StringComparison.Ordinal);
         Assert.Contains(FakeInputRedactor.Placeholder, markdown, StringComparison.Ordinal);
         Assert.Contains(FakeInputRedactor.Placeholder, json, StringComparison.Ordinal);
     }
+
+    private static string Written(EvalWorld world, string path) =>
+        world.Files.Text(path) ?? throw new InvalidOperationException($"nothing was written to {path}");
 
     private static string Resolution(bool withDiff)
     {

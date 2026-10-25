@@ -53,7 +53,7 @@ public sealed class FileEvalFilesTests : EvalFilesContract, IDisposable
         }
 
         var record = ScratchPath("old.jsonl");
-        _ = Directory.CreateDirectory(Path.GetDirectoryName(record)!);
+        _ = Directory.CreateDirectory(Path.Combine(_state.Path, "scratch"));
         await File.WriteAllTextAsync(record, "{}\n", _ct);
         File.SetUnixFileMode(record, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
 

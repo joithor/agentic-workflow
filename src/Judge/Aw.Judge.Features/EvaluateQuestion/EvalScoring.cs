@@ -24,19 +24,18 @@ internal static class EvalScoring
     internal static string Fold(string label, string? collapse) =>
         collapse is null || string.Equals(label, collapse, StringComparison.Ordinal) ? label : Stalled;
 
-    internal static EvalReport Score(
-        string question, string provider, string variant, double threshold, IReadOnlyList<EvalResult> results, LabelSource? labels)
+    internal static EvalReport Score(EvalSetup setup, IReadOnlyList<EvalResult> results, LabelSource? labels)
     {
         var n = results.Count;
-        var decided = results.Select(r => (Row: r, Answer: r.Answer as ProviderDecided)).Where(r => r.Answer is not null).Select(r => (r.Row, Answer: r.Answer!)).ToList();
+        var decided = results.Where(r => r.Answer is ProviderDecided).Select(r => (Row: r, Answer: (ProviderDecided)r.Answer)).ToList();
         bool Correct((EvalResult Row, ProviderDecided Answer) r) => string.Equals(r.Answer.Decision, r.Row.Label, StringComparison.Ordinal);
         List<(EvalResult Row, ProviderDecided Answer)> Covered(double t) => [.. decided.Where(r => r.Answer.Confidence >= t)];
-        var decisive = Covered(threshold);
+        var decisive = Covered(setup.Threshold);
         var latencies = results.Select(r => r.LatencyMs).Order().ToList();
         return new EvalReport(
-            question,
-            provider,
-            variant,
+            setup.Question,
+            setup.Provider,
+            setup.Variant,
             labels,
             n,
             decided.Count,
@@ -56,12 +55,12 @@ internal static class EvalScoring
     /// often the two agree; the report itself when no scored item has both.
     /// </summary>
     internal static EvalReport WithSources(
-        EvalReport report, double threshold, IReadOnlyList<EvalResult> results, IReadOnlyList<LabeledItem> outcome, IReadOnlyList<LabeledItem> adjudicator, string? collapse)
+        EvalReport report, EvalSetup setup, IReadOnlyList<EvalResult> results, IReadOnlyList<LabeledItem> outcome, IReadOnlyList<LabeledItem> adjudicator)
     {
-        var adjudicated = adjudicator.ToDictionary(l => l.Item.Id.Value, l => Fold(l.Label, collapse), StringComparer.Ordinal);
+        var adjudicated = adjudicator.ToDictionary(l => l.Item.Id.Value, l => Fold(l.Label, setup.Collapse), StringComparer.Ordinal);
         var shared = outcome
             .Where(l => adjudicated.ContainsKey(l.Item.Id.Value))
-            .ToDictionary(l => l.Item.Id.Value, l => (Outcome: Fold(l.Label, collapse), Adjudicator: adjudicated[l.Item.Id.Value]), StringComparer.Ordinal);
+            .ToDictionary(l => l.Item.Id.Value, l => (Outcome: Fold(l.Label, setup.Collapse), Adjudicator: adjudicated[l.Item.Id.Value]), StringComparer.Ordinal);
         var scored = results.Where(r => shared.ContainsKey(r.ItemId)).ToList();
         if (scored.Count == 0)
         {
@@ -69,10 +68,7 @@ internal static class EvalScoring
         }
 
         EvalReport Against(LabelSource source) => Score(
-            report.Question,
-            report.Provider,
-            report.Variant,
-            threshold,
+            setup,
             [.. scored.Select(r => r with { Label = source == LabelSource.Outcome ? shared[r.ItemId].Outcome : shared[r.ItemId].Adjudicator })],
             source);
         var agreed = shared.Values.Count(s => string.Equals(s.Outcome, s.Adjudicator, StringComparison.Ordinal));

@@ -38,18 +38,18 @@ internal static class EvalCommand
 
     private static async Task<int> RunEval(IReadOnlyList<string> args, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
     {
-        var parsed = Parse(args, _evalFlags);
-        if (parsed.Problem is { } problem)
+        var (positional, flags, problem) = Parse(args, _evalFlags);
+        if (problem is not null)
         {
             return CommandOutput.Usage(EvalSynopsis, problem);
         }
 
-        if (parsed.Positional.Count != 1)
+        if (positional.Count != 1)
         {
-            return CommandOutput.Usage(EvalSynopsis, parsed.Positional.Count == 0 ? "a question name is required" : "one question at a time");
+            return CommandOutput.Usage(EvalSynopsis, positional.Count == 0 ? "a question name is required" : "one question at a time");
         }
 
-        return await Score(parsed.Positional[0], parsed.Flags, allowed, services, json).ConfigureAwait(false);
+        return await Score(positional[0], flags, allowed, services, json).ConfigureAwait(false);
     }
 
     private static async Task<int> Score(
@@ -94,19 +94,19 @@ internal static class EvalCommand
 
     private static async Task<int> RunImport(string[] args, IServiceProvider services, JsonSerializerOptions json)
     {
-        var parsed = Parse(args, ["--since"]);
-        if (parsed.Problem is { } problem)
+        var (positional, flags, problem) = Parse(args, ["--since"]);
+        if (problem is not null)
         {
             return CommandOutput.Usage(ImportSynopsis, problem);
         }
 
-        if (parsed.Positional.Count == 0)
+        if (positional.Count == 0)
         {
             return CommandOutput.Usage(ImportSynopsis, "a transcript file is required");
         }
 
         TimeSpan? since = null;
-        if (parsed.Flags.TryGetValue("--since", out var window))
+        if (flags.TryGetValue("--since", out var window))
         {
             if (!window.EndsWith('d') || !int.TryParse(window.AsSpan(..^1), NumberStyles.None, CultureInfo.InvariantCulture, out var days))
             {
@@ -117,7 +117,7 @@ internal static class EvalCommand
         }
 
         var result = await services.GetRequiredService<IService<ImportTurnsRequest, ImportTurnsResponse>>()
-            .Handle(new ImportTurnsRequest(parsed.Positional, since), CancellationToken.None).ConfigureAwait(false);
+            .Handle(new ImportTurnsRequest(positional, since), CancellationToken.None).ConfigureAwait(false);
         return result.IsError
             ? Failed(result.Error)
             : CommandOutput.Emit(0, new JsonObject
