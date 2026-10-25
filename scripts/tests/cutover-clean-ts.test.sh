@@ -34,7 +34,7 @@ seed() {
   cat > "$s/bin/cs/stamp1/judge" <<'EOF'
 #!/usr/bin/env bash
 if [ "${1:-}" = health ]; then
-  if grep -q TS_SHAPE "$AW_STATE_DIR/judge/decisions.sqlite" 2> /dev/null; then echo "AW-DATA-009 the database has the TS shape" >&2; exit 1; fi
+  if grep -q TS_SHAPE "$AW_STATE_DIR/judge/decisions.sqlite" 2> /dev/null; then echo "$AW_STATE_DIR/judge/decisions.sqlite has tables but no schema_version table, so this runner didn't create it. Nothing was written. Check the path points at this package's own database." >&2; exit 1; fi
   echo '{"status":"ok","failures24h":0}'; exit 0
 fi
 exit 2
@@ -45,6 +45,7 @@ EOF
 echo "\$*" >> "$d/stubs/sindri.log"
 [ "\${1:-}" = scrub ] || exit 2
 while [ \$# -gt 0 ]; do case "\$1" in --repo) R="\$2"; shift ;; --bin) B="\$2"; shift ;; esac; shift; done
+if git -C "\$R" config --get core.hooksPath > /dev/null 2>&1; then echo "sindri: SND-SCRUB-003 A different pre-commit hook is already installed" >&2; exit 2; fi
 printf '#!/bin/sh\n# sindri-pre-commit v3\nSINDRI=%s\n' "\$B" > "\$R/.git/hooks/pre-commit"
 EOF
   chmod +x "$s/bin/cs/stamp1/judge" "$s/bin/cs/stamp1/sindri"
@@ -81,13 +82,18 @@ EOF
   # --- the kept list
   mkdir -p "$s/judge/sessions" "$s/judge/outbox" "$s/judge/evals" "$s/judge/trait-check" "$s/context-guard" "$s/locks/heavy-job.lock" \
     "$s/hooks" "$s/fleet" "$s/ui-evidence/runs/r1" "$s/myrepo-slug/plans" "$s/myrepo-slug/reviews" "$s/digests" "$s/meta" "$s/cache" \
-    "$s/sindri-app" "$s/bugfix/myrepo-slug/t1" "$s/logs"
+    "$s/sindri-app" "$s/bugfix/myrepo-slug/t1" "$s/logs" "$s/myrepo-slug/bugfix/c1" "$s/myrepo-slug/bugfix/t2"
   echo '{"sid":"s1"}' > "$s/judge/sessions/s1.json"; echo '{}' > "$s/judge/outbox/s1.jsonl"; echo '{"name":"a"}' > "$s/judge/teammate-names.jsonl"
   echo e > "$s/judge/evals/e"; echo t > "$s/judge/trait-check/t"; echo g > "$s/context-guard/g.log"; echo me > "$s/locks/heavy-job.lock/owner"
   echo h > "$s/hooks/h.sh"; echo '{}' > "$s/fleet/f.json"; echo '{}' > "$s/ui-evidence/runs/r1/summary.json"
   echo p > "$s/myrepo-slug/plans/p.md"; echo '{}' > "$s/myrepo-slug/reviews/r.json"; echo d > "$s/digests/d.md"; echo '{}' > "$s/meta/m.json"
   echo c > "$s/cache/c"; echo cs > "$s/sindri-app/ledger.db"; echo '{"pid": 999999}' > "$s/sindri-app/control.json"
-  echo '{}' > "$s/bugfix/myrepo-slug/t1/state.json"; echo old > "$s/logs/older.log"; echo bin > "$s/bin/aw-meta"
+  echo '{}' > "$s/bugfix/myrepo-slug/t1/state.json"
+  # live bug-fix state at $AW_STATE_DIR/<slug>/bugfix/<ticket>/: the C# bugfix-state shape (schemaVersion), written by hand
+  # (the real binary is a dotnet build, which this suite never runs), and the TS helper's shape (version) the lanes still run (#1104)
+  echo '{"schemaVersion":1,"ticket":"c1","phase":"reproduce"}' > "$s/myrepo-slug/bugfix/c1/state.json"; echo 'log' > "$s/myrepo-slug/bugfix/c1/events.jsonl"
+  echo '{"version":1,"ticket":"t2","phase":"fix"}' > "$s/myrepo-slug/bugfix/t2/state.json"
+  echo old > "$s/logs/older.log"; echo bin > "$s/bin/aw-meta"
   ln -s "$d/root" "$s/toolkit"
   cat > "$d/home/.claude/settings.json" <<'EOF'
 {"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/prompt-sort.sh # aw:prompt-sort"}]}],"PreToolUse":[{"hooks":[{"type":"command","command":"/x/trait-check.sh # aw:trait-check"}]}]}}
@@ -107,9 +113,9 @@ EOF
   fi
   # --- the TS side
   mkdir -p "$s/sindri/git-template/hooks" "$s/sindri/channels/stable/abc" "$s/scorer/reports" "$s/scorer/live" "$s/audit/weekly" \
-    "$s/profile/repos" "$s/myrepo-slug/bugfix" "$s/bin/sindri-app/stampA"
+    "$s/profile/repos" "$s/bin/sindri-app/stampA"
   echo db > "$s/sindri/ledger.db"; echo t > "$s/sindri/git-template/hooks/pre-commit"; echo n > "$s/sindri/channels/stable/abc/x"
-  echo db > "$s/scorer/scorer.sqlite"; echo r > "$s/scorer/reports/r"; echo a > "$s/audit/weekly/a"; echo '{}' > "$s/myrepo-slug/bugfix/run.json"
+  echo db > "$s/scorer/scorer.sqlite"; echo r > "$s/scorer/reports/r"; echo a > "$s/audit/weekly/a"
   echo bin > "$s/bin/sindri-app/stampA/sindri"
   printf 'name: demo\ntoken: ghp_0123456789abcdefghijABCDEFGH\nrepos: [app]\n' > "$s/profile/profile.yaml"
   printf 'name: app\npath: %s\napi_key: hunter2supersecret\n' "$d/repo" > "$s/profile/repos/app.yaml"
@@ -144,7 +150,7 @@ snap() {
 # kept <dir>: the paths of the §8.1 kept list, checksummed.
 kept() {
   (cd "$1/state" && for p in judge/sessions judge/outbox judge/teammate-names.jsonl judge/evals judge/trait-check context-guard locks hooks fleet \
-      ui-evidence/runs myrepo-slug/plans myrepo-slug/reviews digests meta cache sindri-app bugfix bin/aw-meta bin/cs/stamp1; do
+      ui-evidence/runs myrepo-slug/plans myrepo-slug/reviews myrepo-slug/bugfix digests meta cache sindri-app bugfix bin/aw-meta bin/cs/stamp1; do
     find "$p" -type f -exec cksum {} \; 2> /dev/null; done | sort
     readlink toolkit
   ) ; cksum < "$1/home/.claude/settings.json"; cksum < "$1/state/logs/older.log"
@@ -162,6 +168,7 @@ for m in --pre-link --post-link --all; do
   check "dry-run $m changes nothing" "$(snap "$D1")" "$before"
 done
 check "dry-run creates no log" "$(ls "$D1/state/logs")" "older.log"
+[ ! -e "$D1/state/backups" ] && ok "dry-run creates no backups" || bad "dry-run created backups"
 
 # ---------------------------------------------------------------------------------------------------------------------
 echo "# a step-1 refusal changes nothing"
@@ -191,6 +198,16 @@ has "failed log write says nothing was changed" "$out" "nothing was changed"
 check "failed log write changes nothing" "$(snap "$D3")" "$before"
 
 # ---------------------------------------------------------------------------------------------------------------------
+echo "# a repo with its own pre-commit hook (husky, core.hooksPath) is skipped with the manual line, not a failure (#1029)"
+DH="$WORK/husky"; seed "$DH"; use "$DH"
+git -C "$DH/repo" config core.hooksPath .husky/_
+out_h="$(run "$DH" --pre-link)"; rc=$?
+check "a foreign hook does not stop step 2" "$rc" 0
+has "the skip names the repo" "$out_h" "hook v3 skipped in app"
+has "the skip prints the manual line" "$out_h" "add 'sindri scrub --staged || exit 1' to it by hand"
+has "the log records the reason" "$(cat "$DH"/state/logs/cutover-*.log)" "hook skipped (SND-SCRUB-003) app"
+
+# ---------------------------------------------------------------------------------------------------------------------
 echo "# the full removal, pre-link then the link then post-link"
 D4="$WORK/full"; seed "$D4"; use "$D4"
 names_before="$(names "$D4")"
@@ -203,7 +220,14 @@ has "hook install passes the stable wrapper path" "$(cat "$D4/stubs/sindri.log")
 [ ! -e "$D4/state/judge/decisions.sqlite" ] && ok "TS judge database deleted" || bad "TS judge database still there"
 [ ! -e "$D4/state/judge/config.json" ] && ok "judge config deleted" || bad "judge config still there"
 check "template dir unset" "$(git config --global --get init.templateDir || echo unset)" unset
-[ ! -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists deleted" || bad "plist still there"
+if [ "$(uname)" = Darwin ]; then
+  [ ! -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists deleted (macOS)" || bad "plist still there"
+  plists='|la/com\.agentic-workflow\.[a-z-]+\.plist$'
+else
+  [ -e "$D4/la/com.agentic-workflow.scorer.plist" ] && ok "plists kept (Linux has no launchd)" || bad "a plist was deleted on Linux"
+  has "Linux gets the cron reminder" "$out_pre" "remove any cron line you added by hand"
+  plists=''
+fi
 bash "$D4/root/scripts/install-cs.sh" --link   # step 6, the stub
 out_post="$(run "$D4" --post-link)"; rc=$?
 check "post-link exits 0" "$rc" 0
@@ -212,9 +236,23 @@ has "post-link prints the repo onboard line" "$out_post" "sindri repo onboard $D
 has "post-link reports what it left alone" "$out_post" "left alone (not a TS wrapper this script knows): sindri-view"
 check "judge health passed through the wrapper" "$("$D4/bin/judge" health | jq -r .status)" ok
 names_after="$(names "$D4")"
-expected="$(printf '%s\n' "$names_before" | grep -vE '^\./(state/(sindri|scorer|audit|profile)(/|$)|state/myrepo-slug/bugfix(/|$)|state/bin/sindri-app(/|$)|state/judge/(config\.json|decisions\.sqlite(-shm|-wal)?)$|la/com\.agentic-workflow\.[a-z-]+\.plist$|bin/(scorer|sindri-next|sindri-app)$|root/judge/node_modules(/|$)|root/sindri/dist(/|$))' | grep -vx './state/logs' )"
-check "exactly the §8 list was removed" "$names_after" "$expected"
+expected="$(printf '%s\n' "$names_before" | grep -vE '^\./(state/(sindri|scorer|audit|profile)(/|$)|state/bin/sindri-app(/|$)|state/judge/(config\.json|decisions\.sqlite(-shm|-wal)?)$'"$plists"'|bin/(scorer|sindri-next|sindri-app)$|root/judge/node_modules(/|$)|root/sindri/dist(/|$))' | grep -vx './state/logs' )"
+check "exactly the §8 list was removed (backups aside)" "$(printf '%s\n' "$names_after" | grep -vE '^\./state/backups(/|$)')" "$expected"
 check "the kept list is byte-identical" "$(kept "$D4")" "$kept_before"
+# live bug-fix state survives, byte for byte, both shapes (#1104)
+check "C#-shaped bug-fix state survives" "$(cat "$D4/state/myrepo-slug/bugfix/c1/state.json")" '{"schemaVersion":1,"ticket":"c1","phase":"reproduce"}'
+check "C# bug-fix event log survives" "$(cat "$D4/state/myrepo-slug/bugfix/c1/events.jsonl")" log
+check "TS-shaped bug-fix state survives" "$(cat "$D4/state/myrepo-slug/bugfix/t2/state.json")" '{"version":1,"ticket":"t2","phase":"fix"}'
+lacks "the log does not name bug-fix state as removed" "$(cat "$D4"/state/logs/cutover-*.log)" "bug-fix state"
+# what is removed is moved under backups/cutover-<stamp>/ with its relative path and content, not deleted (#1104)
+BK="$(ls -d "$D4"/state/backups/cutover-* 2> /dev/null | head -n 1)"
+check "one backup directory for the run" "$(ls -d "$D4"/state/backups/cutover-* 2> /dev/null | wc -l | tr -d ' ')" 1
+check "backup keeps the TS ledger" "$(cat "$BK/sindri/ledger.db" 2> /dev/null)" db
+check "backup keeps TS sindri channels" "$(cat "$BK/sindri/channels/stable/abc/x" 2> /dev/null)" n
+check "backup keeps the scorer database" "$(cat "$BK/scorer/scorer.sqlite" 2> /dev/null)" db
+check "backup keeps the audit report" "$(cat "$BK/audit/weekly/a" 2> /dev/null)" a
+check "backup keeps the TS profile" "$(cat "$BK/profile/repos/app.yaml" 2> /dev/null | head -n 1)" "name: app"
+check "backup keeps the retired sindri-app build" "$(cat "$BK/bin/sindri-app/stampA/sindri" 2> /dev/null)" bin
 [ -f "$D4/root/scorer/dist/notes.txt" ] && ok "uncommitted work in a retired dir is kept" || bad "uncommitted work was deleted"
 [ -f "$D4/root/judge/package.json" ] && ok "tracked files are kept" || bad "tracked file deleted"
 has "claude plugin uninstall ran" "$(cat "$D4/stubs/claude.log")" "plugin uninstall aw-live@agentic-workflow-mods --scope user"
@@ -247,7 +285,7 @@ echo "# the no-flag run does both halves and the link"
 D5="$WORK/all"; seed "$D5"; use "$D5"
 out="$(run "$D5")"; rc=$?
 check "no-flag run exits 0" "$rc" 0
-check "no-flag run leaves the same box as the split run" "$(names "$D5" | sed "s|^\./||")" "$(names "$D4" | sed "s|^\./||")"
+check "no-flag run leaves the same box as the split run" "$(names "$D5" | sed "s|^\./||" | grep -vE '^state/backups(/|$)')" "$(names "$D4" | sed "s|^\./||" | grep -vE '^state/backups(/|$)')"
 [ "$(sed -n 1p "$D5/bin/sindri")" = '#!/usr/bin/env bash' ] && grep -q 'bin/cs/current/sindri' "$D5/bin/sindri" && ok "the link step replaced the TS sindri wrapper" || bad "sindri wrapper is not the C# one"
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -258,6 +296,10 @@ out="$(run "$D6")"; rc=$?
 check "flipped run exits 0" "$rc" 0
 has "flipped run: nothing to remove" "$out" "nothing to remove"
 check "flipped run keeps the C# judge state" "$(snap "$D6")" "$before"
+# a box whose only "work" is live bug-fix state does not start a cutover (#1104)
+check "bug-fix state alone opens no log" "$(ls "$D6/state/logs")" "older.log"
+[ ! -e "$D6/state/backups" ] && ok "bug-fix state alone makes no backup" || bad "a backup was made for bug-fix state alone"
+check "bug-fix state alone is untouched" "$(cat "$D6/state/myrepo-slug/bugfix/c1/state.json" "$D6/state/myrepo-slug/bugfix/t2/state.json")" "$(printf '%s\n%s' '{"schemaVersion":1,"ticket":"c1","phase":"reproduce"}' '{"version":1,"ticket":"t2","phase":"fix"}')"
 
 echo "# a log directory the script creates is 0700"
 D7="$WORK/newlogdir"; seed "$D7"; use "$D7"; wipe "$D7/state/logs"
