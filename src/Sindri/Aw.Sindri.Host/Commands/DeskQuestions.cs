@@ -98,7 +98,7 @@ internal static class DeskQuestions
         {
             foreach (var option in served.EnumerateArray().Where(static o => o.ValueKind == JsonValueKind.Object && Str(o, "id") is { Length: > 0 }))
             {
-                options.Add(new JsonObject
+                options.Add((JsonNode)new JsonObject
                 {
                     ["id"] = Str(option, "id"),
                     ["answer"] = Untrusted(Str(option, "answer"), fenced),
