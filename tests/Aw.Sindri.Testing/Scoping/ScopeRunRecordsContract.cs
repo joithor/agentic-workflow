@@ -1,17 +1,9 @@
+using System.Globalization;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Engine;
 using Xunit;
 
 namespace Aw.Sindri.Testing.Scoping;
-
-/// <summary>One launch of a scoping state's agent Step, as a contract test sets it up.</summary>
-/// <param name="Run">The scoping instance.</param>
-/// <param name="State">The recipe state.</param>
-/// <param name="Step">The state's Step id.</param>
-/// <param name="Requested">The model the state's 'with.model' asks for; null when it asks for none.</param>
-/// <param name="Number">The run's number.</param>
-/// <param name="Launch">The launch.</param>
-public sealed record ScopeLaunch(InstanceAddress Run, string State, string Step, string? Requested, int Number, LaunchId Launch);
 
 /// <summary>
 /// The contract every <see cref="IScopeRunRecords"/> honours (issue 966, spec 6): one record per agent run of the instance, oldest first, with the model the session
@@ -51,9 +43,9 @@ public abstract class ScopeRunRecordsContract
     /// <returns>Done.</returns>
     protected abstract ValueTask CompletedAtTheDesk(IScopeRunRecords records, InstanceAddress run, string state, int number);
 
-    private static ScopeLaunch Draft(int number = 1) => new(_scoping, "draft", "step.scope.draft", "claude-sonnet-5-5", number, LaunchId.From("LCH-0000000000000000000000000000000" + number));
+    private static ScopeLaunch Draft(int number = 1) => new(_scoping, "draft", "step.scope.draft", "claude-sonnet-5-5", number, LaunchId.From("LCH-0000000000000000000000000000000" + number.ToString(CultureInfo.InvariantCulture)));
 
-    private static ScopeLaunch GapSearch(int number = 1) => new(_scoping, "gap-search", "step.scope.gap-search", "claude-opus-5-5", number, LaunchId.From("LCH-0000000000000000000000000000001" + number));
+    private static ScopeLaunch GapSearch(int number = 1) => new(_scoping, "gap-search", "step.scope.gap-search", "claude-opus-5-5", number, LaunchId.From("LCH-0000000000000000000000000000001" + number.ToString(CultureInfo.InvariantCulture)));
 
     /// <summary>An instance that has run nothing has no records.</summary>
     /// <returns>The test.</returns>
@@ -129,7 +121,7 @@ public abstract class ScopeRunRecordsContract
         var read = await records.Of(_scoping, Token);
 
         var record = Expect.Only(read.Value);
-        Expect.Equal<string?>(null, record.Requested);
+        Expect.Equal<string?>(expected: null, record.Requested);
         Expect.Equal("openai", record.Vendor);
     }
 
