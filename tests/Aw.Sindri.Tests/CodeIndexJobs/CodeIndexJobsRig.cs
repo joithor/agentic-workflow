@@ -19,6 +19,7 @@ internal sealed class CodeIndexJobsRig
     internal static readonly CommitSha New = CommitSha.From(new string('2', 40));
     internal static readonly RepoName Demo = RepoName.From("demo");
     internal static readonly RepoName Other = RepoName.From("other");
+    internal static readonly RepoName Fresh = RepoName.From("fresh");
     private static readonly JsonSerializerOptions _web = new(JsonSerializerDefaults.Web);
     private static readonly string[] _embeddingsPending = ["embeddings"];
     private int _next;
@@ -31,7 +32,7 @@ internal sealed class CodeIndexJobsRig
 
     internal FakeRepoHeads Heads { get; } = new();
 
-    internal CodeIndexJobScopes Scopes => new(Harness.Profiles, Harness.Callers);
+    internal CodeIndexJobScopes Scopes => new(Harness.Profiles, Harness.Profiles, Harness.Callers);
 
     internal async Task Approve(CancellationToken cancellationToken)
     {
