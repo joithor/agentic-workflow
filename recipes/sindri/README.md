@@ -28,7 +28,7 @@ sindri recipe eval recipes/sindri/workflow.scoping.yaml       # one line per cas
 - The three `*-accepted` evals carry a coverage row with a recorded limit (`index-not-built` and `history-unlinked`, `commit-not-held`, `not-synced`) through `check pass` to `evidence complete`. The pure engine proves only that the path is reachable; whether `SCP-COV-002` passes the row is SC-K's `ScopePacketChecks`. Every eval uses one coverage shape (`schemas/scoping/coverage.json`).
 - Eval payloads for a fact with a schema in `schemas/scoping/` are checked against it by `scripts/check-scoping-schemas.mjs`.
 - The loop-cap and no-progress evals assert only the park reason `rounds` or `no-progress`, not which loop parked; the loops were traced by hand.
-- The `refreeze` loop (cap 2) closes the `evidence`, `stop`, `freeze` cycle.
+- The `refreeze` loop (cap 5) closes the `evidence`, `stop`, `freeze` cycle.
 
 ## Block recipes (decision-tree recipes, DT-R2)
 
@@ -44,6 +44,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.verify` | phasePacket, workspace | evidencePack | passed / failed |
 | `workflow.evidence-ui` | phasePacket, built | evidenceSummary | passed / failed (one repair of a broken selector) |
 | `workflow.evidence-api`, `workflow.evidence-db` | phasePacket, built | evidenceSummary | passed / failed |
+| `workflow.evidence-desktop` | phasePacket, built | evidenceSummary | passed / failed (the real desktop app against its mockups, then a screen-by-screen review; one repair of a broken run) |
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
@@ -59,7 +60,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 ### Rules every block recipe follows
 
-- A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk.
+- A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk. An `uncertain` route may instead take a default branch (evidence takes `all`, reproduce `testCheck`, scoping's size goes on with the decision recorded as `uncertain`).
 - A child wait routes `cancelled` on its own transition, which records nothing.
 - `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 5 (`RCP-CHILD-003`); the line's chain line → phase → prove → evidence → evidence-all → evidence-ui sits at the limit.
 - A parent keeps only the summaries its children's every path proves, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (`RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
@@ -73,7 +74,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 ### Approval order
 
-Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`, `build`, `ship`, `docs-sync`, `prove-recheck`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
+Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-desktop`, `evidence-other`, `review-loop`, `build`, `ship`, `docs-sync`, `prove-recheck`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
 
 ### Applied from the decision-tree spec
 
@@ -84,7 +85,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 ### Known gaps
 
 - A check cancelled inside `evidence-all` ends `workflow.evidence` in `all-failed`, not `dropped`. `evidence-all` reports it as its own unresolved `dropped`, because a recipe terminal can't declare `cancelled`.
-- A change that touches two of ui, api and db is not an `all` change (`all` needs all three). The judge routes it to one leaf, or ends uncertain and the desk picks. Running two leaves needs DT-B or DT-E.
+- A change that touches two of ui, api and db is not an `all` change (`all` needs all three). The judge routes it to one leaf, or, when unsure, takes the default leaf `all` (a judge failure still goes to the desk). Running two leaves needs DT-B or DT-E.
 
 ## Line stations: build and prove
 

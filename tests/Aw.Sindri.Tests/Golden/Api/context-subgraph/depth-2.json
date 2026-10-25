@@ -99,8 +99,7 @@
         "records": 3,
         "decisions": 2,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -112,6 +111,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -122,6 +122,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -137,7 +138,8 @@
           "depth": 1,
           "path": [
             "part-of-by surface:command/switch-tab"
-          ]
+          ],
+          "repo": "aw-split-panes"
         },
         {
           "node": "surface:command/group-tabs",
@@ -150,7 +152,8 @@
           "depth": 1,
           "path": [
             "part-of-by surface:command/group-tabs"
-          ]
+          ],
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-manager.restore-layout",
@@ -164,7 +167,8 @@
           "path": [
             "part-of-by surface:command/switch-tab",
             "on-by action:tab-manager.restore-layout"
-          ]
+          ],
+          "repo": "aw-split-panes"
         },
         {
           "node": "action:tab-groups.group-selected",
@@ -178,7 +182,8 @@
           "path": [
             "part-of-by surface:command/group-tabs",
             "on-by action:tab-groups.group-selected"
-          ]
+          ],
+          "repo": "aw-split-panes"
         }
       ],
       "affects": [],
@@ -234,8 +239,7 @@
           "confirmed": true,
           "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [
@@ -254,6 +258,7 @@
           "label": "src/tabs/TabManager.ts",
           "kind": "code",
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 1
         },
         {
@@ -270,6 +275,7 @@
           "label": "src/tabs/TabGroups.ts",
           "kind": "code",
           "trust": "untrusted",
+          "repo": "aw-split-panes",
           "depth": 1
         }
       ],
@@ -282,8 +288,7 @@
         "files": 2,
         "symbols": 0,
         "featuresWithNoCode": 1
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [

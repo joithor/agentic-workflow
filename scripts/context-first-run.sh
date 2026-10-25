@@ -14,7 +14,7 @@
 #      1. Scratch home: AW_SINDRI_HOME=$AW_STATE_DIR/sindri-app-firstrun (0700, marker .first-run-scratch), port 7481.
 #      2. Profile: `sindri profile init`, then this repo as the one repo, the context-docs-refresh service, and the
 #         `index:` and `context:` sections. Written only when the home has no profile yet.
-#      3. STOP for approval. Approval is the human's: a session is refused (SND-AUTH-002), so the script prints the exact
+#      3. STOP for approval. Approval needs no typed phrase, but the script stops so you read what changed first; it prints the exact
 #         `sindri profile approve <hash>` for you to type, and exits 3. Run `continue` after.
 #      4. Serve: `sindri --headless` (the control plane and its Temporal dev server), then `sindri status --json`.
 #      5. First code index build: `sindri services run code-index-main-move` (there is no build verb: the service starts the
@@ -42,6 +42,7 @@
 #   SINDRI                    the sindri command line, split on spaces; default scripts/sindri-app.sh (publishes the C# build
 #                             into $AW_STATE_DIR/bin/sindri-app/ when its source changed, then runs it)
 #   AW_SINDRI_UI              the sindri-ui binary; default the newest $AW_STATE_DIR/bin/sindri-app/*/sindri-ui
+# It exports AW_SINDRI_APP_NO_MCP=1 for every Sindri it starts, so the scratch plane never registers a 'sindri' MCP server in ~/.claude.json.
 #
 # Exit: 0 ok; 1 a step failed (the message names it); 2 usage or a refused setup; 3 stopped for you to approve something.
 # Bash 3.2 compatible (macOS /bin/bash).
@@ -72,6 +73,8 @@ done
 unset TMUX TMUX_PANE
 # The real profile must never steer the scratch instance (owner-check.sh does the same).
 unset AW_SINDRI_PROFILE
+# Every Sindri this script starts is throwaway: sindri-app.sh must not register it as the 'sindri' MCP server in the real ~/.claude.json.
+export AW_SINDRI_APP_NO_MCP=1
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
@@ -122,7 +125,7 @@ guard() {
 # ---- running things ----
 step()  { echo; echo "== $1"; }
 note()  { echo "-- $*"; }
-shown() { printf '%s' "AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd"; }
+shown() { printf '%s' "AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port AW_SINDRI_APP_NO_MCP=1 $sindri_cmd"; }
 # words <args>: the arguments as a shell would need them typed (an argument with a space is quoted).
 words() {
   local a out=""
@@ -288,7 +291,7 @@ approval_gate() {
   fi
   if [ "$PROFILE_RC" = 0 ]; then note "the profile is approved ($HASH)"; return 0; fi
   cat >&2 <<EOF
-The profile needs your approval. Approval is human-only (SND-AUTH-002 refuses a session), so type this at your own terminal:
+The profile needs your approval. Read what changed, then approve it with:
 
   AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd profile approve $HASH
 
@@ -391,7 +394,7 @@ open_ui() {
   step "7. open the Sindri app on the scratch home (Context page)"
   if [ "$no_ui" = 1 ]; then note "skipped (--no-ui)"; return 0; fi
   if [ "$dry" = 1 ]; then
-    echo "+ AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui> > $home/logs/ui.log 2>&1 &"
+    echo "+ AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port AW_SINDRI_APP_NO_MCP=1 <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui> > $home/logs/ui.log 2>&1 &"
     check "the process is alive 2 s later; its pid is kept in $home/first-run/ui.pid"
     return 0
   fi
@@ -418,7 +421,7 @@ recipes_gate() {
   sx_out recipe list
   if printf '%s\n' "$OUT" | grep -Eq '^workflow\.scoping@[0-9a-f]+ approved'; then note "workflow.scoping is approved"; return 0; fi
   cat >&2 <<EOF
-The scoping recipe isn't approved yet. Approval is human-only, so type this at your own terminal:
+The scoping recipe isn't approved yet. Approve it with:
 
   AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd recipe approve-all
 

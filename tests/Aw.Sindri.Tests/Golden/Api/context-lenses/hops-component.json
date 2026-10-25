@@ -18,8 +18,7 @@
         "records": 0,
         "decisions": 0,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -30,7 +29,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
@@ -48,7 +48,8 @@
             "feature:share.sharing",
             "component code:src/share/Share.ts",
             "implements feature:share.export"
-          ]
+          ],
+          "repo": "aw-split-panes"
         }
       ],
       "counts": {
@@ -57,8 +58,7 @@
         "neighbors": 0,
         "edges": 0
       },
-      "edges": [],
-      "truncated": false
+      "edges": []
     },
     "code": {
       "files": [
@@ -75,7 +75,8 @@
           "linkId": null,
           "label": "src/share/Share.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {
@@ -88,8 +89,7 @@
         "files": 1,
         "symbols": 0,
         "featuresWithNoCode": 0
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [

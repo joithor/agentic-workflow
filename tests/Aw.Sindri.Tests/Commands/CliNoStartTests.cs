@@ -39,7 +39,7 @@ public sealed class CliNoStartTests : IDisposable
         var verbs = new Verbs(client, _probe, new Output(_out, _error, SliceHarness.Json), new ServiceCollection().BuildServiceProvider(),
             ct => start.EnsureRunning(launch: !noStart, ct));
 
-        var code = await Drive(verbs.Approve(hashText: null, interactive: true, TextReader.Null, TestContext.Current.CancellationToken));
+        var code = await Drive(verbs.Approve(hashText: null, TestContext.Current.CancellationToken));
 
         Assert.Equal((1, noStart ? 0 : 1), (code, launcher.Launches));
         if (noStart)

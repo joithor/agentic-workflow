@@ -17,7 +17,7 @@ public interface ICodeIndex
     /// <param name="commit">The commit; it must still be on the default branch.</param>
     /// <param name="progress">Told a counts-only line per step ('structure 1,400 of 3,100 files').</param>
     /// <param name="cancellationToken">Cancels the build between files and batches; a cancelled build leaves the live index alone.</param>
-    /// <returns>The report. A busy box is a deferred report, not an error; SND-CODEIDX-002, 003, 010 and 011 are errors.</returns>
+    /// <returns>The report. A build takes no heavy-job slot; SND-CODEIDX-002, 003, 010 and 011 are errors.</returns>
     public ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken);
 
     /// <summary>Embeds a repo's pending symbols without the heavy slot, until none remain or the model fails (spec §5.7a); called by Sindri's EmbedCodeIndexService.</summary>
@@ -89,7 +89,7 @@ public interface ICodeIndex
     /// <param name="scope">The caller's repos.</param>
     /// <param name="repo">The repo.</param>
     /// <param name="text">The text.</param>
-    /// <param name="k">How many; at most <see cref="CodeIndexRules.MaxNeighbors"/>.</param>
+    /// <param name="k">How many, 1 or more.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The neighbors; unavailable with the embeddings layer's code when that layer is (006, 009, 005).</returns>
     public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken);

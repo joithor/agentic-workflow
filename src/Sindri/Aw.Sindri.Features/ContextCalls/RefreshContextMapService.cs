@@ -14,7 +14,8 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// The work of a refresh job (owner F1, 2026-10-19; the publish gate, owner decision 2026-10-20): reads the mapped repos' heads, builds the draft, lets the cleanup agent settle its review queue, then asks
 /// <see cref="MapPublishDecision"/> whether the draft goes ahead. On publish it promotes through the engine (not the protected command: the owner decided the service promotes, as the job's caller) and records
 /// 'context.map.built', 'context.map.promoted' and 'context.map.published'; on wait it stores a hold next to the draft and records 'context.map.held'. Either way it ends with 'context.map.refreshed'.
-/// Any step's error fails the job with the later steps not run; a built draft stays.
+/// Any step's error fails the job with the later steps not run; a built draft stays. A transient error (see <see cref="MapRefreshRetry"/>: Unavailable, Timeout, RateLimited) runs the whole
+/// job again after 30 s, 2 min and 10 min (four attempts), saying so in the job's progress; any other error, and the last attempt's error, fails the job.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine.</param>
@@ -28,6 +29,21 @@ internal sealed class RefreshContextMapService(ContextScopes scopes, IContextEng
     public async ValueTask<Result<RefreshContextMapResult>> Handle(RefreshContextMapRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = await Attempt(cancellationToken).ConfigureAwait(false);
+            if (result.IsSuccess || MapRefreshRetry.WaitBefore(attempt + 1, result.Error) is not { } wait)
+            {
+                return result;
+            }
+
+            jobs.Current?.Progress.Report(MapRefreshRetry.Line(attempt + 1, wait, result.Error));
+            await Task.Delay(wait, clock, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async ValueTask<Result<RefreshContextMapResult>> Attempt(CancellationToken cancellationToken)
+    {
         var opened = source.Open();
         if (opened.IsError)
         {

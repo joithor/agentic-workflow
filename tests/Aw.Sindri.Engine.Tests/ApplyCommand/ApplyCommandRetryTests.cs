@@ -1,10 +1,8 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.ApplyCommand;
-using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
 
@@ -12,7 +10,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 
 /// <summary>
 /// A retry with the same nonce (engine spec rev 8 §5.2, review run 1): after a timeout the Update may have applied, so the
-/// claim stays and the retry resends the same Update id without checking again (a protected answer's challenge is single
+/// claim stays and the retry resends the same Update id without checking again (a protected answer asks for no challenge now; it was single
 /// use and bound to the instance version, so a second check would refuse an answer that applied). Only the call that
 /// created a claim may give it back.
 /// </summary>
@@ -24,22 +22,19 @@ public sealed class ApplyCommandRetryTests
     private readonly FakeTimeProvider _clock = new();
     private readonly TemporalLikeRuntime _instance = new();
     private readonly InMemoryCommandNonces _nonces;
-    private readonly InMemoryChallenges _challenges;
     private readonly ApplyCommandService _service;
 
     public ApplyCommandRetryTests()
     {
         _nonces = new InMemoryCommandNonces(_clock);
-        _challenges = new InMemoryChallenges(_clock);
-        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, _challenges, _instance);
+        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, _instance);
     }
 
     [Fact(Timeout = 30_000)]
     public async Task A_protected_answer_retried_after_a_timeout_that_did_apply_is_applied_not_SND_WF_013_and_keeps_its_claim()
     {
         var address = _instance.Address;
-        var issued = _challenges.Issue(InstanceChallenge.Action(address, AnswerVariant.Grant, 1), InstanceChallenge.Subject(_instance.View()));
-        var request = new ApplyCommandRequest(address.Value, ApplyCommandKind.Answer, AnswerVariant.Grant, Amount: 1, Nonce: _nonce, Challenge: new ChallengeAnswer(issued.Id, "grant 1 " + address.Value));
+        var request = new ApplyCommandRequest(address.Value, ApplyCommandKind.Answer, AnswerVariant.Grant, Amount: 1, Nonce: _nonce);
         _instance.LoseNextResponse();
 
         var first = await _service.Handle(request, TestContext.Current.CancellationToken);

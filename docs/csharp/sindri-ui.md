@@ -679,6 +679,13 @@ see its exit code and standard error.
 and Sindri's HTTP API (with `control.json` and `auth/human.token`) stays the app's only contract. The edge is `status: planned` only because check-deps doesn't
 scan C# for cli edges (a current edge its scan can't find fails `DEPS-STALE-001`).
 
+### Drivable for desktop evidence
+
+`Composition.Compose` ends with `.UseAwUiDriver(args)` (Aw.UiDriver.Avalonia, docs/csharp/ui-driver.md). It does nothing unless the run sets `AW_UI_DRIVER=1` or passes
+`--ui-driver`, so a normal launch opens no port and writes no file. Desktop UI evidence (docs/csharp/evidence.md "Desktop evidence") starts the published `sindri-ui`
+that way on the seeded fixture home and drives it through its tabs and rows with `aw-ui-driver`, taking each screen's picture with the driver's `screenshot` verb.
+The driver clicks through automation peers, so a control the evidence must press needs an `AutomationProperties.Name` (the tabs and rows already have one).
+
 ## Errors
 
 The app shows the first three as words in the window, never a dialog or a crash. A call Sindri refuses (a 403 with
@@ -875,4 +882,4 @@ The contract (T0): `GET /sindri/sessions` and `GET /sindri/sessions/{provider}/{
 
 ## Grant tokens (budget parks)
 
-A budget-parked instance's frame shows a Grant tokens panel in the header, under the stage line (UI spec W7; engine spec §3.7, §4.2). It is `GrantTokensViewModel` on the shared `HoldButton` and `TypedConfirmBox`, for the one catalog action `ApplyCommand:answer-grant-tokens` (`AppConfirm.GrantTokens`, the fourth action `AppConfirm.Require` accepts). The amount field starts at the amount of the served `--grant-tokens` command (the whole round budget), and a challenge is asked for that amount and instance (`POST /sindri/workflow/challenges/app` with `grant-tokens <n> <address>`), so changing the amount drops it. A complete hold or the exact typed text sends `POST /sindri/workflow/instances/{id}/commands` (`kind: answer`, `answer: grant-tokens`, `amount`, `challenge`); the server's refusal (amount outside the 4x bound, a stale challenge, an agent session) shows in its own words, and the frame re-reads once the grant applied. While the catalog's row is `cli-only:typed-confirmation` (it is, until the server opens the answer to the app) the panel is the lock button with the served command, as for every protected answer, and the answer's `atTerminal` stays true until then.
+A budget-parked instance's frame shows a Grant tokens panel in the header, under the stage line (UI spec W7; engine spec §3.7, §4.2). It is `GrantTokensViewModel` on the shared `HoldButton` and `TypedConfirmBox`, for the one catalog action `ApplyCommand:answer-grant-tokens` (`AppConfirm.GrantTokens`, the fourth action `AppConfirm.Require` accepts). The amount field starts at the amount of the served `--grant-tokens` command (the whole round budget), and a challenge is asked for that amount and instance (`POST /sindri/workflow/challenges/app` with `grant-tokens <n> <address>`), so changing the amount drops it. A complete hold or the exact typed text sends `POST /sindri/workflow/instances/{id}/commands` (`kind: answer`, `answer: grant-tokens`, `amount`, `challenge`); the server's refusal (an amount below 1 (the 4x upper bound is gone, owner q93, 2026-10-23), a stale challenge, an agent session) shows in its own words, and the frame re-reads once the grant applied. While the catalog's row is `cli-only:typed-confirmation` (it is, until the server opens the answer to the app) the panel is the lock button with the served command, as for every protected answer, and the answer's `atTerminal` stays true until then.

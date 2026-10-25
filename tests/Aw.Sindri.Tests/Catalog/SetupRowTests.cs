@@ -26,23 +26,23 @@ public sealed class SetupRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void AddRepo_is_a_ready_job_row_so_a_session_is_refused_and_the_app_and_terminal_start_it()
+    public void AddRepo_is_a_ready_job_row_the_app_terminal_and_a_session_start_it()
     {
         var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "AddRepo");
 
         Assert.Equal((ActionClass.Job, "POST", "/sindri/setup/repos", "sindri repo add <path>", "ready", false, false), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui, row.NeedsTerminal, row.Destructive));
-        Assert.NotNull(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
+        Assert.Null(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
         Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().AtTerminal().Build(), row).Refusal);
         Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().Build(), row).Refusal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void OnboardRepo_is_a_ready_job_row_the_terminal_and_app_start_and_a_session_is_refused()
+    public void OnboardRepo_is_a_ready_job_row_the_terminal_app_and_a_session_start()
     {
         var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "OnboardRepo");
 
         Assert.Equal((ActionClass.Job, "POST", "/sindri/setup/repos/onboard", "sindri repo onboard [<path>]", "ready", false, false), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui, row.NeedsTerminal, row.Destructive));
-        Assert.NotNull(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
+        Assert.Null(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
         Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().AtTerminal().Build(), row).Refusal);
         Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().Build(), row).Refusal);
     }
@@ -57,12 +57,12 @@ public sealed class SetupRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void RegisterMcp_is_a_ready_job_row_the_app_starts_and_a_session_is_refused()
+    public void RegisterMcp_is_a_ready_job_row_the_app_and_a_session_start()
     {
         var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "RegisterMcp");
 
         Assert.Equal((ActionClass.Job, "POST", "/sindri/setup/mcp", "sindri mcp register --apply", "ready"), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui));
-        Assert.NotNull(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
+        Assert.Null(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
         Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().Build(), row).Refusal);
     }
 

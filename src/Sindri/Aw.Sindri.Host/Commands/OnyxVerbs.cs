@@ -8,14 +8,12 @@ using Aw.Sindri.Features.OnyxUp;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri onyx up' and 'sindri onyx down': they run Docker and write Onyx's files under the Sindri home, for whoever runs the CLI (an agent
-/// the owner started included). 'onyx open' needs a terminal: it opens a browser page. Local: they run in this process and need no control plane. Progress is on standard error (lines and dots, through IOnyxProgress); standard output carries only the summary.
+/// 'sindri onyx up' and 'sindri onyx down': they run Docker and write Onyx's files under the Sindri home, so any caller may run them (owner decision q93). Local: they run in this process and need no control plane. Progress is on standard error (lines and dots, through IOnyxProgress); standard output carries only the summary.
 /// </summary>
 /// <param name="services">The CLI's scoped services.</param>
 /// <param name="output">Where answers go.</param>
-/// <param name="session">Who runs the CLI.</param>
 /// <param name="approve">Runs `profile approve [hash]` the way the CLI does (preview without a hash, the typed challenge with one), for the approval `onyx up` shows inline; null skips the offer.</param>
-internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session, Func<string?, Output, CancellationToken, Task<int>>? approve = null)
+internal sealed class OnyxVerbs(IServiceProvider services, Output output, Func<string?, Output, CancellationToken, Task<int>>? approve = null)
 {
     internal async Task<int> Up(bool json, CancellationToken ct)
     {
@@ -50,11 +48,6 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
     /// <returns>0 opened (or the address printed), 1 refused or not set up.</returns>
     internal async Task<int> Open(CancellationToken ct)
     {
-        if (!session.Human)
-        {
-            return await Refused("open", "opens a page in the browser").ConfigureAwait(false);
-        }
-
         ct.ThrowIfCancellationRequested();
         var state = services.GetRequiredService<IOnyxWorkspace>().ReadState();
         if (state is null)
@@ -115,13 +108,5 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
     {
         services.GetRequiredService<IOnyxProgress>().Line(text);
         return Output.InterruptedExit;
-    }
-
-    // The printed refusal: SND-AUTH-002, exit 1 (attention, not a tool error), with nothing called.
-    private async Task<int> Refused(string verb, string what)
-    {
-        _ = await output.Error(SindriErrors.AuthRefused.With(
-            $"`sindri onyx {verb}` {what}, so it needs a terminal (this CLI has no terminal; fix: run `sindri onyx {verb}` at a terminal)")).ConfigureAwait(false);
-        return 1;
     }
 }

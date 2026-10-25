@@ -147,7 +147,7 @@ public sealed class QueryContextTests
         var catalog = new FixedSourceCatalog(FakeContextSource.FixtureDocs());
         var engine = Engines.Over(catalog);
 
-        var off = await engine.Query(new ContextQuery("orientation"), Engines.Session("split-panes"), CancellationToken.None);
+        var off = await engine.Query(new ContextQuery("orientation"), Engines.Session("split-panes", """{"sessions":{"enabled":false}}"""), CancellationToken.None);
         var on = await engine.Query(new ContextQuery("orientation"), Engines.Session("split-panes", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
         var elsewhere = await engine.Query(new ContextQuery("orientation"), Engines.Session("nope", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
 
@@ -203,6 +203,18 @@ public sealed class QueryContextTests
         var cite = result.Value.Cites["C1"];
         Assert.Equal(shown, cite.Permalink?.OriginalString);
         Assert.Equal(record.Ref.Canonical, cite.Key);   // the citation and its key stay
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_searches_onyx_like_a_human_and_gets_the_hit_fenced()
+    {
+        var record = FakeContextSource.Doc("linear/SPL-104", "Orientation toggle", "orientation for the toggle", "o9");
+        var onyx = new FakeContextSource(_onyx, [record with { Ref = record.Ref with { Source = _onyx.Id } }]);
+
+        var result = await Engines.Over(onyx).Query(new ContextQuery("orientation"), Engines.Session("split-panes", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
+
+        var item = result.Value.Sections.Single().Items.Single();
+        Assert.Equal("<untrusted source=\"onyx\">Orientation toggle</untrusted>", item.Title);
     }
 
     [Fact, Trait("Lane", "unit")]

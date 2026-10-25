@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Run;
 using Aw.Sindri.Ui.Views.Controls;
 
@@ -16,12 +17,16 @@ internal sealed partial class WholeMapView : UserControl
 {
     private const double PanStep = 0.1;
     private WholeMapViewModel? _map;
+    /// <summary>The strip along the stage's bottom edge that the mini-map floats over: its 112 high box, the 14 px margin under it and 14 over it.</summary>
+    internal const double MiniMapBand = 140;
+
     private bool _fitted;
 
     /// <summary>Initializes a new instance of the <see cref="WholeMapView"/> class.</summary>
     public WholeMapView()
     {
         InitializeComponent();
+        WholeCanvas.FitBottomInset = MiniMapBand;
         AutomationProperties.SetName(WholeZoomOut, Labels.ContextMapZoomOut);
         AutomationProperties.SetName(WholeZoomIn, Labels.ContextMapZoomIn);
         AutomationProperties.SetName(WholeZoomFit, Labels.ContextMapZoomFit);
@@ -34,6 +39,7 @@ internal sealed partial class WholeMapView : UserControl
         };
         WholeCanvas.SizeChanged += (_, _) => Arrange();
         WholeMiniMap.Centred += (_, e) => Centre(e.Value);
+        WholeCanvas.Clicked += (_, e) => WholeWorld.Click(e.GetPosition(WholeWorld));
         ViewChanged();
     }
 
@@ -52,6 +58,8 @@ internal sealed partial class WholeMapView : UserControl
             old.ZoomRequested -= OnZoomRequested;
             old.FitRequested -= OnFitRequested;
             old.PropertyChanged -= OnMapChanged;
+            old.EmphasisChanged -= OnEmphasisChanged;
+            old.CentreRequested -= OnCentreRequested;
         }
 
         _map = DataContext as WholeMapViewModel;
@@ -61,6 +69,8 @@ internal sealed partial class WholeMapView : UserControl
             _map.ZoomRequested += OnZoomRequested;
             _map.FitRequested += OnFitRequested;
             _map.PropertyChanged += OnMapChanged;
+            _map.EmphasisChanged += OnEmphasisChanged;
+            _map.CentreRequested += OnCentreRequested;
             _fitted = false;
             Arrange();
         }
@@ -85,7 +95,28 @@ internal sealed partial class WholeMapView : UserControl
             Arrange();
         }
 
+        if (string.Equals(e.PropertyName, nameof(WholeMapViewModel.Shown), StringComparison.Ordinal))
+        {
+            Arrange();   // a search filtered the map, or ended: the minimap and the zoom floor follow the set that is drawn
+        }
+
         WholeWorld.InvalidateVisual();   // the answer's nodes standing out is not a property the canvas watches
+    }
+
+    private void OnEmphasisChanged(object? sender, EventArgs e) => WholeWorld.Highlight(_map?.Focus, _map?.Emphasis);
+
+    private void OnCentreRequested(object? sender, ValueEventArgs<WholeRect> e) => Centre(new Point(e.Value.CenterX, e.Value.CenterY));
+
+    private void OnNodePanelClose(object? sender, RoutedEventArgs e) => _ = _map?.Panel.Close();
+
+    private void OnNodePanelOpenSource(object? sender, RoutedEventArgs e) => _ = _map?.Panel.OpenSource();
+
+    private void OnNodePanelEdge(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: NodeEdgeRowViewModel row })
+        {
+            row.Jump();
+        }
     }
 
     private void OnFitRequested(object? sender, EventArgs e) => WholeCanvas.Fit();
@@ -101,12 +132,13 @@ internal sealed partial class WholeMapView : UserControl
             return;
         }
 
-        var world = new Rect(geometry.World.X, geometry.World.Y, geometry.World.Width, geometry.World.Height);
+        var box = _map.FitBox ?? geometry.World;
+        var world = new Rect(box.X, box.Y, box.Width, box.Height);
         WholeCanvas.WorldBounds = world;
         WholeMiniMap.World = world;
-        WholeMiniMap.Nodes = [.. MiniMapRects(geometry).Select(card => new MiniMapNode(card.Rect, Brush(card.Colour), Selected: false))];
+        WholeMiniMap.Nodes = [.. MiniMapRects(_map.Shown ?? geometry).Select(card => new MiniMapNode(card.Rect, Brush(card.Colour), Selected: false))];
         WholeWorld.InvalidateMeasure();
-        var stage = WholeCanvas.Bounds.Size;
+        var stage = WholeCanvas.FitStage;   // less the strip the mini-map floats over, so no card opens or fits under it
         if (stage.Width <= 0 || stage.Height <= 0 || world.Width <= 0 || world.Height <= 0)
         {
             return;
@@ -178,7 +210,7 @@ internal sealed partial class WholeMapView : UserControl
         }
     }
 
-    private void OnAllFeatures(object? sender, RoutedEventArgs e) => _map?.CloseArea();
+    private void OnCrumb(object? sender, ValueEventArgs<Crumb> e) => _map?.GoHome();
 
     private void OnZoomIn(object? sender, RoutedEventArgs e) => WholeCanvas.ZoomIn();
 

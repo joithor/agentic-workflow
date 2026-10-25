@@ -3,7 +3,6 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Kernel;
@@ -12,7 +11,7 @@ using Aw.Kernel.Services;
 namespace Aw.Context.Features.BuildMap;
 
 /// <summary>
-/// Proposes the map from the repos (spec Phase 4): under the heavy-job lock, reads each mapped repo at its HEAD (never the
+/// Proposes the map from the repos (spec Phase 4): one build at a time (<see cref="MapBuildGate"/>), reads each mapped repo at its HEAD (never the
 /// working tree, never a denied path), extracts the deterministic anchors with file-level 'implements', adds graphify
 /// clusters as candidate features and, only when 'context.labeling.enabled', names them with a model. The result joins the
 /// current map (a draft is a whole map, so a promote loses nothing) and is written as a draft in one step; 'current' is never
@@ -23,7 +22,7 @@ internal sealed class BuildMapService(
     IRepoReader repos,
     IClusterSource clusterSource,
     ILabeler labeler,
-    IHeavyJobLock heavy,
+    MapBuildGate gate,
     IDefaultBranch defaults,
     IGraphStore store,
     TimeProvider clock) : IService<BuildMapRequest, MapBuildReport>
@@ -33,11 +32,6 @@ internal sealed class BuildMapService(
     public async ValueTask<Result<MapBuildReport>> Handle(BuildMapRequest request, CancellationToken cancellationToken)
     {
         var scope = request.Scope;
-        if (scope.Caller.Kind == ContextCallerKind.Session)
-        {
-            return ContextErrors.SessionsDisabled.With("building the map is a human or service job: a session can't start one");
-        }
-
         var mapped = SettingsReader.Read(scope.Settings).Bind(settings => ScopeRules.Resolve(settings, scope.Repos, scope.Caller).Map(r => (Settings: settings, Repos: r)));
         if (mapped.IsError)
         {
@@ -50,16 +44,8 @@ internal sealed class BuildMapService(
             return ContextErrors.SettingsInvalid.With("context.repos: the profile maps no repo to build from (fix: add a repo to the profile and approve it)");
         }
 
-        var slot = await heavy.Take(request.Progress, cancellationToken).ConfigureAwait(false);
-        if (slot.IsError)
-        {
-            return slot.Error;
-        }
-
-        await using (slot.Value.ConfigureAwait(false))
-        {
-            return await Build(request.Progress, settings, mappedRepos, scope.Repos, cancellationToken).ConfigureAwait(false);
-        }
+        using var turn = await gate.Enter(cancellationToken).ConfigureAwait(false);
+        return await Build(request.Progress, settings, mappedRepos, scope.Repos, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<MapBuildReport>> Build(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, IReadOnlyList<ContextRepo> profileRepos, CancellationToken cancellationToken)
@@ -154,7 +140,11 @@ internal sealed class BuildMapService(
     }
 
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
-        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
+        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. LabelNote(labels), .. timedOut ? new[] { "recognizers" } : []];
+
+    private static string[] LabelNote(Result<LabelPass> labels) =>
+        labels is { IsError: false, Value.Unavailable: { } why } ? [$"labels: {ContextErrors.LabelingUnavailable.Code}: {why}"]
+        : labels.IsError || !labels.Value.Complete ? ["labels"] : [];
 
     // A denied path is never read, whatever a recognizer wants.
     private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));

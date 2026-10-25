@@ -22,6 +22,7 @@ every path it writes into a run file is absolute.
 | `run <script.json> <run-dir> [--baseline png] [--app-build sha] [--fixtures id] [--cache verdict-cache.json] [--host url] [--allow-preview-host] [--allow-writes] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/summary.json`; runs every step of a UI script in each of its viewports, writes `summary.json` and prints it | 0 every step passed · 2 a step failed or broke · 1 · 4 · 75 |
 | `api-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] [--host url] [--allow-preview-host] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (host, redirects, CLI targets, write verbs, environment) before any lock; once both locks are held, runs the HTTP requests, then the CLI calls, in order; writes `summary.json` (`evidence.api.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
 | `db-run <script.json> <run-dir> --at base\|head [--repo dir] [--app-build sha] [--config file] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; vets the script (the database target, the pre-run write refusal) before any lock; once both locks are held, opens the database read-only (SQLite: a copy in the run directory; Postgres: after the identity and role checks), runs each query, checks its rows; writes `summary.json` (`evidence.db.summary/1`) and prints it | 0 every expectation held · 2 one did not · 1 · 4 · 75 |
+| `desktop-run <screens.json> <run-dir> [--repo dir] [--app-build sha] [--config file] [--screens a,b] [--lock-timeout s]` | Deletes `<run-dir>/summary.json`; reads the screens manifest and the repo's `desktop` config (a problem with either is a refusal); under both locks it makes a scratch directory (passed to every command in the variable `desktop.homeEnv`), runs the fixture steps, then for every screen at every window size starts the app with the UI driver on (`AW_UI_DRIVER=1`, its own `AW_UI_DRIVER_DIR`) and runs the screen's script through `aw-ui-driver`, stops the app, runs `fixture down` (always), then renders each screen's mockup in the browser at the same size and compares the two frames (section "Desktop evidence"). Writes `summary.json`, `report.md` and four images per screen and size; stdout is the summary | 0 every screen within its limit · 2 a screen over its limit, whose script failed or not comparable · 1 refused (usage, manifest, config) · 4 errored (a fixture command, the app or its driver, the browser) · 75 lock busy |
 | `parity <manifest.json> <run-dir> [--host url] [--allow-preview-host] [--allow-writes] [--app-build sha] [--db-provenance seeded\|unknown] [--lock-timeout s]` | Once both locks are held, deletes `<run-dir>/parity.json`; measures each design frame, writes `parity.json` and prints it; each failed box check is also a stderr line `ui-evidence: geometry: <frame> <target>: <failure>` | 0 every geometry check passed · 2 one failed · 1 · 4 · 75 |
 | `parity-plan <run-dir> [--reviewed file,file]` | Prints the Linear attachment plan (one side-by-side image per frame) | 0 every image reviewed · 3 an image is unreviewed · 1 provenance unknown (AW-EVIDENCE-016: the evidence stays local) |
 | `parity-comment <run-dir> --for linear\|github` | Prints the comment as markdown (Linear: a table with geometry; GitHub: a table, images stay on Linear) | 0 · 1 |
@@ -89,28 +90,37 @@ rule is listed, joined by `; `.
 | `role` | lower-case kebab-case string (the app's own role name, e.g. `admin`) | yes | the app role; recorded in `summary.json`, not interpreted |
 | `viewports` | (`desktop` \| `phone`)[] | yes | at least one; every step runs in each (desktop 1280x800, phone 375x812) |
 | `steps` | step[] | yes | at least one, run in order (below) |
+| `login` | object \| null | no | a sign-in run before the first step, in each viewport: `emailEnv`, `passwordEnv` (UPPER_SNAKE environment variable names; both required, never a literal credential), and optional `emailSelector` (default `input[type="email"]`), `passwordSelector` (`input[type="password"]`), `submitSelector` (`button[type="submit"]`), `nextSelector` (clicked after the email, two-step forms) and `loginPath` (default `/login`: sign-in is done once the URL path no longer contains it). A variable unset or blank is AW-EVIDENCE-006 before a browser opens |
+| `localStorage` | object (string to string) \| null | no | entries written verbatim into the host origin's localStorage before every page load (feature-flag overrides and similar client toggles) |
 | `planning` | object \| null | no | the planner's own model call, recorded as the first `invocations[]` entry: `pr` (string \| null, also `summary.json`'s `pr`), `model` (string \| null), `elapsedMs`, `inputTokens`, `outputTokens` (integer \| null each, not negative; null is unknown, never zero) |
 
 A step:
 
 | Key | Type | Required | Holds and rules |
 |---|---|---|---|
-| `action` | `goto` \| `click` \| `fill` \| `expect-visible` | yes | what the step does |
-| `target` | string | yes | `goto`: a path on the host (one leading `/`; the host guard below); `click`, `fill`: a `data-testid`; `expect-visible`: visible text |
+| `action` | `goto` \| `click` \| `fill` \| `expect-visible` \| `scroll` \| `drag` \| `press` | yes | what the step does |
+| `target` | string | yes, except for a `press` | `goto`: a path on the host (one leading `/`; the host guard below); `click`, `fill`, `press`: a `data-testid`, `role:<role>\|<accessible name>` or `text:<text>`, with a trailing `#<n>` (1-based, hugging the name: `Day#2`) picking the nth of several matches; `scroll`, `drag`: a `data-testid`; `expect-visible`: visible text. A `role:` or `text:` target is exact and strict (several matches without `#<n>` fail the step), the role is lower-case, and a near-miss prefix (`Role:`, ` text:`) is a schema error. A broken `role:` or `text:` target is never repaired by a model |
 | `expectedState` | object | yes | the state that must hold after the action (below) |
-| `value` | string \| null | no | the text a `fill` types; null or absent types nothing |
+| `value` | string \| null | no | the text a `fill` types; null or absent types nothing. A `scroll`'s position: `end` (default) or `start` (horizontal), `bottom` or `top` (vertical), or a non-negative integer horizontal pixel offset |
+| `index` | integer, not negative | no | `click`, `fill`, `scroll`, `press` with a target: picks the nth match (0-based) when a bare `data-testid` repeats |
+| `to` | string | `drag` only, required there | the destination `data-testid` |
+| `grabOffset`, `dropOffset` | `{x, y}` (both required) | `drag` only | pixels from the source's (destination's) top-left corner; default its centre |
+| `holdAlt` | boolean | `drag` only | holds Alt through the release |
+| `key` | string | `press` only, required there | a Playwright key (`ArrowRight`, `Shift+Tab`), pressed on the target (focused first), or on whatever has focus when there is no target |
 
-`expectedState` is one of five kinds, chosen by its `kind` key (anywhere in the object):
+`expectedState` is one of seven kinds, chosen by its `kind` key (anywhere in the object):
 
 | `kind` | Other keys (all required) | Holds when |
 |---|---|---|
 | `text-visible` | `text` (string, not empty) | some visible element shows the text |
 | `text-absent` | `text` (string, not empty) | no visible element shows the text |
 | `testid-visible` | `testId` (string, not blank) | the element with that `data-testid` is visible |
+| `testid-absent` | `testId` (string, not blank) | no visible element has that `data-testid`; looked at once, right after the action, without waiting for it to go (a leftover after a drag drop fails the step) |
 | `url-path` | `path` (string, not empty) | the page's URL path is `path` |
+| `url-search` | `param` (string, not empty), `value` (string, may be empty) | the URL's query parameter `param` is `value`; the path is not checked |
 | `input-value` | `testId` (string, not blank), `value` (string, may be empty) | that input holds exactly `value` |
 
-A missing `kind` is `missing required property "kind"`; another value names the five kinds. Enum values are matched by
+A missing `kind` is `missing required property "kind"`; another value names the seven kinds. Enum values are matched by
 name only (a number is refused). Unknown keys are refused in every script object (the script, `planning`, each step
 and each `expectedState`, whatever its kind and wherever `kind` sits): a misspelt key is one error naming the file, the
 JSON location and the key (`script <path>: $.steps[0].vaule: unknown property`), never a silently ignored setting such
@@ -240,6 +250,76 @@ A query:
 assertions, the API script's `equals`, `exists` and `matches`, over the rows read as a JSON array of objects keyed by
 column name: `/0/text` is the first row's `text`), `golden` (a file the rows' JSON must equal, canonically; resolved like the API script's).
 
+## Desktop evidence (`desktop-run`)
+
+Desktop apps (Avalonia and the like) have no URL to drive. `desktop-run` starts the **real app** on **seeded data**, drives each screen into view
+through the app's own UI with the UI driver (`aw-ui-driver`, docs/csharp/ui-driver.md: the same elements and commands a person uses), takes the
+window's picture and compares it with the owner's mockup, at the same window size, pixel for pixel. It knows no app: the repo names its own commands, and
+the app opts into the driver with one call (`UseAwUiDriver`), which does nothing unless the run sets `AW_UI_DRIVER=1`.
+
+**Config**: the `desktop` part of `<repo>/.agentic-workflow/evidence.json` (unknown keys are AW-EVIDENCE-022):
+
+```json
+{ "desktop": { "manifest": "docs/ui-evidence/screens.json", "homeEnv": "APP_HOME",
+    "fixture": { "command": ["scripts/fixture.sh"], "up": [["up"]], "down": ["down"] },
+    "app": { "command": ["scripts/start-app.sh"] },
+    "driver": { "command": ["scripts/aw-ui-driver.sh"] },
+    "sizes": ["1440x900", "900x900"], "threshold": 10, "timeoutSeconds": 300, "env": { "APP_FLAG": "1" } } }
+```
+
+`manifest` is relative to the repo. `homeEnv` carries a new scratch directory (below the system temp directory, removed at the end) to every command: it is
+where the fixture keeps its state and where the app finds it. `fixture.command` plus each `up` step's arguments run in the repo, in order; every screen's own
+`fixture` steps follow, once each (first use first); `down` runs last even after a failure and a cancel. `app.command` starts the app (it runs until
+`desktop-run` stops it, with `AW_UI_DRIVER=1` and `AW_UI_DRIVER_DIR` set to a fresh folder per launch). `driver.command` is the driver's command line (default
+`aw-ui-driver` on the PATH); `desktop-run` adds `--dir <that folder>` and the verb. The display is the user's `DISPLAY` when set (always on macOS and
+Windows), else `xvfb-run -a` (1920x1200x24); neither is an error that says so, and the choice is recorded as a `display: ...` line in the summary's `notes`.
+`threshold` is the default share of differing pixels, in percent (default 10); `timeoutSeconds` bounds each fixture and driver command. Commands are
+argument lists, never a shell; a program with a directory in its name is the repo's. `env` is literal, never a secret.
+
+**Screens manifest** (`schema: "ui-evidence.desktop-screens/1"`, unknown keys refused, AW-EVIDENCE-026):
+
+| Key | Meaning |
+|---|---|
+| `designRoot` | The mockups' folder, relative to the manifest's folder |
+| `threshold` | Default limit for the manifest (0 to 100) |
+| `screens[].name` | Lowercase letters, digits, `-`; unique; names the screen's images |
+| `screens[].steps` | The screen's script (below) |
+| `screens[].design` | The mockup's `.html` below `designRoot` |
+| `screens[].fixture` | Extra fixture steps this screen needs (each an argument list) |
+| `screens[].threshold`, `sizes`, `settleMs` | Per-screen limit, window sizes (`WxH`) and the design page's settle time (default 1000 ms) |
+| `screens[].masks` | `{x, y, w, h, why, size?}` regions painted over in both frames (live data, clocks, ids) |
+| `screens[].accepted` | Owner-accepted differences in words, carried into the summary for the review step to skip |
+
+**A screen's script** has the shape of a ui-evidence step: `{ "action", "target", "expectedState", "value" }`, with the desktop actions `launch`, `click`,
+`type`, `key`, `wait-for` and `screenshot`. Every screen is driven on its **own launch** of the app, at the window size of the run (the `window` verb), so a script
+starts from the app as it opens. `launch` may be the first step and is implied when absent. `target` is the driver's selector (`automationId`, `name`, `type`, `text`,
+`contains`, `index`; every field given must match); `expectedState` is `{ "state", "text?" }` (`exists`, `visible`, `hidden`, `gone`, `enabled`, `disabled`,
+`textEquals`, `textContains`), checked after the action with the driver's `wait-for` (a `wait-for` step is that wait), and `timeoutMs` bounds it (the driver's 10 s
+otherwise). `type` and `key` carry the text or chord in `value` (`replace: true` replaces a text box's text); the script ends with exactly one `screenshot`, the frame
+that is compared (of the whole window, or of the element a `target` names). A value, text or chord may not start with `--` (the driver's command line refuses it).
+A step the driver reports as a failed check (no element matches, the element cannot be clicked, a wait timed out: driver exit 2) fails that screen with
+`step N (action) failed: <the driver's line>` and the other screens still run; a driver that does not answer, a window that will not resize or an app that
+will not start is an errored run (exit 4), with how the app ended.
+
+**How a screen is judged**: the mockup is served read-only on a loopback port and rendered by the Evidence browser at the same size; both
+frames are masked, cropped to what they share and compared (the `parity` pixel match, tolerance 0.1). A screen passes when its script reached the screenshot, the frames are the same size and
+the differing share is within its limit. This is the pixel half of the verdict; the structural half (an agent lists layout, element, band, colour and
+label mismatches from the side-by-side image) is the `step.evidence.desktop-review` block of the `workflow.evidence-desktop` recipe.
+
+**Run files** in `<run-dir>`: `summary.json` (`schema: "ui-evidence.desktop/1"`, `kind: "desktop"`, `runId`, `startedAt`, `finishedAt`, `appBuild`,
+`manifestSha256`, `outcome` passed|failed|refused|errored, `headline`, `screens[]` with `name`, `size`, `diffPercent`, `threshold`, `passed`, `problem`,
+`files` {`app`, `design`, `diff`, `sideBySide`}, `accepted`, `masked`, `notes` (how the app got its display), and `refusal`/`error` as `{code, message}`), `report.md`, and
+`<screen>-<WxH>/app.png`, `design.png`, `diff.png`, `side-by-side.png`. Ports: `IDesktopCommands` (process adapter: the fixture and the driver's command line),
+`IDesktopApps` (starts the app on a display and keeps it until disposed; its fake and a contract), `IScratchDirectories` (temp directories), `IStaticSite`
+(loopback HTTP listener), beside the existing `IBrowser`. Evidence has no project reference to the driver: it runs the `aw-ui-driver` command (a `cli` edge in deps.yaml).
+
+**Sindri's own setup**: `sindri-ui` calls `UseAwUiDriver(args)` (Aw.Sindri.Ui.Desktop `Composition.Compose`), so it is drivable when started with `AW_UI_DRIVER=1` or
+`--ui-driver`; a normal launch opens no port. `scripts/sindri-ui-app.sh` is the app command: it runs the `sindri-ui` named by `AW_SINDRI_UI`, else publishes it
+(`scripts/sindri-app.sh --publish-only`) and runs the newest build, against the fixture home in `AW_SINDRI_HOME`. `scripts/aw-ui-driver.sh` is the driver command: the
+`aw-ui-driver` named by `AW_UI_DRIVER_BIN`, else the CLI published into `$AW_STATE_DIR/bin/aw-ui-driver` when its sources changed. The page screens click the top bar's tab
+(`ListBoxItem` named for the page); the screens behind a row click the row by its name, so a screen whose element is not found fails with the driver's `AW-UIDRIVER-002`
+line, which names the step to fix in `docs/sindri/ui-evidence/screens.json` (all eleven mockups of the screens design).
+
 ## Run files
 
 Scorer and bugfix-state read these files after their own ports; the fields they read are marked †.
@@ -260,7 +340,7 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 | `scriptSha256` † | string | SHA-256 (hex) of the script file's bytes as read: proves which script a run executed |
 | `pr` | string \| null | the script's `planning.pr` |
 | `viewports` | (`desktop` \| `phone`)[] | the script's viewports (1280x800, 375x812) |
-| `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible`), `target`, `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
+| `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible` \| `scroll` \| `drag` \| `press`), `target` (for a `drag` `<target> → <to>`, for a `press` `<key> on <target>` or the key alone), `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
 | `visual` | object | `verdict` † (`unchecked` \| `unchanged` \| `looks-right` \| `looks-off` \| `sloppy`), `reasons` (string[]), `diffScore` (number \| null: the fraction of pixels differing from the baseline, 1 for a size change), `diffImage` (string \| null: `<run-dir>/visual-diff.png`) |
 | `lintFindings[]` | object[] | `viewport`, `rule` (`overlap` \| `misaligned-edge` \| `phone-overflow` \| `truncated-label` \| `clipped` \| `missing-hover-focus` \| `unresolved-placeholder` \| `non-token-color`), `selector`, `detail` |
 | `invocations[]` † | object[] | every model call actually made, in order (none when no judge is wired: "Judge" below): `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model` (string \| null), `elapsedMs` (number \| null), `ok` (false: the judge was called and failed or answered nothing), `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
@@ -527,7 +607,7 @@ exit 4 and write no `summary.json` / `parity.json`. In `run` that message is the
 run failure as AW-EVIDENCE-015, naming the origin when the page left during sign-in or route opening, and naming the
 frame and its step (`step N … broken`) when it left during a frame step. Sign-in checks again after loading the host and right before it
 types each credential, so a credential is never typed into a page off the vetted origin. A write-looking step is a click (or a `goto`) whose
-target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`). Selector
+target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`); for a `role:` or `text:` target the name or text is read, its `#<n>` dropped. Every `drag` counts as a write, and so does a `press` unless its key only navigates (`Shift+` an arrow key, `Home`, `End`, `PageUp`, `PageDown`, `Tab`, `Escape`); `scroll` never does. Selector
 repair is held to the same guard: where writes are refused, a candidate the judge picks whose test id, accessible name
 or text reads like a write is never clicked or filled (it counts as no candidate, so the step stays `broken`). `parity`
 applies the write guard on every host, local included, to its manifest `route` (vetted as the first `goto`) and every

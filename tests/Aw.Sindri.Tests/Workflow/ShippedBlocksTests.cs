@@ -38,7 +38,7 @@ public sealed class ShippedBlocksTests
                 "step.build.prepare", "step.build.red", "step.build.red-check", "step.build.scope-desk", "step.checks", "step.design.apply",
                 "step.design.check", "step.design.draft", "step.design.evidence", "step.design.intake", "step.design.lens-desk",
                 "step.design.revise", "step.desk.choose", "step.docs.check", "step.docs.scope", "step.docs.update", "step.evidence.api-plan",
-                "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run", "step.evidence.desk",
+                "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run", "step.evidence.desk", "step.evidence.desktop-review", "step.evidence.desktop-run",
                 "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run", "step.intake.ticket",
                 "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record", "step.judge.choose",
                 "step.lens.ask", "step.lens.log", "step.lens.round", "step.lens.run", "step.line.decide", "step.line.dispatch", "step.line.seed", "step.owner.decide", "step.phase.decide",
@@ -165,16 +165,16 @@ public sealed class ShippedBlocksTests
             Assert.Empty(decision.RequiredOn);
         }
 
-        Assert.True(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // why: the catalog test pins both ids
+        Assert.Null(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // owner q93, 2026-10-23: an agent may answer the desk   // why: the catalog test pins both ids
         Assert.Equal(BlockRuntime.Block, catalog.Find(BlockId.From("step.judge.choose"))!.Runtime);
 
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // the decision-tree Steps have no desk-runtime Step (step.judge.choose runs on the block runtime, step.desk.choose on the desk)
         // the scoping station's and the design lens loop's Steps listed here are the block runtimes of this build (BS-1, BS-4); step.judge.choose (DT-J) is one too
         Assert.Equal(
-            ["step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.design.check", "step.design.evidence", "step.design.intake", "step.docs.check", "step.docs.scope", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.judge.choose", "step.lens.log", "step.lens.round", "step.line.dispatch", "step.line.seed", "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.freeze", "step.plan.holdout-store", "step.plan.intake", "step.plan.questions", "step.plan.settle", "step.pr.ci-log", "step.pr.held-comment", "step.pr.intake", "step.pr.next-comment", "step.pr.ready-check", "step.pr.snapshot", "step.prove.before-after", "step.prove.collect", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout-log", "step.prove.intake", "step.prove.rerun-scripts", "step.recheck.log", "step.recheck.plan", "step.review.log", "step.review.record", "step.review.round", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.return"],
+            ["step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.design.check", "step.design.evidence", "step.design.intake", "step.docs.check", "step.docs.scope", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.judge.choose", "step.lens.log", "step.lens.round", "step.line.dispatch", "step.line.seed", "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.freeze", "step.plan.holdout-store", "step.plan.intake", "step.plan.questions", "step.plan.settle", "step.pr.ci-log", "step.pr.held-comment", "step.pr.intake", "step.pr.next-comment", "step.pr.ready-check", "step.pr.snapshot", "step.prove.before-after", "step.prove.collect", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout-log", "step.prove.intake", "step.prove.rerun-scripts", "step.recheck.log", "step.recheck.plan", "step.review.log", "step.review.record", "step.review.round", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.pack", "step.ship.return"],
             provider.GetServices<BlockStepRegistration>().Select(static r => r.Step.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(65, scope.ServiceProvider.GetServices<IBlockStep>().Count());
+        Assert.Equal(66, scope.ServiceProvider.GetServices<IBlockStep>().Count());
     }
 
     [Fact, Trait("Lane", "unit")]

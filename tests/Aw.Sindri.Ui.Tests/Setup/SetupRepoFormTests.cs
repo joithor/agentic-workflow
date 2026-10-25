@@ -113,7 +113,7 @@ public sealed class SetupRepoFormTests
     public async Task A_refusal_is_said_in_words_under_the_field_with_the_path_kept_and_focus_back_in_it(string scenario, string sentence)
     {
         var (_, form, step) = await Open();
-        _f.Server.AddRepoAnswer = RouteAnswer.Problem("setup-repos", scenario);
+        _f.Server.AddRepoAnswer = scenario == "refused-session" ? RouteAnswer.Refused() : RouteAnswer.Problem("setup-repos", scenario);
         var asked = new List<SetupFocus>();
         form.FocusRequested += (_, e) => asked.Add(e.Target);
         form.Path = "/work/demo";

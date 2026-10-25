@@ -100,7 +100,7 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task The_whole_map_button_does_the_same_in_one_step()
+    public async Task Going_back_to_the_whole_map_closes_the_inspector_and_the_answer_in_one_step()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
@@ -113,18 +113,37 @@ public sealed class ContextWholeZoomTests
         Assert.False(page.BackToWholeMap());
     }
 
+    private static IEnumerable<(string Text, bool IsLink)> Trail(ContextPageViewModel page) => page.Whole.Crumbs.Select(c => (c.Text, c.IsLink));
+
     [Fact]
-    public async Task The_card_asks_for_a_starting_point_until_one_is_chosen()
+    public async Task The_map_breadcrumb_is_a_plain_tilde_on_the_whole_map_and_a_link_back_from_an_answer()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
+        Assert.Equal([("~", false)], Trail(page));
 
-        Assert.Equal(Labels.ContextWholePick, page.Whole.CardText);
         page.AnchorText = Anchor;
         await page.Submit(Token);
-        Assert.False(string.Equals(Labels.ContextWholePick, page.Whole.CardText, StringComparison.Ordinal));
-        _ = page.BackToWholeMap();
-        Assert.Equal(Labels.ContextWholePick, page.Whole.CardText);
+        Assert.Equal([("~", true), (Labels.ContextCrumbAnswer, false)], Trail(page));
+
+        page.MapHome();
+
+        Assert.Equal([("~", false)], Trail(page));
+        Assert.False(page.IsZoomedIn);
+    }
+
+    [Fact]
+    public async Task The_tilde_closes_an_open_feature_and_the_last_step_names_it()
+    {
+        var page = Page(ByArea());
+        await page.Opened(Token);
+
+        await page.OpenWholeArea(ContextAnswers.OpenArea, Token);
+        Assert.Equal([("~", true), ("Tab groups", false)], Trail(page));
+        page.MapHome();
+
+        Assert.False(page.Whole.IsAreaOpen);
+        Assert.Equal([("~", false)], Trail(page));
     }
 
     [Fact]
@@ -161,7 +180,7 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task A_query_keeps_every_node_of_the_map_drawn_behind_the_answer_to_be_dimmed_and_Whole_map_restores_it()
+    public async Task A_query_draws_only_the_answer_and_its_links_and_Whole_map_restores_every_node()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
@@ -171,9 +190,17 @@ public sealed class ContextWholeZoomTests
         await page.Submit(Token);
 
         Assert.Equal(nodes, page.Whole.Geometry!.Nodes.Count);
-        Assert.Contains(page.Whole.Geometry.Nodes, n => !page.Whole.HitKeys.Contains(n.Key));
+        var hits = page.Whole.HitKeys;
+        var expected = page.Whole.Geometry.Edges
+            .Where(e => hits.Contains(e.From) || hits.Contains(e.To))
+            .SelectMany(e => new[] { e.From, e.To })
+            .Concat(hits)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(expected.Order(StringComparer.Ordinal), page.Whole.Shown!.Nodes.Select(n => n.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.All(page.Whole.HitKeys, key => Assert.Contains(page.Whole.Shown.Nodes, n => string.Equals(n.Key, key, StringComparison.Ordinal)));
         _ = page.BackToWholeMap();
         Assert.Empty(page.Whole.HitKeys);
+        Assert.Same(page.Whole.Geometry, page.Whole.Shown);
     }
 
     [Fact]
@@ -205,22 +232,22 @@ public sealed class ContextWholeZoomTests
     };
 
     [Fact]
-    public async Task A_click_on_a_dimmed_node_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
+    public async Task A_click_on_a_node_outside_the_answer_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
     {
         var asked = new List<string>();
         var page = Page(Recording(asked));
         await page.Opened(Token);
         page.AnchorText = Anchor;
         await page.Submit(Token);
-        var dimmed = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
+        var outside = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
         var moved = new List<WholeRect>();
         page.Whole.ZoomRequested += (_, e) => moved.Add(e.Value);
         asked.Clear();
 
-        await page.ChooseWholeNode(dimmed, Token);
+        await page.ChooseWholeNode(outside, Token);
 
-        Assert.Equal([dimmed], asked);
-        Assert.Equal(dimmed, page.AnchorText);
+        Assert.Equal([outside], asked);
+        Assert.Equal(outside, page.AnchorText);
         _ = Assert.Single(moved);
         Assert.True(page.IsZoomedIn);
     }

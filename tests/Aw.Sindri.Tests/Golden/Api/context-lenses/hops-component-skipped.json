@@ -18,8 +18,7 @@
         "records": 0,
         "decisions": 0,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -30,7 +29,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
@@ -41,8 +41,7 @@
         "neighbors": 0,
         "edges": 0
       },
-      "edges": [],
-      "truncated": false
+      "edges": []
     },
     "code": {
       "files": [
@@ -59,7 +58,8 @@
           "linkId": null,
           "label": "src/util/format.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {
@@ -72,8 +72,7 @@
         "files": 1,
         "symbols": 0,
         "featuresWithNoCode": 0
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [
@@ -174,7 +173,7 @@
   "skippedComponents": [
     {
       "unit": "code:src/util/format.ts",
-      "features": 6
+      "features": 51
     }
   ]
 }

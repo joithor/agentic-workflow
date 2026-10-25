@@ -7,6 +7,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 public static class AgentStepBrief
 {
     private const string RunFolder = "$AW_SINDRI_RUN_DIR";
+    private const string OutFolder = RunFolder + "/.sindri-out";   // why: the launcher makes and git-excludes this folder (StepFactWriter.Outputs), so outputs never count as worktree changes
     private const string FactPrefix = "fact:";
 
     /// <summary>Renders the brief; deterministic for the same run and descriptor.</summary>
@@ -37,7 +38,7 @@ public static class AgentStepBrief
             lines.Add("This Step also reports the choices its state lists; read them from the state's parameters.");
         }
 
-        lines.Add($"Put each output in its own file under the run folder {RunFolder}, named after the fact.");
+        lines.Add($"Put each output in its own file under the output folder {OutFolder}, named after the fact.");
         lines.Add("Report with: " + Command(run, descriptor, outcomes));
         lines.Add("Your Step ends only when this command succeeds; if it's refused, read the error and fix it.");
         return string.Join('\n', lines);
@@ -48,12 +49,12 @@ public static class AgentStepBrief
         var head = $"sindri workflow complete {run.Address.Value} --run {run.Run.Value} --outcome ";
         if (descriptor is not null && descriptor.OutcomesFrom is null && outcomes.Count == 1)
         {
-            var outputs = Needed(descriptor, outcomes[0]).Select(static f => $" --output {f.Value}={RunFolder}/{Name(f)}");
+            var outputs = Needed(descriptor, outcomes[0]).Select(static f => $" --output {f.Value}={OutFolder}/{Name(f)}");
             return head + outcomes[0].Value + string.Concat(outputs);
         }
 
         var choice = outcomes.Count == 0 ? "<outcome>" : "<" + string.Join('|', outcomes.Select(static o => o.Value)) + ">";
-        return head + choice + $" --output fact:<key>={RunFolder}/<key> (one --output per fact the outcome needs)";
+        return head + choice + $" --output fact:<key>={OutFolder}/<key> (one --output per fact the outcome needs)";
     }
 
     private static string Writes(BlockDescriptor descriptor, OutcomeName outcome)

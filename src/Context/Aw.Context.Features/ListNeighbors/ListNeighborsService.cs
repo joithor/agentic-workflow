@@ -12,11 +12,13 @@ internal sealed class ListNeighborsService(MapReader reader, IScrubberFactory sc
 {
     public async ValueTask<Result<NeighborsView>> Handle(ListNeighborsRequest request, CancellationToken cancellationToken)
     {
-        var depth = request.Depth ?? 1;
-        if (QueryRules.CheckDepth(depth) is { } depthError)
+        var asked = request.Depth ?? 1;
+        if (QueryRules.CheckDepth(asked) is { } depthError)
         {
             return depthError;
         }
+
+        var depth = Math.Min(asked, QueryRules.MaxDepth);
 
         var call = await reader.Open(request.Scope, scrubbers, cancellationToken).ConfigureAwait(false);
         var node = call.Bind(c => AnchorMatch.Resolve(c.Map.Graph, request.Key));
@@ -27,7 +29,8 @@ internal sealed class ListNeighborsService(MapReader reader, IScrubberFactory sc
 
         var (map, text) = call.Value;
         var hood = GraphWalk.Neighbors(map.Graph, node.Value.Key, depth);
-        return new NeighborsView(map.Snapshot.Label, hood.Center, depth, [.. hood.Nodes.Select(n => new NeighborFact(text.Fact(n.Node), n.Depth))],
+        var repoOf = NodeRepos.Index(map.Graph, map.Snapshot.Version.Repo.Value);
+        return new NeighborsView(map.Snapshot.Label, hood.Center, depth, [.. hood.Nodes.Select(n => new NeighborFact(text.Fact(n.Node) with { Repo = repoOf.GetValueOrDefault(n.Node.Key.Value) }, n.Depth))],
             [.. hood.Edges.Select(EdgeFact.Of)]);
     }
 }

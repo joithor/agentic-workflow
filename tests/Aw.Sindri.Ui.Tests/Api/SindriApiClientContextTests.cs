@@ -28,53 +28,59 @@ public sealed class SindriApiClientContextTests
     private static string Query(FakeSindriHandler handler) => Uri.UnescapeDataString(Assert.Single(handler.Requests).Query);
 
     [Fact]
-    public async Task Lenses_sends_each_anchor_as_a_repeated_query_parameter()
+    public async Task Lenses_sends_the_anchors_and_flags_as_the_body_of_a_QUERY()
     {
-        var (client, _, handler) = Reach();
+        var (client, server, handler) = Reach();
         var anchors = Anchors("set-two-anchors");
+        LensesQuery? served = null;
+        server.LensesAnswer = q => { served = q; return ContextAnswers.Lenses(q); };
 
-        var lenses = await client.Lenses(_api, new LensesQuery(anchors, Depth: 1, Draft: true, MapVersion: "v1"), Token);
+        _ = await client.Lenses(_api, new LensesQuery(anchors, Depth: 1, Draft: true, MapVersion: "v1"), Token);
 
-        _ = lenses;
         var seen = Assert.Single(handler.Requests);
-        Assert.Equal(("GET", "/sindri/context/lenses"), (seen.Method, seen.Path));
-        Assert.Equal($"?anchor={anchors[0]}&anchor={anchors[1]}&depth=1&draft=true&mapVersion=v1", Uri.UnescapeDataString(seen.Query));
+        Assert.Equal(("QUERY", "/sindri/context/lenses", string.Empty), (seen.Method, seen.Path, seen.Query));
+        Assert.Equal(anchors, served!.Anchors);
+        Assert.Equal((1, true, "v1"), (served.Depth, served.Draft, served.MapVersion));
     }
 
     [Fact]
-    public async Task Lenses_sends_only_what_it_was_asked()
+    public async Task Lenses_sends_five_hundred_anchors_in_one_read_with_nothing_in_the_url()
     {
-        var (client, _, handler) = Reach();
-        var anchor = Anchors("set-two-anchors")[0];
+        var (client, server, handler) = Reach();
+        var many = Enumerable.Range(0, 500).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:a.{i}")).ToList();
+        var count = 0;
+        server.LensesAnswer = q => { count = q.Anchors.Count; return ContextAnswers.Lenses(q); };
 
-        _ = await client.Lenses(_api, new LensesQuery([anchor], Depth: null, Draft: false, MapVersion: null), Token);
+        _ = await client.Lenses(_api, new LensesQuery(many, Depth: null, Draft: false, MapVersion: null), Token);
 
-        Assert.Equal($"?anchor={anchor}", Query(handler));
+        Assert.Equal(500, count);
+        Assert.Equal(string.Empty, Assert.Single(handler.Requests).Query);
     }
 
-    // Keys hold ':', '/' and '#': they travel as escaped query values and never become a path segment.
+    // Keys hold ':', '/' and '#': a node's travels as an escaped query value, a lens' anchors in the body; neither becomes a path segment.
     [Fact]
-    public async Task Keys_travel_in_query_strings_never_the_path()
+    public async Task Keys_travel_in_the_query_or_the_body_never_the_path()
     {
-        var (client, _, handler) = Reach();
+        var (client, server, handler) = Reach();
         var key = (string)GoldenFiles.Node("context-node", "tab-manager")["node"]!["key"]! + "/x#y";
+        IReadOnlyList<string>? sent = null;
+        server.LensesAnswer = q => { sent = q.Anchors; return ContextAnswers.Lenses(q); };
 
         _ = await client.Node(_api, key, Token);
         _ = await client.Lenses(_api, new LensesQuery([key], Depth: null, Draft: false, MapVersion: null), Token);
 
         Assert.Equal(["/sindri/context/node", "/sindri/context/lenses"], handler.Requests.Select(r => r.Path), StringComparer.Ordinal);
-        Assert.All(handler.Requests, r =>
-        {
-            Assert.Contains(Uri.EscapeDataString(key), r.Query, StringComparison.Ordinal);
-            Assert.DoesNotContain('#', r.Query);
-        });
+        Assert.Contains(Uri.EscapeDataString(key), handler.Requests[0].Query, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, handler.Requests[1].Query);
+        Assert.Equal([key], sent);
     }
 
     [Theory]
     [InlineData("unknown-anchor-003", "SND-CONTEXT-003", ErrorKind.NotFound, "suggestedAnchors")]
     [InlineData("ambiguous-037", "SND-CONTEXT-037", ErrorKind.Conflict, "candidates")]
     [InlineData("no-draft-044", "SND-CONTEXT-044", null, null)]
-    [InlineData("set-21-anchors-006", "SND-CONTEXT-006", null, null)]
+    [InlineData("bad-depth-006", "SND-CONTEXT-006", null, null)]
+    [InlineData("query-no-anchor-006", "SND-CONTEXT-006", null, null)]
     [InlineData("map-version-not-retained-120", "SND-CONTEXT-120", null, null)]
     public async Task Lenses_maps_each_refusal_to_its_code_detail_and_extension(string scenario, string code, ErrorKind? kind, string? extension)
     {
@@ -111,15 +117,30 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
-    public async Task Code_sends_each_anchor_the_draft_flag_and_the_map_version()
+    public async Task Code_sends_the_anchors_the_draft_flag_and_the_map_version_as_a_QUERY_body()
     {
-        var (client, _, handler) = Reach();
+        var (client, server, handler) = Reach();
         var key = (string)GoldenFiles.Node("context-code", "edges-and-lexical")["anchors"]![0]!["key"]!;
 
         _ = await client.Code(_api, new CodeQuery([key, "feature:other"], Draft: true, MapVersion: "v2"), Token);
 
-        Assert.Equal("/sindri/context/code", Assert.Single(handler.Requests).Path);
-        Assert.Equal($"?anchor={key}&anchor=feature:other&draft=true&mapVersion=v2", Query(handler));
+        var seen = Assert.Single(handler.Requests);
+        Assert.Equal(("QUERY", "/sindri/context/code", string.Empty), (seen.Method, seen.Path, seen.Query));
+        var served = Assert.Single(server.CodeQueries);
+        Assert.Equal([key, "feature:other"], served.Anchors);
+        Assert.Equal((true, "v2"), (served.Draft, served.MapVersion));
+    }
+
+    [Fact]
+    public async Task Code_maps_a_call_with_no_anchor_to_006_and_its_detail()
+    {
+        var (client, server, _) = Reach();
+        var golden = RouteAnswer.Problem("context-code", "query-no-anchor-006");
+        server.CodeAnswer = golden;
+
+        var code = await client.Code(_api, new CodeQuery([], Draft: false, MapVersion: null), Token);
+
+        Assert.Equal(("SND-CONTEXT-006", (string)JsonNode.Parse(golden.Body)!["detail"]!), (code.Error.Code, code.Error.Message));
     }
 
     [Fact]
@@ -163,14 +184,14 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
-    public async Task ReviewDecision_a_session_refusal_reads_as_SND_AUTH_002()
+    public async Task ReviewDecision_a_session_decision_reads_like_any_other()
     {
         var (client, server, _) = Reach();
-        server.ReviewDecided = RouteAnswer.Problem("context-map-review", "session-auth-002");
+        server.ReviewDecided = RouteAnswer.Api("context-map-review", "session-accept");
 
         var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
 
-        Assert.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (decision.Error.Code, decision.Error.Kind));
+        Assert.True(decision.IsSuccess, decision.IsError ? decision.Error.Message : null);
     }
 
     [Fact]

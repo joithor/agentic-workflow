@@ -162,16 +162,24 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             return Answer(server.ReviewDecided);
         }
 
+        if (request.Method == HttpMethod.Query
+            && (string.Equals(uri.AbsolutePath, "/sindri/context/lenses", StringComparison.Ordinal) || string.Equals(uri.AbsolutePath, "/sindri/context/code", StringComparison.Ordinal)))
+        {
+            return await ContextQueryBody(request, uri, cancellationToken).ConfigureAwait(false);
+        }
+
+        return await ContextRead(uri, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The context reads whose inputs are query values.
+    private async Task<HttpResponseMessage> ContextRead(Uri uri, CancellationToken cancellationToken)
+    {
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         var limit = int.TryParse(query["limit"], NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : (int?)null;
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
-            case "lenses":
-                var lenses = Lenses(query);
-                _ = await server.Lenses(uri, lenses, cancellationToken);
-                return Answer(server.LensesAnswer(lenses));
             case "filemap":
-                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true");
+                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true", Cursor: query["cursor"], Limit: limit);
                 _ = await server.FileMap(uri, files, cancellationToken);
                 return Answer(server.FileMapFor(files));
             case "map/review":
@@ -185,14 +193,25 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
         }
     }
 
+    // QUERY /sindri/context/lenses and /code: the anchors are the JSON body, as the real routes read them.
+    private async Task<HttpResponseMessage> ContextQueryBody(HttpRequestMessage request, Uri uri, CancellationToken cancellationToken)
+    {
+        if (uri.AbsolutePath.EndsWith("/lenses", StringComparison.Ordinal))
+        {
+            var lenses = await Body<LensesQuery>(request, cancellationToken).ConfigureAwait(false);
+            _ = await server.Lenses(uri, lenses, cancellationToken).ConfigureAwait(false);
+            return Answer(server.LensesAnswer(lenses));
+        }
+
+        var code = await Body<CodeQuery>(request, cancellationToken).ConfigureAwait(false);
+        _ = await server.Code(uri, code, cancellationToken).ConfigureAwait(false);
+        return Answer(server.CodeFor(code));
+    }
+
     private async Task<HttpResponseMessage> ContextRecord(Uri uri, System.Collections.Specialized.NameValueCollection query, CancellationToken cancellationToken)
     {
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
-            case "code":
-                var code = Code(query);
-                _ = await server.Code(uri, code, cancellationToken);
-                return Answer(server.CodeFor(code));
             case "node":
                 _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
                 return Answer(server.NodeAnswer);
@@ -217,7 +236,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
             case "map/whole":
-                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true");
+                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true", query["repo"]);
                 _ = await server.WholeMap(uri, whole, cancellationToken);
                 return Answer(server.WholeMapAnswer(whole));
             case "map/publish":
@@ -227,12 +246,6 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 return Text(HttpStatusCode.NotFound, "{}", "application/json");
         }
     }
-
-    private static CodeQuery Code(System.Collections.Specialized.NameValueCollection query) =>
-        new([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
-
-    private static LensesQuery Lenses(System.Collections.Specialized.NameValueCollection query) =>
-        new([.. query.GetValues("anchor") ?? []], Depth: int.TryParse(query["depth"], NumberStyles.None, CultureInfo.InvariantCulture, out var depth) ? depth : null, Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
 
     // The workflow reads (API §3.8): the call goes through the model (so a down server or a refusal answers as it does there),
     // then the route's golden is served as the model has it. An address is only ever a query value, so every segment is an id, a key or a recipe.

@@ -66,7 +66,7 @@ public sealed class ContextScopesTests
     {
         var live = SliceHarness.Profile("5s");
         _h.Profiles.Live = live with { Profile = live.Profile with { Context = JsonDocument.Parse("""{"repos":["nope"]}""").RootElement.Clone() } };
-        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, _h.Challenges, new Features.ApproveProfile.ProfileChecks(FakeContextEngine.Instance, new Testing.FixedAgentCatalog()));
+        var service = new Features.ApproveProfile.ApproveProfileService(_h.Profiles, _h.Profiles, _h.Held, _h.Store, _h.Events, new Features.ApproveProfile.ProfileChecks(FakeContextEngine.Instance, new Testing.FixedAgentCatalog()));
 
         var approved = await service.Handle(new Features.ApproveProfile.ApproveProfileRequest(Hash: null, Answer: null), TestContext.Current.CancellationToken);
 

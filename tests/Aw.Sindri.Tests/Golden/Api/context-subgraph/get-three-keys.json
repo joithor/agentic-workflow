@@ -18,8 +18,7 @@
         "records": 0,
         "decisions": 0,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -31,6 +30,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         },
         {
@@ -41,6 +41,7 @@
           "confidence": 1,
           "confirmed": true,
           "trust": "trusted",
+          "repo": "aw-split-panes",
           "depth": 0
         }
       ],
@@ -62,8 +63,7 @@
           "confirmed": true,
           "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [],
@@ -76,8 +76,7 @@
         "files": 0,
         "symbols": 0,
         "featuresWithNoCode": 1
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [],

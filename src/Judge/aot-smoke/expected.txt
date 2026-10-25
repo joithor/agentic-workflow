@@ -27,5 +27,12 @@ exit 64
 {"status":"ok","failures24h":0}
 ## health after
 {"status":"ok","failures24h":0}
+## prompt-sort (offline: heuristics, every scaffold off, nothing printed)
+## not yet built (cutover spec 5.2)
+judge: label is not in this build yet
+exit 1
+judge: prompt-sort why is not in this build yet
+exit 1
 ## state files
 ./judge/decisions.sqlite
+./judge/sessions/s1.sort.json

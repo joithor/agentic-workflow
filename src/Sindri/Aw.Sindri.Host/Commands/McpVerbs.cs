@@ -9,8 +9,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>
 /// 'sindri mcp register [--repo NAME] [--providers claude,codex,cursor|all] [--apply] [--json]' (context spec §3, API spec
 /// §8): prints each provider's per-repo registration of /sindri/mcp (Claude Code's local scope, the checkout's
-/// .cursor/mcp.json and .codex/config.toml; Claude Code alone without --providers); --apply writes them (repo-local, for whoever runs the
-/// CLI). Local: it needs no running process.
+/// .cursor/mcp.json and .codex/config.toml; Claude Code alone without --providers); --apply writes them. Local: it needs no running process.
 /// </summary>
 /// <param name="services">The CLI's scoped services.</param>
 /// <param name="output">Where answers go.</param>

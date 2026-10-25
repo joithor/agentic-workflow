@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <summary>
 /// The work of a build job (context spec §8.7; API P6): builds the draft through the engine under the starting caller, which is the same work as the
 /// 'context-rebuild' service, passes the engine's step lines on as the job's progress and records 'context.map.built' (slot: when the job began).
-/// The engine takes the box-wide heavy-job lock (SND-CONTEXT-040 when it stays busy).
+/// The engine runs one build at a time and takes no heavy-job slot.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine.</param>
