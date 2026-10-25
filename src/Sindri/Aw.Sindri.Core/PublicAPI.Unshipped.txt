@@ -18588,3 +18588,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.ShippedApprovalPlans(Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeRegistration? registration = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Setup.IBuildStamps
+Aw.Sindri.Core.Setup.IBuildStamps.Installed() -> string?
+Aw.Sindri.Core.Setup.IBuildStamps.Running() -> string?

@@ -3,15 +3,21 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Features.RunDoctor;
 
 internal sealed class RunDoctorService(
-    ILease lease, IProcessProbe probe, LedgerFacts ledger, ProfileFacts profile, IControlPlaneProbe api, ITemporalServer temporal, TimeProvider clock)
+    ILease lease, IProcessProbe probe, LedgerFacts ledger, ProfileFacts profile, IControlPlaneProbe api, ITemporalServer temporal, TimeProvider clock, IBuildStamps? builds = null)
     : IService<RunDoctorRequest, RunDoctorResponse>
 {
     public async ValueTask<Result<RunDoctorResponse>> Handle(RunDoctorRequest request, CancellationToken cancellationToken)
     {
+        if (builds is not null)
+        {
+            throw new NotSupportedException("the stale build check (#1032) is not built yet");   // red first: doctor warns when the stamps differ
+        }
+
         var now = clock.GetUtcNow();
         var read = await lease.Read(cancellationToken).ConfigureAwait(false);
         var row = read.IsSuccess ? read.Value : null;
