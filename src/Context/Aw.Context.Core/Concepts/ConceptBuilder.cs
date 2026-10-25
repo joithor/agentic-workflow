@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.WholeMap;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Concepts;

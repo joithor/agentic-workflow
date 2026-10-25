@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>Concept ids: lower-case ASCII words joined by '-' or '.', at most 64 characters, unique within one derivation (the shape <see cref="ConceptId"/> accepts).</summary>
+/// <summary>Concept ids: lower-case ASCII words joined by '-' or '.', at most 64 characters, unique within one derivation (the shape <see cref="Engine.ConceptId"/> accepts).</summary>
 internal static class ConceptSlug
 {
     private const int MaxLength = 64;
