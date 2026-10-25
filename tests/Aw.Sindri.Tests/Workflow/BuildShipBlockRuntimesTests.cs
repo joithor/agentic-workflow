@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.Prove;
@@ -107,7 +108,8 @@ public sealed class BuildShipBlockRuntimesTests
         var outputs = done.Outputs.ToDictionary(static o => o.Key, static o => EngineFixture.Fact(o.Value.ValueKind == JsonValueKind.String ? o.Value.GetString()! : o.Value.GetRawText()));   // why: a string element always holds its text
         var step = recipe.States[entered.State].Step!.Use;   // why: the caller entered a Step state
         var trigger = BlockStepTriggers.Completed(entered, recipe, context, new BlockCompletion(step, entered.Frame.Run!.Token, done.Outcome, outputs));   // why: a block run is open
-        var after = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(entered, recipe, trigger, GateAnswers.None, context))).Changes[0].After;
+        var accepted = trigger as StepCompleted ?? throw new InvalidOperationException("the report was refused: " + (trigger as StepFailed)?.Reason);   // a refused report becomes step.failed, which the engine now retries in the same state: the test would pass or fail by the retry, not by the report
+        var after = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(entered, recipe, accepted, GateAnswers.None, context))).Changes[0].After;
         return after.Park is { } park ? $"{after.State} ({park})" : after.State;
     }
 }
