@@ -79,18 +79,18 @@ drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 || setup_fail
 drv click --type ListBoxItem --name List >"$OUT/list.log" 2>&1 || setup_fail "no List view toggle on the Workflows page (see $OUT/list.log)"
 open_name=""
 for _ in $(seq 1 60); do
-  drv tree --depth 20 >"$OUT/workflows-tree.json" 2>/dev/null
+  drv search --type Button --limit 500 >"$OUT/workflows-tree.json" 2>/dev/null
   open_name="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(startswith("Open "))] | first // empty' "$OUT/workflows-tree.json")"
   [ -n "$open_name" ] && break
   sleep 1
 done
-[ -n "$open_name" ] || setup_fail "the Workflows page shows no run to open (tree in $OUT/workflows-tree.json)"
+[ -n "$open_name" ] || { drv tree --depth 20 >"$OUT/workflows-tree-full.json" 2>/dev/null; setup_fail "the Workflows page shows no run to open (buttons in $OUT/workflows-tree.json, tree in $OUT/workflows-tree-full.json)"; }
 drv click --type Button --name "$open_name" >/dev/null 2>&1 || setup_fail "the click on \"$open_name\" was not accepted"
 
 # 4. Select the first step, so the inspector shows; its actions include See its context (the run has an item).
 step=""
 for _ in $(seq 1 40); do
-  drv tree --depth 20 >"$OUT/run-tree.json" 2>/dev/null
+  drv search --type Button --limit 500 >"$OUT/run-tree.json" 2>/dev/null
   step="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(contains(" stage, step "))] | first // empty' "$OUT/run-tree.json")"
   [ -n "$step" ] && break
   sleep 1
@@ -105,7 +105,7 @@ drv screenshot --out "$OUT/inspector.png" >/dev/null 2>&1
 drv click --type Button --name "See its context" >/dev/null 2>&1 || setup_fail "the See its context click was not accepted by the driver"
 shown=""
 for _ in $(seq 1 40); do
-  drv tree --depth 20 >"$OUT/context-tree.json" 2>/dev/null
+  drv search --limit 500 >"$OUT/context-tree.json" 2>/dev/null
   if jq -e --arg item "$item" '[.. | objects | select(((.name // "") | contains($item)) or ((.text // "") | contains($item)))] | length > 0' "$OUT/context-tree.json" >/dev/null 2>&1; then
     shown=1; break
   fi
