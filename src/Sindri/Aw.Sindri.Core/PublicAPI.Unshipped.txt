@@ -12431,8 +12431,6 @@ static Aw.Sindri.Core.Sessions.SessionRows.Worktree(string? cwd, string? repoPat
 static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>! previous, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.UnavailableReason?
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
-static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
-static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
 Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource
 Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Id.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
 Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Prepare(Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin!>!>!
