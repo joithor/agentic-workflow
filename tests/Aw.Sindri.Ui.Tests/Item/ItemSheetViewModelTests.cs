@@ -147,6 +147,7 @@ public sealed class ItemSheetViewModelTests
         var close = sheet.Actions[0];
 
         await close.Press(Token);
+        await close.Confirm(Token);
         _server.Items[A.NewItem] = RouteAnswer.SpecShaped("items-id", "after-close");
         await sheet.Refresh(_api, Token);
 
