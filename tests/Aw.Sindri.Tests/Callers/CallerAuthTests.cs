@@ -112,6 +112,14 @@ public sealed class CallerAuthTests(CallerHost host) : IClassFixture<CallerHost>
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_launch_secret_makes_the_caller_a_session_even_with_this_starts_human_token()
+    {
+        var answer = await host.Http.Ask(Get("/test/caller", [.. Human(host.Token.Value), (SindriHeaders.LaunchSecret, "proof")]));
+
+        Assert.Equal((HttpStatusCode.OK, "Session|"), (answer.Status, answer.Body));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_malformed_launch_header_is_400_SND_API_007()
     {
         var answer = await host.Http.Ask(Get("/sindri/status", (SindriHeaders.Launch, "nope")));

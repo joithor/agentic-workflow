@@ -287,7 +287,7 @@ composed by the host from the class and the client label, never taken from a hea
 | `X-Sindri-Terminal` | `1` | Informational (sent with `human` when stdin is a terminal); it decides no authority |
 | `X-Sindri-Client` | `cli`, `ui`, `prover`, `mcp` | Names the actor: `human:cli`, `human:ui`, `human:prover`, else `human:http`; `session:cli`, `session:mcp`, else `session:http`. An unknown label counts as none (logged) |
 | `X-Sindri-Repo` | a repo name | Scopes the caller (enforced from P3); a malformed name is 400 `SND-API-007` |
-| `X-Sindri-Launch` | a launch id (`LCH-…`) | The launch Sindri started this session under (the CLI sends its `AW_SINDRI_LAUNCH`); `CallerContext.Launch` is set for a session caller only, so the engine can tell Sindri's own step children from an owner-started session. A malformed id is 400 `SND-API-007`; one with no open launch is 403 `SND-AUTH-003` |
+| `X-Sindri-Launch` | a launch id (`LCH-…`) | The launch Sindri started this session under (the CLI sends its `AW_SINDRI_LAUNCH`); `CallerContext.Launch` is set for a session caller only, so the engine can tell Sindri's own step children from an owner-started session; it makes the call a session even under `human` (#1002). A malformed id is 400 `SND-API-007`; one with no open launch is 403 `SND-AUTH-003` |
 | `X-Sindri-Token` | the per-start token | Required with `human`, on queries too: missing or stale is 403 `SND-AUTH-001` ("restart the app or rerun the command"), never a silent downgrade to `session` |
 
 - **The human token.** `sindri serve` mints `auth/human.token` under the home (32 random bytes, base64url; the file
@@ -454,18 +454,21 @@ or a command with no row of its own run as `protected` and, with no row, as term
 
 **Authorization table (API spec §4.2):**
 
-| Class | human + terminal | human (app) | session | service |
-|---|---|---|---|---|
-| `request`, `pause` | yes | yes | yes | yes |
-| `job` | yes | yes | yes | yes |
-| `decision` | yes | yes | yes | no |
-| `desk` | yes | yes | yes | only a service the row grants (`service:host` → `StopProcess`) |
-| `protected` | yes | yes | yes | no |
-| `issue` | yes | yes | yes | no |
-| `step-report` | no (the launched session only, once P10's launch proof exists) | no | no | no |
-| `local` | never through the API | | | |
+| Class | human + terminal | human (app) | session (owner-started) | session Sindri launched | service |
+|---|---|---|---|---|---|
+| `request` | yes | yes | yes | yes | yes |
+| `pause` | yes | yes | yes | no | yes |
+| `job` | yes | yes | yes | yes | yes |
+| `decision` | yes | yes | yes | no | no |
+| `desk` | yes | yes | yes | no | only a service the row grants (`service:host` → `StopProcess`) |
+| `protected` | yes | yes | yes | no | no |
+| `issue` | yes | yes | yes | yes (its nonce, heartbeat and exit) | no |
+| `step-report` | no | no | yes (the service checks the launch secret) | yes | no |
+| `local` | never through the API | | | | |
 
-Owner decision q93: an agent session may run every class a human may; there is no typed challenge and no per-row terminal or app gate. `NeedsTerminal` survives on the line holdout read alone (hidden scenarios stay from the agent), and `AppConfirm` and the `confirm` value stay in the catalog as data for the app, with no effect on authorization. `human:prover` needs no marker.
+A session Sindri launched is one whose call carries `X-Sindri-Launch` (an open launch) or `X-Sindri-Launch-Secret` (#1002, owner decision q100). Either header makes the call a session before the token check, whatever `X-Sindri-Caller` and `X-Sindri-Token` say, and a launched CLI never reads the human token. The launched agent runs as the same OS user, so nothing at the OS level stops it reading `auth/human.token`. The guard is that the server never honours the token alongside a launch. The command list names both kinds of session `session`.
+
+Owner decision q93: an owner-started agent session may run every class a human may; there is no typed challenge and no per-row terminal or app gate. `NeedsTerminal` survives on the line holdout read alone (hidden scenarios stay from the agent), and `AppConfirm` and the `confirm` value stay in the catalog as data for the app, with no effect on authorization. `human:prover` needs no marker.
 
 ## Command catalog
 

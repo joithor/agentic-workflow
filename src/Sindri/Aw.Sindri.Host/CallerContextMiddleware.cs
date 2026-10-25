@@ -9,7 +9,8 @@ namespace Aw.Sindri.Host;
 /// <summary>
 /// Turns every request's caller headers into the call's <see cref="CallerContext"/> (API spec §6), queries included:
 /// an unknown X-Sindri-Caller or a malformed X-Sindri-Repo or X-Sindri-Launch is 400 SND-API-007; a human without the per-start token, or
-/// with a stale one, is 403 SND-AUTH-001, never downgraded to a session; and the prover label from a human is honoured
+/// with a stale one, is 403 SND-AUTH-001, never downgraded to a session (a request carrying X-Sindri-Launch or
+/// X-Sindri-Launch-Secret is a session before that check, whatever token it also carries: #1002); and the prover label from a human is honoured
 /// only when this process's home is a temp or proof home, else 403 SND-AUTH-001. These refusals come before the command
 /// chain, so they are logged, not audited (plan G13). The actor is composed from the class and the label, never taken
 /// from a header.
@@ -36,7 +37,7 @@ internal static partial class CallerContextMiddleware
             return;
         }
 
-        var caller = parsed.Value;
+        var caller = AsLaunched(parsed.Value, headers.ContainsKey(SindriHeaders.LaunchSecret));
         if (caller.UnknownClient is { } label)
         {
             LogUnknownClient(log, method, path, label);
@@ -64,6 +65,10 @@ internal static partial class CallerContextMiddleware
             await next(context).ConfigureAwait(false);
         }
     }
+
+    /// <summary>A request carrying a launch secret comes from a session Sindri launched: it is a session whatever X-Sindri-Caller and X-Sindri-Token say (#1002).</summary>
+    internal static ParsedCaller AsLaunched(ParsedCaller caller, bool carriesLaunchSecret) =>
+        carriesLaunchSecret && caller.Class == CallerClass.Human ? caller with { Class = CallerClass.Session, Terminal = false } : caller;
 
     /// <summary>Why a human caller is refused (the SND-AUTH-001 detail), or null when it may go on.</summary>
     private static string? Refusal(IServiceProvider services, ParsedCaller caller, string? presented)
