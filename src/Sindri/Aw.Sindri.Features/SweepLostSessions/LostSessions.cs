@@ -3,12 +3,11 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Features.SweepLostSessions;
 
 /// <summary>
-/// Ends the sessions with no heartbeat for <see cref="LaunchRules.LostAfter"/> as 'session.ended' with reason lost (API spec §8.1), and the ones whose turn ended with no report for <see cref="LaunchRules.IdleAfter"/> as idle. A host that runs its
+/// Ends the sessions with no heartbeat for <see cref="LaunchRules.LostAfter"/> as 'session.ended' with reason lost (API spec §8.1). A host that runs its
 /// sessions without 'session wrap' (T3) is asked first: each live session it reports counts as a heartbeat, and one it reports gone ends as an exit.
 /// </summary>
 /// <param name="liveness">The heartbeats.</param>
@@ -18,8 +17,7 @@ namespace Aw.Sindri.Features.SweepLostSessions;
 /// <param name="views">The 'launches' view: which launches have a live session.</param>
 /// <param name="status">How fresh the views are.</param>
 /// <param name="hosted">The sessions a host keeps without a wrap.</param>
-/// <param name="instances">Reads the instance a Step launch belongs to, to see whether a person took it over.</param>
-internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents session, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IProjectorStatus status, IHostedSessions hosted, IInstanceReader instances) : ILostSessions
+internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents session, TimeProvider clock, ILaunchFiles files, ILaunchViews views, IProjectorStatus status, IHostedSessions hosted) : ILostSessions
 {
     public async ValueTask<int> Sweep(CancellationToken cancellationToken)
     {
@@ -34,49 +32,7 @@ internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents 
             }
         }
 
-        return ended + await SweepIdle(cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Ends as idle the sessions whose Stop hook says the turn ended <see cref="LaunchRules.IdleAfter"/> ago: the agent has nothing more to do and never reported, and its wrap still
-    /// beats, so the silence sweep never sees it. A prompt deletes the hook's file, so a person typing to the session starts the clock over.
-    /// </summary>
-    private async ValueTask<int> SweepIdle(CancellationToken cancellationToken)
-    {
-        var ended = 0;
-        var now = clock.GetUtcNow();
-        foreach (var launch in liveness.Active())
-        {
-            if (files.TurnEndedAt(launch) is { } turn && now - turn >= LaunchRules.IdleAfter && !await TakenOver(launch, cancellationToken).ConfigureAwait(false)
-                && (await session.End(launch, SessionEndReason.Idle, exitCode: null, cancellationToken).ConfigureAwait(false)).IsSuccess)
-            {
-                hosted.Forget(launch);
-                ended++;
-            }
-        }
-
         return ended;
-    }
-
-    /// <summary>
-    /// Whether a person holds the Step's instance (a takeover pauses its timer, and a person reading the session is not idle), or the instance can't be read right now: either way the session is
-    /// left alone this sweep. A launch with no instance (attended) has no turn hooks, so there is nothing to ask.
-    /// </summary>
-    private async ValueTask<bool> TakenOver(LaunchId launch, CancellationToken cancellationToken)
-    {
-        var row = await views.Get(launch, cancellationToken).ConfigureAwait(false);
-        if (row.IsError)
-        {
-            return true;
-        }
-
-        if (row.Value?.Step.Instance is not { } address)
-        {
-            return false;
-        }
-
-        var instance = await instances.Get(address, cancellationToken).ConfigureAwait(false);
-        return instance.IsError || instance.Value.TakenOverBy is not null;
     }
 
     /// <summary>Heartbeats for the live hosted sessions Sindri tracks; an exit for the ones whose host says they are gone (not counted as lost).</summary>

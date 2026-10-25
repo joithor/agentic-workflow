@@ -10943,6 +10943,8 @@ Aw.Sindri.Core.Launches.ILaunchFiles
 Aw.Sindri.Core.Launches.ILaunchFiles.Forget(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
 Aw.Sindri.Core.Launches.ILaunchFiles.SweepStale(System.DateTimeOffset now, System.TimeSpan olderThan, System.Func<Aw.Sindri.Core.Workflow.Engine.LaunchId, bool>! live) -> int
 Aw.Sindri.Core.Launches.ILaunchFiles.TurnEndedAt(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> System.DateTimeOffset?
+Aw.Sindri.Core.Launches.IIdleSessions
+Aw.Sindri.Core.Launches.IIdleSessions.Sweep(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 Aw.Sindri.Core.Launches.ILaunchFiles.Verify(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Launches.LaunchSecret secret) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Sindri.Core.Launches.ILostSessions
 Aw.Sindri.Core.Launches.ILostSessions.Sweep(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
