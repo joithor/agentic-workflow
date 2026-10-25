@@ -1,9 +1,7 @@
-using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Map;
-using Aw.Context.Tests.ReviewMap;
 
 namespace Aw.Context.Tests.Map;
 
@@ -38,8 +36,8 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
         var demoted = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, Demoting(Demoted), MapWorld.None)).Value;
 
-        Assert.Equal([Demoted, Product], plain.Bands.Code.Files.Select(f => f.Path));
-        Assert.Equal([Product, Demoted], demoted.Bands.Code.Files.Select(f => f.Path));
+        Assert.Equal<IEnumerable<string>>([Demoted, Product], plain.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
+        Assert.Equal<IEnumerable<string>>([Product, Demoted], demoted.Bands.Code.Files.Select(f => f.Path), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -50,8 +48,8 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = (await _world.Engine.Query(new ContextQuery(Text: "Kept"), MapWorld.Human, MapWorld.None)).Value;
         var demoted = (await _world.Engine.Query(new ContextQuery(Text: "Kept"), Demoting(Demoted), MapWorld.None)).Value;
 
-        Assert.Equal(["code:" + Demoted, "code:" + Product], CodeNodes(plain));
-        Assert.Equal(["code:" + Product, "code:" + Demoted], CodeNodes(demoted));
+        Assert.Equal<IEnumerable<string?>>(["code:" + Demoted, "code:" + Product], CodeNodes(plain), StringComparer.Ordinal);
+        Assert.Equal<IEnumerable<string?>>(["code:" + Product, "code:" + Demoted], CodeNodes(demoted), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -62,10 +60,10 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = (await _world.Engine.Query(new ContextQuery(Text: "Kept Zeta handler"), MapWorld.Human, MapWorld.None)).Value;
         var demoted = (await _world.Engine.Query(new ContextQuery(Text: "Kept Zeta handler"), Demoting(Demoted), MapWorld.None)).Value;
 
-        Assert.Contains("code:" + Demoted, plain.Anchors);
-        Assert.DoesNotContain("code:" + Demoted, demoted.Anchors);
-        Assert.DoesNotContain("code:" + Demoted, demoted.SuggestedAnchors);
-        Assert.Contains("feature:kept", demoted.Anchors);
+        Assert.Contains("code:" + Demoted, plain.Anchors, StringComparer.Ordinal);
+        Assert.DoesNotContain("code:" + Demoted, demoted.Anchors, StringComparer.Ordinal);
+        Assert.DoesNotContain("code:" + Demoted, demoted.SuggestedAnchors, StringComparer.Ordinal);
+        Assert.Contains("feature:kept", demoted.Anchors, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -78,7 +76,7 @@ public sealed class DemotedPathReadTests : IDisposable
 
         Assert.False(shown.IsError);
         Assert.False(queried.IsError);
-        Assert.Contains("code:" + Demoted, queried.Value.Anchors);
+        Assert.Contains("code:" + Demoted, queried.Value.Anchors, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
