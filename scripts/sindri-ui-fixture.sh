@@ -329,6 +329,33 @@ workflows() {
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
 }
 
+# workflow.line is not in the fixture's registry: its effects go into the live profile (as sindri-sandbox-e2e.sh writes them), the profile
+# is approved again, and the owner's approve-all approves every shipped recipe, children first. Idempotent.
+line_recipes_approved() {
+  local profile out i
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "line-run: no live profile at $profile: run 'up' first"
+  if "$PROVE" human recipe list 2>&1 | grep -Eq '^workflow\.line@[0-9a-f]+ approved'; then return 0; fi
+  if ! grep -q 'effect.line.start-phase' "$profile"; then
+    grep -q '^workflow:' "$profile" && die "line-run: the live profile already has a workflow: section; add the line's effects to it"
+    {
+      echo "workflow:"
+      echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
+      echo "  forge: { adapter: file, hosts: [forge.test] }"
+      echo "  build:"
+      echo "    commands:"
+      echo "      - 'true'"
+    } >> "$profile" || return
+  fi
+  if needs_approval; then approve >&2 || return; fi
+  out="$("$PROVE" human recipe approve-all 2>&1)" || die "line-run: recipe approve-all was refused: $out"
+  for i in $(seq 1 120); do
+    if "$PROVE" human recipe list 2>&1 | grep -Eq '^workflow\.line@[0-9a-f]+ approved'; then return 0; fi
+    sleep 1
+  done
+  die "line-run: workflow.line is not approved 120 s after approve-all: $("$PROVE" human recipe list 2>&1 | tail -5 | tr '\n' ' ')"
+}
+
 # A line run on a new item of the context repo (gh-1046: the run page's See its context needs a run with an item). The item has no
 # frozen scope, as a fresh item never has.
 line_run() {
@@ -337,6 +364,7 @@ line_run() {
   dir="$(context_dir)/$CONTEXT_REPO"
   [ -d "$dir/.git" ] || die "line-run: run 'context up' first"
   mkdir -p "$facts" || return
+  line_recipes_approved || return
   item="$(FIXTURE_REPO="$CONTEXT_REPO" new_item "Fixture line run")" || return
   printf '{"kind":"brief","repo":"%s","path":"README.md"}\n' "$CONTEXT_REPO" > "$facts/scopeInput.json"
   printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$(git -C "$dir" rev-parse HEAD)" > "$facts/lineContext.json"
