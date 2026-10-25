@@ -74,7 +74,7 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
         if (BranchRules.ChangedTests(branch.Scope, branch.Changes).Where(f => ScopeGlobs.Allows(branch.Scope.AllowedFiles, f.Path ?? string.Empty)).Select(static f => f.Path).OfType<string>().ToList() is { Count: > 0 } unnamed)
         {
             // The plan let the phase write the file and never said the phase changes it: the builder can't fix that, so the Step ends and the desk sees why.
-            return BlockStepResult.Failed($"the plan didn't list {string.Join(", ", unnamed)} in the phase's testChange, though the phase may write it ({BranchRules.Test}; fix: amend the plan to name the file in testChange, or approve the change)");
+            return BlockStepResult.Failed($"the plan didn't list {string.Join(", ", unnamed)} in the phase's testChange, though the phase may write it ({BranchRules.Test}) (fix: amend the plan to name the file in testChange, or approve the change)");
         }
 
         var failures = new List<RuleFinding>();
