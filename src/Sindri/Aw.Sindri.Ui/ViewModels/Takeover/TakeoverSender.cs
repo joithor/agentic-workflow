@@ -1,8 +1,7 @@
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
-using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
-namespace Aw.Sindri.Ui.ViewModels.Instance;
+namespace Aw.Sindri.Ui.ViewModels.Takeover;
 
 /// <summary>
 /// Sends "ApplyCommand:takeover" for a surface that has no Attach control (the run inspectors): once per press, never retried, and says
@@ -10,7 +9,6 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// </summary>
 internal sealed class TakeoverSender(ISindriApi api, Func<Uri?> apiUrl)
 {
-    private readonly InstanceCommander _commands = new(api, apiUrl);
     private bool _pressed;
 
     /// <summary>One press: shows "Sending…", sends, then shows the answer. A press while one is out does nothing.</summary>
@@ -40,11 +38,12 @@ internal sealed class TakeoverSender(ISindriApi api, Func<Uri?> apiUrl)
 
     private async Task<TakeoverView> Send(string instance, string? launchId)
     {
-        var answer = await _commands.Send(new ApplyCommandBody(instance, CommandKind.Takeover)).ConfigureAwait(true);
-        if (answer is not { } result)
+        if (apiUrl() is not { } endpoint)
         {
             return new TakeoverView(Labels.TakeoverNotSent, string.Empty);
         }
+
+        var result = await api.ApplyCommand(endpoint, instance, new ApplyCommandBody(instance, CommandKind.Takeover), CancellationToken.None).ConfigureAwait(true);
 
         if (result.IsError)
         {
@@ -57,7 +56,7 @@ internal sealed class TakeoverSender(ISindriApi api, Func<Uri?> apiUrl)
             (viewer, attach) = (read.Value.Viewer, attach ?? read.Value.Attach);
         }
 
-        var (line, command) = RunWords.TakeoverOutcome(viewer, attach);
+        var (line, command) = ViewerWords.TakeoverOutcome(viewer, attach);
         return new TakeoverView(line, command);
     }
 }

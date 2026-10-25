@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.ViewModels.Instance;
+namespace Aw.Sindri.Ui.ViewModels.Takeover;
 
 /// <summary>What a takeover came to, in words.</summary>
 /// <param name="Line">The sentence: sending, the viewer's outcome, or the refusal with its code.</param>

@@ -2,6 +2,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Takeover;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -239,7 +240,7 @@ internal sealed partial class ExpandedStateViewModel
             (viewer, attach) = (launch.Viewer, attach ?? launch.Attach);
         }
 
-        return RunWords.TakeoverOutcome(viewer, attach);
+        return ViewerWords.TakeoverOutcome(viewer, attach);
     }
 
     /// <summary>Copies the attach command, whole.</summary>
