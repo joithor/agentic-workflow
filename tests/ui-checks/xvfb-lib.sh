@@ -26,7 +26,7 @@ xvfb_start() {
   command -v Xvfb >/dev/null 2>&1 || { echo "xvfb-lib: Xvfb is not installed" >&2; return 1; }
   for n in $(seq 90 199); do
     [ -e "${XVFB_LOCK_DIR:-/tmp}/.X${n}-lock" ] && continue
-    Xvfb ":$n" -screen 0 "$screen" -nolisten tcp >/dev/null 2>&1 &
+    Xvfb ":$n" -screen 0 "$screen" -nolisten tcp </dev/null >/dev/null 2>&1 &
     XVFB_PID=$!
     for i in $(seq 1 100); do
       kill -0 "$XVFB_PID" 2>/dev/null || break   # it exited (the display was taken after all): try the next one
@@ -52,8 +52,15 @@ xvfb_start() {
 }
 
 xvfb_stop() {
+  local i
   if [ -n "${XVFB_PID:-}" ]; then
     kill "$XVFB_PID" 2>/dev/null || true
+    # Bounded: up to 3 s for it to go, then KILL; the wait below only reaps a process that is already gone.
+    for i in $(seq 1 30); do
+      kill -0 "$XVFB_PID" 2>/dev/null || break
+      sleep 0.1
+    done
+    if kill -0 "$XVFB_PID" 2>/dev/null; then kill -KILL "$XVFB_PID" 2>/dev/null || true; sleep 0.1; fi
     wait "$XVFB_PID" 2>/dev/null || true
     XVFB_PID=""
   fi
