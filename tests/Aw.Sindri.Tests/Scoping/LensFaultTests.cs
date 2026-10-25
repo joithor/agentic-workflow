@@ -73,6 +73,19 @@ public sealed class LensFaultTests
     }
 
     [Fact]
+    public void A_coverage_row_recording_edges_out_of_scope_with_only_in_scope_edges_left_is_clean()
+    {
+        var facts = ScopingFacts.Expiry().Edit("coverage", n =>
+        {
+            var row = n["lenses"]!.AsArray().Single(static r => r!["lens"]!.GetValue<string>() == "code")!;
+            row["searched"]!["sources"]!.AsArray().Add(new JsonObject { ["id"] = "edges", ["state"] = "unavailable", ["reason"] = "edges-out-of-scope" });
+            row["limits"]!.AsArray().Add(new JsonObject { ["why"] = "edges-out-of-scope", ["not"] = "5 edges outside the lens" });
+        });
+
+        Assert.Null(LensShape.GatherFault(JsonNode.Parse(facts["lenses"])!, JsonNode.Parse(facts["coverage"])!));
+    }
+
+    [Fact]
     public void Gather_on_clean_lenses_has_no_fault()
     {
         var facts = ScopingFacts.Expiry();
