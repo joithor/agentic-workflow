@@ -16,11 +16,11 @@ public sealed class ConceptBuilderTests
         var view = Read(ConceptGraph.Product());
 
         Assert.Equal((1, "v7", ConceptStates.Ok, null), (view.ApiVersion, view.MapVersion, view.State, view.Code));
-        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id));
-        var scheduling = view.Concepts.Single(c => c.Id == "concept:scheduling");
+        Assert.Equal(["concept:billing", "concept:scheduling"], view.Concepts.Select(c => c.Id.Value));
+        var scheduling = view.Concepts.Single(c => c.Id.Value == "concept:scheduling");
         Assert.Equal(("Self scheduling", "People pick and swap shifts.", "derived"), (scheduling.Name, scheduling.Summary, scheduling.Source));
         Assert.Equal(["repo:web/docs/scheduling.md"], scheduling.Citations.Select(c => c.Key));
-        Assert.Equal("override", view.Concepts.Single(c => c.Id == "concept:billing").Source);
+        Assert.Equal("override", view.Concepts.Single(c => c.Id.Value == "concept:billing").Source);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -28,8 +28,8 @@ public sealed class ConceptBuilderTests
     {
         var view = Read(ConceptGraph.Product());
 
-        Assert.Equal(new ConceptSize(2, 1, 0, 2), view.Concepts.Single(c => c.Id == "concept:scheduling").Size);   // Shared.cs implements both features and counts once
-        Assert.Equal(new ConceptSize(1, 0, 1, 1), view.Concepts.Single(c => c.Id == "concept:billing").Size);
+        Assert.Equal(new ConceptSize(2, 1, 0, 2), view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Size);   // Shared.cs implements both features and counts once
+        Assert.Equal(new ConceptSize(1, 0, 1, 1), view.Concepts.Single(c => c.Id.Value == "concept:billing").Size);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -37,7 +37,7 @@ public sealed class ConceptBuilderTests
     {
         var view = Read(ConceptGraph.Product());
 
-        Assert.Equal((ConceptKeys.Other, "Other", new ConceptSize(1, 1, 0, 0)), (view.Other.Id, view.Other.Name, view.Other.Size));
+        Assert.Equal((ConceptKeys.Other, "Other", new ConceptSize(1, 1, 0, 0)), (view.Other.Id.Value, view.Other.Name, view.Other.Size));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -47,7 +47,7 @@ public sealed class ConceptBuilderTests
 
         var view = Read(graph);
 
-        Assert.Equal((3, 2, 0), (view.Concepts.Single(c => c.Id == "concept:scheduling").Size.Features, view.Concepts.Single(c => c.Id == "concept:billing").Size.Features, view.Other.Size.Features));
+        Assert.Equal((3, 2, 0), (view.Concepts.Single(c => c.Id.Value == "concept:scheduling").Size.Features, view.Concepts.Single(c => c.Id.Value == "concept:billing").Size.Features, view.Other.Size.Features));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -57,7 +57,7 @@ public sealed class ConceptBuilderTests
 
         Assert.Equal(
             [("concept:billing", "concept:scheduling", 1), ("concept:other", "concept:scheduling", 1), ("concept:scheduling", "concept:billing", 1)],
-            view.Links.Select(l => (l.From, l.To, l.Weight)));
+            view.Links.Select(l => (l.From.Value, l.To.Value, l.Weight)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -76,14 +76,14 @@ public sealed class ConceptBuilderTests
     [InlineData("round up", "concept:billing")]
     [InlineData("swap rules", "concept:scheduling")]
     public void The_filter_matches_a_name_a_summary_or_a_member_label_ignoring_case(string q, string expected) =>
-        Assert.Equal([expected], Read(ConceptGraph.Product(), q).Concepts.Select(c => c.Id));
+        Assert.Equal([expected], Read(ConceptGraph.Product(), q).Concepts.Select(c => c.Id.Value));
 
     [Fact, Trait("Lane", "unit")]
     public void A_filter_that_matches_nothing_answers_no_concepts_and_still_the_state_and_other()
     {
         var view = Read(ConceptGraph.Product(), "zzz");
 
-        Assert.Equal((ConceptStates.Ok, 0, ConceptKeys.Other), (view.State, view.Concepts.Count, view.Other.Id));
+        Assert.Equal((ConceptStates.Ok, 0, ConceptKeys.Other), (view.State, view.Concepts.Count, view.Other.Id.Value));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -92,9 +92,9 @@ public sealed class ConceptBuilderTests
         var first = Read(ConceptGraph.Product(), page: new ConceptPage(Limit: 1));
         var second = Read(ConceptGraph.Product(), page: new ConceptPage(first.Next, 1));
 
-        Assert.Equal(["concept:billing"], first.Concepts.Select(c => c.Id));
+        Assert.Equal(["concept:billing"], first.Concepts.Select(c => c.Id.Value));
         Assert.Equal("v7:1", first.Next);
-        Assert.Equal(["concept:scheduling"], second.Concepts.Select(c => c.Id));
+        Assert.Equal(["concept:scheduling"], second.Concepts.Select(c => c.Id.Value));
         Assert.Null(second.Next);
     }
 
@@ -103,7 +103,7 @@ public sealed class ConceptBuilderTests
     {
         var first = Read(ConceptGraph.Product(), page: new ConceptPage(Limit: 1));
 
-        Assert.All(first.Links, l => Assert.True(l.From == "concept:billing" || l.To == "concept:billing"));
+        Assert.All(first.Links, l => Assert.True(l.From.Value == "concept:billing" || l.To.Value == "concept:billing"));
         Assert.NotEmpty(first.Links);
     }
 
@@ -130,16 +130,16 @@ public sealed class ConceptBuilderTests
     [Fact, Trait("Lane", "unit")]
     public void The_members_of_a_concept_are_its_features_records_and_decisions_by_kind_and_key()
     {
-        var view = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery("concept:scheduling", MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
+        var view = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(NodeKey.From("concept:scheduling"), MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
 
-        Assert.Equal(("concept:scheduling", "v7"), (view.Concept, view.MapVersion));
+        Assert.Equal(("concept:scheduling", "v7"), (view.Concept.Value, view.MapVersion));
         Assert.Equal([("feature:shifts", "feature", "Shifts"), ("feature:swaps", "feature", "Swaps"), ("record:swap-rules", "record", "Swap rules")], view.Members.Select(m => (m.Key, m.Kind, m.Label)));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void The_members_of_other_are_the_ones_no_concept_takes()
     {
-        var view = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(ConceptKeys.Other, MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
+        var view = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(NodeKey.From(ConceptKeys.Other), MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
 
         Assert.Equal(["feature:lone", "record:orphan"], view.Members.Select(m => m.Key));
     }
@@ -147,9 +147,9 @@ public sealed class ConceptBuilderTests
     [Fact, Trait("Lane", "unit")]
     public void The_members_page_by_the_same_cursor_and_an_unknown_concept_is_003()
     {
-        var first = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery("concept:scheduling", MapRead.Current, new ConceptPage(Limit: 2)), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
-        var rest = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery("concept:scheduling", MapRead.Current, new ConceptPage(first.Next, 2)), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
-        var unknown = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery("concept:nope", MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text);
+        var first = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(NodeKey.From("concept:scheduling"), MapRead.Current, new ConceptPage(Limit: 2)), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
+        var rest = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(NodeKey.From("concept:scheduling"), MapRead.Current, new ConceptPage(first.Next, 2)), ConceptGraph.Product().Build(), ConceptGraph.Text).Value;
+        var unknown = ConceptBuilder.Members(ConceptGraph.Basis, new ConceptMembersQuery(NodeKey.From("concept:nope"), MapRead.Current, new ConceptPage()), ConceptGraph.Product().Build(), ConceptGraph.Text);
 
         Assert.Equal((2, "v7:2"), (first.Members.Count, first.Next));
         Assert.Equal(["record:swap-rules"], rest.Members.Select(m => m.Key));

@@ -28,6 +28,6 @@ internal sealed class ConceptsNotReady(IJobViews jobs)
         var running = builds.IsSuccess && builds.Value.Any(static j => j.State == JobState.Running);
         var repo = scope.Repos.Count == 1 ? scope.Repos[0].Name.Value : scope.Caller.Repo?.Value;
         return new ConceptsView(1, repo, string.Empty, running ? ConceptStates.Building : ConceptStates.Unavailable, running ? null : refusal.Code, [],
-            new ConceptOther(ConceptKeys.Other, "Other", new ConceptSize(0, 0, 0, 0)), [], null);
+            new ConceptOther(NodeKey.From(ConceptKeys.Other), "Other", new ConceptSize(0, 0, 0, 0)), [], null);
     }
 }

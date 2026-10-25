@@ -7113,7 +7113,7 @@ static Aw.Context.Core.Concepts.ConceptsQuery.operator !=(Aw.Context.Core.Concep
 static Aw.Context.Core.Concepts.ConceptsQuery.operator ==(Aw.Context.Core.Concepts.ConceptsQuery? left, Aw.Context.Core.Concepts.ConceptsQuery? right) -> bool
 Aw.Context.Core.Concepts.ConceptMembersQuery
 Aw.Context.Core.Concepts.ConceptMembersQuery.<Clone>$() -> Aw.Context.Core.Concepts.ConceptMembersQuery!
-Aw.Context.Core.Concepts.ConceptMembersQuery.Concept.get -> string!
+Aw.Context.Core.Concepts.ConceptMembersQuery.Concept.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptMembersQuery.Concept.init -> void
 Aw.Context.Core.Concepts.ConceptMembersQuery.Read.get -> Aw.Context.Core.Map.MapRead
 Aw.Context.Core.Concepts.ConceptMembersQuery.Read.init -> void
@@ -7121,9 +7121,9 @@ Aw.Context.Core.Concepts.ConceptMembersQuery.Page.get -> Aw.Context.Core.Concept
 Aw.Context.Core.Concepts.ConceptMembersQuery.Page.init -> void
 Aw.Context.Core.Concepts.ConceptMembersQuery.Repo.get -> string?
 Aw.Context.Core.Concepts.ConceptMembersQuery.Repo.init -> void
-Aw.Context.Core.Concepts.ConceptMembersQuery.Deconstruct(out string! Concept, out Aw.Context.Core.Map.MapRead Read, out Aw.Context.Core.Concepts.ConceptPage! Page, out string? Repo) -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.Deconstruct(out Aw.Context.Core.Graph.NodeKey Concept, out Aw.Context.Core.Map.MapRead Read, out Aw.Context.Core.Concepts.ConceptPage! Page, out string? Repo) -> void
 Aw.Context.Core.Concepts.ConceptMembersQuery.Equals(Aw.Context.Core.Concepts.ConceptMembersQuery? other) -> bool
-Aw.Context.Core.Concepts.ConceptMembersQuery.ConceptMembersQuery(string! Concept, Aw.Context.Core.Map.MapRead Read, Aw.Context.Core.Concepts.ConceptPage! Page, string? Repo = null) -> void
+Aw.Context.Core.Concepts.ConceptMembersQuery.ConceptMembersQuery(Aw.Context.Core.Graph.NodeKey Concept, Aw.Context.Core.Map.MapRead Read, Aw.Context.Core.Concepts.ConceptPage! Page, string? Repo = null) -> void
 override Aw.Context.Core.Concepts.ConceptMembersQuery.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptMembersQuery.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptMembersQuery.ToString() -> string!
@@ -7163,7 +7163,7 @@ static Aw.Context.Core.Concepts.ConceptCitation.operator !=(Aw.Context.Core.Conc
 static Aw.Context.Core.Concepts.ConceptCitation.operator ==(Aw.Context.Core.Concepts.ConceptCitation? left, Aw.Context.Core.Concepts.ConceptCitation? right) -> bool
 Aw.Context.Core.Concepts.ConceptRow
 Aw.Context.Core.Concepts.ConceptRow.<Clone>$() -> Aw.Context.Core.Concepts.ConceptRow!
-Aw.Context.Core.Concepts.ConceptRow.Id.get -> string!
+Aw.Context.Core.Concepts.ConceptRow.Id.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptRow.Id.init -> void
 Aw.Context.Core.Concepts.ConceptRow.Name.get -> string!
 Aw.Context.Core.Concepts.ConceptRow.Name.init -> void
@@ -7175,9 +7175,9 @@ Aw.Context.Core.Concepts.ConceptRow.Size.get -> Aw.Context.Core.Concepts.Concept
 Aw.Context.Core.Concepts.ConceptRow.Size.init -> void
 Aw.Context.Core.Concepts.ConceptRow.Citations.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>!
 Aw.Context.Core.Concepts.ConceptRow.Citations.init -> void
-Aw.Context.Core.Concepts.ConceptRow.Deconstruct(out string! Id, out string! Name, out string! Summary, out string! Source, out Aw.Context.Core.Concepts.ConceptSize! Size, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
+Aw.Context.Core.Concepts.ConceptRow.Deconstruct(out Aw.Context.Core.Graph.NodeKey Id, out string! Name, out string! Summary, out string! Source, out Aw.Context.Core.Concepts.ConceptSize! Size, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
 Aw.Context.Core.Concepts.ConceptRow.Equals(Aw.Context.Core.Concepts.ConceptRow? other) -> bool
-Aw.Context.Core.Concepts.ConceptRow.ConceptRow(string! Id, string! Name, string! Summary, string! Source, Aw.Context.Core.Concepts.ConceptSize! Size, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
+Aw.Context.Core.Concepts.ConceptRow.ConceptRow(Aw.Context.Core.Graph.NodeKey Id, string! Name, string! Summary, string! Source, Aw.Context.Core.Concepts.ConceptSize! Size, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptCitation!>! Citations) -> void
 override Aw.Context.Core.Concepts.ConceptRow.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptRow.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptRow.ToString() -> string!
@@ -7185,15 +7185,15 @@ static Aw.Context.Core.Concepts.ConceptRow.operator !=(Aw.Context.Core.Concepts.
 static Aw.Context.Core.Concepts.ConceptRow.operator ==(Aw.Context.Core.Concepts.ConceptRow? left, Aw.Context.Core.Concepts.ConceptRow? right) -> bool
 Aw.Context.Core.Concepts.ConceptOther
 Aw.Context.Core.Concepts.ConceptOther.<Clone>$() -> Aw.Context.Core.Concepts.ConceptOther!
-Aw.Context.Core.Concepts.ConceptOther.Id.get -> string!
+Aw.Context.Core.Concepts.ConceptOther.Id.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptOther.Id.init -> void
 Aw.Context.Core.Concepts.ConceptOther.Name.get -> string!
 Aw.Context.Core.Concepts.ConceptOther.Name.init -> void
 Aw.Context.Core.Concepts.ConceptOther.Size.get -> Aw.Context.Core.Concepts.ConceptSize!
 Aw.Context.Core.Concepts.ConceptOther.Size.init -> void
-Aw.Context.Core.Concepts.ConceptOther.Deconstruct(out string! Id, out string! Name, out Aw.Context.Core.Concepts.ConceptSize! Size) -> void
+Aw.Context.Core.Concepts.ConceptOther.Deconstruct(out Aw.Context.Core.Graph.NodeKey Id, out string! Name, out Aw.Context.Core.Concepts.ConceptSize! Size) -> void
 Aw.Context.Core.Concepts.ConceptOther.Equals(Aw.Context.Core.Concepts.ConceptOther? other) -> bool
-Aw.Context.Core.Concepts.ConceptOther.ConceptOther(string! Id, string! Name, Aw.Context.Core.Concepts.ConceptSize! Size) -> void
+Aw.Context.Core.Concepts.ConceptOther.ConceptOther(Aw.Context.Core.Graph.NodeKey Id, string! Name, Aw.Context.Core.Concepts.ConceptSize! Size) -> void
 override Aw.Context.Core.Concepts.ConceptOther.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptOther.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptOther.ToString() -> string!
@@ -7201,15 +7201,15 @@ static Aw.Context.Core.Concepts.ConceptOther.operator !=(Aw.Context.Core.Concept
 static Aw.Context.Core.Concepts.ConceptOther.operator ==(Aw.Context.Core.Concepts.ConceptOther? left, Aw.Context.Core.Concepts.ConceptOther? right) -> bool
 Aw.Context.Core.Concepts.ConceptLink
 Aw.Context.Core.Concepts.ConceptLink.<Clone>$() -> Aw.Context.Core.Concepts.ConceptLink!
-Aw.Context.Core.Concepts.ConceptLink.From.get -> string!
+Aw.Context.Core.Concepts.ConceptLink.From.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptLink.From.init -> void
-Aw.Context.Core.Concepts.ConceptLink.To.get -> string!
+Aw.Context.Core.Concepts.ConceptLink.To.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptLink.To.init -> void
 Aw.Context.Core.Concepts.ConceptLink.Weight.get -> int
 Aw.Context.Core.Concepts.ConceptLink.Weight.init -> void
-Aw.Context.Core.Concepts.ConceptLink.Deconstruct(out string! From, out string! To, out int Weight) -> void
+Aw.Context.Core.Concepts.ConceptLink.Deconstruct(out Aw.Context.Core.Graph.NodeKey From, out Aw.Context.Core.Graph.NodeKey To, out int Weight) -> void
 Aw.Context.Core.Concepts.ConceptLink.Equals(Aw.Context.Core.Concepts.ConceptLink? other) -> bool
-Aw.Context.Core.Concepts.ConceptLink.ConceptLink(string! From, string! To, int Weight) -> void
+Aw.Context.Core.Concepts.ConceptLink.ConceptLink(Aw.Context.Core.Graph.NodeKey From, Aw.Context.Core.Graph.NodeKey To, int Weight) -> void
 override Aw.Context.Core.Concepts.ConceptLink.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptLink.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptLink.ToString() -> string!
@@ -7267,15 +7267,15 @@ Aw.Context.Core.Concepts.ConceptMembersView.Repo.get -> string?
 Aw.Context.Core.Concepts.ConceptMembersView.Repo.init -> void
 Aw.Context.Core.Concepts.ConceptMembersView.MapVersion.get -> string!
 Aw.Context.Core.Concepts.ConceptMembersView.MapVersion.init -> void
-Aw.Context.Core.Concepts.ConceptMembersView.Concept.get -> string!
+Aw.Context.Core.Concepts.ConceptMembersView.Concept.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Concepts.ConceptMembersView.Concept.init -> void
 Aw.Context.Core.Concepts.ConceptMembersView.Members.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>!
 Aw.Context.Core.Concepts.ConceptMembersView.Members.init -> void
 Aw.Context.Core.Concepts.ConceptMembersView.Next.get -> string?
 Aw.Context.Core.Concepts.ConceptMembersView.Next.init -> void
-Aw.Context.Core.Concepts.ConceptMembersView.Deconstruct(out int ApiVersion, out string? Repo, out string! MapVersion, out string! Concept, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, out string? Next) -> void
+Aw.Context.Core.Concepts.ConceptMembersView.Deconstruct(out int ApiVersion, out string? Repo, out string! MapVersion, out Aw.Context.Core.Graph.NodeKey Concept, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, out string? Next) -> void
 Aw.Context.Core.Concepts.ConceptMembersView.Equals(Aw.Context.Core.Concepts.ConceptMembersView? other) -> bool
-Aw.Context.Core.Concepts.ConceptMembersView.ConceptMembersView(int ApiVersion, string? Repo, string! MapVersion, string! Concept, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, string? Next) -> void
+Aw.Context.Core.Concepts.ConceptMembersView.ConceptMembersView(int ApiVersion, string? Repo, string! MapVersion, Aw.Context.Core.Graph.NodeKey Concept, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptMember!>! Members, string? Next) -> void
 override Aw.Context.Core.Concepts.ConceptMembersView.Equals(object? obj) -> bool
 override Aw.Context.Core.Concepts.ConceptMembersView.GetHashCode() -> int
 override Aw.Context.Core.Concepts.ConceptMembersView.ToString() -> string!
