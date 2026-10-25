@@ -69,11 +69,7 @@ internal static partial class ScopePacketChecks
 
         var agent = ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "class");
         var judge = ScopeJson.Str(ScopeJson.Obj(entry, "judge"), "class");
-        if (ScopeJson.Bool(entry, "disputed") == true)
-        {
-            s.Warn(id, $"disputed: {ScopeJson.Str(entry, "label") ?? id} — AI said {agent ?? "nothing"}, judge said {judge ?? "nothing"}", "Read both reasons at the stop; the entry stayed in.");
-        }
-
+        Disputed(entry, id, (agent, judge), s);
         if (!string.Equals(result, "in", StringComparison.Ordinal))
         {
             var left = new Left(entry, id, result, agent, judge);
@@ -81,6 +77,14 @@ internal static partial class ScopePacketChecks
             {
                 Cited(left, known, ids, s);
             }
+        }
+    }
+
+    private static void Disputed(JsonNode entry, string id, (string? Agent, string? Judge) classes, RuleSink s)
+    {
+        if (ScopeJson.Bool(entry, "disputed") == true)
+        {
+            s.Warn(id, $"disputed: {ScopeJson.Str(entry, "label") ?? id} — AI said {classes.Agent ?? "nothing"}, judge said {classes.Judge ?? "nothing"}", "Read both reasons at the stop; the entry stayed in.");
         }
     }
 

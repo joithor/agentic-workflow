@@ -51,8 +51,8 @@ internal sealed class RelevanceJudgeStep(IJudgeChoice judge, ITextScrubber scrub
         var briefText = ScopeJson.Str(StepFacts.Read(context, "fact:brief"), "text") ?? string.Empty;
         var entries = RelevanceEntries.Of(lenses);
         var requests = entries.Select(e => RelevanceJudgeProjection.Request(e, briefText, [.. ScopeJson.Strings(ScopeJson.Obj(lenses, e.Lens), "anchors")], new RelevanceJudgeProjection.JudgeSettings(settings.Threshold, settings.Providers), scrubber)).ToList();
-        var asked = await Ask(requests, settings.Parallel, cancellationToken).ConfigureAwait(false);
-        if (asked.Failure is { } failure)
+        var (answers, failure) = await Ask(requests, settings.Parallel, cancellationToken).ConfigureAwait(false);
+        if (failure is not null)
         {
             return BlockStepResult.Failed($"{Name}: {failure}");
         }
@@ -60,7 +60,7 @@ internal sealed class RelevanceJudgeStep(IJudgeChoice judge, ITextScrubber scrub
         var rulings = new JsonArray();
         for (var i = 0; i < entries.Count; i++)
         {
-            ScopeJson.Append(rulings, Ruling(entries[i], asked.Answers[i]));
+            ScopeJson.Append(rulings, Ruling(entries[i], answers[i]));
         }
 
         return StepFacts.Done("ruled", ("fact:relevanceRulings", new JsonObject
@@ -76,7 +76,7 @@ internal sealed class RelevanceJudgeStep(IJudgeChoice judge, ITextScrubber scrub
     {
         var threshold = context.Arguments.TryGetValue("threshold", out var given) && given.ValueKind == JsonValueKind.Number ? given.GetDouble() : DefaultThreshold;
         var providers = context.Arguments.TryGetValue("providers", out var listed) && listed.ValueKind == JsonValueKind.Array
-            ? (IReadOnlyList<string>)[.. listed.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty)]
+            ? listed.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).ToList()
             : JudgeProviders.Default;
         var parallel = context.Arguments.TryGetValue("parallel", out var width) && width.ValueKind == JsonValueKind.Number && width.TryGetInt32(out var asked) ? Math.Clamp(asked, 1, MaxParallel) : DefaultParallel;
         return new Arguments(threshold, providers, parallel);
