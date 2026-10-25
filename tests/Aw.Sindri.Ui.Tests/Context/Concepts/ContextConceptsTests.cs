@@ -285,6 +285,18 @@ public sealed class ContextConceptsTests
     }
 
     [Fact]
+    public async Task A_concept_whose_slug_has_a_dot_opens_with_its_id_escaped_in_the_map_read()
+    {
+        var api = ConceptPage.Serving(AConcepts.Ok([AConcepts.Concept("concept:tabs.tab-manager", "Tab manager")]));
+        var page = await ConceptPage.Shown(api);
+
+        await page.OpenConcept(page.Concepts.Tiles[0].Id, Token);
+
+        Expect.Equal("Tab manager", page.Concepts.Tiles[0].Name);
+        Expect.True(Aw.Sindri.Ui.Api.Context.ContextRoutes.WholeMap(api.WholeMapAsked[^1]).Contains("concept=concept%3Atabs.tab-manager", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Choosing_another_repo_starts_again_at_the_concepts()
     {
         var api = ConceptPage.Serving(AConcepts.Three());
