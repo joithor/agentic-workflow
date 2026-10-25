@@ -225,6 +225,8 @@ A generated recipe whose base was revoked after it was registered is refused too
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
 with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
+**A shipped version that gains a capability (#983).** A previously approved shipped recipe whose new version adds a capability waits for its own approval: approve-all leaves it out, and nothing has registered it yet. The recipe list (`GET /sindri/workflow/recipes`, `recipe list`, and `recipe list --stale`) names that version anyway, registered or not, with its id, version, hash, standing `unapproved`, status `changed` and `gainsCapability: true`, read from the same plan the needs-you row is. The row's `cli` is `sindri recipe approve <id>@<hash>` of that version, and that exact string works pasted. `recipe approve <id>@<hash>`, its challenge (`approve <id>@<hash>` and `approve <id> <version>`) and `POST /sindri/workflow/recipes/{id}@{hash}/approve` register the version from this build's embedded set first when it is not registered (the same registration approve-all does), so the app's typed approval and the CLI reach the same approval. A hash or version this build does not ship is `SND-RECIPE-002`, as before.
+
 `sindri recipe approve-all [--json]` approves every shipped recipe at once (setup-once spec §5.3): it reads
 `GET /sindri/workflow/recipes/approve-all`, prints the plan (each recipe and version in the order approval happens, children
 first, then the recipes approved one at a time) and posts to `POST /sindri/workflow/recipes/approve-all`, which starts the
