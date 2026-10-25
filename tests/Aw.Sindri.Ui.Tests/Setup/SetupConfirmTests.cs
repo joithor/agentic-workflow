@@ -14,6 +14,8 @@ public sealed class SetupConfirmTests
 
     private readonly SetupFixture _f = new("extra-setup-ready") { Hash = LiveHash };
 
+    private const string ServedCli = "sindri profile approve [<hash>]";   // the ApproveProfile row of the served catalog fixture
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static SetupStepViewModel Step(SetupViewModel setup, string id) => setup.Steps.Single(s => s.Id == id);
@@ -54,7 +56,18 @@ public sealed class SetupConfirmTests
 
         await profile.Approve();
 
-        Assert.Equal((Labels.SetupProfileChangedWhileReading, false, true), (profile.Refusal, profile.IsDone, profile.CanApprove));
+        Assert.Equal(("SND-PROFILE-003: " + Labels.SetupProfileChangedWhileReading + " Run: " + ServedCli, false, true), (profile.Refusal, profile.IsDone, profile.CanApprove));
+    }
+
+    [Fact]
+    public async Task A_refused_approval_names_its_code_and_the_catalogs_command()
+    {
+        _f.Server.ApproveProfileAnswer = RouteAnswer.Refused();
+        var profile = (await ProfileRow()).Profile!;
+
+        await profile.Approve();
+
+        Assert.Equal(("SND-AUTH-002: " + Labels.ApproveSessionRefused + " Run: " + ServedCli, false), (profile.Refusal, profile.IsDone));
     }
 
     [Fact]

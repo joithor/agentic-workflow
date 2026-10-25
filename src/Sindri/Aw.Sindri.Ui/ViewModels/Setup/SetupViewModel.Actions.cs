@@ -68,7 +68,7 @@ internal sealed partial class SetupViewModel
         }
         else if (string.Equals(row.Id, ProfileStep, StringComparison.Ordinal))
         {
-            row.Profile = new SetupProfileConfirmViewModel(() => _url, _profileHash, _api);
+            row.Profile = new SetupProfileConfirmViewModel(() => _url, _profileHash, _api, () => _catalog.Row("ApproveProfile")?.Cli ?? "");
         }
         else if (string.Equals(row.Id, RecipesStep, StringComparison.Ordinal))
         {

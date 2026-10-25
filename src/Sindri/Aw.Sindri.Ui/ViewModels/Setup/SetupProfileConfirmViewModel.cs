@@ -15,15 +15,16 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     private readonly Func<Uri?> _url;
     private readonly Func<string?> _hash;
     private readonly ISindriApi _api;
+    private readonly Func<string> _cli;   // the served catalog's command for this approval, named with every refusal
     private string _summaryFor = string.Empty;   // the hash the summary in hand was read for
     private bool _wanted;
     private int _session;
 
     private bool Sending { get; set; }
 
-    internal SetupProfileConfirmViewModel(Func<Uri?> url, Func<string?> hash, ISindriApi api)
+    internal SetupProfileConfirmViewModel(Func<Uri?> url, Func<string?> hash, ISindriApi api, Func<string> cli)
     {
-        (_url, _hash, _api) = (url, hash, api);
+        (_url, _hash, _api, _cli) = (url, hash, api, cli);
     }
 
     /// <summary>The plain-words summary of what approving lets Sindri do (shown while the row needs the person).</summary>
@@ -125,7 +126,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
         }
 
         var refused = sent.IsError ? sent.Error : null;
-        Refusal = refused is null ? Labels.NeedsYouNotApproved : Words(refused);
+        Refusal = Labels.ApproveRefusal(refused is null ? "" : refused.Code, refused is null ? Labels.NeedsYouNotApproved : Words(refused), _cli());
         if (refused is { } error && string.Equals(error.Code, ChangedRefusal, StringComparison.Ordinal))
         {
             _summaryFor = string.Empty;
