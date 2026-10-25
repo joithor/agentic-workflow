@@ -24,6 +24,7 @@ public sealed class ShippedBlockRecipesTests
         Assert.Equal(2, Depth("workflow.evidence"));
         Assert.Equal(1, Depth("workflow.evidence-all"));
         Assert.Equal(0, Depth("workflow.evidence-ui"));
+        Assert.Equal(0, Depth("workflow.evidence-desktop"));
     }
 
     [Theory, Trait("Lane", "unit")]

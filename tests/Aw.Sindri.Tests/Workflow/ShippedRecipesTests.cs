@@ -20,7 +20,7 @@ public sealed partial class ShippedRecipesTests
                 "dev/workflow.dev-evidence-route.yaml",
                 "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml",
                 "sindri/workflow.build.yaml", "sindri/workflow.design.yaml", "sindri/workflow.docs-sync.yaml", "sindri/workflow.evidence-all.yaml",
-                "sindri/workflow.evidence-api.yaml", "sindri/workflow.evidence-db.yaml", "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml",
+                "sindri/workflow.evidence-api.yaml", "sindri/workflow.evidence-db.yaml", "sindri/workflow.evidence-desktop.yaml", "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml",
                 "sindri/workflow.evidence.yaml", "sindri/workflow.hand-test.yaml", "sindri/workflow.idea-to-brief.yaml", "sindri/workflow.implement.yaml",
                 "sindri/workflow.investigate.yaml", "sindri/workflow.item.yaml", "sindri/workflow.line.yaml", "sindri/workflow.phase.yaml", "sindri/workflow.plan.yaml",
                 "sindri/workflow.pr-babysitter.yaml", "sindri/workflow.prove-recheck.yaml", "sindri/workflow.prove.yaml", "sindri/workflow.report.yaml", "sindri/workflow.reproduce.yaml",
@@ -109,7 +109,7 @@ public sealed partial class ShippedRecipesTests
             [
                 ("workflow.dev-child-outputs", "workflow.dev-child-summary"),
                 ("workflow.evidence", "workflow.evidence-all"), ("workflow.evidence", "workflow.evidence-api"), ("workflow.evidence", "workflow.evidence-db"),
-                ("workflow.evidence", "workflow.evidence-other"), ("workflow.evidence", "workflow.evidence-ui"),
+                ("workflow.evidence", "workflow.evidence-desktop"), ("workflow.evidence", "workflow.evidence-other"), ("workflow.evidence", "workflow.evidence-ui"),
                 ("workflow.evidence-all", "workflow.evidence-api"), ("workflow.evidence-all", "workflow.evidence-db"), ("workflow.evidence-all", "workflow.evidence-ui"),
                 ("workflow.item", "workflow.step"),
                 ("workflow.line", "workflow.design"), ("workflow.line", "workflow.design"),

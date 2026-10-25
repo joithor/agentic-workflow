@@ -86,7 +86,8 @@ git diff origin/{base}..HEAD --name-only
 If any changed file is a UI component, page, route, template, or stylesheet:
 
 1. **Invoke skill `verify-app`** with args `--yes auto` — auto mode infers screens from the diff; `--yes` skips the confirmation re-prompt. A `FAIL` verdict **blocks the push**: stop and report the evidence-pack path.
-2. **Baseline check:** if `~/.agentic-workflow/$REPO_SLUG/design/screens.json` exists and any of its screens match the changed files/routes, also **Invoke skill `design-verify`**. A FAIL diff (>10%) blocks the push.
+   For a desktop UI change (`_shared/platform-detection.md`) this runs `verify-desktop`: the real app on seeded data against its mockups. A desktop UI diff with no desktop evidence pack blocks the push.
+2. **Baseline check:** if `~/.agentic-workflow/$REPO_SLUG/design/screens.json` exists and any of its screens match the changed files/routes, also **Invoke skill `design-verify`**. A FAIL diff (>10%) blocks the push. A desktop UI change always gets `design-verify` (its mockups come from the repo's screens manifest, not `screens.json`); any FAIL blocks the push.
 
 If the diff is not user-facing, note "verification: n/a (no UI/route changes)" and continue.
 

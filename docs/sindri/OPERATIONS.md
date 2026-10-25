@@ -5,7 +5,7 @@ approve recipes, and run the factory line (`workflow.line`). These are CLI chore
 as its pages land, and this page shrinks with them.
 
 Every command is `sindri-app` (read every `sindri` in a hint as `sindri-app` until the switch). **Human-only** commands
-run only in your own terminal; Sindri refuses them in an agent session with `SND-AUTH-002`
+are the owner's decisions. Sindri no longer detects an agent session: a CLI that can read the per-start token (an agent you started included) is a full caller, and one that can't is refused with `SND-AUTH-002`
 ([SETUP.md, Troubleshooting](SETUP.md#9-troubleshooting)). Sections marked **to be confirmed by the demo** are written
 from the docs and the code and haven't been run end to end yet.
 
@@ -93,7 +93,7 @@ The order for the line:
 
 ```text
 idea-to-brief
-evidence-api evidence-db evidence-ui evidence-other evidence-all evidence
+evidence-api evidence-db evidence-ui evidence-desktop evidence-other evidence-all evidence
 hand-test verify prove
 build review-loop pr-babysitter ship phase
 design plan docs-sync

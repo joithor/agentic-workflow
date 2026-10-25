@@ -48,6 +48,16 @@ A step may carry an optional `index` (non-negative integer; `click`, `fill` and 
 An optional script-level `login` signs in before the first step of each viewport, on previews that need a session: `{"emailEnv": "ADMIN_EMAIL", "passwordEnv": "ADMIN_PASSWORD"}` plus optional `emailSelector`, `passwordSelector`, `nextSelector`, `submitSelector` (defaults fit a one-step email + password form: `input[type="email"]`, `input[type="password"]`, `button[type="submit"]`; set `nextSelector` for a two-step form) and `loginPath` (default `/login`). It is strict like the parity login: env var names must be `UPPER_SNAKE`, unknown keys fail the parse. Credentials come only from the environment; a missing variable stops the run before a browser starts, values never reach `summary.json` or logs, and error text is scrubbed of them. Only the env var names and selectors enter the scenario hash. The shared implementation lives in `login.ts`; without `login` nothing changes.
 
 
+## Desktop mode (real app, seeded data, mockups)
+
+For a desktop app (Avalonia and the like) there is no URL to drive, so the plain runner does not apply. Run the **real app** on **seeded data**, drive each screen into view through the app's own UI, and pixel-compare it with its mockup. The repo supplies everything app-specific: `<repo>/.agentic-workflow/evidence.json`, its `desktop` section and the screens manifest it names. Follow `skills/_shared/desktop-evidence.md` (config, the workflow engine when present or `desktop-run` directly, the pack, and judging every screen against its mockup); `/verify-desktop` and `/design-verify-desktop` are the skills that run it end to end.
+
+```bash
+ui-evidence desktop-run <screens.json> <run-dir> [--repo <dir>] [--app-build $(git rev-parse HEAD)] [--screens a,b]
+```
+
+`desktop-run` is a verb of the Evidence binary (not `dist/bin.js`) and takes its own locks, so there is no stack-lock wrapper. Exit 0 every screen passed, 2 a screen failed, 1 usage or a refusal, 4 the run errored. `<run-dir>/summary.json` (`ui-evidence.desktop/1`), `report.md` and each screen's `app`, `design`, `diff` and `side-by-side` images are the evidence; attach them to `evidence.md` like a web run's. Any unexpected mismatch against a mockup fails the run. The publish step (Publishing to the PR) applies to these images unchanged, and a desktop run has no DB-provenance check: its data is the fixture the config names.
+
 ## Design-parity mode (Figma pixel diff)
 
 Compares the implementation with a design export instead of with a main-branch screenshot. Existing usage is unchanged.

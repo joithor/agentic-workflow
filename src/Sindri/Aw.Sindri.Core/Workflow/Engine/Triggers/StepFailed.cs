@@ -14,6 +14,12 @@ public sealed record StepFailed(string Actor, RunToken Run, string Reason, int T
     /// <summary>What the human reads after the reason (an agent run's launcher words, scrubbed); null for none. It is in the park's question, not in the recorded reason.</summary>
     public string? Detail { get; init; }
 
+    /// <summary>The typed code of the dependency's own failure (SND-LAUNCH-007, SND-WF-016 …) where there is one; null otherwise. It becomes the park's code.</summary>
+    public string? Code { get; init; }
+
+    /// <summary>The dependency that was down, in the words the park names it (an input's block id, the launcher …); null names the Step itself.</summary>
+    public string? Dependency { get; init; }
+
     /// <inheritdoc/>
     public override string Name => TriggerNames.StepFailed;
 

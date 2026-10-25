@@ -32,21 +32,22 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
     private async Task<int> Read((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, string? Limit, string? Offset, bool Json) o, CancellationToken ct)
     {
-        var query = AnchorQuery(o.Anchors, ("depth", o.Depth), ("hops", o.Hops), ("limit", o.Limit), ("offset", o.Offset), ("mapVersion", o.MapVersion))
-            + (o.Draft ? "&draft=true" : string.Empty);
-        var fence = client.SessionReason is null;
+        var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
+            + (o.Hops is null ? string.Empty : "&hops=" + Uri.EscapeDataString(o.Hops))
+            + (o.Limit is null ? string.Empty : "&limit=" + Uri.EscapeDataString(o.Limit)) + (o.Offset is null ? string.Empty : "&offset=" + Uri.EscapeDataString(o.Offset))
+            + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
             var set = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesSetView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
             return set.IsError ? await Failed(set.Error).ConfigureAwait(false)
                 : o.Json ? await output.Raw(set.Value.Body, 0).ConfigureAwait(false)
-                : await output.Text(ContextLensText.LensesSet(set.Value.Value, fence), 0).ConfigureAwait(false);
+                : await output.Text(ContextLensText.LensesSet(set.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
         }
 
         var answer = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
-            : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
+            : await output.Text(ContextLensText.Lenses(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
     /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>
@@ -111,21 +112,6 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         return flags is { Words: [], Values: var v } && v.TryGetValue("--repo", out var repo)
             ? (repo, v.GetValueOrDefault("--path"), flags.Bare.Contains("--unmapped"), flags.Bare.Contains("--draft"), flags.Bare.Contains("--json"), v.GetValueOrDefault("--cursor"), v.GetValueOrDefault("--limit"))
             : null;
-    }
-
-    /// <summary>The anchor query with each named part that has a value.</summary>
-    private static string AnchorQuery(string[] anchors, params (string Name, string? Value)[] parts)
-    {
-        var query = "?" + string.Join('&', anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a)));
-        foreach (var (name, value) in parts)
-        {
-            if (value is not null)
-            {
-                query += "&" + name + "=" + Uri.EscapeDataString(value);
-            }
-        }
-
-        return query;
     }
 
     /// <summary>Sorts the arguments into words, valued flags and bare flags; null for an unknown flag, a repeated one or one without its value.</summary>
