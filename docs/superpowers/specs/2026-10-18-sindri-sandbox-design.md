@@ -136,7 +136,7 @@ The plan is a stack of bind mounts over the host root, bottom to top:
    **The exceptions inside the state directories** are a closed inventory, taken from the hooks that are actually installed
    (`~/.claude/hooks` and `config/hooks`, with `lib/failopen.sh` and `lib/locks.sh`, `~/.local/bin/judge`, and
    `bin-r1b/heavy`; read again 2026-10-18). They exist so the safety hooks run in a Step as they do in a lane; a hook that
-   can't run **fails open**, so a missing path would silently switch a guard off (R1-01, R2-04):
+   can't run **fails open**, so a missing path would silently switch a guard off (R1-01, R2-04). *Rev 7: the rows naming `node`, `judge/dist`, `better-sqlite3` and `.nvm` describe the TS `judge`; the installed one is the C# NativeAOT `judge` under `bin/cs/<stamp>/` with `e_sqlite3` beside it, so those rows are superseded, part (b) of the canary runs that binary, and SB-1 re-reads this table against it.*:
 
    | Path | Mode | Used by |
    |---|---|---|
@@ -149,27 +149,26 @@ The plan is a stack of bind mounts over the host root, bottom to top:
    | `$AW_STATE_DIR/locks/` | rw | `heavy`'s `mkdir` mutexes (`heavy-job.lock*`, `heavy-session/`). A finer bind is impossible for `mkdir` mutexes; accepted with the mitigations of §3.3 rule 6 |
    | `$AW_STATE_DIR/heavy-slots-cap`, `heavy-meta-reserve`, `bin-r1b/` | ro | `heavy` |
    | `$AW_STATE_DIR/bin/aw-meta` and `$AW_STATE_DIR/meta/` | **not bound** (absent) | `meta-outbox` and `meta-stop-gate` exit at once when `aw-meta` is not executable, and `meta-lane-gate` passes without lane variables (LCH §10.2), so the meta hooks do nothing in a Step, by design; the canary proves it |
-   | `$AW_SINDRI_HOME/launches/` (the real folder, at its real path) | rw | The session home's `launches` link resolves here (below). `session-id-report` writes `launches/<id>.session-id`, the Step policy's turn-ended hook touches `launches/<id>.turn-ended`, and `session wrap` reads `launches/<id>.capture.json` (outside the sandbox). The idle rule needs the turn-ended marker to reach the folder the control plane watches, so rev 6's thrown-away per-launch directory would have switched idle detection off. The GitHub token directory (SB-7) is **not** under this folder any more: it is the session home's `gh/` (below) |
-   | `$AW_SINDRI_HOME/approved/` (the real path) | ro | The session home's `approved` link resolves here: the CLI finds its repo in the approved profile snapshot. It holds no token or secret (a forge `credential` is a pointer, `env:NAME` or `command:<argv>`) |
+   | `$AW_SINDRI_HOME/launches/` (the real folder, at its real path) | rw | The session home's `launches` link resolves here (below). `session-id-report` writes `launches/<id>.session-id`, the Step policy's turn-ended hook touches `launches/<id>.turn-ended`, and `session wrap` reads `launches/<id>.capture.json` (outside the sandbox). The idle rule needs the turn-ended marker to reach the folder the control plane watches, so rev 6's thrown-away per-launch directory would have switched idle detection off. The GitHub token directory (SB-7) is **not** under this folder any more: it is the session home's `gh-token/` (below) |
+   | `$AW_SINDRI_HOME/approved/` (the real path) | ro | The session home's `approved` link resolves here: the CLI finds its repo in the approved profile snapshot. It should hold no token or secret (a forge `credential` is a pointer, `env:NAME` or `command:<argv>`; a literal secret written into an argv would be readable, which the profile's approval does not check today) |
    | The session home `<real home>-sessions/<launch>/` (the same path) | **ro**, with `gh-config/` rw | The launcher makes it before the sandbox (0700) and removes it at run close and in the crash sweep. It holds the Step's policy file, the MCP config and the `control.json` below. `session wrap` runs outside the sandbox and reads and deletes the launch secret file before it starts the agent, so the file needs no bind and the agent's environment loses `AW_SINDRI_LAUNCH_SECRET_FILE` (only `AW_SINDRI_LAUNCH_SECRET` is on the §3.4 allowlist). The delete is skipped if `AW_SINDRI_LAUNCH_SECRET` was inherited into wrap's environment; a test `Agent_env_has_no_LAUNCH_SECRET_FILE` and a canary check that the file is gone after wrap starts guard it. The agent can read its own launch secret from its environment; it cannot rewrite its own policy |
    | `<session home>/control.json` | ro, **a file the launcher writes** | A copy of the endpoint record with the real `Url`, pid and epoch (SB-S1 item 7; the inside forwarder listens on the same port number as Sindri's real one, §3.2). The real file is not bound: the state directory is absent, and a single-file bind would pin an old inode after `serve` restarts (R1-14). The launcher writes it before the inside init; the CLI's liveness probe (`GET /sindri/ping`, pid and epoch must equal the record) then passes through the forwarder. **It follows a `serve` restart:** `session wrap` (outside the sandbox, rw on the dir) rewrites it by rename when the epoch changes (case `Control_json_follows_serve_restart`), so a running Step does not see `not the recorded control plane`. Outside a sandbox (macOS before Seatbelt, a Step run without one) the session home's `control.json` is a link to the real file instead |
    | The net directory (§3.2), the token directory (SB-7, the session home's `gh-token/`, ro) and the plan summary | ro (net: sockets) | §3.2, §3.4 |
    | The run directory | rw | The Step's outputs |
-   | `$AW_STATE_DIR/bin/cs/<stamp>/` (the published C# `sindri` and `judge`; `~/.local/bin/sindri` execs into `bin/cs/current`) and `DOTNET_ROOT` | ro | The wrappers below resolve here, and the state directory is otherwise absent, so without this bind `sindri status` fails at exec. The inventory above was read against the TS `judge` and `sindri`; SB-1 re-reads it against the C# binaries (rev 7) |
+   | `$AW_STATE_DIR/bin/cs/<stamp>/` (the published C# `sindri` and `judge`; `~/.local/bin/sindri` execs into `bin/cs/current`, a sibling link that is absent in the sandbox, so the plan builder resolves `current` to the stamp at launch and binds the wrapper to that path; golden case `Wrapper_resolves_current_to_stamp`) and `DOTNET_ROOT` | ro | The wrappers below resolve here, and the state directory is otherwise absent, so without this bind `sindri status` fails at exec. The inventory above was read against the TS `judge` and `sindri`; SB-1 re-reads it against the C# binaries (rev 7) |
    | `~/.local/bin/sindri` | ro | `sindri-nudge`, `workflow complete`, `sandbox explain`; the discovery file it reads is the session home's `control.json` above (SB-S1 item 7) |
 
    **The launch's session home (rev 7; #1099, built on `bugfix/gh-1099-a1`).** The launcher gives each launch a folder of its own, `<real home>-sessions/<launch>/` (0700, beside the
    real home and not inside it), and sets `AW_SINDRI_HOME` and `AW_SINDRI_LAUNCH_SECRET_FILE` to paths in it, so no variable and no argv entry names a path under the real home, where
    `auth/human.token` is. It holds three links (`control.json`, `launches/` and `approved/`, each to the real one), the launch's one-read secret file, and the Step's policy file, MCP
-   config and empty `gh-config/` folder (the GitHub CLI's `GH_CONFIG_DIR`). The CLI, the turn-ended hook and `session wrap` run unchanged against it. **Under the sandbox** it is bound as the rows above say: the real
+   config empty `gh-config/` folder (the GitHub CLI's `GH_CONFIG_DIR`) and, for `agent-app`, the `gh-token/` folder; the whole home, those two included, is removed at run close and in the crash sweep. The CLI, the turn-ended hook and `session wrap` run unchanged against it. **Under the sandbox** it is bound as the rows above say: the real
    `launches/` and `approved/` at their real paths, so the links resolve (the plan builder emits the binds in depth order, with the links absolute; the plan golden has a case
    `Session_home_links_resolve_in_plan`), and a launcher-written `control.json` in place of the link. The `net-forward` canary (`-016`) gains the end-to-end check: SB-4a asserts that a request through the forwarder reaches a stub `/sindri/ping` with the record's pid and epoch; **SB-5a**, where the launcher exists, runs `sindri status` inside the sandbox through the launcher-written file and must answer. The binds are the plan's (SB-1: the plan emits them, shallow to deep, after a tmpfs mask of the real home and of `<real home>-sessions/` so the mountpoints exist even for a custom home outside `$HOME`; golden cases `Session_home_links_resolve_in_plan` and one for a custom home); the launcher (SB-5a) makes the session home and writes the file; SB-4a owns the listener side only. Honest about what hides the token: the real home's **path is not secret** (`readlink` on a link, or
    `/proc/self/mountinfo`, names it); what protects `auth/human.token` is that no mount of it exists in the session.
 
-   **What still blocks `human.token` once SB-2 runs, said plainly (#1099).** Inside the sandbox the file does not exist: the state directory and the real home are absent and the plan binds only the
+   **What blocks `human.token`, and when, said plainly (#1099).** Today nothing blocks the file for a launched agent: the session home only hides the path, and the path is findable (the default home, or `readlink`). It is blocked per launch type once the sandbox is in force: Steps at SB-5a, `sindri open` at SB-5b, macOS at SB-9; SB-2 alone only builds the `bwrap` argv. Inside the sandbox the file does not exist: the state directory and the real home are absent and the plan binds only the
    entries above. The `fs-deny` canary (SB-2) asserts `[ ! -e <real home>/auth/human.token ]` inside (on Seatbelt, where a denied file still exists, "stat and read both fail") and that `ls <real home>` shows only `launches` and `approved`, so this is a tested fact once it runs, not a plan-derived claim. **Still open:**
-   (1) `/proc/<pid>/root` and `/proc/<pid>/environ` of a process outside the sandbox, which §3.1 below accepts because `/proc` is shared; the user namespace's ptrace check may in fact deny it for a process
-   in the parent namespace, which has not been probed on this box, so SB-2 adds the probe (`cat /proc/<serve pid>/root/...` from inside) and the spec is then amended to say denied or accepted;
+   (1) `/proc/<pid>/root` and `/proc/<pid>/environ` of a process outside the sandbox, which the "what it can't stop" paragraph below accepts because `/proc` is shared; **Assumed open until the probe says otherwise:** for a same-uid target the kernel's ptrace check passes when the target is dumpable, and the plan shares the pid namespace. so SB-2 adds the probe (`cat /proc/<serve pid>/root/...` from inside). If the probe reads, SB-2's done-when fails and SB-5a does not start until a pid namespace with a fresh `/proc` is in the plan (which reopens SB6 and the heavy wrapper's ancestor walk); if it is denied, the spec is amended to say so;
    (2) every session that runs outside the sandbox: attended `sindri open` sessions until SB-5b (and on macOS, where no sandbox exists yet, until SB-9, or refused: §12), a session someone starts by hand in tmux (it has neither the session home nor the sandbox, and its
    only control is #1098's rule); before SB-5a no Step runs at all, since the product refuses with `-014` (SB16);
    (3) the same OS user: a process the sandbox did not start can read the file. #1098's server rule (a call carrying a launch is that launch's session, never the human) is the other layer;
@@ -205,7 +204,7 @@ The plan is a stack of bind mounts over the host root, bottom to top:
 **What it can't stop, said plainly:** reading a repo's `.env` outside `$HOME` (the root is readable; repos under `$HOME` are not bound); `pkill` (SB6); a write through
 a tool cache that poisons a later build; filling the disk (a growth check on the worktree and scratch runs on the
 watchdog's tick and records `sandbox.limit-hit {kind: disk}` as a warning, it does not kill); and, because `/proc` is
-shared, a same-user process **may** read `/proc/<pid>/environ` or walk `/proc/<pid>/root` around the denials (the user namespace's ptrace check may deny it for a process outside; not probed yet, SB-2 probes it, §3.1 above). The state
+shared, a same-user process can read `/proc/<pid>/environ` or walk `/proc/<pid>/root` around the denials (assumed open until SB-2's probe says otherwise; see the session-home paragraph above). The state
 directory is hidden from honest access only, not from someone looking for a way around (R1-22). `sandbox.fs.denyExtra` takes
 more paths. Tidying `locks/` or `judge/` (writable for the hooks and `heavy`) can also damage the owner's box-wide mutex and judge records; the launch brief says not to, and `heavy` prints the holder.
 
@@ -318,7 +317,7 @@ CLAUDE.md's own commands. `session wrap` builds it: `PATH` (the toolchain dirs b
 `npm_config_cache`, `npm_config_logs_dir` (scratch), `npm_config_ignore_scripts=true`, `NODE_OPTIONS` only if the repo
 sets it, `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_<n>`/`GIT_CONFIG_VALUE_<n>` and `GIT_CONFIG_GLOBAL` (an empty file; the sandbox's git settings, §3.4), `CLAUDE_CONFIG_DIR` (when the CLI supports it), `DOTNET_PROCESSOR_COUNT`, `MSBUILDDISABLENODEREUSE`, `DOTNET_CLI_USE_MSBUILD_SERVER`, the proxy variables and `NO_PROXY`, `AW_SANDBOX=1`,
 `AW_SANDBOX_PLAN` (the value-free summary, §3.6), `AW_SINDRI_INSTANCE`, `AW_SINDRI_RUN_DIR`, `AW_SINDRI_WORKTREE`,
-`AW_SINDRI_BRANCH` (the run ref), `AW_SINDRI_CHILD`, `AW_SINDRI_ITEM`, `AW_SINDRI_LAUNCH`, `AW_SINDRI_HOME` (rev 7: always the launch's session home, §3.1, never the real home), `AW_SANDBOX_SLOT_HELD` under rule 3 of §3.3 (never `AW_HEAVY_LOCK_HELD`), and `AW_SINDRI_LAUNCH_SECRET` (engine P8 D8). A test fails on
+`GH_CONFIG_DIR` (the session home's empty `gh-config/`, so `gh` finds no login), `AW_SINDRI_BRANCH` (the run ref), `AW_SINDRI_CHILD`, `AW_SINDRI_ITEM`, `AW_SINDRI_LAUNCH`, `AW_SINDRI_HOME` (rev 7: always the launch's session home, §3.1, never the real home), `AW_SANDBOX_SLOT_HELD` under rule 3 of §3.3 (never `AW_HEAVY_LOCK_HELD`), and `AW_SINDRI_LAUNCH_SECRET` (engine P8 D8). A test fails on
 any name matching `*_TOKEN`, `*_KEY`, `*_SECRET`, `*PASSWORD*`, `AWS_*`, `GH_*`, `GITHUB_*` or `AGENT_APP_*` unless it
 is on the list with a reason (the launch secret, the target's model credential). LN-LCH1's scrub is subsumed.
 
@@ -574,7 +573,7 @@ for each grant must succeed:
 | `env` | no secret-pattern name in the environment except the allowlist |
 | `login` | the credential source delivered what it promises (§3.4): the login is readable at its planned path (a copy has mode 0600), the owner's original login is not writable and, under `separate-login`, the owner's whole agent home is absent, and the inner policy denies reading it |
 | `hooks-run` | the three-part hook canary of §3.1: plain hooks deny, a `judge` round trip works, the fail-open log is written and the meta hooks do nothing |
-| `net-forward` | a call through the Sindri forwarder reaches the API, run as `sindri status` through the session home's launcher-written `control.json` (rev 7); the proxy forwarder answers |
+| `net-forward` | a call through the Sindri forwarder reaches the API, stub ping in SB-4a, then `sindri status` through the session home's launcher-written `control.json` in SB-5a (rev 7); the proxy forwarder answers |
 | `net-deny` | a connect to a non-allowed host through the proxy is refused; a direct connect fails |
 
 | Code | Kind | Meaning | `reason` / detail | Engine route |
@@ -805,14 +804,15 @@ and shares the profile; `sandbox.login.source: separate-login` is the multi-user
 
 ## 12. Phases
 
+**In four lines (rev 7):** Linux sandbox now. macOS Seatbelt in parallel, runner to be assigned by the owner. No stopgap before the sandbox. One open question (§13: macOS `sindri open` between SB-5b and SB-9).
+
 **Order (rev 7, owner answers 2026-10-25 on #1113).** Two tracks run at once. **Linux, now**, in this merge order: SB-0, SB-1, then SB-2 and SB-4a (built in parallel, either may merge first; they share no files), then SB-3a (needs P10a's `session wrap`) and SB-5a (needs SB-2, SB-3a, SB-4a and P8 U9). Each parent PR is restacked onto `main` before its child. **macOS Seatbelt, in parallel:** SB-9, from the same plan SB-1 builds, with its runner the owner assigns
 later (**macOS: owner-assigned runner**; the spec does not name a lane or a Mac). The macOS unit work does not wait for the Linux track; its end-to-end proof needs SB-5a, so the tracks join there, and a Linux merge does not mean the macOS box is
 covered. **On a Mac** the product's sandbox is unavailable until SB-9: Steps park without a runtime (`-014` `unsupported-platform`) from SB-5a, and from SB-5b `sindri open` is refused the same way (SB1: no setting keeps the old path). Whether macOS owners keep an unconfined `sindri open` until SB-9 is an open owner question (§13, rev 7). **There is no stopgap** (owner answer 2): no interim token ACL, no process-ancestry check, no keychain trick; until a sandbox is in force the controls are the two that
 already merged, #1098's server rule (a call carrying a launch is its launch's session) and #1099's session home (§3.1), and `UnavailableSandbox` keeps refusing every Step launch with `-014` (SB16).
 
 **Why the Linux track can go now (box facts, 2026-10-25):** bubblewrap 0.9.0 is installed; `kernel.unprivileged_userns_clone` is 1 and `user.max_user_namespaces` is
-127216; `kernel.apparmor_restrict_unprivileged_userns` is 1 (Ubuntu's restriction, which is what stopped a plain `bwrap` before); and #366 (SB-2) reports its contract
-cases passing under it on this box (reported by that PR, not re-run for this amendment). The spike's item 1 and 4 answers (§15) stand for the same tools.
+127216; `kernel.apparmor_restrict_unprivileged_userns` is 1 (Ubuntu 24.04's restriction, which stops an unprofiled program from making a user namespace); what lets `bwrap` through is the AppArmor profile named `bwrap` that Ubuntu ships in `/etc/apparmor.d`, so no root step is needed per box (a box without that profile needs one, and `sindri sandbox check` reports `no-user-namespace`). Re-run for this amendment on 2026-10-25: `bwrap --ro-bind / / --unshare-user --dev /dev --proc /proc true` exits 0. #366 (SB-2) reports its contract cases passing under the same setup (a claim of that PR, not re-run here). The spike's item 1 and 4 answers (§15) stand for the same tools.
 
 Each phase is one PR, driven by /specToProvenPR in its lane, red first. Sizes: S a few files, M one subsystem slice, L more.
 **(owner)** steps run on the owner's box. **The critical path to the first agent-run item:** P10a → DT-J2 (#306) → P8 (with
@@ -854,7 +854,7 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
 | Wave | API lane | Ideas lane | Engine lane | UI lane | Owner |
 |---|---|---|---|---|---|
 | 0 | SB-0, then SB-1 | SB-S1 | reads SB-0's table and types; **P8 U9** (park kind, N1 rule, limit rule, suspension read and endpoint, `-020` wait); P8 on `PassThroughSandbox`, in process | — | nothing to answer: the decisions are in §13 |
-| 1 | SB-2 and SB-4a (no common files), SB-3a once `session wrap` is on `main`; SB-9's unit work (macOS, owner-assigned runner) | SB-7 tests against a fake token API | P8 eval cases per code kind | SB-6 on the goldens | the spike's "no" answers |
+| 1 | SB-2 and SB-4a (no common files), SB-3a once `session wrap` is on `main`; SB-9's unit work (macOS; the runner is whoever the owner assigns, not the API lane) | SB-7 tests against a fake token API | P8 eval cases per code kind | SB-6 on the goldens | the spike's "no" answers |
 | 2 | SB-3b and SB-4b beside SB-5a, then SB-5b | SB-11, then SB-7 | P8 U7 (the D10 git hardening) | SB-6 live | — |
 | 3 | — | SB-8 if triggered | P8's binary proof is SB-10 | — | SB-10 |
 
@@ -876,7 +876,7 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
 
 **Open question (rev 7).** Between SB-5b and SB-9 a macOS owner cannot `sindri open` (no Seatbelt adapter, and SB1 allows no unconfined path). Keep macOS opens unconfined, with a visible "not sandboxed" line, until SB-9 lands, or accept the refusal? Until answered the spec's text is the refusal.
 
-The owner answered the fourteen questions of revision 4 on 2026-10-18. **No question is open.** The numbers Q1..Q14 are the
+The owner answered the fourteen questions of revision 4 on 2026-10-18. None of these fourteen is open; the one question from revision 7, above, is the only open one. The numbers Q1..Q14 are the
 ones the rest of the spec cites. "Accepted" means the default of revision 4 stands as written.
 
 | # | Decision | What it means |
