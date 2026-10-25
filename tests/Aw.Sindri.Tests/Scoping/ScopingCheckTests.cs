@@ -375,13 +375,13 @@ public sealed class ScopingCheckTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task An_evidence_stage_with_only_lens_findings_is_a_regather()
+    public async Task An_evidence_stage_with_only_lens_findings_is_incomplete_never_a_regather()
     {
         var facts = ScopingFacts.Expiry().Edit("lenses", n => n["code"]!["anchors"] = new JsonArray("feature:other"));
 
         var response = await Run(facts, ScopeStage.Evidence);
 
-        Names(response, "SCP-LENS-001", ScopeOutcome.Regather);
+        Names(response, "SCP-LENS-001", ScopeOutcome.Incomplete);
     }
 
     [Fact, Trait("Lane", "unit")]
