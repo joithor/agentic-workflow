@@ -37,7 +37,7 @@ public sealed class ContextSearchApiTests : IDisposable
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var answer = await host.Http.Ask(Get("/sindri/context/search?q=tab+manager&limit=3", Terminal(host)));
+        var answer = await host.Http.Ask(Get("/sindri/context/search?q=tabs&limit=3", Terminal(host)));
 
         var whole = await host.Http.Ask(Get("/sindri/context/map/whole?detail=nodes", Terminal(host)));
         var only = await host.Http.Ask(Get("/sindri/context/search?q=manager", Terminal(host)));

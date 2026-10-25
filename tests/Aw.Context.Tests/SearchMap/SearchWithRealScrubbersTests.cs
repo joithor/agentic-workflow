@@ -46,20 +46,23 @@ public sealed class SearchWithRealScrubbersTests
         Assert.Equal("feature:tabs.tab-manager", hits[0]);
     }
 
-    // The split-panes fixture map is what the Sindri host imports: its decisions, records and edge evidence must not change what "tab manager" finds.
+    // The split-panes fixture map is what the Sindri host imports. Its rename override ("Tabs") applies to the map a caller sees but not to the stored graph this second test reads.
     [Fact, Trait("Lane", "unit")]
-    public async Task The_split_panes_map_puts_the_feature_first_through_the_engine_with_the_fake_scrubbers()
+    public async Task The_split_panes_map_finds_the_renamed_feature_by_its_new_label_and_not_by_the_old_one()
     {
         using var world = new MapWorld();
         _ = await world.ImportYaml(FixtureMap.Yaml);
 
-        var view = (await world.Engine.Search(new MapSearchQuery("tab manager", Limit: null, Area: null, Repo: null, Aw.Context.Core.Map.MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
+        // The fixture's rename override makes the feature's label "Tabs": the search reads the map the caller sees, so "tab manager" finds only the file.
+        var renamed = (await world.Engine.Search(new MapSearchQuery("tabs", Limit: null, Area: null, Repo: null, Aw.Context.Core.Map.MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
+        var old = (await world.Engine.Search(new MapSearchQuery("tab manager", Limit: null, Area: null, Repo: null, Aw.Context.Core.Map.MapRead.Current), MapWorld.Human, MapWorld.None)).Value;
 
-        Assert.True(view.Hits.Count > 0 && view.Hits[0].Key.Value == "feature:tabs.tab-manager", string.Join(' ', view.Hits.Select(static h => h.Key.Value)));
+        Assert.True(renamed.Hits.Count > 0 && renamed.Hits[0].Key.Value == "feature:tabs.tab-manager", string.Join(' ', renamed.Hits.Select(static h => h.Key.Value)));
+        Assert.DoesNotContain(old.Hits, static h => h.Key.Value == "feature:tabs.tab-manager");
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_split_panes_map_puts_the_feature_first_over_the_real_scrubbers()
+    public async Task The_split_panes_stored_graph_puts_the_feature_first_over_the_real_scrubbers()
     {
         using var world = new MapWorld();
         _ = await world.ImportYaml(FixtureMap.Yaml);
