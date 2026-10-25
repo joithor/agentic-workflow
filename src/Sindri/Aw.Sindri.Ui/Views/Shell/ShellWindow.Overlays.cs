@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Approvals;
 using Aw.Sindri.Ui.Views.Item;
+using Aw.Sindri.Ui.Views.Layout;
 using Aw.Sindri.Ui.Views.Palette;
 using Aw.Sindri.Ui.Views.Start;
 
