@@ -4,11 +4,6 @@ using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
-/// <summary>What a takeover came to, in words.</summary>
-/// <param name="Line">The sentence: sending, the viewer's outcome, or the refusal with its code.</param>
-/// <param name="Command">The attach command to copy when no terminal opened; empty otherwise.</param>
-internal sealed record TakeoverView(string Line, string Command);
-
 /// <summary>
 /// Sends "ApplyCommand:takeover" for a surface that has no Attach control (the run inspectors): once per press, never retried, and says
 /// what came of it: the viewer's outcome, or the refusal with its code. A server that served no viewer is asked for the launch.
