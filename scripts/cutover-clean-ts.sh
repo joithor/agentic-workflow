@@ -282,10 +282,16 @@ pre_link() {
           if [ ! -d "$path/.git" ] && ! git -C "$path" rev-parse --git-dir > /dev/null 2>&1; then
             say "hook v3 not installed in $name: $path is not a readable git repo"; L "hook skipped $name $path"; continue
           fi
-          if "$sindri_bin" scrub --install-pre-commit --repo "$path" --bin "$BIN/sindri" > /dev/null 2>&1 < /dev/null; then
+          if hook_out="$("$sindri_bin" scrub --install-pre-commit --repo "$path" --bin "$BIN/sindri" 2>&1 < /dev/null)"; then
             say "installed hook v3 in $name ($path)"; L "hook v3 $name $path"
+          elif printf '%s' "$hook_out" | grep -q 'SND-SCRUB-003'; then
+            # The repo has its own pre-commit hook (husky, core.hooksPath, ...): Sindri never replaces it, so this is a
+            # skip with the manual line to add (the same answer `sindri doctor` gives), not a step-2 failure (#1029).
+            say "hook v3 skipped in $name ($path): it has its own pre-commit hook; add 'sindri scrub --staged || exit 1' to it by hand"
+            L "hook skipped (SND-SCRUB-003) $name $path: $(printf '%s' "$hook_out" | redact | tr '\n' ' ')"
           else
-            say "hook v3 failed in $name ($path)"; L "hook failed $name $path"; partial=1
+            say "hook v3 failed in $name ($path): $(printf '%s' "$hook_out" | redact | tail -n 3 | tr '\n' ' ')"
+            L "hook failed $name $path: $(printf '%s' "$hook_out" | redact | tr '\n' ' ')"; partial=1
           fi
         done <<EOF
 $REPOS
