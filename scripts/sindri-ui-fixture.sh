@@ -741,7 +741,7 @@ agent_run() {
   need jq
   need git
   sessions_need_copy
-  local dir profile launcher recipe item n out
+  local dir profile launcher recipe item out
   dir="$(agent_dir)"
   profile="$(profile_path)"
   launcher="$(sessions_dir)/launcher.json"
@@ -760,7 +760,8 @@ agent_run() {
   item="$(FIXTURE_REPO="$AGENT_REPO" start_on_new_item "$AGENT_RECIPE" "Fixture agent run")" || return
   local wait="${FIXTURE_AGENT_WAIT:-120}"
   [[ "$wait" =~ ^[0-9]+$ ]] || die "agent-run: FIXTURE_AGENT_WAIT '$wait' is not a number of seconds"
-  for n in $(seq 1 "$wait"); do
+  local deadline=$((SECONDS + wait))
+  while [ "$SECONDS" -lt "$deadline" ]; do
     if "$PROVE" human ledger --item "$item" --max 1000 2>&1 | tr -d '\r' | grep -q 'launch.started'; then
       printf '%s\n' "$item"
       return 0
