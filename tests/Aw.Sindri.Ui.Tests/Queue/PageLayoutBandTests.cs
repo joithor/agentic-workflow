@@ -30,4 +30,47 @@ public sealed class PageLayoutBandTests
 
         Assert.Equal([true, false, true, false, true, true], grid.Children.Select(c => c.IsVisible));
     }
+
+    [Theory]
+    [InlineData(PageTier.Wide, 1120)]
+    [InlineData(PageTier.Mid, 1000)]
+    [InlineData(PageTier.Narrow, 760)]
+    public void The_columns_beside_the_title_leave_it_160_px_at_the_start_of_each_tier(PageTier tier, double width)
+    {
+        var grid = SixColumns();
+
+        PageLayout.Apply(grid, tier);
+
+        var fixedWidth = grid.ColumnDefinitions.Skip(1).Sum(c => c.Width.Value);
+        Assert.True(width - fixedWidth >= 160, $"{tier}: the title column gets {width - fixedWidth} px");
+        Assert.Equal(Avalonia.Controls.GridUnitType.Star, grid.ColumnDefinitions[0].Width.GridUnitType);
+    }
+
+    [Theory]
+    [InlineData(PageTier.Wide)]
+    [InlineData(PageTier.Mid)]
+    [InlineData(PageTier.Narrow)]
+    [InlineData(PageTier.Tight)]
+    public void The_header_and_the_rows_get_the_same_column_widths(PageTier tier)
+    {
+        var header = SixColumns();
+        var row = SixColumns();
+
+        PageLayout.Apply(header, tier);
+        PageLayout.Apply(row, tier);
+
+        Assert.Equal(header.ColumnDefinitions.Select(c => c.Width), row.ColumnDefinitions.Select(c => c.Width));
+    }
+
+    private static Avalonia.Controls.Grid SixColumns()
+    {
+        var grid = new Avalonia.Controls.Grid();
+        for (var i = 0; i < 6; i++)
+        {
+            grid.ColumnDefinitions.Add(new Avalonia.Controls.ColumnDefinition());
+            grid.Children.Add(new Avalonia.Controls.Border { [Avalonia.Controls.Grid.ColumnProperty] = i });
+        }
+
+        return grid;
+    }
 }
