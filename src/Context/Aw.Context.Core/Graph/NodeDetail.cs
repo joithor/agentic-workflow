@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Context.Core.Graph;
 
 /// <summary>A node as 'context show' answers it: the <see cref="NodeFact"/> fields, where the node came from and a short description.</summary>
@@ -21,6 +23,10 @@ public sealed record NodeDetail(
     NodeSource? Source = null,
     string? Description = null)
 {
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+
     /// <summary>The detail for <paramref name="fact"/>.</summary>
     /// <param name="fact">The node fact.</param>
     /// <param name="source">Where it came from, or null.</param>
@@ -29,10 +35,10 @@ public sealed record NodeDetail(
     public static NodeDetail Of(NodeFact fact, NodeSource? source = null, string? description = null)
     {
         ArgumentNullException.ThrowIfNull(fact);
-        return new NodeDetail(fact.Key, fact.Kind, fact.Label, fact.Provenance, fact.Confirmed, fact.Trust, fact.Confidence, source, description);
+        return new NodeDetail(fact.Key, fact.Kind, fact.Label, fact.Provenance, fact.Confirmed, fact.Trust, fact.Confidence, source, description) { Repo = fact.Repo };
     }
 
     /// <summary>The plain fact (what the text form prints).</summary>
     /// <returns>The fact.</returns>
-    public NodeFact ToFact() => new(Key, Kind, Label, Provenance, Confirmed, Trust, Confidence);
+    public NodeFact ToFact() => new(Key, Kind, Label, Provenance, Confirmed, Trust, Confidence) { Repo = Repo };
 }

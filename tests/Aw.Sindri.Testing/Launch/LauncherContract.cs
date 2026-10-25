@@ -73,8 +73,16 @@ public abstract class LauncherContract
     {
         var step = new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"));
 
-        var result = await Create().Launch(A.LaunchRequest().Unattended(step).Build(), CancellationToken.None);
+        var directory = Directory.CreateTempSubdirectory("aw-launcher-contract-");   // an unattended Step makes its output folder in the directory it works in
+        try
+        {
+            var result = await Create().Launch(A.LaunchRequest().InDirectory(directory.FullName).Unattended(step).Build(), CancellationToken.None);
 
-        Expect.True(result is StartedLaunch { Viewer.Kind: ViewerOutcomeKind.Skipped });
+            Expect.True(result is StartedLaunch { Viewer.Kind: ViewerOutcomeKind.Skipped });
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
     }
 }

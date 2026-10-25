@@ -4,9 +4,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -29,9 +27,8 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="recipes">The approval check.</param>
 /// <param name="nonces">The nonce table.</param>
-/// <param name="challenges">The server's challenges, for a protected answer.</param>
 /// <param name="callers">The caller the API chain classed: its actor sends the command.</param>
-internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces, IChallenges challenges,
+internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces,
     ICallerContextAccessor callers)
     : IService<ApplyCommandRequest, ApplyCommandResponse>
 {
@@ -160,8 +157,8 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     private readonly record struct SentCommand(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
     /// <summary>
-    /// The checks before the Update (spec §4.2, §5.2): a protected answer redeems its challenge against the instance as it
-    /// is now; a human trigger that isn't exempt needs its recipe's approval to hold.
+    /// The checks before the Update (spec §4.2, §5.2): a protected answer (a grant or an accept) asks for no typed challenge (owner decision q93) but is checked like any
+    /// other; a human trigger that isn't exempt needs its recipe's approval to hold.
     /// </summary>
     private async ValueTask<Result<Unit>> Check(ApplyCommandRequest request, Routing route, CancellationToken cancellationToken)
     {
@@ -178,11 +175,6 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
             return view.Error;
         }
 
-        if (protectedAnswer && Redeem(request, address, view.Value) is { } stale)
-        {
-            return stale;
-        }
-
         var approval = await recipes.Check(view.Value.Recipe, cancellationToken).ConfigureAwait(false);
         if (approval.IsError)
         {
@@ -195,19 +187,6 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     /// <summary>The view the check reads: the parent's, when routing already read it, else the target's.</summary>
     private ValueTask<Result<InstanceView>> ViewOf(Routing route, CancellationToken cancellationToken) =>
         route.Parent is { } known ? ValueTask.FromResult<Result<InstanceView>>(known) : runtime.Get(route.Target, cancellationToken);
-
-    /// <summary>A protected answer's challenge (spec §4.2): its action text and the instance as it is now must match; any attempt uses it up (SND-WF-013).</summary>
-    private Error? Redeem(ApplyCommandRequest request, InstanceAddress address, InstanceView view)
-    {
-        var action = InstanceChallenge.Action(address, request.Answer!.Value, request.Amount); // why: only a protected answer redeems
-        if (request.Challenge is not { } answer)
-        {
-            return WorkflowErrors.WorkflowChallengeStale.With($"'{action.Text}' is protected and needs its challenge typed at a terminal (fix: run it again in a terminal: sindri workflow answer {address.Value} ...)");
-        }
-
-        var redeemed = challenges.Redeem(answer, action, InstanceChallenge.Subject(view), WorkflowErrors.WorkflowChallengeStale);
-        return redeemed.IsError ? redeemed.Error : null;
-    }
 
     /// <summary>The arguments each kind needs (spec §6.3): an answer's variant and its text or amount, a command's verb.</summary>
     private static Error? Malformed(ApplyCommandRequest request) => request switch

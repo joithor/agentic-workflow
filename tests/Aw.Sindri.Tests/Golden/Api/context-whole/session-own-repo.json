@@ -74,7 +74,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "surface:command/switch-tab",
@@ -85,7 +86,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "action:tab-manager.restore-layout",
@@ -96,7 +98,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000201",
@@ -140,7 +143,8 @@
       "trust": "trusted",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": false
+      "confirmed": false,
+      "repo": "aw-split-panes"
     },
     {
       "key": "feature:tabs.tab-groups",
@@ -151,7 +155,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "surface:command/group-tabs",
@@ -162,7 +167,8 @@
       "trust": "trusted",
       "provenance": "human",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": true,
+      "repo": "aw-split-panes"
     },
     {
       "key": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
@@ -195,7 +201,8 @@
       "trust": "trusted",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": false
+      "confirmed": false,
+      "repo": "aw-split-panes"
     }
   ],
   "edges": [
@@ -317,5 +324,11 @@
       "confirmed": true
     }
   ],
-  "truncated": false
+  "truncated": false,
+  "repos": [
+    {
+      "name": "aw-split-panes",
+      "nodeCount": 7
+    }
+  ]
 }

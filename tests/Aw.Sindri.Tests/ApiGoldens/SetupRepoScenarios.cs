@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Setup;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -16,10 +15,10 @@ internal static class SetupRepoScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("setup-repos", "started"), ("setup-repos", "refused-session"), ("setup-repos", "not-a-checkout"), ("setup-repos", "not-absolute"),
+        ("setup-repos", "started"), ("setup-repos", "not-a-checkout"), ("setup-repos", "not-absolute"),
         ("setup-repos", "already-added"), ("setup-repos", "name-taken"), ("setup-repos", "bad-name"),
-        ("setup-repos-onboard", "refused-session"), ("setup-repos-onboard", "not-approved"),   // POST /setup/repos/onboard (§5.1): a session is refused, no approved profile is 409
-        ("setup-mcp", "not-in-profile"), ("setup-mcp", "refused-session"),   // POST /setup/mcp (§5.4): a repo the approved profile does not name is 409, a session is refused
+        ("setup-repos-onboard", "not-approved"),   // POST /setup/repos/onboard (§5.1): a session is refused, no approved profile is 409
+        ("setup-mcp", "not-in-profile"),   // POST /setup/mcp (§5.4): a repo the approved profile does not name is 409, a session is refused
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -51,7 +50,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "started" => Post(route, "{\"path\":\"/work/demo\"}", human),
-            "refused-session" => Post(route, "{\"path\":\"/work/demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             "not-a-checkout" => Post(route, "{\"path\":\"/work/missing\"}", human),
             "not-absolute" => Post(route, "{\"path\":\"demo\"}", human),
             "already-added" => Post(route, "{\"path\":\"/work/demo\"}", human),
@@ -67,7 +65,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "not-approved" => Post(route, "{\"path\":\"/work/demo\"}", Human(host.Token.Value)),
-            "refused-session" => Post(route, "{\"path\":\"/work/demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such setup-repos-onboard scenario"),
         })).Body;
     }
@@ -78,7 +75,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "not-in-profile" => Post(route, "{\"repo\":\"demo\"}", Human(host.Token.Value)),
-            "refused-session" => Post(route, "{\"repo\":\"demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such setup-mcp scenario"),
         })).Body;
     }

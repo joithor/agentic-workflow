@@ -68,7 +68,7 @@ public sealed class LauncherT3Tests : IDisposable
     [Fact]
     public async Task A_step_stays_on_tmux()
     {
-        var result = await Make(_rig.Host()).Launch(A.LaunchRequest().Unattended(new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"))).Build(), Token);
+        var result = await Make(_rig.Host()).Launch(A.LaunchRequest().InDirectory(_home).Unattended(new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"))).Build(), Token);
 
         Expect.True(result is StartedLaunch { Host.Kind: HostKind.Tmux });
         Expect.Equal(0, _rig.Api.Launched.Count);
