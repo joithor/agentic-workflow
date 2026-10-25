@@ -62,6 +62,6 @@ Limits:
   memory 6.4GiB (slowed at 5.1GiB), cpu 400%, processes 2048, sessions 3, home 256MiB, time none
 
 Credentials: GitHub none, model login owner-copy
-The agent's own policy: asks, 45 rules; its own sandbox: auto
-Hooks kept: block-destructive, block-push-main, context-guard, detect-secrets, done-gate, done-gate-annotate, git-context, judge-health, meta-lane-gate, meta-outbox, meta-stop-gate, outbox-flush, prism-context, probe-log, prompt-sort, session-id-report, sindri-nudge, subagent-start-map, turn-origin
-Hooks left out: external-write-guard, record-teammate-name, rtk-rewrite, scope-gate, send-gate
+The agent's own policy: asks, 61 rules; its own sandbox: auto
+Hooks kept: block-destructive, block-push-main, context-guard, detect-secrets, done-gate, done-gate-annotate, git-context, judge-health, meta-lane-gate, meta-outbox, meta-stop-gate, outbox-flush, prism-context, probe-log, prompt-sort, rtk-rewrite, session-id-report, sindri-nudge, subagent-start-map, turn-origin, winch, aw-live
+Hooks left out: external-write-guard, record-teammate-name, scope-gate, send-gate

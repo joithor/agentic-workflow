@@ -21,46 +21,56 @@ public static class HookInventory
         new("bin/aw-meta", StatePathKind.Absent, "meta hooks exit at once when aw-meta is not executable"),
     ];
 
-    /// <summary>The installed hook scripts and whether each answers permissions.</summary>
+    /// <summary>
+    /// Every owner hook a session would run, with its treatment (owner, 2026-10-18): keep is the default; a hook is dropped only when it answers
+    /// 'allow' in a way that bypasses 'dontAsk', and a hook that rewrites commands is kept with its rewritten forms denied too.
+    /// <see cref="HookPermissionPolicy"/> applies it; a hook missing here is kept and noted in the plan.
+    /// </summary>
     public static IReadOnlyList<HookScript> Scripts { get; } =
     [
-        Plain("block-destructive"),
-        Plain("block-push-main"),
-        Plain("context-guard"),
-        Plain("detect-secrets"),
-        Plain("done-gate"),
-        Plain("done-gate-annotate"),
-        Answers("external-write-guard"),
-        Plain("git-context"),
-        Plain("judge-health"),
-        Plain("meta-lane-gate"),
-        Plain("meta-outbox"),
-        Plain("meta-stop-gate"),
-        Plain("outbox-flush"),
-        Plain("prism-context"),
-        Plain("probe-log"),
-        Plain("prompt-sort"),
-        Answers("record-teammate-name"),
-        Answers("rtk-rewrite"),
-        Answers("scope-gate"),
-        Answers("send-gate"),
-        Plain("session-id-report"),
-        Plain("sindri-nudge"),
-        Plain("subagent-start-map"),
-        Plain("turn-origin"),
+        Keep("block-destructive", "PreToolUse Bash", "denies only (exit 2): a guard that tightens"),
+        Keep("block-push-main", "PreToolUse Bash", "denies only (exit 2): a guard that tightens"),
+        Keep("context-guard", "PostToolUse *", "adds context and writes digests; answers nothing"),
+        Keep("detect-secrets", "PreToolUse Bash", "denies only (exit 2): a guard that tightens"),
+        Keep("done-gate", "Stop", "blocks a stop (exit 2) until the brief's proof is shown; answers no permission"),
+        Keep("done-gate-annotate", "PostToolUse Agent", "annotates the result; never blocks or answers"),
+        new("external-write-guard", Hook("external-write-guard"), "PreToolUse *", AnswersPermissions: true, RewritesInput: false, HookTreatment.Drop,
+            "answers 'allow' to every tool call it doesn't match, so with it every tool would pass 'dontAsk'; its external writes stay refused by the deny rule 'gh:*' and by 'dontAsk' for tools outside the Step's list"),
+        Keep("git-context", "SessionStart", "prints git context; answers nothing"),
+        Keep("judge-health", "SessionStart", "warns when the judge is degraded; answers nothing"),
+        Keep("meta-lane-gate", "UserPromptSubmit, SessionStart, PostToolUse, Stop (Codex and Cursor lanes)", "acts only in a Meta lane (does nothing in a Sindri launch); blocks a stop, answers no permission"),
+        Keep("meta-outbox", "PostToolUse SendMessage", "records sent messages for the meta; answers nothing"),
+        Keep("meta-stop-gate", "Stop", "blocks only the registered meta's stop; answers no permission"),
+        Keep("outbox-flush", "TeammateIdle", "keeps a teammate working (exit 2); answers no permission"),
+        Keep("prism-context", "SessionStart", "loads memory context; answers nothing"),
+        Keep("probe-log", "every event, while the probe is on", "logs the hook input; prints nothing"),
+        Keep("prompt-sort", "UserPromptSubmit", "may print a scaffold note; answers nothing"),
+        new("record-teammate-name", Hook("record-teammate-name"), "PreToolUse Agent", AnswersPermissions: true, RewritesInput: false, HookTreatment.Drop,
+            "always answers 'allow' to Agent, so every dispatch would pass 'dontAsk'; without it subagent-start-map uses its dispatch-order fallback"),
+        new("rtk-rewrite", Hook("rtk-rewrite"), "PreToolUse Bash", AnswersPermissions: true, RewritesInput: true, HookTreatment.KeepDenyRewrites,
+            "rewrites commands to their 'rtk' form for token savings (the owner keeps it); every denied command is also denied in its 'rtk' form, so 'git push' can't pass as 'rtk git push'",
+            RewritePrefix: "rtk "),
+        new("scope-gate", Hook("scope-gate"), "PreToolUse Agent", AnswersPermissions: true, RewritesInput: false, HookTreatment.Drop,
+            "answers 'allow' to an Agent dispatch with a good brief, so dispatches would pass 'dontAsk'"),
+        new("send-gate", Hook("send-gate"), "PreToolUse SendMessage", AnswersPermissions: true, RewritesInput: true, HookTreatment.Drop,
+            "answers 'allow' to SendMessage (and rewrites the message), so messages would pass 'dontAsk'"),
+        Keep("session-id-report", "SessionStart (Codex and Cursor)", "reports the session id to Sindri's launcher; answers nothing"),
+        Keep("sindri-nudge", "SessionStart", "prints a reminder; answers nothing"),
+        Keep("subagent-start-map", "SubagentStart", "maps a subagent to its brief; answers nothing"),
+        Keep("turn-origin", "UserPromptSubmit", "marks the turn's origin; answers nothing"),
+        new("winch", "config/settings.json", "PreToolUse *, Stop (inline)", AnswersPermissions: false, RewritesInput: false, HookTreatment.Keep,
+            "asks the owner's terminal to redraw; answers nothing"),
+        new("aw-live", "mods/aw-live", "in-process mod (the /live pane)", AnswersPermissions: false, RewritesInput: false, HookTreatment.Keep,
+            "draws this session's numbers; answers nothing"),
     ];
 
-    private static HookScript Plain(string name) => new(name, AnswersPermissions: false);
+    private static HookScript Keep(string name, string events, string why) =>
+        new(name, Hook(name), events, AnswersPermissions: false, RewritesInput: false, HookTreatment.Keep, why);
 
-    private static HookScript Answers(string name) => new(name, AnswersPermissions: true);
+    private static string Hook(string name) => "config/hooks/" + name + ".sh";
 
-    /// <summary>The hooks a sandboxed session keeps and omits, by <see cref="HookPermissionPolicy.OmitPermissionAnsweringHooks"/>.</summary>
-    /// <returns>The two lists.</returns>
-    public static PlanHooks ForSession()
-    {
-        var omit = HookPermissionPolicy.OmitPermissionAnsweringHooks;
-        return new PlanHooks(
-            [.. Scripts.Where(s => !(omit && s.AnswersPermissions)).Select(s => s.Name)],
-            [.. Scripts.Where(s => omit && s.AnswersPermissions).Select(s => s.Name)]);
-    }
+    /// <summary>The inventory entry for a hook, or null when the inventory doesn't list it.</summary>
+    /// <param name="name">The hook's name.</param>
+    /// <returns>The entry.</returns>
+    public static HookScript? Find(string name) => Scripts.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.Ordinal));
 }

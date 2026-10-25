@@ -731,12 +731,12 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-LAUNCH-019` | A sandbox limit ended the session (`reason`: `memory`, `wall`). Kind **step failure** (`step.failed(limit)`), never auto-retried. Catalogue only: it rides on `session.ended` and `step.failed` and has no HTTP class |
 | `SND-LAUNCH-020` | The cap on concurrent sandboxed sessions is reached (`reason`: `sessions`). Kind **resource wait**: the launch activity retries until the state timeout; an attended open is refused at once (503) |
 | `SND-LAUNCH-021` | The host-side prepare of the repo's packages failed (`reason`: `install-failed`, `lockfile-missing`, `timeout`). Kind **step failure** (503) |
-| `SND-LAUNCH-015` | The agent entry's `sessionIdPattern` timed out on a session id (2 s limit, non-backtracking), so the id was refused unjudged, not as a mismatch: an argv build (open or resume) fails with it, a heartbeat or exit report that carries the id returns it (the heartbeat still counts and the exit still ends the session), and `session wrap` prints it on stderr when a hook file or a scanned file hit the limit. `-014` is reserved by the sandbox spec (a gap, not a reuse) (launcher L-9) |
 | `SND-LAUNCH-022` | The Step's worktree already has a `pre-push` hook that isn't Sindri's (no `# aw-sindri pre-push guard` marker line); the launch is refused (409) and the hook is never changed. `-014`..`-021` belong to the sandbox spec (LN-LCH1) |
 | `SND-LAUNCH-023` | Printed by the pre-push hook Sindri installs, when an agent Step tries to push: "agent Steps can't push; Sindri pushes" (LN-LCH1; the hook exits 1, so this is git's refusal, not an API response) |
 | `SND-LAUNCH-025` | The launcher's host is `t3` and T3 Code can't be reached: not running, its `t3` CLI missing, or a tool call failed or answered something Sindri can't read; nothing starts, or a stop records nothing (`docs/csharp/sindri-launcher.md` "The t3 host") |
 | `SND-LAUNCH-026` | The launcher's host is `t3` and no T3 Code project's folder holds the item's repo; nothing starts (fix: `t3 project add <repo>`) |
 | `SND-LAUNCH-027` | The launcher's host is `t3` and T3 Code has no enabled provider for the launch's agent (`claude-code` → Claude, `codex` → Codex, `cursor` → Cursor); nothing starts (fix: enable it in T3's settings, or open with another `--agent`) |
+| `SND-LAUNCH-028` | The agent entry's `sessionIdPattern` timed out on a session id (2 s limit, non-backtracking), so the id was refused unjudged, not as a mismatch: an argv build (open or resume) fails with it, a heartbeat or exit report that carries the id returns it (the heartbeat still counts and the exit still ends the session), and `session wrap` prints it on stderr when a hook file or a scanned file hit the limit. `-014` is reserved by the sandbox spec (a gap, not a reuse) (launcher L-9) |
 | `SND-LAUNCH-404` | No launch has that id: `GET /sindri/launches/{launchId}` (404; API P10a) |
 | `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes `GET /sessions` and `GET /sessions/{provider}/{id}` answer it, CO-3) |
@@ -891,7 +891,17 @@ sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
 **Marked previews.** Since P4c a supplied input is served `required: true` and a `generate` input `required: false`; every input of a started instance is present. `workflow-instances/preview-missing-input` (ITM-01JKH) is still a preview (a started instance never misses an input), like the fan-out previews; it gives the UI data for the missing and
 blocked renders. `workflow-recipe/workflow.no-outputs`' `fact:context` is a real `generate` input. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
 
-both-r
+## Sandbox contract (sandbox spec; SB-0)
+
+The sandbox's types, codes, goldens and profile keys are specified in `docs/csharp/sindri-sandbox.md`. In this page's terms: `session.ended` gains
+the reason `limit` with `kind`, `limit`, `peak` and `peaks` (all left out of the JSON when null), `launch.started` gains an optional `sandbox`
+summary, and `sandbox.denied` and `sandbox.limit-hit` are public events that invalidate the `launch` and `item` views. The codes `-014` to
+`-021` are in the table above. No sandbox behavior exists before SB-1; the product Host refuses every Step launch with `-014` until SB-5a.
+
+## Scrub and the pre-commit hook (cutover unit 4.1)
+
+`sindri scrub` is local (no control plane): bare, it redacts standard input through `Aw.Redaction`; `--staged` scans the added lines of `git diff --cached --unified=0` and exits 1 with `SND-SCRUB-002` on a finding (the pre-commit hook turns that into a refused commit; `scripts/sindri-guard-proof.sh` greps the code); `--install-pre-commit [--repo PATH] [--bin PATH]` writes the hook at `git rev-parse --git-path hooks/pre-commit`. `SND-SCRUB-003` is a foreign hook or a `core.hooksPath` (nothing is written there), `-004` not a repo, `-005` a failed `git diff`. The hook body is v3 (marker `# sindri-pre-commit v3`, no shape line, the stable `~/.local/bin/sindri` baked in, fails closed with `sindri-scrub: ... not found` and a fix naming `./setup.sh`); the installer replaces v2 (`# sindri-pre-commit v2`) and v1 (`# sindri-scrub-pre-commit v1`) and refuses anything else. `repo onboard` installs it through `IRepoHooks` after approval, and doctor reports one `pre-commit:<repo>` line per profile repo (`IRepoHookStates`). Git is reached through the `IPreCommitGit` port (`GitPreCommit` in Infrastructure, over `GitProcess`: the hook path, `core.hooksPath` counts as foreign unless it sits in the git directory, and the staged added lines), and the installer is the `IPreCommitInstaller` port (`PreCommitInstaller` in the scrub slice) so that `PreCommitRepoHooks` (the `IRepoHooks` adapter; it bakes in the stable `~/.local/bin/sindri`) and `RepoHookStates` (the doctor's reader) reach it without crossing slices. `NoSecretCheckHook` is no longer registered.
+
 ## Hook contract
 
 The `Hooks → Sindri` cli edge in `deps.yaml` (sindri-nudge) is this binary's: the hook runs `sindri repo status --nudge`

@@ -780,8 +780,6 @@ Aw.Sindri.Features.GetJob.JobView.State.get -> Aw.Sindri.Core.Jobs.JobState
 Aw.Sindri.Features.GetJob.JobView.State.init -> void
 Aw.Sindri.Features.GetJob.JobView.Summary.get -> string?
 Aw.Sindri.Features.GetJob.JobView.Summary.init -> void
-Aw.Sindri.Features.GetLaunch.LaunchView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launches.LaunchState State, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Detail, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Ids.SessionId? SessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Launch.LaunchStep! Step, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
-Aw.Sindri.Features.GetLaunch.LaunchView.LaunchView(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launches.LaunchState State, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Detail, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Ids.SessionId? SessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Launch.LaunchStep! Step, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.Step.get -> Aw.Sindri.Core.Launch.LaunchStep!
 Aw.Sindri.Features.GetLaunch.LaunchView.Step.init -> void
 Aw.Sindri.Features.GetNeedsYou.GetNeedsYouRequest
@@ -3513,30 +3511,6 @@ Aw.Sindri.Features.GetLaunch.LaunchView.Reason.get -> string?
 Aw.Sindri.Features.GetLaunch.LaunchView.Reason.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.Source.get -> string?
 Aw.Sindri.Features.GetLaunch.LaunchView.Source.init -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.<Clone>$() -> Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest!
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! Launch) -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? other) -> bool
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxRequest!
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.init -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.PlanSandboxRequest(Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! Launch) -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.<Clone>$() -> Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse!
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? other) -> bool
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxPlan!
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.init -> void
-Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.PlanSandboxResponse(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(object? obj) -> bool
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.GetHashCode() -> int
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.ToString() -> string!
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(object? obj) -> bool
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.GetHashCode() -> int
-override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.ToString() -> string!
-static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
-static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
-static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool
-static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool
 Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest
 Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest!
 Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -4535,6 +4509,8 @@ override Aw.Sindri.Features.InitProfile.InitProfileResponse.GetHashCode() -> int
 override Aw.Sindri.Features.InitProfile.InitProfileResponse.ToString() -> string!
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator !=(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator ==(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
+Aw.Sindri.Features.GetLaunch.LaunchView.LaunchView(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launches.LaunchState State, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Detail, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Ids.SessionId? SessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Launch.LaunchStep! Step, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launches.LaunchState State, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Detail, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Ids.SessionId? SessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Launch.LaunchStep! Step, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetEngine.GetEngineRequest
 Aw.Sindri.Features.GetEngine.GetEngineRequest.<Clone>$() -> Aw.Sindri.Features.GetEngine.GetEngineRequest!
 Aw.Sindri.Features.GetEngine.GetEngineRequest.Equals(Aw.Sindri.Features.GetEngine.GetEngineRequest? other) -> bool
@@ -4861,3 +4837,27 @@ Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.init -> void
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.init -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.<Clone>$() -> Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! Launch) -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? other) -> bool
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxRequest!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.init -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.PlanSandboxRequest(Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! Launch) -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.<Clone>$() -> Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? other) -> bool
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxPlan!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.init -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.PlanSandboxResponse(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.GetHashCode() -> int
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.ToString() -> string!
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.GetHashCode() -> int
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.ToString() -> string!
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool

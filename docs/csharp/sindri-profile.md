@@ -315,3 +315,4 @@ recipe or Step may ask for a stricter source and never a looser one (`owner-copy
 error. The earlier `sandbox.agentHome` key is retired.
 
 `sandbox.attended`: `wall` is `off` (default) or a duration, a wall-clock ceiling for sessions you open yourself.
+

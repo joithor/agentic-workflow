@@ -25,7 +25,9 @@ namespace Aw.Sindri.Core.Profile;
 /// </param>
 /// <param name="Launch">The 'launch:' block (UI spec E-4). Left out of the canonical JSON when absent, so a profile without it keeps its hash.</param>
 /// <param name="Agents">The 'agents:' block (budgets, SL8's stepArgvHash). Left out of the canonical JSON when absent.</param>
-both-r[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+/// <param name="Sandbox">The 'sandbox:' section (sandbox spec §9). Left out of the canonical JSON when absent, so a profile without it keeps its hash and gets the built-in defaults.</param>
+/// <param name="Setup">The 'setup:' block (setup-once spec §7.1). Left out of the canonical JSON when absent, so a profile without it keeps its hash.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record SindriProfile(
     int SchemaVersion,
     string User,

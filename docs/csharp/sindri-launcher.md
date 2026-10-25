@@ -99,7 +99,7 @@ launches unrestricted (the API implements the check).
 ### The sandboxed launch flow (sandbox spec §6; SB-0 contract, built in SB-1 to SB-5b)
 
 For a Step run `ILauncher.Launch` becomes, with the new steps in bold: resolve the agent, SL8 (`-012`), L-17's form check (`-013`),
-**build the sandbox plan from the `StepPolicy` (pure; `-015`)**, **probe the mechanism (cached per box, refreshed by Check again; `-014`)**,
+**build the sandbox plan from the `StepPolicy` (pure; `-025`)**, **probe the mechanism (cached per box, refreshed by Check again; `-014`)**,
 **the session cap (`-020`: an atomic count; a wait, not a failure)**, **prepare credentials from the Step's credential source (`-017`, `-018`)**,
 **the host-side prepare of the repo's packages (`-021`)**, budget (E-28), **write the plan file, start the outside half of the network, run the
 self-check (`-016`)**, start in the host, return. The launcher appends nothing: the engine's launch activity writes `launch.outcome`, and the
