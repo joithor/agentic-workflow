@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
@@ -26,7 +27,7 @@ internal sealed class ContextGraph(
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
     IService<GetFileMapRequest, FileMapView> fileMap,
-    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory
+    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -66,4 +67,10 @@ internal sealed class ContextGraph(
 
     public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
         codeHistory.History(anchors, window, read, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.ConceptMembers(query, scope, cancellationToken);
 }

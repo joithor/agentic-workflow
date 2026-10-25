@@ -27,7 +27,7 @@ internal sealed class SearchMapService(MapReader reader, IScrubberFactory scrubb
             return terms.IsError ? terms.Error : limit.IsError ? limit.Error : built.Error;
         }
 
-        var repo = RepoChoices.Addressed(settings.Value, scope, query.Repo);
+        var repo = RepoAddressing.Addressed(settings.Value, scope, query.Repo);
         if (repo.IsError)
         {
             return repo.Error;

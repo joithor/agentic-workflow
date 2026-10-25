@@ -120,6 +120,23 @@ internal static class ContextApiScenarios
         ("context-whole", "bad-detail-006", async (s, ct) => await s.Fetch(WholeRoute("detail=everything"), ct)),
         ("context-whole", "session-own-repo", async (s, ct) => await s.FetchAsSession(WholeRoute(), ct)),
         ("context-whole", "session-other-repo-045", async (s, ct) => await s.FetchAsSession(WholeRoute("repo=elsewhere"), ct)),
+        ("context-whole", "concept-open", async (s, ct) => await s.Fetch(WholeRoute("concept=concept%3Ascheduling"), ct)),
+        ("context-whole", "concept-other", async (s, ct) => await s.Fetch(WholeRoute("concept=concept%3Aother"), ct)),
+        ("context-whole", "concept-unknown-200", async (s, ct) => await s.Fetch(WholeRoute("concept=concept%3Anope"), ct)),
+        ("context-whole", "concept-and-area-006", async (s, ct) => await s.Fetch(WholeRoute("concept=concept%3Abilling&area=feature%3Ashifts"), ct)),
+        ("context-concepts", "concept-map", async (s, ct) => await s.Fetch("/sindri/context/concepts", ct)),
+        ("context-concepts", "filtered-invoices", async (s, ct) => await s.Fetch("/sindri/context/concepts?q=invoices", ct)),
+        ("context-concepts", "first-page", async (s, ct) => await s.Fetch("/sindri/context/concepts?limit=1", ct)),
+        ("context-concepts", "second-page", async (s, ct) => await s.Fetch("/sindri/context/concepts?limit=1&cursor=v1%3A1", ct)),
+        ("context-concepts", "bad-cursor-006", async (s, ct) => await s.Fetch("/sindri/context/concepts?cursor=v9%3A1", ct)),
+        ("context-concepts", "bad-limit-006", async (s, ct) => await s.Fetch("/sindri/context/concepts?limit=0", ct)),
+        ("context-concepts", "no-concepts-empty", async (s, ct) => await s.Fetch("/sindri/context/concepts", ct)),
+        ("context-concepts", "no-map-unavailable", async (s, ct) => await s.Fetch("/sindri/context/concepts", ct)),
+        ("context-concepts", "session-own-repo", async (s, ct) => await s.FetchAsSession("/sindri/context/concepts", ct)),
+        ("context-concepts-id-members", "scheduling", async (s, ct) => await s.Fetch("/sindri/context/concepts/concept%3Ascheduling/members", ct)),
+        ("context-concepts-id-members", "other", async (s, ct) => await s.Fetch("/sindri/context/concepts/concept%3Aother/members", ct)),
+        ("context-concepts-id-members", "first-page", async (s, ct) => await s.Fetch("/sindri/context/concepts/concept%3Ascheduling/members?limit=1", ct)),
+        ("context-concepts-id-members", "unknown-003", async (s, ct) => await s.Fetch("/sindri/context/concepts/concept%3Anope/members", ct)),
         ("context-eval", "map-tabs", async (s, ct) => await s.Fetch("/sindri/context/eval/map", ct)),
         ("context-filemap", "root", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}", ct)),
         ("context-filemap", "src", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&path=src/", ct)),
@@ -195,8 +212,8 @@ internal static class ContextApiScenarios
 
     // The whole-map answers for "no map yet" run on a host that imported nothing.
     private static bool StartsWithoutMap(string slug, string scenario) =>
-        string.Equals(slug, "context-whole", StringComparison.Ordinal)
-        && new[] { "no-map-030", "no-map-never-run", "no-map-approved", "building-in-progress" }.Contains(scenario, StringComparer.Ordinal);
+        (string.Equals(slug, "context-whole", StringComparison.Ordinal) && new[] { "no-map-030", "no-map-never-run", "no-map-approved", "building-in-progress" }.Contains(scenario, StringComparer.Ordinal))
+        || (string.Equals(slug, "context-concepts", StringComparison.Ordinal) && string.Equals(scenario, "no-map-unavailable", StringComparison.Ordinal));
 
     // The code goldens read the CodeLensRepo (a fixed sha); the map names no commit, so the lexical search reads HEAD, except where a scenario says otherwise.
     private static async Task<GoldenHost> StartCode(string scenario, CancellationToken ct)
@@ -272,6 +289,11 @@ internal static class ContextApiScenarios
         if (scenario.StartsWith("hops-", StringComparison.Ordinal))
         {
             return HopsMap(host.Home);
+        }
+
+        if ((slug.StartsWith("context-concepts", StringComparison.Ordinal) && !string.Equals(scenario, "no-concepts-empty", StringComparison.Ordinal)) || scenario.StartsWith("concept-", StringComparison.Ordinal))
+        {
+            return ConceptMapFile.Write(host.Home);   // the tabs map has no concept: its own scenario reads that answer
         }
 
         if ((slug, scenario) is not ("context-lenses", "ambiguous-037"))
