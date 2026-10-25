@@ -181,6 +181,7 @@ bash scripts/tests/owner-check.test.sh
 bash scripts/tests/context-first-run.test.sh   # dry-run golden, the refusal of a real-looking home, the approval stops, a whole run on a stub sindri
 bash scripts/tests/repo-templates.test.sh
 bash scripts/tests/probe.test.sh
+bash scripts/tests/run-test-guard.test.sh   # scripts/run-test-guard.sh (the check wrapper for the TS bugfix-state, #1130): exit code passes through, a timeout exits 124 and the EXIT trap runs, a daemonized child is gone after a normal exit and after a timeout, usage errors exit 2 (Linux only)
 bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-onyx.test.sh      # the Onyx step of setup.sh: dry run, Docker missing or silent, no terminal, the call, a failure, a rerun, --no-onyx (stub docker and sindri)
