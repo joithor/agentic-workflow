@@ -78,8 +78,17 @@ for _ in $(seq 1 60); do
   sleep 0.5
 done
 [ -n "$group" ] || setup_fail "the Work page shows no group header (toggles: $(toggles | tr '\n' ',' ))"
-drv wait-for --type ToggleButton --contains Closed --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "the Work page shows no Closed header"
+# --contains matches shown text, and a ToggleButton's content is a panel, so the Closed header is found by its accessible name.
+closed=""
+for _ in $(seq 1 120); do
+  closed="$(toggles | grep -F Closed | head -1)"
+  [ -n "$closed" ] && break
+  sleep 0.5
+done
+if [ -z "$closed" ]; then
+  drv search --type ToggleButton --limit 200 >"$OUT/toggles.json" 2>&1
+  setup_fail "the Work page shows no Closed header (toggles in $OUT/toggles.json)"
+fi
 drv screenshot --out "$OUT/before.png" >/dev/null 2>&1
 
 # 1. Folding a group: its arrow turns right (one more right-pointing arrow than before; the Closed header already shows one).
@@ -99,7 +108,7 @@ sleep 1
 [ "$(arrows '▸')" -eq "$right0" ] || fail "unfolding \"$group\" left its arrow pointing right"
 
 # 3. Opening Closed: its arrow turns down (one fewer right-pointing arrow).
-drv click --type ToggleButton --contains Closed >/dev/null 2>&1 || setup_fail "the Closed header click was not accepted"
+drv click --type ToggleButton --name "$closed" >/dev/null 2>&1 || setup_fail "the Closed header click was not accepted"
 sleep 1
 drv screenshot --out "$OUT/closed-open.png" >/dev/null 2>&1
 right2="$(arrows '▸')"
