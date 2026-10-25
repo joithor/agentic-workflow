@@ -4797,6 +4797,10 @@ override Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.GetHash
 override Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptMembersRequest? right) -> bool
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Viewer.get -> Aw.Sindri.Core.Events.LaunchViewer?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Viewer.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandResponse.Attach.init -> void
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Made.get -> int
 Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Carried.init -> void
