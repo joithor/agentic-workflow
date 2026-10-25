@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.BugFix.Core.Model;
 using Aw.BugFix.Core.Ports;
 
@@ -36,7 +37,7 @@ internal sealed class ProcessCheckRunner(BugFixSettings settings, IFiles files) 
     // A command that died on a signal (the shell reports it as 128 plus the signal) or wrote nothing (a check stuck behind a lock
     // and cut off, say) never reached a verdict, whatever code it left.
     private static string? NoVerdict(int code, string log) =>
-        code is > 128 and <= 128 + 64 ? $"the command was killed by signal {code - 128}"
+        code is > 128 and <= 128 + 64 ? string.Create(CultureInfo.InvariantCulture, $"the command was killed by signal {code - 128}")
         : new FileInfo(log).Length == 0 ? "the command left an empty log"
         : null;
 
