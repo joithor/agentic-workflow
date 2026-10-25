@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Scoping;
 
