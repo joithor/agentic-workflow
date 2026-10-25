@@ -2,7 +2,7 @@
   "recipes": [
     {
       "id": "workflow.step",
-      "version": 4,
+      "version": 5,
       "hash": "sha256:4ca37bf46333dc66a14c042bb4561aad96eed677f35f5fc221f0497c8b3e31f7",
       "standing": "approved",
       "via": "desk",
@@ -54,7 +54,7 @@
         }
       ],
       "name": null,
-      "approvedVersion": 4,
+      "approvedVersion": 5,
       "approvedHash": "sha256:4ca37bf46333dc66a14c042bb4561aad96eed677f35f5fc221f0497c8b3e31f7",
       "status": "approved",
       "childOnly": false,

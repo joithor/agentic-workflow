@@ -5,7 +5,7 @@
   "recipe": {
     "id": "workflow.step",
     "hash": "sha256:4ca37bf46333dc66a14c042bb4561aad96eed677f35f5fc221f0497c8b3e31f7",
-    "version": 4,
+    "version": 5,
     "urgency": "work"
   },
   "state": "failed",
