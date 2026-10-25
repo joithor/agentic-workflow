@@ -166,19 +166,13 @@ internal sealed partial class HealthViewModel
         return card;
     }
 
-    // What the cards say needs a look that the server's one health word does not: the Code index and overdue services; empty when neither.
+    // What the cards say needs a look that the server's one health word does not: the Code index; empty when it is fine.
     private string NeedsLook()
     {
         List<string> parts = [];
         if (string.Equals(CodeIndex.Word, Labels.CodeIndexNeedsLook, StringComparison.Ordinal))
         {
             parts.Add(Labels.CodeIndexLookName);
-        }
-
-        var overdue = ServiceCard.Count(static r => r.IsOverdue);
-        if (overdue > 0)
-        {
-            parts.Add(Labels.ServicesOverdueHeadline(overdue));
         }
 
         return string.Join(", ", parts);
@@ -249,7 +243,7 @@ internal sealed partial class HealthViewModel
                 vm.JobRequested += (_, e) => JobRequested?.Invoke(this, e);
             }
 
-            vm.Show(row, clock.GetUtcNow());
+            vm.Show(row);
             WireServiceControls(vm, row);
             shown.Add(vm);
         }
@@ -257,8 +251,7 @@ internal sealed partial class HealthViewModel
         ServiceTable = shown;
         ServiceCard = [.. shown];
         ServicesTabLabel = Labels.ServicesTab(shown.Count);
-        var overdue = shown.Count(static r => r.IsOverdue);
-        ServicesScheduled = overdue > 0 ? Labels.ServicesOverdueSummary(overdue, shown.Count - overdue) : Labels.ServicesScheduled(shown.Count);
+        ServicesScheduled = Labels.ServicesScheduled(shown.Count);
         lock (_gate)
         {
             ShowSystemState();

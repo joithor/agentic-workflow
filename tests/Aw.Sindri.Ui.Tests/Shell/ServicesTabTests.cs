@@ -38,7 +38,6 @@ public sealed class ServicesTabTests
     public async Task A_failed_last_run_says_so_and_a_service_that_has_not_run_is_scheduled()
     {
         var system = new SystemTestHarness("ran-failed");
-        system.Clock.SetUtcNow(new DateTimeOffset(2026, 1, 1, 0, 0, 5, TimeSpan.Zero));   // the golden's next slot is not yet past
 
         await system.Show();
 

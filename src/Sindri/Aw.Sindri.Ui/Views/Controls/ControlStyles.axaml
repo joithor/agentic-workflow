@@ -83,9 +83,6 @@
   <Style Selector="TextBlock.error">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
   </Style>
-  <Style Selector="TextBlock.warn">
-    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
-  </Style>
   <Style Selector="icons|StateIcon.error">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
   </Style>

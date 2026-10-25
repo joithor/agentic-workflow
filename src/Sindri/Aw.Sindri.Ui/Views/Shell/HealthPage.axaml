@@ -371,7 +371,7 @@
                   <Grid ColumnDefinitions="180,90,140,*,130,250" IsVisible="{Binding IsWide}" AutomationProperties.Name="{Binding Name}">
                     <TextBlock Classes="body-strong" Text="{Binding Name}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}" />
                     <TextBlock Grid.Column="1" Classes="body muted" Text="{Binding Every}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Every}" />
-                    <TextBlock Grid.Column="2" Classes="body" Classes.error="{Binding HasFailed}" Classes.warn="{Binding IsOverdue}" Text="{Binding Status}" VerticalAlignment="Center"
+                    <TextBlock Grid.Column="2" Classes="body" Classes.error="{Binding HasFailed}" Text="{Binding Status}" VerticalAlignment="Center"
                                AutomationProperties.Name="{Binding Status}" />
                     <TextBlock Grid.Column="3" Classes="body muted" Text="{Binding What}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
                                AutomationProperties.Name="{Binding What}" />
@@ -385,7 +385,7 @@
                   </Grid>
                   <Grid ColumnDefinitions="*,140,Auto" IsVisible="{Binding IsCompact}" AutomationProperties.Name="{Binding Name}">
                     <TextBlock Classes="body-strong" Text="{Binding Name}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Name}" />
-                    <TextBlock Grid.Column="1" Classes="body" Classes.error="{Binding HasFailed}" Classes.warn="{Binding IsOverdue}" Text="{Binding Status}" VerticalAlignment="Center"
+                    <TextBlock Grid.Column="1" Classes="body" Classes.error="{Binding HasFailed}" Text="{Binding Status}" VerticalAlignment="Center"
                                AutomationProperties.Name="{Binding Status}" />
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                       <Panel IsVisible="{Binding RunShown}"><ccontrols:CommandControl DataContext="{Binding Run}" /></Panel>
