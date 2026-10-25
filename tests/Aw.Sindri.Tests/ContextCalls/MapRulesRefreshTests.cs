@@ -4,7 +4,6 @@ using Aw.Context.Core.Map;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -24,7 +23,10 @@ public sealed class MapRulesRefreshTests
     private readonly HeadsEngineProxy _engine = HeadsEngineProxy.Create();
     private Core.Lease.LeaseGrant? _grant;
 
-    public MapRulesRefreshTests() => _start = new Starter(_h);
+    public MapRulesRefreshTests()
+    {
+        _start = new Starter(_h);
+    }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
