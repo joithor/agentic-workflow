@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Lenses;
 
@@ -25,4 +26,7 @@ public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf)
 
     /// <summary>The intent sources' rows (the builder adds the map and the code index).</summary>
     public IReadOnlyList<SearchedSource> IntentSources { get; init; } = [];
+
+    /// <summary>The repos in scope, for the globs they demote (<see cref="DemotedCode"/>); a subgraph read leaves out the demoted code nodes depth expansion alone would reach. Empty demotes nothing.</summary>
+    public IReadOnlyList<ContextRepo> Repos { get; init; } = [];
 }

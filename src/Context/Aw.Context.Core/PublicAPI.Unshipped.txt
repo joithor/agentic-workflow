@@ -7069,6 +7069,8 @@ Aw.Context.Core.Graph.NodeFact.Repo.get -> string?
 Aw.Context.Core.Graph.NodeFact.Repo.init -> void
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.get -> string?
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.init -> void
+Aw.Context.Core.Lenses.LensBasis.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Lenses.LensBasis.Repos.init -> void
 Aw.Context.Core.Lenses.LensBasis.MapRepo.get -> string?
 Aw.Context.Core.Lenses.LensBasis.MapRepo.init -> void
 Aw.Context.Core.WholeMap.WholeMapAsk.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
