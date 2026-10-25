@@ -52,7 +52,7 @@ public sealed class FileDeskNoticesTests : IDisposable
         _ = await notices.Send(DeskNoticesContract.Notice("WFI-a:2:n2", NoticeClass.Info), Token);
 
         var (title, text) = Assert.Single(_os.Shown);
-        Assert.Equal(("Sindri: T-4/dev-notify/1", "Waiting for the desk notification to be delivered."), (title, text));
+        Assert.Equal(("Sindri", "Waiting for the desk notification to be delivered."), (title, text));
         var digest = Assert.Single(await File.ReadAllLinesAsync(Path.Combine(_home.Path, "digest", "2026-10-13.jsonl"), Token));
         Assert.Equal("WFI-a:2:n2", JsonDocument.Parse(digest).RootElement.GetProperty("identity").GetString());
     }

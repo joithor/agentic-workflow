@@ -37,8 +37,9 @@ public static class EngineNotices
     /// <param name="version">The instance's version after the change.</param>
     /// <param name="deskTaskNotified">Whether the instance already sent a desk-task notice.</param>
     /// <param name="change">The type of the change's ledger event.</param>
+    /// <param name="stageName">Reads a recipe state's display name (the text names the stage by it); null names a stage by its id made readable.</param>
     /// <returns>Each notice's command and class.</returns>
-    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, WorkflowEventType change)
+    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, WorkflowEventType change, Func<string, string?>? stageName = null)
     {
         ArgumentNullException.ThrowIfNull(after);
         if (after.Ended)
@@ -46,17 +47,17 @@ public static class EngineNotices
             return [];
         }
 
-        var address = after.Address.Value;
+        var stage = NoticeWords.Stage(after.Frame.State, stageName);
         var notice = after.Suspension switch
         {
             { Kind: SuspensionKind.Takeover } when change == WorkflowEventType.Notified =>
-                (NoticeClass.Interrupt, $"hand back {after.Item.Value}? {address} is still taken over"),
+                (NoticeClass.Interrupt, NoticeWords.IdleTakeover(stage)),
             { Kind: SuspensionKind.Park } park when AsksAHuman(park, before) =>
-                (NoticeClass.Interrupt, $"{address} parked ({Reason(park.Reason)}): {park.Question}"),
+                (NoticeClass.Interrupt, NoticeWords.Park(stage, park.Reason)),
             { Kind: SuspensionKind.Escalation } escalation when escalation != before?.Suspension =>
-                (NoticeClass.Interrupt, $"{address} escalated: {escalation.Question}"),
+                (NoticeClass.Interrupt, NoticeWords.Escalation(stage)),
             null when after.Frame.Run is { Runtime: StepRuntime.Desk } run && run.Token != before?.Frame.Run?.Token =>
-                (deskTaskNotified ? NoticeClass.Info : NoticeClass.Interrupt, $"{address} needs you: the desk task in {after.Frame.State} (run {run.Token.Value})"),
+                (deskTaskNotified ? NoticeClass.Info : NoticeClass.Interrupt, NoticeWords.DeskTask(stage)),
             _ => ((NoticeClass Class, string Text)?)null,
         };
         if (notice is not { } found)
