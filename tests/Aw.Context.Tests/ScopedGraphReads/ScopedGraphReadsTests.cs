@@ -21,12 +21,18 @@ public sealed class ScopedGraphReadsTests : IDisposable
         "edges:",
         $"  - {{from: \"feature:main.part\", to: \"{Manager}\", type: part-of, provenance: deterministic}}");
     private readonly MapWorld _world = new();
+    private bool _imported;
 
     public void Dispose() => _world.Dispose();
 
     private async Task RememberDepthOne()
     {
-        _ = await _world.ImportYaml(Map);
+        if (!_imported)
+        {
+            _ = await _world.ImportYaml(Map);
+            _imported = true;
+        }
+
         var graph = await _world.Engine.ScopeGraph(new ScopeGraphQuery([Manager], MapRead.Current, new LensRange(1, null), Brief: null, 400, 300_000), MapWorld.Human, MapWorld.None);
         Assert.True(graph.IsSuccess, graph.IsError ? graph.Error.Message : null);
         var stored = await _world.Engine.RememberScopeGraph(Instance, graph.Value, MapWorld.None);
@@ -91,5 +97,19 @@ public sealed class ScopedGraphReadsTests : IDisposable
         Assert.Equal(["context_neighbors"], second.Value.Select(r => r.Tool), StringComparer.Ordinal);
         Assert.True(none.IsSuccess);
         Assert.Empty(none.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Remembering_the_graph_again_on_a_later_launch_keeps_the_reads_and_the_graph()
+    {
+        await RememberDepthOne();
+        _ = await Read(Manager);
+
+        await RememberDepthOne();
+        var again = await Read(Manager);
+        var log = await _world.Engine.GraphReads(Instance, Run, MapWorld.None);
+
+        Assert.True(again.IsSuccess, again.IsError ? again.Error.Message : null);
+        Assert.Equal(2, log.Value.Count);
     }
 }

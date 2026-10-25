@@ -63,4 +63,23 @@ public abstract class ScopeRunStoreContract
         Assert.Equal((true, "why"), (first[1].Outside, first[1].Reason));
         Assert.Empty(none);
     }
+
+    /// <summary>Remembering the same graph again leaves the graph as it was and the run's reads untouched.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Remembering_the_same_graph_twice_is_idempotent_and_keeps_the_read_log()
+    {
+        var store = CreateStore();
+        _ = await store.Remember(Instance, Graph("feature:a", "feature:b"), _at, None);
+        _ = await store.Log(Instance, "1.1", new GraphRead("feature:a", "context_node", false, null, _at), None);
+
+        var again = await store.Remember(Instance, Graph("feature:a", "feature:b"), _at.AddMinutes(1), None);
+        var a = (await store.Holds(Instance, "feature:a", None)).Value;
+        var b = (await store.Holds(Instance, "feature:b", None)).Value;
+        var reads = (await store.Reads(Instance, "1.1", None)).Value;
+
+        Assert.True(again.IsSuccess);
+        Assert.Equal(new bool?[] { true, true }, new[] { a, b });
+        Assert.Single(reads);
+    }
 }

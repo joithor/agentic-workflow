@@ -229,9 +229,15 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
         ValueTask.FromResult(GraphReadsAnswer);
 
+    /// <summary>The graphs remembered, in order, by instance.</summary>
+    public IList<(string Instance, ScopeGraphView Graph)> Remembered { get; } = [];
+
     /// <inheritdoc/>
-    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("The fake keeps no run graph");
+    public ValueTask<Result<bool>> RememberScopeGraph(string instanceAddress, ScopeGraphView graph, CancellationToken cancellationToken)
+    {
+        Remembered.Add((instanceAddress, graph));
+        return ValueTask.FromResult(Results.Success(true));
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<GraphRead>> ReadInScopeGraph(string instanceAddress, string runToken, GraphRead read, CancellationToken cancellationToken) =>
