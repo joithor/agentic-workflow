@@ -18480,3 +18480,6 @@ Aw.Sindri.Core.Prove.PhaseSignals
 static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
 static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
 static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!
+static Aw.Sindri.Core.Launches.LaunchRules.IdleTurn(System.DateTimeOffset turnEnded, System.DateTimeOffset now) -> bool
+static Aw.Sindri.Core.Health.HealthSummary.WithStalledAgents(Aw.Sindri.Core.Health.HealthReport! report, int stalled) -> Aw.Sindri.Core.Health.HealthReport!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForStalledAgent(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!

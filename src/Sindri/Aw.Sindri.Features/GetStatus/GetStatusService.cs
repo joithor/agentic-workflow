@@ -54,7 +54,8 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
         var problems = await healthRows.CodeIndexProblems(approved, cancellationToken).ConfigureAwait(false);
         var standing = profile.ChangedSinceApproval ? ProfileApproval.Changed : profile.NeedsApproval ? ProfileApproval.NeedsApproval : ProfileApproval.Approved;
         var health = HealthSummary.For(running, views, rows, standing, problems);
-        return HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
+        var stuck = HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
+        return HealthSummary.WithStalledAgents(stuck, await healthRows.Stalled(cancellationToken).ConfigureAwait(false));   // issue #1000: so do agent runs idle past their launch's idle time
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)
