@@ -107,7 +107,8 @@ internal sealed partial class RecipeWorkflow
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
         var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
         var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; a history without it never takes or grants a slot
-        var storesLiterals = Workflow.Patched("child-literal-facts-v1"); var retriesBeforePark = Workflow.Patched("timeout-retries-before-park-v1");   // a child's literal inputs go into the fact store at its start; a history without it never stored them; owner q93: a state timeout retries once before it parks; a history without the marker parks at the first expiry as it did
+        var storesLiterals = Workflow.Patched("child-literal-facts-v1");   // a child's literal inputs go into the fact store at its start; a history without it never stored them
+        var retriesBeforePark = Workflow.Patched("timeout-retries-before-park-v1");   // owner q93: a state timeout retries once before it parks; a history without the marker parks at the first expiry as it did
         var loaded = await LoadRecipe(start, storesLiterals).ConfigureAwait(true);
         var pins = await LoadChildPins(loaded).ConfigureAwait(true);   // engine P7: the children the approval pinned
         var catalog = new BlockCatalog(loaded.Blocks, []);
