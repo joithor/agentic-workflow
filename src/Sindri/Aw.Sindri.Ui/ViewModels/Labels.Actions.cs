@@ -93,6 +93,9 @@ internal static partial class Labels
     /// <summary>After a copy, for 1.5 s (§4.1, §12.4).</summary>
     internal const string Copied = "Copied";
 
+    /// <summary>The button that copies a whole hash where the screen shows its first digits.</summary>
+    internal const string CopyHash = "Copy hash";
+
     /// <summary>An action's label, keyed by its catalog id; an id the app has no label for shows a humanised form of it ("Some new thing"), never the raw "X:y".</summary>
     /// <param name="action">The action id.</param>
     /// <returns>The label.</returns>
