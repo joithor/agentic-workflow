@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core.Glossary;
 using static Aw.Context.Tests.Glossary.GlossaryFixtures;
 
@@ -21,7 +22,7 @@ public sealed class GlossaryClusterTests
         // (1,0,0) and (4,3,0) have cosine 4/5, which is exactly 0.8 in double arithmetic.
         List<FeatureVectors> features = [Feature("feature:a", "a", ("alpha", [1f, 0f, 0f])), Feature("feature:b", "b", ("beta", [4f, 3f, 0f]))];
 
-        Assert.Single(Build(features, new GlossaryRules { Similarity = 0.8 }).Clusters);
+        _ = Assert.Single(Build(features, new GlossaryRules { Similarity = 0.8 }).Clusters);
         Assert.Equal(2, Build(features, new GlossaryRules { Similarity = 0.8000001 }).Clusters.Count);
     }
 
@@ -39,7 +40,7 @@ public sealed class GlossaryClusterTests
 
         // a-b is 0.8 and b-c is 0.6; c joins nothing at 0.8.
         Assert.Equal([["feature:a", "feature:b"], ["feature:c"]], glossary.Clusters.Select(c => Keys(c.Features)));
-        Assert.Equal(1, Build(features, new GlossaryRules { Similarity = 0.6 }).Clusters.Count);
+        _ = Assert.Single(Build(features, new GlossaryRules { Similarity = 0.6 }).Clusters);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -67,7 +68,7 @@ public sealed class GlossaryClusterTests
     [Fact, Trait("Lane", "unit")]
     public void Past_the_cap_only_the_first_features_in_key_order_are_clustered_and_truncated_is_set()
     {
-        var features = Enumerable.Range(0, 5).Reverse().Select(i => Feature($"feature:f{i}", $"f{i}", ($"name{i}", [1f, 0f, 0f]))).ToList();
+        var features = Enumerable.Range(0, 5).Reverse().Select(i => NumberedFeature(i.ToString(CultureInfo.InvariantCulture))).ToList();
 
         var glossary = Build(features, new GlossaryRules { MaxFeatures = 3 });
 
@@ -75,4 +76,6 @@ public sealed class GlossaryClusterTests
         Assert.Equal(["feature:f0", "feature:f1", "feature:f2"], Keys(glossary.Clusters.Single().Features));
         Assert.False(Build(features).Truncated);
     }
+
+    private static FeatureVectors NumberedFeature(string n) => Feature("feature:f" + n, "f" + n, ("name" + n, [1f, 0f, 0f]));
 }

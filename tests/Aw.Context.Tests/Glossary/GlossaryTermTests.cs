@@ -12,8 +12,8 @@ public sealed class GlossaryTermTests
 
         Assert.DoesNotContain(glossary.Terms, t => t.Term == "compute");
         Assert.DoesNotContain(glossary.Clusters.SelectMany(c => c.Terms), t => t == "compute");
-        Assert.Contains("invoice", glossary.Clusters[0].Terms);
-        Assert.Contains("shift", glossary.Clusters[1].Terms);
+        Assert.Contains("invoice", glossary.Clusters[0].Terms, StringComparer.Ordinal);
+        Assert.Contains("shift", glossary.Clusters[1].Terms, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -27,9 +27,10 @@ public sealed class GlossaryTermTests
 
         var terms = Build(features).Clusters.SelectMany(c => c.Terms).ToList();
 
-        Assert.Contains("order", terms);
-        Assert.Contains("parcel", terms);
-        Assert.Empty(terms.Intersect(["get", "handler", "service", "public", "static"]));
+        Assert.Contains("order", terms, StringComparer.Ordinal);
+        Assert.Contains("parcel", terms, StringComparer.Ordinal);
+        string[] noise = ["get", "handler", "service", "public", "static"];
+        Assert.Empty(terms.Intersect(noise, StringComparer.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -43,8 +44,9 @@ public sealed class GlossaryTermTests
 
         var terms = Build(features, new GlossaryRules { TermsPerCluster = 50 }).Clusters[0].Terms;
 
-        Assert.Equal(["foo", "bar", "baz", "http", "server", "pool", "snake", "name", "kebab", "word"].Order(StringComparer.Ordinal), terms.Order(StringComparer.Ordinal));
-        Assert.DoesNotContain("go", terms);
+        string[] expected = ["foo", "bar", "baz", "http", "server", "pool", "snake", "name", "kebab", "word"];
+        Assert.Equal(expected.Order(StringComparer.Ordinal), terms.Order(StringComparer.Ordinal));
+        Assert.DoesNotContain("go", terms, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
