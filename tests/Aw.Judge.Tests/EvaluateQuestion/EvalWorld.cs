@@ -32,7 +32,7 @@ internal sealed class EvalWorld
 
     internal EvaluateQuestionService Service { get; }
 
-    internal static string Input(string tail) => JsonSerializer.Serialize(new Dictionary<string, string> { ["transcriptTail"] = tail });
+    internal static string Input(string tail) => JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal) { ["transcriptTail"] = tail });
 
     internal EvalWorld Item(string id, string label, LabelSource source = LabelSource.Outcome)
     {

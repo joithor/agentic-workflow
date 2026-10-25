@@ -116,7 +116,7 @@ public sealed class EvaluateQuestionTests
 
         Assert.Equal(1, result.Value.Report.N);
         Assert.Equal(LabelSource.Outcome, result.Value.Report.Labels);
-        Assert.Single(world.Jev.Calls);
+        _ = Assert.Single(world.Jev.Calls);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -293,7 +293,7 @@ public sealed class EvaluateQuestionTests
 
     private static string Resolution(bool withDiff)
     {
-        var input = new Dictionary<string, object>
+        var input = new Dictionary<string, object>(StringComparer.Ordinal)
         {
             ["brief"] = "b",
             ["expected"] = "e",

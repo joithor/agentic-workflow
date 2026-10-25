@@ -65,7 +65,7 @@ public sealed class EvalCommandTests : IDisposable
         var run = await cli.Run("eval", "ask-check", "--labels", "any");
 
         var request = Assert.Single(scorer.Requests);
-        Assert.Equal(("ask-check", ProviderName.Jev, "as-is", (LabelSource?)null, (string?)null, (string?)null, (string?)null), (request.Question, request.Provider, request.Variant, request.Labels, request.Collapse, request.RecordFile, request.ReplayFile));
+        Assert.Equal(("ask-check", ProviderName.Jev, "as-is", null, null, null, null), (request.Question, request.Provider, request.Variant, request.Labels, request.Collapse, request.RecordFile, request.ReplayFile));
         Assert.Null(request.Providers);
         Assert.Equal("any", run.Json().GetProperty("labelSource").GetString());
     }
