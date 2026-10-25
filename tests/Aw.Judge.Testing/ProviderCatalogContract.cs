@@ -98,4 +98,17 @@ public abstract class ProviderCatalogContract
         Expect.That(codex.IsError && codex.Error.Code == JudgeErrors.ProviderUnavailable.Code, "codex-cli is not installed");
         Expect.That(rules.IsError && rules.Error.Code == JudgeErrors.ProviderUnavailable.Code, "rules only closes a chain");
     }
+
+    /// <summary>The adjudicator is claude-cli, with the same refusals by name as any provider: AW-JUDGE-011 and AW-JUDGE-012.</summary>
+    [Fact]
+    public void The_adjudicator_is_claude_and_honours_the_allowlist_and_the_path()
+    {
+        var found = Create([AgentCliName.ClaudeCli]).Adjudicator(allowed: null);
+        var excluded = Create([AgentCliName.ClaudeCli]).Adjudicator(allowed: [ProviderName.Jev]);
+        var missing = Create([AgentCliName.CodexCli]).Adjudicator(allowed: null);
+
+        Expect.That(found.IsSuccess && found.Value.Name == ProviderName.ClaudeCli, "the adjudicator is claude-cli");
+        Expect.That(excluded.IsError && excluded.Error.Code == JudgeErrors.ProviderExcluded.Code, "an allowlist without claude-cli excludes it");
+        Expect.That(missing.IsError && missing.Error.Code == JudgeErrors.ProviderUnavailable.Code, "claude-cli not installed is unavailable");
+    }
 }

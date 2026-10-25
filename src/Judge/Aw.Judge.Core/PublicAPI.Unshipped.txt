@@ -1765,3 +1765,12 @@ static Aw.Judge.Core.Transcripts.TurnOutcomes.AskCheckLabel(string! action, Syst
 static Aw.Judge.Core.Transcripts.TurnOutcomes.IsRealPromptText(string! text) -> bool
 static Aw.Judge.Core.Transcripts.TurnOutcomes.TurnDiff(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Transcripts.TranscriptEdit!>! edits) -> string!
 static Aw.Judge.Core.Transcripts.TurnOutcomes.TurnLabel(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Transcripts.TranscriptTurn!>! session, int index, bool sessionClosed) -> string?
+Aw.Judge.Core.Processes.ProcessRequest.InheritOnly.get -> System.Collections.Generic.IReadOnlyCollection<string!>?
+Aw.Judge.Core.Processes.ProcessRequest.InheritOnly.init -> void
+Aw.Judge.Core.Ports.IProviderCatalog.Adjudicator(System.Collections.Generic.IReadOnlyCollection<Aw.Judge.Core.Providers.ProviderName>? allowed) -> Aw.Kernel.Result<Aw.Judge.Core.Ports.IModelProvider!>!
+Aw.Judge.Core.Evaluation.PreparedQuestion
+Aw.Judge.Core.Evaluation.PreparedQuestion.PreparedQuestion(Aw.Judge.Core.Providers.QuestionRef! reference, System.Text.Json.Nodes.JsonNode? input, System.TimeSpan timeBudget) -> void
+Aw.Judge.Core.Evaluation.PreparedQuestion.Reference.get -> Aw.Judge.Core.Providers.QuestionRef!
+Aw.Judge.Core.Evaluation.PreparedQuestion.Input.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Judge.Core.Evaluation.PreparedQuestion.TimeBudget.get -> System.TimeSpan
+static Aw.Judge.Core.Evaluation.QuestionCatalog.Prepare(string! question, string! inputJson, System.Text.Json.JsonSerializerOptions! json) -> Aw.Judge.Core.Evaluation.PreparedQuestion?
