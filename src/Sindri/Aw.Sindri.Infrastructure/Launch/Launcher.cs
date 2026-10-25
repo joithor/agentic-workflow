@@ -244,7 +244,7 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
         {
             viewer = request.Attended
                 ? await OpenViewer(new ViewerRequest(started.Value, host.AttachArgv(started.Value), $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = prepared.WorkDir }, cancellationToken).ConfigureAwait(false)
-                : ViewerOutcome.Skipped;
+                : await Background(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -256,12 +256,25 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher, ILaunch
         return new StartedLaunch(started.Value, viewer, host.AttachArgv(started.Value), source.Source, source.Item2) { ChosenSession = prepared.Session };
     }
 
+    /// <summary>A background launch opens no viewer (it runs unattended; the viewer opens on takeover). It says so with the viewer that will open, so the ledger never shows 'none' beside a configured one.</summary>
+    private async ValueTask<ViewerOutcome> Background(CancellationToken cancellationToken)
+    {
+        var facts = await parts.Viewer.Probe(cancellationToken).ConfigureAwait(false);
+        var kind = string.IsNullOrEmpty(facts.Kind) ? null : facts.Kind;
+        return ViewerOutcome.Skipped with
+        {
+            ViewerKind = kind,
+            ViewerLabel = kind is null || string.Equals(kind, "print", StringComparison.Ordinal) ? null : facts.Label,
+            Reason = kind is null ? "background: no viewer is configured" : "background: viewer opens on takeover",
+        };
+    }
+
     private async ValueTask<LaunchResult> RunOnViewer(LaunchRequest request, ISessionHost host, (string Name, string WorkDir, List<string> Argv) session, ((CatalogSource Source, string Hash) Entry, string? Chosen) started, CancellationToken cancellationToken)
     {
         var none = new HostRef(host.Kind, session.Name);
         var outcome = request.Attended
             ? await OpenViewer(new ViewerRequest(none, session.Argv, $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = session.WorkDir }, cancellationToken).ConfigureAwait(false)
-            : ViewerOutcome.Skipped;
+            : await Background(cancellationToken).ConfigureAwait(false);
         if (outcome.Kind != ViewerOutcomeKind.Failed)
         {
             return new StartedLaunch(none, outcome, session.Argv, started.Entry.Source, started.Entry.Hash) { ChosenSession = started.Chosen };
