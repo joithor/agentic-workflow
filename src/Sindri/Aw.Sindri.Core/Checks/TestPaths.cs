@@ -36,4 +36,15 @@ public static class TestPaths
         return allowed.Select(static e => e.Trim())
             .Where(e => !e.StartsWith("new:", StringComparison.Ordinal) && e.IndexOfAny(['*', '?']) < 0 && IsTest(e) && !named.Contains(e, StringComparer.Ordinal));
     }
+
+    /// <summary>The entries a phase allows: its write scope, or its allowed files when the write scope is empty.</summary>
+    /// <param name="writeScope">The phase's 'writeScope' entries.</param>
+    /// <param name="allowedFiles">The phase's 'allowedFiles' entries.</param>
+    /// <returns>The entries PLN-TEST-001 looks at.</returns>
+    public static IReadOnlyList<string> AllowedEntries(IReadOnlyList<string> writeScope, IReadOnlyList<string> allowedFiles)
+    {
+        ArgumentNullException.ThrowIfNull(writeScope);
+        ArgumentNullException.ThrowIfNull(allowedFiles);
+        return writeScope.Count > 0 ? writeScope : allowedFiles;
+    }
 }

@@ -164,7 +164,7 @@ internal static partial class PlanChecks
         }
     }
 
-    /// <summary>PLN-TEST-001: BLD-TEST-001 fails a build that changes an existing test its phase doesn't name, so a phase names every existing test file its write scope allows (the rule is TestPaths.UnnamedExisting, shared with the line's plan checks).</summary>
+    /// <summary>PLN-TEST-001: BLD-TEST-001 fails a build that changes an existing test its phase doesn't name, so a phase names every existing test file its write scope, or allowed files when it has none, allows (the rule is TestPaths.UnnamedExisting, shared with the line's plan checks).</summary>
     internal static void TestsNamed(LineFacts facts, LineSink sink)
     {
         if (!sink.Need(Tasks))
@@ -175,7 +175,7 @@ internal static partial class PlanChecks
         foreach (var phase in Phases(facts))
         {
             var named = NamedTests(phase);
-            foreach (var path in TestPaths.UnnamedExisting(LineJson.Strings(phase, "writeScope"), named))
+            foreach (var path in TestPaths.UnnamedExisting(TestPaths.AllowedEntries([.. LineJson.Strings(phase, "writeScope")], [.. LineJson.Strings(phase, "allowedFiles")]), named))
             {
                 sink.Fail(PhaseId(phase), $"{PhaseId(phase)} allows the existing test {path} but its test-change doesn't name it", $"add 'test-change:{path}:<reason>' to the phase's rules, or write 'new: {path}' if the phase creates it");
             }
