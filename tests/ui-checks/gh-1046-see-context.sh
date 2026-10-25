@@ -87,15 +87,15 @@ done
 [ -n "$open_name" ] || { drv tree --depth 20 >"$OUT/workflows-tree-full.json" 2>/dev/null; setup_fail "the Workflows page shows no run to open (buttons in $OUT/workflows-tree.json, tree in $OUT/workflows-tree-full.json)"; }
 drv click --type Button --name "$open_name" >/dev/null 2>&1 || setup_fail "the click on \"$open_name\" was not accepted"
 
-# 4. Select the first step, so the inspector shows; its actions include See its context (the run has an item).
+# 4. Select the first step (a stage card when the stage has no steps drawn: "Scope, Stage 1 of 3, Running, Sub-workflow"), so the inspector shows; its actions include See its context (the run has an item).
 step=""
 for _ in $(seq 1 40); do
   drv search --type Button --limit 500 >"$OUT/run-tree.json" 2>/dev/null
-  step="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(contains(" stage, step "))] | first // empty' "$OUT/run-tree.json")"
+  step="$(jq -r '[.. | objects | select((.type // "") == "Button") | .name // empty | select(contains(" stage, step ") or contains(", Stage "))] | first // empty' "$OUT/run-tree.json")"
   [ -n "$step" ] && break
   sleep 1
 done
-[ -n "$step" ] || setup_fail "the run page shows no step (tree in $OUT/run-tree.json)"
+[ -n "$step" ] || setup_fail "the run page shows no step or stage (tree in $OUT/run-tree.json)"
 drv click --type Button --name "$step" >/dev/null 2>&1 || setup_fail "the click on step \"$step\" was not accepted"
 drv wait-for --type Button --name "See its context" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the inspector offers no \"See its context\" (the run has item $item)"
