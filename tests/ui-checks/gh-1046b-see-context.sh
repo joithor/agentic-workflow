@@ -132,7 +132,7 @@ fi
 stuck=1
 for _ in $(seq 1 30); do
   timeout 120 "$DRIVER" search --type TextBlock --limit 5000 >"$OUT/loading-tree.json" 2>/dev/null
-  if jq -e '[.. | objects | select(.visible == true and (((.text // "") | contains("Reading the map")) or ((.name // "") | contains("Reading the map"))))] | length > 0' "$OUT/loading-tree.json" >/dev/null 2>&1; then stuck=0; break; fi
+  if jq -e '[.. | objects | select(.visible == true and (((.text // "") | contains("Reading the map")) or ((.name // "") | contains("Reading the map"))))] | length == 0' "$OUT/loading-tree.json" >/dev/null 2>&1; then stuck=0; break; fi
   sleep 1
 done
 [ "$stuck" = 0 ] || fail "the Context page for $item is stuck on \"Reading the map…\""
