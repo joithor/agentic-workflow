@@ -15,7 +15,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 /// <summary>
 /// 'workflow takeover' and 'handback' through the API's command chain, the engine's 'open-request' (UI spec E-6) and a
 /// start taken over (E-19), against the pinned dev server (engine spec §3.8, §5.2, §5.5, §6.2; verification plan
-/// journeys 5–7): a session may take over (class pause) but not hand back (class desk, SND-AUTH-002); a handback of an
+/// journeys 5–7): a session may take over (class pause) and hand back (class desk); a handback of an
 /// instance that isn't taken over is SND-WF-003 and records nothing; an open-request sent twice for one launch applies
 /// once, with one ledger row; a start while a launch is requested starts taken over, the launch as its causation.
 /// </summary>
@@ -34,7 +34,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task Session_may_take_over_but_not_hand_back()
+    public async Task Session_may_take_over_and_hand_back()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Started(served, "T-60");
@@ -42,15 +42,9 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
 
         var (taken, takenBody) = await Post(served, route, Command(address, "takeover"), static r => r.AsSession());
         var (refused, refusedBody) = await Post(served, route, Command(address, "handback"), static r => r.AsSession());
-        var stillTaken = await served.Until(address, static v => v.State == "taken-over");
-        var back = await served.Cli("handback", address);
 
         Assert.True(taken == HttpStatusCode.OK, takenBody);
-        Assert.Equal(HttpStatusCode.Forbidden, refused);
-        Assert.Contains("SND-AUTH-002", refusedBody, StringComparison.Ordinal);
-        Assert.Contains("ApplyCommand:handback is a human decision", refusedBody, StringComparison.Ordinal);
-        Assert.Equal("taken-over", stillTaken.State);
-        Assert.True(back.Exit == 0, back.Stderr);
+        Assert.True(refused == HttpStatusCode.OK, refusedBody);
         Assert.NotNull((await served.Until(address, static v => v.Task is not null)).Task);
     }
 

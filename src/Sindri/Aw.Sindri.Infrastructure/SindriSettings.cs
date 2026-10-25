@@ -38,10 +38,4 @@ internal sealed record SindriSettings(string Home, string ProfilePath)
     public bool ProverLabelAllowed =>
         RealPath.Of(Home) is { } home && RealPath.Of(TempDirectory) is { } temp && RealPath.Of(StateDirectory) is { } state
         && ProverHome.Allows(home, temp, state);
-
-    /// <summary>The marker only the prover writes into a scratch home (setup-once spec §4 item 6).</summary>
-    public string ProverScratchPath => Path.Combine(Home, ".prover-scratch");
-
-    /// <summary>Whether the prover may confirm what the app confirms: a temp or proof home that also holds the marker. The owner's default home never does.</summary>
-    public bool ProverMayConfirm => ProverLabelAllowed && File.Exists(ProverScratchPath);
 }
