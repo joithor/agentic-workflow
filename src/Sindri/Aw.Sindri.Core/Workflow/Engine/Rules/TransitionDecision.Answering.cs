@@ -156,7 +156,7 @@ public static partial class TransitionDecision
             return d.Changed(d.Rules.Suspend(instance, AtCapPark(capped, step.Use, resume, d.Trigger.Actor)));
         }
 
-        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null };
+        var next = run with { Token = RunToken.For(run.Token.Entry, run.Token.Number + 1), Launch = null, Retries = 0 };   // an answer starts the engine's retries again
         var loops = countsRound && state.Loop is { } name && instance.Loops.TryGetValue(name, out var loop)
             ? With(instance.Loops, name, loop with { Round = loop.Round + 1 })
             : instance.Loops;

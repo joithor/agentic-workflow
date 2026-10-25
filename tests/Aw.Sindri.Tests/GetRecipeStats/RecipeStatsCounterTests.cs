@@ -107,6 +107,22 @@ public sealed class RecipeStatsCounterTests
     }
 
     [Fact]
+    public void An_unavailable_park_is_counted_by_its_reason_but_is_no_human_time_and_no_human_run()
+    {
+        var a = "T-1/item/1";
+        var rows = new List<StatEvent>
+        {
+            Start(a, Ago(5)),
+            Park(a, Ago(5, -10), "produce", ParkReason.Unavailable), Resume(a, Ago(5, -20), "produce"),
+        };
+
+        var stats = Count(rows);
+
+        Assert.Equal([new ReasonCount("unavailable", 1)], Assert.Single(stats.ByState, s => s.State == "produce").Parks);
+        Assert.Equal(new HumanTimeFigure(N: 0, MedianSeconds: null), stats.HumanTime!.ParksAnswered);
+    }
+
+    [Fact]
     public void A_gate_row_counts_its_refusals_and_its_escalations_by_threshold()
     {
         var a = "T-1/item/1";

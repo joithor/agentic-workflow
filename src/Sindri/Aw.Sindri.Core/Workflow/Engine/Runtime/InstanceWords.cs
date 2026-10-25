@@ -108,7 +108,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
             ParkReason.Budget => $"{Answering} --grant-tokens {GrantTokens()}{Gap}(at a terminal; once per park)",
             ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"{Answering} --resume [--text <answer>]",
             ParkReason.NeedsAnswer => $"{Answering} --text <answer>",
-            ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or null or _ => $"{Answering} --resume",
+            ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or ParkReason.Unavailable or null or _ => $"{Answering} --resume",
         };
     }
 
@@ -149,6 +149,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         ParkReason.NeedsAnswer => "needs-answer",
         ParkReason.Timeout => "timeout",
         ParkReason.SpecConflict => "spec-conflict",
+        ParkReason.Unavailable => "unavailable",
         ParkReason.NoRuntime or _ => "SND-WF-010",
     };
 
