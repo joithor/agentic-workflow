@@ -48,7 +48,9 @@ public sealed class ContextOpenForItemNoteTests
     [Fact]
     public async Task An_item_that_cannot_be_read_still_names_itself_and_opens_the_map()
     {
-        var page = Page(new FakeSindriApi());   // the item is not served: the scope is, as "no scope"
+        var api = new FakeSindriApi();
+        _ = api.Items.Remove(Item);   // the fake serves this id by default: here the item is not served, the scope is, as "no scope"
+        var page = Page(api);
 
         await page.OpenForItem(Item, Token);
 
