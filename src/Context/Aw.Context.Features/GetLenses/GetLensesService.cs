@@ -41,7 +41,7 @@ internal sealed class GetLensesService(MapReader reader, LensBasisReader bases, 
         }
 
         var read = await reader.ReadViewAt(request.Scope, request.Read, cancellationToken).ConfigureAwait(false);
-        var anchor = read.IsError ? read.Error : AnchorMatch.Resolve(read.Value.Graph, request.Anchor);
+        var anchor = read.IsError ? read.Error : AnchorMatch.Resolve(read.Value.Graph, request.Anchor, request.Scope.Repos);
         if (read.IsError || anchor.IsError)
         {
             return read.IsError ? read.Error : anchor.Error;

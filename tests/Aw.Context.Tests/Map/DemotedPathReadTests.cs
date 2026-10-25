@@ -81,6 +81,18 @@ public sealed class DemotedPathReadTests : IDisposable
         Assert.Contains("code:" + Demoted, queried.Value.Anchors);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_unknown_anchor_error_never_suggests_a_demoted_file()
+    {
+        await Import();
+
+        var plain = await _world.Engine.Lenses("Zeta thing", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None);
+        var demoted = await _world.Engine.Lenses("Zeta thing", read: MapRead.Current, depth: null, Demoting(Demoted), MapWorld.None);
+
+        Assert.Contains(plain.Error.Extensions ?? [], m => m.Key == "suggestedAnchors" && m.Value.ToString().Contains("code:" + Demoted, StringComparison.Ordinal));
+        Assert.DoesNotContain(demoted.Error.Extensions ?? [], m => m.Key == "suggestedAnchors");
+    }
+
     private static List<string?> CodeNodes(ContextResult result) =>
         [.. result.Sections.Where(s => string.Equals(s.Name, "code", StringComparison.Ordinal)).SelectMany(s => s.Items).Select(i => i.Node)];
 }

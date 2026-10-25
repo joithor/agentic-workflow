@@ -96,7 +96,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var map = await graphs.Read(request.Scope, read, cancellationToken).ConfigureAwait(false);
         if (query.Node is { } node)
         {
-            var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node));
+            var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node, request.Scope.Repos));
             if (anchor.IsError)
             {
                 return anchor.Error;
