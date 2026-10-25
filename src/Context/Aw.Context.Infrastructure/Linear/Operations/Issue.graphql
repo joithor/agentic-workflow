@@ -6,6 +6,8 @@ query Issue($id: String!) {
     project { id name }
     creator { id name }
     comments(first: 50) { nodes { id body createdAt updatedAt user { id name } } pageInfo { hasNextPage } }
+    relations(first: 50) { nodes { type relatedIssue { identifier title } } }
+    inverseRelations(first: 50) { nodes { type issue { identifier title } } }
     attachments(first: 50) { nodes { id title url sourceType createdAt } pageInfo { hasNextPage } }
   }
 }

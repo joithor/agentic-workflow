@@ -12,4 +12,7 @@ namespace Aw.Context.Infrastructure.Linear;
 /// <param name="Creator">The Creator Linear serves.</param>
 /// <param name="Comments">The Comments Linear serves.</param>
 /// <param name="Attachments">The Attachments Linear serves.</param>
-internal sealed record LinearIssue(string Id, string Identifier, string Title, DateTimeOffset UpdatedAt, string? Description = null, string? Url = null, DateTimeOffset? CreatedAt = null, LinearTeam? Team = null, LinearNamed? Creator = null, LinearConnection<LinearComment>? Comments = null, LinearConnection<LinearAttachment>? Attachments = null);
+/// <param name="Project">The Project Linear serves.</param>
+/// <param name="Relations">The Relations Linear serves.</param>
+/// <param name="InverseRelations">The InverseRelations Linear serves.</param>
+internal sealed record LinearIssue(string Id, string Identifier, string Title, DateTimeOffset UpdatedAt, string? Description = null, string? Url = null, DateTimeOffset? CreatedAt = null, LinearTeam? Team = null, LinearNamed? Creator = null, LinearConnection<LinearComment>? Comments = null, LinearConnection<LinearAttachment>? Attachments = null, LinearNamed? Project = null, LinearConnection<LinearRelation>? Relations = null, LinearConnection<LinearRelation>? InverseRelations = null);
