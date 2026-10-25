@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# A-14 (UX pass 2026-10-25): Work 'Closed (1)' shows a collapsed arrow but its row is open, unstyled, with Stage 'Not started'.
+# Expected: once the Closed fold is open its arrow points down, its rows lie inside the Work card, and a closed item's
+# Stage column does not say 'Not started'.
+source "$(dirname "$0")/lib.sh"
+uxu_start up items
+
+item="$($SINDRI items | grep -o 'ITM-[A-Za-z0-9]*' | head -1)"
+[ -n "$item" ] || uxu_die "the fixture has no item to close"
+uxu_fixture close "$item" >/dev/null || uxu_die "could not close $item"
+$SINDRI items | grep "$item" | grep -qiE 'done|closed' || uxu_die "$item is not closed at the CLI"
+
+d click --type ListBoxItem --name Work >/dev/null || uxu_die "no Work tab"
+d wait-for --type ToggleButton --contains "Closed (" --state visible --wait-ms 30000 >/dev/null || uxu_die "the Closed group never showed"
+d click --type ToggleButton --contains "Closed (" >/dev/null || uxu_die "could not open the Closed group"
+d wait-for --name QueueClosedRows --state visible --wait-ms 10000 >/dev/null || uxu_die "the Closed rows never showed"
+sleep 2
+
+# $@ = selector args (--name is AutomationProperties.Name first, else x:Name); prints that node's whole subtree as JSON.
+subtree() {
+  local id
+  id="$(d search "$@" | jq -r '.matches[0].id // empty')"
+  [ -n "$id" ] || { echo "no node matching $*" >&2; return 1; }
+  d tree --node-id "$id" --depth 30
+}
+export -f subtree d
+export UXU_DRIVER AW_UI_DRIVER_DIR
+
+expect "the open Closed group's arrow points down, not right" \
+  bash -c 'out="$(subtree --type ToggleButton --contains "Closed (")" || exit 1; echo "$out" | grep -q "▾" && ! echo "$out" | grep -q "▸"'
+expect "the Closed rows lie inside the Work card" \
+  bash -c 'subtree --type Border --name Work | grep -q "Closed ("'
+expect "a closed item's Stage does not say 'Not started'" \
+  bash -c 'out="$(subtree --name QueueClosedRows)" || exit 1; echo "$out" | grep -q "Not started" && exit 1; [ -n "$out" ]'
+
+uxu_done
