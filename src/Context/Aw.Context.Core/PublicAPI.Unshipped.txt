@@ -2486,6 +2486,8 @@ Aw.Context.Core.Lenses.LensFile.Confidence.get -> double
 Aw.Context.Core.Lenses.LensFile.Confidence.init -> void
 Aw.Context.Core.Lenses.LensFile.Confirmed.get -> bool
 Aw.Context.Core.Lenses.LensFile.Confirmed.init -> void
+Aw.Context.Core.Lenses.LensFile.Demoted.get -> bool
+Aw.Context.Core.Lenses.LensFile.Demoted.init -> void
 Aw.Context.Core.Lenses.LensFile.Deconstruct(out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Implements, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Tests, out Aw.Context.Core.Results.Provenance Provenance, out double Confidence, out bool Confirmed, out bool Suggested, out Aw.Context.Core.Graph.LinkId? LinkId, out string! Label, out Aw.Context.Core.Graph.NodeKind Kind, out Aw.Context.Core.Results.Trust Trust) -> void
 Aw.Context.Core.Lenses.LensFile.Depth.get -> int?
 Aw.Context.Core.Lenses.LensFile.Depth.init -> void
@@ -7518,3 +7520,10 @@ static Aw.Context.Core.Lenses.DemotedFiles.Last<T>(System.Collections.Generic.IR
 Aw.Context.Core.Lenses.DemotedFiles
 Aw.Context.Core.Graph.DemotedCode
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensBands!
+Aw.Context.Core.Engine.FillBands
+const Aw.Context.Core.Engine.FillBands.CodeLexical = "context.fill.code.lexical" -> string!
+const Aw.Context.Core.Engine.FillBands.CodeSymbols = "context.fill.code.symbols" -> string!
+const Aw.Context.Core.Engine.FillBands.History = "context.fill.history" -> string!
+const Aw.Context.Core.Engine.FillBands.Lenses = "context.fill.lenses" -> string!
+static Aw.Context.Core.Engine.FillBands.Source.get -> System.Diagnostics.ActivitySource!
+static Aw.Context.Core.Engine.FillBands.Start(string! band) -> System.Diagnostics.Activity?
