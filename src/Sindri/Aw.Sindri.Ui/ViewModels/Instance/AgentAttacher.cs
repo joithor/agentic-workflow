@@ -41,6 +41,21 @@ internal sealed class AgentAttacher(ISindriApi api, Func<Uri?> url, string itemI
         return new AttachOutcome(line, command, string.Equals(view.State, "failed", StringComparison.Ordinal));
     }
 
+    /// <summary>Reads a launch again, for a takeover whose answer carried no viewer.</summary>
+    /// <param name="launchId">The launch.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The launch, or null when it can't be read.</returns>
+    internal async Task<LaunchView?> ReadLaunch(string launchId, CancellationToken cancellationToken)
+    {
+        if (url() is not { } baseUrl)
+        {
+            return null;
+        }
+
+        var launch = await api.Launch(baseUrl, launchId, cancellationToken).ConfigureAwait(true);
+        return launch.IsError ? null : launch.Value;
+    }
+
     // A code the app has words for gets them; any other is shown as served (its message carries the fix).
     private static AttachOutcome Refusal(Error error) =>
         new(Labels.AttachRefusal(error.Code) ?? $"{error.Message} ({error.Code})", string.Empty, Refused: true);
