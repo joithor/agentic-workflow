@@ -122,10 +122,16 @@ internal sealed partial class RecipeSheetViewModel
         var lines = new List<RecipeStatLine>
         {
             new(Labels.StatRuns, Labels.StatCount(runs)),
-            new(Labels.StatFinished, Labels.StatShare(stats.Done ?? 0, runs)),
+            new(Labels.StatFinished, Labels.StatFinishedShare(stats.Done ?? 0, stats.Failed ?? 0, stats.Cancelled ?? 0)),
             new(Labels.StatHuman, stats.HumanRate is { } rate ? Labels.Percent(rate) : Labels.StatNone),
             new(Labels.StatTypical, stats.MedianSeconds is { } seconds ? Labels.Duration(seconds) : Labels.StatNone),
         };
+        var open = runs - (stats.Done ?? 0) - (stats.Failed ?? 0) - (stats.Cancelled ?? 0);
+        if (open > 0)
+        {
+            lines.Insert(2, new RecipeStatLine(Labels.StatOpen, Labels.StatCount(open)));
+        }
+
         AddWhenCounted(lines, Labels.StatFailed, stats.Failed);
         AddWhenCounted(lines, Labels.StatCancelled, stats.Cancelled);
         AddWhenCounted(lines, Labels.StatBudget, stats.BudgetHits);
