@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.CodeIndex.Core;
 
-/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN; 017 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
+/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN (004 is retired: a build takes no heavy-job slot, owner 2026-10-24); 017 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
 public static class CodeIndexErrors
 {
     /// <summary>SND-CODEIDX-001: the 'index:' section has a bad key or value, or a repo name is not a file-safe name; the message starts with the key path.</summary>
@@ -13,9 +13,6 @@ public static class CodeIndexErrors
 
     /// <summary>SND-CODEIDX-003: the tracked input is over 'index.maxTotalMB'.</summary>
     public static readonly ErrorDefinition InputTooLarge = new("SND-CODEIDX-003", ErrorKind.Invalid, "The tracked code input is over the total size cap");
-
-    /// <summary>SND-CODEIDX-004: every heavy-job slot stayed busy past the wait; only ever a job result code (the job ends deferred, not failed).</summary>
-    public static readonly ErrorDefinition HeavyBusy = new("SND-CODEIDX-004", ErrorKind.Unavailable, "Every heavy-job slot stayed busy");
 
     /// <summary>SND-CODEIDX-005: the embedding URL is not loopback, or the model is a cloud model.</summary>
     public static readonly ErrorDefinition EmbeddingTargetRefused = new("SND-CODEIDX-005", ErrorKind.Invalid, "The embedding URL is not loopback, or the model is a cloud model");
@@ -56,7 +53,7 @@ public static class CodeIndexErrors
     /// <summary>Every code-index error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
-        SettingsInvalid, RepoNotFound, InputTooLarge, HeavyBusy, EmbeddingTargetRefused, EmbeddingServerFailed, NoSandbox,
+        SettingsInvalid, RepoNotFound, InputTooLarge, EmbeddingTargetRefused, EmbeddingServerFailed, NoSandbox,
         GraphUnavailable, PinMismatch, IndexDamaged, SymbolNotFound, QueryInvalid, IndexNotBuilt, IndexBehind, BuildFailed, IndexBusy,
     ];
 }

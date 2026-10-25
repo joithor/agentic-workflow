@@ -9,11 +9,11 @@ internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
     public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken) =>
-        Get<LensesView>(api, ContextRoutes.Lenses(query), cancellationToken);
+        Call<LensesView>(api, HttpMethod.Query, ContextRoutes.Lenses, cancellationToken, new CallOptions(Content: AwJson.Serialize(query, Json)));
 
     /// <inheritdoc />
     public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken) =>
-        Get<CodeView>(api, ContextRoutes.Code(query), cancellationToken);
+        Call<CodeView>(api, HttpMethod.Query, ContextRoutes.Code, cancellationToken, new CallOptions(Content: AwJson.Serialize(query, Json)));
 
     /// <inheritdoc />
     public Task<Result<ItemScopeView>> ItemScope(Uri api, string itemId, CancellationToken cancellationToken) =>

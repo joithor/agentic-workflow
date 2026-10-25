@@ -4426,7 +4426,6 @@ Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.get -> Syste
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.init -> void
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.get -> int
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.init -> void
-const Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deferred = "deferred" -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.Deconstruct(out string? Repo) -> void
