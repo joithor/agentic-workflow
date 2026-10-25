@@ -1,9 +1,7 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Workflows.Inputs;
 using Microsoft.Extensions.DependencyInjection;
-using Temporalio.Api.Enums.V1;
 using Temporalio.Client;
 using Temporalio.Worker;
 
