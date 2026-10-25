@@ -148,8 +148,12 @@ is not approved, and approving again records it. Every surface judges by this on
 validate`, the `profile approve` preview, `status` (`profile.needsApproval`) and the startup summary ("approval not recorded in
 the ledger as the latest one"), and `doctor`'s profile check (a `warn` with the fix `sindri profile approve`). A ledger or a
 saved approval that can't be read is an error on each of them, never "not approved": `profile validate`, `status` and bare
-`sindri` exit 2 with `SND-LEDGER-002` or `SND-PROFILE-006`, the preview refuses (approving a hash still works, and it repairs
-an unreadable snapshot), and `doctor` fails its profile check. `status`'s `profile.problem` names only a live file that doesn't load.
+`sindri` exit 2 with `SND-LEDGER-002` or `SND-PROFILE-006`, and `doctor` fails its profile check. An approval stays readable across
+builds (#1143): the snapshot's bytes are checked against the sha256 in its directory name, not re-hashed through today's profile model, so a
+model that gained a member doesn't invalidate it. A snapshot whose bytes don't hash to its name, or that today's model can't parse
+(SND-PROFILE-005), no longer stops the preview: `profile approve` still prints the live hash, lists every key as changed and says the stored
+approval can't be read (`unreadable` in `--json`'s response); approving a hash replaces it. A stale hash is SND-PROFILE-003 and its fix line is the whole command,
+`sindri profile approve <the live hash>`. `status`'s `profile.problem` names only a live file that doesn't load.
 
 ## Host lease
 
