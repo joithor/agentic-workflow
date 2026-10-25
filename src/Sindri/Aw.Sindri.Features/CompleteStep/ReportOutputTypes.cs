@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Features.Scoping;
 
 namespace Aw.Sindri.Features.CompleteStep;
 
@@ -45,6 +46,8 @@ internal sealed class ReportOutputTypes(IApprovedRecipes recipes, ILauncher laun
         var wrong = request.Outputs.Where(o => declared.Contains(o.Key)).OrderBy(static o => o.Key.Value, StringComparer.Ordinal)
             .Select(o => PayloadFacts.Violation(o.Key, o.Value.Span)).OfType<string>().ToList();
         wrong.AddRange(request.Outputs.Where(static o => ChallengeRoundShape.Covers(o.Key)).Select(static o => ChallengeRoundShape.Violation(o.Value.Span)).OfType<string>());   // #1102: one round, not the challenge log
+        wrong.AddRange(request.Outputs.Where(static o => ModelFactSchemas.Covers(o.Key)).OrderBy(static o => o.Key.Value, StringComparer.Ordinal)
+            .SelectMany(static o => ModelFactSchemas.Violations(o.Key, o.Value.Span)));   // #1112: a field the schema forbids is the writer's to fix, not a new drafter's
         if (wrong.Count == 0)
         {
             return null;
