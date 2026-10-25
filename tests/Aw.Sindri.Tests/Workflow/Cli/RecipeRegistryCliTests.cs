@@ -62,7 +62,8 @@ public sealed class RecipeRegistryCliTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
-        _ = await Run(app, ct, "register", await Shipped("workflow.step.yaml", ct));
+        var registered = await Run(app, ct, "register", await Shipped("workflow.step.yaml", ct));
+        Assert.True(registered == 0, _error.ToString());
         _ = Take();
 
         var code = await Run(app, ct, "list", "--json");
@@ -78,7 +79,8 @@ public sealed class RecipeRegistryCliTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
-        _ = await Run(app, ct, "register", await Shipped("workflow.step.yaml", ct));
+        var registered = await Run(app, ct, "register", await Shipped("workflow.step.yaml", ct));
+        Assert.True(registered == 0, _error.ToString());
         var hash = (await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value.Single().Hash;
         _ = Take();
         var name = $"workflow.step@{hash.Display}";
@@ -109,7 +111,8 @@ public sealed class RecipeRegistryCliTests : IDisposable
         await using var app = await Started(ct);
         var file = Path.Combine(_home.Path, "triage.yaml");
         await File.WriteAllTextAsync(file, ShippedRecipes.Read("dev/triage-three-state.yaml"), ct);
-        _ = await Run(app, ct, "register", file);
+        var registered = await Run(app, ct, "register", file);
+        Assert.True(registered == 0, _error.ToString());
         var hash = (await app.Services.GetRequiredService<IRecipeStore>().All(ct)).Value.Single().Hash;
         _ = Take();
 
