@@ -64,11 +64,16 @@ fi
 APP_WRAPPER_PID=$!
 "$DRIVER" ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never answered (see $OUT/app.log)"
 
-# 3. Work page, then the item's sheet (the row's title button is named "Open ITM-…").
-"$DRIVER" click --name Work >/dev/null 2>&1 || true
-open=(--type Button --contains "Open $item")
-"$DRIVER" wait-for "${open[@]}" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "no Open $item button on the Work page (see $OUT/app.log)"
+# 3. Work page: the top bar's page list is a ListBox whose items are named by their label ("Work", shell NavEntry); the page
+#    shows one row per item, each with a title button named "Open ITM-…" (ItemRowViewModel.OpenName).
+"$DRIVER" click --type ListBoxItem --name Work >"$OUT/nav.log" 2>&1 \
+  || setup_fail "the Work nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
+"$DRIVER" wait-for --type Button --contains "Open ITM-" --state visible --wait-ms 30000 >/dev/null 2>&1 \
+  || setup_fail "the Work page shows no item row after the nav click (see $OUT/app.log)"
+"$DRIVER" screenshot --out "$OUT/work.png" >/dev/null 2>&1
+open=(--type Button --name "Open $item")
+"$DRIVER" wait-for "${open[@]}" --state visible --wait-ms 15000 >/dev/null 2>&1 \
+  || setup_fail "the Work page has item rows but no \"Open $item\" button (screenshot $OUT/work.png)"
 "$DRIVER" click "${open[@]}" >/dev/null 2>&1 || setup_fail "the Open $item click was not accepted"
 close=(--type CommandControl --index 0)   # the sheet's first action: Close item (CloseItem:done)
 "$DRIVER" wait-for "${close[@]}" --state visible --wait-ms 15000 >/dev/null 2>&1 \
