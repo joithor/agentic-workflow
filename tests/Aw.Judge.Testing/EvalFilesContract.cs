@@ -32,7 +32,7 @@ public abstract class EvalFilesContract
         Expect.That((await files.AppendLine(path, """{"a":2}""", _none)).IsSuccess, "a second append succeeds");
 
         var read = await files.ReadLines(path, _none);
-        Expect.That(read.IsSuccess && read.Value.SequenceEqual(["""{"a":1}""", """{"a":2}"""]), "the lines come back in order");
+        Expect.That(read.IsSuccess && read.Value.SequenceEqual(["""{"a":1}""", """{"a":2}"""], StringComparer.Ordinal), "the lines come back in order");
     }
 
     /// <summary>A file that isn't there can't be read.</summary>
@@ -58,6 +58,6 @@ public abstract class EvalFilesContract
         Expect.That(first.IsSuccess && second.IsSuccess && first.Value == second.Value, "both writes name the same file");
         Expect.That(first.Value.EndsWith("ask-check-jev-as-is-1.md", StringComparison.Ordinal), "the path ends with the name");
         var read = await files.ReadLines(second.Value, _none);
-        Expect.That(read.IsSuccess && read.Value.SequenceEqual(["second"]), "the second text replaced the first");
+        Expect.That(read.IsSuccess && read.Value.SequenceEqual(["second"], StringComparer.Ordinal), "the second text replaced the first");
     }
 }

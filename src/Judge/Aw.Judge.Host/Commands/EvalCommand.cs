@@ -33,7 +33,7 @@ internal static class EvalCommand
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json) =>
         args.Count > 0 && string.Equals(args[0], ImportTurns, StringComparison.Ordinal)
-            ? await RunImport(args.Skip(1).ToArray(), services, json).ConfigureAwait(false)
+            ? await RunImport([.. args.Skip(1)], services, json).ConfigureAwait(false)
             : await RunEval(args, allowed, services, json).ConfigureAwait(false);
 
     private static async Task<int> RunEval(IReadOnlyList<string> args, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
@@ -53,7 +53,7 @@ internal static class EvalCommand
     }
 
     private static async Task<int> Score(
-        string question, IReadOnlyDictionary<string, string> flags, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
+        string question, Dictionary<string, string> flags, IReadOnlyList<ProviderName>? allowed, IServiceProvider services, JsonSerializerOptions json)
     {
         if (!ProviderNames.TryParse(flags.GetValueOrDefault("--provider", DefaultProvider), out var provider))
         {
