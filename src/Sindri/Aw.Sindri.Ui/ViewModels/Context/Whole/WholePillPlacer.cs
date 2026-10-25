@@ -1,11 +1,5 @@
 namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 
-/// <summary>One label on an edge, and where it is to be drawn.</summary>
-/// <param name="Style">How its edge is drawn and the label's words.</param>
-/// <param name="X">The label's centre, world x.</param>
-/// <param name="Y">The label's centre, world y.</param>
-internal sealed record WholePill(WholeEdgeStyle Style, double X, double Y);
-
 /// <summary>
 /// Places the labels on the map's edges so none lies on another (UX pass A-15): a label that starts on a taken place is moved up or down by its own height, and one that finds no free
 /// place within two steps is left out (the node panel and the highlight name every edge). Sizes are estimated from the words, in world units at the zoom the map is drawn at.

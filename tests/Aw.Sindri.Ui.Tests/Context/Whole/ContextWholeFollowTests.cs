@@ -33,7 +33,7 @@ public sealed class ContextWholeFollowTests
         var api = new FakeSindriApi();
         var (page, follows, url) = await Page(api);
         await page.Opened(Token);
-        Assert.Single(api.WholeMapAsked);
+        _ = Assert.Single(api.WholeMapAsked);
 
         api.MapStatusAnswer = StatusAt(2);
         foreach (var follow in follows)
@@ -56,7 +56,7 @@ public sealed class ContextWholeFollowTests
             await follow(url, Token);
         }
 
-        Assert.Single(api.WholeMapAsked);
+        _ = Assert.Single(api.WholeMapAsked);
     }
 
     [Fact]

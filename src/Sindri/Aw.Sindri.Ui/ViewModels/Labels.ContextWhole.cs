@@ -108,5 +108,5 @@ internal static partial class Labels
     /// <param name="label">The words the map shows.</param>
     /// <param name="what">The kind, or how many items a feature holds.</param>
     /// <returns>"Tab groups, feature".</returns>
-    internal static string ContextMapItemName(string label, string what) => string.Create(CultureInfo.InvariantCulture, $"{label}, {what}");
+    internal static string ContextMapItemName(string label, string what) => $"{label}, {what}";
 }

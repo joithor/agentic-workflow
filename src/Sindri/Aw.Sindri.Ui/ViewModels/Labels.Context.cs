@@ -42,12 +42,12 @@ internal static partial class Labels
     /// <param name="asked">What was typed.</param>
     /// <returns>"Nothing on the map matches 'Tab groups'. Try a topic such as feature:name."</returns>
     internal static string ContextNothingMatches(string asked) =>
-        string.Create(CultureInfo.InvariantCulture, $"Nothing on the map matches '{asked}'. Try a topic such as feature:name.");
+        $"Nothing on the map matches '{asked}'. Try a topic such as feature:name.";
 
     /// <summary>The line when a name is the name of several items.</summary>
     /// <param name="asked">What was typed.</param>
     /// <returns>"'Pane' names several items. Pick one."</returns>
-    internal static string ContextSeveralMatch(string asked) => string.Create(CultureInfo.InvariantCulture, $"'{asked}' names several items. Pick one.");
+    internal static string ContextSeveralMatch(string asked) => $"'{asked}' names several items. Pick one.";
 
     /// <summary>A refusal of a search in the app's own words: the miss and the several-match codes are worded here, any other keeps the server's sentence without its command-line hint.</summary>
     /// <param name="code">The refusal's code.</param>

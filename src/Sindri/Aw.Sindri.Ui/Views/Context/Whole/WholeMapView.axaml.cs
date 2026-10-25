@@ -145,14 +145,18 @@ internal sealed partial class WholeMapView : UserControl
             return;
         }
 
+        ApplyFit(stage, world);
+    }
+
+    // The zoom range for the stage the map has, and the fit: the first open, and a resize while the person has not zoomed or panned, fit the map again.
+    private void ApplyFit(Size stage, Rect world)
+    {
         var fit = Math.Min(stage.Width / world.Width, stage.Height / world.Height);
         (WholeCanvas.MinZoom, WholeCanvas.MaxZoom) = WholeMapViewModel.ZoomLimits(fit);
-        var fitted = ZoomView.Fit(stage, world, new ZoomRange(WholeMapViewModel.FirstOpenFloor, WholeMapViewModel.MaxScale));
         if (!_fitted || WholeCanvas.View == _fitView)
         {
-            // The first open, and a resize while the person has not zoomed or panned: the map is fitted again to the stage it has now.
             _fitted = true;
-            WholeCanvas.SetView(fitted);
+            WholeCanvas.SetView(ZoomView.Fit(stage, world, new ZoomRange(WholeMapViewModel.FirstOpenFloor, WholeMapViewModel.MaxScale)));
             _fitView = WholeCanvas.View;
         }
 

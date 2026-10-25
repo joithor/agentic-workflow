@@ -147,7 +147,7 @@ internal static partial class Labels
     /// <summary>The word for a filter that matches no file of the folder.</summary>
     /// <param name="filter">What was typed.</param>
     /// <returns>"No files match 'zzzz'."</returns>
-    internal static string ContextFilesNoMatch(string filter) => string.Create(CultureInfo.InvariantCulture, $"No files match '{filter}'.");
+    internal static string ContextFilesNoMatch(string filter) => $"No files match '{filter}'.";
 
     /// <summary>The totals line while a filter is on: how many of the folder's entries it shows.</summary>
     /// <param name="shown">The entries shown.</param>
