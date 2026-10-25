@@ -70,6 +70,7 @@ internal sealed partial class ContextPageViewModel
         var joined = first.Value;
         var concepts = new List<ContextConcept>(joined.Concepts ?? []);
         var links = new List<ConceptLink>(joined.Links ?? []);
+        var glossary = new List<ConceptGlossaryEntry>(joined.Glossary ?? []);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var next = joined.Next; next is { Length: > 0 } && seen.Add(next);)
         {
@@ -81,10 +82,11 @@ internal sealed partial class ContextPageViewModel
 
             concepts.AddRange(page.Value.Concepts ?? []);
             links.AddRange(page.Value.Links ?? []);
+            glossary.AddRange(page.Value.Glossary ?? []);
             next = page.Value.Next;
         }
 
-        return joined with { Concepts = concepts, Links = links, Next = null };
+        return joined with { Concepts = concepts, Links = links, Glossary = glossary, Next = null };
     }
 
     /// <summary>Reads the page's top again (Retry, and when a build has ended): the concepts when none is open, else the open concept's map.</summary>

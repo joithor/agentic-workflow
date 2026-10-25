@@ -22,8 +22,8 @@ internal sealed class ConceptLayerViewModel : ObservableObject
     /// <summary>The concepts drawn, the concept of the unassigned nodes last; while a search is on, only the ones it kept.</summary>
     public IReadOnlyList<ConceptTileViewModel> Tiles => _kept is null ? _all : [.. _all.Where(t => _kept.Contains(t.Id))];
 
-    /// <summary>The product's glossary, held for later (red stub).</summary>
-    internal IReadOnlyList<ConceptGlossaryEntry> Glossary { get; } = [];
+    /// <summary>The product's glossary, held for later (provisional contract); empty when the server serves none.</summary>
+    internal IReadOnlyList<ConceptGlossaryEntry> Glossary { get; private set; } = [];
 
     /// <summary>Whether the concepts are being read.</summary>
     public bool IsLoading { get; private set; }
@@ -69,10 +69,10 @@ internal sealed class ConceptLayerViewModel : ObservableObject
     internal void Show(ContextConceptsView view)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var tiles = (view.Concepts ?? []).Select(c => new ConceptTileViewModel(c.Id, c.Name, c.Summary, c.Size, string.Equals(c.Source, "override", StringComparison.Ordinal), _open)).ToList();
+        var tiles = (view.Concepts ?? []).Select(c => new ConceptTileViewModel(c.Id, c.Name, c.Summary, c.Size, string.Equals(c.Source, "override", StringComparison.Ordinal), c.Terms, _open)).ToList();
         if (view.Other is { } other && other.Size.Total > 0)
         {
-            tiles.Add(new ConceptTileViewModel(other.Id, other.Name.Length > 0 ? other.Name : Labels.ContextWholeBandOther, string.Empty, other.Size, setByPerson: false, _open));
+            tiles.Add(new ConceptTileViewModel(other.Id, other.Name.Length > 0 ? other.Name : Labels.ContextWholeBandOther, string.Empty, other.Size, setByPerson: false, terms: null, _open));
         }
 
         if (tiles.Count == 0)
@@ -82,6 +82,7 @@ internal sealed class ConceptLayerViewModel : ObservableObject
         }
 
         (_all, _links, IsLoading, Note) = (tiles, view.Links ?? [], false, string.Empty);
+        Glossary = view.Glossary ?? [];
         ResetSearch();
         Changed();
     }
@@ -110,7 +111,7 @@ internal sealed class ConceptLayerViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(text);
         return text.Length == 0
             ? new HashSet<string>(StringComparer.Ordinal)
-            : _all.Where(t => t.Name.Contains(text, StringComparison.OrdinalIgnoreCase) || t.Summary.Contains(text, StringComparison.OrdinalIgnoreCase)).Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+            : _all.Where(t => t.Name.Contains(text, StringComparison.OrdinalIgnoreCase) || t.Summary.Contains(text, StringComparison.OrdinalIgnoreCase) || t.Terms.Any(term => term.Contains(text, StringComparison.OrdinalIgnoreCase))).Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
     }
 
     /// <summary>A search resolved: the concepts that match stay, with the ones they link to; the rest is gone.</summary>
@@ -152,6 +153,7 @@ internal sealed class ConceptLayerViewModel : ObservableObject
 
     private void Say(string note)
     {
+        Glossary = [];
         _all = [];
         _links = [];
         (IsLoading, Note) = (false, note);

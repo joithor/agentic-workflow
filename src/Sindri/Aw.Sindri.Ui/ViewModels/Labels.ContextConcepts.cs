@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Aw.Sindri.Ui.ViewModels;
 
 /// <summary>The app's own copy (<see cref="Labels"/>, continued): the Context page's concept band, the first layer of the map.</summary>
@@ -40,6 +42,16 @@ internal static partial class Labels
         var parts = new (string Kind, int Count)[] { ("feature", features), ("record", records), ("decision", decisions), ("code", code) }
             .Where(p => p.Count > 0).Select(p => ContextWholeKindCount(p.Kind, p.Count)).ToList();
         return parts.Count == 0 ? "nothing yet" : string.Join(" · ", parts);
+    }
+
+    /// <summary>A concept card's top terms.</summary>
+    /// <param name="shown">The terms to name, best first.</param>
+    /// <param name="more">How many more there are.</param>
+    /// <returns>"Terms: shift · swap · roster +2".</returns>
+    internal static string ContextConceptTerms(IReadOnlyList<string> shown, int more)
+    {
+        ArgumentNullException.ThrowIfNull(shown);
+        return "Terms: " + string.Join(" · ", shown) + (more > 0 ? " +" + more.ToString(CultureInfo.InvariantCulture) : string.Empty);
     }
 
     /// <summary>A concept's accessible name.</summary>
