@@ -20,4 +20,22 @@ public static class RepoDemoteGlobs
         string[] globs = [.. roles.Where(r => demoted.Contains(r.Key, StringComparer.Ordinal)).OrderBy(r => r.Key, StringComparer.Ordinal).SelectMany(r => r.Value)];
         return globs.Length == 0 ? null : globs;
     }
+
+    /// <summary>The demoted roles of <paramref name="repo"/> by the name the person gave them, each with its globs.</summary>
+    /// <param name="profile">The approved profile.</param>
+    /// <param name="repo">One of its repos.</param>
+    /// <returns>The roles; null when the repo demotes none.</returns>
+    public static IReadOnlyDictionary<string, IReadOnlyList<string>>? Roles(SindriProfile profile, RepoEntry repo)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(repo);
+        var roles = repo.Index?.Roles;
+        if (roles is null || repo.Index?.Demote is not { } demoted)
+        {
+            return null;
+        }
+
+        var named = roles.Where(r => demoted.Contains(r.Key, StringComparer.Ordinal)).ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
+        return named.Count == 0 ? null : named;
+    }
 }

@@ -6,4 +6,5 @@ namespace Aw.Context.Core.Engine;
 /// <param name="DenyPaths">The globs the profile's 'index.denyPaths' (its own and this repo's) add to the built-in secret globs, or null for none.</param>
 /// <param name="Concepts">The pins of the profile's 'index.concepts' (its own and this repo's), or null for none.</param>
 /// <param name="DemotePaths">The globs of the repo's demoted roles ('index.demote'): indexed, but never an implementer, anchor or scope surface; or null for none.</param>
-public sealed record ProfileRepoEntry(string Name, string Path, IReadOnlyList<string>? DenyPaths = null, IReadOnlyList<ConceptPin>? Concepts = null, IReadOnlyList<string>? DemotePaths = null);
+/// <param name="DemoteRoles">The demoted roles by the name the person gave them, each with its globs (the same globs as <paramref name="DemotePaths"/>, kept apart so answers can count per role); or null for none.</param>
+public sealed record ProfileRepoEntry(string Name, string Path, IReadOnlyList<string>? DenyPaths = null, IReadOnlyList<ConceptPin>? Concepts = null, IReadOnlyList<string>? DemotePaths = null, IReadOnlyDictionary<string, IReadOnlyList<string>>? DemoteRoles = null);

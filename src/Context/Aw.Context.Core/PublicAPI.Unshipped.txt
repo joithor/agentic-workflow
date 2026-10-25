@@ -534,7 +534,7 @@ Aw.Context.Core.Engine.ProfileRecognizer.Pattern.get -> string!
 Aw.Context.Core.Engine.ProfileRecognizer.ProfileRecognizer(string! kind, string! glob, string! pattern, string! keyFrom) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry
 Aw.Context.Core.Engine.ProfileRepoEntry.<Clone>$() -> Aw.Context.Core.Engine.ProfileRepoEntry!
-Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts, out System.Collections.Generic.IReadOnlyList<string!>? DemotePaths) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.Deconstruct(out string! Name, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts, out System.Collections.Generic.IReadOnlyList<string!>? DemotePaths, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? DemoteRoles) -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Context.Core.Engine.ProfileRepoEntry.DenyPaths.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Equals(Aw.Context.Core.Engine.ProfileRepoEntry? other) -> bool
@@ -542,7 +542,7 @@ Aw.Context.Core.Engine.ProfileRepoEntry.Name.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Name.init -> void
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.get -> string!
 Aw.Context.Core.Engine.ProfileRepoEntry.Path.init -> void
-Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts = null, System.Collections.Generic.IReadOnlyList<string!>? DemotePaths = null) -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.ProfileRepoEntry(string! Name, string! Path, System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>? Concepts = null, System.Collections.Generic.IReadOnlyList<string!>? DemotePaths = null, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? DemoteRoles = null) -> void
 Aw.Context.Core.Engine.PublishSettings
 Aw.Context.Core.Engine.PublishSettings.<Clone>$() -> Aw.Context.Core.Engine.PublishSettings!
 Aw.Context.Core.Engine.PublishSettings.Equals(Aw.Context.Core.Engine.PublishSettings? other) -> bool
@@ -7547,3 +7547,11 @@ Aw.Context.Core.Lenses.LensesSetView.Filtered.get -> Aw.Context.Core.Results.Fil
 Aw.Context.Core.Lenses.LensesSetView.Filtered.init -> void
 Aw.Context.Core.Engine.ContextRepo.DemoteRoles.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.Context.Core.Engine.ContextRepo.DemoteRoles.init -> void
+Aw.Context.Core.Engine.ProfileRepoEntry.DemoteRoles.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
+Aw.Context.Core.Engine.ProfileRepoEntry.DemoteRoles.init -> void
+Aw.Context.Core.Engine.ContextRepo.DemoteRole(string! path) -> string?
+static Aw.Context.Core.Graph.DemotedCode.Role(Aw.Context.Core.Graph.NodeKey key, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> string?
+static Aw.Context.Core.Lenses.DemotedFiles.Counts(System.Collections.Generic.IEnumerable<Aw.Context.Core.Graph.NodeKey>! keys, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Results.FilteredCounts?
+static Aw.Context.Core.Lenses.DemotedFiles.Counts(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Results.FilteredCounts?
+static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesView!
+static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesSetView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesSetView!

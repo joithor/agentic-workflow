@@ -18635,3 +18635,4 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Profile.RepoDemoteGlobs.Roles(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
