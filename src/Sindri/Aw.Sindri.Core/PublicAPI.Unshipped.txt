@@ -5910,7 +5910,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 11 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 12 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -18262,7 +18262,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Deconstruct(out Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Hash.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Id.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.ShippedFile(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Workflow.Validation.RecipeDocument! Document, string! File, string! Text) -> void
-
 Aw.Sindri.Core.Setup.HookKind
 Aw.Sindri.Core.Setup.HookKind.Foreign = 4 -> Aw.Sindri.Core.Setup.HookKind
 Aw.Sindri.Core.Setup.HookKind.None = 0 -> Aw.Sindri.Core.Setup.HookKind
@@ -18501,6 +18500,34 @@ Aw.Sindri.Core.Prove.PhaseSignals
 static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
 static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
 static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!
+const Aw.Sindri.Core.Events.EventTypes.LaunchTakeoverOpened = "launch.takeover-opened" -> string!
+Aw.Sindri.Core.Events.LaunchViewer.Reason.get -> string?
+Aw.Sindri.Core.Events.LaunchViewer.Reason.init -> void
+static Aw.Sindri.Core.Events.LaunchViewer.Background(Aw.Sindri.Core.Launch.ViewerOutcome! outcome) -> Aw.Sindri.Core.Events.LaunchViewer!
+Aw.Sindri.Core.Events.LaunchViewerPublic.Reason.get -> string?
+Aw.Sindri.Core.Events.LaunchViewerPublic.Reason.init -> void
+Aw.Sindri.Core.Launch.ViewerOutcome.Reason.get -> string?
+Aw.Sindri.Core.Launch.ViewerOutcome.Reason.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.<Clone>$() -> Aw.Sindri.Core.Events.LaunchTakeoverOpened!
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out Aw.Sindri.Core.Events.LaunchViewer! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach) -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Equals(Aw.Sindri.Core.Events.LaunchTakeoverOpened? other) -> bool
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Launch.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Item.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Instance.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Viewer.get -> Aw.Sindri.Core.Events.LaunchViewer!
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Viewer.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.Attach.init -> void
+Aw.Sindri.Core.Events.LaunchTakeoverOpened.LaunchTakeoverOpened(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Events.LaunchViewer! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach) -> void
+override Aw.Sindri.Core.Events.LaunchTakeoverOpened.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.LaunchTakeoverOpened.GetHashCode() -> int
+override Aw.Sindri.Core.Events.LaunchTakeoverOpened.ToString() -> string!
+static Aw.Sindri.Core.Events.LaunchTakeoverOpened.operator !=(Aw.Sindri.Core.Events.LaunchTakeoverOpened? left, Aw.Sindri.Core.Events.LaunchTakeoverOpened? right) -> bool
+static Aw.Sindri.Core.Events.LaunchTakeoverOpened.operator ==(Aw.Sindri.Core.Events.LaunchTakeoverOpened? left, Aw.Sindri.Core.Events.LaunchTakeoverOpened? right) -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash?
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Hash.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Version.get -> int?
