@@ -66,10 +66,10 @@ public sealed class ViewsFileTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_view_name_has_a_table_and_the_schema_is_at_version_9()
+    public void Every_view_name_has_a_table_and_the_schema_is_at_version_10()
     {
         Assert.Equal(["code-index", "decisions", "item-aliases", "item-timeline", "items", "jobs", "launches", "needs_you", "profile", "recipe-stats", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
-        Assert.Equal(9, ViewSchema.Version);   // the code-index view joined after recipe-stats (and launch rows gained a required member at 7): an older views.db must rebuild, not fail to read
+        Assert.Equal(10, ViewSchema.Version);   // NeedsYouRow.Open became required (#959); the code-index view joined after recipe-stats (and launch rows gained a required member at 7): an older views.db must rebuild, not fail to read
     }
 
     [Fact, Trait("Lane", "integration")]
