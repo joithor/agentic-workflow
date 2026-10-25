@@ -85,8 +85,11 @@ drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 \
 # The page opens as the board, which holds only runs on a lane; the List toggle shows every run.
 drv click --type ListBoxItem --name List >"$OUT/list.log" 2>&1 \
   || setup_fail "the List toggle was not clicked (driver: $(tr -d '\n' <"$OUT/list.log" | cut -c1-160))"
-drv wait-for --type ListItem --state visible --wait-ms 60000 >/dev/null 2>&1 || setup_fail "Workflows lists no instance"
-drv click --type ListItem --index 0 >/dev/null 2>&1 || setup_fail "the instance row click was not accepted by the driver"
+# The run's title button is in the row; focus arriving on it selects the row (WorkflowsPage.OnSelect) and opens the drawer without opening the run.
+title=(--type Button --text "Fixture agent run")
+drv wait-for "${title[@]}" --state visible --wait-ms 60000 >/dev/null 2>&1 || setup_fail "Workflows lists no run titled Fixture agent run"
+drv action --do focus "${title[@]}" >"$OUT/select.log" 2>&1 \
+  || setup_fail "the run's row could not take focus (driver: $(tr -d '\n' <"$OUT/select.log" | cut -c1-160))"
 drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the run drawer shows no Take over button for the live agent run"
 drv screenshot --out "$OUT/before-click.png" >/dev/null 2>&1
