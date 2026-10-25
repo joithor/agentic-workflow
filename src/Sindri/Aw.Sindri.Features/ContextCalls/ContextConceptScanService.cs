@@ -1,11 +1,13 @@
 using System.Globalization;
 using Aw.Context.Core.ConceptScan;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Logging;
@@ -48,7 +50,12 @@ internal sealed partial class ContextConceptScanService(ContextScopes scopes, IC
             return scope.IsError && scope.Error.Code != SindriErrors.ProfileNotApproved.Code ? scope.Error : ScheduledResult.Quiet;
         }
 
-        var state = await engine.Held(scope.Value, cancellationToken).ConfigureAwait(false);
+        return await Tick(scope.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<ScheduledResult>> Tick(ContextScope scope, CancellationToken cancellationToken)
+    {
+        var state = await engine.Held(scope, cancellationToken).ConfigureAwait(false);
         var scans = await jobs.List(state: null, Kind, cancellationToken).ConfigureAwait(false);
         if (state.IsError || scans.IsError)
         {

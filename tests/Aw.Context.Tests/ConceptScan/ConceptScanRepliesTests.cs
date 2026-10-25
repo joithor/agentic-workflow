@@ -13,8 +13,8 @@ public sealed class ConceptScanRepliesTests
     {
         var found = ConceptScanReplies.Candidates("""{"concepts":[{"name":"Self scheduling","queries":["shift swap","open shifts"]},{"name":"Payroll","queries":["pay run"]}]}""");
 
-        Assert.Equal(["Self scheduling", "Payroll"], found.Select(static c => c.Name));
-        Assert.Equal(["shift swap", "open shifts"], found[0].Queries);
+        Assert.Equal(["Self scheduling", "Payroll"], found.Select(static c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["shift swap", "open shifts"], found[0].Queries, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -22,7 +22,7 @@ public sealed class ConceptScanRepliesTests
     {
         var found = ConceptScanReplies.Candidates("Here you go:\n```json\n[{\"name\":\"Payroll\",\"queries\":[\"pay run\"]}]\n```\nHope that helps.");
 
-        Assert.Equal(["Payroll"], found.Select(static c => c.Name));
+        Assert.Equal(["Payroll"], found.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -42,7 +42,7 @@ public sealed class ConceptScanRepliesTests
     {
         var found = ConceptScanReplies.Candidates("{\"concepts\":[{\"name\":\"\",\"queries\":[\"a\"]},{\"name\":\"No queries\",\"queries\":[]},{\"name\":\"Payroll\",\"queries\":[\"pay run\"]},{\"name\":\"payroll\",\"queries\":[\"other\"]},{\"queries\":[\"x\"]},{\"name\":7,\"queries\":[\"x\"]}]}");
 
-        Assert.Equal(["Payroll"], found.Select(static c => c.Name));
+        Assert.Equal(["Payroll"], found.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -50,7 +50,7 @@ public sealed class ConceptScanRepliesTests
     {
         var found = ConceptScanReplies.Candidates("{\"concepts\":[{\"name\":\"Self\\n  scheduling\\t\",\"queries\":[\"swap\"]},{\"name\":\"" + new string('x', 61) + "\",\"queries\":[\"swap\"]}]}");
 
-        Assert.Equal(["Self scheduling"], found.Select(static c => c.Name));
+        Assert.Equal(["Self scheduling"], found.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -72,8 +72,8 @@ public sealed class ConceptScanRepliesTests
 
         var hint = Assert.Single(hints);
         Assert.Equal("Self scheduling", hint.Name);
-        Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members);
-        Assert.Equal(["src/shifts/swap.ts"], hint.Evidence);
+        Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members, StringComparer.Ordinal);
+        Assert.Equal(["src/shifts/swap.ts"], hint.Evidence, StringComparer.Ordinal);
         Assert.Equal(0.8, hint.Confidence);
     }
 
@@ -90,9 +90,9 @@ public sealed class ConceptScanRepliesTests
     {
         var hints = ConceptScanReplies.Hints("{\"concepts\":[ {\"name\":\"Weak\",\"members\":[\"feature:pay.run\",\"feature:pay.slip\"],\"confidence\":0.4}, {\"name\":\"Strong\",\"members\":[\"feature:pay.run\"],\"confidence\":0.9}]}", _features);
 
-        Assert.Equal(["Strong", "Weak"], hints.Select(static h => h.Name));
-        Assert.Equal(["feature:pay.run"], hints[0].Members);
-        Assert.Equal(["feature:pay.slip"], hints[1].Members);
+        Assert.Equal(["Strong", "Weak"], hints.Select(static h => h.Name), StringComparer.Ordinal);
+        Assert.Equal(["feature:pay.run"], hints[0].Members, StringComparer.Ordinal);
+        Assert.Equal(["feature:pay.slip"], hints[1].Members, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -40,7 +40,7 @@ public sealed class ConceptScanPromptsTests
     public void Both_prompts_stay_within_the_input_limit_however_much_is_given()
     {
         var huge = new string('<', 90_000);
-        var hits = Enumerable.Range(0, 50).Select(static i => new ConceptSearchResult("q" + i, [new string('&', 3_000)])).ToList();
+        var hits = Enumerable.Range(0, 50).Select(static i => new ConceptSearchResult(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"q{i}"), [new string('&', 3_000)])).ToList();
 
         Assert.True(ConceptScanPrompts.Propose(huge).Length <= ConceptScanLimits.MaxInputChars);
         Assert.True(ConceptScanPrompts.Conclude(huge, _candidates, hits).Length <= ConceptScanLimits.MaxInputChars);

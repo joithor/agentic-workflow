@@ -17,22 +17,20 @@ public sealed class ConceptScanSummaryTests
 
     [Fact, Trait("Lane", "unit")]
     public void The_feature_keys_are_only_features_in_key_order()
-    {
-        Assert.Equal(["feature:pay.run", "feature:shifts.swap"], ConceptScanSummary.FeatureKeys(Map()));
-    }
+        => Assert.Equal(["feature:pay.run", "feature:shifts.swap"], ConceptScanSummary.FeatureKeys(Map()), StringComparer.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public void Each_feature_is_one_line_with_its_label_and_top_files()
     {
         var lines = ConceptScanSummary.Build(Map(), glossary: null, maxChars: 10_000).Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-        Assert.Equal(["feature:pay.run | Run payroll", "feature:shifts.swap | Swap shifts | src/shifts/board.ts, src/shifts/swap.ts"], lines.Select(static l => l.TrimEnd('\r')));
+        Assert.Equal(["feature:pay.run | Run payroll", "feature:shifts.swap | Swap shifts | src/shifts/board.ts, src/shifts/swap.ts"], lines.Select(static l => l.TrimEnd('\r')), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Glossary_terms_follow_the_features_when_there_are_some()
     {
-        var glossary = new MapGlossary([new GlossaryTerm("shift", 2.5, [NodeKey.From("feature:shifts.swap")])], [], [], false);
+        var glossary = new MapGlossary([new GlossaryTerm("shift", 2.5, [NodeKey.From("feature:shifts.swap")])], [], [], Truncated: false);
 
         var text = ConceptScanSummary.Build(Map(), glossary, maxChars: 10_000);
 

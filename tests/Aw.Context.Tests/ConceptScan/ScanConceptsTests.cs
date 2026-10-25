@@ -51,8 +51,8 @@ public sealed class ScanConceptsTests : IDisposable
         Assert.Equal(new ConceptScanReport(draft, OnDraft: true, ConceptScanOutcome.Scanned, Hints: 1, Searches: 2), report);
         var hint = Assert.Single((await _world.Hints.Read(draft, MapWorld.None)).Value);
         Assert.Equal("Self scheduling", hint.Name);
-        Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members);   // 'feature:made.up' is no feature of the draft
-        Assert.Equal(["src/shifts/swap.ts"], hint.Evidence);
+        Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members, StringComparer.Ordinal);   // 'feature:made.up' is no feature of the draft
+        Assert.Equal(["src/shifts/swap.ts"], hint.Evidence, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
