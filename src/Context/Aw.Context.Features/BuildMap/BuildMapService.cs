@@ -97,12 +97,13 @@ internal sealed class BuildMapService(
         }
 
         var at = clock.GetUtcNow();
-        var overrides = current.Value?.Overrides ?? [];
-        var (denied, undo) = MapAccess.WithoutDenied(basis, overrides, profileRepos, mappedRepos, at);
-        var (kept, demoteUndo) = MapAccess.WithoutDemoted(denied, overrides, mappedRepos, at);
-        undo = UndoAlso([.. undo, .. demoteUndo], open.Value, profileRepos, mappedRepos, at);
+        var ruleset = MapRuleset.Of(ScopeRules.Mapped(read.Settings, profileRepos));
+        var changed = current.Value is { } map && !string.Equals(map.Version.Ruleset, ruleset, StringComparison.Ordinal);
+        var cuts = new BuildCuts(profileRepos, mappedRepos, read.Found, changed, at);
+        var (kept, undo) = cuts.Apply(basis, current.Value?.Overrides ?? []);
+        undo = UndoAlso(undo, open.Value, cuts);
         var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], cancellationToken).ConfigureAwait(false);
-        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads) { Ruleset = MapRuleset.Of(ScopeRules.Mapped(read.Settings, profileRepos)) }, at, cancellationToken).ConfigureAwait(false);
+        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads) { Ruleset = ruleset }, at, cancellationToken).ConfigureAwait(false);
         return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), note is null ? read.Degraded : [.. read.Degraded, note], read.Heads);
     }
 
@@ -116,17 +117,10 @@ internal sealed class BuildMapService(
     }
 
     // The open draft this build replaces may hold nodes the current map doesn't (a surface found since the last promote): the decisions about those it would lose to the cut are undone too, in the same write.
-    private static IReadOnlyList<MapOverride> UndoAlso(IReadOnlyList<MapOverride> undo, MapSnapshot? openDraft, IReadOnlyList<ContextRepo> profileRepos, IReadOnlyList<ContextRepo> mappedRepos, DateTimeOffset at)
-    {
-        if (openDraft is null)
-        {
-            return undo;
-        }
-
-        var (denied, deniedUndo) = MapAccess.WithoutDenied(openDraft.Graph, openDraft.Overrides, profileRepos, mappedRepos, at);
-        var demotedUndo = MapAccess.WithoutDemoted(denied, openDraft.Overrides, mappedRepos, at).Undo;
-        return [.. undo.Concat(deniedUndo).Concat(demotedUndo).DistinctBy(o => o.Undoes?.Value, StringComparer.Ordinal)];
-    }
+    private static IReadOnlyList<MapOverride> UndoAlso(IReadOnlyList<MapOverride> undo, MapSnapshot? openDraft, BuildCuts cuts) =>
+        openDraft is null
+            ? undo
+            : [.. undo.Concat(cuts.Apply(openDraft.Graph, openDraft.Overrides).Undo).DistinctBy(o => o.Undoes?.Value, StringComparer.Ordinal)];
 
     private async ValueTask<Result<RepoExtraction>> Extract(IProgress<string>? progress, ContextSettings settings, ContextRepo repo, CancellationToken cancellationToken)
     {

@@ -4701,6 +4701,8 @@ const Aw.Context.Core.Map.MapRetention.RetainedVersions = 100 -> int
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
 const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
 const Aw.Context.Core.Overrides.MapOverride.DemoteMarker = "service:demote-cut" -> string!
+const Aw.Context.Core.Overrides.MapOverride.EngineWho = "service:engine" -> string!
+const Aw.Context.Core.Overrides.MapOverride.RedecideMarker = "service:rules-redecide" -> string!
 const Aw.Context.Core.Overrides.ProposalRows.Confidence = 0.5 -> double
 const Aw.Context.Core.Ranking.RankFusion.K = 60 -> int
 const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
@@ -6075,6 +6077,7 @@ static Aw.Context.Core.Map.MapAccess.ViewWithIntent(Aw.Context.Core.Linking.Inte
 static Aw.Context.Core.Map.MapAccess.ViewWithIntentOrEmpty(Aw.Context.Core.Linking.IntentLayer! intent, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Engine.ContextScope! scope, bool pending) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapView!>!
 static Aw.Context.Core.Map.MapAccess.WithoutDemoted(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
 static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! profile, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
+static Aw.Context.Core.Map.MapAccess.WithoutLostEngineAccepts(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Extract.ExtractedMap! found, bool rulesChanged, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
 static Aw.Context.Core.Map.MapBuildReport.operator !=(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
 static Aw.Context.Core.Map.MapBuildReport.operator ==(Aw.Context.Core.Map.MapBuildReport? left, Aw.Context.Core.Map.MapBuildReport? right) -> bool
 static Aw.Context.Core.Map.MapCounts.Of(Aw.Context.Core.Graph.GraphSnapshot! graph, int overrides) -> Aw.Context.Core.Map.MapCounts!
@@ -6149,6 +6152,7 @@ static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSe
 static Aw.Context.Core.Overrides.AppliedMap.operator !=(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator ==(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.Confirmation.Of(Aw.Context.Core.Results.Provenance provenance, bool accepted = false) -> bool
+static Aw.Context.Core.Overrides.MapOverride.UndoingRedecide(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 static Aw.Context.Core.Overrides.MapOverride.operator !=(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.operator ==(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
