@@ -2769,6 +2769,8 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.get -> boo
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyTimeoutPark.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyTimeoutPark.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyUnavailable.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyUnavailable.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
@@ -11173,6 +11175,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Exit = 1 -> Aw.Sindri.Cor
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Lost = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Idle = 3 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
 static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Bound(System.TimeSpan max, System.TimeSpan? timerLeft) -> System.TimeSpan
+static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.IsExplicit(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(string! actor) -> bool
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockProfileUnreadable -> Aw.Kernel.ErrorDefinition!
@@ -18635,3 +18638,7 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Scoping.ChallengeRoundShape
+static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Covers(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> bool
+static Aw.Sindri.Core.Scoping.ChallengeRoundShape.LogShape(System.Text.Json.Nodes.JsonObject! round) -> string?
+static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Violation(System.ReadOnlySpan<byte> content) -> string?
