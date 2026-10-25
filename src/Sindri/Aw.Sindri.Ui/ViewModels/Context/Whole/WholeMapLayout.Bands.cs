@@ -17,7 +17,7 @@ internal static partial class WholeMapLayout
         {
             var below = floor?.FirstOrDefault(f => f.Band == band);
             var height = Math.Max(need.GetValueOrDefault(band), below?.Height ?? 0);
-            var words = below is { Meta.Length: > 0 } ? below.Meta : meta.GetValueOrDefault(band, string.Empty);   // why: a floor carries the whole map's counts
+            var words = meta.GetValueOrDefault(band, string.Empty);   // the label counts what is drawn; a floor gives height only
 
             if (band == WholeBand.Other && height <= 0 && words.Length == 0)
             {
