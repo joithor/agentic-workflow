@@ -39,6 +39,7 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddScoped<IPromptSortStore, SqlitePromptSortStore>()
             .AddScoped<IEvalStore, SqliteEvalStore>()
             .AddSingleton<ITranscriptReader, ClaudeTranscriptReader>()
+            .AddSingleton<IEvalFiles>(new FileEvalFiles(Path.Combine(settings.StateDirectory, "evals")))
             .AddScoped<ISortSessionStore>(_ => new FileSortSessionStore(Path.Combine(settings.StateDirectory, "sessions")))
             .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))

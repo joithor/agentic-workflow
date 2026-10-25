@@ -1758,3 +1758,13 @@ static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderExcluded -> Aw.Kernel.E
 static readonly Aw.Judge.Core.Errors.JudgeErrors.ProviderUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.UnknownItem -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.NoTranscript -> Aw.Kernel.ErrorDefinition!
+Aw.Judge.Core.Evaluation.PreparedQuestion
+Aw.Judge.Core.Evaluation.PreparedQuestion.Ask(System.Text.Json.Nodes.JsonNode? input, System.Text.Json.JsonSerializerOptions! json) -> Aw.Judge.Core.Providers.QuestionRef?
+Aw.Judge.Core.Evaluation.PreparedQuestion.Outputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Evaluation.PreparedQuestion.Threshold.get -> double
+Aw.Judge.Core.Evaluation.PreparedQuestion.TimeBudget.get -> System.TimeSpan
+static Aw.Judge.Core.Evaluation.QuestionCatalog.Prepare(string! question) -> Aw.Judge.Core.Evaluation.PreparedQuestion?
+Aw.Judge.Core.Ports.IEvalFiles
+Aw.Judge.Core.Ports.IEvalFiles.AppendLine(string! path, string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Judge.Core.Ports.IEvalFiles.ReadLines(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
+Aw.Judge.Core.Ports.IEvalFiles.WriteReport(string! name, string! content, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
