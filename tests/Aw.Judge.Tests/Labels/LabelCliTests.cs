@@ -75,16 +75,12 @@ public sealed class LabelCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Status_of_an_empty_store_lists_no_questions()
-    {
+    public async Task Status_of_an_empty_store_lists_no_questions() =>
         Assert.Equal(new CliRun(0, """{"questions":[]}""" + "\n", ""), await Cli().Run("label", "status"));
-    }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Set_of_an_unknown_item_exits_1_naming_it()
-    {
+    public async Task Set_of_an_unknown_item_exits_1_naming_it() =>
         Assert.Equal(new CliRun(1, "", "unknown item: nope\n"), await Cli().Run("label", "set", "nope", "skip"));
-    }
 
     [Fact, Trait("Lane", "integration")]
     public async Task Set_of_a_label_the_question_cannot_answer_exits_1_listing_the_choices()
@@ -134,7 +130,7 @@ public sealed class LabelCliTests : IDisposable
         Assert.Equal(64, run.ExitCode);
         Assert.Equal("", run.Stdout);
         Assert.StartsWith("usage: judge label", run.Stderr, StringComparison.Ordinal);
-        Assert.Single(run.Stderr.TrimEnd('\n').Split('\n'));
+        _ = Assert.Single(run.Stderr.TrimEnd('\n').Split('\n'));
     }
 
     public void Dispose() => _state.Dispose();
