@@ -89,8 +89,8 @@ public sealed class DemotedPathReadTests : IDisposable
         var plain = await _world.Engine.Lenses("Zeta thing", read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None);
         var demoted = await _world.Engine.Lenses("Zeta thing", read: MapRead.Current, depth: null, Demoting(Demoted), MapWorld.None);
 
-        Assert.Contains(plain.Error.Extensions ?? [], m => m.Key == "suggestedAnchors" && m.Value.ToString().Contains("code:" + Demoted, StringComparison.Ordinal));
-        Assert.DoesNotContain(demoted.Error.Extensions ?? [], m => m.Key == "suggestedAnchors");
+        Assert.Contains(plain.Error.Extensions ?? Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors" && m.Value.ToString().Contains("code:" + Demoted, StringComparison.Ordinal));
+        Assert.DoesNotContain(demoted.Error.Extensions ?? Kernel.ErrorExtensions.Empty, m => m.Key == "suggestedAnchors");
     }
 
     private static List<string?> CodeNodes(ContextResult result) =>
