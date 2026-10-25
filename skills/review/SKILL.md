@@ -48,7 +48,7 @@ ls -1dt "$AW_DIR/verification/"*/ 2>/dev/null | head -1   # newest pack.json dir
 ls -1dt "$AW_DIR/design/verify/"*/ 2>/dev/null | head -1  # newest comparison-report.json dir
 ```
 
-Read `pack.json` and `comparison-report.json` from those newest dirs (per `_shared/evidence-pack.md`). Their contents become `{evidence}` for reviewers — the literal `none` when neither exists.
+Read `pack.json` and `comparison-report.json` from those newest dirs (per `_shared/evidence-pack.md`). Their contents become `{evidence}` for reviewers — the literal `none` when neither exists. A diff that changes a desktop UI is only covered by a pack with `platform: "desktop"`; a web or iOS pack does not count for it.
 
 ## Step 4: Triage
 

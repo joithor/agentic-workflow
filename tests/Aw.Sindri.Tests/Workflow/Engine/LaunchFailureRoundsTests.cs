@@ -44,7 +44,7 @@ public sealed class LaunchFailureRoundsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Three_launch_failures_in_a_row_park_with_the_last_error()
+    public void Three_launch_failures_in_a_row_park_unavailable_with_the_last_error()
     {
         var instance = In("produce", new LoopState(1, 3, Last: null));
         instance = Applied(Decide(instance, LaunchFailed(instance)));
@@ -52,10 +52,24 @@ public sealed class LaunchFailureRoundsTests
 
         var third = Applied(Decide(instance, LaunchFailed(instance)));
 
-        Assert.Equal(ParkReason.NeedsAnswer, third.Park);
+        Assert.Equal(ParkReason.Unavailable, third.Park);
         Assert.Equal(1, third.Loops[Revisions].Round);
         Assert.Contains(Error, third.Suspension!.Question, StringComparison.Ordinal);
+        Assert.Contains("unavailable after 2 retries", third.Suspension.Question, StringComparison.Ordinal);
         Assert.Equal(ResumeKind.Rerun, third.Suspension.Resume.Kind);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_history_from_before_the_unavailable_park_still_parks_needs_answer_on_the_third()
+    {
+        var instance = In("produce", new LoopState(1, 3, Last: null));
+        instance = Applied(Decide(instance, LaunchFailed(instance)));
+        instance = Applied(Decide(instance, LaunchFailed(instance)));
+
+        var third = Applied(TransitionDecision.Decide(new DecisionInput(instance, Retrying, LaunchFailed(instance), GateAnswers.None, EngineFixture.Context() with { LegacyUnavailable = true })));
+
+        Assert.Equal(ParkReason.NeedsAnswer, third.Park);
+        Assert.Contains(Error, third.Suspension!.Question, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

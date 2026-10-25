@@ -107,6 +107,14 @@ public sealed class UiPreferencesTests
         Assert.Equal(clamped, (UiPreferences.Defaults with { LastPage = page }).Clamp().LastPage);
 
     [Fact]
+    public void Four_thousand_seen_ids_are_all_kept()
+    {
+        var many = Enumerable.Range(0, 4000).Select(i => "r" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
+        Assert.Equal(many, (UiPreferences.Defaults with { SeenIds = many }).Clamp().SeenIds);
+    }
+
+    [Fact]
     public void Seen_ids_drop_blanks_and_repeats_and_keep_the_newest()
     {
         var many = Enumerable.Range(0, UiPreferences.MaxSeenIds + 10).Select(i => "r" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToList();
@@ -114,7 +122,7 @@ public sealed class UiPreferencesTests
         var clamped = (UiPreferences.Defaults with { SeenIds = ["", " ", .. many, "r5"] }).Clamp().SeenIds;
 
         Assert.Equal(UiPreferences.MaxSeenIds, clamped.Count);
-        Assert.Equal(("r509", "r5"), (clamped[^2], clamped[^1]));   // a repeat keeps its newest place
+        Assert.Equal(("r" + (UiPreferences.MaxSeenIds + 9).ToString(System.Globalization.CultureInfo.InvariantCulture), "r5"), (clamped[^2], clamped[^1]));   // a repeat keeps its newest place
         Assert.DoesNotContain("", clamped, StringComparer.Ordinal);
         Assert.Equal(clamped.Count, clamped.Distinct(StringComparer.Ordinal).Count());
     }

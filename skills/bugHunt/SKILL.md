@@ -37,7 +37,7 @@ Confirm the bug exists before attempting a fix.
 3. **If argument is a description**, search files to find related test files and **list every candidate test first** (file + why it matched) before running any. Then run the candidates, best match first.
 4. **Capture the failure output.** If no candidate fails, do NOT conclude non-reproduction yet:
    - Show the full candidate list you tried.
-   - For user-facing symptoms, try the app path: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from the description>`.
+   - For user-facing symptoms, try the app path: **Invoke skill `verify-app`** with args `--yes --journey <repro steps from the description>` (for a desktop app it runs the real app on seeded data).
    - Only after both routes pass, **Ask the user** whether they can provide more detail / a failing command, or wants to stop.
 
 ## Step 3: Locate
@@ -107,6 +107,7 @@ If the fix touches user-facing code (routes, components, views, templates, style
 > **Invoke skill `verify-app`** with args `--yes --journey <the repro steps from Step 2, as the journey>`
 
 - Recommended at `standard` tier; **mandated** at `exhaustive` tier — do not report `fixed` there without it.
+- For a desktop UI fix this is the desktop evidence pack (`verify-desktop`: the real app on seeded data, screens judged against their mockups).
 - Record the resulting evidence pack (`skills/_shared/evidence-pack.md`) for the report:
   ```bash
   SHARED_DIR="$HOME/.agentic-workflow/toolkit/skills/_shared"
