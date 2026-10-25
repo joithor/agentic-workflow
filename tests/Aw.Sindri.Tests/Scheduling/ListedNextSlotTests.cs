@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Aw.Kernel;
@@ -58,8 +59,8 @@ public sealed class ListedNextSlotTests : IDisposable
         await app.StopAsync(Token);
 
         var now = _clock.GetUtcNow();
-        Assert.True(listed.NextSlot > now, FormattableString.Invariant($"next {listed.NextSlot:O} is not after now {now:O}"));
-        Assert.True(listed.NextSlot <= now + interval, FormattableString.Invariant($"next {listed.NextSlot:O} is more than one cadence after now {now:O}"));
+        Assert.True(listed.NextSlot > now, string.Create(CultureInfo.InvariantCulture, $"next {listed.NextSlot:O} is not after now {now:O}"));
+        Assert.True(listed.NextSlot <= now + interval, string.Create(CultureInfo.InvariantCulture, $"next {listed.NextSlot:O} is more than one cadence after now {now:O}"));
     }
 
     private async Task<WebApplication> Start(string every)
