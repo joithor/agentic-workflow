@@ -5,6 +5,8 @@ namespace Aw.Sindri.Testing.Scoping;
 /// <summary>Edits of the gold facts for the relevance review (issue 966): one entry's two verdicts and what the pass did to the lenses and coverage, kept consistent so only the rule under test is broken.</summary>
 public static class RelevanceFacts
 {
+    private static readonly string[] _lists = ["nodes", "items"];
+
     /// <summary>
     /// Sets an entry's verdicts and result in 'fact:relevance' and recomputes its counts. An entry whose result is 'out' or 'noise' also leaves 'fact:lenses'
     /// (with the edges that touched its node) and 'fact:coverage' (its found id and count), as the apply Step does.
@@ -42,7 +44,7 @@ public static class RelevanceFacts
             entry["disputed"] = disputed;
             n["counts"] = Counts(entries);
         });
-        if (result is "out" or "noise")
+        if (string.Equals(result, "out", StringComparison.Ordinal) || string.Equals(result, "noise", StringComparison.Ordinal))
         {
             Leave(facts, lens!, key, id);
         }
@@ -74,7 +76,7 @@ public static class RelevanceFacts
         _ = facts.Edit("lenses", n =>
         {
             var entry = n[lens]!.AsObject();
-            foreach (var list in new[] { "nodes", "items" })
+            foreach (var list in _lists)
             {
                 var array = entry[list]!.AsArray();
                 var found = array.FirstOrDefault(e => (string?)e!["lensItem"] == id);
