@@ -67,6 +67,23 @@ public sealed class GetCodeSymbolsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_map_ahead_of_an_ancestor_index_is_catching_up_and_only_rows_in_pending_files_are_stale()
+    {
+        var (world, view) = await Lens(new FakeCodeSymbolSource([Index(AheadCommit) with { Ahead = ["src/main.ts"] }]));
+        using var _ = world;
+
+        Assert.Equal((SearchedState.Ok, "catching-up", null), (Row(view).State, Row(view).Reason, Row(view).Code));
+        Assert.Equal(new SearchedCatchingUp(AheadCommit, MapCommit, ["src/main.ts"]), Row(view).CatchingUp);
+        Assert.Empty(view.Degraded);
+        Assert.Equal((AheadCommit, MapCommit, "catching-up"), (view.Callers.Commit, view.Callers.AsOfCommit, view.Callers.Reason));
+        var pending = Assert.Single(view.Callers.Items, e => e.Symbol.Ref == _main.Ref);
+        Assert.Equal((SymbolsState.Stale, MapCommit), (pending.State, pending.AsOfCommit));
+        var current = Assert.Single(view.Callers.Items, e => e.Symbol.Ref == _routes.Ref);
+        Assert.Equal((SymbolsState.Ok, null), (current.State, current.AsOfCommit));
+        Assert.All(view.Callees.Items, e => Assert.Equal(SymbolsState.Ok, e.State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_rows_turn_fresh_when_the_index_lands_at_the_maps_commit_with_nothing_republished()
     {
         var fake = new FakeCodeSymbolSource([Index(AheadCommit)]);

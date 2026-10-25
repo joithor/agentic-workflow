@@ -4,7 +4,10 @@ using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Testing;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Symbols;
+using Aw.Context.Testing.Extract;
 using Aw.Kernel;
 using Aw.Sindri.Host.CodeIndexHost;
 using IndexHit = Aw.CodeIndex.Core.Facade.SymbolHit;
@@ -52,6 +55,55 @@ public sealed class CodeIndexSymbolSourceTests
         Assert.All(found.Rows, r => Assert.Equal((Indexed, Other, SymbolsState.Stale), (r.Commit, r.AsOfCommit, r.State)));
         Assert.All(files.Rows, r => Assert.Equal((Indexed, Other, SymbolsState.Stale), (r.Commit, r.AsOfCommit, r.State)));
         Assert.All(callees.Rows, r => Assert.Equal((Indexed, Other, SymbolsState.Stale), (r.Commit, r.AsOfCommit, r.State)));
+    }
+
+    [Fact]
+    public async Task An_index_that_is_an_ancestor_of_the_maps_commit_is_catching_up_with_the_changed_files_pending()
+    {
+        var source = Source(Index(), reader: Git(Indexed, "src/Worker.cs", "src/New.cs"));
+
+        var head = (await source.Heads(_repo, Other, Ct)).Value;
+        var workers = (await source.FindSymbols(_repo, new SymbolQuery("Worker.", Prefix: true, Max: 10), Other, Ct)).Value;
+        var helpers = (await source.FindSymbols(_repo, new SymbolQuery("Helper.", Prefix: true, Max: 10), Other, Ct)).Value;
+        var callees = (await source.Callees(_repo, "src/Worker.cs#Worker.Run", 1, Other, Ct)).Value;
+
+        Assert.Equal((CodeIndexState.CatchingUp, Indexed, Other), (head.State, head.Commit, head.AsOfCommit));
+        Assert.Equal(["src/New.cs", "src/Worker.cs"], head.Pending);
+        Assert.All(workers.Rows, r => Assert.Equal((Indexed, Other, SymbolsState.Stale), (r.Commit, r.AsOfCommit, r.State)));
+        Assert.All(helpers.Rows, r => Assert.Equal((Indexed, null, SymbolsState.Ok), (r.Commit, r.AsOfCommit, r.State)));
+        Assert.Equal(("src/Helper.cs#Helper.Assist", SymbolsState.Ok), (Assert.Single(callees.Rows).Symbol.Ref, callees.Rows[0].State));
+    }
+
+    [Fact]
+    public async Task An_index_that_is_not_an_ancestor_of_the_maps_commit_stays_stale()
+    {
+        var source = Source(Index(), reader: Git(mergeBase: "fedcba9876543210fedcba9876543210fedcba98", "src/Worker.cs"));
+
+        var head = (await source.Heads(_repo, Other, Ct)).Value;
+        var files = (await source.FileSymbols(_repo, ["src/Helper.cs"], Other, Ct)).Value;
+
+        Assert.Equal((CodeIndexState.Stale, null), (head.State, head.Pending));
+        Assert.All(files.Rows, r => Assert.Equal(SymbolsState.Stale, r.State));
+    }
+
+    [Fact]
+    public async Task An_index_whose_ancestry_git_cannot_tell_stays_stale()
+    {
+        var source = Source(Index(), reader: Git(mergeBase: null));
+
+        var head = (await source.Heads(_repo, Other, Ct)).Value;
+
+        Assert.Equal((CodeIndexState.Stale, null), (head.State, head.Pending));
+    }
+
+    [Fact]
+    public async Task A_graph_layer_that_is_down_stays_degraded_when_the_index_is_an_ancestor()
+    {
+        var source = Source(Index().WithGraphUnavailable(_name), reader: Git(Indexed, "src/Worker.cs"));
+
+        var head = (await source.Heads(_repo, Other, Ct)).Value;
+
+        Assert.Equal((CodeIndexState.Stale, null, "graph"), (head.State, head.Pending, head.Layer));
     }
 
     [Fact]
@@ -144,7 +196,12 @@ public sealed class CodeIndexSymbolSourceTests
         Assert.Equal(("src/Worker.cs#Worker.Run", "Worker.Run", 10, 20, true), (hit.Site.Ref, hit.Site.Name, hit.Site.StartLine, hit.Site.EndLine, hit.Site.Exported));
     }
 
-    private static CodeIndexSymbolSource Source(FakeCodeIndex index, string scopeRepo = "demo") => new(index, new FixedScope(scopeRepo));
+    private static CodeIndexSymbolSource Source(FakeCodeIndex index, string scopeRepo = "demo", IRepoReader? reader = null) => new(index, new FixedScope(scopeRepo), reader ?? Git(mergeBase: null));
+
+    // A checkout that holds both commits; 'mergeBase' is what git would say the merge base of the index's commit and the map's is.
+    private static FakeRepoReader Git(string? mergeBase = Indexed, params string[] changed) =>
+        new FakeRepoReader(new ContextRepo(_repo, "/tmp/demo"), Other, new Dictionary<string, string>())
+            .WithHistory([Indexed, Other], mergeBase is null ? [] : [new RepoChanges(Indexed, Other, mergeBase, [.. changed.Select(p => new RepoChange(p, ChangeKind.Modified))])]);
 
     private static FakeCodeIndex Index()
     {

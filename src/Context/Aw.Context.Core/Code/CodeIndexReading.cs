@@ -37,6 +37,19 @@ public static class CodeIndexReading
         return behind ? own with { State = own.State is CodeIndexState.Ok or CodeIndexState.LayerUnavailable ? CodeIndexState.Stale : own.State, AsOfCommit = asOf } : own with { AsOfCommit = null };
     }
 
+    /// <summary>The head of a stale index whose commit was found to be the merge base of the index and the map (an ancestor): catching-up, with the files changed between them as pending. Any other stale head stays as it is.</summary>
+    /// <param name="stale">The head <see cref="Head"/> gave.</param>
+    /// <param name="mergeBase">The merge base of the index's commit and the map's.</param>
+    /// <param name="pending">The files changed from the index's commit to the map's.</param>
+    /// <returns>The head.</returns>
+    public static CodeIndexHead CatchingUp(CodeIndexHead stale, string mergeBase, IReadOnlyList<string> pending) => throw new NotSupportedException();
+
+    /// <summary>What a row of an answer carries for one file: like <see cref="Stamp(CodeIndexHead)"/>, except that a catching-up index is 'stale' only for the files pending and 'ok' for the others.</summary>
+    /// <param name="head">The head the rows were read under.</param>
+    /// <param name="path">The repo-relative path of the row's file.</param>
+    /// <returns>The row state and the as-of commit to show, or null.</returns>
+    public static (SymbolsState State, string? AsOfCommit) Stamp(CodeIndexHead head, string path) => throw new NotSupportedException();
+
     /// <summary>Whether the head names an index that can be read: a commit and a state that is not missing, damaged, still building or not configured.</summary>
     /// <param name="head">The head.</param>
     /// <returns>True when rows can be asked for.</returns>

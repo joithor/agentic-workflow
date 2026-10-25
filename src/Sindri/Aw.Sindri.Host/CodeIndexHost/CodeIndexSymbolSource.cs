@@ -4,6 +4,7 @@ using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Symbols;
 using Aw.Kernel;
 using IndexSymbolHit = Aw.CodeIndex.Core.Facade.SymbolHit;
@@ -19,8 +20,10 @@ namespace Aw.Sindri.Host.CodeIndexHost;
 /// A repo outside the scope (no approved profile entry, or another session's repo) is not-configured, one with no index or a damaged one is an answer with no rows, and only a failed read is an error.
 /// Context names a symbol 'path#name'; the index names it '&lt;repo&gt;:path#name'.
 /// </summary>
-internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSource scopes) : ICodeSymbolSource
+internal sealed class CodeIndexSymbolSource(ICodeIndex index, ICodeIndexScopeSource scopes, IRepoReader repos) : ICodeSymbolSource
 {
+    internal IRepoReader Repos => repos;
+
     private const string DamagedCode = "SND-CODEIDX-010";
     private const string NotBuiltCode = "SND-CODEIDX-013";
 
