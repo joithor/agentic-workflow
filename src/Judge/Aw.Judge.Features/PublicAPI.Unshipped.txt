@@ -463,3 +463,225 @@ static Aw.Judge.Features.CheckTraits.CheckTraitsResponse.operator !=(Aw.Judge.Fe
 static Aw.Judge.Features.CheckTraits.CheckTraitsResponse.operator ==(Aw.Judge.Features.CheckTraits.CheckTraitsResponse? left, Aw.Judge.Features.CheckTraits.CheckTraitsResponse? right) -> bool
 static Aw.Judge.Features.CheckTraits.TraitFinding.operator !=(Aw.Judge.Features.CheckTraits.TraitFinding? left, Aw.Judge.Features.CheckTraits.TraitFinding? right) -> bool
 static Aw.Judge.Features.CheckTraits.TraitFinding.operator ==(Aw.Judge.Features.CheckTraits.TraitFinding? left, Aw.Judge.Features.CheckTraits.TraitFinding? right) -> bool
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.<Clone>$() -> Aw.Judge.Features.ImportLabels.ImportLabelsRequest!
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Deconstruct(out System.TimeSpan Since, out string? Question) -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Equals(Aw.Judge.Features.ImportLabels.ImportLabelsRequest? other) -> bool
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Since.get -> System.TimeSpan
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Since.init -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Question.get -> string?
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Question.init -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsRequest.ImportLabelsRequest(System.TimeSpan Since, string? Question = null) -> void
+override Aw.Judge.Features.ImportLabels.ImportLabelsRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.ImportLabels.ImportLabelsRequest.GetHashCode() -> int
+override Aw.Judge.Features.ImportLabels.ImportLabelsRequest.ToString() -> string!
+static Aw.Judge.Features.ImportLabels.ImportLabelsRequest.operator !=(Aw.Judge.Features.ImportLabels.ImportLabelsRequest? left, Aw.Judge.Features.ImportLabels.ImportLabelsRequest? right) -> bool
+static Aw.Judge.Features.ImportLabels.ImportLabelsRequest.operator ==(Aw.Judge.Features.ImportLabels.ImportLabelsRequest? left, Aw.Judge.Features.ImportLabels.ImportLabelsRequest? right) -> bool
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.<Clone>$() -> Aw.Judge.Features.ImportLabels.ImportLabelsResponse!
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.Deconstruct(out int Imported, out int SkippedUnparsable) -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.Equals(Aw.Judge.Features.ImportLabels.ImportLabelsResponse? other) -> bool
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.Imported.get -> int
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.Imported.init -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.SkippedUnparsable.get -> int
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.SkippedUnparsable.init -> void
+Aw.Judge.Features.ImportLabels.ImportLabelsResponse.ImportLabelsResponse(int Imported, int SkippedUnparsable) -> void
+override Aw.Judge.Features.ImportLabels.ImportLabelsResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.ImportLabels.ImportLabelsResponse.GetHashCode() -> int
+override Aw.Judge.Features.ImportLabels.ImportLabelsResponse.ToString() -> string!
+static Aw.Judge.Features.ImportLabels.ImportLabelsResponse.operator !=(Aw.Judge.Features.ImportLabels.ImportLabelsResponse? left, Aw.Judge.Features.ImportLabels.ImportLabelsResponse? right) -> bool
+static Aw.Judge.Features.ImportLabels.ImportLabelsResponse.operator ==(Aw.Judge.Features.ImportLabels.ImportLabelsResponse? left, Aw.Judge.Features.ImportLabels.ImportLabelsResponse? right) -> bool
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.<Clone>$() -> Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest!
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.Equals(Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest? other) -> bool
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.LabelOutcomesRequest() -> void
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.GetHashCode() -> int
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.ToString() -> string!
+static Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.operator !=(Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest? left, Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest? right) -> bool
+static Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest.operator ==(Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest? left, Aw.Judge.Features.LabelOutcomes.LabelOutcomesRequest? right) -> bool
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.<Clone>$() -> Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse!
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.Deconstruct(out int Labeled, out int NoSignal) -> void
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.Equals(Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse? other) -> bool
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.Labeled.get -> int
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.Labeled.init -> void
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.NoSignal.get -> int
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.NoSignal.init -> void
+Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.LabelOutcomesResponse(int Labeled, int NoSignal) -> void
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.GetHashCode() -> int
+override Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.ToString() -> string!
+static Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.operator !=(Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse? left, Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse? right) -> bool
+static Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse.operator ==(Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse? left, Aw.Judge.Features.LabelOutcomes.LabelOutcomesResponse? right) -> bool
+Aw.Judge.Features.SetLabel.SetLabelRequest
+Aw.Judge.Features.SetLabel.SetLabelRequest.<Clone>$() -> Aw.Judge.Features.SetLabel.SetLabelRequest!
+Aw.Judge.Features.SetLabel.SetLabelRequest.Deconstruct(out Aw.Judge.Core.Ids.EvalItemId Item, out string! Label) -> void
+Aw.Judge.Features.SetLabel.SetLabelRequest.Equals(Aw.Judge.Features.SetLabel.SetLabelRequest? other) -> bool
+Aw.Judge.Features.SetLabel.SetLabelRequest.Item.get -> Aw.Judge.Core.Ids.EvalItemId
+Aw.Judge.Features.SetLabel.SetLabelRequest.Item.init -> void
+Aw.Judge.Features.SetLabel.SetLabelRequest.Label.get -> string!
+Aw.Judge.Features.SetLabel.SetLabelRequest.Label.init -> void
+Aw.Judge.Features.SetLabel.SetLabelRequest.SetLabelRequest(Aw.Judge.Core.Ids.EvalItemId Item, string! Label) -> void
+override Aw.Judge.Features.SetLabel.SetLabelRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.SetLabel.SetLabelRequest.GetHashCode() -> int
+override Aw.Judge.Features.SetLabel.SetLabelRequest.ToString() -> string!
+static Aw.Judge.Features.SetLabel.SetLabelRequest.operator !=(Aw.Judge.Features.SetLabel.SetLabelRequest? left, Aw.Judge.Features.SetLabel.SetLabelRequest? right) -> bool
+static Aw.Judge.Features.SetLabel.SetLabelRequest.operator ==(Aw.Judge.Features.SetLabel.SetLabelRequest? left, Aw.Judge.Features.SetLabel.SetLabelRequest? right) -> bool
+Aw.Judge.Features.SetLabel.SetLabelResponse
+Aw.Judge.Features.SetLabel.SetLabelResponse.<Clone>$() -> Aw.Judge.Features.SetLabel.SetLabelResponse!
+Aw.Judge.Features.SetLabel.SetLabelResponse.Deconstruct(out Aw.Judge.Core.Ids.EvalItemId Item, out string! Label) -> void
+Aw.Judge.Features.SetLabel.SetLabelResponse.Equals(Aw.Judge.Features.SetLabel.SetLabelResponse? other) -> bool
+Aw.Judge.Features.SetLabel.SetLabelResponse.Item.get -> Aw.Judge.Core.Ids.EvalItemId
+Aw.Judge.Features.SetLabel.SetLabelResponse.Item.init -> void
+Aw.Judge.Features.SetLabel.SetLabelResponse.Label.get -> string!
+Aw.Judge.Features.SetLabel.SetLabelResponse.Label.init -> void
+Aw.Judge.Features.SetLabel.SetLabelResponse.SetLabelResponse(Aw.Judge.Core.Ids.EvalItemId Item, string! Label) -> void
+override Aw.Judge.Features.SetLabel.SetLabelResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.SetLabel.SetLabelResponse.GetHashCode() -> int
+override Aw.Judge.Features.SetLabel.SetLabelResponse.ToString() -> string!
+static Aw.Judge.Features.SetLabel.SetLabelResponse.operator !=(Aw.Judge.Features.SetLabel.SetLabelResponse? left, Aw.Judge.Features.SetLabel.SetLabelResponse? right) -> bool
+static Aw.Judge.Features.SetLabel.SetLabelResponse.operator ==(Aw.Judge.Features.SetLabel.SetLabelResponse? left, Aw.Judge.Features.SetLabel.SetLabelResponse? right) -> bool
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.<Clone>$() -> Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus!
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Deconstruct(out string! Question, out int Items, out int Labeled, out int Skipped, out Aw.Judge.Core.Labels.LabelAgreement! Agreement) -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Equals(Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus? other) -> bool
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Question.get -> string!
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Question.init -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Items.get -> int
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Items.init -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Labeled.get -> int
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Labeled.init -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Skipped.get -> int
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Skipped.init -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Agreement.get -> Aw.Judge.Core.Labels.LabelAgreement!
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Agreement.init -> void
+Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.QuestionLabelStatus(string! Question, int Items, int Labeled, int Skipped, Aw.Judge.Core.Labels.LabelAgreement! Agreement) -> void
+override Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.GetHashCode() -> int
+override Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.ToString() -> string!
+static Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.operator !=(Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus? left, Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus? right) -> bool
+static Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus.operator ==(Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus? left, Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus? right) -> bool
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.<Clone>$() -> Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest!
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.Equals(Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest? other) -> bool
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.GetLabelStatusRequest() -> void
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.GetHashCode() -> int
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.ToString() -> string!
+static Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.operator !=(Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest? left, Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest? right) -> bool
+static Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest.operator ==(Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest? left, Aw.Judge.Features.GetLabelStatus.GetLabelStatusRequest? right) -> bool
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.<Clone>$() -> Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse!
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus!>! Questions) -> void
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.Equals(Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse? other) -> bool
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.Questions.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus!>!
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.Questions.init -> void
+Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.GetLabelStatusResponse(System.Collections.Generic.IReadOnlyList<Aw.Judge.Features.GetLabelStatus.QuestionLabelStatus!>! Questions) -> void
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.GetHashCode() -> int
+override Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.ToString() -> string!
+static Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.operator !=(Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse? left, Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse? right) -> bool
+static Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse.operator ==(Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse? left, Aw.Judge.Features.GetLabelStatus.GetLabelStatusResponse? right) -> bool
+Aw.Judge.Features.Adjudicate.AdjudicateRequest
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.<Clone>$() -> Aw.Judge.Features.Adjudicate.AdjudicateRequest!
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Deconstruct(out string! Question, out int Limit, out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers) -> void
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Equals(Aw.Judge.Features.Adjudicate.AdjudicateRequest? other) -> bool
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Question.get -> string!
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Question.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Limit.get -> int
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Limit.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.Providers.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateRequest.AdjudicateRequest(string! Question, int Limit = 60, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers = null) -> void
+override Aw.Judge.Features.Adjudicate.AdjudicateRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.Adjudicate.AdjudicateRequest.GetHashCode() -> int
+override Aw.Judge.Features.Adjudicate.AdjudicateRequest.ToString() -> string!
+static Aw.Judge.Features.Adjudicate.AdjudicateRequest.operator !=(Aw.Judge.Features.Adjudicate.AdjudicateRequest? left, Aw.Judge.Features.Adjudicate.AdjudicateRequest? right) -> bool
+static Aw.Judge.Features.Adjudicate.AdjudicateRequest.operator ==(Aw.Judge.Features.Adjudicate.AdjudicateRequest? left, Aw.Judge.Features.Adjudicate.AdjudicateRequest? right) -> bool
+Aw.Judge.Features.Adjudicate.AdjudicateResponse
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.<Clone>$() -> Aw.Judge.Features.Adjudicate.AdjudicateResponse!
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Deconstruct(out int Labeled, out int Split, out int Failed) -> void
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Equals(Aw.Judge.Features.Adjudicate.AdjudicateResponse? other) -> bool
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Labeled.get -> int
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Labeled.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Split.get -> int
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Split.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Failed.get -> int
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.Failed.init -> void
+Aw.Judge.Features.Adjudicate.AdjudicateResponse.AdjudicateResponse(int Labeled, int Split, int Failed) -> void
+override Aw.Judge.Features.Adjudicate.AdjudicateResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.Adjudicate.AdjudicateResponse.GetHashCode() -> int
+override Aw.Judge.Features.Adjudicate.AdjudicateResponse.ToString() -> string!
+static Aw.Judge.Features.Adjudicate.AdjudicateResponse.operator !=(Aw.Judge.Features.Adjudicate.AdjudicateResponse? left, Aw.Judge.Features.Adjudicate.AdjudicateResponse? right) -> bool
+static Aw.Judge.Features.Adjudicate.AdjudicateResponse.operator ==(Aw.Judge.Features.Adjudicate.AdjudicateResponse? left, Aw.Judge.Features.Adjudicate.AdjudicateResponse? right) -> bool
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.<Clone>$() -> Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Deconstruct(out string! Question, out Aw.Judge.Core.Providers.ProviderName Provider, out string! Variant, out Aw.Judge.Core.Labels.LabelSource? Labels, out string? Collapse, out string? RecordFile, out string? ReplayFile, out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers) -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Equals(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest? other) -> bool
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Question.get -> string!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Question.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Provider.get -> Aw.Judge.Core.Providers.ProviderName
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Provider.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Variant.get -> string!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Variant.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Labels.get -> Aw.Judge.Core.Labels.LabelSource?
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Labels.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Collapse.get -> string?
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Collapse.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.RecordFile.get -> string?
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.RecordFile.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.ReplayFile.get -> string?
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.ReplayFile.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>?
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Providers.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.EvaluateQuestionRequest(string! Question, Aw.Judge.Core.Providers.ProviderName Provider, string! Variant, Aw.Judge.Core.Labels.LabelSource? Labels = null, string? Collapse = null, string? RecordFile = null, string? ReplayFile = null, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Providers.ProviderName>? Providers = null) -> void
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.GetHashCode() -> int
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.ToString() -> string!
+static Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.operator !=(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest? left, Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest? right) -> bool
+static Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest.operator ==(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest? left, Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionRequest? right) -> bool
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.<Clone>$() -> Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.Deconstruct(out Aw.Judge.Core.Evals.EvalReport! Report, out string! ReportPath) -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.Equals(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse? other) -> bool
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.Report.get -> Aw.Judge.Core.Evals.EvalReport!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.Report.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.ReportPath.get -> string!
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.ReportPath.init -> void
+Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.EvaluateQuestionResponse(Aw.Judge.Core.Evals.EvalReport! Report, string! ReportPath) -> void
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.GetHashCode() -> int
+override Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.ToString() -> string!
+static Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.operator !=(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse? left, Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse? right) -> bool
+static Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse.operator ==(Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse? left, Aw.Judge.Features.EvaluateQuestion.EvaluateQuestionResponse? right) -> bool
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.<Clone>$() -> Aw.Judge.Features.ImportTurns.ImportTurnsRequest!
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Files, out System.TimeSpan? Since) -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Equals(Aw.Judge.Features.ImportTurns.ImportTurnsRequest? other) -> bool
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Files.init -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Since.get -> System.TimeSpan?
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Since.init -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsRequest.ImportTurnsRequest(System.Collections.Generic.IReadOnlyList<string!>! Files, System.TimeSpan? Since = null) -> void
+override Aw.Judge.Features.ImportTurns.ImportTurnsRequest.Equals(object? obj) -> bool
+override Aw.Judge.Features.ImportTurns.ImportTurnsRequest.GetHashCode() -> int
+override Aw.Judge.Features.ImportTurns.ImportTurnsRequest.ToString() -> string!
+static Aw.Judge.Features.ImportTurns.ImportTurnsRequest.operator !=(Aw.Judge.Features.ImportTurns.ImportTurnsRequest? left, Aw.Judge.Features.ImportTurns.ImportTurnsRequest? right) -> bool
+static Aw.Judge.Features.ImportTurns.ImportTurnsRequest.operator ==(Aw.Judge.Features.ImportTurns.ImportTurnsRequest? left, Aw.Judge.Features.ImportTurns.ImportTurnsRequest? right) -> bool
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.<Clone>$() -> Aw.Judge.Features.ImportTurns.ImportTurnsResponse!
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Deconstruct(out int Imported, out int Skipped, out int Unreadable) -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Equals(Aw.Judge.Features.ImportTurns.ImportTurnsResponse? other) -> bool
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Imported.get -> int
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Imported.init -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Skipped.get -> int
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Skipped.init -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Unreadable.get -> int
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Unreadable.init -> void
+Aw.Judge.Features.ImportTurns.ImportTurnsResponse.ImportTurnsResponse(int Imported, int Skipped, int Unreadable) -> void
+override Aw.Judge.Features.ImportTurns.ImportTurnsResponse.Equals(object? obj) -> bool
+override Aw.Judge.Features.ImportTurns.ImportTurnsResponse.GetHashCode() -> int
+override Aw.Judge.Features.ImportTurns.ImportTurnsResponse.ToString() -> string!
+static Aw.Judge.Features.ImportTurns.ImportTurnsResponse.operator !=(Aw.Judge.Features.ImportTurns.ImportTurnsResponse? left, Aw.Judge.Features.ImportTurns.ImportTurnsResponse? right) -> bool
+static Aw.Judge.Features.ImportTurns.ImportTurnsResponse.operator ==(Aw.Judge.Features.ImportTurns.ImportTurnsResponse? left, Aw.Judge.Features.ImportTurns.ImportTurnsResponse? right) -> bool

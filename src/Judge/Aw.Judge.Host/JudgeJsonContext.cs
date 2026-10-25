@@ -3,17 +3,24 @@ using Aw.Judge.Core.Config;
 using Aw.Judge.Core.Decisions;
 using Aw.Judge.Core.PromptSort;
 using Aw.Judge.Core.Questions;
+using Aw.Judge.Features.Adjudicate;
 using Aw.Judge.Features.ApproveDecision;
 using Aw.Judge.Features.CheckTraits;
+using Aw.Judge.Features.EvaluateQuestion;
 using Aw.Judge.Features.ExplainDecision;
 using Aw.Judge.Features.GetBrief;
 using Aw.Judge.Features.GetConfig;
 using Aw.Judge.Features.GetHealth;
+using Aw.Judge.Features.GetLabelStatus;
+using Aw.Judge.Features.ImportLabels;
+using Aw.Judge.Features.ImportTurns;
+using Aw.Judge.Features.LabelOutcomes;
 using Aw.Judge.Features.MapBriefByDispatch;
 using Aw.Judge.Features.MapBriefByName;
 using Aw.Judge.Features.SaveBrief;
 using Aw.Judge.Features.SetBriefAgentId;
 using Aw.Judge.Features.SetConfig;
+using Aw.Judge.Features.SetLabel;
 using Aw.Judge.Features.SetPromptSort;
 using Aw.Judge.Features.SortPrompt;
 using Aw.Judge.Features.UndoDecision;
@@ -77,4 +84,12 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(CheckTraitsRequest))]
 [JsonSerializable(typeof(CheckTraitsResponse))]
 [JsonSerializable(typeof(TraitFinding))]
+// The by-hand verbs (6.3 declares them; the lander of each fills its response).
+[JsonSerializable(typeof(AdjudicateResponse))]
+[JsonSerializable(typeof(EvaluateQuestionResponse))]
+[JsonSerializable(typeof(GetLabelStatusResponse))]
+[JsonSerializable(typeof(ImportLabelsResponse))]
+[JsonSerializable(typeof(ImportTurnsResponse))]
+[JsonSerializable(typeof(LabelOutcomesResponse))]
+[JsonSerializable(typeof(SetLabelResponse))]
 internal sealed partial class JudgeJsonContext : JsonSerializerContext;
