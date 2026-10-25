@@ -17,6 +17,14 @@ public static partial class RulesLinker
     private const double Exact = 1.0;
     private const double ByPath = 0.8;
     private const double ByName = 0.7;
+    private const double ByPhrase = 0.5;
+
+    // Words that name nothing on their own: a label made only of these ('General settings') is not a phrase worth finding in prose.
+    private static readonly HashSet<string> _commonWords = new(StringComparer.Ordinal)
+    {
+        "a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "new", "old", "main", "other", "general", "common", "default", "basic", "all", "any", "more", "less",
+        "settings", "setting", "options", "option", "items", "item", "list", "page", "home", "view", "data", "info", "misc", "support", "help", "tools", "tool", "things", "stuff",
+    };
 
     /// <summary>Links one record's text.</summary>
     /// <param name="record">The record the text belongs to (it never links to itself).</param>
@@ -37,6 +45,7 @@ public static partial class RulesLinker
         run.QuotedTitles();
         run.IssueKeys();
         run.IdentifierTokens();
+        run.Names();
         return run.Result();
     }
 
@@ -100,6 +109,27 @@ public static partial class RulesLinker
                 if (identifiers.TryGetValue(match.Value, out var nodes) && nodes.Count == 1)
                 {
                     Add(nodes.First(), LinkRule.Identifier, ByName, match.Value);
+                }
+            }
+        }
+
+        // A suggestion, not a fact: a feature's name (label, or an alias of it) in the text as whole words, when it names exactly one feature. The longest phrase wins where phrases overlap.
+        // Glossary aliases (feature:glossary/<slug>) are offered through graph.Aliases like any other alias once they are in the map.
+        public void Names()
+        {
+            var phrases = Phrases(graph);
+            var words = Words(_rest.ToString());
+            foreach (var phrase in phrases.Keys.OrderByDescending(p => p.Length).ThenBy(p => p, StringComparer.Ordinal))
+            {
+                if (!words.Contains(phrase, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                words = words.Replace(phrase, " # ", StringComparison.Ordinal);
+                if (phrases[phrase].Count == 1)
+                {
+                    Add(phrases[phrase].First(), LinkRule.Name, ByPhrase, phrase.Trim());
                 }
             }
         }
@@ -182,6 +212,42 @@ public static partial class RulesLinker
         return map;
     }
 
+    private static string Words(string text) => " " + string.Join(' ', Word.Matches(text).Select(m => m.Value.ToLowerInvariant())) + " ";
+
+    private static Dictionary<string, SortedSet<string>> Phrases(GraphSnapshot graph)
+    {
+        var map = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+
+        void Offer(string candidate, string target)
+        {
+            var words = Word.Matches(candidate).Select(m => m.Value.ToLowerInvariant()).ToList();
+            if (words.Count < 2 || string.Concat(words).Length < 4 || words.TrueForAll(_commonWords.Contains))
+            {
+                return;
+            }
+
+            var phrase = " " + string.Join(' ', words) + " ";
+            if (!map.TryGetValue(phrase, out var set))
+            {
+                map[phrase] = set = new SortedSet<string>(StringComparer.Ordinal);
+            }
+
+            _ = set.Add(target);
+        }
+
+        foreach (var node in graph.Nodes.Where(n => n.Key.Kind == NodeKind.Feature))
+        {
+            Offer(node.Label, node.Key.Value);
+        }
+
+        foreach (var alias in graph.Aliases.Where(a => a.Target.Kind == NodeKind.Feature && a.Alias.Kind is not (NodeKind.Record or NodeKind.Decision)))
+        {
+            Offer(alias.Alias.Name, alias.Target.Value);
+        }
+
+        return map;
+    }
+
     private static string Tail(string name) => name[(name.LastIndexOf('/') + 1)..];
 
     /// <summary>Whether a candidate looks like a code identifier (a separator or a camelCase hump) and so can't be a plain English word.</summary>
@@ -197,6 +263,9 @@ public static partial class RulesLinker
     }
 
     private static string Hash(string span) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(span)));
+
+    [GeneratedRegex(@"[\p{L}\p{N}]+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Word { get; }
 
     [GeneratedRegex(@"https://linear\.app/[^/\s]+/issue/(?<key>" + OnyxRecordKeys.TeamKeyPattern + @"-[0-9]+)(?:/[^\s]*)?", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex LinearUrl { get; }

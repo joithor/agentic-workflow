@@ -3,7 +3,7 @@ using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Linking;
 
-/// <summary>Merges the intent layer into a graph (S-5B): 'record:' nodes, 'mentions' edges, decision nodes with 'quotes', 'decides' and 'supersedes'. Targets resolve through aliases.</summary>
+/// <summary>Merges the intent layer into a graph (S-5B): 'record:' nodes, 'mentions' edges (a link made only by a feature's name is a model-provenance suggestion until confirmed), decision nodes with 'quotes', 'decides' and 'supersedes'. Targets resolve through aliases.</summary>
 public static class IntentOverlay
 {
     /// <summary>Applies the layer.</summary>
@@ -59,7 +59,7 @@ public static class IntentOverlay
 
         public void AddMentions()
         {
-            var mentions = new Dictionary<(string From, string To), (double Confidence, List<EvidenceRef> Evidence)>();
+            var mentions = new Dictionary<(string From, string To), (double Confidence, List<EvidenceRef> Evidence, bool Suggested)>();
             foreach (var link in layer.Links.Where(l => _present.Contains(RecordNode(l.Record).Value)))
             {
                 if (Resolve(link.Target) is not { } target)
@@ -74,13 +74,14 @@ public static class IntentOverlay
 
                 var pair = (RecordNode(link.Record).Value, target.Value);
                 var evidence = new EvidenceRef(link.Record, link.SpanHash);
+                var suggested = link.Rule == LinkRule.Name;
                 mentions[pair] = mentions.TryGetValue(pair, out var seen)
-                    ? (Math.Max(seen.Confidence, link.Confidence), [.. seen.Evidence, evidence])
-                    : (link.Confidence, [evidence]);
+                    ? (Math.Max(seen.Confidence, link.Confidence), [.. seen.Evidence, evidence], seen.Suggested && suggested)
+                    : (link.Confidence, [evidence], suggested);
             }
 
             _edges.AddRange(mentions.OrderBy(m => m.Key.From, StringComparer.Ordinal).ThenBy(m => m.Key.To, StringComparer.Ordinal)
-                .Select(m => new GraphEdge(NodeKey.From(m.Key.From), NodeKey.From(m.Key.To), EdgeType.Mentions, Provenance.Deterministic, m.Value.Confidence, m.Value.Evidence)));
+                .Select(m => new GraphEdge(NodeKey.From(m.Key.From), NodeKey.From(m.Key.To), EdgeType.Mentions, m.Value.Suggested ? Provenance.Model : Provenance.Deterministic, m.Value.Confidence, m.Value.Evidence)));
         }
 
         public void AddDecisionEdges()

@@ -27,7 +27,7 @@ public static class LensesBuilder
         var (product, productKeys) = LensProduct.Build(scope, clamped);
         var (code, codeKeys) = LensCode.Build(scope);
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
-        var bands = new LensBands(intent, product, code);
+        var bands = LensRepos.Stamp(new LensBands(intent, product, code), graph, basis.MapRepo);
         var coverage = LensCoverageBuilder.Of(scope) with { Map = MapCoverageBuilder.Of(graph, scope.Own, basis) };
         var searched = LensSearchedBuilder.For(basis, [scope.Anchor.Key.Value], clamped, bands);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Code;
@@ -25,4 +26,9 @@ public sealed record CodeTest(
     bool Suggested,
     LinkId? LinkId,
     Results.Trust Trust,
-    IReadOnlyList<NodeKey> Anchors);
+    IReadOnlyList<NodeKey> Anchors)
+{
+    /// <summary>The repo it belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+}

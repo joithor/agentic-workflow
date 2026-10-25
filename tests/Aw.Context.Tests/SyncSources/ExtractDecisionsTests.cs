@@ -36,7 +36,7 @@ public sealed class ExtractDecisionsTests
     internal static ContextScope Scope(bool labeling = true, int? perSync = null)
     {
         var cap = perSync is { } n ? ",\"maxTokensPerSync\":" + n.ToString(CultureInfo.InvariantCulture) : string.Empty;
-        var section = labeling ? ",\"labeling\":{\"enabled\":true" + cap + "}" : string.Empty;
+        var section = labeling ? ",\"labeling\":{\"enabled\":true" + cap + "}" : ",\"labeling\":{\"enabled\":false}";
         return MapWorld.HumanWith("{\"sources\":{\"linear\":{\"teams\":[\"SPL\"]}}" + section + "}");
     }
 

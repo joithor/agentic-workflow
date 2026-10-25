@@ -28,4 +28,9 @@ public sealed record ReviewEntry(
     IReadOnlyList<NodeKey> Files,
     NodeKey? Parent,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] OverrideId? Override = null,
-    Results.Trust Trust = Results.Trust.Trusted);
+    Results.Trust Trust = Results.Trust.Trusted)
+{
+    /// <summary>The repo the proposed node belongs to (see <see cref="NodeRepos"/>), or null when it belongs to no single repo, such as a decision that spans repos or an orphaned override; left out when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Repo { get; init; }
+}

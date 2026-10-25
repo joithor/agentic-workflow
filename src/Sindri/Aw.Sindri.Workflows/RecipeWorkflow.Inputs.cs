@@ -10,7 +10,6 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -82,8 +81,7 @@ internal sealed partial class RecipeWorkflow
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
-                var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
-                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}").ConfigureAwait(true);
+                return await InputsFailed(instance, open, InputFillPolicy.Reason(request.Input.Value, e.InnerException)).ConfigureAwait(true);   // a code, never the message: it could carry text
             }
 
             if (_capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
@@ -167,13 +165,8 @@ internal sealed partial class RecipeWorkflow
         return fresh;
     }
 
-    private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) => new()
-    {
-        ActivityId = string.Create(CultureInfo.InvariantCulture, $"inputs:{open.Token.Value}:{n}"),
-        TaskQueue = StepTaskQueue.For(state, Workflow.Info.TaskQueue),
-        StartToCloseTimeout = TimeSpan.FromSeconds(60),
-        RetryPolicy = new RetryPolicy { MaximumAttempts = 3, InitialInterval = TimeSpan.FromSeconds(1), BackoffCoefficient = 2 },
-    };
+    private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) =>
+        InputFillPolicy.Options(string.Create(CultureInfo.InvariantCulture, $"inputs:{open.Token.Value}:{n}"), StepTaskQueue.For(state, Workflow.Info.TaskQueue));
 
     /// <summary>Parks the instance for the input whose runtime is gone, mirrors it, and stops the Step from opening.</summary>
     private async Task<WorkflowInstance> ParkNoRuntime(WorkflowInstance before, OpenRun open, StepUse step, BlockId input)

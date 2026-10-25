@@ -1,6 +1,5 @@
 using System.Text;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -10,7 +9,6 @@ using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Workflow;
-using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Tests.ApproveRecipe;
 using Aw.Sindri.Tests.Ledger;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,9 +99,7 @@ public sealed class ShippedRecipesLedgerTests : IAsyncDisposable
 
     private async Task<ApproveAllResult> Apply(ShippedRecipePlan plan)
     {
-        var challenges = new InMemoryChallenges(new FakeTimeProvider(KnownInstants.Epoch));
-        var issued = challenges.Issue(ChallengeAction.ApproveAll(plan.Digest), ChallengeSubject.ForApproveAll(plan.Digest));
-        var redeemed = RedeemedPlan.Redeem(challenges, new ChallengeAnswer(issued.Id, "approve-all " + plan.Digest), plan, _ids.Batch).Value;
+        var redeemed = RedeemedPlan.For(plan, _ids.Batch);
         using var entered = _registry.H.Callers.Enter(RegistryHarness.Human);
         await using var scope = _registry.Services.CreateAsyncScope();
         return (await scope.ServiceProvider.GetRequiredService<IShippedRecipes>().Approve(redeemed, new Progress<string>(), TestContext.Current.CancellationToken)).Value;
