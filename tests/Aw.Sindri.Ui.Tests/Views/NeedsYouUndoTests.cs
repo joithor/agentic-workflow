@@ -131,7 +131,7 @@ public sealed class NeedsYouUndoTests : IDisposable
         Assert.Equal([Labels.MarkedSeen(2)], spoken);
         Assert.Equal(Avalonia.Automation.AutomationLiveSetting.Polite, Avalonia.Automation.AutomationProperties.GetLiveSetting(live));
 
-        _clock.Advance(TimeSpan.SeenTracker.UndoFor + TimeSpan.FromSeconds(1));
+        _clock.Advance(SeenTracker.UndoFor + TimeSpan.FromSeconds(1));
         for (var i = 0; i < 50 && Named<Control>(window, "NeedsYouUndo").IsEffectivelyVisible; i++)
         {
             await Task.Delay(10, Token);
