@@ -11,6 +11,6 @@ public static class RepoConcepts
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(repo);
-        return [];
+        return [.. profile.Index?.Concepts ?? [], .. repo.Index?.Concepts ?? []];
     }
 }
