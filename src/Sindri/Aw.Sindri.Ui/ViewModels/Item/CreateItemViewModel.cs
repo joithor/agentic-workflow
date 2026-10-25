@@ -9,7 +9,8 @@ namespace Aw.Sindri.Ui.ViewModels.Item;
 /// <summary>
 /// Create item (UI spec §4.5, §7): `C` opens a small form (title, repo, body) whose button is the catalog's CreateItem
 /// control, so it is drawn pending until P3 ships and keeps the §4.1 lifecycle. The new row appears from the stream's
-/// re-query, never from the answer. The form closes once the accepted outcome has shown.
+/// re-query, never from the answer. The form closes as soon as the item is created and announces its id, so the Work list can
+/// select the row once the stream has brought it.
 /// </summary>
 internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api) : ObservableObject
 {
@@ -82,6 +83,9 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
 
     /// <summary>Counts the blank submits that ask the view to put focus on the title.</summary>
     public int TitleFocusRequests { get; private set => Set(ref field, value); }
+
+    /// <summary>Raised with the new item's id when the form has created it and closed.</summary>
+    internal event EventHandler<string>? Created;
 
     /// <summary>The new item's id once accepted, else empty.</summary>
     public string CreatedId
@@ -197,7 +201,10 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
 
         if (form == _form)
         {
-            CreatedId = created.Value.ItemId;   // only the form that sent it: Esc and C made another since
+            // Only the form that sent it: Esc and C made another since.
+            CreatedId = created.Value.ItemId;
+            IsOpen = false;
+            Created?.Invoke(this, CreatedId);
         }
 
         return created.Value.Accepted;
