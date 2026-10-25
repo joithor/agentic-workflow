@@ -10,8 +10,18 @@ uxu_start up items
 
 item="$($SINDRI items | grep -o 'ITM-[A-Za-z0-9]*' | head -1)"
 [ -n "$item" ] || uxu_die "the fixture has no item to close"
-uxu_fixture close "$item" >/dev/null || uxu_die "could not close $item"
-$SINDRI items | grep "$item" | grep -qiE 'done|closed' || uxu_die "$item is not closed at the CLI"
+close_out="$(uxu_fixture close "$item" 2>&1)"; close_rc=$?
+# The default item list hides closed items: ask for the done state, and give the views a moment to catch up.
+closed=0
+for _ in $(seq 1 20); do
+  $SINDRI items --state done 2>&1 | grep -q "$item" && { closed=1; break; }
+  sleep 1
+done
+if [ "$closed" != 1 ]; then
+  { echo "close exit code: $close_rc"; echo "close output: $close_out"
+    echo "items --state done:"; $SINDRI items --state done --json 2>&1; } >&2
+  uxu_die "$item is not closed at the CLI"
+fi
 
 dt click --type ListBoxItem --name Work >/dev/null || uxu_die "no Work tab"
 dt wait-for --type ToggleButton --contains "Closed (" --state visible --wait-ms 30000 >/dev/null || uxu_die "the Closed group never showed"
