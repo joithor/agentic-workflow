@@ -3,9 +3,13 @@ using Aw.Context.Core.Graph;
 namespace Aw.Context.Core.Glossary;
 
 /// <summary>Builds a <see cref="MapGlossary"/> from feature vectors: pure and deterministic, no I/O.</summary>
-internal static class GlossaryBuilder
+public static class GlossaryBuilder
 {
-    internal static MapGlossary Build(IReadOnlyList<FeatureVectors> features, GlossaryRules rules)
+    /// <summary>Clusters the features by symbol embedding and ranks each cluster's terms.</summary>
+    /// <param name="features">The features with their symbol vectors, in any order.</param>
+    /// <param name="rules">The similarity, term count, feature cap and stoplist.</param>
+    /// <returns>The glossary; the same input gives the same output.</returns>
+    public static MapGlossary Build(IReadOnlyList<FeatureVectors> features, GlossaryRules rules)
     {
         var ordered = features.OrderBy(f => f.Feature.Value, StringComparer.Ordinal).ToList();
         var used = ordered.Take(rules.MaxFeatures).ToList();
@@ -38,9 +42,9 @@ internal static class GlossaryBuilder
         {
             foreach (var (term, weight) in ranked[i])
             {
-                var entry = byTerm.TryGetValue(term, out var existing) ? existing : (0.0, new SortedSet<string>(StringComparer.Ordinal));
+                (double Weight, SortedSet<string> Features) entry = byTerm.TryGetValue(term, out var existing) ? existing : (0.0, new SortedSet<string>(StringComparer.Ordinal));
                 entry.Features.UnionWith(clusters[i].Features.Select(f => f.Value));
-                byTerm[term] = (Math.Max(entry.Item1, weight), entry.Features);
+                byTerm[term] = (Math.Max(entry.Weight, weight), entry.Features);
             }
         }
 

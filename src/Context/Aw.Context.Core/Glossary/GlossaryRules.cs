@@ -1,7 +1,7 @@
 namespace Aw.Context.Core.Glossary;
 
 /// <summary>The knobs of <see cref="GlossaryBuilder"/>.</summary>
-internal sealed record GlossaryRules
+public sealed record GlossaryRules
 {
     /// <summary>Two feature centroids join one cluster at this cosine or above (single link).</summary>
     public double Similarity { get; init; } = 0.80;

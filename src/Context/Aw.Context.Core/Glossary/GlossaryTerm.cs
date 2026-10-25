@@ -6,4 +6,4 @@ namespace Aw.Context.Core.Glossary;
 /// <param name="Term">The lower-cased word.</param>
 /// <param name="Weight">The highest TF-IDF score the word had in any cluster.</param>
 /// <param name="Features">The features of those clusters, in key order.</param>
-internal sealed record GlossaryTerm(string Term, double Weight, IReadOnlyList<NodeKey> Features);
+public sealed record GlossaryTerm(string Term, double Weight, IReadOnlyList<NodeKey> Features);

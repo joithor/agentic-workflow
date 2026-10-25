@@ -7,7 +7,7 @@ namespace Aw.Context.Core.Glossary;
 /// <param name="Clusters">The clusters, ordered by their first feature's key.</param>
 /// <param name="Unvectored">The features left out because they had no usable vectors.</param>
 /// <param name="Truncated">True when the input passed the feature cap and only the first features, in key order, were used.</param>
-internal sealed record MapGlossary(
+public sealed record MapGlossary(
     IReadOnlyList<GlossaryTerm> Terms,
     IReadOnlyList<GlossaryCluster> Clusters,
     IReadOnlyList<NodeKey> Unvectored,

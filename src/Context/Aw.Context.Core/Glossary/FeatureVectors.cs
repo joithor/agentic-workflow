@@ -6,4 +6,4 @@ namespace Aw.Context.Core.Glossary;
 /// <param name="Feature">The feature's node key.</param>
 /// <param name="Label">The feature's label, a source of terms.</param>
 /// <param name="Symbols">The symbols' names and vectors; empty when the code index has none for this feature.</param>
-internal sealed record FeatureVectors(NodeKey Feature, string Label, IReadOnlyList<SymbolVector> Symbols);
+public sealed record FeatureVectors(NodeKey Feature, string Label, IReadOnlyList<SymbolVector> Symbols);
