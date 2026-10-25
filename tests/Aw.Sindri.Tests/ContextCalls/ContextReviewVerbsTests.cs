@@ -1,6 +1,7 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 
@@ -33,12 +34,12 @@ public sealed class ContextReviewVerbsTests : IDisposable
         return await verbs.Run(args, Token);
     }
 
-    private async Task<int> Lens(ScriptedApi api, params string[] args) => await LensAs(session: null, api, args);
+    private async Task<int> Lens(ScriptedApi api, params string[] args) => await LensAs(tokens: null, api, args);
 
-    /// <summary>The lens verbs as a human at a terminal (<paramref name="session"/> with no signal) or as a session.</summary>
-    private async Task<int> LensAs(AgentSession? session, ScriptedApi api, params string[] args)
+    /// <summary>The lens verbs as a human (<paramref name="tokens"/> holds the token) or as a session.</summary>
+    private async Task<int> LensAs(IHumanTokenStore? tokens, ScriptedApi api, params string[] args)
     {
-        var headers = session is null ? null : CallerHeaders.For(session, new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null));
+        var headers = tokens is null ? null : CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), tokens, static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null));
         using var client = new ControlPlaneClient(_probe, SliceHarness.Json, headers, handler: api);
         return await new ContextLensVerbs(client, new Output(_out, _error, SliceHarness.Json)).Run(args, Token);
     }
@@ -233,12 +234,12 @@ public sealed class ContextReviewVerbsTests : IDisposable
     {
         const string Lenses = """{"schemaVersion":1,"anchor":{"key":"feature:a","label":"A","kind":"feature","trust":"trusted"},"mapVersion":"v1","draft":false,"depth":3,"asOf":"2026-10-14T09:12:40Z","bands":{"intent":{"records":[{"key":"record:linear:issue/1","label":"Spec <x>","source":"linear","mentions":["feature:a"],"trust":"untrusted","state":"unchecked","cites":[],"kind":"record"}],"decisions":[],"counts":{"records":1,"decisions":0,"orphaned":null}},"product":{"own":[],"neighbors":[],"affects":[],"counts":{"own":0,"affects":0},"edges":[]},"code":{"files":[],"symbols":{"state":"unavailable","reason":"index not built","items":[]},"counts":{"files":0,"symbols":0,"featuresWithNoCode":0}}},"edges":[],"conflicts":[],"coverage":{"scope":1,"intent":{"covered":1,"of":1},"product":{"confirmed":1,"of":1},"code":{"implemented":0,"of":1,"level":"file","suggested":0},"gaps":[]},"searched":{"anchors":["feature:a"],"mapVersion":"v1","depth":3,"hops":["state"],"sources":[{"id":"map","state":"ok","reason":null,"code":null,"asOf":"2026-10-14T09:00:00Z"}],"bands":{"intent":{"empty":false},"product":{"empty":true},"code":{"empty":true}}},"degraded":[],"cites":{}}""";
         var human = new ScriptedApi(Ok(Lenses));
-        var humanExit = await LensAs(new AgentSession(Signal: null, Terminal: true, Prover: false), human, "lenses", "feature:a", "--depth", "3");
+        var humanExit = await LensAs(InMemoryHumanTokenStore.WithToken(), human, "lenses", "feature:a", "--depth", "3");
         var humanText = _out.ToString();
         _out.GetStringBuilder().Clear();
         var session = new ScriptedApi(Ok(Lenses.Replace("\"label\":\"Spec <x>\"", "\"label\":\"<untrusted source=\\\"map\\\">Spec &lt;x&gt;</untrusted>\"", StringComparison.Ordinal)));   // what the server sends a session
 
-        var sessionExit = await LensAs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false), session, "lenses", "feature:a");
+        var sessionExit = await LensAs(new InMemoryHumanTokenStore(), session, "lenses", "feature:a");
 
         Assert.True(humanExit == 0 && sessionExit == 0, _error.ToString());
         Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&depth=3", human.Calls[0].Route);

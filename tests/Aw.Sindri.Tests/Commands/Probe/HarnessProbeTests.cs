@@ -94,23 +94,17 @@ public sealed class HarnessProbeTests : IDisposable
         Assert.Empty(versions.Reads);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("CLAUDE_CODE_ENTRYPOINT", null, "CLAUDE_CODE_ENTRYPOINT is set")]
-    [InlineData(null, "claude", "parent process claude")]
-    [InlineData(null, "2.1.296", "parent process 2.1.296 (/Users/owner/.local/share/claude/versions/2.1.296)")]
-    public async Task The_refusal_names_the_variable_or_process_it_found(string? variable, string? parent, string named)
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_refusal_names_why_the_cli_called_as_a_session()
     {
-        var ancestry = parent is null
-            ? FakeProcessAncestry.Under(Environment.ProcessId, "zsh", "login")
-            : FakeProcessAncestry.UnderProcesses(Environment.ProcessId, ("zsh", "/bin/zsh"), (parent, $"{Home}/.local/share/claude/versions/2.1.296"));
-        var session = AgentSession.Detect(n => n == variable ? "x" : null, ancestry, interactive: true);
+        var session = AgentSession.Detect(_ => null, interactive: true);
         using var client = new ControlPlaneClient(_api, SliceHarness.Json,
             CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)),
             handler: new CliStubApi(HttpStatusCode.Forbidden, $$"""{"type":"about:blank","title":"SND-AUTH-002","status":403,"detail":"{{Refusal}}"}"""));
 
         var code = await new Verbs(client, _api, new Output(_out, _error, SliceHarness.Json), new ServiceCollection().BuildServiceProvider()).Stop(Token);
 
-        Assert.Equal((2, $"SND-AUTH-002 {Refusal} (this CLI ran as a session: {named})\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
+        Assert.Equal((2, $"SND-AUTH-002 {Refusal} (this CLI ran as a session: the per-start human token isn't readable)\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
     }
 
     private static HarnessProbeReport Live() => new("unknown", ["PATH"], [new("launchd", "/sbin/launchd")], Terminal: true, Version: null);

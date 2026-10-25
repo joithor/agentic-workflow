@@ -14,9 +14,9 @@ using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Host;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
-using Aw.Sindri.Tests.Server;
 
 namespace Aw.Sindri.Tests.Commands;
 
@@ -30,9 +30,9 @@ public sealed class CliRequestVerbsTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static AgentSession Human => new(Signal: null, Terminal: true, Prover: false);
+    private static IHumanTokenStore Human => InMemoryHumanTokenStore.WithToken();
 
-    private static AgentSession InAgent => new(Signal: "CLAUDECODE is set", Terminal: true, Prover: false);
+    private static IHumanTokenStore NoToken => new InMemoryHumanTokenStore();   // a session: no readable token
 
     public void Dispose()
     {
@@ -50,7 +50,7 @@ public sealed class CliRequestVerbsTests : IDisposable
         var filed = new RequestFiledResponse(new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 6), A.FirstRequestId, A.FirstDecisionId);
         var api = new RoutedApi().On("/sindri/requests", HttpStatusCode.OK, filed);
 
-        var code = await Verbs(api, InAgent).Run(["request", "rescope", "--item", A.FirstItemId.Value, "Split", "the", "work."], Token);
+        var code = await Verbs(api, NoToken).Run(["request", "rescope", "--item", A.FirstItemId.Value, "Split", "the", "work."], Token);
 
         Assert.Equal((0, $"{A.FirstRequestId.Value} filed; {A.FirstDecisionId.Value} waits for a human (sequence 6)\n"), (code, Out));
         var call = Assert.Single(api.Calls);
@@ -63,7 +63,7 @@ public sealed class CliRequestVerbsTests : IDisposable
         var filed = new RequestFiledResponse(new CommandAccepted(new SequentialIdGenerator().New<CommandId>(), Sequence: 6), A.FirstRequestId, A.FirstDecisionId);
         var api = new RoutedApi().On("/sindri/requests", HttpStatusCode.OK, filed);
 
-        var code = await Verbs(api, InAgent).Run(["request", "note", "All", "done.", "--json"], Token);
+        var code = await Verbs(api, NoToken).Run(["request", "note", "All", "done.", "--json"], Token);
 
         Assert.Equal((0, Body(filed)), (code, Out));
         Assert.Equal("""{"kind":"note","text":"All done.","item":null}""", Assert.Single(api.Calls).Body);
@@ -78,7 +78,7 @@ public sealed class CliRequestVerbsTests : IDisposable
     {
         var api = new RoutedApi();
 
-        var code = await Verbs(api, InAgent).Run(line.Split(' '), Token);
+        var code = await Verbs(api, NoToken).Run(line.Split(' '), Token);
 
         Assert.Equal((2, 0), (code, api.Calls.Count));
         Assert.StartsWith("SND-CLI-003 ", _error.ToString(), StringComparison.Ordinal);
@@ -89,7 +89,7 @@ public sealed class CliRequestVerbsTests : IDisposable
     {
         var api = new RoutedApi().OnRaw("/sindri/requests", HttpStatusCode.TooManyRequests, """{"type":"about:blank","title":"SND-REQ-002","status":429,"detail":"20 open requests already"}""");
 
-        var code = await Verbs(api, InAgent).Run(["request", "note", "Again"], Token);
+        var code = await Verbs(api, NoToken).Run(["request", "note", "Again"], Token);
 
         Assert.Equal((2, "SND-REQ-002 20 open requests already\n"), (code, _error.ToString().ReplaceLineEndings("\n")));
     }
@@ -181,7 +181,7 @@ public sealed class CliRequestVerbsTests : IDisposable
     {
         var api = new RoutedApi().OnRaw("/sindri/decisions/" + A.FirstDecisionId.Value, HttpStatusCode.Forbidden, """{"type":"about:blank","title":"SND-AUTH-002","status":403,"detail":"only a human decides"}""");
 
-        var code = await Verbs(api, InAgent).Run(["decide", A.FirstDecisionId.Value, "accept"], Token);
+        var code = await Verbs(api, NoToken).Run(["decide", A.FirstDecisionId.Value, "accept"], Token);
 
         Assert.Equal(2, code);
         Assert.StartsWith("SND-AUTH-002 only a human decides", _error.ToString(), StringComparison.Ordinal);
@@ -363,27 +363,6 @@ public sealed class CliRequestVerbsTests : IDisposable
         Assert.Equal("7", api.Calls.Single(static c => c.Path == "/sindri/decisions").Headers.GetValueOrDefault(SindriHeaders.After));
     }
 
-    [Theory(Timeout = 10_000), Trait("Lane", "unit")]
-    [InlineData("needs-you")]
-    [InlineData("requests")]
-    [InlineData("decisions")]
-    [InlineData("decide")]
-    public async Task Cli_in_an_agent_session_never_starts_the_process(string verb)
-    {
-        var launcher = new FakeControlPlaneLauncher();
-        var down = new FakeControlPlaneProbe();
-        var api = new RoutedApi();
-        using var client = new ControlPlaneClient(down, SliceHarness.Json, handler: api);
-        var start = new StartCommand(down, launcher, client, new Output(_out, _error, SliceHarness.Json), new SteppedClock(new Microsoft.Extensions.Time.Testing.FakeTimeProvider(KnownInstants.Epoch)), new AgentSession(Signal: "CLAUDECODE is set", Terminal: true, Prover: false));
-        var verbs = new RequestVerbs(client, new Output(_out, _error, SliceHarness.Json), (launch, ct) => start.EnsureRunning(launch, ct));
-        string[] args = verb == "decide" ? [verb, A.FirstDecisionId.Value, "accept"] : [verb];
-
-        var code = await verbs.Run(args, TestContext.Current.CancellationToken);
-
-        Assert.Equal((1, 0, 0), (code, launcher.Launches, api.Calls.Count));
-        Assert.StartsWith("SND-API-001 ", _error.ToString(), StringComparison.Ordinal);
-    }
-
     [Fact, Trait("Lane", "unit")]
     public void Usage_names_the_five_verbs_as_the_catalog_does()
     {
@@ -399,10 +378,10 @@ public sealed class CliRequestVerbsTests : IDisposable
         Assert.All(forms, f => Assert.Contains(f, Usage.Text, StringComparison.Ordinal));
     }
 
-    private RequestVerbs Verbs(RoutedApi api, AgentSession session)
+    private RequestVerbs Verbs(RoutedApi api, IHumanTokenStore tokens)
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
-            CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult((RepoName?)null)), handler: api);
         return new RequestVerbs(client, new Output(_out, _error, SliceHarness.Json), (_, _) => Task.FromResult<Kernel.Error?>(null));
     }
 }
