@@ -27,6 +27,7 @@ internal static class ContextRoutes
         Add(parts, "detail", query.Detail);
         Add(parts, "area", query.Area);
         Add(parts, "repo", query.Repo);
+        Add(parts, "concept", query.Concept);
         parts.AddRange(query.Locate.Select(k => "locate=" + Uri.EscapeDataString(k)));
         if (query.Draft)
         {
@@ -35,6 +36,13 @@ internal static class ContextRoutes
 
         Add(parts, "mapVersion", query.MapVersion);
         return With(Root + "/map/whole", parts);
+    }
+
+    internal static string Concepts(string repo)
+    {
+        var parts = new List<string>();
+        Add(parts, "repo", repo);
+        return With(Root + "/concepts", parts);
     }
 
     /// <summary>QUERY /sindri/context/code: the anchors travel as the JSON body.</summary>

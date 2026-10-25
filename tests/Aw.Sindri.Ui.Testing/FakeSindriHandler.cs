@@ -236,9 +236,12 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
             case "map/whole":
-                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true", query["repo"]);
+                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true", query["repo"], query["concept"]);
                 _ = await server.WholeMap(uri, whole, cancellationToken);
                 return Answer(server.WholeMapAnswer(whole));
+            case "concepts":
+                _ = await server.ContextConcepts(uri, query["repo"] ?? string.Empty, cancellationToken);
+                return Answer(server.ContextConceptsAnswer(query["repo"] ?? string.Empty));
             case "map/publish":
                 _ = await server.MapPublish(uri, cancellationToken);
                 return Answer(server.MapPublishAnswer);
