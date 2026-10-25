@@ -7001,3 +7001,8 @@ Aw.Context.Core.Lenses.SearchedCatchingUp.Pending.init -> void
 Aw.Context.Core.Lenses.SearchedCatchingUp.SearchedCatchingUp(string! IndexCommit, string! MapCommit, System.Collections.Generic.IReadOnlyList<string!>! Pending) -> void
 static Aw.Context.Core.Code.CodeIndexReading.CatchingUp(Aw.Context.Core.Symbols.CodeIndexHead! stale, string! mergeBase, System.Collections.Generic.IReadOnlyList<string!>! pending) -> Aw.Context.Core.Symbols.CodeIndexHead!
 static Aw.Context.Core.Code.CodeIndexReading.Stamp(Aw.Context.Core.Symbols.CodeIndexHead! head, string! path) -> (Aw.Context.Core.Symbols.SymbolsState State, string? AsOfCommit)
+override Aw.Context.Core.Lenses.SearchedCatchingUp.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.SearchedCatchingUp.GetHashCode() -> int
+override Aw.Context.Core.Lenses.SearchedCatchingUp.ToString() -> string!
+static Aw.Context.Core.Lenses.SearchedCatchingUp.operator !=(Aw.Context.Core.Lenses.SearchedCatchingUp? left, Aw.Context.Core.Lenses.SearchedCatchingUp? right) -> bool
+static Aw.Context.Core.Lenses.SearchedCatchingUp.operator ==(Aw.Context.Core.Lenses.SearchedCatchingUp? left, Aw.Context.Core.Lenses.SearchedCatchingUp? right) -> bool
