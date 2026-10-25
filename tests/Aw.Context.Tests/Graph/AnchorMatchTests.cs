@@ -97,7 +97,7 @@ public sealed class AnchorMatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void SND_CONTEXT_037_candidates_stop_at_a_hundred_keys_while_the_detail_lists_all()
+    public void SND_CONTEXT_037_candidates_list_every_key_and_so_does_the_detail()
     {
         var builder = new GraphBuilder();
         foreach (var i in Enumerable.Range(0, 120))
@@ -107,7 +107,7 @@ public sealed class AnchorMatchTests
 
         var node = AnchorMatch.Resolve(builder.Build(), "Same");
 
-        Assert.Equal(100, Members(node.Error, "candidates").Count);
+        Assert.Equal(120, Members(node.Error, "candidates").Count);   // why: no cap, so a list past 100 is whole
         Assert.Contains("feature:n119", node.Error.Message, StringComparison.Ordinal);
     }
 
