@@ -6,7 +6,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <summary>The app's reads of the API (<see cref="ISindriApi"/>, continued): the context code lens.</summary>
 internal partial interface ISindriApi
 {
-    /// <summary>GET /sindri/context/code: the callers and callees the code index gave for the files around one to 20 anchors.</summary>
+    /// <summary>QUERY /sindri/context/code: the callers and callees the code index gave for the files around the anchors (the JSON body).</summary>
     /// <param name="api">The base URL.</param>
     /// <param name="query">The anchors and the flags.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
