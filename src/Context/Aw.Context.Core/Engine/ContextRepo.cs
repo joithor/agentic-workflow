@@ -15,4 +15,12 @@ public sealed record ContextRepo(ContextRepoName Name, string Path)
     /// <param name="path">The repo-relative path.</param>
     /// <returns>True when a deny glob matches it.</returns>
     public bool Denies(string path) => PathDenylist.Matches(path, DenyPaths);
+
+    /// <summary>The globs of the paths whose role the repo demotes: a demoted file keeps its code node but implements no feature.</summary>
+    public IReadOnlyList<string> DemotePaths { get; init; } = [];
+
+    /// <summary>Whether a path's role is demoted.</summary>
+    /// <param name="path">The repo-relative path.</param>
+    /// <returns>True when a demote glob matches it.</returns>
+    public bool Demotes(string path) => PathDenylist.Matches(path, DemotePaths);
 }
