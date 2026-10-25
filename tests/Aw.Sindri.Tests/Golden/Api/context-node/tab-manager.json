@@ -9,7 +9,8 @@
     "trust": "trusted",
     "confidence": 1,
     "source": null,
-    "description": null
+    "description": null,
+    "repo": "aw-split-panes"
   },
   "aliases": [],
   "out": [],

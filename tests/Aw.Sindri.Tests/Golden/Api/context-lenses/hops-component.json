@@ -29,7 +29,8 @@
           "provenance": "human",
           "confidence": 1,
           "confirmed": true,
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "neighbors": [],
@@ -47,7 +48,8 @@
             "feature:share.sharing",
             "component code:src/share/Share.ts",
             "implements feature:share.export"
-          ]
+          ],
+          "repo": "aw-split-panes"
         }
       ],
       "counts": {
@@ -73,7 +75,8 @@
           "linkId": null,
           "label": "src/share/Share.ts",
           "kind": "code",
-          "trust": "trusted"
+          "trust": "trusted",
+          "repo": "aw-split-panes"
         }
       ],
       "symbols": {

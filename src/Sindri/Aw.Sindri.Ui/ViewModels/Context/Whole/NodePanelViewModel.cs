@@ -189,7 +189,7 @@ internal sealed class NodePanelViewModel : ObservableObject
         var known = _lookup(other);
         var kind = edge.OtherKind ?? known?.Kind ?? KindOf(other);
         var label = edge.OtherLabel ?? known?.Label ?? other;
-        return (NodeBands.Of(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, edge.Type, outgoing), _jump));
+        return (NodeBands.Of(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, edge.Type, outgoing), label, kind, _jump));
     }
 
     // Only a web link is opened; any other scheme is shown as the plain reference.

@@ -10,8 +10,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// The 'context-rebuild' background service (context spec §6.2, README X63): runs only when the profile names it, on its cadence.
-/// It proposes the map from the repo into a draft (extraction takes the box-wide heavy-job lock: SND-CONTEXT-040 when it stays
-/// busy) and records 'context.map.built'. Nothing runs map build inside the command gate: until API P6 adds the build job,
+/// It proposes the map from the repo into a draft (one build at a time, no heavy-job slot) and records 'context.map.built'. Nothing runs map build inside the command gate: until API P6 adds the build job,
 /// this service is how a draft appears without the proposals route.
 /// </summary>
 internal sealed class ContextRebuildService(ContextScopes scopes, IContextEngine engine, ILedgerStore ledger, EventFactory events) : IScheduledService
