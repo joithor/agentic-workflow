@@ -48,7 +48,7 @@ internal static partial class Labels
     /// <param name="repo">The item's repo, or null when it is not known.</param>
     /// <returns>The note.</returns>
     internal static string ContextItemUnscoped(string item, string? repo) =>
-        $"{item} has no scope yet. Showing " + (repo is null ? "the whole map." : $"the map of {repo}.");
+        $"No scope yet for {item}; showing " + (repo is null ? "the whole map" : $"{repo}'s map");
 
     /// <summary>The note when the item has a frozen scope: its starting points are in the box.</summary>
     /// <param name="item">The item's id.</param>

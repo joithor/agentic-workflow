@@ -9,26 +9,28 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Whether the item note shows.</summary>
     public bool HasItemNote => ItemNote.Length > 0;
 
-    /// <summary>Opens the page for an item: shows that it is reading, opens the item's repo, and fills the starting points from its frozen scope, or says there is none.</summary>
+    /// <summary>Whether the last open for an item failed, so Retry shows.</summary>
+    public bool IsItemFailed { get; private set; }
+
+    /// <summary>The retry button's words.</summary>
+    public string ItemRetryText { get; } = Labels.ContextWholeRetry;
+
+    private string? _itemOpened;
+
+    /// <summary>Opens the page for an item: shows that it is reading, opens the item's repo, and fills the starting points from its frozen scope, or says there is none and selects the item's node when the map has one.</summary>
     /// <param name="itemId">The item.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the scope is read and the live map is drawn.</returns>
     internal async Task OpenForItem(string itemId, CancellationToken cancellationToken = default)
     {
+        _itemOpened = itemId;
         if (Ports.ApiUrl() is not { } api)
         {
-            NoteItem(Labels.ContextItemFailed(itemId, Labels.ContextItemUnreachable));
+            NoteItem(Labels.ContextItemFailed(itemId, Labels.ContextItemUnreachable), failed: true);
             return;
         }
 
         NoteItem(Labels.ContextItemLoading(itemId));
-        var scope = await Ports.Api.ItemScope(api, itemId, cancellationToken).ConfigureAwait(true);
-        if (!scope.IsSuccess)
-        {
-            NoteItem(Labels.ContextItemFailed(itemId, scope.Error.Message));
-            return;
-        }
-
         // The repo is a courtesy: an item that can't be read here still gets its note and the map as it is.
         var item = await Ports.Api.Item(api, itemId, cancellationToken).ConfigureAwait(true);
         var repo = item.IsSuccess ? item.Value.Repo : null;
@@ -37,9 +39,21 @@ internal sealed partial class ContextPageViewModel
             await PickRepo(repo, cancellationToken).ConfigureAwait(true);
         }
 
+        var scope = await Ports.Api.ItemScope(api, itemId, cancellationToken).ConfigureAwait(true);
+        if (!scope.IsSuccess)
+        {
+            NoteItem(Labels.ContextItemFailed(itemId, scope.Error.Message), failed: true);
+            return;
+        }
+
         if (scope.Value.Scope is not { } frozen)
         {
             NoteItem(Labels.ContextItemUnscoped(itemId, repo));
+            if ((await Ports.Api.Node(api, itemId, cancellationToken).ConfigureAwait(true)).IsSuccess)
+            {
+                await ChooseWholeNode(itemId, cancellationToken).ConfigureAwait(true);
+            }
+
             return;
         }
 
@@ -48,9 +62,17 @@ internal sealed partial class ContextPageViewModel
         NoteItem(Labels.ContextItemScoped(itemId));
     }
 
-    private void NoteItem(string note)
+    /// <summary>Retry on the item note: the open is made again.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>When the answer is drawn.</returns>
+    internal Task RetryItem(CancellationToken cancellationToken = default) =>
+        _itemOpened is { } item ? OpenForItem(item, cancellationToken) : Task.CompletedTask;
+
+    private void NoteItem(string note, bool failed = false)
     {
         ItemNote = note;
+        IsItemFailed = failed;
+        OnChanged(nameof(IsItemFailed));
         OnChanged(nameof(ItemNote));
         OnChanged(nameof(HasItemNote));
     }

@@ -86,6 +86,35 @@ public sealed class ContextOpenForItemNoteTests
     }
 
     [Fact]
+    public async Task A_failed_scope_read_still_opens_the_items_repo_map_and_offers_retry()
+    {
+        var api = ApiWithItem();
+        api.ItemScopeAnswer = _ => RouteAnswer.Problem(HttpStatusCode.InternalServerError, "SND-CTX-500", "the scope store is down");
+        var page = Page(api);
+
+        await page.OpenForItem(Item, Token);
+
+        Assert.True(page.IsItemFailed);
+        Assert.Equal(ItemRepo, api.WholeMapAsked.Last().Repo);
+    }
+
+    [Fact]
+    public async Task Retry_reads_the_item_again()
+    {
+        var api = ApiWithItem();
+        var failing = true;
+        api.ItemScopeAnswer = _ => failing ? RouteAnswer.Problem(HttpStatusCode.InternalServerError, "SND-CTX-500", "down") : RouteAnswer.Api("items-id-scope", "no-scope");
+        var page = Page(api);
+        await page.OpenForItem(Item, Token);
+        failing = false;
+
+        await page.RetryItem(Token);
+
+        Assert.False(page.IsItemFailed);
+        Assert.Equal(Labels.ContextItemUnscoped(Item, ItemRepo), page.ItemNote);
+    }
+
+    [Fact]
     public async Task Opening_the_page_again_drops_the_note()
     {
         var page = Page(ApiWithItem());

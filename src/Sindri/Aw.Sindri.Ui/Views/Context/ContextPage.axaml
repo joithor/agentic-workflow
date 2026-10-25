@@ -70,6 +70,7 @@
         <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" IsVisible="{Binding HasHead}" VerticalAlignment="Center" />
         <TextBlock x:Name="ContextItemNote" Classes="caption" Text="{Binding ItemNote}" IsVisible="{Binding HasItemNote}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                    AutomationProperties.Name="{Binding ItemNote}" />
+        <Button x:Name="ItemRetry" Content="{Binding ItemRetryText}" IsVisible="{Binding IsItemFailed}" Click="OnRetryItem" AutomationProperties.Name="{Binding ItemRetryText}" />
       </StackPanel>
       <Border x:Name="ContextDraftTag" Grid.Column="2" IsVisible="{Binding IsDraft}" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.Pill}" Padding="10,2" VerticalAlignment="Center"
               AutomationProperties.Name="{Binding DraftTag}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
