@@ -101,7 +101,7 @@ done
 # Focus selects the row; Enter on the selected row opens the drawer on it (a second Enter would open the run). The row border is not a button, so the key reaches the page.
 drv action --do focus --node-id "$row_id" >"$OUT/select.log" 2>&1 \
   || setup_fail "the run's row could not take focus (driver: $(tr -d '\n' <"$OUT/select.log" | cut -c1-160))"
-drv key Enter --node-id "$row_id" >"$OUT/enter.log" 2>&1 \
+drv key --chord Enter --node-id "$row_id" >"$OUT/enter.log" 2>&1 \
   || setup_fail "Enter on the run's row was not accepted (driver: $(tr -d '\n' <"$OUT/enter.log" | cut -c1-160))"
 drv wait-for --name "Run details" --state visible --wait-ms 30000 >/dev/null 2>&1 \
   || setup_fail "the run drawer (Run details) never opened after Enter on the row"
