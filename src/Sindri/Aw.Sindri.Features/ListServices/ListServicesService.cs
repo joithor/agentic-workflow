@@ -61,7 +61,7 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
 
     /// <summary>
     /// The first slot of the series after <paramref name="slot"/> that is still to come. An idle run after an ok one records nothing (C8), so the
-    /// recorded slot ages while the scheduler ticks on; the series it advances (<c>ServiceSchedule.Advance</c>) is slot plus whole cadences.
+    /// recorded slot ages while the scheduler ticks on; the series it advances (ServiceSchedule.Advance) is slot plus whole cadences.
     /// </summary>
     private DateTimeOffset Upcoming(DateTimeOffset slot, TimeSpan interval)
     {
