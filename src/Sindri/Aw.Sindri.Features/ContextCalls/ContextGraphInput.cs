@@ -21,6 +21,8 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="json">The host's JSON options.</param>
 internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes scopes, ContextInputFacts facts, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
+    private static readonly string[] _briefParts = ["subject", "text"];
+
     /// <summary>The block id.</summary>
     public const string Id = "input.context.graph";
 
@@ -120,7 +122,7 @@ internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes
             return null;
         }
 
-        var parts = new[] { "subject", "text" }.Select(p => value.TryGetProperty(p, out var part) && part.ValueKind == JsonValueKind.String ? part.GetString() : null).OfType<string>().Where(static s => s.Length > 0);
+        var parts = _briefParts.Select(p => value.TryGetProperty(p, out var part) && part.ValueKind == JsonValueKind.String ? part.GetString() : null).OfType<string>().Where(static s => s.Length > 0);
         return string.Join("\n\n", parts) is { Length: > 0 } prose ? prose : null;
     }
 

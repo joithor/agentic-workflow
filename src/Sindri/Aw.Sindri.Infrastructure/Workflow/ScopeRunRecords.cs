@@ -198,7 +198,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
     }
 
     // Every 'workflow.transition' row the engine mirrored for the instance that completed a Step, oldest first.
-    private async ValueTask<Result<(List<(long Sequence, WorkflowEventPayload Payload)> Completed, int Transitions)>>> Completions(InstanceAddress run, CancellationToken cancellationToken)
+    private async ValueTask<Result<(List<(long Sequence, WorkflowEventPayload Payload)> Completed, int Transitions)>> Completions(InstanceAddress run, CancellationToken cancellationToken)
     {
         var scanned = await Scan(new LedgerFilter(TypeFilter.Parse(EventTypes.WorkflowTransition).Value, Item: null, Instance: run), cancellationToken).ConfigureAwait(false);
         if (scanned.IsError)

@@ -40,34 +40,10 @@ internal static class GraphGather
 
     private static JsonObject FromLenses(JsonObject lenses, IReadOnlyList<string> anchors)
     {
-        var nodes = new JsonArray();
-        var edges = new JsonArray();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var seenEdges = new HashSet<string>(StringComparer.Ordinal);
-        var rank = 0;
+        var projection = new LensProjection();
         foreach (var lens in ScopeRules.Lenses)
         {
-            var entry = ScopeJson.Obj(lenses, lens);
-            foreach (var node in ScopeJson.Items(entry, "nodes"))
-            {
-                Add(nodes, seen, ScopeJson.Str(node, "key"), node, lens, ref rank);
-            }
-
-            foreach (var item in ScopeJson.Items(entry, "items"))
-            {
-                Add(nodes, seen, ScopeJson.Strings(item, "citations").FirstOrDefault() ?? ScopeJson.Str(item, "lensItem"), item, lens, ref rank);
-            }
-
-            foreach (var edge in ScopeJson.Items(entry, "edges"))
-            {
-                var from = ScopeJson.Str(edge, "from") ?? string.Empty;
-                var to = ScopeJson.Str(edge, "to") ?? string.Empty;
-                var type = ScopeJson.Str(edge, "type") ?? "relates";
-                if (seenEdges.Add($"{from}\n{to}\n{type}"))
-                {
-                    edges.Add(new JsonObject { ["from"] = from, ["to"] = to, ["type"] = type });
-                }
-            }
+            projection.Read(lens, ScopeJson.Obj(lenses, lens));
         }
 
         var related = ScopeJson.Obj(lenses, "related");
@@ -78,45 +54,85 @@ internal static class GraphGather
             ["anchors"] = ScopeJson.ToArray(anchors),
             ["depth"] = ScopeJson.Int(related, "depth") ?? 0,
             ["hops"] = ScopeJson.ToArray(ScopeJson.Strings(related, "hops")),
-            ["nodes"] = nodes,
-            ["edges"] = edges,
+            ["nodes"] = projection.Nodes,
+            ["edges"] = projection.Edges,
             ["limits"] = new JsonArray(new JsonObject { ["why"] = NoGraph, ["not"] = "ranking, summaries and role filtering: the context engine gave no graph, so this is the lenses' own order" }),
         };
     }
 
+    // The lenses' nodes, items and edges as graph nodes and edges: each id once, ranked in the order the lenses list them.
+    private sealed class LensProjection
+    {
+        private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _seenEdges = new(StringComparer.Ordinal);
+        private int _rank;
+
+        internal JsonArray Nodes { get; } = [];
+
+        internal JsonArray Edges { get; } = [];
+
+        internal void Read(string lens, JsonObject? entry)
+        {
+            foreach (var node in ScopeJson.Items(entry, "nodes"))
+            {
+                AddNode(ScopeJson.Str(node, "key"), node, lens);
+            }
+
+            foreach (var item in ScopeJson.Items(entry, "items"))
+            {
+                AddNode(ScopeJson.Strings(item, "citations").FirstOrDefault() ?? ScopeJson.Str(item, "lensItem"), item, lens);
+            }
+
+            foreach (var edge in ScopeJson.Items(entry, "edges"))
+            {
+                AddEdge(edge);
+            }
+        }
+
+        private void AddEdge(JsonNode edge)
+        {
+            var from = ScopeJson.Str(edge, "from") ?? string.Empty;
+            var to = ScopeJson.Str(edge, "to") ?? string.Empty;
+            var type = ScopeJson.Str(edge, "type") ?? "relates";
+            if (_seenEdges.Add($"{from}\n{to}\n{type}"))
+            {
+                ScopeJson.Append(Edges, new JsonObject { ["from"] = from, ["to"] = to, ["type"] = type });
+            }
+        }
+
+        private void AddNode(string? id, JsonNode source, string lens)
+        {
+            if (string.IsNullOrEmpty(id) || !_seen.Add(id))
+            {
+                return;
+            }
+
+            var node = new JsonObject
+            {
+                ["id"] = id,
+                ["kind"] = ScopeJson.Str(source, "kind") ?? "node",
+                ["summary"] = ScopeJson.Str(source, "label") ?? id,
+                ["rank"] = ++_rank,
+                ["lens"] = lens,
+                ["lensItem"] = ScopeJson.Str(source, "lensItem") ?? string.Empty,
+                ["citations"] = new JsonArray([.. ScopeJson.Strings(source, "citations").Select(static key => (JsonNode?)new JsonObject { ["key"] = key })]),
+            };
+            if (id.StartsWith(CodePrefix, StringComparison.Ordinal))
+            {
+                node["path"] = id[CodePrefix.Length..];   // why: a path is on code: nodes only, derived from the key
+            }
+
+            if ((ScopeJson.Str(source, "band") ?? (IsIntent(ScopeJson.Str(source, "kind")) ? "intent" : null)) is { } band)
+            {
+                node["band"] = band;
+            }
+
+            ScopeJson.Append(Nodes, node);
+        }
+    }
+
     // A record or a decision is intent, whatever lens found it.
     private static bool IsIntent(string? kind) => string.Equals(kind, "record", StringComparison.Ordinal) || string.Equals(kind, "decision", StringComparison.Ordinal);
-
-    private static void Add(JsonArray nodes, HashSet<string> seen, string? id, JsonNode source, string lens, ref int rank)
-    {
-        if (string.IsNullOrEmpty(id) || !seen.Add(id))
-        {
-            return;
-        }
-
-        var label = ScopeJson.Str(source, "label") ?? id;
-        var node = new JsonObject
-        {
-            ["id"] = id,
-            ["kind"] = ScopeJson.Str(source, "kind") ?? "node",
-            ["summary"] = label,
-            ["rank"] = ++rank,
-            ["lens"] = lens,
-            ["lensItem"] = ScopeJson.Str(source, "lensItem") ?? string.Empty,
-            ["citations"] = new JsonArray([.. ScopeJson.Strings(source, "citations").Select(static key => (JsonNode?)new JsonObject { ["key"] = key })]),
-        };
-        if (id.StartsWith(CodePrefix, StringComparison.Ordinal))
-        {
-            node["path"] = id[CodePrefix.Length..];   // why: a path is on code: nodes only, derived from the key
-        }
-
-        if ((ScopeJson.Str(source, "band") ?? (IsIntent(ScopeJson.Str(source, "kind")) ? "intent" : null)) is { } band)
-        {
-            node["band"] = band;
-        }
-
-        nodes.Add(node);
-    }
 
     // The size is recounted here, never trusted from the view: the brief tells the agent to read it first.
     private static void Size(JsonObject graph)
