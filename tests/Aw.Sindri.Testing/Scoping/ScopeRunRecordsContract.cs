@@ -98,11 +98,16 @@ public abstract class ScopeRunRecordsContract
         var records = await Create();
         var run = Aw.Sindri.Core.Workflow.Engine.RunToken.For(entry: 4, number: 2);
         var id = Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Ids.WorkflowInstanceId.Of(_scoping), run);
+        for (var earlier = 1; earlier <= 3; earlier++)
+        {
+            await CompletedAtTheDesk(records, _scoping, "challenge", earlier);   // why: a frame reaches entry 4 only through the transitions before it
+        }
+
         await Launched(records, new ScopeLaunch(_scoping, "draft", "step.scope.draft", "claude-sonnet-5-5", 2, id));
 
         var read = await records.Of(_scoping, Token);
 
-        Expect.Equal("4.2", Expect.Only(read.Value).RunToken);
+        Expect.Equal("4.2", Expect.Only(read.Value.Where(static r => r.Via == "agent").ToList()).RunToken);
     }
 
     /// <summary>A completion at the desk carries the run id the ledger row names.</summary>
