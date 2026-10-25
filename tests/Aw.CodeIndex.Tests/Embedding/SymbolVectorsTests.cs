@@ -31,7 +31,7 @@ public sealed class SymbolVectorsTests
 
         var view = (await harness.Facade.SymbolVectors(harness.Scope, BuildHarness.Name, Ask("src/A.cs"), Token)).Value;
 
-        Assert.Equal(["M0000", "M0001", "M0002"], view.Vectors.Select(v => v.Name));
+        Assert.Equal(["M0000", "M0001", "M0002"], view.Vectors.Select(v => v.Name), StringComparer.Ordinal);
         Assert.All(view.Vectors, v => Assert.Equal("src/A.cs", v.Path));
         Assert.All(view.Vectors, v => Assert.False(v.Vector.IsEmpty));
         Assert.Equal(harness.Embedder.ModelFor(CodeIndexSettings.Default.Embeddings), view.Model);
