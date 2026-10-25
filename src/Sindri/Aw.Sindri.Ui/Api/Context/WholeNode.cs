@@ -10,4 +10,5 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Provenance">Where it came from.</param>
 /// <param name="Confidence">How sure the map is (0 to 1).</param>
 /// <param name="Confirmed">True when a person confirmed it.</param>
-internal sealed record WholeNode(string Key, string Label, string Kind, string Area, IReadOnlyList<string> AlsoIn, string Trust, string Provenance, double Confidence, bool Confirmed);
+/// <param name="Repo">The repo it belongs to, or null (left out of the answer) when it belongs to no single repo.</param>
+internal sealed record WholeNode(string Key, string Label, string Kind, string Area, IReadOnlyList<string> AlsoIn, string Trust, string Provenance, double Confidence, bool Confirmed, string? Repo = null);
