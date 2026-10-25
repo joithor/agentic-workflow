@@ -7,7 +7,7 @@
   "recipe": {
     "id": "workflow.scoping",
     "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-    "version": 10,
+    "version": 11,
     "urgency": "work",
     "displayName": "Scoping"
   },
@@ -424,7 +424,7 @@
         "address": "ITM-01JN3/scoping/1",
         "recipe": "workflow.scoping",
         "hash12": "000000000000",
-        "version": 10,
+        "version": 11,
         "state": "interview",
         "detail": "desk task",
         "since": "2026-10-12T12:10:00.0000000Z",
@@ -471,7 +471,7 @@
           "confirm": "Cancel ITM-01JN3/scoping/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JN3/scoping/1  workflow.scoping@000000000000  v10  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JN3/scoping/1  workflow.scoping@000000000000  v11  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },
