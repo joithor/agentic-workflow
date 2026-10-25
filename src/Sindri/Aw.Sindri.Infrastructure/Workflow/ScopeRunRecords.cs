@@ -164,7 +164,7 @@ internal sealed class ScopeRunRecords(ILedgerReader ledger, EventFactory events,
                 }
 
                 var usage = payload.Value;
-                var (beforeSample, beforeModel) = latest.GetValueOrDefault(usage.Launch.Value);
+                var (beforeSample, _, beforeModel) = latest.GetValueOrDefault(usage.Launch.Value);
                 if (usage.Sample > beforeSample)
                 {
                     latest[usage.Launch.Value] = (usage.Sample, usage.InputTokens + usage.OutputTokens - (usage.CacheReadTokens ?? 0), usage.Model ?? beforeModel);
