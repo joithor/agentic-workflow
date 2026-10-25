@@ -187,29 +187,6 @@ internal sealed partial class RecipeWorkflow
         _context is not { } context || context.Recipe.States.Values.Any(s => s.WaitFor?.Event == kind);
 
     /// <summary>
-    /// Mirrors one event into the ledger ('RecordEvent', a local activity keyed by its own activity id; rev 8.1 §5.6),
-    /// then sets the search attributes the instance is found by (§5.1) as they stand after it.
-    /// </summary>
-    private async Task Mirror(WorkflowEventRecord record, bool needsYou)
-    {
-        var stamped = record with { Tenant = _start!.Tenant, Ring = _start.Ring };   // why: Mirror runs only after RunAsync set _start; the row is the instance's, not the worker's
-        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(stamped), RecordEventActivities.LocalOptions).ConfigureAwait(true);
-        _mirrored++;   // the instance's version, 'v<n>' in status: Temporal keeps no row version (unit (e))
-        Upsert(record.To, needsYou);
-    }
-
-    /// <summary>
-    /// The instance waits on a human (spec §5.1 'NeedsYou'): it is parked or escalated, or it holds an open desk task. A
-    /// takeover doesn't: the human already has it. A park for a dependency that is down doesn't either: nobody can answer it, and health shows it.
-    /// </summary>
-    private static bool NeedsYou(WorkflowInstance instance) => !instance.Ended && instance.Suspension switch
-    {
-        { Kind: SuspensionKind.Takeover } or { Kind: SuspensionKind.Park, Reason: ParkReason.Unavailable } => false,
-        not null => true,
-        _ => instance.Frame.Run is { Runtime: StepRuntime.Desk },
-    };
-
-    /// <summary>
     /// Takes <paramref name="instance"/> as the instance after a decided change, and does what the change asks of the
     /// timers (spec §5.5, <see cref="StateTimers.Between"/>): a new entry or run, or an answer that ended a park, arms the
     /// state's full timeout; a park, escalation or end stops it; a 'then: retry' arms the retry timer; a takeover pauses
