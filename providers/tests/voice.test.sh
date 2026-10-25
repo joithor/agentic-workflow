@@ -96,6 +96,34 @@ test_unclosed_block_is_refused() {
   echo "PASS: test_unclosed_block_is_refused"
 }
 
+test_file_without_trailing_newline_stays_idempotent() {
+  setup_env
+  local f="$HOME/.claude/CLAUDE.md" first
+  mkdir -p "$(dirname "$f")"
+  printf 'no newline at the end' > "$f"
+  aw_write_managed_block "$f" voice "$SRC" >/dev/null
+  first="$(cat "$f")"
+  [ "$(sed -n 1p "$f")" = "no newline at the end" ] || fail "the last user line was glued to the start marker"
+  aw_write_managed_block "$f" voice "$SRC" >/dev/null
+  [ "$(cat "$f")" = "$first" ] || fail "rerun changed the file"
+  [ "$(count '<!-- aw:voice:start -->' "$f")" = 1 ] || fail "start marker duplicated"
+  teardown_env
+  echo "PASS: test_file_without_trailing_newline_stays_idempotent"
+}
+
+test_end_marker_before_start_is_refused() {
+  setup_env
+  local f="$HOME/.claude/CLAUDE.md" before rc=0
+  mkdir -p "$(dirname "$f")"
+  printf '<!-- aw:voice:end -->\nmine\n<!-- aw:voice:start -->\nmore of mine\n' > "$f"
+  before="$(cat "$f")"
+  aw_write_managed_block "$f" voice "$SRC" >/dev/null 2>&1 || rc=$?
+  [ "$rc" -ne 0 ] || fail "an end marker before the start should be refused"
+  [ "$(cat "$f")" = "$before" ] || fail "the file must stay untouched"
+  teardown_env
+  echo "PASS: test_end_marker_before_start_is_refused"
+}
+
 test_dry_run_writes_nothing() {
   setup_env
   local f="$HOME/.claude/CLAUDE.md" out
@@ -135,6 +163,8 @@ test_block_created_in_missing_file
 test_block_appended_and_outside_text_kept
 test_rerun_replaces_in_place_without_duplicating
 test_unclosed_block_is_refused
+test_file_without_trailing_newline_stays_idempotent
+test_end_marker_before_start_is_refused
 test_dry_run_writes_nothing
 test_providers_install_the_voice
 test_skills_and_agents_read_the_voice

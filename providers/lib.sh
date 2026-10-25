@@ -281,7 +281,7 @@ aw_link_toolkit() {
 # Write <src>'s content into <file> between "<!-- aw:<tag>:start -->" and "<!-- aw:<tag>:end -->":
 # replaced in place when the block exists, appended when it doesn't (the file is created if missing).
 # Text outside the markers is never touched, and the file keeps its inode and mode. A start marker
-# with no end marker is refused (exit 1, file untouched): the rest of the file might be the user's.
+# with no end marker after it is refused (exit 1, file untouched): the rest of the file might be the user's.
 # Usage: aw_write_managed_block <file> <tag> <src>
 aw_write_managed_block() {
   local file="$1" tag="$2" src="$3"
@@ -292,12 +292,9 @@ aw_write_managed_block() {
   fi
   mkdir -p "$(dirname "$file")"
   if [ ! -f "$file" ] || ! grep -qxF -- "$start" "$file"; then
-    { [ -s "$file" ] && printf '\n'; echo "$start"; cat "$src"; echo "$end"; } >> "$file"
+    # A last line without a newline would glue the start marker onto it, and the next run would not find the block.
+    { [ -s "$file" ] && { [ -z "$(tail -c 1 "$file")" ] || printf '\n'; printf '\n'; }; echo "$start"; cat "$src"; echo "$end"; } >> "$file"
     return 0
-  fi
-  if ! grep -qxF -- "$end" "$file"; then
-    echo "  WARN: $file has $start but no $end; left it alone (fix it by hand)" >&2
-    return 1
   fi
   local tmp
   tmp="$(mktemp)"
@@ -305,7 +302,13 @@ aw_write_managed_block() {
     $0 == s { print; while ((getline line < src) > 0) print line; close(src); skip = 1; next }
     $0 == e && skip { skip = 0; print; next }
     !skip { print }
-  ' "$file" > "$tmp" && cat "$tmp" > "$file"
+    END { if (skip) exit 3 }
+  ' "$file" > "$tmp" || {
+    rm -f "$tmp"
+    echo "  WARN: $file has $start but no $end after it; left it alone (fix it by hand)" >&2
+    return 1
+  }
+  cat "$tmp" > "$file"
   rm -f "$tmp"
 }
 
