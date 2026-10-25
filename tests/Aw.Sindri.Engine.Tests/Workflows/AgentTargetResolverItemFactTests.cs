@@ -41,7 +41,7 @@ public sealed class AgentTargetResolverItemFactTests
         var target = await Resolve(factJson);
 
         Assert.True(target.IsError);
-        Assert.NotEqual(SindriErrors.LaunchRepoMissing.Code, target.Error.Code);
+        Assert.NotEqual(SindriErrors.LaunchRepoMissing.Code, target.Error.Code, StringComparer.Ordinal);
         Assert.Contains("id", target.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("names no repo", target.Error.Message, StringComparison.Ordinal);
     }
