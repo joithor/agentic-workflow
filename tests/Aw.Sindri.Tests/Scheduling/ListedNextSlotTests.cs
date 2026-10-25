@@ -6,9 +6,9 @@ using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
-using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Host;
@@ -58,8 +58,8 @@ public sealed class ListedNextSlotTests : IDisposable
         await app.StopAsync(Token);
 
         var now = _clock.GetUtcNow();
-        Assert.True(listed.NextSlot > now, $"next {listed.NextSlot:O} is not after now {now:O}");
-        Assert.True(listed.NextSlot <= now + interval, $"next {listed.NextSlot:O} is more than one cadence after now {now:O}");
+        Assert.True(listed.NextSlot > now, FormattableString.Invariant($"next {listed.NextSlot:O} is not after now {now:O}"));
+        Assert.True(listed.NextSlot <= now + interval, FormattableString.Invariant($"next {listed.NextSlot:O} is more than one cadence after now {now:O}"));
     }
 
     private async Task<WebApplication> Start(string every)
