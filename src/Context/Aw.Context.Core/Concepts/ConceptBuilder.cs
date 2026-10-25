@@ -38,7 +38,7 @@ public static class ConceptBuilder
         var end = offset + page.Count;
         var other = new ConceptOther(NodeKey.From(ConceptKeys.Other), OtherName, Size(index, index.MembersOf(ConceptKeys.Other)));
         var rows = page.Select(n => Row(index, n, text)).ToList();
-        return new ConceptsView(1, basis.Repo, basis.MapVersion, index.Concepts.Count == 0 ? ConceptStates.Empty : ConceptStates.Ok, null, rows, other, Links(index, edges, page), ConceptPages.Next(basis.MapVersion, end, matching.Count));
+        return new ConceptsView(1, basis.Repo, basis.MapVersion, index.Concepts.Count == 0 ? ConceptStates.Empty : ConceptStates.Ok, Code: null, rows, other, Links(index, edges, page), ConceptPages.Next(basis.MapVersion, end, matching.Count));
     }
 
     /// <summary>One page of one concept's members.</summary>
