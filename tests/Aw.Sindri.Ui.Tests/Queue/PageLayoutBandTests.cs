@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Views.Layout;
 
@@ -42,7 +43,7 @@ public sealed class PageLayoutBandTests
         PageLayout.Apply(grid, Enum.Parse<PageTier>(tier));
 
         var fixedWidth = grid.ColumnDefinitions.Skip(1).Sum(c => c.Width.Value);
-        Assert.True(width - fixedWidth >= 160, $"{tier}: the title column gets {width - fixedWidth} px");
+        Assert.True(width - fixedWidth >= 160, string.Create(CultureInfo.InvariantCulture, $"{tier}: the title column gets {width - fixedWidth} px"));
         Assert.Equal(Avalonia.Controls.GridUnitType.Star, grid.ColumnDefinitions[0].Width.GridUnitType);
     }
 
