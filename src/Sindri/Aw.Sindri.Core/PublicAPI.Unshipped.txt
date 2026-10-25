@@ -18466,3 +18466,9 @@ Aw.Sindri.Core.Prove.PhaseSignals
 static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
 static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
 static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!
+Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Hash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash?
+Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Hash.init -> void
+Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Version.get -> int?
+Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Version.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.GainsCapability.get -> bool?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.GainsCapability.init -> void

@@ -23,8 +23,9 @@ internal sealed partial class NeedsYouConfirm
     /// <summary>The version a changed workflow's approval is for: the one still waiting for approval, else the newest.</summary>
     /// <param name="recipes">The registered recipes.</param>
     /// <param name="id">The recipe id.</param>
+    /// <param name="hash">The hash the row's CLI line names, or null.</param>
     /// <returns>The version's row, or null when the recipe is not registered.</returns>
-    internal static RecipeSummaryView? Pick(IReadOnlyList<RecipeSummaryView> recipes, string id)
+    internal static RecipeSummaryView? Pick(IReadOnlyList<RecipeSummaryView> recipes, string id, string? hash = null)
     {
         ArgumentNullException.ThrowIfNull(recipes);
         return recipes.Where(r => string.Equals(r.Id, id, StringComparison.Ordinal))

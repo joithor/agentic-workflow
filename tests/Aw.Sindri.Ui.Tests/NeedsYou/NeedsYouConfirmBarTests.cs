@@ -200,8 +200,65 @@ public sealed class NeedsYouConfirmBarTests
         ServeRecipeChallenge();
         var bar = await Bar(NeedsYouRows.Recipe("workflow.gone"));
 
-        Assert.Equal((0, Labels.NeedsYouRecipeGone), (_server.Challenges.Count, bar.Refusal));
+        Assert.Equal(0, _server.Challenges.Count);
+        Assert.Contains(Labels.NeedsYouRecipeGone, bar.Refusal, StringComparison.Ordinal);
+        Assert.Contains("SND-RECIPE-002", bar.Refusal, StringComparison.Ordinal);   // the code and the line that works are in the words
+        Assert.Contains("sindri recipe approve workflow.gone", bar.Refusal, StringComparison.Ordinal);
         Assert.Empty(_server.RecipeApprovals);
+    }
+
+    private const string GainsHash = "sha256:" + "d4c3b2a1d4c3b2a1d4c3b2a1d4c3b2a1d4c3b2a1d4c3b2a1d4c3b2a1d4c3b2a1";
+
+    // The list as the server serves it once it names the shipped version that gains a capability: the old approved hash and the waiting one.
+    private void ServeGainingVersion() => _server.RecipeListAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, $$"""
+        {"recipes":[
+          {"id":"workflow.step","version":3,"hash":"sha256:aa","standing":"approved","name":null,"approvedVersion":3,"approvedHash":"sha256:aa"},
+          {"id":"workflow.step","version":4,"hash":"{{GainsHash}}","standing":"unapproved","name":null,"status":"changed","gainsCapability":true,"approvedVersion":3,"approvedHash":"sha256:aa"}]}
+        """);
+
+    [Fact]
+    public async Task A_workflow_that_gains_a_capability_opens_the_typed_box_for_the_waiting_version_and_the_answer_approves_that_hash()
+    {
+        ServeRecipeChallenge();
+        ServeGainingVersion();
+        var bar = await Bar(NeedsYouRows.Recipe(hash: GainsHash));
+
+        Assert.Equal("approve workflow.step 4", Assert.Single(_server.Challenges).Action);
+        bar.TypedBox!.Text = bar.TypedBox.Phrase;
+        await bar.SubmitTyped(bar.TypedBox.Submit()!);
+
+        var sent = Assert.Single(_server.RecipeApprovals);
+        Assert.Equal(("workflow.step", GainsHash, true), (sent.Id, sent.Hash, bar.IsApproved));
+    }
+
+    [Fact]
+    public async Task A_refused_approval_of_a_workflow_shows_its_code_and_the_cli_line_that_works()
+    {
+        ServeRecipeChallenge();
+        ServeGainingVersion();
+        _server.ApproveRecipeAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.BadRequest, "SND-RECIPE-008", "the recipe declares no evals");
+        var bar = await Bar(NeedsYouRows.Recipe(hash: GainsHash));
+        bar.TypedBox!.Text = bar.TypedBox.Phrase;
+
+        await bar.SubmitTyped(bar.TypedBox.Submit()!);
+
+        Assert.False(bar.IsApproved);
+        Assert.Contains("SND-RECIPE-008", bar.Refusal, StringComparison.Ordinal);
+        Assert.Contains("sindri recipe approve workflow.step@" + GainsHash, bar.Refusal, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_workflow_row_with_no_running_api_says_so_with_the_cli_line_instead_of_nothing()
+    {
+        ServeRecipeChallenge();
+        _catalog = _fixture.Catalog("ready");
+        var confirm = new NeedsYouConfirm(_catalog, () => null, _server, _fixture.Clock);
+        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => null), _fixture.Clipboard, _fixture.Clock, confirm);
+        bar.Show(new NeedsYouRowViewModel(NeedsYouRows.Recipe(hash: GainsHash), seen: true, reducedMotion: false, arrived: false, _fixture.Clock));
+        await bar.Loaded;
+
+        Assert.True(bar.HasRefusal);
+        Assert.Contains("sindri recipe approve workflow.step@" + GainsHash, bar.Refusal, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -211,7 +268,11 @@ public sealed class NeedsYouConfirmBarTests
         var waiting = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 3, "sha256:bb", "unapproved", Name: null);
         var other = new Ui.Api.Workflow.RecipeSummaryView("workflow.other", 9, "sha256:cc", "unapproved", Name: null);
 
+        var gaining = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 5, "sha256:dd", "unapproved", Name: null, GainsCapability: true);
+
         Assert.Same(waiting, NeedsYouConfirm.Pick([approved, waiting, other], "workflow.step"));
+        Assert.Same(gaining, NeedsYouConfirm.Pick([approved, waiting, gaining], "workflow.step"));   // the version that gains a capability is the one the row is about
+        Assert.Same(gaining, NeedsYouConfirm.Pick([gaining, approved], "workflow.step", "sha256:dd"));
         Assert.Null(NeedsYouConfirm.Pick([other], "workflow.step"));
     }
 

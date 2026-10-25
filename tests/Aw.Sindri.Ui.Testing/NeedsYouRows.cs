@@ -135,7 +135,7 @@ internal static class NeedsYouRows
     };
 
     /// <summary>A changed workflow: its single approve is a later slice's, so the bar shows the command only.</summary>
-    internal static NeedsYouEntry Recipe(string id = "workflow.step") => new("recipe:" + id, NeedsYouUrgency.Calm)
+    internal static NeedsYouEntry Recipe(string id = "workflow.step", string? hash = null) => new("recipe:" + id, NeedsYouUrgency.Calm)
     {
         Kind = "recipe",
         Chip = new StateChip("RECIPE", ChipTone.Attn),
@@ -144,9 +144,9 @@ internal static class NeedsYouRows
         Reason = "the recipe changed since it was approved",
         Since = A.Noon.AddHours(-1),
         PrimaryAction = "ApproveRecipe",
-        Actions = [new NeedsYouAction("ApproveRecipe", "Approve", ActionReadiness.Ready, "sindri recipe approve " + id, RejectLike: false)],
+        Actions = [new NeedsYouAction("ApproveRecipe", "Approve", ActionReadiness.Ready, "sindri recipe approve " + id + (hash is null ? "" : "@" + hash), RejectLike: false)],
         Subject = new NeedsYouSubject("recipe", id),
-        Cli = "sindri recipe approve " + id,
+        Cli = "sindri recipe approve " + id + (hash is null ? "" : "@" + hash),
     };
 
     /// <summary>A pulse row with just an id, for lists that need many.</summary>
