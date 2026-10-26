@@ -4888,3 +4888,31 @@ static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator
 static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.get -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleAction.End = 2 -> Aw.Sindri.Features.SweepLostSessions.IdleAction
+Aw.Sindri.Features.SweepLostSessions.IdleAction
+Aw.Sindri.Features.SweepLostSessions.IdleAction.None = 0 -> Aw.Sindri.Features.SweepLostSessions.IdleAction
+Aw.Sindri.Features.SweepLostSessions.IdleAction.Nudge = 1 -> Aw.Sindri.Features.SweepLostSessions.IdleAction
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.<Clone>$() -> Aw.Sindri.Features.SweepLostSessions.IdleInputs!
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Deconstruct(out System.DateTimeOffset Now, out System.DateTimeOffset? TurnEnded, out System.DateTimeOffset? TurnFailed, out System.DateTimeOffset? SnapshotIdleSince, out bool ToolRunning, out System.DateTimeOffset? Nudged) -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Equals(Aw.Sindri.Features.SweepLostSessions.IdleInputs? other) -> bool
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.IdleInputs(System.DateTimeOffset Now, System.DateTimeOffset? TurnEnded, System.DateTimeOffset? TurnFailed, System.DateTimeOffset? SnapshotIdleSince, bool ToolRunning, System.DateTimeOffset? Nudged) -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Now.get -> System.DateTimeOffset
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Now.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Nudged.get -> System.DateTimeOffset?
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.Nudged.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.SnapshotIdleSince.get -> System.DateTimeOffset?
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.SnapshotIdleSince.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.ToolRunning.get -> bool
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.ToolRunning.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.TurnEnded.get -> System.DateTimeOffset?
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.TurnEnded.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.TurnFailed.get -> System.DateTimeOffset?
+Aw.Sindri.Features.SweepLostSessions.IdleInputs.TurnFailed.init -> void
+Aw.Sindri.Features.SweepLostSessions.IdleRules
+override Aw.Sindri.Features.SweepLostSessions.IdleInputs.Equals(object? obj) -> bool
+override Aw.Sindri.Features.SweepLostSessions.IdleInputs.GetHashCode() -> int
+override Aw.Sindri.Features.SweepLostSessions.IdleInputs.ToString() -> string!
+static Aw.Sindri.Features.SweepLostSessions.IdleInputs.operator !=(Aw.Sindri.Features.SweepLostSessions.IdleInputs? left, Aw.Sindri.Features.SweepLostSessions.IdleInputs? right) -> bool
+static Aw.Sindri.Features.SweepLostSessions.IdleInputs.operator ==(Aw.Sindri.Features.SweepLostSessions.IdleInputs? left, Aw.Sindri.Features.SweepLostSessions.IdleInputs? right) -> bool
+static Aw.Sindri.Features.SweepLostSessions.IdleRules.Decide(Aw.Sindri.Features.SweepLostSessions.IdleInputs! inputs, System.TimeSpan stalledAfter) -> Aw.Sindri.Features.SweepLostSessions.IdleAction
