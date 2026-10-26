@@ -34,13 +34,14 @@ public sealed class ContextGraphInputTests
     public async Task A_good_read_is_remembered_under_the_instance_address_and_handed_over()
     {
         var engine = FakeContextEngine.WithProbes(new ProbeSet([]));
-        engine.ScopeGraphAnswer = Results.Success(Graph());
+        var graph = Graph();
+        engine.ScopeGraphAnswer = Results.Success(graph);
 
         var filled = await Input(engine).Fill(Context(Instance), TestContext.Current.CancellationToken);
 
         var (address, remembered) = Assert.Single(engine.Remembered);
         Assert.Equal(Instance, address);
-        Assert.Equal(Graph(), remembered);
+        Assert.Same(graph, remembered);
         Assert.True(filled.Value.Result is not null);
     }
 
