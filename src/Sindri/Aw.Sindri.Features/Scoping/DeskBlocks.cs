@@ -231,14 +231,7 @@ internal static partial class DeskBlocks
         }
 
         entry["digest"] = digest;
-        if (!ScopeJson.Strings(entry, "recordedAs").Any())
-        {
-            // why: an applied answer is recorded as the question it answers (SCP-ACC-003 accepts a Q id); the draft may refine it to the items and map changes it caused
-            var single = ScopeJson.Str(entry, "question");
-            var answered = ScopeJson.Strings(entry, "questionIds").Concat(ScopeJson.Items(entry, "answers").Select(static a => ScopeJson.Str(a, "question"))).Append(single).OfType<string>().Distinct(StringComparer.Ordinal);
-            entry["recordedAs"] = new JsonArray([.. answered.Select(static q => (JsonNode)JsonValue.Create(q))]);
-        }
-
+        // why: recordedAs is never defaulted here; SCP-ACC-003 finds the entry through the items, surfaces and open questions that cite its id
         return entry;
     }
 
