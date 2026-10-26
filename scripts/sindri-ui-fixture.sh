@@ -443,14 +443,17 @@ context_whole() {
     under) map="$dir/tabs-map.json"; cp "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" "$map" || die "context whole: can't copy the tabs map" ;;
     concepts)
       map="$dir/concepts-map.json"
-      jq -n --arg repo "$CONTEXT_REPO" '{schemaVersion: 1, kind: "authored", repo: $repo,
+      # A decision's node is implied by its row: its key is 'decision:' and the sha256 of the record, a newline and the quote (DecisionRow.KeyFor).
+      drec="repo:fixture/docs/decisions.md"; dquote="swaps close a day before the shift"
+      dkey="decision:$(printf '%s\n%s' "$drec" "$dquote" | sha256sum | cut -c1-64)"
+      jq -n --arg repo "$CONTEXT_REPO" --arg drec "$drec" --arg dquote "$dquote" --arg dkey "$dkey" '{schemaVersion: 1, kind: "authored", repo: $repo,
+        decisions: [{record: $drec, quote: $dquote, wording: "Swaps close a day before the shift.", at: "2026-10-01T10:00:00Z"}],
         nodes: [
           {key: "concept:scheduling", label: "Self scheduling", attributes: {summary: "People pick and swap shifts.", source: "derived", seed: "feature:shifts", terms: ["shift", "swap", "roster", "rota"]}},
           {key: "concept:billing", label: "Billing", attributes: {summary: "Invoices and payment.", source: "override", terms: ["invoice"]}},
           {key: "feature:shifts", label: "Shifts"}, {key: "feature:swaps", label: "Swaps"}, {key: "feature:invoices", label: "Invoices"}, {key: "feature:lone", label: "Loose end"},
           {key: "surface:screen/shifts", label: "Shifts screen"}, {key: "action:pick", label: "Pick a shift"},
-          {key: "code:src/shifts.ts", label: "shifts.ts", provenance: "deterministic"}, {key: "code:src/invoices.ts", label: "invoices.ts", provenance: "deterministic"},
-          {key: "decision:swap-cutoff", label: "Swaps close a day before the shift"}],
+          {key: "code:src/shifts.ts", label: "shifts.ts", provenance: "deterministic"}, {key: "code:src/invoices.ts", label: "invoices.ts", provenance: "deterministic"}],
         edges: [
           {from: "feature:shifts", to: "concept:scheduling", type: "belongs-to"}, {from: "feature:swaps", to: "concept:scheduling", type: "belongs-to"},
           {from: "feature:invoices", to: "concept:billing", type: "belongs-to"},
@@ -458,7 +461,7 @@ context_whole() {
           {from: "code:src/invoices.ts", to: "feature:invoices", type: "implements", provenance: "deterministic"},
           {from: "feature:invoices", to: "feature:shifts", type: "depends-on"}, {from: "feature:swaps", to: "feature:invoices", type: "depends-on"},
           {from: "surface:screen/shifts", to: "feature:shifts", type: "part-of"}, {from: "action:pick", to: "surface:screen/shifts", type: "on"},
-          {from: "decision:swap-cutoff", to: "feature:swaps", type: "decides"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
+          {from: $dkey, to: "feature:swaps", type: "decides"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
     over)
       map="$dir/over-map.json"
       jq -n --arg repo "$CONTEXT_REPO" '{schemaVersion: 1, kind: "authored", repo: $repo,

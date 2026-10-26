@@ -577,8 +577,9 @@ contains "context whole concepts imports the map as the owner" "$(cat "$STUB_LOG
 M="$W/ui-fixture-context/concepts-map.json"
 check "the concepts map has two concepts" "$(jq '[.nodes[] | select(.key | startswith("concept:"))] | length' "$M")" "2"
 check "each concept of the concepts map carries its glossary terms" "$(jq -c '[.nodes[] | select(.key | startswith("concept:")) | .attributes.terms]' "$M")" '[["shift","swap","roster","rota"],["invoice"]]'
-check "every edge of the concepts map joins two of its nodes" "$(jq '[.nodes[].key] as $k | [.edges[] | select((.from as $f | $k | index($f)) == null or (.to as $t | $k | index($t)) == null)] | length' "$M")" "0"
-check "the concepts map has a decision on a Self scheduling feature (the Why band, #1281)" "$(jq -r '[.edges[] | select(.type == "decides") | .to] | join(",")' "$M")" "feature:swaps"
+DKEY="decision:$(printf '%s\n%s' "$(jq -r '.decisions[0].record' "$M")" "$(jq -r '.decisions[0].quote' "$M")" | sha256sum | cut -c1-64)"
+check "every edge of the concepts map joins two of its nodes (a decision row implies its node)" "$(jq --arg d "$DKEY" '([.nodes[].key] + [$d]) as $k | [.edges[] | select((.from as $f | $k | index($f)) == null or (.to as $t | $k | index($t)) == null)] | length' "$M")" "0"
+check "the concepts map has one decision, on a Self scheduling feature, keyed as context keys it (the Why band, #1281)" "$(jq -r '[.edges[] | select(.type == "decides") | .from + ">" + .to] | join(",")' "$M")" "$DKEY>feature:swaps"
 
 # agent-run's wait is wall-clock seconds, not loop passes (issue #1123): a ledger call that takes 2 s and never shows
 # launch.started must still end the wait after FIXTURE_AGENT_WAIT=3 s. The sessions copy is faked (no uid needed): agent-run
