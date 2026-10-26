@@ -61,7 +61,7 @@ internal sealed class OnyxSetupReader(OnyxStatusReader status, ILedgerReader led
     // and the answer is null: whether Onyx runs can't be told, which the step shows as a failed read that names Docker.
     private async ValueTask<Result<OnyxStatusReport>?> BoundedStatus(CancellationToken cancellationToken)
     {
-        var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);   // disposed only when the read ended: an abandoned read still holds its token
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);   // every exit with the read still running has its token cancelled first (the timeout cancels it below, the caller's cancel reaches it through the link), so disposing here is safe
         var read = Task.Run(async () => await status.Read(limit.Token).ConfigureAwait(false), CancellationToken.None);
         try
         {
@@ -72,13 +72,6 @@ internal sealed class OnyxSetupReader(OnyxStatusReader status, ILedgerReader led
             await limit.CancelAsync().ConfigureAwait(false);
             _ = read.ContinueWith(static finished => _ = finished.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);   // why: the abandoned read ends cancelled or faulted; nobody awaits it
             return null;
-        }
-        finally
-        {
-            if (read.IsCompleted)
-            {
-                limit.Dispose();
-            }
         }
     }
 }
