@@ -60,7 +60,7 @@ public abstract class EvalStoreContract
         Expect.That((await store.FindItem(Id("item-2"), CancellationToken.None)).IsError, "the refused duplicate was not stored");
     }
 
-    /// <summary>An item nobody added is AW-JUDGE-013.</summary>
+    /// <summary>An item nobody added is AW-JUDGE-014.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task An_unknown_item_is_AW_JUDGE_013()
@@ -70,8 +70,8 @@ public abstract class EvalStoreContract
         var found = await store.FindItem(Id("nope"), CancellationToken.None);
         var labelled = await store.RecordLabel(Id("nope"), LabelSource.Override, "ask", _t0, CancellationToken.None);
 
-        Expect.That(found.IsError && found.Error.Code == JudgeErrors.UnknownItem.Code, "FindItem says AW-JUDGE-013");
-        Expect.That(labelled.IsError && labelled.Error.Code == JudgeErrors.UnknownItem.Code, "RecordLabel says AW-JUDGE-013");
+        Expect.That(found.IsError && found.Error.Code == JudgeErrors.UnknownItem.Code, "FindItem says AW-JUDGE-014");
+        Expect.That(labelled.IsError && labelled.Error.Code == JudgeErrors.UnknownItem.Code, "RecordLabel says AW-JUDGE-014");
     }
 
     /// <summary>A secret in an input's values or keys never reaches the store, and what is stored stays JSON.</summary>

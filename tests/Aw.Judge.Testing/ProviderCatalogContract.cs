@@ -77,7 +77,7 @@ public abstract class ProviderCatalogContract
         Expect.That(jev.IsSuccess && jev.Value.Name == ProviderName.Jev, "jev is the jev provider");
     }
 
-    /// <summary>The allowlist is honoured: an excluded provider is AW-JUDGE-011, even when it is installed.</summary>
+    /// <summary>The allowlist is honoured: an excluded provider is AW-JUDGE-012, even when it is installed.</summary>
     [Fact]
     public void A_provider_asked_for_by_name_honours_the_allowlist()
     {
@@ -86,7 +86,7 @@ public abstract class ProviderCatalogContract
         Expect.That(excluded.IsError && excluded.Error.Code == JudgeErrors.ProviderExcluded.Code, "claude-cli is excluded by an allowlist of jev");
     }
 
-    /// <summary>An agent CLI that isn't installed, and rules, can't be asked by name: AW-JUDGE-012.</summary>
+    /// <summary>An agent CLI that isn't installed, and rules, can't be asked by name: AW-JUDGE-013.</summary>
     [Fact]
     public void A_provider_that_is_not_installed_or_is_rules_is_unavailable_by_name()
     {
@@ -99,7 +99,7 @@ public abstract class ProviderCatalogContract
         Expect.That(rules.IsError && rules.Error.Code == JudgeErrors.ProviderUnavailable.Code, "rules only closes a chain");
     }
 
-    /// <summary>The adjudicator is claude-cli, with the same refusals by name as any provider: AW-JUDGE-011 and AW-JUDGE-012.</summary>
+    /// <summary>The adjudicator is claude-cli, with the same refusals by name as any provider: AW-JUDGE-012 and AW-JUDGE-013.</summary>
     [Fact]
     public void The_adjudicator_is_claude_and_honours_the_allowlist_and_the_path()
     {

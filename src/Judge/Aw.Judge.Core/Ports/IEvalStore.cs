@@ -19,7 +19,7 @@ public interface IEvalStore
     /// <summary>Finds an item.</summary>
     /// <param name="id">The item id.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The item, or AW-JUDGE-013 when there is none.</returns>
+    /// <returns>The item, or AW-JUDGE-014 when there is none.</returns>
     public ValueTask<Result<EvalItem>> FindItem(EvalItemId id, CancellationToken cancellationToken);
 
     /// <summary>Gives an item a label from a source, replacing that source's earlier label (the other sources' labels stay).</summary>
@@ -28,7 +28,7 @@ public interface IEvalStore
     /// <param name="label">One of the question's outputs, or 'skip'.</param>
     /// <param name="at">When the label was given.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>Success, or AW-JUDGE-013 when there is no such item.</returns>
+    /// <returns>Success, or AW-JUDGE-014 when there is no such item.</returns>
     public ValueTask<Result<Unit>> RecordLabel(EvalItemId item, LabelSource source, string label, DateTimeOffset at, CancellationToken cancellationToken);
 
     /// <summary>The oldest item with no label (from the source, when one is given), oldest first by creation and then id.</summary>

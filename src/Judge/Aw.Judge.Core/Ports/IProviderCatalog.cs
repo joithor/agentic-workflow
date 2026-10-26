@@ -23,7 +23,7 @@ public interface IProviderCatalog
     /// </summary>
     /// <param name="name">The provider.</param>
     /// <param name="allowed">The --providers / AW_JUDGE_PROVIDERS allowlist, or null for every provider.</param>
-    /// <returns>The provider, AW-JUDGE-011 when the allowlist excludes it, or AW-JUDGE-012 when it can't be asked (its CLI is missing, or it is rules).</returns>
+    /// <returns>The provider, AW-JUDGE-012 when the allowlist excludes it, or AW-JUDGE-013 when it can't be asked (its CLI is missing, or it is rules).</returns>
     public Result<IModelProvider> Provider(ProviderName name, IReadOnlyCollection<ProviderName>? allowed);
 
     /// <summary>
@@ -31,6 +31,6 @@ public interface IProviderCatalog
     /// settings or hooks; a scratch directory; a minimal environment). Same refusals as <see cref="Provider"/> for claude-cli.
     /// </summary>
     /// <param name="allowed">The --providers / AW_JUDGE_PROVIDERS allowlist, or null for every provider.</param>
-    /// <returns>The provider, AW-JUDGE-011 when the allowlist excludes claude-cli, or AW-JUDGE-012 when the CLI is missing.</returns>
+    /// <returns>The provider, AW-JUDGE-012 when the allowlist excludes claude-cli, or AW-JUDGE-013 when the CLI is missing.</returns>
     public Result<IModelProvider> Adjudicator(IReadOnlyCollection<ProviderName>? allowed);
 }

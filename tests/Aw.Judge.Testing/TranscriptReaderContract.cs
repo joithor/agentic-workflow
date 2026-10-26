@@ -83,7 +83,7 @@ public abstract class TranscriptReaderContract
         AssertStandard(read.Value);
     }
 
-    /// <summary>A session with no transcript is AW-JUDGE-014.</summary>
+    /// <summary>A session with no transcript is AW-JUDGE-015.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task An_unknown_session_has_no_transcript()
@@ -92,10 +92,10 @@ public abstract class TranscriptReaderContract
 
         var found = await reader.FindSession(SessionId.From("no-such-session"), _none);
 
-        Expect.That(found.IsError && found.Error.Code == JudgeErrors.NoTranscript.Code, "an unknown session is AW-JUDGE-014");
+        Expect.That(found.IsError && found.Error.Code == JudgeErrors.NoTranscript.Code, "an unknown session is AW-JUDGE-015");
     }
 
-    /// <summary>A path that can't be read is AW-JUDGE-014.</summary>
+    /// <summary>A path that can't be read is AW-JUDGE-015.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_missing_file_has_no_transcript()
@@ -104,10 +104,10 @@ public abstract class TranscriptReaderContract
 
         var read = await reader.Read(path + ".missing", _none);
 
-        Expect.That(read.IsError && read.Error.Code == JudgeErrors.NoTranscript.Code, "a missing file is AW-JUDGE-014");
+        Expect.That(read.IsError && read.Error.Code == JudgeErrors.NoTranscript.Code, "a missing file is AW-JUDGE-015");
     }
 
-    /// <summary>With no transcripts at all (no projects directory), every lookup is AW-JUDGE-014 and nothing throws.</summary>
+    /// <summary>With no transcripts at all (no projects directory), every lookup is AW-JUDGE-015 and nothing throws.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task An_empty_reader_finds_nothing()
@@ -116,7 +116,7 @@ public abstract class TranscriptReaderContract
 
         var found = await reader.FindSession(StandardSession, _none);
 
-        Expect.That(found.IsError && found.Error.Code == JudgeErrors.NoTranscript.Code, "no projects directory is AW-JUDGE-014");
+        Expect.That(found.IsError && found.Error.Code == JudgeErrors.NoTranscript.Code, "no projects directory is AW-JUDGE-015");
     }
 
     private static void AssertStandard(Transcript actual)

@@ -160,10 +160,10 @@ printed on one line; a failure is one stderr line and nothing on stdout.
 | `eval import-turns <transcript.jsonl>... [--since 14d]` | Rebuilds `turn-progress` items from the Edit, Write and MultiEdit calls of Claude transcripts and labels each from what happened next in the same transcript (source `outcome`). Only this spelling is the second word: any other word after `eval` is a question name, so `eval import-turn` is an unknown question | `{"imported": n, "skipped": n, "unreadable": n}` (turns with no edits or already imported; files that can't be read). Files older than `--since` are left out |
 
 Exit codes follow the table above: 0 ok, 1 error, 64 usage (a missing, extra or unknown argument, a flag without its value, a bad
-`--limit`, an `adjudicate` or `eval` provider the `--providers` allowlist excludes: AW-JUDGE-011). Errors that exit 1: an unknown
+`--limit`, an `adjudicate` or `eval` provider the `--providers` allowlist excludes: AW-JUDGE-012). Errors that exit 1: an unknown
 question or variant, `--labels` or `--collapse` outside the question's values, `--since` that doesn't look like `14d`, no labelled item
-to score (the message names the commands that make some), an unreadable `--replay` file, a provider whose CLI isn't on `PATH` (AW-JUDGE-012;
-for `adjudicate` that is `claude`), `label set` of an unknown item (AW-JUDGE-013), a transcript that can't be read (AW-JUDGE-014), a store
+to score (the message names the commands that make some), an unreadable `--replay` file, a provider whose CLI isn't on `PATH` (AW-JUDGE-013;
+for `adjudicate` that is `claude`), `label set` of an unknown item (AW-JUDGE-014), a transcript that can't be read (AW-JUDGE-015), a store
 that can't be used.
 
 **Redaction.** Every writer redacts string values and object keys through the redactor before capping: the input of an eval item, the
@@ -234,7 +234,7 @@ decides or escalates, and before its envelope is written, the judge prunes old d
 | `brief-scope` | `{agentType, goal, acceptanceCriteria, proofCommand, skillInternal?}` | `ready`, `missing`, `needs_design` | brief | 0.6 | 10 s | `agentType` `Explore`, `claude-code-guide` or `lean-researcher`, or `skillInternal: true` → `ready`; a blank goal or acceptance criteria → `missing` | none (escalates) |
 | `ask-check` | `{transcriptTail}` | `continue`, `ask` | transcript | 0.6 | 10 s | the deny list → `ask`: merge, delete, force push (`force-push`, `force pushed`, …), or a push with `-f`, `--force`, `--force-with-lease` or a `+refspec`; a plain push isn't listed | `ask` |
 | `rule-check` | `{rule, hunk}` | `violated`, `fine`, `n/a` | diff | 0.6 | 10 s | a blank hunk → `n/a` | none |
-| `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence`, `api-evidence` (an HTTP or CLI contract check), `db-evidence` (a persisted-state check) or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
+| `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence`, `api-evidence` (an HTTP or CLI contract check), `db-evidence` (a persisted-state check) or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`; a `partial` or `unresolved` answer without a non-blank reason is skipped like a failed one, failure row `no-reasons`, and the chain goes on; Jev, which only classifies, is not asked) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved`; a diff over 100,000 characters is cut by whole files, `src/` files first, and the prompt ends with a line naming each omitted file and its size (a single file, or a first file that alone is over the cap, is cut at a line and named as cut) | none |
 | `choose` | `{prompt, state: {<fact>: <value>}, choices: [{name, criterion}], threshold?}`; per call: 2 to 32 choices, each `name` matching `[a-z][A-Za-z0-9]{0,31}`, distinct and never `uncertain`, each `criterion` 1 to 400 characters, a non-blank `prompt`, a non-empty `state`, `threshold` above 0 and at most 1; anything else is invalid input | the call's choice names (+ `probabilities` in the envelope) | brief | config.json's `choose` entry, else the call's `threshold`, else 0.6 | 15 s | none | none (escalates) |
 | `turn-progress` | `{problem, turnDiff, acceptanceCriteria?, priorDiffStat?, signals?}` (the last three default to empty); a blank `problem` is invalid input | `progressing`, `stalled`, `regressing`, `off-target` | diff | 0.7 | 10 s | a blank `turnDiff` → `stalled` | none |
 | `ui-element-repair` | `{brokenSelector, step, candidates: [{index, role, accessibleName, testId, text}]}` (the four strings may be null) | `repaired` (+ `chosenIndex`), `no-good-candidate` | code | 0.6 | 10 s | no candidates → `no-good-candidate` | none |
@@ -260,10 +260,11 @@ invalid input, unknown question).
 | AW-JUDGE-005 | NotFound | `brief get` of a tool use id with no brief |
 | AW-JUDGE-007 | Invalid | `config.json` can't be read as a judge config |
 | AW-JUDGE-010 | Invalid | The `--providers` flag or `AW_JUDGE_PROVIDERS` is malformed (a usage error, 64) |
-| AW-JUDGE-011 | Invalid | `eval --provider`, or `adjudicate` (which needs `claude-cli`), names a provider the `--providers` allowlist excludes (a usage error, 64) |
-| AW-JUDGE-012 | NotFound | `eval --provider` names a provider that can't be asked (its CLI is not on `PATH`, or it is `rules`), or `adjudicate` can't find `claude` |
-| AW-JUDGE-013 | NotFound | `label set` of an item id no eval item has |
-| AW-JUDGE-014 | NotFound | A transcript that can't be read (`label outcomes`, `eval import-turns`) |
+| AW-JUDGE-011 | Invalid | `why` found the decision row but a column can't be read (a timestamp that isn't ISO-8601 UTC text): exit 2, one stderr line naming the decision and the column |
+| AW-JUDGE-012 | Invalid | `eval --provider`, or `adjudicate` (which needs `claude-cli`), names a provider the `--providers` allowlist excludes (a usage error, 64) |
+| AW-JUDGE-013 | NotFound | `eval --provider` names a provider that can't be asked (its CLI is not on `PATH`, or it is `rules`), or `adjudicate` can't find `claude` |
+| AW-JUDGE-014 | NotFound | `label set` of an item id no eval item has |
+| AW-JUDGE-015 | NotFound | A transcript that can't be read (`label outcomes`, `eval import-turns`) |
 
 ## Providers
 
