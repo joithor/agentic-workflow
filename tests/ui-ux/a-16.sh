@@ -19,26 +19,35 @@ if [ -z "$row" ]; then
   uxu_die "no workflow row on Home"
 fi
 d click --node-id "$row" >/dev/null || uxu_die "could not open the instance sheet"
-d wait-for --name InstanceTitle --state visible --wait-ms 30000 >/dev/null || uxu_die "the instance sheet never showed its title"
+
+# AutomationProperties.Name wins over x:Name: InstanceTitle is named by its own text and EdgeTab by "Reopen workflow ...", so
+# neither is found by --name. The sheet body (InstanceBody) has no automation name, and its first TextBlock is the title;
+# the edge tab is the Button named "Reopen ...".
+d wait-for --name InstanceBody --state visible --wait-ms 30000 >/dev/null || uxu_die "the instance sheet never showed its body"
 sleep 2
-title="$(d tree --name InstanceTitle --depth 0 | jq -r '[.. | objects | .text? // empty] | .[0]')"
+title="$(d tree --name InstanceBody --depth 6 | jq -r '[.. | objects | select(.type == "TextBlock" and ((.text // "") != "")) | .text][0] // empty')"
 [ -n "$title" ] || uxu_die "the sheet has no readable title"
+
+edge_id() { "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" search --type Button --limit 200 | jq -r '[.matches[] | select((.name // "") | startswith("Reopen"))][0].id // empty'; }
+edge_text() { "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" tree --node-id "$(edge_id)" --depth 4 | jq -r '[.. | objects | select(.type == "TextBlock") | .text // empty][0] // empty'; }
+edge_shown() { local id; id="$(edge_id)"; [ -n "$id" ] && "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" props --node-id "$id" | grep "IsVisible" | grep -qi true; }
+export -f edge_id edge_text edge_shown
+export UXU_DRIVER AW_UI_DRIVER_DIR
+
 d key --chord Escape >/dev/null || uxu_die "Esc failed"
-d wait-for --name EdgeTab --state visible --wait-ms 10000 >/dev/null || uxu_die "no edge tab after Esc"
+for _ in $(seq 1 20); do edge_shown && break; sleep 0.5; done
+edge_shown || uxu_die "no edge tab after Esc"
 
 expect "the edge tab reads the readable title ($title)" \
-  bash -c '[ "$("$0" --dir "$1" tree --name EdgeTab --depth 4 | jq -r "[.. | objects | .text? // empty] | .[0]")" = "$2" ]' \
-  "$UXU_DRIVER" "$AW_UI_DRIVER_DIR" "$title"
+  bash -c '[ "$(edge_text)" = "$0" ]' "$title"
 expect "the edge tab text is not a raw address" \
-  bash -c '! "$0" --dir "$1" tree --name EdgeTab --depth 4 | jq -r "[.. | objects | .text? // empty] | .[0]" | grep -qE "^ITM-|^desk:WFI-|/[0-9]+$"' \
-  "$UXU_DRIVER" "$AW_UI_DRIVER_DIR"
+  bash -c 't="$(edge_text)"; [ -n "$t" ] && ! printf %s "$t" | grep -qE "^ITM-|^desk:WFI-|/[0-9]+$"'
 
 for page in Work Agents System; do
   d click --type ListBoxItem --name "$page" >/dev/null || uxu_die "no $page tab"
   sleep 2
   expect "the edge tab is gone on $page" \
-    bash -c '! "$0" --dir "$1" props --name EdgeTab | grep -E "IsVisible" | grep -qi true' \
-    "$UXU_DRIVER" "$AW_UI_DRIVER_DIR"
+    bash -c '! edge_shown'
 done
 
 uxu_done
