@@ -21,7 +21,7 @@ design.
 - `run-test` and `run-ui` print `evidence`, the run record path the skill passes back to `advance reproduce` and
   `record-run`.
 - `resume` prints `next`; `status` prints the state with `baseline.commit`.
-- `judge` prints `decision`, `reasons` and `status` (an escalation is asked once more, then falls back to `unresolved`; the status stays `active`).
+- `judge` prints `decision`, `reasons` and `status` (an escalation is asked once more, then falls back to `unresolved`; the status stays `active`). A `partial` or `unresolved` answer with no reasons counts as an escalation (code `no-reasons`): it names nothing the implementer can act on.
 
 ## Commands
 
