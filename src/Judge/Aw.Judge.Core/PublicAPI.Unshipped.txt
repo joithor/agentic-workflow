@@ -453,6 +453,7 @@ static Aw.Judge.Core.Ids.ToolUseId.TryParse(string? s, System.IFormatProvider? p
 static readonly Aw.Judge.Core.Errors.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.Errors.JudgeErrors.UnreadableDecision -> Aw.Kernel.ErrorDefinition!
 Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Degraded = 2 -> Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Down = 3 -> Aw.Judge.Core.Health.HealthStatus
@@ -788,6 +789,7 @@ const Aw.Judge.Core.Questions.UiElementRepairQuestion.Repaired = "repaired" -> s
 const Aw.Judge.Core.Questions.UntrustedText.BriefCap = 8000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.DiffCap = 12000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.FieldCap = 2000 -> int
+const Aw.Judge.Core.Questions.UntrustedText.ResolutionDiffCap = 100000 -> int
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksOff = "looks-off" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksRight = "looks-right" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.Name = "visual-critique" -> string!
@@ -849,6 +851,7 @@ static Aw.Judge.Core.Questions.UiCandidate.operator ==(Aw.Judge.Core.Questions.U
 static Aw.Judge.Core.Questions.UiElementRepairInput.operator !=(Aw.Judge.Core.Questions.UiElementRepairInput? left, Aw.Judge.Core.Questions.UiElementRepairInput? right) -> bool
 static Aw.Judge.Core.Questions.UiElementRepairInput.operator ==(Aw.Judge.Core.Questions.UiElementRepairInput? left, Aw.Judge.Core.Questions.UiElementRepairInput? right) -> bool
 static Aw.Judge.Core.Questions.UiElementRepairQuestion.Definition.get -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.UiElementRepairInput!>!
+static Aw.Judge.Core.Questions.UntrustedText.CappedDiff(string! diff, int cap) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.Capped(string! text, int cap) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.Neutralized(string! text) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.OneLine(string! text) -> string!
