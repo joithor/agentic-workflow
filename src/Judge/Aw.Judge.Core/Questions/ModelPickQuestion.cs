@@ -24,7 +24,7 @@ public static class ModelPickQuestion
     /// <summary>The most candidates a call may offer.</summary>
     public const int MaxCandidates = 32;
 
-    /// <summary>The cap on the brief and the files' text together, in characters. M-0 replaces this with the measured cap.</summary>
+    /// <summary>The cap on the brief and the files' text together, in characters. Final: M-0 (spec §4.3, 2026-10-26) showed Jev accepts and reads a full 100,000-character input.</summary>
     public const int PackCap = 100_000;
 
     /// <summary>
