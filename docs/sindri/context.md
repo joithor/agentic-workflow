@@ -645,12 +645,13 @@ the graph, the overrides and the pins are never touched, a feature no hint names
 `map v<N>: <hints> concept hint(s) from <searches> search(es) (<tier> model[: <model>])`, and the job result carries the version, the outcome, the counts, the tier and the model.
 
 The scan picks its model from the size of the map (owner, q121; issue 1172). Before the first call it counts the map's features and estimates the first prompt's tokens
-(characters / 4, rounded up). Above 150 features or 10,000 prompt tokens it asks for the `strong` tier, otherwise the `cheap` one, and both calls of the scan ask for
-the same tier. The thresholds are `ConceptScanTiers.Default` in `Aw.Context.Core`, not profile keys. The model port maps the tier to a model per agent CLI: `cheap`
-names none, so each CLI keeps the small fast model Judge already runs for it (`haiku` for Claude, `gpt-6-luna` for Codex, `gpt-5.6-luna-none-fast` for Cursor); `strong` names `sonnet` for `claude --model`,
-`gpt-6` for `codex exec --model` and `gpt-5.6` for `cursor-agent --model` (`ModelTierNames.Default` in `Aw.Sindri.Host`). The model port walks the CLIs in the same order as
-before and the first that answers wins, so a scan that falls through to the next CLI asks that CLI for its own strong model. The scan's report, and so the job result, records the tier and, for
-`strong`, the model the answering CLI was asked for; nothing else asks for a tier, so every other model call is unchanged.
+(characters / 4, rounded up). Above `context.conceptScan.strongAboveFeatures` (default 150) features or `context.conceptScan.strongAbovePromptTokens` (default 10,000;
+the input cap allows about 15,000) tokens it asks for the `strong` tier, otherwise the `cheap` one, and both calls of the scan ask for the same tier. The model port
+asks each agent CLI for the model the profile names for that CLI and tier (`context.conceptScan.models.<claude|codex|cursor>.<cheap|strong>`). Defaults: Claude Code
+`haiku` for cheap and `sonnet` for strong (aliases `claude --model` takes); Codex and Cursor have none, so for them both tiers run the CLI's own default until the profile names a
+model (a wrong name makes that CLI fail, so none is guessed). The port walks the CLIs in the same order as before and the first that answers wins, so a scan that
+falls through to the next CLI asks that CLI for its own model name for the tier. The scan's report, and so the job result, records the tier and the model the answering CLI was
+asked for (empty when that CLI ran its default); nothing else asks for a tier, so every other model call is unchanged.
 
 **Rules changes start a refresh too (issue 1041).** Each map version records a hash of the rules it was built under (`MapRuleset`, table column
 `map_version.ruleset`): a built-in `RulesVersion` that is bumped in every change to the clustering or extraction rules, and per mapped repo the deny
