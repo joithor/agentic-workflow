@@ -191,6 +191,8 @@ repos:
       demote: [test, fixture, demo]
 ```
 
+`sindri profile approve` also says what a changed role does: under the changed-keys line, one line per changed `roles.<role>` key and per role a changed `demote` list names, with how many of the checkout's tracked files (`git ls-files`, so the files in the index, not a given commit) match the role's globs, and how many matched under the approved globs: `repos.web-app.index.roles.test: 412 files on HEAD (was 0)` (`was` is 0 for a new key). It is read-only (`git ls-files`) and bounded: one listing per repo, 5 seconds, at most 200,000 files; a failure, a timeout or more files than that prints `repos.web-app.index.roles.test: count unavailable` and the preview goes on. The JSON preview carries the same lines in `roleCounts` (left out when no role key changed).
+
 
 #### `index.concepts`
 
