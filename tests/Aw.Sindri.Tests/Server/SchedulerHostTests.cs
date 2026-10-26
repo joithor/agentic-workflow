@@ -227,7 +227,7 @@ public sealed class SchedulerHostTests
             .AddScoped<IScheduledService, FailingService>()
             .BuildServiceProvider();
         var clock = new SteppedClock(_h.Clock);
-        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(approvals, builtIns ?? [], new NoPauses()), new ServiceRunGuard(), _h.Held, _h.Callers, clock, _log);
+        using var scheduler = new SchedulerHost(provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(approvals, builtIns ?? [], new NoPauses(), new LiveSchedule()), new ServiceRunGuard(), _h.Held, _h.Callers, clock, _log);
         await scheduler.StartAsync(Token);
         for (var step = 0; !done(); step++)
         {

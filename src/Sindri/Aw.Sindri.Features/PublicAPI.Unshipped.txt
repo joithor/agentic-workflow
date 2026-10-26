@@ -12,11 +12,9 @@ Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Amount.get -> int?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Amount.init -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Answer.get -> Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Answer.init -> void
-Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer = null, string? Text = null, int? Amount = null, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb = null, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge = null) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.CarriesProtectedFields.get -> bool
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Challenge.init -> void
-Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Equals(Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest? other) -> bool
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Instance.get -> string!
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Instance.init -> void
@@ -2217,7 +2215,9 @@ Aw.Sindri.Features.ListRequests.RequestView.State.get -> Aw.Sindri.Core.Requests
 Aw.Sindri.Features.ListRequests.RequestView.State.init -> void
 Aw.Sindri.Features.ListRequests.RequestView.Text.get -> string!
 Aw.Sindri.Features.ListRequests.RequestView.Text.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot, out Aw.Sindri.Core.Ids.JobId? Job, out System.Collections.Generic.IReadOnlyList<string!>! Actions, out string? Description, out string? PausedBy, out System.DateTimeOffset? PausedAt) -> void
+Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot, out Aw.Sindri.Core.Ids.JobId? Job, out System.Collections.Generic.IReadOnlyList<string!>! Actions, out string? Description, out string? PausedBy, out System.DateTimeOffset? PausedAt, out System.DateTimeOffset? OverdueSince) -> void
+Aw.Sindri.Features.ListServices.ServiceView.OverdueSince.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ListServices.ServiceView.OverdueSince.init -> void
 Aw.Sindri.Features.ListServices.ServiceView.Job.get -> Aw.Sindri.Core.Ids.JobId?
 Aw.Sindri.Features.ListServices.ServiceView.Job.init -> void
 Aw.Sindri.Features.ListServices.ServiceView.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -2228,7 +2228,7 @@ Aw.Sindri.Features.ListServices.ServiceView.PausedAt.get -> System.DateTimeOffse
 Aw.Sindri.Features.ListServices.ServiceView.PausedAt.init -> void
 Aw.Sindri.Features.ListServices.ServiceView.PausedBy.get -> string?
 Aw.Sindri.Features.ListServices.ServiceView.PausedBy.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot, Aw.Sindri.Core.Ids.JobId? Job, System.Collections.Generic.IReadOnlyList<string!>! Actions, string? Description = null, string? PausedBy = null, System.DateTimeOffset? PausedAt = null) -> void
+Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot, Aw.Sindri.Core.Ids.JobId? Job, System.Collections.Generic.IReadOnlyList<string!>! Actions, string? Description = null, string? PausedBy = null, System.DateTimeOffset? PausedAt = null, System.DateTimeOffset? OverdueSince = null) -> void
 Aw.Sindri.Features.PauseService.PauseServiceRequest
 Aw.Sindri.Features.PauseService.PauseServiceRequest.<Clone>$() -> Aw.Sindri.Features.PauseService.PauseServiceRequest!
 Aw.Sindri.Features.PauseService.PauseServiceRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name) -> void
@@ -4898,3 +4898,8 @@ static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator
 static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.get -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.init -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandKind.Rewind = 6 -> Aw.Sindri.Features.ApplyCommand.ApplyCommandKind
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! Instance, Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer = null, string? Text = null, int? Amount = null, Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb = null, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge = null, string? To = null) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, out string? To) -> void
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.get -> string?
+Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.init -> void
