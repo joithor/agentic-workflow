@@ -1,5 +1,3 @@
-using Aw.Sindri.Testing;
-using Aw.Sindri.Core.Text;
 using System.Text.Json;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -7,9 +5,11 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RecordServiceRun;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Server;
