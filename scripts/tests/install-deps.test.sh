@@ -172,6 +172,7 @@ expect "AW_NO_SYSTEM_INSTALL=1 with only bubblewrap missing prints the command a
 fake bwrap
 
 # 6. macOS: no Linux-only packages are required.
+fake terminal-notifier
 run AW_DEPS_OS=Darwin AW_DRY_RUN=1
 expect "macOS does not ask for bwrap" 0 "tmux: found"
 printf '%s\n' "$OUT" | has "bwrap" && fail "macOS must not mention bwrap" || ok "macOS must not mention bwrap"
@@ -181,6 +182,12 @@ rm "$BIN/tmux"; : >"$LOG"
 run AW_DEPS_OS=Darwin AW_FAKE_PROVIDES=tmux AW_STATE_DIR="$TMPROOT/nostate"
 grep -q "^brew install tmux$" "$LOG" && ok "macOS installs a missing tmux with brew" || fail "brew not run: $(cat "$LOG")"
 fake tmux
+
+# 6c. macOS without terminal-notifier: brew installs it (Sindri's clickable banners).
+rm "$BIN/terminal-notifier"; : >"$LOG"
+run AW_DEPS_OS=Darwin AW_FAKE_PROVIDES=terminal-notifier AW_STATE_DIR="$TMPROOT/nostate"
+grep -q "^brew install terminal-notifier$" "$LOG" && ok "macOS installs a missing terminal-notifier with brew" || fail "brew not run: $(cat "$LOG")"
+fake terminal-notifier
 
 # 7. Temporal: a cached fetch is found in the cache layout sindri serve reads, and `temporal --version` is run.
 fake bwrap
