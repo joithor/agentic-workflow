@@ -87,11 +87,10 @@ public sealed class RewindScopingAnswersTests(SindriTimeSkippingServer server) :
         "human:cli", view.Run!.Value, OutcomeName.From("answered"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:answers")] = batch },
         Tokens: 0, StepRuntime.Desk, new string('f', 64));
 
-    /// <summary>The stored 'fact:answerLog', read from the instance's fact row through the fact contents.</summary>
+    /// <summary>The stored 'fact:answerLog', read through the instance's fact hashes and the fact contents, as the facts route does.</summary>
     private static async Task<JsonArray> AnswerLog(IServiceProvider sindri, WorkflowHandle<RecipeWorkflow, RecipeResult> handle, CancellationToken ct)
     {
-        var row = (await handle.QueryAsync(static wf => wf.GetInstance())).Facts.Single(f => string.Equals(f.Key, "fact:answerLog", StringComparison.Ordinal));
-        var hash = row.Ref!.Hash!.Replace("sha256:", string.Empty, StringComparison.Ordinal);
+        var hash = (await handle.QueryAsync(static wf => wf.GetInstance())).FactShas!["fact:answerLog"];   // the fact query GetInstanceFact reads: the row's own ref is null for a payload
         var content = await sindri.GetRequiredService<IFactContents>().Read(new FactValue("fact:sha256:" + hash, hash, HeadSha: null), ct);
         return (JsonArray)JsonNode.Parse(content.Value.Span)!;
     }
