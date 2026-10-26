@@ -228,12 +228,15 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
         StepVerdicts.Of(result, question.Outputs, run.Threshold, lacksReasons: result is ProviderDecided decided && question.LacksReasons(decided));
 
     // The failure row's reason: the provider's own, or the engine's when the provider answered but the answer can't be used.
-    private static string FailureCode(StepVerdict verdict, ProviderResult result) => verdict switch
+    private static string FailureCode(StepVerdict verdict, ProviderResult result)
     {
-        StepVerdict.NoReasons => EvaluationReasons.NoReasons,
-        _ when result is ProviderDecided => EvaluationReasons.OutOfEnum,
-        _ => result.ReasonCode,
-    };
+        if (verdict == StepVerdict.NoReasons)
+        {
+            return EvaluationReasons.NoReasons;
+        }
+
+        return result is ProviderDecided ? EvaluationReasons.OutOfEnum : result.ReasonCode;
+    }
 
     // opinion: what the fallback rules would have said; telemetry only, never a change to the model's decision.
     private static Settlement Decided(EvaluationRun run, ProviderAnswer at, ProviderDecided answer, string? opinion)
