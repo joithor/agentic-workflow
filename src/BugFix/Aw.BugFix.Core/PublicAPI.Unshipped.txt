@@ -686,3 +686,4 @@ Aw.BugFix.Core.Model.Candidate.JudgeAsks.init -> void
 Aw.BugFix.Core.Model.Candidate.JudgeEscalations.get -> int
 Aw.BugFix.Core.Model.Candidate.JudgeEscalations.init -> void
 const Aw.BugFix.Core.Model.Candidate.MaxJudgeAsks = 2 -> int
+Aw.BugFix.Core.Model.TicketSource.Github = 3 -> Aw.BugFix.Core.Model.TicketSource
