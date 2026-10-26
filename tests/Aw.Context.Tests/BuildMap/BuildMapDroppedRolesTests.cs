@@ -18,11 +18,11 @@ public sealed class BuildMapDroppedRolesTests : IDisposable
         [
             new ContextRepo(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes")
             {
-                DenyPaths = [.. PathDenylist.Defaults, "**/*.md", "src/ui/**", "nothing/**"],
+                DenyPaths = [.. PathDenylist.Defaults, "*.md", "src/ui/**", "nothing/**"],
                 DemotePaths = ["config/**"],
                 Roles =
                 [
-                    new RepoRole("docs", Demoted: false, ["**/*.md"]),
+                    new RepoRole("docs", Demoted: false, ["*.md"]),
                     new RepoRole("ui", Demoted: false, ["src/ui/**"]),
                     new RepoRole("nothing", Demoted: false, ["nothing/**"]),
                     new RepoRole("config", Demoted: true, ["config/**"]),
