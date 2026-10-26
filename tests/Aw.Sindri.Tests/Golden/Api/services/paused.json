@@ -33,7 +33,8 @@
       "job": null,
       "actions": [
         "run"
-      ]
+      ],
+      "description": "Scans each new context map version for the concepts the code names, for the glossary."
     },
     {
       "name": "context-map-refresh",
