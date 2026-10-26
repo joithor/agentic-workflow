@@ -57,7 +57,7 @@ public sealed class RewindEvidenceUpgradeTests(SindriTimeSkippingServer server) 
             var runs = new List<RunToken>();
             foreach (var state in _passes)
             {
-                await Report(handle, state, runs);
+                await Report(handle, state, runs, _harness.Fact("the drafted scope"));
             }
 
             var parked = await WorkflowsHarness.Until(handle, static v => v.State == "parked");
@@ -79,11 +79,10 @@ public sealed class RewindEvidenceUpgradeTests(SindriTimeSkippingServer server) 
         }, ct);
     }
 
-    private static async Task Report(WorkflowHandle<RecipeWorkflow, RecipeResult> handle, string state, List<RunToken> runs)
+    private static async Task Report(WorkflowHandle<RecipeWorkflow, RecipeResult> handle, string state, List<RunToken> runs, FactValue output)
     {
         var open = await WorkflowsHarness.Until(handle, v => v.State == state && v.Run is { } run && !runs.Contains(run));
         runs.Add(open.Run!.Value);
-        var output = new FactValue("fact:sha256:" + new string('b', 64), new string('b', 64), HeadSha: null);
         var report = new StepCompleted("human:cli", open.Run.Value, OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
         _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(RealTime.NewGuid().ToString("N")));
     }
