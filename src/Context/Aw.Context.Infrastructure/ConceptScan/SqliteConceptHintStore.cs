@@ -11,7 +11,7 @@ using Microsoft.Data.Sqlite;
 namespace Aw.Context.Infrastructure.ConceptScan;
 
 /// <summary>
-/// The concept hints in context.db (migration 0013_s5g_concept_hint), one row per version. A read opens the file read-only and never migrates it: no file, or a file from before the table, is a version with no hints.
+/// The concept hints in context.db (migration 0014_s5g_concept_hint), one row per version. A read opens the file read-only and never migrates it: no file, or a file from before the table, is a version with no hints.
 /// A write migrates first and replaces the version's row in one transaction.
 /// </summary>
 internal sealed class SqliteConceptHintStore(ContextDatabase database) : IConceptHintStore
