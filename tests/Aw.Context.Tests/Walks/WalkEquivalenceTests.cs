@@ -116,7 +116,7 @@ public sealed class WalkEquivalenceTests
     private static async Task<string> FillTwoRepoHistory(int degree, string? hangOn)
     {
         using var world = await World(degree, TwoRepoHistory(hangOn), twoRepos: true);
-        var scope = hangOn is null ? MapWorld.Human : MapWorld.HumanWith("""{"deadline":"100ms"}""");
+        var scope = hangOn is null ? MapWorld.Human : MapWorld.HumanWith("""{"history":{"deadline":"100ms"}}""");
         var window = HistoryWindow.Of(since: null, before: null).Value;
         return Json(await Engines.Advancing(world.Clock, () => world.Engine.History(_anchors, window, MapRead.Current, scope, MapWorld.None).AsTask()));
     }
@@ -191,7 +191,7 @@ public sealed class WalkEquivalenceTests
         var serial = await FillTwoRepoHistory(degree: 1, hangOn: "aw-split-panes");
         var parallel = await FillTwoRepoHistory(degree: 8, hangOn: "aw-split-panes");
 
-        Assert.Contains("SND-CONTEXT-160", serial, StringComparison.Ordinal);
+        Assert.Contains("context.history.deadline", serial, StringComparison.Ordinal);
         Assert.Equal(serial, parallel);
     }
 }
