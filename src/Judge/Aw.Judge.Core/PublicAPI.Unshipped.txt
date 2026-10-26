@@ -1988,3 +1988,8 @@ static Aw.Judge.Core.Questions.ModelPickQuestion.Unreadable.get -> Aw.Judge.Core
 static Aw.Judge.Core.Questions.ModelPickWithheld.operator !=(Aw.Judge.Core.Questions.ModelPickWithheld? left, Aw.Judge.Core.Questions.ModelPickWithheld? right) -> bool
 static Aw.Judge.Core.Questions.ModelPickWithheld.operator ==(Aw.Judge.Core.Questions.ModelPickWithheld? left, Aw.Judge.Core.Questions.ModelPickWithheld? right) -> bool
 static Aw.Judge.Core.Questions.UntrustedText.CappedFiles(System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Questions.ModelPickFile!>! files, int cap) -> Aw.Judge.Core.Questions.CappedFileSet!
+const Aw.Judge.Core.Questions.ModelPickPack.Denied = "denied" -> string!
+const Aw.Judge.Core.Questions.ModelPickPack.Secret = "secret" -> string!
+const Aw.Judge.Core.Questions.ModelPickQuestion.JevInputCap = 130000 -> int
+static Aw.Judge.Core.Questions.ModelPickQuestion.Kinds.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.Judge.Core.Errors.JudgeErrors.ModelPickInput -> Aw.Kernel.ErrorDefinition!

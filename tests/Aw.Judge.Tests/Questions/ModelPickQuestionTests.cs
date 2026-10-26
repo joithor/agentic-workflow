@@ -204,7 +204,7 @@ public sealed class ModelPickQuestionTests
         Assert.Contains("src/App.cs", prompt, StringComparison.Ordinal);
         Assert.DoesNotContain("FILE_TEXT_ONE", prompt, StringComparison.Ordinal);
         Assert.DoesNotContain("FILE_TEXT_TWO", prompt, StringComparison.Ordinal);
-        Assert.DoesNotContain(ModelPickJson.Brief, prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain(Brief, prompt, StringComparison.Ordinal);
         Assert.Contains("FILE_TEXT_ONE", call.Input?.ToJsonString(), StringComparison.Ordinal);   // why: the text rides in the request's state, once
         Assert.Equal(["m1", "m2", "m3"], call.Question.Outputs);
     }
@@ -225,10 +225,10 @@ public sealed class ModelPickQuestionTests
         var jev = Jev().Decides("m1", 0.9);
         var files = new[]
         {
-            ("docs/guide.md", ModelPickJson.Lines(30_000)),
-            ("src/a.cs", ModelPickJson.Lines(45_000)),
-            ("src/b.cs", ModelPickJson.Lines(45_000)),
-            ("docs/z.md", ModelPickJson.Lines(10_000)),
+            ("docs/guide.md", Lines(30_000)),
+            ("src/a.cs", Lines(45_000)),
+            ("src/b.cs", Lines(45_000)),
+            ("docs/z.md", Lines(10_000)),
         };
 
         _ = await new QuestionRun().AskByName("model-pick", Input(files, brief: "Draft."), jev);
@@ -246,7 +246,7 @@ public sealed class ModelPickQuestionTests
     {
         var jev = Jev().Decides("m1", 0.9);
 
-        _ = await new QuestionRun().AskByName("model-pick", Input([("src/big.cs", ModelPickJson.Lines(150_000))], brief: "Draft."), jev);
+        _ = await new QuestionRun().AskByName("model-pick", Input([("src/big.cs", Lines(150_000))], brief: "Draft."), jev);
 
         var call = Assert.Single(jev.Calls);
         var sent = JsonNode.Parse(call.Input!.ToJsonString())!;   // why: the evaluator always hands a provider the input as JSON

@@ -10,5 +10,40 @@ public static partial class UntrustedText
     /// <param name="files">The files, with their text.</param>
     /// <param name="cap">How many characters of text to keep.</param>
     /// <returns>The kept files (in the order given), the dropped ones and the cut one.</returns>
-    public static CappedFileSet CappedFiles(IReadOnlyList<ModelPickFile> files, int cap) => throw new NotSupportedException("model-pick is not built yet");
+    public static CappedFileSet CappedFiles(IReadOnlyList<ModelPickFile> files, int cap)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        if (files.Sum(static f => f.Text.Length) <= cap)
+        {
+            return new CappedFileSet(files, [], []);
+        }
+
+        var sections = files.Select(static f => (f.Path, f.Text)).ToList();
+        var order = Enumerable.Range(0, files.Count).OrderBy(i => IsSource(files[i].Path) ? 0 : 1).ThenBy(static i => i).ToList();
+        var kept = cap > 0 ? Fitting(sections, order, cap) : [];
+        int? cutIndex = cap > 0 && kept.Count == 0 ? order[0] : null;
+        List<ModelPickFile> stayed = [];
+        List<ModelPickOmitted> omitted = [];
+        List<ModelPickCut> cut = [];
+        for (var i = 0; i < files.Count; i++)
+        {
+            var file = files[i];
+            if (i == cutIndex)
+            {
+                var text = CutAtLine(file.Text, cap);
+                stayed.Add(file with { Text = text });
+                cut.Add(new ModelPickCut(file.Path, text.Length, file.Text.Length));
+            }
+            else if (kept.Contains(i))
+            {
+                stayed.Add(file);
+            }
+            else
+            {
+                omitted.Add(new ModelPickOmitted(file.Path, file.Text.Length, "cap"));
+            }
+        }
+
+        return new CappedFileSet(stayed, omitted, cut);
+    }
 }
