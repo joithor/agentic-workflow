@@ -151,6 +151,12 @@
       "source": "spec 7.3: recommended is set on at most one option"
     },
     {
+      "file": "questions.no-recommended.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "#1204: every question has exactly one recommended option"
+    },
+    {
       "file": "questions.six.invalid.json",
       "schema": "questions.json",
       "valid": false,

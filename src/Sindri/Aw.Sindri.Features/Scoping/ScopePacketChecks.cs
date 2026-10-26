@@ -86,6 +86,7 @@ internal static partial class ScopePacketChecks
         ScopeRules.Chal1 => ChallengerDone,
         ScopeRules.Chal2 => ChallengerDiffers,
         ScopeRules.Map1 => Workstreams,
+        ScopeRules.Qst1 => QuestionsRecommended,
         _ => throw new InvalidOperationException($"No body for rule {id}."),
     };
 }

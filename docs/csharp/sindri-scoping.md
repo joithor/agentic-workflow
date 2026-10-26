@@ -28,7 +28,7 @@ like `desk --out`, is refused inside a git worktree (`SND-SCOPING-002`); with an
 
 ## Rules
 
-`SCP-CITE-001/002`, `SCP-COV-001..005`, `SCP-LENS-001`, `SCP-ACC-001..005`, `SCP-ANS-001`, `SCP-TRUST-001`, `SCP-CHAL-001/002`, `SCP-MAP-001` as in §8.2,
+`SCP-CITE-001/002`, `SCP-COV-001..005`, `SCP-LENS-001`, `SCP-ACC-001..005`, `SCP-ANS-001`, `SCP-TRUST-001`, `SCP-CHAL-001/002`, `SCP-MAP-001` as in §8.2, `SCP-QST-001` (#1204: each question in `fact:questions` has two or three options and exactly one recommended),
 plus `SCP-SCHEMA-001` (SC-K's: a model's `scopeMap` and `acceptance` are validated against the schema's `$defs/fact` directly, whatever `schemaVersion` says).
 Choices where the spec is silent: a surface is marked `noBehaviourChange: "<reason>"` (SCP-ACC-002/005); a regression item matches `continue to`;
 SCP-COV-003 counts nodes of a lens that followed at most one edge, or within one edge of an anchor; SCP-COV-004 reads a brief ref with source `change`

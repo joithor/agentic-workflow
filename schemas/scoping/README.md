@@ -30,6 +30,6 @@ JSON Schemas for the scoping station's facts (scoping spec `docs/superpowers/spe
 ## Notes
 
 - `scope-map`'s `change` and `baseSha` envelope fields come from the line gold fixture and the `docs/csharp/packets.md` conventions, not from spec 8.3.
-- "`recommended` is set on at most one option" (spec 7.3) is in the schema (`contains` with `maxContains: 1`), so `check-scoping-schemas.mjs` needs no extra code for it; `questions.two-recommended.invalid.json` pins it.
+- "`recommended` is set on exactly one option" (spec 7.3, #1204) is in the schema (`contains` with `minContains: 1`, `maxContains: 1`), so `check-scoping-schemas.mjs` needs no extra code for it; `questions.two-recommended.invalid.json` and `questions.no-recommended.invalid.json` pin it. SCP-QST-001 checks the same on the facts.
 - Citation, `L-<lens>-<n>` and `S<n>` / `AC-<n>` ids start at 1 (`[1-9][0-9]*`), as in aw-packets' `lenses.json`.
 - `coverage.json` requires four rows, one per lens (a `contains` for each lens name); `coverage.four-code-rows.invalid.json` pins it. A source is a name or `{ id, state, reason?, code? }` (the shape #309 gives the recorded limits; `not-synced`'s code is assigned by the context lane's S-H, so the eval omits it).
