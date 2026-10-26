@@ -17,7 +17,7 @@ public static partial class TransitionDecision
     /// <summary>'workflow rewind' (#1270): the instance re-enters an earlier state with every fact kept and its park, if any, ended. Not a loop round; each loop's no-progress marker is cleared, its cap is not touched.</summary>
     private static Decision Rewind(Deciding d, WorkflowInstance instance, RewindRequested rewind)
     {
-        if (RewindRefusal(d, instance, rewind.To) is { } refusal)
+        if (RewindRefusal(d, instance, rewind) is { } refusal)
         {
             return new Rejected(d.Key, refusal);
         }
@@ -40,7 +40,7 @@ public static partial class TransitionDecision
         return new Applied(d.Key, [own, .. entered.Children], entered.Effects, entered.FollowUps);
     }
 
-    private static Aw.Kernel.Error? RewindRefusal(Deciding d, WorkflowInstance instance, string to)
+    private static Aw.Kernel.Error? RewindRefusal(Deciding d, WorkflowInstance instance, RewindRequested rewind)
     {
         var address = instance.Address.Value;
         if (instance.Ended)
@@ -53,11 +53,22 @@ public static partial class TransitionDecision
             return FitRefusals.Refuse($"{address} is taken over", $"sindri workflow handback {address}, then rewind");
         }
 
-        if (instance.Frame.Run?.Launch is { Length: > 0 } launch)
+        if (instance.Frame.Run?.Launch is { Length: > 0 } launch && !string.Equals(rewind.EndedLaunch, launch, StringComparison.Ordinal))
         {
             return FitRefusals.Refuse($"{address} has a live agent ({launch}); a rewind never ends it", $"end or wait for {launch}, then rewind");
         }
 
+        if (RewindBlockedByWait(instance) is { } waiting)
+        {
+            return waiting;
+        }
+
+        return RewindTargetRefusal(d, instance, rewind.To);
+    }
+
+    private static Aw.Kernel.Error? RewindBlockedByWait(WorkflowInstance instance)
+    {
+        var address = instance.Address.Value;
         if (instance.Frame.Child is not null || instance.Suspension?.Mirrors is not null)
         {
             return FitRefusals.Refuse($"{address} waits on a child", "answer or cancel the child, or cancel this instance");
@@ -68,7 +79,7 @@ public static partial class TransitionDecision
             return FitRefusals.Refuse($"{address} is parked on refused effects that a rewind would drop", FitRefusals.Status(address));
         }
 
-        return RewindTargetRefusal(d, instance, to);
+        return null;
     }
 
     private static Aw.Kernel.Error? RewindTargetRefusal(Deciding d, WorkflowInstance instance, string to)

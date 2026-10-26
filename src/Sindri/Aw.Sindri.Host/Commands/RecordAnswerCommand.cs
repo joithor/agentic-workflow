@@ -2,7 +2,9 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Host.Endpoints;
 
 namespace Aw.Sindri.Host.Commands;
@@ -47,8 +49,44 @@ internal static class RecordAnswerCommand
             return await host.Output.Error(run.Error).ConfigureAwait(false);
         }
 
+        if (await UnknownSupersedes(host.Desk, id.Value.Value, file, ct).ConfigureAwait(false) is { } refusal)
+        {
+            return await host.Output.Error(refusal).ConfigureAwait(false);
+        }
+
         string[] complete = [address, "--run", run.Value.Value, "--outcome", "answered", "--output", $"fact:answers={file}", .. nonce is null ? [] : new[] { "--nonce", nonce }, .. json ? new[] { "--json" } : []];
         return await CompleteCommand.Run(complete, host.Desk, host.Services, host.Output, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>The refusal for a batch whose 'supersedes' names an answer the log does not hold: a typo would leave the old answer in place, so it is named before anything is sent.</summary>
+    private static async Task<Error?> UnknownSupersedes(RecipeDesk desk, string id, string file, CancellationToken ct)
+    {
+        JsonNode? batch;
+        try
+        {
+            batch = JsonNode.Parse(await File.ReadAllTextAsync(file, ct).ConfigureAwait(false));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)   // boundary: an unreadable or malformed file is the caller's input error
+        {
+            return SindriErrors.InvalidInput.With($"{file} can't be read as JSON: {e.Message} ({Usage})");
+        }
+
+        var superseded = (batch is JsonArray array ? array : [batch]).OfType<JsonObject>().SelectMany(static b => (b["supersedes"] as JsonArray ?? []).Select(static s => s?.GetValue<string>())).OfType<string>().ToList();
+        if (superseded.Count == 0)
+        {
+            return null;
+        }
+
+        var log = await desk.Client.Get<FactView>($"{InstanceReads.Instances}/{id}/facts/{Uri.EscapeDataString("fact:answerLog")}", ct).ConfigureAwait(false);
+        if (log.IsError)
+        {
+            return log.Error;
+        }
+
+        var held = log.Value.Value.Body.EnumerateArray().Select(static e => e.TryGetProperty("id", out var v) ? v.GetString() : null).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        return superseded.Where(s => !held.Contains(s)).ToList() is { Count: > 0 } missing
+            ? SindriErrors.InvalidInput.With($"the batch supersedes {string.Join(", ", missing)}, which the answer log does not hold (it holds {string.Join(", ", held)}; fix: name ids from that list)")
+            : null;
     }
 
     private static Result<(string File, string? Nonce)> Parse(string[] options)

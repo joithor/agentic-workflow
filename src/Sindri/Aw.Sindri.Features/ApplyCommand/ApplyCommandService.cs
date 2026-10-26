@@ -28,8 +28,9 @@ namespace Aw.Sindri.Features.ApplyCommand;
 /// <param name="recipes">The approval check.</param>
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor sends the command.</param>
+/// <param name="sessions">The agent sessions the ledger shows: a rewind passes the launch of an ended session to the engine, which refuses a run whose agent is live; null reads none.</param>
 internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, ICommandNonces nonces,
-    ICallerContextAccessor callers)
+    ICallerContextAccessor callers, IAgentSessions? sessions = null)
     : IService<ApplyCommandRequest, ApplyCommandResponse>
 {
     public async ValueTask<Result<ApplyCommandResponse>> Handle(ApplyCommandRequest request, CancellationToken cancellationToken)
@@ -53,7 +54,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
 
         var nonce = request.Nonce ?? nonces.Issue();
         var stamp = new CommandStamp(nonce, ArgumentsSha(request));
-        var trigger = Trigger(request, caller.Actor, stamp);
+        var trigger = await Ended(Trigger(request, caller.Actor, stamp), address.Value, cancellationToken).ConfigureAwait(false);
         var subject = address.Value.Value + "\n" + stamp.ArgumentsSha256;
         var claim = await nonces.Claim(nonce, subject, cancellationToken).ConfigureAwait(false);
         if (claim.IsError)
@@ -65,6 +66,24 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     }
 
     /// <summary>Routes the command (spec §5.8), checks it when this call created the claim, and sends it.</summary>
+    // A rewind refuses a run whose agent is live. The engine can't read the ledger, so the launch whose session already ended (failed, idle, lost) is passed in.
+    private async ValueTask<Trigger> Ended(Trigger trigger, InstanceAddress address, CancellationToken cancellationToken)
+    {
+        if (trigger is not RewindRequested rewind || sessions is null)
+        {
+            return trigger;
+        }
+
+        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        if (view.IsError || view.Value.AgentRun?.Launch is not { Length: > 0 } launch || !LaunchId.TryFrom(launch, out var id))
+        {
+            return trigger;
+        }
+
+        var state = await sessions.Watch(id, cancellationToken).ConfigureAwait(false);
+        return !state.IsError && !state.Value.IsLive ? rewind with { EndedLaunch = launch } : trigger;
+    }
+
     private async ValueTask<Result<ApplyCommandResponse>> Deliver(ApplyCommandRequest request, InstanceAddress address, SentCommand command, (Trigger Trigger, CallerContext Caller) call, CancellationToken cancellationToken)
     {
         var route = await Route(request, address, new Dispatch(command.Nonce, call.Trigger), cancellationToken).ConfigureAwait(false);
