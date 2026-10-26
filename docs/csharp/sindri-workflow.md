@@ -1033,7 +1033,7 @@ refusal follows §5.8's precedence. A wait state's timer wakes the wait like a d
 | `Item`, `Recipe`, `Tenant`, `Ring` | From `InstanceStart`; `StartRequest` carries the tenant and ring into the instance |
 | `State` | The state after each change (`parked`, `escalated`, `taken-over` while suspended) |
 | `NeedsYou` | True while parked or escalated, or while an open desk task waits; false while taken over |
-| `Repo` | `fact:item`'s `repo`, read once on start by the `ReadItemRepo` local activity; unset without one |
+| `Repo` | `fact:item`'s `repo` (`{ id, repo?, spec? }`: `repo` and `spec` are optional), read once on start by the `ReadItemRepo` local activity; unset without one |
 
 The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
 through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
