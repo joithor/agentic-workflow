@@ -18860,3 +18860,26 @@ override Aw.Sindri.Core.Profile.ProfileRole.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.ProfileRole.ToString() -> string!
 static Aw.Sindri.Core.Profile.ProfileRole.operator !=(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
 static Aw.Sindri.Core.Profile.ProfileRole.operator ==(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Stamp.get -> Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Stamp.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.To.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.To.init -> void
+const Aw.Sindri.Core.Workflow.Engine.Triggers.TriggerNames.Rewind = "rewind" -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.KeyPart.get -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Name.get -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.ToString() -> string!
+override sealed Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger? other) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!
+static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator !=(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator ==(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Views.InstanceDetail! detail) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, out string! To, out string? EndedLaunch) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.RewindRequested(string! Actor, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, string! To, string? EndedLaunch = null) -> void
