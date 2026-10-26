@@ -70,6 +70,14 @@ internal static partial class Labels
     internal static string LaunchViewerFailed(string code, string detail) =>
         detail.Length == 0 ? $"The agent session is running. The viewer failed ({code})." : $"The agent session is running. The viewer failed ({code}): {detail}";
 
+    /// <summary>A launch that started whose viewer was skipped.</summary>
+    /// <param name="reason">The reason as served.</param>
+    /// <returns>The sentence.</returns>
+    internal static string LaunchViewerSkipped(string reason) => $"The agent session is running. No terminal was opened: {reason}";
+
+    /// <summary>A takeover was accepted and nothing says whether a terminal opened.</summary>
+    internal const string TakeoverNoViewer = "You have the run. The server didn't say whether a terminal opened.";
+
     /// <summary>A launch that failed.</summary>
     /// <param name="code">The failure code.</param>
     /// <param name="detail">The sentence with its fix.</param>
@@ -88,7 +96,7 @@ internal static partial class Labels
         "SND-LAUNCH-009" => "The viewer timed out.",
         "SND-LAUNCH-002" => "No viewer is set up.",
         "SND-ITEM-409" => "The item has changed or is closed. Reload it and try again.",
-        "SND-AUTH-002" => "Only you can watch the agent, from the app or a terminal. A session can't.",
+        "SND-AUTH-002" => "Sindri's own steps can't watch the agent.",
         _ => null,
     };
 
