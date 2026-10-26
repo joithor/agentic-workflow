@@ -35,19 +35,25 @@ internal sealed class ShowRecipeService(RecipeApprovalPlanner planner, IApproved
         var found = await planner.Find(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
         if (found.IsError)
         {
-            if (waiting is not null && string.Equals(found.Error.Code, WorkflowErrors.RecipeNotFound.Code, StringComparison.Ordinal))
-            {
-                var shipped = await waiting.Find(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
-                if (shipped.IsSuccess && shipped.Value is { } file)
-                {
-                    return RecipeViews.Of(file.Document.Recipe, new RecipeVersion(file.Id, file.Document.Recipe.Version, file.Hash), names?.Of(request.Id), catalog);
-                }
-            }
-
-            return found.Error;
+            var shown = await ShownFromShipped(request, found.Error, cancellationToken).ConfigureAwait(false);
+            return shown is { } view ? view : found.Error;
         }
 
         var recipe = found.Value.Read(json);
         return recipe.IsError ? recipe.Error : RecipeViews.Of(recipe.Value, new RecipeVersion(found.Value.Id, found.Value.Version, found.Value.Hash), names?.Of(request.Id), catalog);
+    }
+
+    // The waiting shipped version the request names, when the registry has no such version and the embedded set does; null otherwise.
+    private async ValueTask<RecipeView?> ShownFromShipped(ShowRecipeRequest request, Error notFound, CancellationToken cancellationToken)
+    {
+        if (waiting is null || request.Hash is null || !string.Equals(notFound.Code, WorkflowErrors.RecipeNotFound.Code, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var shipped = await waiting.Find(request.Id, request.Hash, cancellationToken).ConfigureAwait(false);
+        return shipped.IsSuccess && shipped.Value is { } file
+            ? RecipeViews.Of(file.Document.Recipe, new RecipeVersion(file.Id, file.Document.Recipe.Version, file.Hash), names?.Of(request.Id), catalog)
+            : null;
     }
 }

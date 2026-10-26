@@ -49,20 +49,36 @@ public sealed class ShippedApprovalPlans(RecipeApprovalPlanner planner, ShippedR
         List<PreviewChildNote> notes = [];
         foreach (var pin in planned.Value.Preview.Pins.Children)
         {
-            var versions = await store.Versions(pin.Recipe, cancellationToken).ConfigureAwait(false);
-            if (versions.IsError)
+            var note = await NoteFor(store, pin, shipped, cancellationToken).ConfigureAwait(false);
+            if (note.IsError)
             {
-                return versions.Error;
+                return note.Error;
             }
 
-            var pinned = versions.Value.FirstOrDefault(r => r.Hash == pin.Hash);
-            var newer = shipped.FirstOrDefault(f => f.Id == pin.Recipe && f.Hash != pin.Hash && (pinned is null || f.Version > pinned.Version));
-            var pinnedWords = $"{pin.Recipe.Value}@{pin.Hash.Display}" + (pinned is null ? string.Empty : string.Create(CultureInfo.InvariantCulture, $" (version {pinned.Version})"));
-            notes.Add(new PreviewChildNote(pin.Recipe, pin.Hash, pinned?.Version, newer?.Hash, newer?.Version, newer is null
-                ? $"pins {pinnedWords}"
-                : string.Create(CultureInfo.InvariantCulture, $"pins {pinnedWords}; a newer shipped version waits for its approval: {pin.Recipe.Value}@{newer.Hash.Display} (version {newer.Version})")));
+            notes.Add(note.Value);
         }
 
         return planned.Value with { Preview = planned.Value.Preview with { ChildNotes = notes } };
+    }
+
+    private static async ValueTask<Result<PreviewChildNote>> NoteFor(IRecipeStore store, ChildPin pin, IReadOnlyList<ShippedFile> shipped, CancellationToken cancellationToken)
+    {
+        var versions = await store.Versions(pin.Recipe, cancellationToken).ConfigureAwait(false);
+        if (versions.IsError)
+        {
+            return versions.Error;
+        }
+
+        var pinned = versions.Value.FirstOrDefault(r => r.Hash == pin.Hash);
+        var newer = shipped.FirstOrDefault(f => f.Id == pin.Recipe && f.Hash != pin.Hash && (pinned is null || f.Version > pinned.Version));
+        return new PreviewChildNote(pin.Recipe, pin.Hash, pinned?.Version, newer?.Hash, newer?.Version, NoteText(pin, pinned, newer));
+    }
+
+    private static string NoteText(ChildPin pin, RegisteredRecipe? pinned, ShippedFile? newer)
+    {
+        var pinnedWords = $"{pin.Recipe.Value}@{pin.Hash.Display}" + (pinned is null ? string.Empty : string.Create(CultureInfo.InvariantCulture, $" (version {pinned.Version})"));
+        return newer is null
+            ? $"pins {pinnedWords}"
+            : string.Create(CultureInfo.InvariantCulture, $"pins {pinnedWords}; a newer shipped version waits for its approval: {pin.Recipe.Value}@{newer.Hash.Display} (version {newer.Version})");
     }
 }

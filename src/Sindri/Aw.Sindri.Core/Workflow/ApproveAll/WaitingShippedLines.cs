@@ -73,7 +73,7 @@ public sealed class WaitingShippedLines(IShippedRecipes shipped, ShippedRecipeSe
         }
 
         var file = files.Files().FirstOrDefault(f => f.Id == id && (string.Equals(f.Hash.Value, hash, StringComparison.Ordinal) || f.Hash.MatchesPrefix(hash)));
-        return file is not null && Waiting(plan.Value).Any(w => w.Id == id) ? file : (ShippedFile?)null;
+        return file is not null && Waiting(plan.Value).Any(w => w.Id == id) ? file : null;
     }
 
     // Every waiting shipped recipe the plan names, with how it is approved: the hold's rows by approve-all, the previously approved ones that gain a capability or wait for a child on their own.
