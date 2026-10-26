@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.RecordServiceRun;
 using Aw.Sindri.Host.Server;
@@ -133,6 +134,7 @@ public sealed class IdleRunTests
             .AddSingleton<TimeProvider>(_h.Clock)
             .AddSingleton(_h.Callers)
             .AddSingleton<IIdGenerator>(_h.Ids)
+            .AddSingleton<ITextScrubber>(new PassThroughScrubber())
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddSingleton<IScheduledService>(tidy)
             .BuildServiceProvider();
