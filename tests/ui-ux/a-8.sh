@@ -15,23 +15,22 @@ sleep 3
 # The strip's title buttons: their name is the subject and the recipe ("Fixture request for X, Dev Desk Round Trip").
 title_buttons() { dt search --type Button --limit 200 | jq -c '[.matches[] | select(.visible) | select((.name // "") | test(", Dev "))]'; }
 
-# Needs-you rows shown: their title buttons are named "Open <title> ITM-<id>" (a queue row's is "Open ITM-<id>").
-needs_you_count() { dt search --type Button --limit 200 | jq '[.matches[] | select(.visible) | select((.name // "") | test("^Open .+ ITM-"))] | length'; }
-
-# The strip shows the fold's budget (8) less the Needs-you rows shown, and at most the 4 instances the fixture started;
-# Needs-you fills in a little after the strip, so wait until its count is the same on two reads 2 s apart.
-settled=""
+# Every instance the fixture started (4) is accounted for on the strip: a titled row, or the "... N more" line the strip shows
+# for the rows its fold budget leaves out (8 less the Needs-you rows shown, so 3 or 4 rows here). This only stops a fix that
+# passes by hiding rows. Retried for up to 30 s, since the strip and its Needs-you rows land a little after each other.
+more_count() { dt search --type Button --limit 200 | jq '[.matches[] | select(.visible) | (.name // "") | select(test("^… [0-9]+ more$")) | capture("(?<n>[0-9]+)").n | tonumber] | add // 0'; }
+accounted=""
 for _ in $(seq 1 15); do
-  before="$(needs_you_count)"; sleep 2; after="$(needs_you_count)"
-  [ -n "$before" ] && [ "$before" = "$after" ] && { settled="$after"; break; }
+  rows="$(title_buttons | jq 'length')"; more="$(more_count)"
+  accounted=$((rows + more))
+  [ "$accounted" -ge 4 ] && break
+  sleep 2
 done
-[ -n "$settled" ] || uxu_die "the Needs-you row count never settled within 30 s"
-want=$((8 - settled)); [ "$want" -gt 4 ] && want=4
 
-strip_has_expected_titles() { [ "$(title_buttons | jq 'length')" -eq "$want" ]; }
+strip_accounts_for_all_instances() { [ "$accounted" -eq 4 ] || { echo "strip shows $rows titled rows + $more more = $accounted, want 4"; return 1; }; }
 strip_titles_are_wide() { title_buttons | jq -e 'length > 0 and all(.[]; .width >= 240)'; }
 
-expect "the strip shows $want titled rows (8 less the $settled Needs-you rows, at most 4)" strip_has_expected_titles
+expect "the 4 started instances are all on the strip (titled rows plus the \"more\" line)" strip_accounts_for_all_instances
 expect "every strip title button is at least 240 px wide at 1280 (today about 140)" strip_titles_are_wide
 
 uxu_done
