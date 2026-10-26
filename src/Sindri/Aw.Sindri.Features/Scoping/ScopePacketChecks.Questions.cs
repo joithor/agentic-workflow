@@ -1,4 +1,4 @@
-using System.Globalization;
+using Aw.Sindri.Core.Scoping;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -12,20 +12,9 @@ internal static partial class ScopePacketChecks
             return;
         }
 
-        foreach (var question in ScopeJson.Items(c.Facts["questions"]))
+        foreach (var (id, message, fix) in QuestionShape.Faults(c.Facts["questions"]))
         {
-            var id = ScopeJson.Str(question, "id") ?? "?";
-            var options = ScopeJson.Items(question, "options").ToList();
-            if (options.Count is < 2 or > 4)
-            {
-                s.Fail(id, $"{id} has {options.Count} options", "Give it two to four options.");
-            }
-
-            var recommended = options.Count(static o => ScopeJson.Bool(o, "recommended") == true);
-            if (recommended != 1)
-            {
-                s.Fail(id, string.Create(CultureInfo.InvariantCulture, $"{id} has {recommended} recommended options"), "Mark exactly one option recommended; for a question that can't be decided yet, recommend the option that defers and reports it, or move it to openQuestions.");
-            }
+            s.Fail(id, message, fix);
         }
     }
 }

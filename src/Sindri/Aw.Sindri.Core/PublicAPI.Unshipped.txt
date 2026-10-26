@@ -18707,3 +18707,5 @@ override Aw.Sindri.Core.Profile.ProfileRole.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.ProfileRole.ToString() -> string!
 static Aw.Sindri.Core.Profile.ProfileRole.operator !=(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
 static Aw.Sindri.Core.Profile.ProfileRole.operator ==(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
+Aw.Sindri.Core.Scoping.QuestionShape
+static Aw.Sindri.Core.Scoping.QuestionShape.Faults(System.Text.Json.Nodes.JsonNode? questions) -> System.Collections.Generic.IReadOnlyList<(string! Id, string! Message, string! Fix)>!

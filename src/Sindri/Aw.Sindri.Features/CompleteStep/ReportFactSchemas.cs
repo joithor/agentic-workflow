@@ -50,9 +50,14 @@ internal static partial class ReportFactSchemas
         }
 
         var path = SchemaPath(fact.Value);
-        return [.. Errors(_schemas[fact.Value], tree)
+        var broken = Errors(_schemas[fact.Value], tree)
             .Where(static e => !e.Path.EndsWith("/trust", StringComparison.Ordinal))   // same filter as SCP-SCHEMA-001: code stamps trust
-            .Select(e => $"{fact.Value}{e.Path}: {Unquoted(e.Message)} (fix: make {fact.Value} match {path})")];
+            .Select(e => $"{fact.Value}{e.Path}: {Unquoted(e.Message)} (fix: make {fact.Value} match {path})");
+        // #1204: SCP-QST-001's own logic, so a question with no or two recommended options is named by its id
+        var questions = string.Equals(fact.Value, "fact:questions", StringComparison.Ordinal)
+            ? QuestionShape.Faults(tree).Select(static f => $"fact:questions {f.Id}: {f.Message} (fix: {f.Fix})")
+            : [];
+        return [.. broken, .. questions];
     }
 
     private static IReadOnlyList<(string Path, string Message)> Errors(string schema, JsonNode? tree)
