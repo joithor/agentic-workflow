@@ -220,4 +220,29 @@ public sealed partial class CleanMapTests : IDisposable
         Assert.Contains(pattern, cleaned.Error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(segment, cleaned.Error.Message, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_cleanup_over_thousands_of_deep_paths_with_the_profile_s_demote_and_role_globs_succeeds_and_none_of_them_has_a_time_limit()
+    {
+        string[] globs = ["**/a/**/b/**/c/**/*.test.*", "**/__tests__/**", "**/fixtures/**"];
+        IReadOnlyList<ContextRepo> repos = [new(ContextRepoName.From(FixtureMap.Repo), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, .. globs], DemotePaths = globs }];
+        var graph = new GraphBuilder().Node("surface:command/split", "Split pane", Provenance.Deterministic);
+        for (var n = 0; n < 3000; n++)
+        {
+            var deep = string.Concat(Enumerable.Range(0, 24).Select(d => (d % 3 == 0 ? "a" : d % 3 == 1 ? "b" : "c") + "/"));
+            _ = graph.Edge(string.Create(CultureInfo.InvariantCulture, $"code:src/{deep}f{n}.ts"), EdgeType.Implements, "surface:command/split", provenance: Provenance.Deterministic, confidence: 1.0);
+        }
+
+        await Seed(graph.Build());
+
+        var cleaned = await _world.Map.CleanDraft(MapWorld.HumanWith(MapWorld.OnlyFixtureRepo, repos), MapWorld.None);
+
+        Assert.True(cleaned.IsSuccess, cleaned.IsError ? cleaned.Error.Message : null);
+        Assert.All(globs, g =>
+        {
+            var regex = PathDenylist.GlobRegex(g);
+            Assert.True(regex.Options.HasFlag(RegexOptions.NonBacktracking), g);
+            Assert.Equal(Regex.InfiniteMatchTimeout, regex.MatchTimeout);
+        });
+    }
 }
