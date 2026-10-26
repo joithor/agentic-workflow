@@ -32,7 +32,7 @@ design.
 | `run-test --check <file> [--cwd <dir>] -- <command…>` | any | Runs the test command on a clean tree and registers a run record (with the commit and the working directory) |
 | `run-ui --check <script.json> [--cwd <dir>]` | any | Runs the ui-evidence script on a clean tree and registers a run record |
 | `advance reproduce --evidence <run> --check <file> [--cwd <dir>]` | investigate → reproduce | Freezes the check and the failing baseline |
-| `start-attempt --mode <A\|B\|C> [--abandon-judge]` | reproduce, evaluate → fix | Opens the next attempt (at most 5); `--abandon-judge` leaves behind a candidate whose judge question was asked twice without an answer, once no judge process is running |
+| `start-attempt --mode <A\|B\|C> [--abandon-judge] [--abandon-unrun]` | reproduce, evaluate (fix with `--abandon-unrun`) → fix | Opens the next attempt (at most 5); `--abandon-judge` leaves behind a candidate whose judge question was asked twice without an answer, once no judge process is running; `--abandon-unrun` leaves behind a candidate of this attempt that has no recorded run (`record-run` refused it, so the phase never left fix), recorded in the history with the candidate ids |
 | `record-candidate --branch <b> [--cwd <dir>] [--hypothesis <n>] [--allow-test-changes [--reason <why>]]` | fix, evaluate | Records the worktree's commit as the next candidate (`c1`, `c2`, …) |
 | `record-run <candidate> --evidence <run>` | fix, evaluate → evaluate | Records the frozen check's run against the candidate |
 | `record-run <candidate> --build-failed --log <build.log>` | fix, evaluate → evaluate | Marks a candidate that doesn't build as failed (no check to run), with its non-empty build log, so `start-attempt` can follow |
@@ -107,6 +107,11 @@ not with another rule.
   beyond that: installed tools other than the check's own program, files under `HOME` (`~/.npmrc`, shell startup
   files), and dependencies in gitignored directories (`node_modules`, `.venv`).
 - **No display.** A check never sees `DISPLAY` (the environment is an allowlist); a check that needs one, such as a desktop evidence run, names it in `AW_BUGFIX_CHECK_ENV=DISPLAY`, which freezes its value with the check.
+- **A check file main changed.** `record-run` takes a check file that differs from its baseline sha when the run executed the
+  file as it is in the candidate and the file is not among the candidate's own changes, measured from the net base (the
+  baseline plus what main added by a merge, as `record-candidate` and the judge diff use). A shared project file that main
+  changes is no weakening of the check; the history step says so (`record-run c1; the check file … changed on main …`). A
+  change the fix made, or one that can't be told from the fix's (no main ref, a merge conflict), is still AW-BUGFIX-008.
 - **A clean tree.** `run-test`, `run-ui`, `record-candidate` and `record-run` refuse a work tree with an uncommitted
   change, or with an untracked file (not ignored) that no registered run left behind: a new fixture or a module that
   shadows another could change what the check does while the commit stays the same. Each test run record keeps the
@@ -190,7 +195,7 @@ Everything else is one line on stderr ending with the catalogue code, and nothin
 | AW-BUGFIX-005 | conflict | The step isn't allowed in this phase, or an unfinished bug fix exists at `init` |
 | AW-BUGFIX-006 | conflict | The handoff doesn't support a fix |
 | AW-BUGFIX-007 | conflict | The baseline run doesn't reproduce the bug |
-| AW-BUGFIX-008 | conflict | The check isn't committed, is outside the repository or changed since the baseline |
+| AW-BUGFIX-008 | conflict | The check isn't committed, is outside the repository or changed since the baseline by the fix (a change that only main made, and the candidate merged, is accepted and the reason goes into the history) |
 | AW-BUGFIX-009 | conflict | The evidence isn't a registered, unchanged run record |
 | AW-BUGFIX-010 | conflict | No new attempt now |
 | AW-BUGFIX-011 | conflict | The candidate can't be recorded |
