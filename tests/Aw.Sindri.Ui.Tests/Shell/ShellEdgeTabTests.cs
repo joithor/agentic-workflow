@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -36,11 +37,13 @@ public sealed partial class ShellEdgeTabTests
     public Task An_item_sheets_edge_tab_reads_the_word_Item_then_the_items_title() => UiThread.Run(async () =>
     {
         var shell = await Connected();
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
         shell.CloseSheet();
         Assert.Equal(Labels.EdgeTabItem, shell.EdgeTabText);
 
+        gate.SetResult();   // the held item read is served
         await ShellWait.Until(shell, () => shell.Item.Title == "Try the queue", Token);
         Assert.Equal("Try the queue", shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
@@ -51,12 +54,14 @@ public sealed partial class ShellEdgeTabTests
     {
         var shell = await Connected();
         var detail = FixtureInstances.Detail("project-build");
+        var gate = _server.InstancesGates[new InstanceQuery(Address: detail.Address)] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        shell.OpenInstance(detail.Address, detail.Id);
+        shell.OpenInstance(detail.Address, id: null);
         shell.CloseSheet();
         Assert.Equal(Labels.EdgeTabWorkflowRun, shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
 
+        gate.SetResult();   // the held instance read is served
         await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
         Assert.Equal(detail.Title, shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
@@ -66,12 +71,14 @@ public sealed partial class ShellEdgeTabTests
     public Task An_item_sheets_edge_tab_name_reads_Reopen_item_then_the_items_title_never_the_address() => UiThread.Run(async () =>
     {
         var shell = await Connected();
+        var gate = _server.ItemGates[A.NewItem] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
         shell.CloseSheet();
         Assert.Equal(Labels.Reopen + " item", shell.EdgeTabName);
         Assert.DoesNotContain(A.NewItem, shell.EdgeTabName, StringComparison.Ordinal);
 
+        gate.SetResult();   // the held item read is served
         await ShellWait.Until(shell, () => shell.Item.Title == "Try the queue", Token);
         Assert.Contains("Try the queue", shell.EdgeTabName, StringComparison.Ordinal);
         Assert.DoesNotContain(A.NewItem, shell.EdgeTabName, StringComparison.Ordinal);
@@ -83,12 +90,14 @@ public sealed partial class ShellEdgeTabTests
     {
         var shell = await Connected();
         var detail = FixtureInstances.Detail("project-build");
+        var gate = _server.InstancesGates[new InstanceQuery(Address: detail.Address)] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        shell.OpenInstance(detail.Address, detail.Id);
+        shell.OpenInstance(detail.Address, id: null);
         shell.CloseSheet();
         Assert.Equal(Labels.Reopen + " workflow", shell.EdgeTabName);
         Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
 
+        gate.SetResult();   // the held instance read is served
         await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
         Assert.Contains(detail.Title, shell.EdgeTabName, StringComparison.Ordinal);
         Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
@@ -97,7 +106,6 @@ public sealed partial class ShellEdgeTabTests
 
     [Theory]
     [InlineData("job/JOB-9")]
-    [InlineData("needs-you/ITM-01JC8")]
     public Task Other_sheets_never_show_a_raw_address(string link) => UiThread.Run(async () =>
     {
         var shell = await Connected();
@@ -108,5 +116,20 @@ public sealed partial class ShellEdgeTabTests
 
         Assert.NotEmpty(shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
+    }, Token);
+
+    // A needs-you link opens the inbox, not a sheet, so it has no edge tab; the row's own sheet is the one that does.
+    [Fact]
+    public Task A_needs_you_row_sheets_edge_tab_reads_Needs_you_never_the_address() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        Assert.True(DeepLink.TryParse("needs-you/ITM-01JC8", out var parsed));
+
+        shell.NavigateToRowSheet(parsed);
+        shell.CloseSheet();
+
+        Assert.Equal(Labels.EdgeTabNeedsYou, shell.EdgeTabText);
+        Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
+        Assert.DoesNotMatch(RawAddress, shell.EdgeTabName);
     }, Token);
 }
