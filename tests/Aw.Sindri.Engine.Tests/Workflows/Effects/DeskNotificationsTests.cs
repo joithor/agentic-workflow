@@ -100,7 +100,9 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
 
             Assert.Equal(task.Identity, notices[0].GetProperty("identity").GetString());
             Assert.All(notices, static n => Assert.Equal("interrupt", n.GetProperty("class").GetString()));
-            Assert.Contains("parked (timeout)", notices[1].GetProperty("text").GetString(), StringComparison.Ordinal);
+            var park = notices[1].GetProperty("text").GetString();
+            Assert.Contains("stopped, it timed out", park, StringComparison.Ordinal);
+            Assert.DoesNotContain("parked (timeout)", park, StringComparison.Ordinal);
             Assert.Equal(2, _harness.Notifier.Shown.Count);
             await handle.TerminateAsync("test over");
         }, Token);
