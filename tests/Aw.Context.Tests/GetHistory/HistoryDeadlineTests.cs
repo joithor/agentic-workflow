@@ -1,12 +1,10 @@
 using System.Globalization;
-using Aw.Context.Core;
-using Aw.Context.Core.Engine;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Testing.History;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.QueryContext;
-using Aw.Kernel;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.GetHistory;
@@ -41,7 +39,7 @@ public sealed class HistoryDeadlineTests : IDisposable
         clock = world.Clock;
         _ = await world.ImportFixture();
 
-        var view = (await Engines.Advancing(world.Clock, () => world.Engine.History([Anchor], HistoryWindow.Of(null, null).Value, MapRead.Current, MapWorld.Human, MapWorld.None).AsTask())).Value;
+        var view = (await Engines.Advancing(world.Clock, () => world.Engine.History([Anchor], HistoryWindow.Of(since: null, before: null).Value, MapRead.Current, MapWorld.Human, MapWorld.None).AsTask())).Value;
 
         var row = view.Searched.Sources.First(s => s.Id.Value == "git-history");
         Assert.NotEqual(SearchedState.Degraded, row.State);
