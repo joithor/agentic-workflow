@@ -75,7 +75,7 @@ public sealed class DeskNotificationsTests(SindriTimeSkippingServer server) : IC
             Assert.Equal(("info", handle.Id, "T-4"), (line.GetProperty("class").GetString(), line.GetProperty("instance").GetString(), line.GetProperty("item").GetString()));
             Assert.Equal("Waiting for the desk notification to be delivered.", line.GetProperty("text").GetString());
             Assert.Equal("interrupt", Assert.Single(Lines(firstTask.Identity)).GetProperty("class").GetString());
-            Assert.Equal($"Sindri: {handle.Id}", Assert.Single(_harness.Notifier.Shown).Title);   // only the first desk task interrupts
+            Assert.DoesNotContain(handle.Id, Assert.Single(_harness.Notifier.Shown).Title, StringComparison.Ordinal);   // only the first desk task interrupts; its title is the item's, never the instance id
             Assert.Equal(("done", "resolved"), (result.State, result.Outcome));
         }, Token);
     }

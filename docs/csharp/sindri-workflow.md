@@ -1350,8 +1350,9 @@ Unit (c), as built:
   entered state's rendered `next` (the interpreter passes it as `EffectRun.Text`) with the instance address beside
   it, and it replies `notify.delivered` with `delivered`; an engine notice replies nothing.
 - **`notifications.jsonl`** (`FileDeskNotices`): one JSON line per identity (`identity`, `instance`, `item`, `class`,
-  `text`, `at`), so a repeat writes nothing. An `interrupt` is then shown as a macOS notification through `osascript`
-  (`IOsNotifier`, internal to Infrastructure; title `Sindri: <address>`); an `info` one isn't, and is collected into
+  `text`, `at`), so a repeat writes nothing. An `interrupt` is then shown as a macOS notification through `terminal-notifier`
+  (`IOsNotifier`, internal to Infrastructure; title the item's title, else `Sindri`; the text names the stage in plain words, never the address;
+  a click opens the app on the needs-you row; without terminal-notifier no banner is shown, since an `osascript` banner's click opens Script Editor); an `info` one isn't, and is collected into
   `$AW_SINDRI_HOME/digest/<yyyy-MM-dd>.jsonl` (UTC). The spec defines no digest delivery. Every test composition
   (`WorkflowsHarness.Sindri`, `Served`) replaces the notifier with `FakeOsNotifier`.
 - **`outbox list [--pending | --dispatched] [--json]`** and **`GET /sindri/outbox?state=`** (`pending`, `dispatched`,
