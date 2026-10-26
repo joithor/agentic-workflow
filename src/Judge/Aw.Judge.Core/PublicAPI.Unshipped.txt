@@ -785,6 +785,7 @@ const Aw.Judge.Core.Questions.UiElementRepairQuestion.Repaired = "repaired" -> s
 const Aw.Judge.Core.Questions.UntrustedText.BriefCap = 8000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.DiffCap = 12000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.FieldCap = 2000 -> int
+const Aw.Judge.Core.Questions.UntrustedText.ResolutionDiffCap = 100000 -> int
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksOff = "looks-off" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksRight = "looks-right" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.Name = "visual-critique" -> string!

@@ -56,6 +56,52 @@ public sealed class ResolutionCheckTests
     }
 
     [Fact]
+    public async Task A_diff_over_the_cap_drops_whole_files_with_src_kept_first_and_names_what_it_dropped()
+    {
+        var tests = FileDiff("tests/AppTests.cs", 'T', UntrustedText.ResolutionDiffCap - 1_000);
+        var source = FileDiff("src/App.cs", 'S', UntrustedText.ResolutionDiffCap - 1_000);
+        var cli = Cli(ContentClass.Brief).Decides("resolved", 1);
+
+        _ = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(diff: tests + source), cli);
+
+        var prompt = Assert.Single(cli.Calls).Question.Prompt;
+        Assert.Contains(new string('S', 500), prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain(new string('T', 500), prompt, StringComparison.Ordinal);
+        Assert.Contains("omitted", prompt, StringComparison.Ordinal);
+        Assert.Contains("tests/AppTests.cs", prompt[prompt.IndexOf("omitted", StringComparison.Ordinal)..], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_fix_of_about_25000_characters_reaches_the_judge_whole()
+    {
+        var diff = FileDiff("src/App.cs", 'S', 15_000) + FileDiff("tests/AppTests.cs", 'T', 10_000);
+        var cli = Cli(ContentClass.Brief).Decides("resolved", 1);
+
+        _ = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(diff: diff), cli);
+
+        var prompt = Assert.Single(cli.Calls).Question.Prompt;
+        Assert.Contains(new string('S', 15_000), prompt, StringComparison.Ordinal);
+        Assert.Contains(new string('T', 10_000), prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("omitted", prompt, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_diff_under_the_cap_is_sent_whole()
+    {
+        var diff = FileDiff("tests/AppTests.cs", 'T', 2_000) + FileDiff("src/App.cs", 'S', 2_000);
+        var cli = Cli(ContentClass.Brief).Decides("resolved", 1);
+
+        _ = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input(diff: diff), cli);
+
+        var prompt = Assert.Single(cli.Calls).Question.Prompt;
+        Assert.Contains(new string('T', 2_000), prompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("omitted", prompt, StringComparison.Ordinal);
+    }
+
+    private static string FileDiff(string path, char fill, int size) =>
+        $"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n@@ -1 +1 @@\n+{new string(fill, size)}\n";
+
+    [Fact]
     public async Task Without_a_diff_the_prompt_has_no_diff_block_and_an_unsure_model_escalates()
     {
         var cli = Cli(ContentClass.Brief).Decides("resolved", 0.79);

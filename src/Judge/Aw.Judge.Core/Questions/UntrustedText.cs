@@ -16,6 +16,9 @@ public static partial class UntrustedText
     /// <summary>The cap for a diff.</summary>
     public const int DiffCap = 12_000;
 
+    /// <summary>The cap for the diff of a resolution-check: a whole fix, so a judge sees all of it.</summary>
+    public const int ResolutionDiffCap = 100_000;
+
     /// <summary>The cap for a ticket brief.</summary>
     public const int BriefCap = 8_000;
 
