@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Aw.Sindri.Ui.ViewModels;
 
 /// <summary>The app's own copy (<see cref="Labels"/>, continued): the Workflows board, list and run drawer (F3 workflows spec §6). Never a served sentence.</summary>
@@ -98,9 +96,4 @@ internal static partial class Labels
     /// <param name="age">The time since it ended.</param>
     /// <returns>"ended 5h 20m ago".</returns>
     internal static string WorkflowsEndedAgo(TimeSpan age) => "ended " + Age(age) + " ago";
-
-    /// <summary>The line under the board for open runs that no lane holds.</summary>
-    /// <param name="count">How many.</param>
-    /// <returns>"2 runs not on the board — switch to list".</returns>
-    internal static string WorkflowsOffBoard(int count) => (count == 1 ? "1 run" : string.Create(CultureInfo.InvariantCulture, $"{count} runs")) + " not on the board — switch to list";
 }

@@ -59,12 +59,13 @@ public sealed class WorkflowLanesTests
     }
 
     [Fact]
-    public async Task Another_workflows_runs_are_not_on_the_board()
+    public async Task Another_workflows_runs_are_only_in_the_lane_outside_the_line()
     {
         var list = await Shown();
 
-        var onBoard = list.Lanes.SelectMany(l => l.Cards).Select(c => c.Recipe).Distinct(StringComparer.Ordinal);
-        Assert.Equal("workflow.line", Assert.Single(onBoard));
+        var inLine = list.Lanes.Where(l => l.Id != LaneId.Other).SelectMany(l => l.Cards).Select(c => c.Recipe).Distinct(StringComparer.Ordinal);
+        Assert.Equal("workflow.line", Assert.Single(inLine));
+        Assert.DoesNotContain("workflow.line", list.Lanes.Single(l => l.Id == LaneId.Other).Cards.Select(c => c.Recipe), StringComparer.Ordinal);
     }
 
     [Fact]
