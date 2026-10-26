@@ -4446,6 +4446,8 @@ Aw.Context.Core.Subgraph.SubgraphView.Edges.get -> System.Collections.Generic.IR
 Aw.Context.Core.Subgraph.SubgraphView.Edges.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.Equals(Aw.Context.Core.Subgraph.SubgraphView? other) -> bool
 Aw.Context.Core.Subgraph.SubgraphView.MapCommit.get -> string?
+Aw.Context.Core.Subgraph.SubgraphView.Demoted.get -> int?
+Aw.Context.Core.Subgraph.SubgraphView.Demoted.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.MapCommit.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.MapVersion.get -> string!
 Aw.Context.Core.Subgraph.SubgraphView.MapVersion.init -> void
@@ -7070,6 +7072,8 @@ Aw.Context.Core.Graph.NodeFact.Repo.get -> string?
 Aw.Context.Core.Graph.NodeFact.Repo.init -> void
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.get -> string?
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.init -> void
+Aw.Context.Core.Lenses.LensBasis.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Lenses.LensBasis.Repos.init -> void
 Aw.Context.Core.Lenses.LensBasis.MapRepo.get -> string?
 Aw.Context.Core.Lenses.LensBasis.MapRepo.init -> void
 Aw.Context.Core.WholeMap.WholeMapAsk.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
