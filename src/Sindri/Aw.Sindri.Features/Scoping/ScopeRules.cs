@@ -28,7 +28,7 @@ internal static class ScopeRules
     internal static IReadOnlyList<(string Id, ScopeStage From)> All { get; } =
     [
         (Schema, ScopeStage.Draft), (Cite1, ScopeStage.Draft), (Cite2, ScopeStage.Draft),
-        (Cov1, ScopeStage.Draft), (Cov2, ScopeStage.Draft), (Cov3, ScopeStage.Evidence), (Cov4, ScopeStage.Evidence), (Cov5, ScopeStage.Evidence),
+        (Cov1, ScopeStage.Draft), (Cov2, ScopeStage.Draft), (Cov3, ScopeStage.Draft), (Cov4, ScopeStage.Evidence), (Cov5, ScopeStage.Evidence),
         (Lens1, ScopeStage.Evidence),
         (Acc1, ScopeStage.Draft), (Acc2, ScopeStage.Draft), (Acc3, ScopeStage.Evidence), (Acc4, ScopeStage.Evidence), (Acc5, ScopeStage.Draft),
         (Ans1, ScopeStage.Draft), (Trust1, ScopeStage.Draft), (Chal1, ScopeStage.Evidence), (Chal2, ScopeStage.Evidence), (Map1, ScopeStage.Draft), (Qst1, ScopeStage.Draft),
