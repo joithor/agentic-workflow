@@ -37,6 +37,8 @@ Aw.Judge.Core.Decisions.DecisionDetails.InputJson.get -> string!
 Aw.Judge.Core.Decisions.DecisionDetails.InputJson.init -> void
 Aw.Judge.Core.Decisions.DecisionDetails.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
 Aw.Judge.Core.Decisions.DecisionDetails.Probabilities.init -> void
+Aw.Judge.Core.Decisions.DecisionDetails.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Judge.Core.Decisions.DecisionDetails.Reasons.init -> void
 Aw.Judge.Core.Decisions.DecisionDetails.RulesOpinion.get -> string?
 Aw.Judge.Core.Decisions.DecisionDetails.RulesOpinion.init -> void
 Aw.Judge.Core.Decisions.DecisionDetails.SessionId.get -> Aw.Judge.Core.Ids.SessionId?
