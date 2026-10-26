@@ -20,7 +20,7 @@ public sealed class RewindEndedAgentTests
 
     private static readonly string[] _walked = ["intake", "read-brief", "gather", "draft", "check", "questions", "interview", "record", "apply"];
 
-    private static Aw.Sindri.Core.Workflow.Recipes.Recipe Scoping => RecipeComposition.ReadClean(Aw.Sindri.Testing.Workflow.ShippedRecipes.Read("sindri/workflow.scoping.yaml"), "workflow.scoping.yaml").Recipe;
+    private static Core.Workflow.Recipes.Recipe Scoping => RecipeComposition.ReadClean(Testing.Workflow.ShippedRecipes.Read("sindri/workflow.scoping.yaml"), "workflow.scoping.yaml").Recipe;
 
     private static WorkflowInstance WithLaunch()
     {

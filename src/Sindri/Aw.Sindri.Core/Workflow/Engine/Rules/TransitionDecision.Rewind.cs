@@ -40,7 +40,7 @@ public static partial class TransitionDecision
         return new Applied(d.Key, [own, .. entered.Children], entered.Effects, entered.FollowUps);
     }
 
-    private static Aw.Kernel.Error? RewindRefusal(Deciding d, WorkflowInstance instance, RewindRequested rewind)
+    private static Kernel.Error? RewindRefusal(Deciding d, WorkflowInstance instance, RewindRequested rewind)
     {
         var address = instance.Address.Value;
         if (instance.Ended)
@@ -66,7 +66,7 @@ public static partial class TransitionDecision
         return RewindTargetRefusal(d, instance, rewind.To);
     }
 
-    private static Aw.Kernel.Error? RewindBlockedByWait(WorkflowInstance instance)
+    private static Kernel.Error? RewindBlockedByWait(WorkflowInstance instance)
     {
         var address = instance.Address.Value;
         if (instance.Frame.Child is not null || instance.Suspension?.Mirrors is not null)
@@ -82,7 +82,7 @@ public static partial class TransitionDecision
         return null;
     }
 
-    private static Aw.Kernel.Error? RewindTargetRefusal(Deciding d, WorkflowInstance instance, string to)
+    private static Kernel.Error? RewindTargetRefusal(Deciding d, WorkflowInstance instance, string to)
     {
         var address = instance.Address.Value;
         var fix = $"rewind to one of: {string.Join(", ", RewindTargets(d, instance))}";
