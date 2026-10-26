@@ -85,7 +85,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     public int TitleFocusRequests { get; private set => Set(ref field, value); }
 
     /// <summary>Raised with the new item's id when the form has created it and closed.</summary>
-    internal event EventHandler<string>? Created;
+    internal event EventHandler<ItemCreatedEventArgs>? Created;
 
     /// <summary>The new item's id once accepted, else empty.</summary>
     public string CreatedId
@@ -204,7 +204,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
             // Only the form that sent it: Esc and C made another since.
             CreatedId = created.Value.ItemId;
             IsOpen = false;
-            Created?.Invoke(this, CreatedId);
+            Created?.Invoke(this, new ItemCreatedEventArgs(CreatedId));
         }
 
         return created.Value.Accepted;
