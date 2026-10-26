@@ -17,7 +17,7 @@ public sealed class ContextGraphInputContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ContextGraphInput.Descriptor;
 
-    protected override string ExpectedHash => "sha256:TODO-pin-from-the-gate-actual";
+    protected override string ExpectedHash => "sha256:2c17208d3e2e261c19e4986ca31aee485635cd53cabeccec1cf2fd546e8023bf";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
