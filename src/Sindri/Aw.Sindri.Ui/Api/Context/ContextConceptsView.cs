@@ -12,7 +12,6 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Links">The weighted links between concepts.</param>
 /// <param name="Next">The cursor of the next page; null on the last.</param>
 /// <param name="Code">The error code when the state is unavailable.</param>
-/// <param name="Glossary">The product's terms with their definitions; absent on a server that does not serve them (provisional, additive).</param>
 internal sealed record ContextConceptsView(
     int ApiVersion,
     string? Repo,
@@ -22,5 +21,4 @@ internal sealed record ContextConceptsView(
     ConceptOther? Other = null,
     IReadOnlyList<ConceptLink>? Links = null,
     string? Next = null,
-    string? Code = null,
-    IReadOnlyList<ConceptGlossaryEntry>? Glossary = null);
+    string? Code = null);

@@ -50,6 +50,7 @@ internal sealed partial class ContextPageViewModel
             Head = Labels.ContextConceptsHead;
             ChangedConcepts();
             ChangedWhole();
+            await ReadGlossary(api, read.Value.MapVersion, cancellationToken).ConfigureAwait(true);
             return;
         }
 
@@ -84,14 +85,33 @@ internal sealed partial class ContextPageViewModel
         return Joined(pages);
     }
 
-    // The first page's state and Other, with the concepts, links and glossary of every page.
+    // The first page's state and Other, with the concepts and links of every page.
     private static ContextConceptsView Joined(List<ContextConceptsView> pages) => pages[0] with
     {
         Concepts = [.. pages.SelectMany(p => p.Concepts ?? [])],
         Links = [.. pages.SelectMany(p => p.Links ?? [])],
-        Glossary = [.. pages.SelectMany(p => p.Glossary ?? [])],
         Next = null,
     };
+
+    // The concept cards' terms. No map (the 030 refusal, or a 200 "unavailable") and a server without the route leave the cards as the concepts read left them;
+    // any other refusal is said in one line with its code and message.
+    private async Task ReadGlossary(Uri api, string? mapVersion, CancellationToken cancellationToken)
+    {
+        var read = await Ports.Api.ContextConceptGlossary(api, new ConceptGlossaryQuery(_repo ?? string.Empty, mapVersion), cancellationToken).ConfigureAwait(true);
+        if (read.IsSuccess)
+        {
+            if (!string.Equals(read.Value.State, "unavailable", StringComparison.Ordinal))
+            {
+                Concepts.ShowTerms(read.Value);
+            }
+        }
+        else if (!string.Equals(read.Error.Code, NoMapCode, StringComparison.Ordinal) && !IsNotServed(read.Error))
+        {
+            Concepts.TermsUnavailable(read.Error.Code, read.Error.Message);
+        }
+
+        ChangedConcepts();
+    }
 
     /// <summary>Reads the page's top again (Retry, and when a build has ended): the concepts when none is open, else the open concept's map.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>

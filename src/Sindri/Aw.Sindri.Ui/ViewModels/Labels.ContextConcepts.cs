@@ -23,6 +23,15 @@ internal static partial class Labels
     /// <summary>The line when the map has no concepts yet; the map itself opens as before.</summary>
     internal const string ContextConceptsEmpty = "The map has no concepts yet, so the whole map is shown.";
 
+    /// <summary>The line over the cards when no concept has terms yet.</summary>
+    internal const string ContextConceptsNoTerms = "No terms yet.";
+
+    /// <summary>The line over the cards when the glossary is refused.</summary>
+    /// <param name="code">The error code.</param>
+    /// <param name="message">The refusal's message.</param>
+    /// <returns>"Terms are not available (SND-CONTEXT-041): ...".</returns>
+    internal static string ContextConceptsTermsUnavailable(string code, string message) => $"Terms are not available ({code}): {message}";
+
     /// <summary>The line while the concepts are still being built; the map itself opens as before.</summary>
     internal const string ContextConceptsBuilding = "The concepts are still being built, so the whole map is shown.";
 
