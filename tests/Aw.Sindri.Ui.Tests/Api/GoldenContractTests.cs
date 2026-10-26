@@ -57,6 +57,7 @@ public sealed class GoldenContractTests
         ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
         ["context-lenses"] = As<LensesView>,
         ["context-concepts"] = As<ContextConceptsView>,   // GET /sindri/context/concepts: the Context page's concept band (ui #1012); the refusals are ProblemDetails
+        ["context-concepts-glossary"] = As<ConceptGlossaryView>,   // GET /sindri/context/concepts/glossary: the concept cards' top terms (ui #1036); no-map-030 is a ProblemDetails
         ["context-whole"] = As<WholeMapView>,   // GET /context/map/whole (whole-map spec §2.1); the refusals (006, 030, 044, 045, 120, 200) are ProblemDetails
         ["context-filemap"] = As<FileMapView>,
         ["context-code"] = As<CodeView>,   // GET /sindri/context/code: the code lens' callers and callees (S-9)
@@ -94,7 +95,6 @@ public sealed class GoldenContractTests
     {
         "stop",
         "workflow-challenges-app",   // q93: the app asks for no challenge any more; the route stays served until api removes it
-        "context-concepts-glossary",   // q110 serves it first; ui's concept cards (#1036) read it and move it to _read
         "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
         "context-concepts-id-members",   // GET /sindri/context/concepts/{id}/members: the band reads sizes from the concepts answer, never a concept's member list
         "context-eval", "context-map-proposals", "context-query", "context-history", "context-subgraph", "context-search",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them

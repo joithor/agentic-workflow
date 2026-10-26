@@ -10,7 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Context.Concepts;
 [Lane(TestLane.Unit)]
 public sealed class ContextConceptTermsTests
 {
-    // Mirrors tests/Aw.Sindri.Tests/Golden/Api/context-concepts-glossary/terms.json (arrives with the context lane's glossary route).
+    // Mirrors tests/Aw.Sindri.Tests/Golden/Api/context-concepts-glossary/terms.json; GoldenContractTests reads all three goldens.
 #pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     private const string TermsBody = """
         {"apiVersion":1,"repo":"aw-split-panes","mapVersion":"v1","state":"ok",
