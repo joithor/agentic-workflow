@@ -18642,3 +18642,6 @@ Aw.Sindri.Core.Scoping.ChallengeRoundShape
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Covers(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> bool
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.LogShape(System.Text.Json.Nodes.JsonObject! round) -> string?
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Violation(System.ReadOnlySpan<byte> content) -> string?
+Aw.Sindri.Core.Scoping.JsonSchemaLite
+Aw.Sindri.Core.Scoping.JsonSchemaLite.JsonSchemaLite(System.Text.Json.Nodes.JsonNode! root) -> void
+Aw.Sindri.Core.Scoping.JsonSchemaLite.Validate(System.Text.Json.Nodes.JsonNode? instance, System.Text.Json.Nodes.JsonNode? schema) -> System.Collections.Generic.IReadOnlyList<(string! Path, string! Message)>!

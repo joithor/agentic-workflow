@@ -10,7 +10,7 @@ internal sealed class ScopeMapInstructions : IAgentStepInstructions
 
     private static readonly string[] _lines =
     [
-        $"fact:scopeMap is checked against {ModelFactSchemas.SchemaPath("fact:scopeMap")} and fact:acceptance against {ModelFactSchemas.SchemaPath("fact:acceptance")}; neither allows a field the schema does not list, and a report with one is refused with its path.",
+        $"fact:scopeMap is checked against {"schemas/scoping/scope-map.json"} and fact:acceptance against {"schemas/scoping/acceptance.json"}; neither allows a field the schema does not list, and a report with one is refused with its path.",
         "fact:scopeMap's top-level fields are only: surfaces, implications, workstreams, flagged, excluded, unmapped, unresolved. fact:acceptance's is only: items. Do not add others (no \"decisions\", no \"answers\").",
         "The owner's answers live in fact:answerLog, which Sindri writes: never copy them into the map. What an answer means for the work goes in scopeMap.implications, as an item that cites the answer (A<n>).",
     ];
