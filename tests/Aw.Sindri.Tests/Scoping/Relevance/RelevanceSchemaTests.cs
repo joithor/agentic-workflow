@@ -16,7 +16,7 @@ public sealed class RelevanceSchemaTests
 
     private const string MapFixes = """{"fixes":[{"id":"L-code-3","node":"code:src/admin/Shell.ts","action":"ignore","relabelTo":null,"reason":"A shared admin shell.","citation":"L-code-3","status":"proposed"}]}""";
 
-    private static IReadOnlyList<SchemaError> Check(string schema, string json, bool packetFile = false) => ScopeSchemas.Errors(schema, JsonNode.Parse(json), packetFile);
+    private static IReadOnlyList<(string Path, string Message)> Check(string schema, string json, bool packetFile = false) => ScopeSchemas.Errors(schema, JsonNode.Parse(json), packetFile);
 
     private static string Without(string json, string path) => Edit(json, node => RemovePath(node, path));
 
