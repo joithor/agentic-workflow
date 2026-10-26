@@ -552,7 +552,7 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
 | `SCP-CHAL-001` | evidence | The last entry of `fact:challenge.rounds[]` reports nothing new in surfaces and in behaviours, and lists every lens and dimension it walked |
 | `SCP-CHAL-002` | evidence | Both runs' runtime records (W8) show the challenger's model differs from the drafter's, and the vendor too when the profile allows more than one. When either run is `via: desk`, it is a warning shown first at the stop ("challenger ran at the desk: model self-reported" or "not recorded"), never a refusal. The packet records both |
 | `SCP-MAP-001` | draft | Workstreams: every surface sits in exactly one; dependencies exist and don't cycle (TS "How it works" step 3) |
-| `SCP-QST-001` | draft | Every question in `fact:questions` has two or three options and exactly one marked `recommended` (the scoping counterpart of DSN-DEC-001; #1204) |
+| `SCP-QST-001` | draft | Every question in `fact:questions` has two to four options and exactly one marked `recommended` (the scoping counterpart of DSN-DEC-001; #1204) |
 
 - **Outcomes.** `check`: `pass`, `gaps`, or `regather` when every failing rule is `SCP-COV-002`. `evidence`:
   `complete`, `incomplete`, or `regather` on the same condition. Warnings never change an outcome and are never

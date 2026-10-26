@@ -4,7 +4,7 @@ namespace Aw.Sindri.Features.Scoping;
 
 internal static partial class ScopePacketChecks
 {
-    /// <summary>SCP-QST-001: every interview question has two or three options and exactly one of them recommended, like a design decision (DSN-DEC-001); the owner's fastest path is the recommended option, and a delegated run can only follow one.</summary>
+    /// <summary>SCP-QST-001: every interview question has two to four options and exactly one of them recommended, like a design decision (DSN-DEC-001); the owner's fastest path is the recommended option, and a delegated run can only follow one.</summary>
     private static void QuestionsRecommended(ScopeContext c, RuleSink s)
     {
         if (!s.Need("questions"))
@@ -16,9 +16,9 @@ internal static partial class ScopePacketChecks
         {
             var id = ScopeJson.Str(question, "id") ?? "?";
             var options = ScopeJson.Items(question, "options").ToList();
-            if (options.Count is < 2 or > 3)
+            if (options.Count is < 2 or > 4)
             {
-                s.Fail(id, $"{id} has {options.Count} options", "Give it two or three options.");
+                s.Fail(id, $"{id} has {options.Count} options", "Give it two to four options.");
             }
 
             var recommended = options.Count(static o => ScopeJson.Bool(o, "recommended") == true);
