@@ -49,9 +49,14 @@ public sealed class ScopingRoundLogTests
     public void The_same_evidence_findings_two_rounds_running_reach_the_stop_instead_of_parking()
     {
         var lines = ShippedRecipes.Read(EvidenceEval).Split('\n', StringSplitOptions.RemoveEmptyEntries);   // start .. first incomplete (draft) .. drafted (check)
-        var repeat = lines.Skip(5).Take(7).ToArray();   // check pass .. propose .. evidence incomplete, the same findings again, reported as converged
+        var first = Array.FindIndex(lines, static l => l.Contains("\"outcome\":\"incomplete\"", StringComparison.Ordinal));
+        var pass = Array.FindIndex(lines, static l => l.Contains("\"outcome\":\"pass\"", StringComparison.Ordinal));
+        var clear = Array.FindIndex(lines, static l => l.Contains("\"outcome\":\"clear\"", StringComparison.Ordinal));
+        var again = JsonNode.Parse(lines[pass])!;   // why: the eval line is JSON; the gap search is latched shut after its clear round, so the check goes straight on to the questions
+        again["expect"] = JsonNode.Parse("""{"state":"questions"}""");
+        string[] repeat = [again.ToJsonString(), .. lines[(clear + 1)..(first + 1)]];   // check pass .. propose .. evidence incomplete, the same findings again, reported as converged
         var last = JsonNode.Parse(repeat[^1])!;   // why: the eval line is JSON
-        last["trigger"]!["outcome"] = "converged";   // the evidence Step reports the repeat as its own outcome   // why: a trigger line has a trigger object
+        last["trigger"]!["outcome"] = "converged";   // why: a trigger line has a trigger object; the evidence Step reports the repeat as its own outcome
         last["expect"] = JsonNode.Parse("""{"state":"stop"}""");
         repeat[^1] = last.ToJsonString();
         var read = EvalCaseReader.Read("converged", string.Join('\n', [.. lines, .. repeat]), EvalComposition.Options);

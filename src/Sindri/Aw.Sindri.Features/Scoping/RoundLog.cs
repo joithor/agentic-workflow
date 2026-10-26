@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Aw.Sindri.Features.Scoping;
@@ -34,7 +33,7 @@ internal static class RoundLog
     {
         ArgumentNullException.ThrowIfNull(findings);
         var log = Of(facts);
-        var number = round ?? Latest(log, step) + 1;
+        var number = round ?? (Latest(log, step) + 1);
         foreach (var finding in findings)
         {
             ScopeJson.Append(log, new JsonObject
@@ -72,5 +71,5 @@ internal static class RoundLog
     private static bool IsEntry(JsonNode entry, string step, int round) =>
         string.Equals(ScopeJson.Str(entry, "step"), step, StringComparison.Ordinal) && ScopeJson.Int(entry, "round") == round;
 
-    private static string KeyOf(ScopeFinding finding) => string.Create(CultureInfo.InvariantCulture, $"{finding.Rule}:{finding.Item}");
+    private static string KeyOf(ScopeFinding finding) => $"{finding.Rule}:{finding.Item}";
 }

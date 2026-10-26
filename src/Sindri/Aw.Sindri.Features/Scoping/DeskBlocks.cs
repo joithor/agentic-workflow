@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Scoping;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -41,12 +42,13 @@ internal static partial class DeskBlocks
     /// <param name="block">The Step's id.</param>
     /// <param name="facts">The facts.</param>
     /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds) => block switch
+    /// <param name="gapCap">The running recipe's loops.gapsearch.cap; the shipped default where no recipe runs the helper (the desk).</param>
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds, int gapCap = ScopeRules.DefaultGapRounds) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
         "step.scope.challenge-log" => ChallengeLog(facts),
-        "step.scope.evidence" => Evidence(facts, challengeCap),
+        "step.scope.evidence" => Evidence(facts, challengeCap, gapCap),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
@@ -173,6 +175,11 @@ internal static partial class DeskBlocks
         }
 
         var round = facts.ObjectCopy("challengeRound");
+        if (ChallengeRoundShape.LogShape(round) is { } shape)
+        {
+            return SindriErrors.InvalidInput.With(shape);
+        }
+
         var verdict = ScopeJson.Str(round, "verdict");
         var surfaces = ScopeJson.Items(round, "surfaces").ToList();
         var behaviours = ScopeJson.Items(round, "behaviours").ToList();
@@ -215,76 +222,17 @@ internal static partial class DeskBlocks
                 }
 
                 entry["digest"] = digest;
+                if (!ScopeJson.Strings(entry, "recordedAs").Any())
+                {
+                    // why: an applied answer is recorded as the question it answers (SCP-ACC-003 accepts a Q id); the draft may refine it to the items and map changes it caused
+                    var answered = ScopeJson.Strings(entry, "questionIds").Concat(ScopeJson.Items(entry, "answers").Select(static a => ScopeJson.Str(a, "question")).OfType<string>()).Distinct(StringComparer.Ordinal);
+                    entry["recordedAs"] = new JsonArray([.. answered.Select(static q => (JsonNode)JsonValue.Create(q))]);
+                }
+
                 ScopeJson.Append(log, entry);
             }
         }
 
         return Reply("step.interview.record", "recorded", Outputs(("answerLog", log)), []);
-    }
-
-    /// <summary>'fact:recommendation' for the owner's stop: approve when no question is left open, else revise (the stop's form shows it as the recommended outcome).</summary>
-    private static JsonObject Recommendation(JsonNode openQuestions)
-    {
-        var open = ScopeJson.Items(openQuestions).Count();
-        return new JsonObject
-        {
-            ["outcome"] = open == 0 ? "approve" : "revise",
-            ["why"] = open == 0 ? "Every check passed and no question is left open." : string.Create(CultureInfo.InvariantCulture, $"{open} question(s) are still open."),
-        };
-    }
-
-    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap)
-    {
-        var assembled = ScopeEvidence.FlagUncited(facts);
-        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap);
-        if (LensFaultAt("step.scope.evidence", report) is { } lens)
-        {
-            return lens;
-        }
-
-        if (report.Outcome is not ScopeOutcome.Complete)
-        {
-            var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
-            var missing = report.Rules.Where(static r => r.Status == ScopeRuleStatus.NotRun).Select(static r => r.Rule).ToList();
-            var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail))).ToList();
-            var log = RoundLog.Append(facts, "evidence", "step.scope.evidence", findings);
-            if (outcome == "incomplete" && RoundLog.Repeats(facts, "evidence", findings) && assembled.Missing("decision", "questions").Count == 0)
-            {
-                return Converged(assembled, findings, log, report);
-            }
-
-            return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
-        }
-
-        if (assembled.Missing("decision", "questions") is { Count: > 0 } lacking)
-        {
-            return SindriErrors.InvalidInput.With($"evidence assembles size.json and questions.json from {string.Join(", ", lacking)} (fix: write them into the facts directory)");
-        }
-
-        var outputs = Outputs(
-            ("scopeMap", assembled.Require("scopeMap")),
-            ("acceptance", assembled.Require("acceptance")),
-            ("coverage", assembled.Require("coverage")),
-            ("openQuestions", assembled.Require("openQuestions")),
-            ("recommendation", Recommendation(assembled.Require("openQuestions"))));
-        return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
-    }
-
-    /// <summary>
-    /// Two evidence rounds in a row found only the same things (#1120): another draft round would find them again, so the owner decides. The packet is assembled as on 'complete' (the stop reads it)
-    /// and the findings stay open in 'fact:findings' and the round log; the recommendation is to revise, and the freeze re-checks the packet, so nothing is approved around a failing rule.
-    /// </summary>
-    private static Result<ScopingDeskResponse> Converged(ScopeFacts assembled, List<ScopeFinding> findings, JsonArray log, ScopingCheckResponse report)
-    {
-        var open = string.Create(CultureInfo.InvariantCulture, $"{findings.Count} finding(s) are still open after two evidence rounds that found the same things.");
-        var outputs = Outputs(
-            ("scopeMap", assembled.Require("scopeMap")),
-            ("acceptance", assembled.Require("acceptance")),
-            ("coverage", assembled.Require("coverage")),
-            ("openQuestions", assembled.Require("openQuestions")),
-            ("recommendation", new JsonObject { ["outcome"] = "revise", ["why"] = open }),
-            ("findings", FindingsFact(findings)),
-            (RoundLog.Key, log));
-        return Reply("step.scope.evidence", "converged", outputs, ScopePacket.Build(assembled), report);
     }
 }
