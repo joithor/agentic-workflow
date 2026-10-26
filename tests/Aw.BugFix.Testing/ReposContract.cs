@@ -144,6 +144,7 @@ public abstract class ReposContract
 
         Expect.That(Ok(Git.FilesDeclaring(root, commit, "tests/Foo.Tests", "BugTests")).SequenceEqual(["tests/Foo.Tests/Slices/Deep/BugTests.cs"], StringComparer.Ordinal), "a class in a subfolder is found, a file that only mentions the name isn't");
         Expect.That(Ok(Git.FilesDeclaring(root, commit, "tests/Foo.Tests", "NoSuchTests")).Count == 0, "an unknown name gives an empty list");
+        Expect.That(Ok(Git.FilesDeclaring($"{root}/tests/Foo.Tests", commit, "tests/Foo.Tests", "BugTests")).SequenceEqual(["tests/Foo.Tests/Slices/Deep/BugTests.cs"], StringComparer.Ordinal), "from a subdirectory, the paths are still repository-relative");
     }
 
     /// <summary>Makes <paramref name="link"/> (repository-relative) a symlink to <paramref name="target"/> (relative to the link's directory).</summary>

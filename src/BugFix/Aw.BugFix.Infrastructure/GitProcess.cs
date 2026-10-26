@@ -94,7 +94,8 @@ internal sealed class GitProcess : IGit
         }
 
         var pattern = $"(^|[^[:alnum:]_])(class|record|struct|interface)[[:space:]]+{typeName}([^[:alnum:]_]|$)";
-        var run = Run(directory, "grep", "-l", "-E", pattern, commit, "--", under.Length == 0 ? "." : under);
+        // --full-name and :(top) keep the pathspec and the printed paths repository-relative when directory is a subdirectory.
+        var run = Run(directory, "grep", "-l", "--full-name", "-E", pattern, commit, "--", $":(top){under}");
         if (run.ExitCode == 1)
         {
             return Results.Success<IReadOnlyList<string>>([]);   // git grep exits 1 when nothing matches
