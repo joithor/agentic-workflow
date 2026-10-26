@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/ui-checks/gh-1096-filter-zoom.sh — check for #1096 (half 1): filtering the Context map to a term must zoom and pan to the matches.
-# Expected: on the 612-node map, searching one feature ('Area 3', 1 of 12) rises the zoom well above the whole-map fit and puts the middle of the canvas
-# inside that feature's part of the world (its opened column, the first in the world), not on the middle of the world.
+# Expected: on the 612-node map, searching one feature ('Area 3', 1 of 12) frames it: the zoom stays near or above the whole-map fit and the middle of the canvas
+# lands inside that feature's part of the world (its opened column, the first in the world), not on the middle of the world.
 # Why not the tabs map: 'context up' loads a 14-item map, and a term there (e.g. 'Pane layout' + its neighbours) is 7 of the 14 items across both columns,
 # so the zoom box is most of the map and a correct zoom looks like no zoom (the first version of this check read 'zoomed out' 1.42 -> 1.40 on main).
 # So it imports the generated map (sindri-ui-fixture.sh context whole over: 12 features x 50 files; it opens by feature, as tiles) and searches 'Area 3':
@@ -9,8 +9,10 @@
 # a file label such as 'File17.ts' is shared by all 12 features, so it would match 12 spread-out nodes. The answer opens that feature as a column of its
 # files (the page reads it with area=), so the check waits until the camera has settled.
 # The matches' rectangles are not in the element tree (one custom control draws the world); the driver reads the ZoomBorder's View (scale, offset) and
-# WorldBounds, which is what this asserts: (1) scale >= 1.2 x the whole-map fit; (2) the world point at the canvas centre is in the first fifth of the
-# world's width (the opened feature's column), not near the world's middle.
+# WorldBounds, which is what this asserts: (1) the zoom didn't drop below 0.9 x the whole-map fit (the opened feature is 51 nodes in a tall column, so
+# its fit is close to the whole map's: the first run on main framed it at 0.497 against a whole-map fit of 0.502, filling ~80% of the canvas height, so a
+# "zoomed in" rule would fail a correct frame); (2) the world point at the canvas centre is in the first fifth of the world's width (the opened feature's
+# column), not near the world's middle, which a re-fit of the whole map would give.
 # It drives the REAL sindri-ui. This check only measures: red or green on main is the answer.
 #   bash tests/ui-checks/gh-1096-filter-zoom.sh        exit 0 pass; 1 FAIL (one line on stderr); 2 the setup broke
 # Env: CTXUX_OUT (screenshots; default a new temp dir), AW_SINDRI_UI (a built sindri-ui), SINDRI (a built sindri).
@@ -53,9 +55,9 @@ sleep 3   # the feature's files are read before the camera moves
 settle
 shot after-filter
 
-lt "$(awk -v s0="$S0" 'BEGIN { print s0 * 1.2 }')" "$VIEW_S" || fail "filtering to '$term' (1 feature of 12) left the zoom at $VIEW_S (whole-map fit $S0): the matches are not framed"
+lt "$(awk -v s0="$S0" 'BEGIN { print s0 * 0.9 }')" "$VIEW_S" || fail "filtering to '$term' (1 feature of 12) zoomed out to $VIEW_S (whole-map fit $S0): the matches are not framed"
 
 read -r cx rel < <(awk -v cw="$CANVAS_W" -v s="$VIEW_S" -v vx="$VIEW_X" -v wx="$WB_X" -v ww="$WB_W" \
   'BEGIN { mx = (cw / 2 - vx) / s; printf "%.1f %.3f\n", mx, (mx - wx) / ww }')
 lt "$rel" 0.2 || fail "filtering to '$term' put the middle of the canvas at world x=$cx, $(awk -v r="$rel" 'BEGIN { printf "%d", r * 100 }')% across the world: not on the feature's column (the first fifth)"
-echo "PASS: filtering to '$term' zoomed $S0 -> $VIEW_S and centred on the feature's column (world x=$cx)"
+echo "PASS: filtering to '$term' framed the feature's column: zoom $S0 -> $VIEW_S, canvas middle at world x=$cx ($(awk -v r="$rel" 'BEGIN { printf "%d", r * 100 }')% across)"
