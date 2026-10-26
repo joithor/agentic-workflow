@@ -2031,6 +2031,10 @@ Aw.Sindri.Core.Scheduling.BuiltInService.Name.init -> void
 Aw.Sindri.Core.Scheduling.IScheduledService
 Aw.Sindri.Core.Scheduling.IScheduledService.Identity() -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Core.Scheduling.IScheduledService.Run(Aw.Sindri.Core.Scheduling.ScheduledRun! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scheduling.ScheduledResult!>!>
+Aw.Sindri.Core.Scheduling.LiveSchedule
+Aw.Sindri.Core.Scheduling.LiveSchedule.Current.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Ids.ServiceName, System.DateTimeOffset>?
+Aw.Sindri.Core.Scheduling.LiveSchedule.LiveSchedule() -> void
+Aw.Sindri.Core.Scheduling.LiveSchedule.Publish(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>! schedules) -> void
 Aw.Sindri.Core.Scheduling.IServicePauses
 Aw.Sindri.Core.Scheduling.IServicePauses.Paused(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Ids.ServiceName>!>!>
 Aw.Sindri.Core.Scheduling.IServiceRunRecorder
@@ -18901,3 +18905,26 @@ Aw.Sindri.Core.Launches.StalledLaunch.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Launches.StalledLaunch.Item.init -> void
 static Aw.Sindri.Core.Launches.StalledLaunches.Open(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.StalledLaunch!>! stalled, Aw.Sindri.Core.Views.IViewReader? views, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.StalledLaunch!>!>
 static Aw.Sindri.Core.Launches.StalledLaunches.MovedPast(Aw.Sindri.Core.Launches.StalledLaunch! launch, Aw.Sindri.Core.Views.EngineItemPart? engine) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Stamp.get -> Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Stamp.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.To.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.To.init -> void
+const Aw.Sindri.Core.Workflow.Engine.Triggers.TriggerNames.Rewind = "rewind" -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.KeyPart.get -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Name.get -> string!
+override Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.ToString() -> string!
+override sealed Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger? other) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!
+static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator !=(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator ==(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Views.InstanceDetail! detail) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, out string! To, out string? EndedLaunch) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.RewindRequested(string! Actor, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, string! To, string? EndedLaunch = null) -> void
