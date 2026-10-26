@@ -13,9 +13,12 @@ namespace Aw.Sindri.Features.ListServices;
 /// A service the approval dropped leaves the list, though its row stays in the view.
 /// </summary>
 internal sealed class ListServicesService(IApprovedProfile approvals, IViewReader views, IProjectorStatus status, IJobViews jobs,
-    IEnumerable<BuiltInService> builtIns, TimeProvider clock)
+    IEnumerable<BuiltInService> builtIns, LiveSchedule live, TimeProvider clock)
     : IService<ListServicesRequest, ListServicesResponse>
 {
+    /// <summary>How far past its slot the scheduler's next slot may be before the service counts as overdue: the loop ticks every second, so a minute rules out a busy tick.</summary>
+    internal static readonly TimeSpan OverdueGrace = TimeSpan.FromMinutes(1);
+
     public async ValueTask<Result<ListServicesResponse>> Handle(ListServicesRequest request, CancellationToken cancellationToken)
     {
         var current = status.Current;
@@ -80,7 +83,22 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         var paused = row?.Paused == true;
         return new ServiceView(ServiceName.From(entry.Name), entry.Every, paused, row?.LastRun, paused ? null : NextSlot(entry.Every, row), job,
             ServiceActions.Allowed(entry.NamedByProfile, builtIn: !entry.NamedByProfile, paused, job is not null),
-            entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null);
+            entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null, OverdueSince(ServiceName.From(entry.Name), paused));
+    }
+
+    /// <summary>
+    /// The scheduler's own next slot when it is more than <see cref="OverdueGrace"/> past: the loop moves a due slot on within a tick while it
+    /// holds the lease (a paused service's slot passes unrun, a busy one is skipped), so a slot left behind was missed. Null while paused, before the
+    /// scheduler loads a schedule, and for a service it does not hold.
+    /// </summary>
+    private DateTimeOffset? OverdueSince(ServiceName name, bool paused)
+    {
+        if (paused || live.Current is not { } slots || !slots.TryGetValue(name, out var slot))
+        {
+            return null;
+        }
+
+        return clock.GetUtcNow() - slot > OverdueGrace ? slot : null;
     }
 
     private DateTimeOffset? NextSlot(string every, ServiceRow? row)
