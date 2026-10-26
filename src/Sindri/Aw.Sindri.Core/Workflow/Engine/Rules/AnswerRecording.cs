@@ -10,6 +10,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// </summary>
 public static class AnswerRecording
 {
+    private const string InterviewAnswer = "step.interview.answer";
+
     /// <summary>The open interview desk run's token, or the refusal (SND-WF-003, "rewind to interview first") for an instance that isn't at it.</summary>
     /// <param name="instance">The instance as it stands.</param>
     /// <param name="recipe">Its recipe.</param>
@@ -18,6 +20,16 @@ public static class AnswerRecording
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(recipe);
-        throw new NotSupportedException("answer --record is not implemented yet (#1270)");
+        var address = instance.Address.Value;
+        var fix = $"rewind to interview first: sindri workflow rewind {address} --to interview";
+        if (instance.Ended || instance.Suspension is not null)
+        {
+            return WorkflowErrors.TriggerNotAllowed.With($"answer --record needs {address} at 'interview' with its desk run open, and it is {(instance.Ended ? "ended" : "parked or taken over")} (fix: {fix})");
+        }
+
+        var step = recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.Step : null;
+        return string.Equals(step?.Use.Value, InterviewAnswer, StringComparison.Ordinal) && instance.Frame.Run is { Runtime: StepRuntime.Desk } run
+            ? run.Token
+            : WorkflowErrors.TriggerNotAllowed.With($"answer --record needs {address} at 'interview', not '{instance.State}' (fix: {fix})");
     }
 }
