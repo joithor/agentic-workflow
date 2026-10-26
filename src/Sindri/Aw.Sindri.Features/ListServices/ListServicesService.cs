@@ -41,23 +41,56 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         var named = approved.Value?.Profile.Services ?? SindriProfile.NoServices;
         var own = builtIns.Where(b => BuiltInService.Is(b.Name, named.ContainsKey(b.Name.Value), builtIns)).ToDictionary(b => b.Name.Value, b => b.Cadence.ToString(), StringComparer.Ordinal);   // a profile entry of the same name sets the cadence instead
         var runs = rows.Value.Where(r => named.ContainsKey(r.Name.Value) || own.ContainsKey(r.Name.Value)).ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
+        var described = Descriptions(builtIns);
         IReadOnlyList<ServiceView> services = [.. named.Select(s => (Name: s.Key, s.Value.Every)).Concat(own.Select(s => (Name: s.Key, Every: s.Value)))
             .OrderBy(s => s.Name, StringComparer.Ordinal)
-            .Select(s => View(s.Name, s.Every, runs.GetValueOrDefault(s.Name), running.Value.FirstOrDefault(j => j.Service?.Value == s.Name)?.Id, named.ContainsKey(s.Name)))];
+            .Select(s => View(new Listed(s.Name, s.Every, described.GetValueOrDefault(s.Name), named.ContainsKey(s.Name)), runs.GetValueOrDefault(s.Name), running.Value.FirstOrDefault(j => j.Service?.Value == s.Name)?.Id))];
         return new ListServicesResponse(services, EmptyText.For(current, services.Count == 0, EmptyText.Services), asOf);
+    }
+
+    /// <summary>What each service the build knows does: the built-ins carry their own sentence, a profile service of the build (the profile has no field for one) is named in <see cref="ServiceDescriptions"/>.</summary>
+    private static Dictionary<string, string> Descriptions(IEnumerable<BuiltInService> builtIns)
+    {
+        var described = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var name in new[] { ServiceDescriptions.HeartbeatName, ServiceDescriptions.JobProbeName })
+        {
+            if (ServiceDescriptions.Of(name) is { } text)
+            {
+                described[name] = text;
+            }
+        }
+
+        foreach (var builtIn in builtIns)
+        {
+            if (builtIn.Description is { } text)
+            {
+                described[builtIn.Name.Value] = text;
+            }
+        }
+
+        return described;
     }
 
     /// <summary>
     /// One service; the approved profile was checked, so its cadence parses (an unparseable one shows no next slot). The next slot is the scheduler's last
     /// slot plus the cadence, so a manual run does not move it, and there is none while the service is paused.
     /// </summary>
-    private ServiceView View(string name, string every, ServiceRow? row, JobId? job, bool namedByProfile)
+    private ServiceView View(Listed entry, ServiceRow? row, JobId? job)
+    {
+        var paused = row?.Paused == true;
+        return new ServiceView(ServiceName.From(entry.Name), entry.Every, paused, row?.LastRun, paused ? null : NextSlot(entry.Every, row), job,
+            ServiceActions.Allowed(entry.NamedByProfile, builtIn: !entry.NamedByProfile, paused, job is not null),
+            entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null);
+    }
+
+    private DateTimeOffset? NextSlot(string every, ServiceRow? row)
     {
         var cadence = Cadence.Parse(every);
-        var paused = row?.Paused == true;
-        DateTimeOffset? next = !paused && row?.ScheduledSlot is { } slot && cadence.IsSuccess ? Upcoming(slot, cadence.Value.Interval) : null;
-        return new ServiceView(ServiceName.From(name), every, paused, row?.LastRun, next, job, ServiceActions.Allowed(namedByProfile, builtIn: !namedByProfile, paused, job is not null));
+        return row?.ScheduledSlot is { } slot && cadence.IsSuccess ? Upcoming(slot, cadence.Value.Interval) : null;
     }
+
+    /// <summary>One service of the list before its run is joined: the name, the cadence text, the sentence, and whether the profile names it.</summary>
+    private sealed record Listed(string Name, string Every, string? Description, bool NamedByProfile);
 
     /// <summary>
     /// The first slot of the series after <paramref name="slot"/> that is still to come. An idle run after an ok one records nothing (C8), so the

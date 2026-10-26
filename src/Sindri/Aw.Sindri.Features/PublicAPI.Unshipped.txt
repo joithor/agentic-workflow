@@ -2217,12 +2217,18 @@ Aw.Sindri.Features.ListRequests.RequestView.State.get -> Aw.Sindri.Core.Requests
 Aw.Sindri.Features.ListRequests.RequestView.State.init -> void
 Aw.Sindri.Features.ListRequests.RequestView.Text.get -> string!
 Aw.Sindri.Features.ListRequests.RequestView.Text.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot, out Aw.Sindri.Core.Ids.JobId? Job, out System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Features.ListServices.ServiceView.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out string! Every, out bool Paused, out Aw.Sindri.Core.Views.LastRun? LastRun, out System.DateTimeOffset? NextSlot, out Aw.Sindri.Core.Ids.JobId? Job, out System.Collections.Generic.IReadOnlyList<string!>! Actions, out string? Description, out string? PausedBy, out System.DateTimeOffset? PausedAt) -> void
 Aw.Sindri.Features.ListServices.ServiceView.Job.get -> Aw.Sindri.Core.Ids.JobId?
 Aw.Sindri.Features.ListServices.ServiceView.Job.init -> void
 Aw.Sindri.Features.ListServices.ServiceView.Actions.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.ListServices.ServiceView.Actions.init -> void
-Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot, Aw.Sindri.Core.Ids.JobId? Job, System.Collections.Generic.IReadOnlyList<string!>! Actions) -> void
+Aw.Sindri.Features.ListServices.ServiceView.Description.get -> string?
+Aw.Sindri.Features.ListServices.ServiceView.Description.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.PausedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ListServices.ServiceView.PausedAt.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.PausedBy.get -> string?
+Aw.Sindri.Features.ListServices.ServiceView.PausedBy.init -> void
+Aw.Sindri.Features.ListServices.ServiceView.ServiceView(Aw.Sindri.Core.Ids.ServiceName Name, string! Every, bool Paused, Aw.Sindri.Core.Views.LastRun? LastRun, System.DateTimeOffset? NextSlot, Aw.Sindri.Core.Ids.JobId? Job, System.Collections.Generic.IReadOnlyList<string!>! Actions, string? Description = null, string? PausedBy = null, System.DateTimeOffset? PausedAt = null) -> void
 Aw.Sindri.Features.PauseService.PauseServiceRequest
 Aw.Sindri.Features.PauseService.PauseServiceRequest.<Clone>$() -> Aw.Sindri.Features.PauseService.PauseServiceRequest!
 Aw.Sindri.Features.PauseService.PauseServiceRequest.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name) -> void
@@ -4848,9 +4854,7 @@ static Aw.Sindri.Features.ContextCalls.ScanContextConceptsRequest.operator !=(Aw
 static Aw.Sindri.Features.ContextCalls.ScanContextConceptsRequest.operator ==(Aw.Sindri.Features.ContextCalls.ScanContextConceptsRequest? left, Aw.Sindri.Features.ContextCalls.ScanContextConceptsRequest? right) -> bool
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult!
-Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Deconstruct(out int Version, out bool OnDraft, out string! Outcome, out int Hints, out int Searches, out string? Reason) -> void
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Equals(Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? other) -> bool
-Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.ScanContextConceptsResult(int Version, bool OnDraft, string! Outcome, int Hints, int Searches, string? Reason) -> void
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Version.get -> int
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Version.init -> void
 Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.OnDraft.get -> bool
@@ -4868,6 +4872,12 @@ override Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.GetHashCode()
 override Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.operator !=(Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? left, Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.operator ==(Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? left, Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? right) -> bool
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Deconstruct(out int Version, out bool OnDraft, out string! Outcome, out int Hints, out int Searches, out string? Reason, out string? Tier, out string? Model) -> void
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Model.get -> string?
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Model.init -> void
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.ScanContextConceptsResult(int Version, bool OnDraft, string! Outcome, int Hints, int Searches, string? Reason, string? Tier = null, string? Model = null) -> void
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Tier.get -> string?
+Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.Tier.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Unreadable.get -> string?
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Unreadable.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest
