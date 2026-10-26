@@ -135,14 +135,14 @@ internal sealed partial class ShellViewModel
         {
             if (string.Equals(e.PropertyName, nameof(InstanceFrameViewModel.Title), StringComparison.Ordinal))
             {
-                Changed(nameof(EdgeTabText));
+                Changed(nameof(EdgeTabText), nameof(SheetName), nameof(EdgeTabName));
             }
         };
         Item.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(ItemSheetViewModel.Title), StringComparison.Ordinal))
             {
-                Changed(nameof(EdgeTabText));
+                Changed(nameof(EdgeTabText), nameof(SheetName), nameof(EdgeTabName));
             }
         };
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);

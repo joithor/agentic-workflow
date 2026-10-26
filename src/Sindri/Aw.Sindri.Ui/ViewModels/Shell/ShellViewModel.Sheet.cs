@@ -23,8 +23,20 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet's accessible name: the kind's noun and the subject ("Workflow X"); an id that names itself stays bare.</summary>
     public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + NamedSubject : SheetSubject;
 
-    /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject : SheetSubject);
+    /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case; an item or workflow reads its title, or the bare noun while it loads, never the raw address.</summary>
+    public string EdgeTabName => Labels.Reopen + " " + EdgeTabSubject;
+
+#pragma warning disable IDE0072 // every other kind falls to the noun arm
+    private string EdgeTabSubject => SheetLink?.Kind switch
+    {
+        DeepLinkKind.Item => Joined("item", Item.Title),
+        DeepLinkKind.Workflow => Joined("workflow", Instance.Title),
+        { } kind when Labels.KindNoun(kind) is { Length: > 0 } noun => char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject,
+        _ => SheetSubject,
+    };
+#pragma warning restore IDE0072
+
+    private static string Joined(string noun, string title) => title.Length > 0 ? noun + " " + title : noun;
 
     /// <summary>The edge tab's text: the item's or workflow's readable title once read, else the sheet kind's plain word; never a raw address.</summary>
 #pragma warning disable IDE0072 // the kinds whose subject is already a readable name keep it

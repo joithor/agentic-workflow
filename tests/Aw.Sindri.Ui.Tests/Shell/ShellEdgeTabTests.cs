@@ -62,6 +62,39 @@ public sealed partial class ShellEdgeTabTests
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
     }, Token);
 
+    [Fact]
+    public Task An_item_sheets_edge_tab_name_reads_Reopen_item_then_the_items_title_never_the_address() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+
+        shell.Navigate(new DeepLink(DeepLinkKind.Item, A.NewItem));
+        shell.CloseSheet();
+        Assert.Equal(Labels.Reopen + " item", shell.EdgeTabName);
+        Assert.DoesNotContain(A.NewItem, shell.EdgeTabName, StringComparison.Ordinal);
+
+        await ShellWait.Until(shell, () => shell.Item.Title == "Try the queue", Token);
+        Assert.Contains("Try the queue", shell.EdgeTabName, StringComparison.Ordinal);
+        Assert.DoesNotContain(A.NewItem, shell.EdgeTabName, StringComparison.Ordinal);
+        Assert.DoesNotMatch(RawAddress, shell.EdgeTabName);
+    }, Token);
+
+    [Fact]
+    public Task A_workflow_sheets_edge_tab_name_reads_Reopen_workflow_then_the_runs_title_never_the_address() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        var detail = FixtureInstances.Detail("project-build");
+
+        shell.OpenInstance(detail.Address, detail.Id);
+        shell.CloseSheet();
+        Assert.Equal(Labels.Reopen + " workflow", shell.EdgeTabName);
+        Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
+
+        await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
+        Assert.Contains(detail.Title, shell.EdgeTabName, StringComparison.Ordinal);
+        Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
+        Assert.DoesNotMatch(RawAddress, shell.EdgeTabName);
+    }, Token);
+
     [Theory]
     [InlineData("job/JOB-9")]
     [InlineData("needs-you/ITM-01JC8")]
