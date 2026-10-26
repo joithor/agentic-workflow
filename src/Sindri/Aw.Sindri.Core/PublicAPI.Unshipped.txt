@@ -915,7 +915,9 @@ Aw.Sindri.Core.Events.ServiceRan.Code.get -> string?
 Aw.Sindri.Core.Events.ServiceRan.Code.init -> void
 Aw.Sindri.Core.Events.ServiceRan.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
 Aw.Sindri.Core.Events.ServiceRan.CommandId.init -> void
-Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out Aw.Sindri.Core.Ids.JobId? Job) -> void
+Aw.Sindri.Core.Events.ServiceRan.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.ServiceName Service, out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out Aw.Sindri.Core.Ids.JobId? Job, out string? Detail) -> void
+Aw.Sindri.Core.Events.ServiceRan.Detail.get -> string?
+Aw.Sindri.Core.Events.ServiceRan.Detail.init -> void
 Aw.Sindri.Core.Events.ServiceRan.Equals(Aw.Sindri.Core.Events.ServiceRan? other) -> bool
 Aw.Sindri.Core.Events.ServiceRan.Job.get -> Aw.Sindri.Core.Ids.JobId?
 Aw.Sindri.Core.Events.ServiceRan.Job.init -> void
@@ -923,7 +925,7 @@ Aw.Sindri.Core.Events.ServiceRan.Outcome.get -> Aw.Sindri.Core.Events.ServiceOut
 Aw.Sindri.Core.Events.ServiceRan.Outcome.init -> void
 Aw.Sindri.Core.Events.ServiceRan.Service.get -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Core.Events.ServiceRan.Service.init -> void
-Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, Aw.Sindri.Core.Ids.JobId? Job = null) -> void
+Aw.Sindri.Core.Events.ServiceRan.ServiceRan(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.ServiceName Service, System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, Aw.Sindri.Core.Ids.JobId? Job = null, string? Detail = null) -> void
 Aw.Sindri.Core.Events.ServiceRan.Slot.get -> System.DateTimeOffset
 Aw.Sindri.Core.Events.ServiceRan.Slot.init -> void
 Aw.Sindri.Core.Events.ServiceResumed
@@ -2017,10 +2019,12 @@ Aw.Sindri.Core.Requests.RequestState.Open = 0 -> Aw.Sindri.Core.Requests.Request
 Aw.Sindri.Core.Requests.RequestState.Voided = 3 -> Aw.Sindri.Core.Requests.RequestState
 Aw.Sindri.Core.Scheduling.BuiltInService
 Aw.Sindri.Core.Scheduling.BuiltInService.<Clone>$() -> Aw.Sindri.Core.Scheduling.BuiltInService!
-Aw.Sindri.Core.Scheduling.BuiltInService.BuiltInService(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Profile.Cadence! Cadence) -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.BuiltInService(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Profile.Cadence! Cadence, string? Description = null) -> void
 Aw.Sindri.Core.Scheduling.BuiltInService.Cadence.get -> Aw.Sindri.Core.Profile.Cadence!
 Aw.Sindri.Core.Scheduling.BuiltInService.Cadence.init -> void
-Aw.Sindri.Core.Scheduling.BuiltInService.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Profile.Cadence! Cadence) -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Profile.Cadence! Cadence, out string? Description) -> void
+Aw.Sindri.Core.Scheduling.BuiltInService.Description.get -> string?
+Aw.Sindri.Core.Scheduling.BuiltInService.Description.init -> void
 Aw.Sindri.Core.Scheduling.BuiltInService.Equals(Aw.Sindri.Core.Scheduling.BuiltInService? other) -> bool
 Aw.Sindri.Core.Scheduling.BuiltInService.Name.get -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Core.Scheduling.BuiltInService.Name.init -> void
@@ -2233,9 +2237,11 @@ Aw.Sindri.Core.Views.LastRun
 Aw.Sindri.Core.Views.LastRun.<Clone>$() -> Aw.Sindri.Core.Views.LastRun!
 Aw.Sindri.Core.Views.LastRun.Code.get -> string?
 Aw.Sindri.Core.Views.LastRun.Code.init -> void
-Aw.Sindri.Core.Views.LastRun.Deconstruct(out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Views.LastRun.Deconstruct(out System.DateTimeOffset Slot, out Aw.Sindri.Core.Events.ServiceOutcome Outcome, out string? Code, out System.DateTimeOffset RanAt, out string? Detail) -> void
+Aw.Sindri.Core.Views.LastRun.Detail.get -> string?
+Aw.Sindri.Core.Views.LastRun.Detail.init -> void
 Aw.Sindri.Core.Views.LastRun.Equals(Aw.Sindri.Core.Views.LastRun? other) -> bool
-Aw.Sindri.Core.Views.LastRun.LastRun(System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, System.DateTimeOffset RanAt) -> void
+Aw.Sindri.Core.Views.LastRun.LastRun(System.DateTimeOffset Slot, Aw.Sindri.Core.Events.ServiceOutcome Outcome, string? Code, System.DateTimeOffset RanAt, string? Detail = null) -> void
 Aw.Sindri.Core.Views.LastRun.Outcome.get -> Aw.Sindri.Core.Events.ServiceOutcome
 Aw.Sindri.Core.Views.LastRun.Outcome.init -> void
 Aw.Sindri.Core.Views.LastRun.RanAt.get -> System.DateTimeOffset
@@ -2320,7 +2326,11 @@ Aw.Sindri.Core.Views.RequestRow.Text.get -> string!
 Aw.Sindri.Core.Views.RequestRow.Text.init -> void
 Aw.Sindri.Core.Views.ServiceRow
 Aw.Sindri.Core.Views.ServiceRow.<Clone>$() -> Aw.Sindri.Core.Views.ServiceRow!
-Aw.Sindri.Core.Views.ServiceRow.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Views.LastRun? LastRun, out bool Paused, out long Sequence, out System.DateTimeOffset? ScheduledSlot) -> void
+Aw.Sindri.Core.Views.ServiceRow.Deconstruct(out Aw.Sindri.Core.Ids.ServiceName Name, out Aw.Sindri.Core.Views.LastRun? LastRun, out bool Paused, out long Sequence, out System.DateTimeOffset? ScheduledSlot, out string? PausedBy, out System.DateTimeOffset? PausedAt) -> void
+Aw.Sindri.Core.Views.ServiceRow.PausedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Views.ServiceRow.PausedAt.init -> void
+Aw.Sindri.Core.Views.ServiceRow.PausedBy.get -> string?
+Aw.Sindri.Core.Views.ServiceRow.PausedBy.init -> void
 Aw.Sindri.Core.Views.ServiceRow.Equals(Aw.Sindri.Core.Views.ServiceRow? other) -> bool
 Aw.Sindri.Core.Views.ServiceRow.LastRun.get -> Aw.Sindri.Core.Views.LastRun?
 Aw.Sindri.Core.Views.ServiceRow.LastRun.init -> void
@@ -2332,7 +2342,7 @@ Aw.Sindri.Core.Views.ServiceRow.ScheduledSlot.get -> System.DateTimeOffset?
 Aw.Sindri.Core.Views.ServiceRow.ScheduledSlot.init -> void
 Aw.Sindri.Core.Views.ServiceRow.Sequence.get -> long
 Aw.Sindri.Core.Views.ServiceRow.Sequence.init -> void
-Aw.Sindri.Core.Views.ServiceRow.ServiceRow(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Views.LastRun? LastRun, bool Paused, long Sequence, System.DateTimeOffset? ScheduledSlot = null) -> void
+Aw.Sindri.Core.Views.ServiceRow.ServiceRow(Aw.Sindri.Core.Ids.ServiceName Name, Aw.Sindri.Core.Views.LastRun? LastRun, bool Paused, long Sequence, System.DateTimeOffset? ScheduledSlot = null, string? PausedBy = null, System.DateTimeOffset? PausedAt = null) -> void
 Aw.Sindri.Core.Views.TimelineRow
 Aw.Sindri.Core.Views.TimelineRow.<Clone>$() -> Aw.Sindri.Core.Views.TimelineRow!
 Aw.Sindri.Core.Views.TimelineRow.Actor.get -> string!
@@ -5914,7 +5924,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 12 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 13 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -18671,6 +18681,12 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.ShippedApprovalPlans(Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeRegistration? registration = null, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet? files = null, Aw.Sindri.Core.Workflow.Registry.IRecipeStore? store = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Scheduling.ServiceDescriptions
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.Heartbeat = "Records that Sindri is alive." -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.HeartbeatName = "heartbeat" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbe = "Runs a short job so the job panel can be tried." -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbeName = "job-probe" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceDescriptions.Of(string! name) -> string?
 Aw.Sindri.Core.Setup.IBuildStamps
 Aw.Sindri.Core.Setup.IBuildStamps.Installed() -> string?
 Aw.Sindri.Core.Setup.IBuildStamps.Running() -> string?
