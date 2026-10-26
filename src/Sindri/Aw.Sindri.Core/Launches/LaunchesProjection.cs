@@ -189,8 +189,8 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
                 Code = failed.Code,
                 Message = SafeText.Escape(failed.Message),
                 Stage = failed.Stage,
-                Reason = failed.Reason,
-                Source = failed.Source,
+                Reason = failed.Detail?.Reason,
+                Source = failed.Detail?.Source,
                 Step = new LaunchStep(failed.Instance, failed.State, failed.Attempt),
                 Sequence = recorded.Sequence,
             };
