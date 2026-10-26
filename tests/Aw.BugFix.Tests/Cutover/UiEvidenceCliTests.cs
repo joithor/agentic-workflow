@@ -16,6 +16,7 @@ public sealed class UiEvidenceCliTests : IDisposable
 {
     private static readonly string _script = string.Join('\n',
     [
+        """#!/bin/bash""",
         """printf '%s\n' "$@" > @DIR@/argv """,
         """env | grep '^AW_' > @DIR@/env || true """,
         """mkdir -p "$3" """,

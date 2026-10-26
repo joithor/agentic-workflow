@@ -1,5 +1,4 @@
 using Aw.BugFix.Tests.Contracts;
-using Aw.Kernel.Testing;
 
 namespace Aw.BugFix.Tests.Cutover;
 
@@ -12,7 +11,11 @@ internal sealed class StubBinary : IDisposable
     {
         Directory = _dir.Path;
         Path = System.IO.Path.Combine(Directory, name);
-        _ = ExecutableScript.Write(Path, script.Replace("@DIR@", Directory, StringComparison.Ordinal), "/bin/bash");   // the stub binaries are bash scripts
+        File.WriteAllText(Path, script.Replace("@DIR@", Directory, StringComparison.Ordinal));
+        if (!OperatingSystem.IsWindows())   // the stub binaries are bash scripts
+        {
+            File.SetUnixFileMode(Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     public string Directory { get; }
