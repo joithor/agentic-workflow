@@ -124,7 +124,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private IReadOnlyList<EffectCommand> Notices(WorkflowInstance? before, WorkflowInstance after, WorkflowEventType change)
     {
-        var notices = EngineNotices.For(before, after, _mirrored, _deskTaskNotified, change, StageName);
+        var notices = EngineNotices.For(before, after, _mirrored, _deskTaskNotified, new NoticeChange(change, StageName));
         _deskTaskNotified |= EngineNotices.NoticedDeskTask(after, notices);
         return [.. notices.Select(static n => n.Command)];
     }

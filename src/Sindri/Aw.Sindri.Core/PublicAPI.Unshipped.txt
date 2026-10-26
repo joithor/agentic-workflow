@@ -7801,7 +7801,6 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator !=(Aw.Sindri.Co
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? left, Aw.Sindri.Core.Workflow.Engine.Effects.EffectRow? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.EffectRules.Recheck(Aw.Sindri.Core.Workflow.Engine.CommandOrigin origin, Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck approval, Aw.Sindri.Core.Profile.EffectSettings! effects, Aw.Sindri.Core.Workflow.Ids.BlockId kind) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
-static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change, System.Func<string!, string?>? stageName = null) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
 static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.NoticedDeskTask(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>! notices) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Of(Aw.Sindri.Core.Workflow.Engine.Effects.EffectState state) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? left, Aw.Sindri.Core.Workflow.Engine.Effects.WorkflowClaim? right) -> bool
@@ -18637,3 +18636,19 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange!
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, out System.Func<string!, string?>? StageName) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.NoticeChange(Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType Type, System.Func<string!, string?>? StageName = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.StageName.get -> System.Func<string!, string?>?
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.StageName.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.Type.get -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
+Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.Type.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange! change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
+static Aw.Sindri.Core.Workflow.Engine.Effects.EngineNotices.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version, bool deskTaskNotified, Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType change) -> System.Collections.Generic.IReadOnlyList<(Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand! Command, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class)>!
+static Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange? left, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange? left, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeChange? right) -> bool

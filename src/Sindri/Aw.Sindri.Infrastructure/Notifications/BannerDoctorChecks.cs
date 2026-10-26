@@ -20,7 +20,7 @@ internal sealed class BannerDoctorChecks(bool isMacOs, Func<string?> terminalNot
         }
 
         var found = terminalNotifier();
-        DoctorCheck check = found is { Length: > 0 }
+        var check = found is { Length: > 0 }
             ? new DoctorCheck(Name, CheckState.Ok, $"desktop banners go through {found}", Fix: null)
             : new DoctorCheck(Name, CheckState.Warn, "desktop banners are off: terminal-notifier isn't installed", "brew install terminal-notifier (or rerun ./setup.sh)");
         return ValueTask.FromResult<IReadOnlyList<DoctorCheck>>([check]);

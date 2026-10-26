@@ -24,7 +24,17 @@ public static class EngineNotices
     /// <param name="deskTaskNotified">Whether the instance already sent a desk-task notice (only the first interrupts).</param>
     /// <returns>Each notice's command and class.</returns>
     public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified) =>
-        For(before, after, version, deskTaskNotified, WorkflowEventType.Transition);
+        For(before, after, version, deskTaskNotified, new NoticeChange(WorkflowEventType.Transition));
+
+    /// <summary>The notices a change of type <paramref name="change"/> sends, naming each stage by its id made readable.</summary>
+    /// <param name="before">The instance before the change (null at start).</param>
+    /// <param name="after">The instance after it.</param>
+    /// <param name="version">The instance's version after the change.</param>
+    /// <param name="deskTaskNotified">Whether the instance already sent a desk-task notice.</param>
+    /// <param name="change">The type of the change's ledger event.</param>
+    /// <returns>Each notice's command and class.</returns>
+    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, WorkflowEventType change) =>
+        For(before, after, version, deskTaskNotified, new NoticeChange(change));
 
     /// <summary>
     /// The notices a change of type <paramref name="change"/> sends (§6.3): a park or an escalation that is new
@@ -36,21 +46,21 @@ public static class EngineNotices
     /// <param name="after">The instance after it.</param>
     /// <param name="version">The instance's version after the change.</param>
     /// <param name="deskTaskNotified">Whether the instance already sent a desk-task notice.</param>
-    /// <param name="change">The type of the change's ledger event.</param>
-    /// <param name="stageName">Reads a recipe state's display name (the text names the stage by it); null names a stage by its id made readable.</param>
+    /// <param name="change">The change's ledger event type and how its banner names a stage.</param>
     /// <returns>Each notice's command and class.</returns>
-    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, WorkflowEventType change, Func<string, string?>? stageName = null)
+    public static IReadOnlyList<(EffectCommand Command, NoticeClass Class)> For(WorkflowInstance? before, WorkflowInstance after, int version, bool deskTaskNotified, NoticeChange change)
     {
         ArgumentNullException.ThrowIfNull(after);
+        ArgumentNullException.ThrowIfNull(change);
         if (after.Ended)
         {
             return [];
         }
 
-        var stage = NoticeWords.Stage(after.Frame.State, stageName);
+        var stage = NoticeWords.Stage(after.Frame.State, change.StageName);
         var notice = after.Suspension switch
         {
-            { Kind: SuspensionKind.Takeover } when change == WorkflowEventType.Notified =>
+            { Kind: SuspensionKind.Takeover } when change.Type == WorkflowEventType.Notified =>
                 (NoticeClass.Interrupt, NoticeWords.IdleTakeover(stage)),
             { Kind: SuspensionKind.Park } park when AsksAHuman(park, before) =>
                 (NoticeClass.Interrupt, NoticeWords.Park(stage, park.Reason)),
@@ -87,7 +97,7 @@ public static class EngineNotices
 
     /// <summary>Whether a change leaving the instance as <paramref name="after"/> sent a desk-task notice (the first one interrupts).</summary>
     /// <param name="after">The instance after the change.</param>
-    /// <param name="notices">The notices <see cref="For(WorkflowInstance?, WorkflowInstance, int, bool, WorkflowEventType)"/> returned for it.</param>
+    /// <param name="notices">The notices <see cref="For(WorkflowInstance?, WorkflowInstance, int, bool, NoticeChange)"/> returned for it.</param>
     /// <returns>True when one of them is the desk task's.</returns>
     public static bool NoticedDeskTask(WorkflowInstance after, IReadOnlyList<(EffectCommand Command, NoticeClass Class)> notices)
     {

@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Sindri.Core.Workflow.Engine.Instances;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 
@@ -55,6 +54,7 @@ internal static class NoticeWords
         ParkReason.Timeout => "it timed out",
         ParkReason.SpecConflict => "the spec conflicts with the code",
         ParkReason.NoRuntime => "no runtime is available for it",
-        _ => "it needs a look",
+        ParkReason.Unavailable => "it needs a look",
+        null or _ => "it needs a look",
     };
 }
