@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -116,6 +117,14 @@ public static partial class TransitionDecision
     private static IEnumerable<string> RewindTargets(Deciding d, WorkflowInstance instance) =>
         (instance.Visited ?? []).Where(s => d.Recipe.States.TryGetValue(s, out var state) && Rewindable(d.Recipe, s, state)
             && !string.Equals(s, instance.Frame.State, StringComparison.Ordinal));
+
+    /// <summary>The states a rewind of <paramref name="instance"/> would accept now, the state of the park's withheld transition first (what 'sindri workflow rewind' offers a parked run); empty when the instance has ended, is taken over or waits on a child.</summary>
+    /// <param name="recipe">The recipe it runs.</param>
+    /// <param name="catalog">The build's block descriptors: the facts a target's Step reads.</param>
+    /// <param name="instance">The instance.</param>
+    /// <returns>The target states, each one <see cref="RewindTargetRefusal"/> would accept.</returns>
+    internal static IReadOnlyList<string> RewindTargets(Recipe recipe, BlockCatalog catalog, WorkflowInstance instance) =>
+        throw new NotSupportedException();
 
     private static bool EnteredWithEffects(Recipe recipe, string state) =>
         recipe.Transitions.Any(t => string.Equals(t.To, state, StringComparison.Ordinal) && t.Effects.Count > 0);
