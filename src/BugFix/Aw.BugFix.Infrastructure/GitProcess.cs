@@ -86,6 +86,9 @@ internal sealed class GitProcess : IGit
         return run.ExitCode == 0 ? run.Output : Failed(run, "show");
     }
 
+    public Result<IReadOnlyList<string>> FilesDeclaring(string directory, string commit, string under, string typeName) =>
+        throw new NotSupportedException();
+
     // The commit of main the candidate's branch last met, or null when main can't be found.
     private static string? MainCommitOf(string directory, string candidate)
     {

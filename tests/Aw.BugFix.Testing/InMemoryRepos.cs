@@ -202,6 +202,10 @@ public sealed class InMemoryRepos : IGit, IFiles
     public Result<string> FileAt(string directory, string commit, string path) =>
         _commits[commit].Files.TryGetValue(path, out var text) ? text : BugFixErrors.GitFailed.With($"fatal: path '{path}' does not exist in '{commit}'");
 
+    /// <inheritdoc/>
+    public Result<IReadOnlyList<string>> FilesDeclaring(string directory, string commit, string under, string typeName) =>
+        throw new NotSupportedException();
+
     // Like realpath(3): each link resolved before the next component, ".." applied to the resolved directory.
     private string? Resolve(string path, int budget)
     {
