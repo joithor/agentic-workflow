@@ -15,6 +15,8 @@ namespace Aw.BugFix.Features.JudgeCandidate;
 internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger, IGit git, IJudge judge, TimeProvider clock)
     : IService<JudgeCandidateRequest, JudgeCandidateResponse>
 {
+    private const string NoReasons = "no-reasons";
+
     public ValueTask<Result<JudgeCandidateResponse>> Handle(JudgeCandidateRequest request, CancellationToken cancellationToken)
     {
         var question = store.Locked(request.StateDirectory, () => Ask(request));
@@ -108,6 +110,12 @@ internal sealed class JudgeCandidateService(IStateStore store, IRunLedger ledger
         if (answer.Decision == JudgeDecision.Escalated)
         {
             return Escalated(request, fresh.Value, candidate.Value, answer);
+        }
+
+        // A partial or unresolved answer that names nothing gives the implementer nothing to act on: treated as an escalation.
+        if (answer.Decision != JudgeDecision.Resolved && answer.Reasons.All(string.IsNullOrWhiteSpace))
+        {
+            return Escalated(request, fresh.Value, candidate.Value, answer with { ReasonCode = NoReasons });
         }
 
         var status = answer.Decision == JudgeDecision.Resolved ? BugFixStatus.Active : fresh.Value.Status;   // a resolving candidate supersedes an earlier escalation in the attempt
