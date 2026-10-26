@@ -327,6 +327,7 @@ const Aw.Judge.Core.Evaluation.EvaluationReasons.FallbackAfterUndecided = "fallb
 const Aw.Judge.Core.Evaluation.EvaluationReasons.InvalidInput = "invalid-input" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProvider = "none" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.NoProviderDecided = "no-provider-decided" -> string!
+const Aw.Judge.Core.Evaluation.EvaluationReasons.NoReasons = "no-reasons" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.OutOfEnum = "out-of-enum" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.PreRule = "pre-rule" -> string!
 const Aw.Judge.Core.Evaluation.EvaluationReasons.QuestionDisabled = "question-disabled" -> string!
@@ -990,6 +991,9 @@ Aw.Judge.Core.Questions.CheckKind.ApiEvidence = 3 -> Aw.Judge.Core.Questions.Che
 Aw.Judge.Core.Questions.CheckKind.DbEvidence = 4 -> Aw.Judge.Core.Questions.CheckKind
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.get -> bool
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.LacksReasons(Aw.Judge.Core.Providers.ProviderDecided! decided) -> bool
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReasonedOutputs.get -> System.Collections.Generic.IReadOnlySet<string!>?
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReasonedOutputs.init -> void
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.get -> bool
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.init -> void
 Aw.Judge.Core.Evaluation.QuestionEvaluator.EvaluateChoose(string! rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>

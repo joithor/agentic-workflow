@@ -4444,6 +4444,8 @@ Aw.Context.Core.Subgraph.SubgraphView.Edges.get -> System.Collections.Generic.IR
 Aw.Context.Core.Subgraph.SubgraphView.Edges.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.Equals(Aw.Context.Core.Subgraph.SubgraphView? other) -> bool
 Aw.Context.Core.Subgraph.SubgraphView.MapCommit.get -> string?
+Aw.Context.Core.Subgraph.SubgraphView.Demoted.get -> int?
+Aw.Context.Core.Subgraph.SubgraphView.Demoted.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.MapCommit.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.MapVersion.get -> string!
 Aw.Context.Core.Subgraph.SubgraphView.MapVersion.init -> void
@@ -6438,6 +6440,7 @@ static readonly Aw.Context.Core.ContextErrors.OnyxKeyRefused -> Aw.Kernel.ErrorD
 static readonly Aw.Context.Core.ContextErrors.OnyxNotPinnedOrLoopback -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.OnyxUnexpectedReply -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.PatternTimedOut -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbeFileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbesRegressed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PromoteRefused -> Aw.Kernel.ErrorDefinition!
@@ -7067,6 +7070,8 @@ Aw.Context.Core.Graph.NodeFact.Repo.get -> string?
 Aw.Context.Core.Graph.NodeFact.Repo.init -> void
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.get -> string?
 Aw.Context.Core.WholeMap.WholeMapNode.Repo.init -> void
+Aw.Context.Core.Lenses.LensBasis.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Lenses.LensBasis.Repos.init -> void
 Aw.Context.Core.Lenses.LensBasis.MapRepo.get -> string?
 Aw.Context.Core.Lenses.LensBasis.MapRepo.init -> void
 Aw.Context.Core.WholeMap.WholeMapAsk.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapRepo!>!
