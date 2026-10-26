@@ -14,5 +14,12 @@ internal sealed record ModelTierNames(string Claude, string Codex, string Cursor
     /// <summary>The strong model for an agent CLI's provider, or null for a provider that is not one.</summary>
     /// <param name="provider">The provider.</param>
     /// <returns>The model name.</returns>
-    public string? Strong(ProviderName provider) => provider == ProviderName.Rules ? Claude : null;
+    public string? Strong(ProviderName provider) => provider switch
+    {
+        ProviderName.ClaudeCli => Claude,
+        ProviderName.CodexCli => Codex,
+        ProviderName.CursorCli => Cursor,
+        ProviderName.Rules or ProviderName.Jev => null,
+        _ => null,
+    };
 }

@@ -51,32 +51,34 @@ internal sealed class ScanConceptsService(IGraphStore store, IScrubberFactory sc
     private async ValueTask<Result<ConceptScanReport>> Scan(ContextScope scope, (ScanTarget Map, string Summary, IReadOnlyList<string> Keys) read, IEgressScrubber egress, CancellationToken cancellationToken)
     {
         var (map, summary, keys) = read;
-        var first = await Ask(ConceptScanPrompts.Propose(summary), cancellationToken).ConfigureAwait(false);
-        var candidates = first is null ? [] : ConceptScanReplies.Candidates(first);
+        var propose = ConceptScanPrompts.Propose(summary);
+        var tier = ConceptScanTiers.Default.Pick(keys.Count, ConceptScanTiers.EstimateTokens(propose));   // the size is known before the first call; both calls ask for this tier
+        var first = await Ask(propose, tier, cancellationToken).ConfigureAwait(false);
+        var candidates = first is null ? [] : ConceptScanReplies.Candidates(first.Text);
         if (candidates.Count == 0)
         {
-            return new ConceptScanReport(map.Number, map.OnDraft, first is null ? ConceptScanOutcome.ModelUnavailable : ConceptScanOutcome.NoConcepts, Hints: 0, Searches: 0);
+            return new ConceptScanReport(map.Number, map.OnDraft, first is null ? ConceptScanOutcome.ModelUnavailable : ConceptScanOutcome.NoConcepts, Hints: 0, Searches: 0, tier, first?.Model);
         }
 
         var found = await Searches(candidates, (scope, new MapRead(map.OnDraft, Version: null)), egress, cancellationToken).ConfigureAwait(false);
-        var second = await Ask(ConceptScanPrompts.Conclude(summary, candidates, found), cancellationToken).ConfigureAwait(false);
+        var second = await Ask(ConceptScanPrompts.Conclude(summary, candidates, found), tier, cancellationToken).ConfigureAwait(false);
         if (second is null)
         {
-            return new ConceptScanReport(map.Number, map.OnDraft, ConceptScanOutcome.ModelUnavailable, Hints: 0, found.Count);
+            return new ConceptScanReport(map.Number, map.OnDraft, ConceptScanOutcome.ModelUnavailable, Hints: 0, found.Count, tier, first?.Model);
         }
 
-        var hints = ConceptScanReplies.Hints(second, new HashSet<string>(keys, StringComparer.Ordinal));
+        var hints = ConceptScanReplies.Hints(second.Text, new HashSet<string>(keys, StringComparer.Ordinal));
         var saved = await hintStore.Save(map.Number, hints, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         return saved.IsError
             ? saved.Error
-            : new ConceptScanReport(map.Number, map.OnDraft, hints.Count == 0 ? ConceptScanOutcome.NoConcepts : ConceptScanOutcome.Scanned, hints.Count, found.Count);
+            : new ConceptScanReport(map.Number, map.OnDraft, hints.Count == 0 ? ConceptScanOutcome.NoConcepts : ConceptScanOutcome.Scanned, hints.Count, found.Count, tier, second.Model);
     }
 
-    // The model's text, or null when no agent answered.
-    private async ValueTask<string?> Ask(string prompt, CancellationToken cancellationToken)
+    // The model's answer, or null when no agent answered.
+    private async ValueTask<ModelAnswer?> Ask(string prompt, ModelTier tier, CancellationToken cancellationToken)
     {
-        var answer = await model.Ask(new ModelRequest(ModelPurpose.Concepts, prompt, ConceptScanLimits.MaxOutputTokens, ConceptScanLimits.CallTimeout), cancellationToken).ConfigureAwait(false);
-        return answer.IsError ? null : answer.Value.Text;
+        var answer = await model.Ask(new ModelRequest(ModelPurpose.Concepts, prompt, ConceptScanLimits.MaxOutputTokens, ConceptScanLimits.CallTimeout, tier), cancellationToken).ConfigureAwait(false);
+        return answer.IsError ? null : answer.Value;
     }
 
     // Each query once, over the draft; a search that fails or finds nothing is a search with no lines, never a failed scan.

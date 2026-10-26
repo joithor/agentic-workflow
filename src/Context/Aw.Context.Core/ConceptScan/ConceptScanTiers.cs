@@ -15,11 +15,16 @@ public sealed record ConceptScanTiers(int StrongAboveFeatures, int StrongAbovePr
     /// <summary>The tokens of a prompt, estimated the way the model port does: characters / 4, rounded up.</summary>
     /// <param name="prompt">The prompt.</param>
     /// <returns>The estimate.</returns>
-    public static int EstimateTokens(string prompt) => throw new NotSupportedException();
+    public static int EstimateTokens(string prompt)
+    {
+        ArgumentNullException.ThrowIfNull(prompt);
+        return (prompt.Length + 3) / 4;
+    }
 
     /// <summary>The tier for this much work.</summary>
     /// <param name="features">How many features the map summary names.</param>
     /// <param name="promptTokens">The first prompt's estimated tokens.</param>
     /// <returns>Strong when either is above its threshold, else cheap.</returns>
-    public ModelTier Pick(int features, int promptTokens) => throw new NotSupportedException();
+    public ModelTier Pick(int features, int promptTokens) =>
+        features > StrongAboveFeatures || promptTokens > StrongAbovePromptTokens ? ModelTier.Strong : ModelTier.Cheap;
 }

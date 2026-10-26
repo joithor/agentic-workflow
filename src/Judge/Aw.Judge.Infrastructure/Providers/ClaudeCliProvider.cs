@@ -15,13 +15,15 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <param name="runner">Runs `claude`.</param>
 internal sealed class ClaudeCliProvider(IProcessRunner runner) : AgentCliProvider(runner, AgentCliName.ClaudeCli)
 {
+    private const string DefaultModel = "haiku";
+
     private const string TextInstruction = "You answer one classification question. Answer only with the JSON object the schema describes.";
 
     private const string Settings = """{"disableAllHooks":true,"alwaysThinkingEnabled":false}""";
 
     /// <inheritdoc />
     protected override AgentCliCall ForText(QuestionRef question, JsonNode? input, string workspace) =>
-        new([.. Common, "--tools", "", "--system-prompt", TextInstruction, "--json-schema", AnswerSchema.Lax(question).ToJsonString(), "--output-format", "json"], workspace)
+        new([.. Common(question), "--tools", "", "--system-prompt", TextInstruction, "--json-schema", AnswerSchema.Lax(question).ToJsonString(), "--output-format", "json"], workspace)
         {
             Environment = Fast,
             StandardInput = question.Prompt,
@@ -31,7 +33,7 @@ internal sealed class ClaudeCliProvider(IProcessRunner runner) : AgentCliProvide
     protected override AgentCliCall ForImage(QuestionRef question, ImageEvidence evidence, string workspace) =>
         new(
             [
-                .. Common, "--tools", "Read", "--allowedTools", "Read(./**)", "--json-schema", AnswerSchema.Lax(question).ToJsonString(),
+                .. Common(question), "--tools", "Read", "--allowedTools", "Read(./**)", "--json-schema", AnswerSchema.Lax(question).ToJsonString(),
                 "--system-prompt", "You inspect screenshots. Use the Read tool on the given path, then answer.", "--output-format", "json",
             ],
             evidence.EvidenceDir)
@@ -66,9 +68,10 @@ internal sealed class ClaudeCliProvider(IProcessRunner runner) : AgentCliProvide
     private static IReadOnlyDictionary<string, string> Fast { get; } =
         new Dictionary<string, string>(StringComparer.Ordinal) { ["MAX_THINKING_TOKENS"] = "0" };
 
-    private static IReadOnlyList<string> Common { get; } =
+    // The question's own model when it names one (the context engine's strong tier), else haiku.
+    private static string[] Common(QuestionRef question) =>
     [
-        "-p", "--model", "haiku", "--effort", "low", "--no-session-persistence",
+        "-p", "--model", question.Model ?? DefaultModel, "--effort", "low", "--no-session-persistence",
         "--strict-mcp-config", "--mcp-config", """{"mcpServers":{}}""",
         "--setting-sources", "", "--settings", Settings, "--disable-slash-commands",
     ];
