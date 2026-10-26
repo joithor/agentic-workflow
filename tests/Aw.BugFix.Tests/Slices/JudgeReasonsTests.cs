@@ -6,6 +6,7 @@ using Aw.BugFix.Features.Resume;
 using Aw.BugFix.Features.Status;
 using Aw.BugFix.Host;
 using Aw.BugFix.Testing;
+using Aw.Kernel.Json;
 
 namespace Aw.BugFix.Tests.Slices;
 
@@ -13,6 +14,8 @@ namespace Aw.BugFix.Tests.Slices;
 public sealed class JudgeReasonsTests : IDisposable
 {
     private const string Reason = "the redirect still drops the cookie";
+
+    private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(BugFixJsonContext.Default);
 
     private readonly World _w = new();
 
@@ -37,8 +40,8 @@ public sealed class JudgeReasonsTests : IDisposable
         var status = World.Ok(await _w.Run<StatusRequest, BugFixState>(new StatusRequest(World.State)));
         var resume = World.Ok(await _w.Run<ResumeRequest, ResumeResponse>(new ResumeRequest(World.State)));
 
-        Assert.Contains(Reason, JsonSerializer.Serialize(status, BugFixJsonContext.Default.BugFixState), StringComparison.Ordinal);
-        Assert.Contains(Reason, JsonSerializer.Serialize(resume, BugFixJsonContext.Default.ResumeResponse), StringComparison.Ordinal);
+        Assert.Contains(Reason, JsonSerializer.Serialize(status, _json), StringComparison.Ordinal);
+        Assert.Contains(Reason, JsonSerializer.Serialize(resume, _json), StringComparison.Ordinal);
     }
 
     // A guard for the fix: a state file written before the field existed must keep reading, never as an error.
@@ -49,7 +52,7 @@ public sealed class JudgeReasonsTests : IDisposable
         var old = StateJson();
         _ = StateVerdict(old).Remove("reasons");
 
-        var read = JsonSerializer.Deserialize(old.ToJsonString(), BugFixJsonContext.Default.BugFixState);
+        var read = JsonSerializer.Deserialize<BugFixState>(old.ToJsonString(), _json);
 
         Assert.Equal(JudgeDecision.Resolved, read?.Candidates[0].Verdict?.Decision);
     }
@@ -62,7 +65,7 @@ public sealed class JudgeReasonsTests : IDisposable
         _ = World.Ok(await _w.Run<JudgeCandidateRequest, JudgeCandidateResponse>(new JudgeCandidateRequest(World.State, c1)));
     }
 
-    private JsonNode StateJson() => JsonNode.Parse(JsonSerializer.Serialize(_w.Now, BugFixJsonContext.Default.BugFixState))!;
+    private JsonNode StateJson() => JsonNode.Parse(JsonSerializer.Serialize(_w.Now, _json))!;
 
     private static JsonObject StateVerdict(JsonNode state) => state["candidates"]![0]!["verdict"]!.AsObject();
 }

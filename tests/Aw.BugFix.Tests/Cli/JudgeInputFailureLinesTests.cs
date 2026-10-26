@@ -10,7 +10,7 @@ namespace Aw.BugFix.Tests.Cli;
 public sealed class JudgeInputFailureLinesTests : IDisposable
 {
     // The failure line is built at run time, so the check's own source (which the judge input also carries) doesn't contain it.
-    private const string Check = "if grep -q keep src/app.txt; then exit 0; fi\necho \"FAIL: expected $(echo keep)-cookie in src/app.txt\"\nexit 1\n";
+    private const string Check = "if grep -q keep src/app.txt; then echo \"ok: cookie kept\"; exit 0; fi\necho \"FAIL: expected $(echo keep)-cookie in src/app.txt\"\nexit 1\n";
     private const string FailureLine = "FAIL: expected keep-cookie in src/app.txt";
 
     private static readonly string _script = string.Join('\n',
