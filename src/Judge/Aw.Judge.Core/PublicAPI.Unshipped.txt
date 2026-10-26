@@ -1487,6 +1487,8 @@ static Aw.Judge.Core.PromptSort.SortOutcome.operator ==(Aw.Judge.Core.PromptSort
 static Aw.Judge.Core.PromptSort.SortSessionUpdate.Next(Aw.Judge.Core.PromptSort.SortSession! before, Aw.Judge.Core.PromptSort.SortOutcome! outcome, Aw.Judge.Core.PromptSort.ScaffoldPlan! plan, bool namesWorkflow) -> Aw.Judge.Core.PromptSort.SortSession!
 static Aw.Judge.Core.PromptSort.SortValues.operator !=(Aw.Judge.Core.PromptSort.SortValues? left, Aw.Judge.Core.PromptSort.SortValues? right) -> bool
 static Aw.Judge.Core.PromptSort.SortValues.operator ==(Aw.Judge.Core.PromptSort.SortValues? left, Aw.Judge.Core.PromptSort.SortValues? right) -> bool
+Aw.Judge.Core.Providers.QuestionRef.Model.get -> string?
+Aw.Judge.Core.Providers.QuestionRef.Model.init -> void
 Aw.Judge.Core.Ids.EvalItemId
 Aw.Judge.Core.Ids.EvalItemId.EvalItemId() -> void
 Aw.Judge.Core.Ids.EvalItemId.Equals(Aw.Judge.Core.Ids.EvalItemId other) -> bool
@@ -1795,3 +1797,7 @@ Aw.Judge.Core.Evaluation.PreparedQuestion.Reference.get -> Aw.Judge.Core.Provide
 Aw.Judge.Core.Evaluation.PreparedQuestion.Input.get -> System.Text.Json.Nodes.JsonNode?
 Aw.Judge.Core.Evaluation.PreparedQuestion.TimeBudget.get -> System.TimeSpan
 static Aw.Judge.Core.Evaluation.QuestionCatalog.Prepare(string! question, string! inputJson, System.Text.Json.JsonSerializerOptions! json) -> Aw.Judge.Core.Evaluation.PreparedQuestion?
+Aw.Judge.Core.Labels.LabelQuestions
+const Aw.Judge.Core.Labels.LabelQuestions.Skip = "skip" -> string!
+static Aw.Judge.Core.Labels.LabelQuestions.Fits(string! question, string! inputJson, System.Text.Json.JsonSerializerOptions! json) -> bool
+static Aw.Judge.Core.Labels.LabelQuestions.Outputs(string! question) -> System.Collections.Generic.IReadOnlyList<string!>?
