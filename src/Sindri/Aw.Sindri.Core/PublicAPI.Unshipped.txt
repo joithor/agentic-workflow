@@ -12387,17 +12387,19 @@ Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.get -> string!
 Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord
 Aw.Sindri.Core.Scoping.ScopeRunRecord.<Clone>$() -> Aw.Sindri.Core.Scoping.ScopeRunRecord!
-Aw.Sindri.Core.Scoping.ScopeRunRecord.Deconstruct(out string! Step, out string! State, out int Round, out string! Via, out string? Model, out string? Requested, out string? Vendor, out long Tokens, out string? Launch) -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.Deconstruct(out string! Step, out string! State, out int Round, out string! Via, out string? Model, out string? Requested, out string? Vendor, out long Tokens, out string? Launch, out string? RunToken) -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Equals(Aw.Sindri.Core.Scoping.ScopeRunRecord? other) -> bool
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Launch.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Launch.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Model.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Model.init -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.RunToken.get -> string?
+Aw.Sindri.Core.Scoping.ScopeRunRecord.RunToken.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Requested.get -> string?
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Requested.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Round.get -> int
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Round.init -> void
-Aw.Sindri.Core.Scoping.ScopeRunRecord.ScopeRunRecord(string! Step, string! State, int Round, string! Via, string? Model, string? Requested, string? Vendor, long Tokens, string? Launch) -> void
+Aw.Sindri.Core.Scoping.ScopeRunRecord.ScopeRunRecord(string! Step, string! State, int Round, string! Via, string? Model, string? Requested, string? Vendor, long Tokens, string? Launch, string? RunToken = null) -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.State.get -> string!
 Aw.Sindri.Core.Scoping.ScopeRunRecord.State.init -> void
 Aw.Sindri.Core.Scoping.ScopeRunRecord.Step.get -> string!
@@ -18864,6 +18866,19 @@ override Aw.Sindri.Core.Profile.ProfileRole.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.ProfileRole.ToString() -> string!
 static Aw.Sindri.Core.Profile.ProfileRole.operator !=(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
 static Aw.Sindri.Core.Profile.ProfileRole.operator ==(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
+Aw.Sindri.Core.Launch.ISessionNudges
+Aw.Sindri.Core.Launch.ISessionNudges.Send(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Launches.ILaunchFiles.MarkNudged(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.DateTimeOffset at) -> void
+Aw.Sindri.Core.Launches.ILaunchFiles.NudgedAt(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> System.DateTimeOffset?
+Aw.Sindri.Core.Launches.ILaunchFiles.ToolRunning(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> bool
+Aw.Sindri.Core.Launches.ILaunchFiles.TurnFailedAt(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> System.DateTimeOffset?
+const Aw.Sindri.Core.Launch.LaunchFiles.NudgedSuffix = ".nudged" -> string!
+const Aw.Sindri.Core.Launch.LaunchFiles.ToolRunningSuffix = ".tool-running" -> string!
+const Aw.Sindri.Core.Launch.LaunchFiles.TurnFailedSuffix = ".turn-failed" -> string!
+static Aw.Sindri.Core.Launch.LaunchFiles.NudgedName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launch.LaunchFiles.ToolRunningName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launch.LaunchFiles.TurnFailedName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launches.LaunchRules.StalledAfter.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? other) -> bool
