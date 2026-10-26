@@ -107,7 +107,7 @@ public static partial class TransitionDecision
             return FitRefusals.Refuse($"{address} is already in '{to}'", FitRefusals.Status(address));
         }
 
-        var missing = d.Context.Catalog.Find(target.Step!.Use)?.Inputs.Where(i => !instance.Facts.ContainsKey(i)).Select(static i => i.Value).ToList() ?? [];   // why: Rewindable holds a Step
+        var missing = MissingInputs(d.Context.Catalog, instance, target);
         return missing.Count == 0 ? null : FitRefusals.Refuse($"'{to}' reads {string.Join(", ", missing)}, which {address} does not hold", fix);
     }
 
@@ -123,8 +123,27 @@ public static partial class TransitionDecision
     /// <param name="catalog">The build's block descriptors: the facts a target's Step reads.</param>
     /// <param name="instance">The instance.</param>
     /// <returns>The target states, each one <see cref="RewindTargetRefusal"/> would accept.</returns>
-    internal static IReadOnlyList<string> RewindTargets(Recipe recipe, BlockCatalog catalog, WorkflowInstance instance) =>
-        throw new NotSupportedException();
+    internal static IReadOnlyList<string> RewindTargets(Recipe recipe, BlockCatalog catalog, WorkflowInstance instance)
+    {
+        if (RewindClosed(instance))
+        {
+            return [];
+        }
+
+        var withheld = instance.Suspension?.Resume.Withheld?.Transition is { } index && index >= 0 && index < recipe.Transitions.Count ? recipe.Transitions[index].From : [];
+        return [.. (instance.Visited ?? []).Where(s => RewindOffered(recipe, catalog, instance, s)).OrderBy(s => withheld.Contains(s, StringComparer.Ordinal) ? 0 : 1)];
+    }
+
+    private static bool RewindClosed(WorkflowInstance instance) =>
+        instance.Ended || instance.State == EngineStates.TakenOver || instance.Suspension is { Kind: SuspensionKind.Takeover } || RewindBlockedByWait(instance) is not null;
+
+    private static bool RewindOffered(Recipe recipe, BlockCatalog catalog, WorkflowInstance instance, string name) =>
+        recipe.States.TryGetValue(name, out var state) && Rewindable(recipe, name, state)
+        && (instance.Suspension is not null || !string.Equals(name, instance.Frame.State, StringComparison.Ordinal))
+        && MissingInputs(catalog, instance, state).Count == 0;
+
+    private static List<string> MissingInputs(BlockCatalog catalog, WorkflowInstance instance, RecipeState target) =>
+        catalog.Find(target.Step!.Use)?.Inputs.Where(i => !instance.Facts.ContainsKey(i)).Select(static i => i.Value).ToList() ?? [];   // why: Rewindable holds a Step
 
     private static bool EnteredWithEffects(Recipe recipe, string state) =>
         recipe.Transitions.Any(t => string.Equals(t.To, state, StringComparison.Ordinal) && t.Effects.Count > 0);
