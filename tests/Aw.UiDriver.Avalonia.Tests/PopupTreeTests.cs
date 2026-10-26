@@ -2,7 +2,6 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Aw.UiDriver.Core.Protocol;
-using Aw.UiDriver.Core.Selectors;
 
 namespace Aw.UiDriver.Avalonia.Tests;
 
@@ -37,7 +36,7 @@ public sealed class PopupTreeTests
         var found = await host.Search(new SearchRequest(_takeOver));
         var clicked = await host.Click(new ClickRequest(_takeOver));
         var tree = (await host.Tree(new TreeRequest())).Value.Root;
-        await TestScreen.OnUi(() => popup.IsOpen = false);
+        _ = await TestScreen.OnUi(() => popup.IsOpen = false);
         var after = await host.Search(new SearchRequest(_takeOver));
 
         Assert.Equal(1, found.Value.Total);
