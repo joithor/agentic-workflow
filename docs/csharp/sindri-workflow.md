@@ -597,7 +597,7 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
-| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
+| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the ten seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`, `gapSearch`, `gapAnchors`) on all four |
 | `step.scope.read-brief`, `step.scope.read-change` | block | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
 | `step.scope.read-tracker` | block (`Network`) | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
 | `step.brief.seed` | block | - | `seeded` | `answers`, `answerLog` on seeded |
@@ -605,17 +605,23 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.brief.write` | agent | `idea`, `answers`, `answerLog` | `written`, `empty` | `brief` on written |
 | `step.scope.anchor` | block | `brief` | `anchored` | `anchors` on anchored |
 | `step.scope.gather` | block | `anchors` (+ its Step inputs) | `gathered` | `lenses`, `coverage` on gathered |
+| `step.scope.relevance-review` | agent | `brief`, `lenses`, `coverage`, `anchors` | `reviewed` | `relevanceVerdicts` on reviewed |
+| `step.scope.relevance-judge` | block (judge, long) | `brief`, `lenses`, `relevanceVerdicts` | `ruled` | `relevanceRulings` on ruled |
+| `step.scope.relevance-apply` | block | `lenses`, `coverage`, `brief`, `relevanceVerdicts`, `relevanceRulings` | `applied` | `lenses`, `coverage`, `relevance`, `mapFixes` on applied |
 | `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
+| `step.scope.gap-search` | agent | `brief`, `acceptance`, `answerLog` | `searched` | `gapCandidates` on searched |
+| `step.scope.gap-judge` | block (judge, long) | `brief`, `acceptance`, `scopeMap`, `lenses`, `gapCandidates` | `ruled` | `gapRulings` on ruled |
+| `step.scope.gap-log` | block | `gapSearch`, `gapCandidates`, `gapRulings`, `findings` | `clear`, `confirmed` | `gapSearch`, `gapAnchors` on both; `findings` on confirmed; `gapSearchClosed` on clear |
 | `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog` | `pass`, `gaps`, `regather` | `findings` on gaps, regather |
 | `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
 | `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
 | `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
 | `step.interview.apply` | agent | ten facts (spec §9) | `updated`, `rescope` | `scopeMap`, `acceptance`, `openQuestions` on both |
-| `step.scope.reanchor` | block | `scopeMap`, `anchors`, `lenses` | `anchored` | `anchors` on anchored |
+| `step.scope.reanchor` | block | `scopeMap`, `anchors`, `lenses`, `gapAnchors` | `anchored` | `anchors` on anchored |
 | `step.scope.challenge` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answerLog`, `challenge` | `nothingNew`, `found` | `challengeRound` (every outcome) |
 | `step.scope.challenge-log` | block | `challenge`, `challengeRound` | `nothingNew`, `found` | `challenge` (every outcome); `findings` on found |
-| `step.scope.propose` | block | `scopeMap` | `proposed`, `skipped` | `scopeMap` (every outcome) |
-| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions` | `complete`, `incomplete`, `regather` | five facts on complete; `findings` on incomplete, regather |
+| `step.scope.propose` | block | `scopeMap`, `mapFixes` | `proposed`, `skipped` | `scopeMap`, `mapFixes` (every outcome) |
+| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions`, `relevance`, `gapSearch`, `mapFixes` | `complete`, `incomplete`, `regather` | six facts on complete (`runs` from the ledger among them); `findings` on incomplete, regather |
 | `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
 | `step.scope.freeze` | block | `scopePacket` and the twelve facts `step.scope.evidence` reads (it re-runs the evidence checks) | `frozen`, `mismatch` | `scopePacket` = `{hash, dir}` on frozen (the run area's `scope-packet/` stays in place); `findings` on mismatch. The engine appends `scoping.approved` under the lease for each `frozen` report (key `scoping.approved:<packetHash>`; `Instance` is the address, the row's item is set, and the hash is aw-packets' hash of that directory) |
 | `step.scope.withdraw` | block | - | `withdrawn` | - |
@@ -883,7 +889,7 @@ tuned; the verification plan is `~/.agentic-workflow/jthorare-agentic-workflow/p
 The measurements were taken while the work was still called Phase 0, so the units (a)–(d), the "P0 scratch dir" and
 the `proof/sindri-wf-p0/` paths below keep that name.
 
-**Pins.** `Temporalio` 1.19.0 (`Directory.Packages.props`), referenced only by `src/Sindri/Aw.Sindri.Workflows`
+**Pins.** `Temporalio` 1.20.0 (`Directory.Packages.props`), referenced only by `src/Sindri/Aw.Sindri.Workflows`
 (`AwAotCompatible=false`, temporalio/sdk-dotnet#286). `binaries.lock` pins the `temporal` CLI (1.9.1, the dev server)
 and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x64, linux-x64 and linux-arm64.
 `scripts/binaries-lock.sh fetch <name>` installs one for this platform under
