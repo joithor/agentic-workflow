@@ -17,6 +17,7 @@ public sealed class ScanConceptsTests : IDisposable
     private const string Proposed = """{"concepts":[{"name":"Self scheduling","queries":["swap"]},{"name":"Payroll","queries":["payroll"]}]}""";
     private const string Concluded = """{"concepts":[{"name":"Self scheduling","members":["feature:shifts.swap","feature:shifts.open","feature:made.up"],"evidence":["src/shifts/swap.ts"],"confidence":0.8}]}""";
 
+    private static readonly string[] _storedTerms = ["swap", "roster"];
     private static readonly ContextScope _scope = MapWorld.HumanWith(MapWorld.OnlyFixtureRepo);
 
     private readonly MapWorld _world = new();
@@ -60,7 +61,7 @@ public sealed class ScanConceptsTests : IDisposable
     public async Task The_terms_a_build_stored_on_the_concepts_join_the_first_prompt()
     {
         var graph = Shifts().Build();
-        var attributes = System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal) { ["summary"] = "", ["source"] = "derived", ["seed"] = "feature:shifts.swap", ["terms"] = new[] { "swap", "roster" } });
+        var attributes = System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal) { ["summary"] = "", ["source"] = "derived", ["seed"] = "feature:shifts.swap", ["terms"] = _storedTerms });
         var concept = new GraphNode(NodeKey.From("concept:shifts"), "Shifts", Provenance.Deterministic, 0.5, Evidence: null, attributes);
         var edge = new GraphEdge(NodeKey.From("feature:shifts.swap"), concept.Key, EdgeType.BelongsTo);
         _ = await Seed(graph with { Nodes = [.. graph.Nodes, concept], Edges = [.. graph.Edges, edge] });

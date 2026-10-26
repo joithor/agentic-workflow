@@ -89,7 +89,7 @@ public sealed class ConceptHintTests
 
         Assert.Equal(["feature:sched.one"], Members(map, "concept:pinned"), StringComparer.Ordinal);
         Assert.Contains("feature:billing.one", Members(map, "concept:tabs"));
-        Assert.DoesNotContain("feature:made.up", map.Edges.Select(e => e.From.Value));
+        Assert.DoesNotContain("feature:made.up", map.Edges.Select(e => e.From.Value), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -107,6 +107,6 @@ public sealed class ConceptHintTests
         var groups = ConceptDeriver.Groups(Product(), _noPins, glossary: null, [Hint("Tab work", 0.9, "feature:tabs", "feature:sched.one", "feature:billing.one")]);
 
         var tabs = Assert.Single(groups, g => g.Seed == "feature:tabs");
-        Assert.Contains("sched.one", tabs.Features);
+        Assert.Contains("sched.one", tabs.Features, StringComparer.Ordinal);
     }
 }
