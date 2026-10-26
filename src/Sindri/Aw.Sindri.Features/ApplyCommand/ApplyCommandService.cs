@@ -91,6 +91,11 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     /// <summary>A launched session's answer or command on a human step (q100, <see cref="LaunchedCallers"/>); null for any other call.</summary>
     private async ValueTask<Error?> LaunchedRefusal(ApplyCommandRequest request, CallerContext caller, Routing route, CancellationToken cancellationToken)
     {
+        if (caller.Launch is not null && request.Kind == ApplyCommandKind.Rewind)
+        {
+            return SindriErrors.AuthRefused.With("workflow rewind is a human step: a session Sindri launched can't rewind an instance. Ask the human, or an agent session the owner started");
+        }
+
         if (caller.Launch is null || request.Kind is not (ApplyCommandKind.Answer or ApplyCommandKind.Command))
         {
             return null;
@@ -221,6 +226,10 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         { Kind: ApplyCommandKind.Cancel or ApplyCommandKind.Takeover or ApplyCommandKind.Handback } when request.Answer is not null || request.Text is not null
             || request.Amount is not null || request.Verb is not null || request.Challenge is not null =>
             SindriErrors.InvalidInput.With("cancel, takeover and handback take only the address and the nonce (fix: drop the answer, text, amount, verb and challenge fields)"),
+        { Kind: ApplyCommandKind.Rewind, To: null or "" } => SindriErrors.InvalidInput.With("a rewind needs its target state: sindri workflow rewind <address> --to <state>"),
+        { Kind: ApplyCommandKind.Rewind } when request.Answer is not null || request.Text is not null || request.Amount is not null || request.Verb is not null || request.Challenge is not null =>
+            SindriErrors.InvalidInput.With("rewind takes only the address, --to and the nonce (fix: drop the answer, text, amount, verb and challenge fields)"),
+        { Kind: not ApplyCommandKind.Rewind, To: not null } => SindriErrors.InvalidInput.With("only a rewind names a target state (fix: drop --to)"),
         { Kind: ApplyCommandKind.Command, Verb: null } => SindriErrors.InvalidInput.With("a command needs its verb: sindri workflow command <address> <verb>"),
         _ => null,
     };
@@ -231,6 +240,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
         ApplyCommandKind.Command => new CommandFired(actor, request.Verb!.Value, stamp), // why: Malformed refuses a command with no verb
         ApplyCommandKind.Takeover => new TakeoverRequested(actor, stamp),
         ApplyCommandKind.Handback => new HandbackRequested(actor, stamp),
+        ApplyCommandKind.Rewind => new RewindRequested(actor, stamp, request.To!), // why: Malformed refuses a rewind with no target
         ApplyCommandKind.Cancel or _ => new CancelRequested(actor, CancelOrigin.Command, stamp, Sequence: null, Parent: null),
     };
 
@@ -238,7 +248,7 @@ internal sealed class ApplyCommandService(IInstanceDirectory directory, IInstanc
     internal static string ArgumentsSha(ApplyCommandRequest request)
     {
         var text = string.Create(CultureInfo.InvariantCulture,
-            $"kind {request.Kind}\nanswer {request.Answer}\namount {request.Amount}\nverb {request.Verb?.Value}\ntext {(request.Text is { } t ? Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(t))) : string.Empty)}\n");
+            $"kind {request.Kind}\nanswer {request.Answer}\namount {request.Amount}\nverb {request.Verb?.Value}\ntext {(request.Text is { } t ? Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(t))) : string.Empty)}\n{(request.To is { } to ? $"to {to}\n" : string.Empty)}");
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }

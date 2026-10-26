@@ -18809,3 +18809,4 @@ override sealed Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Equals(A
 static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!
 static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator !=(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.operator ==(Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? left, Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.AnswerRecording.InterviewRun(Aw.Sindri.Core.Workflow.Views.InstanceDetail! detail) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.RunToken>!

@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
@@ -31,5 +32,18 @@ public static class AnswerRecording
         return string.Equals(step?.Use.Value, InterviewAnswer, StringComparison.Ordinal) && instance.Frame.Run is { Runtime: StepRuntime.Desk } run
             ? run.Token
             : WorkflowErrors.TriggerNotAllowed.With($"answer --record needs {address} at 'interview', not '{instance.State}' (fix: {fix})");
+    }
+
+    /// <summary>The same rule over the instance detail the CLI reads: the open desk run of 'step.interview.answer' when the instance is in that state and not parked or taken over, else the refusal.</summary>
+    /// <param name="detail">The instance detail ('GET /workflow/instances/{id}').</param>
+    /// <returns>The run token to complete as 'answered', or the refusal.</returns>
+    public static Result<RunToken> InterviewRun(InstanceDetail detail)
+    {
+        ArgumentNullException.ThrowIfNull(detail);
+        var address = detail.Address.Value;
+        var fix = $"rewind to interview first: sindri workflow rewind {address} --to interview";
+        return string.Equals(detail.State, detail.Current.State, StringComparison.Ordinal) && string.Equals(detail.Current.Step?.Ref, InterviewAnswer, StringComparison.Ordinal) && detail.Current.Desk is { } desk
+            ? desk.Run
+            : WorkflowErrors.TriggerNotAllowed.With($"answer --record needs {address} at 'interview' with its desk run open, not '{detail.State}' (fix: {fix})");
     }
 }
