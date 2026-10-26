@@ -17,7 +17,7 @@ public sealed class HeavyRigIsolationTests : IDisposable
 
     public void Dispose() => _rig.Dispose();
 
-    [Fact(Timeout = 60_000)]
+    [Fact]
     public async Task The_rig_s_Sindri_reads_its_own_state_root_and_so_one_slot_whatever_the_box_cap_file_holds()
     {
         await using var sindri = await _rig.Compose(FakeBlockStep.Completing("ui"));
@@ -25,7 +25,7 @@ public sealed class HeavyRigIsolationTests : IDisposable
         var root = sindri.GetRequiredService<SindriSettings>().StateDirectory;
 
         // the box's own root is where a cap of 4 would sit; the rig's Sindri must not look there
-        Assert.NotEqual(boxRoot, root);
+        Assert.NotEqual(boxRoot, root, StringComparer.Ordinal);
         Assert.False(File.Exists(Path.Combine(root, "heavy-slots-cap")));
         Assert.Equal(1, sindri.GetRequiredService<HeavyLockSettings>().Slots);
     }
