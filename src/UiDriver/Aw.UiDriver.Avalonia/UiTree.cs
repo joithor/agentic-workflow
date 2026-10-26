@@ -84,7 +84,7 @@ internal sealed class UiTree
     private static string PopupId(int sequence) => "p" + sequence.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     // An element in a popup window is outside the main window, so its position is given in its own popup window.
-    private static Point OriginInOwnRoot(Visual visual) => visual.GetVisualRoot() is Visual root ? visual.TranslatePoint(default, root) ?? default : default;
+    private static Point OriginInOwnRoot(Visual visual) => TopLevel.GetTopLevel(visual) is Visual root ? visual.TranslatePoint(default, root) ?? default : default;
 
     private void Walk(Visual visual, string id)
     {

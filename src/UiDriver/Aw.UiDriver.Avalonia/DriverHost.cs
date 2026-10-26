@@ -22,7 +22,10 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
     // How long one verb may hold the UI thread's turn before the caller is answered AW-UIDRIVER-004.
     private static readonly TimeSpan _uiBudget = TimeSpan.FromSeconds(20);
 
-    static DriverHost() => OpenPopups.Track();
+    static DriverHost()
+    {
+        OpenPopups.Track();
+    }
 
     internal Task<Result<TreeResponse>> Tree(TreeRequest request) => OnUi<TreeResponse>(tree =>
     {

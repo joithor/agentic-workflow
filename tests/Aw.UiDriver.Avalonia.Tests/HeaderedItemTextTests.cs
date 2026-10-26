@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Aw.UiDriver.Core.Protocol;
-using Aw.UiDriver.Core.Selectors;
 
 namespace Aw.UiDriver.Avalonia.Tests;
 
@@ -11,7 +10,7 @@ public sealed class HeaderedItemTextTests
     public async Task A_menu_item_and_a_tab_item_are_found_by_their_header_text()
     {
         var screen = await TestScreen.OpenAsync();
-        await TestScreen.OnUi(() =>
+        _ = await TestScreen.OnUi(() =>
         {
             if (screen.Window.Content is StackPanel form)
             {
