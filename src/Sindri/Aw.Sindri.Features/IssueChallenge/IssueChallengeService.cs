@@ -24,14 +24,14 @@ namespace Aw.Sindri.Features.IssueChallenge;
 /// protected answer on an instance, 'grant &lt;n&gt; &lt;address&gt;', 'grant-tokens &lt;n&gt; &lt;address&gt;' or 'accept
 /// &lt;address&gt;' (engine spec §6.2), bound to the instance's address and version, whose preview is the instance.
 /// </summary>
-/// <param name="approvals">Plans a recipe approval.</param>
+/// <param name="approvals">Plans a recipe approval, registering a shipped version that waits for its own approval first (#983).</param>
 /// <param name="revokes">Plans a revoke.</param>
 /// <param name="challenges">The server's challenges.</param>
 /// <param name="profiles">The live profile, for 'approve profile'.</param>
 /// <param name="directory">Resolves an instance's address, for a protected answer.</param>
 /// <param name="runtime">Reads the instance as it is now, for a protected answer.</param>
 /// <param name="approveAll">Reads the approve-all plan, for 'approve-all &lt;digest6&gt;'.</param>
-internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles,
+internal sealed partial class IssueChallengeService(ShippedApprovalPlans approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles,
     IInstanceDirectory directory, IInstanceRuntime runtime, ApproveAllPlanReader? approveAll = null)
     : IService<IssueChallengeRequest, IssueChallengeResponse>
 {
@@ -170,7 +170,7 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
         var hash = live.Value.Hash;
         return string.Equals(hash.Abbreviated, hash6, StringComparison.Ordinal)
             ? Issued(Mint(ChallengeAction.ApproveProfile(hash), ChallengeSubject.ForProfile(hash), channel), approve: null, revoke: null)
-            : SindriErrors.ProfileHashMismatch.With($"{hash6} isn't the live profile's hash ({hash.Value}); run 'sindri profile approve' to see it and what changed");
+            : SindriErrors.ProfileHashMismatch.With($"{hash6} isn't the live profile's hash; the live hash is {hash.Value} (fix: sindri profile approve {hash.Value})");
     }
 
     /// <summary>Issues the challenge: at the terminal it is typed; in the app approve-all is held (typing its text also redeems it) and everything else is typed.</summary>
