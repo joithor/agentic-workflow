@@ -40,6 +40,7 @@ internal sealed class LedgerAgentSessions(ILaunchViews views, ILedgerReader ledg
             SessionEndReason.Exit => new AgentSessionState(AgentSessionEnd.Exit, payload.Value.ExitCode),
             SessionEndReason.Lost => new AgentSessionState(AgentSessionEnd.Lost, payload.Value.ExitCode),
             SessionEndReason.Idle => new AgentSessionState(AgentSessionEnd.Idle, ExitCode: null, IdleDetail),
+            SessionEndReason.Limit => throw new InvalidOperationException("a sandbox limit end is read by the engine's sandbox slice (step.failed 'limit'), not as an agent session state yet"),
             _ => throw new InvalidOperationException($"the ledger holds session.ended reason {payload.Value.Reason}, which this build does not know"),
         };
     }

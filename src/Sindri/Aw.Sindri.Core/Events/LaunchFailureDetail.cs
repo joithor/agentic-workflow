@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
 
@@ -11,7 +12,9 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Reason">The error's 'reason' extension (not-approved or hash-changed), or null.</param>
 /// <param name="Current">The error's 'current' extension (the entry's argv hash), or null.</param>
 /// <param name="Approved">The error's 'approved' extension (the hashes the profile lists), or null.</param>
-public sealed record LaunchFailureDetail(LaunchStage? Stage, string? Reason = null, string? Current = null, IReadOnlyList<string>? Approved = null)
+/// <param name="Source">The error's 'source' extension (the credential source of SND-LAUNCH-017: 'owner-copy' or 'separate-login'); left out when null.</param>
+public sealed record LaunchFailureDetail(LaunchStage? Stage, string? Reason = null, string? Current = null, IReadOnlyList<string>? Approved = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Source = null)
 {
     /// <summary>The detail of a failure: the stage and what <paramref name="error"/> carries, or null when there is neither.</summary>
     /// <param name="error">The error.</param>
