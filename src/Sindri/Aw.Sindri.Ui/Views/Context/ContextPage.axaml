@@ -125,7 +125,7 @@
       </StackPanel>
 
       <!-- The stage: the page scrolls, so the stage is given the height the window leaves (ContextPage.axaml.cs). -->
-      <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420">
+      <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420" VerticalAlignment="Top">
         <!-- The concept band: the first layer, over the whole map; a concept opens the bands scoped to it. -->
         <Panel x:Name="ConceptsHost" IsVisible="{Binding ShowConcepts}">
           <cv2:ConceptLayerView x:Name="ConceptLayer" DataContext="{Binding Concepts}" />

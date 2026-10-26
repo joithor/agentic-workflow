@@ -100,6 +100,7 @@ internal sealed class UiTree
         TextBox box => NullIfEmpty(box.Text),
         ContentControl { Content: string content } => NullIfEmpty(content),
         HeaderedContentControl { Header: string header } => NullIfEmpty(header),
+        HeaderedSelectingItemsControl { Header: string header } => NullIfEmpty(header),
         _ => null,
     };
 
