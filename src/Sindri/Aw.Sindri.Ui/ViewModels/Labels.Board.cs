@@ -49,7 +49,7 @@ internal static partial class Labels
     internal const string WorkflowsLaneDone = "Done";
 
     /// <summary>An empty lane's first line.</summary>
-    internal const string WorkflowsLaneEmpty = "Nothing here.";
+    internal const string WorkflowsLaneEmpty = "No runs here.";
 
     /// <summary>An empty lane's second line.</summary>
     internal const string WorkflowsLaneEmptyBody = "No runs in this stage.";

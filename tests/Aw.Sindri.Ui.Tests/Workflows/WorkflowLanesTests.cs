@@ -87,7 +87,7 @@ public sealed class WorkflowLanesTests
 
         var merge = list.Lanes.Single(l => l.Id == LaneId.Merge);
         Assert.True(merge.IsEmpty);
-        Assert.Equal("Nothing here.", merge.EmptyTitle);
+        Assert.Equal("No runs here.", merge.EmptyTitle);
         Assert.Equal("Runs wait here for CI and docs, then for your approval.", merge.EmptyBody);
         Assert.Equal("No runs in this stage.", list.Lanes.Single(l => l.Id == LaneId.Plan).EmptyBody);
     }
