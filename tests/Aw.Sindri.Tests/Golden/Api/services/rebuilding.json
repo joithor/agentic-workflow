@@ -25,6 +25,18 @@
       "description": "Starts a code-index update for each repo whose main branch moved."
     },
     {
+      "name": "context-concept-scan",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ],
+      "description": "Scans each new context map version for the concepts the code names, for the glossary."
+    },
+    {
       "name": "context-map-refresh",
       "every": "1m",
       "paused": false,

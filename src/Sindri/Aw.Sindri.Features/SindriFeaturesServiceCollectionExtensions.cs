@@ -244,7 +244,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     /// <summary>The doctor: its fact readers, the core checks and the extra checks decorator.</summary>
     private static IServiceCollection AddDoctor(this IServiceCollection services) => services
         .AddScoped<ProfileFacts>()
-        .AddScoped<LedgerFacts>()
+        .AddScoped<LedgerFacts>().AddScoped<RuntimeFacts>()
         .AddScoped<OnyxDoctor>().AddScoped<LinearDoctor>()
         .AddScoped<ContextEngineChecks>()
         .AddScoped<RunDoctorService>()
