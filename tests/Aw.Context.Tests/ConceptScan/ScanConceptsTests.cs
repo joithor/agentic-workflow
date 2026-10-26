@@ -48,7 +48,7 @@ public sealed class ScanConceptsTests : IDisposable
 
         var report = (await Scan()).Value;
 
-        Assert.Equal(new ConceptScanReport(draft, OnDraft: true, ConceptScanOutcome.Scanned, Hints: 1, Searches: 2), report);
+        Assert.Equal(new ConceptScanReport(draft, OnDraft: true, ConceptScanOutcome.Scanned, Hints: 1, Searches: 2, ModelTier.Cheap), report);
         var hint = Assert.Single((await _world.Hints.Read(draft, MapWorld.None)).Value);
         Assert.Equal("Self scheduling", hint.Name);
         Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members, StringComparer.Ordinal);   // 'feature:made.up' is no feature of the draft
@@ -71,6 +71,37 @@ public sealed class ScanConceptsTests : IDisposable
             Assert.Equal(ConceptScanLimits.CallTimeout, r.Budget);
             Assert.True(r.Prompt.Length <= ConceptScanLimits.MaxInputChars);
         });
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_small_map_asks_both_calls_for_the_cheap_tier()
+    {
+        _ = await Seed(Shifts().Build());
+        _world.Model.Responder = TwoPasses;
+
+        var report = (await Scan()).Value;
+
+        Assert.All(_world.Model.Requests, static r => Assert.Equal(ModelTier.Cheap, r.Tier));
+        Assert.Equal(ModelTier.Cheap, report.Tier);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_map_with_more_features_than_the_threshold_asks_both_calls_for_the_strong_tier()
+    {
+        var graph = Shifts();
+        for (var i = 0; i < ConceptScanTiers.Default.StrongAboveFeatures; i++)
+        {
+            _ = graph.Node(string.Create(CultureInfo.InvariantCulture, $"feature:bulk.f{i}"), string.Create(CultureInfo.InvariantCulture, $"Bulk feature {i}"));
+        }
+
+        _ = await Seed(graph.Build());
+        _world.Model.Responder = TwoPasses;
+
+        var report = (await Scan()).Value;
+
+        Assert.Equal(2, _world.Model.Requests.Count);
+        Assert.All(_world.Model.Requests, static r => Assert.Equal(ModelTier.Strong, r.Tier));
+        Assert.Equal(ModelTier.Strong, report.Tier);
     }
 
     [Fact, Trait("Lane", "unit")]

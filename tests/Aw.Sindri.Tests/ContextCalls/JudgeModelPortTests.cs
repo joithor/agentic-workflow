@@ -60,6 +60,34 @@ public sealed class JudgeModelPortTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_strong_tier_asks_each_agent_cli_for_its_own_strong_model_and_the_answer_names_it()
+    {
+        var claude = new Provider(ProviderName.ClaudeCli, new ProviderUnavailable(ProviderUnavailable.Timeout));
+        var codex = new Provider(ProviderName.CodexCli, Answered("ok"));
+        var port = new JudgeModelPort(() => new Catalog(claude, codex), new ModelTierNames("claude-strong", "codex-strong", "cursor-strong"));
+
+        var answer = (await port.Ask(_request with { Tier = ModelTier.Strong }, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal("claude-strong", Assert.Single(claude.Asked).Model);
+        Assert.Equal("codex-strong", Assert.Single(codex.Asked).Model);
+        Assert.Equal("codex-strong", answer.Model);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null)]
+    [InlineData(ModelTier.Cheap)]
+    public async Task The_cheap_tier_and_no_tier_leave_the_model_to_the_agent_cli(ModelTier? tier)
+    {
+        var claude = new Provider(ProviderName.ClaudeCli, Answered("ok"));
+        var port = new JudgeModelPort(() => new Catalog(claude), new ModelTierNames("claude-strong", "codex-strong", "cursor-strong"));
+
+        var answer = (await port.Ask(_request with { Tier = tier }, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Null(Assert.Single(claude.Asked).Model);
+        Assert.Null(answer.Model);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_remote_jev_api_is_never_allowed_because_the_prompt_names_files_of_the_owners_repo()
     {
         var catalog = new Catalog(new Provider(ProviderName.ClaudeCli, Answered("x")));

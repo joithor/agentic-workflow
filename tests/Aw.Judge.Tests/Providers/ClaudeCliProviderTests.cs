@@ -48,6 +48,16 @@ public sealed class ClaudeCliProviderTests
     }
 
     [Fact]
+    public async Task A_question_that_names_a_model_runs_that_model_instead_of_haiku()
+    {
+        Install(Questions.ClaudeStructured("""{"decision":"send"}"""));
+
+        _ = await Decide(Questions.Text with { Model = "sonnet" });
+
+        Assert.Equal("sonnet", After(Assert.Single(_runner.Calls).Request.Arguments, "--model"));
+    }
+
+    [Fact]
     public async Task Without_structured_output_the_result_text_is_read_as_json()
     {
         Install(Questions.ResultText("""{"decision":"drop"}"""));
