@@ -225,6 +225,8 @@ A generated recipe whose base was revoked after it was registered is refused too
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
 with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
+**A shipped version that gains a capability (#983).** A previously approved shipped recipe whose new version adds a capability waits for its own approval: approve-all leaves it out, and nothing has registered it yet. The recipe list (`GET /sindri/workflow/recipes`, `recipe list`, and `recipe list --stale`) names that version anyway, registered or not, with its id, version, hash, standing `unapproved`, status `changed` and `gainsCapability: true`, read from the same plan the needs-you row is. The row's `cli` is `sindri recipe approve <id>@<hash>` of that version, and that exact string works pasted. `recipe approve <id>@<hash>`, its challenge (`approve <id>@<hash>` and `approve <id> <version>`) and `POST /sindri/workflow/recipes/{id}@{hash}/approve` register the version from this build's embedded set first when it is not registered (the same registration approve-all does), so the app's typed approval and the CLI reach the same approval. A hash or version this build does not ship is `SND-RECIPE-002`, as before.
+
 `sindri recipe approve-all [--json]` approves every shipped recipe at once (setup-once spec §5.3): it reads
 `GET /sindri/workflow/recipes/approve-all`, prints the plan (each recipe and version in the order approval happens, children
 first, then the recipes approved one at a time) and posts to `POST /sindri/workflow/recipes/approve-all`, which starts the
@@ -347,7 +349,8 @@ order (`RecipeStateView.onOutcome`). Written into the hashed form only when set.
 (LN-WF3, see "The heavy resource" below); `slot` is a stub that is always free (P7), so a `slot` wait is reported as information
 (`RCP-RES-001`). `then: retry`
 re-arms the deadline in the same frame and re-sends the entering transition's effects; it isn't allowed on a child wait
-(`RCP-TIME-002`), nor on a state whose Step runs on the block runtime, whose timeout must also outlast the Step's `maxDuration` (`RCP-TIME-003`).
+(`RCP-TIME-002`), nor on a state whose Step runs on the block runtime, whose timeout must also outlast the Step's `maxDuration` when it sets one (`RCP-TIME-003`; a Step with none has no fixed limit, owner q93, 2026-10-23).
+A `then: park` timeout on an active or wait state (not a child wait, not a desk run) retries once, as `then: retry` does, and parks `timeout` on the second expiry (owner q93, 2026-10-23; patch `timeout-retries-before-park-v1`).
 
 ### Transitions
 
@@ -451,7 +454,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-TIME-003` | A state whose Step's descriptor says `runtime: block` (whether or not this build registers a runtime for it) doesn't `retry`, and its `timeout.after` is longer than the Step's `maxDuration` (two minutes when the descriptor sets none) | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin); make the state timeout longer than the Step's `maxDuration` |
+| `RCP-TIME-003` | A state whose Step's descriptor says `runtime: block` (whether or not this build registers a runtime for it) doesn't `retry`, and its `timeout.after` is longer than the Step's `maxDuration` (when the descriptor sets none, the Step has no fixed limit: the state timer ends it; owner q93, 2026-10-23) | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin); make the state timeout longer than the Step's `maxDuration` |
 | `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` or by the answer to an `answer` wait is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
@@ -774,7 +777,7 @@ The line spec names the facts but not their fields; these are the shapes the pro
 - `phasePacket.dir`: absolute as it is; relative, it is read under the repo's checkout (never under serve's working directory), by `step.prove.intake` and `step.prove.evidence` alike. A relative directory with no repo or no checkout fails the Step.
 - `beforeAfter` matching: a result with no `signal` matches any signal of its item.
 - `proofPack`: `{hash, dir}`, the machine-frozen proof pack (the same shape as a packet fact).
-- `step.prove.before-after` runs each live item's `base+head` signal's `script` (a relative path inside `fact:workspace`, no `..`) with bash, at the phase's `baseSha` in a scratch worktree under the run area (`before-after/base`, removed afterwards, never forced) and at the head in the workspace: the same file runs in both trees, so `baseScript` and `headScript` are equal. Exit 0 is `pass`, anything else `fail`; a signal with no usable `script` is recorded `missing` with a note (nothing run; it does not fail the Step). The outcome is `pass` only when every result is `fail` at the base and `pass` at the head. A script that cannot run (no bash, no file, a 20 minute timeout) fails the Step, which parks the instance. The Step is long (LN-WF7): its `maxDuration` is 90 minutes (`CommandStepLimits.ProveMaxDuration`), enough for two signals' scripts at the base and at the head, and inside `prove`'s 2 h state timeout, so the Step's own `timeout` ends a run first. Like every block Step it runs on the heartbeating activity.
+- `step.prove.before-after` runs each live item's `base+head` signal's `script` (a relative path inside `fact:workspace`, no `..`) with bash, at the phase's `baseSha` in a scratch worktree under the run area (`before-after/base`, removed afterwards, never forced) and at the head in the workspace: the same file runs in both trees, so `baseScript` and `headScript` are equal. Exit 0 is `pass`, anything else `fail`; a signal with no usable `script` (and no red test of its item to write one from, which needs `fact:redTests` among the Step's declared reads) is recorded `missing` with a note (nothing run) and makes the outcome `fail`. The outcome is `pass` only when every result is `fail` at the base and `pass` at the head. A script that cannot run (no bash, no file, a 20 minute timeout) fails the Step, which parks the instance. The Step is long (LN-WF7): its `maxDuration` is 90 minutes (`CommandStepLimits.ProveMaxDuration`), enough for two signals' scripts at the base and at the head, and inside `prove`'s 2 h state timeout, so the Step's own `timeout` ends a run first. Like every block Step it runs on the heartbeating activity.
 - `step.prove.fail-log` keeps the findings the instance holds, adds one `PRV-BA-001` per before/after result that did not fail at the base and pass at the head, and one `PRV-HOLD-001` per hidden scenario that did not pass (by item and the observed line, never the scenario's id or text; spec §9.3), never the same rule and item twice; with nothing recorded it adds `PRV-FAIL-001`.
 - `step.prove.evidence` reads exactly its descriptor's six facts (`phasePacket`, `built`, `proof`, `redTests`, `beforeAfter`, `holdoutResult`), and the runner hands it nothing else (`proof` was missing from the descriptor until this fix, so it never reached the Step and every phase parked). `PRV-ACC-001` and `PRV-SHA-001` need `proof`'s artifacts and have no structural cover in the recipe, so without them **the Step fails** (`ProofReport.Unrunnable`, `ProofChecks.Required`): an unrouted `step.failed` parks the instance for the owner, nothing is frozen and the phase is not proven (LN7). Until something writes the artifacts into `proof` and the descriptor reads it, the evidence Step therefore parks every phase for the owner. `PRV-APP-001` needs the hand test and verify results (`manualTest`, `evidencePack`, which the descriptor does not read), and `PRV-HOLD-003` needs `holdoutResult.canary`: the recipe guarantees both structurally (evidence-pack is reached only after the hand-test and verify children resolve, and holdout-log routes `leaked` to fail-log), so each is reported **not run**, listed in the pack's `proof.json` under `notRun`, and is a warning, not a failure. `PRV-HOLD-002` uses a minimum of 2 until the profile key `workflow.prove.holdoutMin` exists. A phase of kind `docs` or `config` needs no application run and may have no red tests. `PRV-NP-001` is met by construction: `not-proven.md` lists every planned signal no passing head artifact names (by `signal`), or says `nothing skipped`. A pack that aw-packets refuses is the Step's own output, which the builder cannot fix: the Step fails with aw-packets' failed checks as the message instead of sending findings back to build.
 - `step.prove.collect` (BS-13) runs between the evidence child and `before-after`. A child's fact (`manualTest`, `evidencePack`, `evidenceSummary`) names the files it produced as `{artifacts: [path | {path, kind?, item?, signal?, passing?}]}`; a relative path is read under `fact:workspace`. The Step hashes each file itself (`IArtifactFiles`, SHA-256 of the bytes), stamps `commit` with `fact:built`'s head and `at` with the clock, and takes `passing` from the child's own record (true unless the entry says `false`: the recipe reaches `collect` only after all three children resolved). A file with an `item` backs that item; one with a `signal` backs the items that hold the signal; one with neither backs every item of the phase (the hand test and the verify journey walk the whole phase). Default kinds are `app-run`, `verify` and `ui-evidence`/`evidence` by source. A file that is missing or unreadable, and a fact that names none, add nothing: the item keeps its empty list and `PRV-ACC-001` names it. An artifact already in `proof` from an older head stays, so `PRV-SHA-001` still catches it. The children's `next:` text asks each to end its report with `artifacts` (workspace-relative paths, never a hash or a commit), so `workflow.hand-test`, `workflow.verify` and `workflow.evidence-ui|api|db` each go up one version; `step.evidence.combine` keeps the three summaries whole, so `collect` also reads the `artifacts` of the combined summary's `ui`, `api` and `db` parts (kinds `ui-evidence`, `api-evidence`, `db-evidence`). Collecting twice on one head adds a file once. `workflow.prove` is version 4 for the new `collect` state, so it needs re-approval after the merge (it rides the approve-all). Decisions tabled for the owner and taken provisionally (reversible): Sindri hashes the files itself; a missing file ends the phase `incomplete` (back to the builder), not parked for the owner; the children's prompts changed.
@@ -1002,7 +1005,7 @@ Engine spec rev 8.1 §5.1–§5.6, "Phase 4". The P4 contract fixes the interfac
 **Recipe verbs in `allowedCommands` (PR babysitter spec API18).** Each `command.<verb>` transition out of the instance's current state is one more entry, in recipe order and once per verb: `{ actionId: "ApplyCommand:command", cli: "sindri workflow command <address> <verb>", verb: "<verb>" }`. They come after the answers and `CompleteStep` and before `handback`, `takeover` and `cancel`. The other entries carry no `verb` (the key is omitted). A taken-over instance lists none (the human has it) and an ended one lists none at all. One generic desk row serves every verb (owner ruling), so the app builds one button per entry from its `verb`. A verb whose transition carries a human-trigger effect (the babysitter's `merge`; `rework` carries none) is listed too: the server refuses an agent session's call with `SND-AUTH-002`, and the entry says `destructive: true` (a `bool?` written only when true), set when any `command.<verb>` transition out of the current state has an effect whose block descriptor has `HumanTrigger`, so the app reads the data, not the verb's name. If a verb ever needs its own `ApplyCommand:command-<verb>` catalog row (another class, or destructive), that entry should carry that action id instead; no such row exists yet.
 
 The Updates, their validators, the `IInstanceRuntime` methods and every `workflow` verb are built. Every Update on this path is built,
-including `takeover`, `handback` and the engine's `open-request` (P5). A rejected
+including `takeover`, `handback` and the engine's `open-request` (P5). A takeover that applies then opens the Step's live session in the launcher's viewer and says what came of it on the response (`viewer`) and as `launch.takeover-opened` ([sindri-launcher.md](sindri-launcher.md) "Background launches and takeover"). A rejected
 Update records nothing. `RecipeWorkflowTests` pins the interface (the desk task 1.1 with its declared outcomes through
 the Query, `allowedCommands`, the ledger key, and replay), and `PhaseFourSignalTests` (integration) is phase 4 signal 1:
 start `workflow.step` on an item, then status shows the desk task with run 1.1.
@@ -1030,7 +1033,7 @@ refusal follows §5.8's precedence. A wait state's timer wakes the wait like a d
 | `Item`, `Recipe`, `Tenant`, `Ring` | From `InstanceStart`; `StartRequest` carries the tenant and ring into the instance |
 | `State` | The state after each change (`parked`, `escalated`, `taken-over` while suspended) |
 | `NeedsYou` | True while parked or escalated, or while an open desk task waits; false while taken over |
-| `Repo` | `fact:item`'s `repo`, read once on start by the `ReadItemRepo` local activity; unset without one |
+| `Repo` | `fact:item`'s `repo` (`{ id, repo?, spec? }`: `repo` and `spec` are optional), read once on start by the `ReadItemRepo` local activity; unset without one |
 
 The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
 through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
@@ -1411,7 +1414,7 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
 
   (The workflow also falls back to `failed` and `the Step returned nothing` when Temporal reports no inner failure or
   the outcome is empty; the runner never produces either.)
-- **The bound:** the activity (queue time included, `ScheduleToCloseTimeout`) is bounded by the descriptor's `maxDuration`
+- **The bound:** the activity (queue time included, `ScheduleToCloseTimeout`) of a Step with no `maxDuration` is bounded by 30 days (`BlockLimits.Fallback`, owner q93, 2026-10-23): the state timer retries once and then parks it. One that sets a `maxDuration` is bounded by it
   and by the time left on the state timer less a second (`BlockLimits.Bound`), so after a takeover and handback, when the
   timer resumes with only what was left, the Step's own `timeout` still ends the run before the timer would park it.
 - **`providers` is checked at validate time:** a literal list may name only `jev`, `claude-cli`, `codex-cli`, `cursor-cli`
@@ -1436,12 +1439,31 @@ session once (`LaunchAgentStep`, id `agent-launch:{run}:{n}`; a repeated request
 session), watches it (`WatchAgentStep`, heartbeating), and on an accepted report closes the run (`CloseAgentStep`: the
 usage, the measured empty diff, and the stop of the session) before it decides.
 
+- **A restart does not drop the report (#1109, #1000 ask 1).** `workflow complete` from a launched session (`AW_SINDRI_LAUNCH_SECRET`
+  set) waits out a control plane that is down: on `SND-API-001` it tries again for `AW_SINDRI_COMPLETE_WAIT` seconds (default 900,
+  enough for a reinstall; 0 is one try), pausing 1 s and doubling to 15 s, with one line on standard error per wait. It keeps the
+  nonce it was issued across the waits. A refusal, an invalid answer and a timeout are never retried; a human's call is tried
+  once. If the window ends it exits 1 and says the output stays in the files it was given: Sindri completes the run from the
+  run's `.sindri-out` folder when it is back (#1000), so the agent must not report the Step again by hand.
 - **The report is the `complete` Update**, validated like a desk report. The session sends `X-Sindri-Launch-Secret`
   (`AW_SINDRI_LAUNCH_SECRET` for the CLI); another caller gets `SND-AUTH-002`, a wrong secret `SND-AUTH-003` (it consumes no
   nonce). While the instance is taken over the secret is refused and only the human completes it, through the desk.
 - **A park or a takeover leaves the session running;** the watch resumes after the handback and attaches to the same
   launch id. A `cancel` or the end of the run stops the session. A session that ends without a report is
-  `step.failed` (`exit`, or `lost` when it vanished), and the loop rules apply to it as to any failure.
+  `step.failed` (`exit`, `lost` when it vanished, or `idle` when its turn ended and nothing happened for 120 s), and the loop
+  rules apply to it as to any failure, after the recovery below.
+- **A restart does not strand a result (issue #1000).** `workflow complete` from a launched session (it carries
+  `AW_SINDRI_LAUNCH_SECRET`) waits out a control plane that is down: on `SND-API-001` (no control plane recorded, or the
+  connection refused or broken) it waits as the item above says (#1109: `AW_SINDRI_COMPLETE_WAIT`, default 15 minutes; a human's
+  call is never held). If the session ends first (its turn over, or the agent gone), the watch reads the
+  run directory's `.sindri-out` folder before it fails the Step (`RecoverAgentStep`, patched `recover-stranded-agent-result`;
+  only files written after the launch count, because a phase workspace is shared by its Steps). `AgentRecovery.Decide` completes the
+  run, as an `agent:recovered` report with the tokens and diff signal the close step read, only when exactly one of the Step's
+  outcomes has outputs the caller writes and every one of them is in the folder (`challengeRound` for `fact:challengeRound`);
+  the outcome is never guessed. A Step that picks its outcome from its parameters, one that needs no output, outputs that fit
+  two outcomes, or some of an outcome's outputs park instead: the Step fails with the session's own reason and the question
+  adds "the agent finished but its result was not recorded: `<run dir>/.sindri-out`". An empty or absent folder fails the Step
+  as before. The pass runs the moment the watch sees the end, so a restart that finds an ended session finishes it in one tick.
 - **Status:** an open agent run adds `run: { runtime: "agent", launch: "LCH-…" }` to the status fields and a `run` line to
   the text (`run       agent LCH-…`). A desk run and a block run have neither; the member is left out of the JSON when
   null, so every other status golden is unchanged. An agent run has no desk task, so `commands` lists `takeover` and

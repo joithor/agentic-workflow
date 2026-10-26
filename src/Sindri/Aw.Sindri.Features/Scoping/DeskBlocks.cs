@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Scoping;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -173,6 +174,11 @@ internal static partial class DeskBlocks
         }
 
         var round = facts.ObjectCopy("challengeRound");
+        if (ChallengeRoundShape.LogShape(round) is { } shape)
+        {
+            return SindriErrors.InvalidInput.With(shape);
+        }
+
         var verdict = ScopeJson.Str(round, "verdict");
         var surfaces = ScopeJson.Items(round, "surfaces").ToList();
         var behaviours = ScopeJson.Items(round, "behaviours").ToList();
@@ -213,6 +219,13 @@ internal static partial class DeskBlocks
                 }
 
                 entry["digest"] = digest;
+                if (!ScopeJson.Strings(entry, "recordedAs").Any())
+                {
+                    // why: an applied answer is recorded as the question it answers (SCP-ACC-003 accepts a Q id); the draft may refine it to the items and map changes it caused
+                    var answered = ScopeJson.Strings(entry, "questionIds").Concat(ScopeJson.Items(entry, "answers").Select(static a => ScopeJson.Str(a, "question")).OfType<string>()).Distinct(StringComparer.Ordinal);
+                    entry["recordedAs"] = new JsonArray([.. answered.Select(static q => (JsonNode)JsonValue.Create(q))]);
+                }
+
                 ScopeJson.Append(log, entry);
             }
         }
