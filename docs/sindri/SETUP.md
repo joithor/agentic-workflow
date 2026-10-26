@@ -31,7 +31,7 @@ Some commands only a person may run, at a real terminal. Sindri refuses them to 
   └──────────────────────────────────────────────────────────────────────────────────────────┘
         ▲ reads only the approved profile             │ searches
         │                                             ▼
-   profile.yaml ── `profile approve` ──►     Onyx (Docker, 127.0.0.1:3000): Linear, Slack
+   profile.yaml ── `profile approve` ──►     Onyx (Docker, 127.0.0.1:3189): Linear, Slack
    recipes/*.yaml ── `recipe approve` ──►    the registry (workflow.line and its children)
 ```
 
@@ -103,6 +103,14 @@ What `scripts/install-cs.sh` does:
 to date (`git pull`) before you rebuild: a checkout that is behind gives you an older build, and a fix you expect is
 missing from it. Running `scripts/install-cs.sh` from a linked worktree publishes that worktree's source and makes it
 the current build for everyone on the box.
+
+**Setup with Sindri already running.** `./setup.sh` also runs `scripts/cutover-clean-ts.sh`, which removes the retired
+TS `sindri-app` builds. It finds the running control plane's pid in `${AW_SINDRI_HOME:-$AW_STATE_DIR/sindri-app}/control.json`
+(the same file `install-cs.sh` reads). If that control plane runs from `bin/sindri-app/`, the first step refuses with
+`cutover: refused: the Sindri control plane (pid N) runs from <state>/bin/sindri-app/. Nothing was changed. Run: sindri-app stop (or sindri stop), then re-run ./setup.sh`
+and exits 1. If it gets past that, the last step keeps the build dir instead of deleting it and prints
+``cutover: kept <state>/bin/sindri-app: Sindri is still running from it; run `sindri stop`, then re-run ./setup.sh``.
+Either way: `sindri stop`, then `./setup.sh` again.
 
 ## 3. The profile
 
@@ -199,13 +207,13 @@ ok    api               127.0.0.1:7410 answers (pid 53290, epoch 6)
 ok    temporal          127.0.0.1:53876 answers (pid 53346), version 1.9.1 as pinned, namespace sindri present
 ok    context:map       map v2 current (my-app, 412 nodes, 655 edges)
 ok    context:retention no expired exports; retained map versions are within the newest 20 and the 90-day eval window
-ok    context:onyx      Onyx v4.9.0 answers on 127.0.0.1:3000 (pinned v4.9.0); key: admin, Sindri's dedicated user
+ok    context:onyx      Onyx v4.9.0 answers on 127.0.0.1:3189 (pinned v4.9.0); key: admin, Sindri's dedicated user
 ok    context:sources   2 of 2 sources ok; session reads on
 ok    context:sync      1 intent source(s) synced
 ok    context:mcp-scope no user-wide 'sindri' MCP entry for Claude Code, Codex or Cursor
 ok    launcher          no launcher.json at …; this box's viewer is Warp (warp) (sindri launch init writes it); …
 ok    launcher:agents   claude-code (builtin): …/claude; codex (builtin): …/codex; cursor (builtin): …/agent
-ok    onyx:stack        9 containers running, healthy, bound to 127.0.0.1:3000, digests match the pins
+ok    onyx:stack        9 containers running, healthy, bound to 127.0.0.1:3189, digests match the pins
 warn  claude-code       re-probed: claude 2.1.303 differs from the pinned probe (2.1.299) (fix: …)
 warn  codex:read-only   pending: owner probe (fix: …)
 ```
@@ -228,7 +236,9 @@ warn  codex:read-only   pending: owner probe (fix: …)
 
 **After a new build.** A control plane keeps running the build it started with. When `install-cs.sh` publishes a new
 one it says `a control plane from an earlier build is running (pid N); 'sindri stop', then 'sindri', runs this
-one`. Do exactly that (**Human-only**):
+one`. `install-cs.sh --link` (so `./setup.sh`) says the same after it switches: ``install-cs: Sindri is still running build
+<old>; run `sindri stop && sindri` to switch to <new>``, and exits 0. It never restarts the control plane for you, because a
+restart can strand open agent runs. Do exactly that (**Human-only**):
 
 ```bash
 sindri stop
@@ -249,7 +259,7 @@ sindri onyx up         # Human-only: everything below, idempotent and resumable
 
 `onyx up` does, in order (`state.json` records each step, so a rerun repeats nothing that is already right):
 
-1. **Preflight**: Docker, Compose, memory, disk, port (3000, or the first free of 3001-3010).
+1. **Preflight**: Docker, Compose, memory, disk, port (3189, or the first free of 3190-3199).
 2. **Fetch**: the pinned deployment files from GitHub, each checked against its sha256.
 3. **Config**: `.env` and a compose override (nginx on `127.0.0.1` only, every image by digest, telemetry off).
 4. **Pull** by digest, then **start**, waiting up to 15 minutes for Onyx to answer.
@@ -275,9 +285,9 @@ Indexing runs inside Onyx and can take a while on a large workspace.
 You should see, in `doctor`:
 
 ```text
-ok    context:onyx      Onyx v4.9.0 answers on 127.0.0.1:3000 (pinned v4.9.0); key: admin, Sindri's dedicated user
+ok    context:onyx      Onyx v4.9.0 answers on 127.0.0.1:3189 (pinned v4.9.0); key: admin, Sindri's dedicated user
 ok    context:sources   2 of 2 sources ok; session reads on
-ok    onyx:stack        9 containers running, healthy, bound to 127.0.0.1:3000, digests match the pins
+ok    onyx:stack        9 containers running, healthy, bound to 127.0.0.1:3189, digests match the pins
 ```
 
 With a managed Onyx, `sindri` starts its containers and `sindri stop` stops them. `onyx down` (**Human-only**)

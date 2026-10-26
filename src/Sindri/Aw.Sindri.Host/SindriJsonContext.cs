@@ -9,6 +9,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
@@ -180,7 +181,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RoutedItem))]           // engine P7 plan D8: the router stub's item.routed event
 [JsonSerializable(typeof(EffectReply))]          // engine P6 unit (a): an effect's reply event (notify.delivered, claim.created)
 [JsonSerializable(typeof(GetInstanceEventsResponse)), JsonSerializable(typeof(InstanceEventView)), JsonSerializable(typeof(InstanceEventFields)), JsonSerializable(typeof(StartInstanceResponse))]
-[JsonSerializable(typeof(StartInstanceRequest)), JsonSerializable(typeof(RerunInstanceRequest)), JsonSerializable(typeof(DeskRecommendation)), JsonSerializable(typeof(ApplyCommandRequest)), JsonSerializable(typeof(CompleteStepRequest)), JsonSerializable(typeof(ApplyCommandResponse))]
+[JsonSerializable(typeof(StartInstanceRequest)), JsonSerializable(typeof(RerunInstanceRequest)), JsonSerializable(typeof(DeskRecommendation)), JsonSerializable(typeof(ApplyCommandRequest)), JsonSerializable(typeof(ApplyCommandBody)), JsonSerializable(typeof(CompleteStepRequest)), JsonSerializable(typeof(ApplyCommandResponse))]
 [JsonSerializable(typeof(IssueNonceResponse)), JsonSerializable(typeof(RecipeRegistered)), JsonSerializable(typeof(RecipeApproved)), JsonSerializable(typeof(RecipeRevoked))]
 [JsonSerializable(typeof(RegisterRecipeRequest)), JsonSerializable(typeof(RegisterRecipeResponse)), JsonSerializable(typeof(ListRecipesResponse)), JsonSerializable(typeof(ApproveRecipeRequest))]
 [JsonSerializable(typeof(RegisterMcpJobRequest))]   // setup-once §5.4: register Sindri in a repo from the app
@@ -215,7 +216,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ContextChallenge)), JsonSerializable(typeof(ReviewContextMapRequest)), JsonSerializable(typeof(ReviewContextMapResponse)), JsonSerializable(typeof(PromoteContextMapRequest))]
 [JsonSerializable(typeof(PromoteContextMapResponse)), JsonSerializable(typeof(ProposeContextMapRequest)), JsonSerializable(typeof(ProposeContextMapResponse)), JsonSerializable(typeof(ReviewQueueView))]
 [JsonSerializable(typeof(ReviewHistoryView)), JsonSerializable(typeof(ReviewExported)), JsonSerializable(typeof(ReviewResult)), JsonSerializable(typeof(ProposalsView))]
-[JsonSerializable(typeof(LensesView)), JsonSerializable(typeof(LensesSetView)), JsonSerializable(typeof(HistoryView)), JsonSerializable(typeof(CodeView)), JsonSerializable(typeof(SubgraphView)), JsonSerializable(typeof(GetContextLensesAnswerRequest)), JsonSerializable(typeof(GetContextHistoryRequest)), JsonSerializable(typeof(GetContextCodeRequest)), JsonSerializable(typeof(GetContextSubgraphRequest)), JsonSerializable(typeof(FileMapView)), JsonSerializable(typeof(WholeMapView)), JsonSerializable(typeof(ConceptsView)), JsonSerializable(typeof(ConceptMembersView)), JsonSerializable(typeof(ContextMapReviewed)), JsonSerializable(typeof(ContextMapPromoted))]
+[JsonSerializable(typeof(LensesView)), JsonSerializable(typeof(LensesSetView)), JsonSerializable(typeof(HistoryView)), JsonSerializable(typeof(CodeView)), JsonSerializable(typeof(SubgraphView)), JsonSerializable(typeof(GetContextLensesAnswerRequest)), JsonSerializable(typeof(GetContextHistoryRequest)), JsonSerializable(typeof(GetContextCodeRequest)), JsonSerializable(typeof(GetContextSubgraphRequest)), JsonSerializable(typeof(FileMapView)), JsonSerializable(typeof(WholeMapView)), JsonSerializable(typeof(MapSearchView)), JsonSerializable(typeof(SearchContextMapRequest)), JsonSerializable(typeof(ConceptsView)), JsonSerializable(typeof(ConceptMembersView)), JsonSerializable(typeof(ContextMapReviewed)), JsonSerializable(typeof(ContextMapPromoted))]
 [JsonSerializable(typeof(ContextMapProposed)), JsonSerializable(typeof(ContextMapBuilt))]
 [JsonSerializable(typeof(FleetChanged))]
 [JsonSerializable(typeof(ItemOpenRequested)), JsonSerializable(typeof(LaunchStarted)), JsonSerializable(typeof(LaunchStartedPublic)), JsonSerializable(typeof(LaunchFailed))]   // API P10a (U0)
