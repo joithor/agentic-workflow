@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Concepts;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Map;
@@ -114,7 +114,7 @@ internal static class Engines
     private sealed class NoConceptSearch : IConceptScanSearch
     {
         public ValueTask<Kernel.Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Kernel.Result<MapSearchView>>(Aw.Context.Core.ContextErrors.StoreUnavailable.With("no search in this test"));
+            ValueTask.FromResult<Kernel.Result<MapSearchView>>(Context.Core.ContextErrors.StoreUnavailable.With("no search in this test"));
     }
 
     private static MapPublishing Publishing(FakeGraphStore store) =>
