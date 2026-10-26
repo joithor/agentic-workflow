@@ -4,8 +4,8 @@ using Aw.Sindri.Core.Profile;
 namespace Aw.Sindri.Tests.ApproveProfile;
 
 /// <summary>
-/// The drift guard for issue 1147: the profile diff is a hand-written list of paths (<c>ProfileDiff.Flatten</c>), and the hash covers every property of these records. A property added to one of
-/// them fails here until it is pinned below, and pinning it means giving it a path in <c>ProfileDiff</c> (and a case in <c>DiffCoversHashedKeysCheckTests</c>).
+/// The drift guard for issue 1147: the profile diff is a hand-written list of paths (ProfileDiff.Flatten), and the hash covers every property of these records. A property added to one of
+/// them fails here until it is pinned below, and pinning it means giving it a path in <see cref="ProfileDiff"/> (and a case in <see cref="DiffCoversHashedKeysCheckTests"/>).
 /// </summary>
 public sealed class ProfileDiffDriftGuardTests
 {
