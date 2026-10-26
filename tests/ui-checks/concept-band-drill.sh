@@ -98,7 +98,8 @@ poll_canvas is_product_back || fail "step 4: 'Links to other bands' did not brin
 click_card "Back" || fail "step 5: could not click Back while drilled"
 poll_canvas is_full || fail "step 5: Back did not return to the concept's whole map with the Code band (canvas: '$cname')"
 vis_button "Open the Why band" || fail "step 5: the 'Open the Why band' button is not back after Back"
-[ -z "$(ctext --type TextBlock --text "Why")" ] || fail "step 5: the 'Why' crumb is still shown after Back"
+# The band buttons (each a child TextBlock "Why", "Product", "Code") are back, so the crumb is checked by the drill's own segment being gone.
+d search --type RadioButton --name "Links inside Why" --limit 10 2>/dev/null | jq -e 'any(.matches[]; .visible)' >/dev/null && fail "step 5: the drill's segments are still shown after Back"
 
 # Step 6: Back again returns to the concept cards.
 click_card "Back" || fail "step 6: could not click Back inside the concept"
