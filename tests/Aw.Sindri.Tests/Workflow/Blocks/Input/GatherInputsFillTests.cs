@@ -82,8 +82,6 @@ public sealed class GatherInputsFillTests : IDisposable
 
         public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.FileMap(query, scope, cancellationToken);
 
-        public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.ScopeGraph(query, scope, cancellationToken);
-
         public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) => _history.History(anchors, window, read, scope, cancellationToken);
 
         public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) => _code.Code(anchors, draft, mapVersion, scope, cancellationToken);

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Aw.Context.Core;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Concepts;
 using Aw.Context.Core.ConceptScan;
@@ -161,8 +160,8 @@ internal sealed class ContextEngine(
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
 
-    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query1, ContextScope scope, CancellationToken cancellationToken) =>
-        graph.ScopeGraph(query1, scope, cancellationToken);
+    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery graphQuery, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.ScopeGraph(graphQuery, scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) =>
         graph.GraphReads(instanceAddress, runToken, cancellationToken);

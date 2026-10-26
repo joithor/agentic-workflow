@@ -172,10 +172,6 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.WholeMap(query, scope, cancellationToken);
 
-    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) => inner.ScopeGraph(query, scope, cancellationToken);
-
-    public ValueTask<Result<IReadOnlyList<GraphRead>>> GraphReads(string instanceAddress, string runToken, CancellationToken cancellationToken) => inner.GraphReads(instanceAddress, runToken, cancellationToken);
-
     public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Search(query, scope, cancellationToken);
 
