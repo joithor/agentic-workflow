@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Launches;
@@ -7,4 +8,5 @@ namespace Aw.Sindri.Core.Launches;
 /// <param name="Instance">The workflow instance whose Step it ran.</param>
 /// <param name="State">The Step's state id, when the launch row has it.</param>
 /// <param name="EndedAt">When the session was ended.</param>
-public sealed record StalledLaunch(LaunchId Launch, InstanceAddress Instance, string? State, DateTimeOffset EndedAt);
+/// <param name="Item">The item the launch belongs to.</param>
+public sealed record StalledLaunch(LaunchId Launch, InstanceAddress Instance, string? State, DateTimeOffset EndedAt, ItemId Item);

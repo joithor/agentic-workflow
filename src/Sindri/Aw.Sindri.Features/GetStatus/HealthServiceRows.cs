@@ -40,7 +40,7 @@ internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInSe
     public async ValueTask<int> IdleAgents(CancellationToken cancellationToken)
     {
         var launches = await views.List<LaunchRow>(ViewNames.Launches, cancellationToken).ConfigureAwait(false);
-        return launches.IsSuccess ? StalledLaunches.Find(launches.Value, clock?.GetUtcNow()).Count : 0;
+        return launches.IsSuccess ? (await StalledLaunches.Open(StalledLaunches.Find(launches.Value, clock?.GetUtcNow()), views, cancellationToken).ConfigureAwait(false)).Count : 0;
     }
 
     /// <summary>How many live workflow instances are parked as unavailable: a dependency of their Step stayed down through the retries, so they wait for a rerun, not for an answer.</summary>

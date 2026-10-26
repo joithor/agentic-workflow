@@ -18877,7 +18877,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.AgentIdle.get -> b
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.AgentIdle.init -> void
 static Aw.Sindri.Core.Health.HealthSummary.WithIdleAgents(Aw.Sindri.Core.Health.HealthReport! report, int idle) -> Aw.Sindri.Core.Health.HealthReport!
 Aw.Sindri.Core.Launches.StalledLaunch
-Aw.Sindri.Core.Launches.StalledLaunch.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? State, out System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Launches.StalledLaunch.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string? State, out System.DateTimeOffset EndedAt, out Aw.Sindri.Core.Ids.ItemId Item) -> void
 Aw.Sindri.Core.Launches.StalledLaunch.EndedAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Launches.StalledLaunch.EndedAt.init -> void
 Aw.Sindri.Core.Launches.StalledLaunch.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
@@ -18886,7 +18886,7 @@ Aw.Sindri.Core.Launches.StalledLaunch.Launch.get -> Aw.Sindri.Core.Workflow.Engi
 Aw.Sindri.Core.Launches.StalledLaunch.Launch.init -> void
 Aw.Sindri.Core.Launches.StalledLaunch.State.get -> string?
 Aw.Sindri.Core.Launches.StalledLaunch.State.init -> void
-Aw.Sindri.Core.Launches.StalledLaunch.StalledLaunch(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? State, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Launches.StalledLaunch.StalledLaunch(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string? State, System.DateTimeOffset EndedAt, Aw.Sindri.Core.Ids.ItemId Item) -> void
 Aw.Sindri.Core.Launches.StalledLaunches
 static Aw.Sindri.Core.Launches.StalledLaunches.Find(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>! rows, System.DateTimeOffset? now) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.StalledLaunch!>!
 static readonly Aw.Sindri.Core.Launches.StalledLaunches.Window -> System.TimeSpan
@@ -18897,3 +18897,7 @@ override Aw.Sindri.Core.Launches.StalledLaunch.GetHashCode() -> int
 override Aw.Sindri.Core.Launches.StalledLaunch.ToString() -> string!
 static Aw.Sindri.Core.Launches.StalledLaunch.operator !=(Aw.Sindri.Core.Launches.StalledLaunch? left, Aw.Sindri.Core.Launches.StalledLaunch? right) -> bool
 static Aw.Sindri.Core.Launches.StalledLaunch.operator ==(Aw.Sindri.Core.Launches.StalledLaunch? left, Aw.Sindri.Core.Launches.StalledLaunch? right) -> bool
+Aw.Sindri.Core.Launches.StalledLaunch.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Launches.StalledLaunch.Item.init -> void
+static Aw.Sindri.Core.Launches.StalledLaunches.Open(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.StalledLaunch!>! stalled, Aw.Sindri.Core.Views.IViewReader? views, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.StalledLaunch!>!>
+static Aw.Sindri.Core.Launches.StalledLaunches.MovedPast(Aw.Sindri.Core.Launches.StalledLaunch! launch, Aw.Sindri.Core.Views.EngineItemPart? engine) -> bool
