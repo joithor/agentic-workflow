@@ -735,6 +735,7 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-LAUNCH-025` | The launcher's host is `t3` and T3 Code can't be reached: not running, its `t3` CLI missing, or a tool call failed or answered something Sindri can't read; nothing starts, or a stop records nothing (`docs/csharp/sindri-launcher.md` "The t3 host") |
 | `SND-LAUNCH-026` | The launcher's host is `t3` and no T3 Code project's folder holds the item's repo; nothing starts (fix: `t3 project add <repo>`) |
 | `SND-LAUNCH-027` | The launcher's host is `t3` and T3 Code has no enabled provider for the launch's agent (`claude-code` → Claude, `codex` → Codex, `cursor` → Cursor); nothing starts (fix: enable it in T3's settings, or open with another `--agent`) |
+| `SND-LAUNCH-029` | A fact a Step reads would be written over a file git tracks in the Step's worktree; the launch is refused and the file is left as it is (`docs/csharp/sindri-launcher.md` "Fact files"; fix: rename or untrack that file, or the fact) |
 | `SND-LAUNCH-404` | No launch has that id: `GET /sindri/launches/{launchId}` (404; API P10a) |
 | `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes `GET /sessions` and `GET /sessions/{provider}/{id}` answer it, CO-3) |
