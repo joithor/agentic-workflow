@@ -44,7 +44,7 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
         }
     }
 
-    /// <summary>Found files: a node keyed code:&lt;path&gt; in the code band. A file the repo demotes (its flag from the context engine) carries <c>demoted</c>, and <paramref name="role"/> (test) marks the tests of a code view, so SCP-COV-003 can skip them.</summary>
+    /// <summary>Found files: a node keyed code:&lt;path&gt; in the code band. A file the repo demotes (its flag from the context engine) carries <c language="text">demoted</c>, and <paramref name="role"/> (test) marks the tests of a code view, so SCP-COV-003 can skip them.</summary>
     internal void Files(IEnumerable<JsonNode> files, string? role = null)
     {
         foreach (var file in files)

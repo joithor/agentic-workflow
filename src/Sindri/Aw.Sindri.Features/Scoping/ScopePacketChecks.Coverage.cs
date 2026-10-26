@@ -192,7 +192,7 @@ internal static partial class ScopePacketChecks
 
     private static bool Accounted(string key, string item, HashSet<string> keys, HashSet<string> cited) => keys.Contains(key) || cited.Contains(item);
 
-    /// <summary>The nodes of a lens at depth 0 or 1: the anchors, the nodes with an edge to or from an anchor (their own implementers at depth 0, the nodes one edge away at depth 1), and not a file the repo demotes or a test, fixture or script (the node's <c>demoted</c> flag and <c>role</c>, set by <see cref="LensGather"/>).</summary>
+    /// <summary>The nodes of a lens at depth 0 or 1: the anchors, the nodes with an edge to or from an anchor (their own implementers at depth 0, the nodes one edge away at depth 1), and not a file the repo demotes or a test, fixture or script (the node's <c language="text">demoted</c> flag and <c language="text">role</c>, set by <see cref="LensGather"/>).</summary>
     private static IEnumerable<JsonNode> NearNodes(JsonObject? entry)
     {
         var anchors = ScopeJson.Strings(entry, "anchors").ToHashSet(StringComparer.Ordinal);
