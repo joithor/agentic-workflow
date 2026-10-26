@@ -63,6 +63,12 @@ internal sealed class JudgeDatabase(SqliteOptions options, TimeProvider clock)
             return migrations.Error;
         }
 
+        var parked = await ParkTsEvalTables(cancellationToken).ConfigureAwait(false);
+        if (parked.IsError)
+        {
+            return parked.Error;
+        }
+
         var migrated = await new MigrationRunner(_connections, clock).Migrate(migrations.Value, cancellationToken).ConfigureAwait(false);
         if (migrated.IsError)
         {
@@ -71,6 +77,13 @@ internal sealed class JudgeDatabase(SqliteOptions options, TimeProvider clock)
 
         _ready = true;
         return Results.Ok();
+    }
+
+    // #1280: stub, not built yet.
+    private ValueTask<Result<Unit>> ParkTsEvalTables(CancellationToken cancellationToken)
+    {
+        _ = (_connections, cancellationToken);
+        return ValueTask.FromResult(Results.Ok());
     }
 
     private Result<Unit> MakeDirectory()
