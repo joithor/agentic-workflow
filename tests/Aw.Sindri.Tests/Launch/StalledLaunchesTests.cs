@@ -82,9 +82,9 @@ public sealed class StalledLaunchesTests
 
     [Fact]
     public void A_child_of_an_ended_root_drops_it() =>
-        Assert.True(StalledLaunches.MovedPast(Stalled(InstanceAddress.From(_item.Value + "/step/1/child/1")), Part(_instance.Value, ended: true)));
+        Assert.True(StalledLaunches.MovedPast(Stalled(InstanceAddress.From(_item.Value + "/step/1/child.1")), Part(_instance.Value, ended: true)));
 
     [Fact]
     public void A_child_of_a_live_root_is_kept_whatever_state_the_root_is_in() =>
-        Assert.False(StalledLaunches.MovedPast(Stalled(InstanceAddress.From(_item.Value + "/step/1/child/1")), Part(_instance.Value, state: "review")));
+        Assert.False(StalledLaunches.MovedPast(Stalled(InstanceAddress.From(_item.Value + "/step/1/child.1")), Part(_instance.Value, state: "review")));
 }
