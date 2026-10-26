@@ -156,10 +156,11 @@ check "codex upstream (explicit openai): the top-level openai_base_url" "$(CODEX
 check "codex upstream (provider without base_url): the default" "$(CODEX_HOME="$WORK/ch-nobase" bash "$WRAP" upstream codex)" "https://api.openai.com/v1"
 
 # --- concurrent starts: two wrappers at once share one proxy, both registered, and the last one out stops it ---
+# Each session lives 8 s: on a loaded macOS runner the second wrapper can take over 3 s to register, and the first would be gone.
 : > "$CALLS"
-FAKE_SLEEP=3 bash "$WRAP" claude a >/dev/null 2>&1 &
+FAKE_SLEEP=8 bash "$WRAP" claude a >/dev/null 2>&1 &
 W1=$!
-FAKE_SLEEP=3 bash "$WRAP" claude b >/dev/null 2>&1 &
+FAKE_SLEEP=8 bash "$WRAP" claude b >/dev/null 2>&1 &
 W2=$!
 for _ in $(seq 1 100); do
   [ "$(ls "$AW_STATE_DIR/headroom/claude/users" 2>/dev/null | wc -l | tr -d ' ')" = "2" ] && break
