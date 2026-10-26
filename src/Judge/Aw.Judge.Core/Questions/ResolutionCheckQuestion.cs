@@ -41,6 +41,7 @@ public static class ResolutionCheckQuestion
         Threshold = 0.8,
         TimeBudget = TimeSpan.FromSeconds(15),
         ExtraProperties = new Dictionary<string, JsonObject>(StringComparer.Ordinal) { [Reasons] = StringList() },
+        ReasonedOutputs = new HashSet<string>(StringComparer.Ordinal) { Partial, Unresolved },
         Prompt = Prompt,
         InputProblem = InputProblem,
         PreRules = PreRule,

@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Lenses;
 
@@ -11,7 +12,7 @@ public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf)
     /// <summary>The commit the map was built at (its first seven characters), or null for an imported map that names none; answers carry it beside 'mapVersion', which stays 'v&lt;N&gt;'.</summary>
     public string? MapCommit { get; init; }
 
-    /// <summary>The repo the map version was built for, or null when the caller has none; the repo of a node that names none (<see cref="Graph.NodeRepos"/>).</summary>
+    /// <summary>The repo the map version was built for, or null when the caller has none; the repo of a node that names none (<see cref="NodeRepos"/>).</summary>
     public string? MapRepo { get; init; }
 
     /// <summary>What the cascade may do for this call: the hops asked for and the component fan-out cap.</summary>
@@ -25,4 +26,7 @@ public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf)
 
     /// <summary>The intent sources' rows (the builder adds the map and the code index).</summary>
     public IReadOnlyList<SearchedSource> IntentSources { get; init; } = [];
+
+    /// <summary>The repos in scope, for the globs they demote (<see cref="DemotedCode"/>); a subgraph read leaves out the demoted code nodes depth expansion alone would reach. Empty demotes nothing.</summary>
+    public IReadOnlyList<ContextRepo> Repos { get; init; } = [];
 }
