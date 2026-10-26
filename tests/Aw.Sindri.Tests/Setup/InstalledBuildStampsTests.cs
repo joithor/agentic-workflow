@@ -33,7 +33,7 @@ public sealed class InstalledBuildStampsTests : IDisposable
     {
         var stamps = new InstalledBuildStamps(Build("only"));
 
-        Assert.Equal<(string?, string?)>(("only", null), (stamps.Running(), stamps.Installed()));
+        Assert.Equal(("only", null), (stamps.Running(), stamps.Installed()));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -41,6 +41,6 @@ public sealed class InstalledBuildStampsTests : IDisposable
     {
         var stamps = new InstalledBuildStamps(_root + Path.DirectorySeparatorChar);
 
-        Assert.Equal<(string?, string?)>((null, null), (stamps.Running(), stamps.Installed()));
+        Assert.Equal((null, null), (stamps.Running(), stamps.Installed()));
     }
 }
