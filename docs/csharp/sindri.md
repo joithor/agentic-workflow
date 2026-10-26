@@ -153,7 +153,8 @@ builds (#1143): the snapshot's bytes are checked against the sha256 in its direc
 model that gained a member doesn't invalidate it. A snapshot whose bytes don't hash to its name, or that today's model can't parse
 (SND-PROFILE-005), no longer stops the preview: `profile approve` still prints the live hash, lists every key as changed and says the stored
 approval can't be read (`unreadable` in `--json`'s response); approving a hash replaces it. A stale hash is SND-PROFILE-003 and its fix line is the whole command,
-`sindri profile approve <the live hash>`. `status`'s `profile.problem` names only a live file that doesn't load.
+`sindri profile approve <the live hash>`. The preview's key paths cover every key the hash covers, the `index` keys at the top and on a repo (`repos.<name>.index.roles.<role>`, `.demote`, `.ignore`, ...), `context` and `setup.mcp` included (#1147);
+when the hash differs and no path does, it says so (`unlistedChange` in `--json`) and never prints "nothing". `status`'s `profile.problem` names only a live file that doesn't load.
 
 ## Host lease
 
