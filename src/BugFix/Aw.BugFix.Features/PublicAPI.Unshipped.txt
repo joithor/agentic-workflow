@@ -241,11 +241,13 @@ Aw.BugFix.Features.StartAttempt.StartAttemptRequest
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.<Clone>$() -> Aw.BugFix.Features.StartAttempt.StartAttemptRequest!
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.AbandonJudge.get -> bool
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.AbandonJudge.init -> void
-Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Model.FixMode Mode, out bool AbandonJudge) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.AbandonUnrun.get -> bool
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.AbandonUnrun.init -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Deconstruct(out string! StateDirectory, out Aw.BugFix.Core.Model.FixMode Mode, out bool AbandonJudge, out bool AbandonUnrun) -> void
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Equals(Aw.BugFix.Features.StartAttempt.StartAttemptRequest? other) -> bool
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Mode.get -> Aw.BugFix.Core.Model.FixMode
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.Mode.init -> void
-Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StartAttemptRequest(string! StateDirectory, Aw.BugFix.Core.Model.FixMode Mode, bool AbandonJudge = false) -> void
+Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StartAttemptRequest(string! StateDirectory, Aw.BugFix.Core.Model.FixMode Mode, bool AbandonJudge = false, bool AbandonUnrun = false) -> void
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StateDirectory.get -> string!
 Aw.BugFix.Features.StartAttempt.StartAttemptRequest.StateDirectory.init -> void
 Aw.BugFix.Features.StartAttempt.StartAttemptResponse
