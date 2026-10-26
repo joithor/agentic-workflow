@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Events;
@@ -6,4 +7,4 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Launch">The launch.</param>
 /// <param name="Kind">Which limit.</param>
 /// <param name="Peak">The peak: a count for pids, bytes for memory and disk.</param>
-public sealed record SandboxLimitHit(LaunchId Launch, LimitHitKind Kind, long Peak);
+public sealed record SandboxLimitHit([property: JsonPropertyName("launchId")] LaunchId Launch, LimitHitKind Kind, long Peak);
