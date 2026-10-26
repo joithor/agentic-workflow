@@ -17,5 +17,17 @@ public sealed record ConceptScanModels(CliModels Claude, CliModels Codex, CliMod
     /// <summary>The models to ask for at a tier, by CLI key ('claude', 'codex', 'cursor'); a CLI with no name is left out.</summary>
     /// <param name="tier">The tier.</param>
     /// <returns>The names.</returns>
-    public IReadOnlyDictionary<string, string> For(ModelTier tier) => throw new NotSupportedException();
+    public IReadOnlyDictionary<string, string> For(ModelTier tier)
+    {
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (key, cli) in new[] { ("claude", Claude), ("codex", Codex), ("cursor", Cursor) })
+        {
+            if ((tier == ModelTier.Strong ? cli.Strong : cli.Cheap) is { } name)
+            {
+                names[key] = name;
+            }
+        }
+
+        return names;
+    }
 }

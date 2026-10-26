@@ -20,4 +20,5 @@ internal sealed record ContextSection(
     CodeSection? Code = null,
     ExtractSection? Extract = null,
     PublishSection? Publish = null,
-    RankerSection? Ranker = null);
+    RankerSection? Ranker = null,
+    ConceptScanSection? ConceptScan = null);

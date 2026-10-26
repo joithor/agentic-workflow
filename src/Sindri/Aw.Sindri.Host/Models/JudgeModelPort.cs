@@ -42,7 +42,7 @@ internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog) : IModelPor
                 continue;
             }
 
-            var asked = question;   // the request's model names are not read yet
+            var asked = request.Models is { } models && models.TryGetValue(CliKey(name), out var model) ? question with { Model = model } : question;
             var result = await provider.Decide(asked, input: null, request.Budget, cancellationToken).ConfigureAwait(false);
             if (result is ProviderDecided { Extra: { } extra } && extra[TextKey] is JsonValue value && value.TryGetValue<string>(out var text) && text.Length > 0)
             {
@@ -52,6 +52,16 @@ internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog) : IModelPor
 
         return ContextErrors.LabelingUnavailable.With("no agent CLI (claude, codex, cursor-agent) answered the request");
     }
+
+    // The key the request's model names use for an agent CLI.
+    private static string CliKey(ProviderName provider) => provider switch
+    {
+        ProviderName.ClaudeCli => "claude",
+        ProviderName.CodexCli => "codex",
+        ProviderName.CursorCli => "cursor",
+        ProviderName.Rules or ProviderName.Jev => string.Empty,
+        _ => string.Empty,
+    };
 
     private static int Tokens(string text) => (text.Length + 3) / 4;
 }
