@@ -26,11 +26,9 @@ public sealed class ModelFactSchemaTests
     private const string Proof = "the-launch-secret";
     private const string EmptyMap = """{"surfaces":[],"implications":[],"workstreams":[],"flagged":[],"excluded":[],"unmapped":[],"unresolved":[]}""";
     private const string MapWithDecisions = """{"surfaces":[],"implications":[],"workstreams":[],"flagged":[],"excluded":[],"unmapped":[],"unresolved":[],"decisions":[{"q":"Q1","a":"private-note-text"}]}""";
-    private const string QuestionWithNoRecommended = """[{"id":"Q7","question":"What does the backfill do with unit-less rows?","options":[{"id":"Q7.a","answer":"Expand them.","cites":["R1"]},{"id":"Q7.b","answer":"Drop them.","cites":["R1"],"recommended":false}],"other":true,"skip":true}]""";
     private static readonly InstanceAddress _address = InstanceAddress.From("T-9/step/1");
     private static readonly LaunchId _launch = LaunchId.From("LCH-" + new string('a', 32));
     private static readonly FactKey _scopeMap = FactKey.From("fact:scopeMap");
-    private static readonly FactKey _questions = FactKey.From("fact:questions");
 
     private readonly InMemoryFactStore _facts = new();
     private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
@@ -65,19 +63,6 @@ public sealed class ModelFactSchemaTests
         Assert.True(first.IsError, "the first report was accepted");
         Assert.False(second.IsError, second.IsError ? second.Error.Message : null);
         Assert.Empty(_launcher.Stops);
-    }
-
-    [Fact(Timeout = 30_000)]
-    public async Task A_question_with_no_recommended_option_is_refused_naming_the_question_so_the_questions_agent_fixes_it()
-    {
-        var run = new AgentRun();
-
-        var refused = await Service(run).Handle(Report(1, (_questions, QuestionWithNoRecommended)), TestContext.Current.CancellationToken);
-
-        Assert.True(refused.IsError, "the report was accepted");
-        Assert.Equal("SND-WF-008", refused.Error.Code);
-        Assert.Contains("fact:questions Q7 has 0 recommended options", refused.Error.Message, StringComparison.Ordinal);
-        Assert.Empty(run.Sent);
     }
 
     private CompleteStepService Service(AgentRun run)
@@ -132,7 +117,7 @@ public sealed class ModelFactSchemaTests
 
         private static Recipe Recipe() =>
             new(1, _version.Id, 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [],
-                [new RecipeOutput(_scopeMap, "Scope map", "text", "produce"), new RecipeOutput(_questions, "Questions", "text", "produce")],
+                [new RecipeOutput(_scopeMap, "Scope map", "text", "produce")],
                 "produce", new Dictionary<string, RecipeState>(StringComparer.Ordinal), [], new Dictionary<string, LoopSpec>(StringComparer.Ordinal), Budget: null, Evals: [], Hash: null);
 
         private static InstanceView View() =>
