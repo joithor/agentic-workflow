@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.ScopeGraph;
 
@@ -65,7 +66,18 @@ public static class ScopeGraphBuilder
         found.AddRange(lenses.Bands.Intent.Records.Select(r => new ScopeGraphCandidate(r.Key.Value, r.Label, "related", "intent", 4, 0)));
         found.AddRange(lenses.Bands.Intent.Decisions.Select(d => new ScopeGraphCandidate(d.Node.Value, d.Label, "related", "intent", 4, 0)));
         found.AddRange(lenses.Bands.Code.Files.Select(f => CodeCandidate(f, byKey, text)));
-        return [.. found.DistinctBy(c => c.Id, StringComparer.Ordinal)];
+        return [.. found.DistinctBy(c => c.Id, StringComparer.Ordinal).Select(c => ConceptSummary(c, byKey, text))];
+    }
+
+    // A concept node is summarized by its summary attribute (issue 1315); without one it keeps the label.
+    private static ScopeGraphCandidate ConceptSummary(ScopeGraphCandidate candidate, Dictionary<string, GraphNode> byKey, MapText text)
+    {
+        if (!byKey.TryGetValue(candidate.Id, out var node) || node.Key.Kind != NodeKind.Concept || NodeAttributes.String(node, "summary") is not { Length: > 0 } written)
+        {
+            return candidate;
+        }
+
+        return candidate with { Summary = text.Label(written, TrustPolicy.ForNode(node, node.Provenance == Provenance.Human)) };
     }
 
     private static ScopeGraphCandidate CodeCandidate(LensFile file, Dictionary<string, GraphNode> byKey, MapText text)
