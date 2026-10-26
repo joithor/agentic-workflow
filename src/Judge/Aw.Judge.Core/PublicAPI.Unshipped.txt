@@ -786,6 +786,7 @@ const Aw.Judge.Core.Questions.UiElementRepairQuestion.Repaired = "repaired" -> s
 const Aw.Judge.Core.Questions.UntrustedText.BriefCap = 8000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.DiffCap = 12000 -> int
 const Aw.Judge.Core.Questions.UntrustedText.FieldCap = 2000 -> int
+const Aw.Judge.Core.Questions.UntrustedText.ResolutionDiffCap = 100000 -> int
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksOff = "looks-off" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.LooksRight = "looks-right" -> string!
 const Aw.Judge.Core.Questions.VisualCritiqueQuestion.Name = "visual-critique" -> string!
@@ -847,6 +848,7 @@ static Aw.Judge.Core.Questions.UiCandidate.operator ==(Aw.Judge.Core.Questions.U
 static Aw.Judge.Core.Questions.UiElementRepairInput.operator !=(Aw.Judge.Core.Questions.UiElementRepairInput? left, Aw.Judge.Core.Questions.UiElementRepairInput? right) -> bool
 static Aw.Judge.Core.Questions.UiElementRepairInput.operator ==(Aw.Judge.Core.Questions.UiElementRepairInput? left, Aw.Judge.Core.Questions.UiElementRepairInput? right) -> bool
 static Aw.Judge.Core.Questions.UiElementRepairQuestion.Definition.get -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.UiElementRepairInput!>!
+static Aw.Judge.Core.Questions.UntrustedText.CappedDiff(string! diff, int cap) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.Capped(string! text, int cap) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.Neutralized(string! text) -> string!
 static Aw.Judge.Core.Questions.UntrustedText.OneLine(string! text) -> string!

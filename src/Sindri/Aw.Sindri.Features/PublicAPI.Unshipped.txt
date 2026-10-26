@@ -4882,3 +4882,5 @@ override Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.GetHas
 override Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextConceptGlossaryRequest? right) -> bool
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.get -> bool
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.UnlistedChange.init -> void
