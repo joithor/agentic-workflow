@@ -1,7 +1,7 @@
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.Shell;
