@@ -33,6 +33,12 @@ internal static class AConcepts
     /// <summary>A state with no concepts to list: empty, building or unavailable.</summary>
     internal static ContextConceptsView Without(string state, string? code = null) => new(1, "aw-split-panes", state, Code: code);
 
+    /// <summary>A glossary answer: the state and each concept's terms.</summary>
+    internal static ConceptGlossaryView Glossary(string state, params ConceptTerms[] concepts) => new(1, "aw-split-panes", "v1", state, concepts, []);
+
     /// <summary>The answer as the route serves it.</summary>
     internal static RouteAnswer Served(ContextConceptsView view) => new(HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(view, SindriApiClient.Json)));
+
+    /// <summary>The glossary answer as the route serves it.</summary>
+    internal static RouteAnswer Served(ConceptGlossaryView view) => new(HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(view, SindriApiClient.Json)));
 }
