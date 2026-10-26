@@ -24,7 +24,8 @@ public sealed class StaleLockCheckTests : IDisposable
     public async Task A_lock_left_by_a_dead_csharp_holder_is_reclaimed(LockKind kind)
     {
         var slot = Slot(kind);
-        await Leave(slot, ("owner", string.Create(CultureInfo.InvariantCulture, $"{await DeadPid()} 2026-10-25T06:39:00Z ui-evidence\n")));
+        var dead = await DeadPid();
+        await Leave(slot, ("owner", string.Create(CultureInfo.InvariantCulture, $"{dead} 2026-10-25T06:39:00Z ui-evidence\n")));
 
         var taken = await Acquire(kind);
 
@@ -37,7 +38,8 @@ public sealed class StaleLockCheckTests : IDisposable
     public async Task A_lock_left_by_a_dead_bash_holder_is_reclaimed(LockKind kind)
     {
         var slot = Slot(kind);
-        await Leave(slot, ("pid", string.Create(CultureInfo.InvariantCulture, $"{await DeadPid()}\n")));
+        var dead = await DeadPid();
+        await Leave(slot, ("pid", string.Create(CultureInfo.InvariantCulture, $"{dead}\n")));
 
         var taken = await Acquire(kind);
 
