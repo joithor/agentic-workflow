@@ -154,6 +154,12 @@
           "lines": []
         },
         {
+          "key": "SCP-GRAPH-001",
+          "text": "SCP-GRAPH-001 pass",
+          "status": "pass",
+          "lines": []
+        },
+        {
           "key": "SCP-QST-001",
           "text": "SCP-QST-001 pass",
           "status": "pass",
