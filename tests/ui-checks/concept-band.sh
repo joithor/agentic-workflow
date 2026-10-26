@@ -69,7 +69,8 @@ why="${bands%%Why (*}"; product="${bands%%Product (*}"; code="${bands%%Code (*}"
 case "$bands" in *"Why (1 decision"*) ;; *) fail "step 2: the Why band does not hold the decision on Swaps (canvas: '$bands')" ;; esac
 
 # Step 3: the path and the way back are on screen; the cards are gone.
-d search --type Button --contains "Concepts" --limit 20 2>/dev/null | jq -e 'any(.matches[]; .visible)' >/dev/null || fail "step 3: no 'Concepts' crumb"
+# The crumb is a button whose label is a child TextBlock, so the driver reports no text on the button itself: it is found by its name.
+d search --type Button --name "Concepts" --limit 20 2>/dev/null | jq -e 'any(.matches[]; .visible)' >/dev/null || fail "step 3: no 'Concepts' crumb"
 [ -n "$(ctext --type TextBlock --text "Self scheduling")" ] || fail "step 3: the concept's own crumb ('Self scheduling') is not shown"
 [ -n "$(card_id "Back")" ] || fail "step 3: no Back button inside the concept"
 [ -z "$(card_id "Billing")" ] || fail "step 3: the concept cards are still on screen inside a concept"
