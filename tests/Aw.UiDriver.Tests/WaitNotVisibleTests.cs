@@ -8,7 +8,7 @@ public sealed class WaitNotVisibleTests
     private static readonly NodeFacts _shown = Node("0/1", visible: true);
     private static readonly NodeFacts _hidden = Node("0/2", visible: false);
 
-    private static NodeFacts Node(string id, bool visible) => new(id, "TextBlock", null, null, "Reading the map", visible, true);
+    private static NodeFacts Node(string id, bool visible) => new(id, "TextBlock", AutomationId: null, Name: null, Text: "Reading the map", visible, Enabled: true);
 
     private static bool Holds(WaitState state, params NodeFacts[] matches) => WaitStates.Holds(state, matches, matches.FirstOrDefault(), text: null);
 
