@@ -64,7 +64,7 @@ internal sealed class ScanContextConceptsService(ContextScopes scopes, IContextE
             return scans.Error;
         }
 
-        return Results.Success<string?>(ConceptScanBudget.Refusal(ConceptScanLog.Started(scans.Value, clock.GetUtcNow() - ConceptScanLimits.Window)));
+        return Results.Success(ConceptScanBudget.Refusal(ConceptScanLog.Started(scans.Value, clock.GetUtcNow() - ConceptScanLimits.Window)));
     }
 
     private static ScanContextConceptsResult Of(ConceptScanReport report) => new(report.Version, report.OnDraft, Outcome(report.Outcome), report.Hints, report.Searches, Reason: null, Tier(report.Tier), report.Model);

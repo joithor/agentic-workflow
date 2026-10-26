@@ -49,7 +49,7 @@ public sealed class GlossaryClusterTests
         var input = TwoGroups();
         var shuffled = new List<FeatureVectors> { input[2], input[0], input[1] };
 
-        Assert.Equal(GlossaryFixtures.Keys(Build(input).Clusters.SelectMany(c => c.Features)), GlossaryFixtures.Keys(Build(shuffled).Clusters.SelectMany(c => c.Features)));
+        Assert.Equal(Keys(Build(input).Clusters.SelectMany(c => c.Features)), Keys(Build(shuffled).Clusters.SelectMany(c => c.Features)));
         Assert.Equal(Build(input).Terms.Select(t => (t.Term, t.Weight, Keys(t.Features))), Build(shuffled).Terms.Select(t => (t.Term, t.Weight, Keys(t.Features))));
         Assert.Equal(Build(input).Clusters.Select(c => c.Terms), Build(shuffled).Clusters.Select(c => c.Terms));
     }

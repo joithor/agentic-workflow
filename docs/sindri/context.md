@@ -397,6 +397,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 - An export is **not scrubbed**: map text is written as imported (answers clean it on the way out), and the file is owner-readable
   only (0600). Exports older than 14 days are purged by the `context-purge` service, and only when it is enabled under
   `services:` (`doctor` warns on `context:retention` otherwise).
+- `map status` also carries `roles` (issue 1105; left out when no repo in scope configures a role in `index.roles` and no file looks like one): per repo, `roles` is the number of indexed files each configured role's globs match (`{"role": "demo", "demoted": true, "files": 3}`; an ignored role is not indexed, so its count is normally 0), and `unassigned` is `{"count": 8, "examples": [...]}`, the files that look like a role (a `__tests__/`, `fixtures/`, `__mocks__/` or `testdata/` directory, or a `*.test.*` or `*.spec.*` name) but match no `index.ignore`, `index.demote` or `denyPaths` glob, with up to 5 example paths in path order. A session sees its own repo only. The Context page reads this field.
 - `map status` also says when the current map was built under older map rules than the profile runs under now (`rulesOlder: true` in `--json`, left out otherwise). A map that recorded no rules (built before issue 1041, or imported) says nothing there; `doctor`'s `context:map` warns for it and the refresh service rebuilds it.
 - HTTP: `GET /sindri/context/map` and `GET /sindri/context/map/export?path=…`.
 - **Sessions** (with `context.sessions.enabled: true`) see only the nodes their repo implements: the targets of
@@ -418,7 +419,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 ### Doctor and the purge
 
 `$SINDRI doctor` adds `context:map` (warns with no map, with orphaned overrides or when the current map was built under older map rules, or none recorded, with the fix `sindri context map build`; how far the map is behind HEAD is
-unknown until a build records its commit, S-4) and `context:retention` (warns while exports older than 14 days or
+unknown until a build records its commit, S-4) `context:roles` (issue 1105: warns when indexed files look like a role but match no glob, naming the repo, the count and up to 5 example paths, with the fix "add a glob to index.demote or index.ignore in the profile"; ok otherwise, with the per-role counts), and `context:retention` (warns while exports older than 14 days or
 retained versions past the newest 100 are still there, except those replaced within the last 90 days, which a backtest can still read). The `context-purge` service removes both: name it under
 `services:` in the profile.
 
@@ -780,6 +781,7 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   column reads `index not built` until the code index exists. `--draft` reads the draft (`SND-CONTEXT-044` when there is none);
   an unknown anchor is `SND-CONTEXT-003` with suggestions.
   A code band file of a demoted role (`index.demote`) ranks last and carries `"demoted": true` (left out otherwise): it stays readable but is never a scope surface.
+  The answer also carries `filtered: {"demoted": {"<role>": n}}`, how many of its code band files each demoted role holds, keyed by the role name from `index.roles` (`test`, `fixture`); left out when nothing is demoted. A query answer (`context_query`) carries the same block for the code items it ranks last. Ignored files (`index.ignore`) are not in the map, so they are not counted. The `input.context.lenses` and `input.context.retrieve` Step inputs hand the block over with the rest of the typed result.
 - Several keys (any number; none is `006`) give one union read from one map snapshot (JSON schema 2): an anchor that doesn't resolve or can't be read is listed as `missing anchor: <key>` and in `missingAnchors`, and `coverage.byAnchor` counts each anchor. With one key the JSON stays schema 1.
 - `--map-version v3` (also `3` or `v3@a41b07d`) reads a retained map version, here and in `context query --map-version`; it can't go with `--draft` (`006`), and a version that isn't held is `SND-CONTEXT-120`. `mapVersion` is always `v<N>`; `mapCommit` is the commit the version was built at, 7 lowercase hex characters, omitted when the version names no commit.
 - Every answer ends with what was searched: one line per source (`map`, `onyx`, `code-index`) with its state as a word (`ok`, `not-configured`, `unavailable` or `degraded`, with its code or reason: `onyx degraded (SND-CONTEXT-010)`), and a `map coverage` line (the repo's files under the anchors' paths, how many are unmapped or suggested, and when the version was created; `coverage.map.created` in JSON, while `asOf` is when the answer was built). Query citations carry `fetchedAt`.
