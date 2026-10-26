@@ -212,18 +212,12 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
 
     private static string? Blank(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    // The accepted outcome shows for its 2 s; then the form closes and empties (§4.1 lifecycle).
+    // The button's CanRun changes what a submit would do.
     private void OnControl(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ControlViewModel.CanRun))
         {
             OnChanged(nameof(CanSubmit));
-        }
-
-        if (e.PropertyName == nameof(ControlViewModel.Phase) && sender is ControlViewModel { Phase: CommandPhase.Idle } && CreatedId.Length > 0 && IsOpen)
-        {
-            (Title, Repo, Body) = (string.Empty, string.Empty, string.Empty);
-            IsOpen = false;
         }
     }
 }
