@@ -22,11 +22,11 @@ internal sealed class ConceptPass(IConceptNamer namer, ISymbolVectors vectors, I
 
     internal async ValueTask<ConceptOutcome> Run(ContextSettings settings, GraphSnapshot joined, IReadOnlyList<ConceptPin> pins, IReadOnlyList<ContextRepo> repos, CancellationToken cancellationToken)
     {
-        _ = (hintStore, store);
         var notes = new List<string>();
         var glossary = await Glossary(joined, repos, notes, cancellationToken).ConfigureAwait(false);
         ConceptNames? names = null;
-        var groups = ConceptDeriver.Groups(joined, pins, glossary);
+        var hints = await Hints(cancellationToken).ConfigureAwait(false);
+        var groups = ConceptDeriver.Groups(joined, pins, glossary, hints);
         if (settings.Labeling.Enabled && groups.Count > 0)
         {
             var named = await namer.Name(groups, settings.ExtraPatterns, settings.Labeling.MaxTokens, cancellationToken).ConfigureAwait(false);
@@ -37,12 +37,25 @@ internal sealed class ConceptPass(IConceptNamer namer, ISymbolVectors vectors, I
             }
         }
 
-        var concepts = ConceptDeriver.Derive(joined, pins, names, glossary);
+        var concepts = ConceptDeriver.Derive(joined, pins, names, glossary, hints);
         return new ConceptOutcome(joined with
         {
             Nodes = [.. joined.Nodes.Concat(concepts.Nodes).DistinctBy(n => n.Key.Value, StringComparer.Ordinal)],
             Edges = [.. joined.Edges.Concat(concepts.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
         }, notes);
+    }
+
+    // The concept hints of the newest map version the scan has looked at; a store that can't answer, or a version with none, shapes nothing.
+    private async ValueTask<IReadOnlyList<ConceptHint>> Hints(CancellationToken cancellationToken)
+    {
+        var versions = await store.Versions(cancellationToken).ConfigureAwait(false);
+        if (versions.IsError || versions.Value.Count == 0)
+        {
+            return [];
+        }
+
+        var hints = await hintStore.Read(versions.Value[0].Number, cancellationToken).ConfigureAwait(false);
+        return hints.IsError ? [] : hints.Value;
     }
 
     // The glossary of the features whose files have vectors, or null when none has; a repo whose vectors can't be read adds the note.

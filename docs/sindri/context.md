@@ -634,7 +634,7 @@ and three failed refreshes or publishes in a row raise the one service row.
 **Concept scan (q110).** The `context-concept-scan` service (every minute, no profile entry) starts a `ScanContextConcepts` job (key `concept-scan`, no route or
 verb of its own; `sindri services run context-concept-scan` runs the service by hand; a session may not start it) for each map version it has not scanned: the
 latest draft, else the current version, because a refresh promotes its draft within moments. It takes no heavy-job slot and waits 10 minutes after a failed scan.
-The job reads a compact summary of the map (one line per feature with its label and top files; the summary takes the glossary's terms too, and the engine passes none until it can read the code index's symbol vectors), scrubbed,
+The job reads a compact summary of the map (one line per feature with its label and top files; the summary takes the glossary's terms too: the words a build stored on the concepts, each with the features of the concepts that carry it), scrubbed,
 and makes two calls through the engine's model port: the first returns candidate product concepts and 1 to 3 search queries each; the engine runs those queries
 with the map search over the same version; the second reads the hits and returns concept hints, each `{ name, members, evidence, confidence }`. Each call is held to
 60,000 input characters and 4,000 output tokens, with 2 minutes to answer, and a repo gets at most 6 scans in 24 hours: the 7th ends `succeeded` with outcome
@@ -642,7 +642,7 @@ with the map search over the same version; the second reads the hits and returns
 that is not JSON or holds no usable concept (`no-concepts`) and a map with no feature (`nothing-to-scan`) also end `succeeded` with that outcome: the scan never fails a
 build, and only an engine error (the store, the profile) fails the job. A member that is not a feature of the map is dropped, a feature stays in the hint of the highest
 confidence that names it, and at most 15 hints are kept. The hints are stored in `context.db` (`map_concept_hint`, one row per map version) beside the map, not in it:
-the graph, the overrides and the pins are never touched, a feature no hint names stays unplaced, and nothing asks a model to place it. The job summary reads
+the scan itself never touches the graph, the overrides or the pins, and a feature no hint names stays where the area rules put it. The next map build reads the hints of the newest map version and groups with them (see the glossary section). The job summary reads
 `map v<N>: <hints> concept hint(s) from <searches> search(es)`, and the job result carries the version, the outcome and the counts.
 
 **Rules changes start a refresh too (issue 1041).** Each map version records a hash of the rules it was built under (`MapRuleset`, table column
@@ -1021,3 +1021,6 @@ A map build can name its concepts from the words the code uses, not only from th
 4. Each concept node keeps its top six words in its `terms` attribute. `terms` is on the concept rows of `GET /sindri/context/concepts` (left out when the map has none, so a map built without embeddings reads exactly as before), and `GET /sindri/context/concepts/glossary` lists every concept's words and, for each word, the concepts that carry it.
 
 When the code index can't answer (no index for the repo, the embeddings layer off or down), the build still finishes: the concepts are grouped and named as before, and the build report lists `glossary` among its degraded notes. A host with no code index adds no note.
+
+**Concept hints shape the next build.** A build reads the hints stored for the newest map version (a store that can't answer, or a version never scanned, means none) and regroups the area groups with them, most confident hint first. The id rule: a hinted group keeps the id of the area group whose seed feature it holds, else of the area group it holds more than half the members of, and an area's id goes to one hint only; otherwise it gets an id from its first member no group uses. What a hint leaves of an area that lost its id or its seed becomes a group of its own. Pinned features stay in their pin, a member the map lacks is ignored, and a feature stays in the first hint that names it. Groups smaller than 3 features merge as before.
+

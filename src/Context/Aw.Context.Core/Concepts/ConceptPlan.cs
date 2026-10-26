@@ -1,3 +1,4 @@
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
@@ -13,13 +14,14 @@ internal static class ConceptPlan
     internal const int WholeBelow = 5;
     internal const int TermsPerConcept = 6;
 
-    internal static (IReadOnlyList<PlannedConcept> Pinned, IReadOnlyList<PlannedConcept> Derived) Build(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, MapGlossary? glossary = null)
+    internal static (IReadOnlyList<PlannedConcept> Pinned, IReadOnlyList<PlannedConcept> Derived) Build(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, MapGlossary? glossary = null, IReadOnlyList<ConceptHint>? hints = null)
     {
         var features = graph.Nodes.Where(n => n.Key.Kind == NodeKind.Feature).Select(n => n.Key.Value).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var taken = new HashSet<string>(StringComparer.Ordinal) { ConceptKeys.Other["concept:".Length..] };
         var pinned = pins.Select(p => new PlannedConcept(ConceptSlug.Unique(p.Id?.Value ?? p.Name, taken), "", p, Pinned(graph, features, p))).Select(WithSeed).Select(c => WithTerms(c, glossary)).ToList();
         var left = features.Except(pinned.SelectMany(p => p.Features), StringComparer.Ordinal).ToList();
-        var groups = ConceptGrouping.Merge(graph, Groups(graph, left), glossary is null ? null : new GlossaryTermIndex(glossary));
+        var areas = Groups(graph, left);
+        var groups = ConceptGrouping.Merge(graph, hints is { Count: > 0 } ? ConceptHintGroups.Apply(areas, hints) : areas, glossary is null ? null : new GlossaryTermIndex(glossary));
         var derived = groups.OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => new PlannedConcept(ConceptSlug.Unique(g.Key["feature:".Length..], taken), g.Key, Pin: null, g.Value)).Select(c => WithTerms(c, glossary)).ToList();
         return (pinned, derived);
     }

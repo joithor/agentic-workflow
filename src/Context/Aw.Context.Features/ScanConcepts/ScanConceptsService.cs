@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Context.Core;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
@@ -44,7 +45,7 @@ internal sealed class ScanConceptsService(IGraphStore store, IScrubberFactory sc
             return new ConceptScanReport(map.Number, map.OnDraft, ConceptScanOutcome.NothingToScan, Hints: 0, Searches: 0);
         }
 
-        var summary = built.Value.Egress.Scrub(ConceptScanSummary.Build(map.View.Applied, glossary: null, ConceptScanPrompts.SummaryRoom)).Text;   // the code index's glossary joins the summary when the engine can read it
+        var summary = built.Value.Egress.Scrub(ConceptScanSummary.Build(map.View.Applied, ConceptGlossaryBuilder.Glossary(map.View.Applied), ConceptScanPrompts.SummaryRoom)).Text;   // the terms the build stored on the concepts join the summary
         return await Scan(request.Scope, (map, summary, keys), built.Value.Egress, cancellationToken).ConfigureAwait(false);
     }
 

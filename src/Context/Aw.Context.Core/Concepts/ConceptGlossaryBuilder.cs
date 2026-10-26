@@ -44,5 +44,41 @@ public static class ConceptGlossaryBuilder
     /// <summary>The glossary the concept nodes of a graph carry: each stored term with the member features of the concepts that have it.</summary>
     /// <param name="graph">The graph, concepts included.</param>
     /// <returns>The glossary (no clusters), or null when no concept carries a term.</returns>
-    public static MapGlossary? Glossary(GraphSnapshot graph) => throw new NotSupportedException();
+    public static MapGlossary? Glossary(GraphSnapshot graph)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        var members = graph.Edges
+            .Where(static e => e.Type == EdgeType.BelongsTo && e.To.Kind == NodeKind.Concept && e.From.Kind == NodeKind.Feature)
+            .GroupBy(static e => e.To.Value, StringComparer.Ordinal)
+            .ToDictionary(static g => g.Key, static g => g.Select(static e => e.From).DistinctBy(static k => k.Value, StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
+        var weights = new Dictionary<string, double>(StringComparer.Ordinal);
+        var features = new Dictionary<string, SortedDictionary<string, NodeKey>>(StringComparer.Ordinal);
+        foreach (var concept in graph.Nodes.Where(static n => n.Key.Kind == NodeKind.Concept))
+        {
+            var terms = ConceptTermsAttribute.Of(concept);
+            for (var i = 0; i < terms.Count; i++)
+            {
+                AddTerm(weights, features, terms[i], (double)(terms.Count - i) / terms.Count, members.GetValueOrDefault(concept.Key.Value) ?? []);
+            }
+        }
+
+        var all = weights.Where(w => features[w.Key].Count > 0).OrderByDescending(static w => w.Value).ThenBy(static w => w.Key, StringComparer.Ordinal)
+            .Select(w => new GlossaryTerm(w.Key, w.Value, [.. features[w.Key].Values])).ToList();
+        return all.Count == 0 ? null : new MapGlossary(all, [], []);
+    }
+
+    // A term several concepts carry takes the features of all of them and its best weight.
+    private static void AddTerm(Dictionary<string, double> weights, Dictionary<string, SortedDictionary<string, NodeKey>> features, string term, double weight, List<NodeKey> members)
+    {
+        weights[term] = Math.Max(weights.GetValueOrDefault(term), weight);
+        if (!features.TryGetValue(term, out var keys))
+        {
+            features[term] = keys = new SortedDictionary<string, NodeKey>(StringComparer.Ordinal);
+        }
+
+        foreach (var member in members)
+        {
+            keys[member.Value] = member;
+        }
+    }
 }
