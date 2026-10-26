@@ -38,7 +38,7 @@ public sealed class QuestionShapeAtCompleteTests
     [Fact(Timeout = 30_000)]
     public async Task A_question_with_no_recommended_option_is_refused_naming_the_question_so_the_questions_agent_fixes_it()
     {
-        var run = new AgentRun();
+        var run = new AgentRun("step.interview.questions");
 
         var refused = await Service(run).Handle(Report(1, (_questions, QuestionWithNoRecommended)), TestContext.Current.CancellationToken);
 
@@ -46,6 +46,16 @@ public sealed class QuestionShapeAtCompleteTests
         Assert.Equal("SND-WF-008", refused.Error.Code);
         Assert.Contains("fact:questions Q7 has 0 recommended options", refused.Error.Message, StringComparison.Ordinal);
         Assert.Empty(run.Sent);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task The_idea_to_brief_questions_step_is_not_held_to_the_one_recommended_rule()
+    {
+        var run = new AgentRun("step.brief.questions");
+
+        var accepted = await Service(run).Handle(Report(1, (_questions, QuestionWithNoRecommended)), TestContext.Current.CancellationToken);
+
+        Assert.False(accepted.IsError, accepted.IsError ? accepted.Error.Message : null);
     }
 
     private CompleteStepService Service(AgentRun run)
@@ -69,7 +79,7 @@ public sealed class QuestionShapeAtCompleteTests
     }
 
     /// <summary>One instance whose open run is an agent's on a Step of a recipe that declares 'fact:questions' as text (not a payload); records what is sent to it.</summary>
-    private sealed class AgentRun : IInstanceDirectory, IInstanceRuntime, IApprovedRecipes
+    private sealed class AgentRun(string step) : IInstanceDirectory, IInstanceRuntime, IApprovedRecipes
     {
         private static readonly RecipeVersion _version = new(RecipeId.From("workflow.step"), 1, RecipeHash.From("sha256:" + new string('a', 64)));
         public List<Trigger> Sent { get; } = [];
@@ -98,10 +108,10 @@ public sealed class QuestionShapeAtCompleteTests
 
         public ValueTask<Result<ApprovalCheck>> Check(RecipeVersion recipe, CancellationToken cancellationToken) => ValueTask.FromResult<Result<ApprovalCheck>>(ApprovalCheck.Holds);
 
-        private static Recipe Recipe() =>
+        private Recipe Recipe() =>
             new(1, _version.Id, 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [],
                 [new RecipeOutput(_questions, "Questions", "text", "produce")],
-                "produce", new Dictionary<string, RecipeState>(StringComparer.Ordinal), [], new Dictionary<string, LoopSpec>(StringComparer.Ordinal), Budget: null, Evals: [], Hash: null);
+                "produce", new Dictionary<string, RecipeState>(StringComparer.Ordinal) { ["produce"] = new(StateKind.Active, new StepUse(BlockId.From(step), new Dictionary<string, WithValue>(StringComparer.Ordinal), []), WaitFor: null, Timeout: null, Loop: null, Budget: null, Next: null, Outcome: null) }, [], new Dictionary<string, LoopSpec>(StringComparer.Ordinal), Budget: null, Evals: [], Hash: null);
 
         private static InstanceView View() =>
             new(_address, _version, "produce", Detail: null, DateTimeOffset.FromUnixTimeMilliseconds(1_000), string.Empty, [], Question: null, Task: null, RunToken.For(1, 1), Children: [], Outcome: null)
