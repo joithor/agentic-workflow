@@ -243,7 +243,6 @@ packages:
     kind: package
     tier: 1
     projectPrefix: Aw.SandboxTools
-    ts: null
     src: null
     note: "the host binaries the Sindri sandbox runs around a Step's agent session (sandbox spec 2026-10-18-sindri-sandbox-design.md, §4, §9): bubblewrap (bwrap), systemd-run for the cgroup scope and socat for the unix-socket forwarders. Not repo code: the node exists so the Sindri -> SandboxTools cli edge is declared. The adapters that start them are SB-2, SB-3a and SB-4a; a test redirects each with AW_SANDBOX_BWRAP, AW_SANDBOX_SYSTEMD_RUN and AW_SANDBOX_SOCAT"
   - id: Meta
