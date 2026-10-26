@@ -18622,3 +18622,9 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.ShippedApprovalPlans(Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeRegistration? registration = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Scheduling.ServiceDescriptions
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.Heartbeat = "Records that Sindri is alive." -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.HeartbeatName = "heartbeat" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbe = "Runs a short job so the job panel can be tried." -> string!
+const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbeName = "job-probe" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceDescriptions.Of(string! name) -> string?
