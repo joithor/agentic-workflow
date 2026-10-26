@@ -7,6 +7,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Roles;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -63,6 +64,7 @@ internal sealed class BuildMapService(
         var degraded = new List<string>();
         (string Commit, ContextRepoName Name)? primary = null;
         var heads = new List<MapHead>(mappedRepos.Count);
+        var dropped = new List<RoleDropped>();
         foreach (var repo in mappedRepos)
         {
             var one = await Extract(progress, settings, repo, cancellationToken).ConfigureAwait(false);
@@ -73,12 +75,13 @@ internal sealed class BuildMapService(
 
             found = found.Plus(one.Value.Map);
             degraded.AddRange(one.Value.Degraded.Except(degraded, StringComparer.Ordinal));
+            dropped.AddRange(one.Value.Dropped);
             primary ??= (one.Value.Commit, repo.Name);
             heads.Add(new MapHead(repo.Name, one.Value.Commit, await OnDefault(repo, one.Value.Commit, cancellationToken).ConfigureAwait(false)));
         }
 
         // why: mappedRepos is not empty, so the loop set the primary
-        return MapHead.Check(heads) is { } invalid ? invalid : new Reading(found, degraded, primary!.Value.Name, primary.Value.Commit, heads, settings);
+        return MapHead.Check(heads) is { } invalid ? invalid : new Reading(found, degraded, primary!.Value.Name, primary.Value.Commit, heads, settings) { Dropped = dropped };
     }
 
     private async ValueTask<Result<MapBuildReport>> Save(Reading read, IReadOnlyList<ContextRepo> profileRepos, IReadOnlyList<ContextRepo> mappedRepos, CancellationToken cancellationToken)
@@ -103,11 +106,14 @@ internal sealed class BuildMapService(
         var (kept, undo) = cuts.Apply(basis, current.Value?.Overrides ?? []);
         undo = UndoAlso(undo, open.Value, cuts);
         var (graph, note) = await WithConcepts(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], cancellationToken).ConfigureAwait(false);
-        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads) { Ruleset = ruleset }, at, cancellationToken).ConfigureAwait(false);
+        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, graph, undo, read.Heads) { Ruleset = ruleset, Dropped = read.Dropped }, at, cancellationToken).ConfigureAwait(false);
         return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), note is null ? read.Degraded : [.. read.Degraded, note], read.Heads);
     }
 
-    private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads, ContextSettings Settings);
+    private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads, ContextSettings Settings)
+    {
+        public IReadOnlyList<RoleDropped> Dropped { get; init; } = [];
+    }
 
     // Whether the default branch holds the commit the build read; a checkout whose default ref can't be read counts as no (the repo is then not waited on), never a failed build.
     private async ValueTask<bool> OnDefault(ContextRepo repo, string commit, CancellationToken cancellationToken)
@@ -142,7 +148,19 @@ internal sealed class BuildMapService(
 
         // A model that couldn't answer leaves the clusters their file-derived names.
         var features = ClusterFeatures.Propose(repo, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
-        return new RepoExtraction(extracted.Plus(features), commit, Degraded(clusters, labels, timedOut));
+        return new RepoExtraction(extracted.Plus(features), commit, Degraded(clusters, labels, timedOut), await Dropped(repo, commit, cancellationToken).ConfigureAwait(false));
+    }
+
+    // What the repo's ignored roles dropped from the tracked files (issue 1161); an unreadable listing counts nothing, never a failed build.
+    private async ValueTask<IReadOnlyList<RoleDropped>> Dropped(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    {
+        if (repo.Roles.All(static r => r.Demoted))
+        {
+            return [];
+        }
+
+        var tracked = await repos.ListTracked(repo, commit, cancellationToken).ConfigureAwait(false);
+        return tracked.IsError ? [] : RoleCounter.Dropped(repo, tracked.Value);
     }
 
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
@@ -260,5 +278,5 @@ internal sealed class BuildMapService(
                 [.. found.Edges.Where(e => e.Type == EdgeType.Implements && e.To.Value == n.Key.Value && e.From.Kind == NodeKind.Code).Select(e => e.From).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)])),
     ];
 
-    private sealed record RepoExtraction(ExtractedMap Map, string Commit, IReadOnlyList<string> Degraded);
+    private sealed record RepoExtraction(ExtractedMap Map, string Commit, IReadOnlyList<string> Degraded, IReadOnlyList<RoleDropped> Dropped);
 }
