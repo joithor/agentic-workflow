@@ -28,7 +28,7 @@ internal static class RoleCountLines
         foreach (var repo in live.Repos ?? [])
         {
             var before = previous?.Repos?.FirstOrDefault(r => string.Equals(r.Name, repo.Name, StringComparison.Ordinal))?.Index;
-            var keys = Keys(repo.Name, before, repo.Index).Where(k => changes.Contains(k.Key, StringComparer.Ordinal)).ToList();
+            var keys = Keys(repo.Name, before, repo.Index).Where(k => changes.Contains(k.Changed, StringComparer.Ordinal)).ToList();
             if (keys.Count == 0)
             {
                 continue;
@@ -44,16 +44,18 @@ internal static class RoleCountLines
     }
 
     /// <summary>One entry per role or demoted role either side names: its key path and the globs it covers now and before (none when it isn't there).</summary>
-    private static IEnumerable<(string Key, IReadOnlyList<string> Globs, IReadOnlyList<string> WasGlobs)> Keys(string repo, IndexSettings? before, IndexSettings? now)
+    private static IEnumerable<(string Key, string Changed, IReadOnlyList<string> Globs, IReadOnlyList<string> WasGlobs)> Keys(string repo, IndexSettings? before, IndexSettings? now)
     {
         foreach (var role in Names(before?.Roles?.Keys, now?.Roles?.Keys))
         {
-            yield return ($"repos.{repo}.index.roles.{role}", Globs(now, role), Globs(before, role));
+            var key = $"repos.{repo}.index.roles.{role}";
+            yield return (key, key, Globs(now, role), Globs(before, role));
         }
 
-        foreach (var role in Names(before?.Demote, now?.Demote))
+        // the profile diff lists the whole demote list as one key ('repos.web.index.demote'), so a role is shown when it joined or left that list
+        foreach (var role in Names(before?.Demote, now?.Demote).Where(r => IsDemoted(before, r) != IsDemoted(now, r)))
         {
-            yield return ($"repos.{repo}.index.demote.{role}", Demoted(now, role), Demoted(before, role));
+            yield return ($"repos.{repo}.index.demote.{role}", $"repos.{repo}.index.demote", Demoted(now, role), Demoted(before, role));
         }
     }
 
@@ -63,8 +65,10 @@ internal static class RoleCountLines
     private static IReadOnlyList<string> Globs(IndexSettings? index, string role) =>
         index?.Roles is { } roles && roles.TryGetValue(role, out var globs) ? globs : [];
 
+    private static bool IsDemoted(IndexSettings? index, string role) => index?.Demote?.Contains(role, StringComparer.Ordinal) == true;
+
     private static IReadOnlyList<string> Demoted(IndexSettings? index, string role) =>
-        index?.Demote?.Contains(role, StringComparer.Ordinal) == true ? Globs(index, role) : [];
+        IsDemoted(index, role) ? Globs(index, role) : [];
 
     private static int Count(IReadOnlyList<string> globs, IReadOnlyList<string> paths) => globs.Count == 0 ? 0 : RoleCounter.Matching(globs, paths);
 
