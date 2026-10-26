@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Core.Walks;
+using Aw.Context.Features.Walks;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 

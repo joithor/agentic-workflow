@@ -8,6 +8,7 @@ using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Walks;
+using Aw.Context.Features.Walks;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.GetHistory;

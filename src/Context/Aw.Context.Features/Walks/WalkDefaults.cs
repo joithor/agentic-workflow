@@ -1,6 +1,6 @@
 using Aw.Context.Core.Walks;
 
-namespace Aw.Context.Features;
+namespace Aw.Context.Features.Walks;
 
 /// <summary>The degree the engine's read-only walks run at unless a caller sets another: every core but one, so the rest of the box keeps a core.</summary>
 internal static class WalkDefaults
