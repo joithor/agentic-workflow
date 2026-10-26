@@ -74,6 +74,8 @@ public sealed class GatherInputsFillTests : IDisposable
 
         public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => _lenses.Lenses(anchor, read, range, scope, cancellationToken);
 
+        public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.ScopeGraph(query, scope, cancellationToken);
+
         public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.WholeMap(query, scope, cancellationToken);
 
         public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.Search(query, scope, cancellationToken);

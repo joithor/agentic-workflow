@@ -12,6 +12,7 @@ using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
+using Aw.Context.Features.SearchMap;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -23,7 +24,8 @@ internal sealed class ContextCodeHistory(
     IService<GetHistoryRequest, HistoryView> history,
     IService<GetSubgraphRequest, SubgraphView> subgraph,
     IService<GetWholeMapRequest, WholeMapView> wholeMap,
-    ContextMapReads mapReads,
+    IService<SearchMapRequest, MapSearchView> search,
+    ContextConceptReads conceptReads,
     ContextScopeGraph scopeGraphs) : IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
@@ -51,11 +53,14 @@ internal sealed class ContextCodeHistory(
         wholeMap.Handle(new GetWholeMapRequest(query, scope), cancellationToken);
 
     public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        mapReads.Search(query, scope, cancellationToken);
+        search.Handle(new SearchMapRequest(query, scope), cancellationToken);
 
     public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        mapReads.Concepts(query, scope, cancellationToken);
+        conceptReads.Concepts(query, scope, cancellationToken);
 
     public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
-        mapReads.ConceptMembers(query, scope, cancellationToken);
+        conceptReads.ConceptMembers(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptGlossaryView>> ConceptGlossary(ConceptGlossaryQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        conceptReads.ConceptGlossary(query, scope, cancellationToken);
 }

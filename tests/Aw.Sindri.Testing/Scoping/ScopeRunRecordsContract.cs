@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Xunit;
 
 namespace Aw.Sindri.Testing.Scoping;
@@ -96,8 +97,8 @@ public abstract class ScopeRunRecordsContract
     public async Task A_launch_carries_the_run_id_its_launch_id_was_made_from()
     {
         var records = await Create();
-        var run = Aw.Sindri.Core.Workflow.Engine.RunToken.For(entry: 4, number: 2);
-        var id = Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.Of(_scoping), run);
+        var run = RunToken.For(entry: 4, number: 2);
+        var id = AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(_scoping), run);
         for (var earlier = 1; earlier <= 3; earlier++)
         {
             await CompletedAtTheDesk(records, _scoping, "challenge", earlier);   // why: a frame reaches entry 4 only through the transitions before it
@@ -169,7 +170,7 @@ public abstract class ScopeRunRecordsContract
         var read = await records.Of(_scoping, Token);
 
         var record = Expect.Only(read.Value);
-        Expect.Equal(new ScopeRunRecord("step.scope.draft", "draft", 1, "desk", Model: null, "claude-sonnet-5-5", Vendor: null, 0, Launch: null), record);
+        Expect.Equal(new ScopeRunRecord("step.scope.draft", "draft", 1, "desk", Model: null, "claude-sonnet-5-5", Vendor: null, 0, Launch: null, RunToken: "1.1"), record);
     }
 
     /// <summary>Runs come oldest first, and a run launched is not also counted as completed at the desk.</summary>

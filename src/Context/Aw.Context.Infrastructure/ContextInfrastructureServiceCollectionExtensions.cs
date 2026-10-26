@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -12,6 +13,7 @@ using Aw.Context.Core.Review;
 using Aw.Context.Core.ScopeGraph;
 using Aw.Context.Core.Search;
 using Aw.Context.Core.Trust;
+using Aw.Context.Infrastructure.ConceptScan;
 using Aw.Context.Infrastructure.Docs;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Extract;
@@ -59,6 +61,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<SqliteGraphStore>()
             .AddSingleton<IGraphStore>(sp => sp.GetRequiredService<SqliteGraphStore>())
             .AddSingleton<IProposalRuns>(sp => sp.GetRequiredService<SqliteGraphStore>())
+            .AddSingleton<IConceptHintStore, SqliteConceptHintStore>()
             .AddSingleton<IIntentStore, SqliteIntentStore>()
             .AddSingleton<IScopeRunStore, SqliteScopeRunStore>()
             .AddSingleton<IMapFileReader, MapFileReader>()

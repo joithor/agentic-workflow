@@ -24,7 +24,7 @@ public sealed class ScopingChecksTests
         var checks = await Run(A.ScopingPacket().Build());
 
         Assert.Equal(
-            [ScopingRules.FilesPresent, ScopingRules.NoUnlisted, ScopingRules.WellFormed, ScopingRules.LensesSchema, ScopingRules.LensIds],
+            [ScopingRules.FilesPresent, ScopingRules.NoUnlisted, ScopingRules.WellFormed, ScopingRules.LensesSchema, ScopingRules.LensIds, ScopingRules.GraphShape],
             checks.Select(static c => c.Rule), StringComparer.Ordinal);
         Assert.All(checks, static c => Assert.Equal(CheckState.Pass, c.State));
     }

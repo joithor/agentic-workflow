@@ -95,7 +95,7 @@ public sealed class ScopeGraphTests
     [Fact]
     public void Without_fact_graph_the_rule_is_not_run()
     {
-        var response = Run(ScopingFacts.Expiry());
+        var response = Run(ScopingFacts.Expiry().Without("graph"));
 
         Assert.Equal(ScopeRuleStatus.NotRun, Status(response, Graph));
     }
