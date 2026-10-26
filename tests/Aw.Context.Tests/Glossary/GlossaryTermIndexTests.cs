@@ -1,4 +1,5 @@
 using Aw.Context.Core.Glossary;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Glossary;
 
@@ -28,9 +29,9 @@ public sealed class GlossaryTermIndexTests
     {
         var index = new GlossaryTermIndex(new MapGlossary(
         [
-            new GlossaryTerm("alpha", 1.0, [Aw.Context.Core.Graph.NodeKey.From("feature:x"), Aw.Context.Core.Graph.NodeKey.From("feature:y")]),
-            new GlossaryTerm("beta", 1.0, [Aw.Context.Core.Graph.NodeKey.From("feature:x")]),
-            new GlossaryTerm("gamma", 1.0, [Aw.Context.Core.Graph.NodeKey.From("feature:y")]),
+            new GlossaryTerm("alpha", 1.0, [NodeKey.From("feature:x"), NodeKey.From("feature:y")]),
+            new GlossaryTerm("beta", 1.0, [NodeKey.From("feature:x")]),
+            new GlossaryTerm("gamma", 1.0, [NodeKey.From("feature:y")]),
         ], [], []));
 
         Assert.Equal(1.0 / 3.0, index.Between(["feature:x"], ["feature:y"]), precision: 9);
