@@ -105,7 +105,7 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
             if (waited >= limit)
             {
                 var ms = ((int)limit.TotalMilliseconds).ToString(CultureInfo.InvariantCulture);
-                return UiDriverErrors.TimedOut.With($"{request.Selector.Describe()} was not {state} within {ms} ms");
+                return UiDriverErrors.TimedOut.With($"{request.Selector.Describe()} was not {state} within {ms} ms{seen.Value.Hint}");
             }
 
             await Task.Delay(_poll, clock, cancellationToken).ConfigureAwait(false);
@@ -116,16 +116,17 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
     {
         if (!WaitStates.TryParse(request.State, out var state))
         {
-            return UiDriverErrors.Invalid.With($"'{request.State}' is not a wait state (exists, visible, hidden, gone, enabled, disabled, textEquals, textContains)");
+            return UiDriverErrors.Invalid.With($"'{request.State}' is not a wait state (exists, visible, hidden, gone, notVisible, enabled, disabled, textEquals, textContains)");
         }
 
         return WaitStates.NeedsText(state) && request.Text is null ? UiDriverErrors.Invalid.With($"{state} needs the request's text") : state;
     }
 
-    private Task<Result<(NodeInfo? Node, bool Holds)>> Look(WaitForRequest request, WaitState state) => OnUi<(NodeInfo? Node, bool Holds)>(tree =>
+    private Task<Result<(NodeInfo? Node, bool Holds, string Hint)>> Look(WaitForRequest request, WaitState state) => OnUi<(NodeInfo? Node, bool Holds, string Hint)>(tree =>
     {
         var node = tree.Find(request.Selector);
-        return (node is { } n ? tree.InfoOf(n) : null, WaitStates.Holds(state, node?.Facts, request.Text));
+        var matches = SelectorMatcher.All(request.Selector, tree.Nodes.Select(static n => n.Facts));
+        return (node is { } n ? tree.InfoOf(n) : null, WaitStates.Holds(state, matches, node?.Facts, request.Text), WaitStates.Hint(state, matches));
     });
 
     private Task<Result<ActedResponse>> Act(Selector? selector, Func<UiTree, Visual, Result<Unit>> work) => OnUi<ActedResponse>(tree =>
