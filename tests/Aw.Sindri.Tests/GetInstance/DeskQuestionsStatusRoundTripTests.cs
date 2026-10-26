@@ -6,9 +6,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using Aw.Kernel;
 using Aw.Kernel.Json;
-using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -27,6 +25,7 @@ using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Ledger;
+using CompleteCommand = Aw.Sindri.Host.Commands.CompleteCommand;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 
@@ -53,11 +52,19 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
         """;
 #pragma warning restore MA0136
 
+    private static readonly string[] _statusLines =
+    [
+        "Q1: What happens on expiry?", "Q1.a  A 410 page  (recommended)", "Q1.b  A 404\n", "other: write your own answer; skip: leave it unanswered",
+        "Q2: Which links expire?", "Q2.a  All of them\n", "Q2.b  Only shared ones  (recommended)",
+    ];
+
+    private static readonly string[] _hintMembers = ["\"round\"", "\"actor\"", "\"at\"", "\"questionIds\"", "\"answers\"", "--output fact:answers=<file>"];
+
     [GeneratedRegex(@"--run (?<run>\S+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex RunOption();
+    private static partial Regex RunOption { get; }
 
     [GeneratedRegex(@"\{""question"":[^{}]*\}", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex EntryForm();
+    private static partial Regex EntryForm { get; }
 
     private sealed class Contents(string text) : IFactContents
     {
@@ -165,14 +172,8 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
         var (exit, text) = await Status(routes, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exit);
-        Assert.All(
-            new[]
-            {
-                "Q1: What happens on expiry?", "Q1.a  A 410 page  (recommended)", "Q1.b  A 404\n", "other: write your own answer; skip: leave it unanswered",
-                "Q2: Which links expire?", "Q2.a  All of them\n", "Q2.b  Only shared ones  (recommended)",
-            },
-            expected => Assert.Contains(expected, text, StringComparison.Ordinal));
-        Assert.Equal(2, Regex.Matches(text, "skip: leave it unanswered", RegexOptions.None, TimeSpan.FromSeconds(1)).Count);
+        Assert.All(_statusLines, expected => Assert.Contains(expected, text, StringComparison.Ordinal));
+        Assert.Equal(2, Regex.Count(text, "skip: leave it unanswered", RegexOptions.None, TimeSpan.FromSeconds(1)));
     }
 
     [Fact(Timeout = 30_000)]
@@ -197,7 +198,7 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
         using var home = new TempHome();
         var (_, text) = await Status(routes, cancellationToken);
         var (_, json) = await Status(routes, cancellationToken, "--json");
-        var run = RunOption().Match(text).Groups["run"].Value;   // the complete line status prints
+        var run = RunOption.Match(text).Groups["run"].Value;   // the complete line status prints
         var questions = JsonNode.Parse(json)!.AsObject()["questions"]!.AsArray();
         var batch = new JsonObject
         {
@@ -226,7 +227,7 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
     [Fact]
     public void The_entry_forms_the_complete_hint_documents_are_the_forms_the_answer_readers_accept()
     {
-        var forms = EntryForm().Matches(DeskQuestions.AnswerHint).Select(static m => JsonNode.Parse(m.Value)).ToList();
+        var forms = EntryForm.Matches(DeskQuestions.AnswerHint).Select(static m => JsonNode.Parse(m.Value)).ToList();
 
         var entries = AnswerEntry.Of(new JsonObject { ["answers"] = new JsonArray([.. forms]) }).ToList();
 
@@ -240,7 +241,7 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
     {
         var hint = DeskQuestions.AnswerHint;
 
-        Assert.All(new[] { "\"round\"", "\"actor\"", "\"at\"", "\"questionIds\"", "\"answers\"", "--output fact:answers=<file>" }, member => Assert.Contains(member, hint, StringComparison.Ordinal));
+        Assert.All(_hintMembers, member => Assert.Contains(member, hint, StringComparison.Ordinal));
         Assert.All(ScopingSteps.InterviewAnswer.Outcomes, outcome => Assert.Contains($"--outcome {outcome.Value}", hint, StringComparison.Ordinal));
     }
 }
