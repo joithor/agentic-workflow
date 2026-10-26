@@ -261,7 +261,7 @@ public sealed class GetHistoryTests : IDisposable
         var row = Row(view, "git-history");
         Assert.Equal((SearchedState.Ok, "deadline", null), (row.State, row.Reason, row.Code));
         Assert.Contains("context.history.deadline (100 ms)", row.Note, StringComparison.Ordinal);
-        Assert.Contains(" ms after ", row.Note, StringComparison.Ordinal);
+        Assert.Matches(@"after \d+ ms", row.Note);
         Assert.Empty(view.Degraded);
         Assert.NotEmpty(view.Decisions);
     }

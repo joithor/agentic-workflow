@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Walks;
@@ -185,6 +186,8 @@ public sealed class WalkEquivalenceTests
         Assert.Equal(serial, parallel);
     }
 
+    private static string Elapsed(string json) => Regex.Replace(json, @"after \d+ ms", "after <elapsed> ms", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
     [Fact, Trait("Lane", "unit")]
     public async Task The_history_is_the_same_bytes_when_the_first_repo_hits_the_deadline_and_the_second_does_not()
     {
@@ -192,6 +195,8 @@ public sealed class WalkEquivalenceTests
         var parallel = await FillTwoRepoHistory(degree: 8, hangOn: "aw-split-panes");
 
         Assert.Contains("context.history.deadline", serial, StringComparison.Ordinal);
-        Assert.Equal(serial, parallel);
+
+        // The note names how long the read took: elapsed time on the fake clock is walk-dependent, so only that number is masked; the rest stays byte-exact.
+        Assert.Equal(Elapsed(serial), Elapsed(parallel));
     }
 }
