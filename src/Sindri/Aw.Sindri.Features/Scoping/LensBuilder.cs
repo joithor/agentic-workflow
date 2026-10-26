@@ -44,7 +44,7 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
         }
     }
 
-    /// <summary>Found files: a node keyed code:&lt;path&gt; in the code band. A file the repo demotes (its flag from the context engine) carries <c language="text">demoted</c>, and <paramref name="role"/> (test) marks the tests of a code view, so SCP-COV-003 can skip them.</summary>
+    /// <summary>Found files: a node keyed code:&lt;path&gt; in the code band. A file the repo demotes (its flag from the context engine) carries <c language="text">demoted</c> and the <c language="text">role</c> that demotes it (the context engine's, from the repo's index.roles), and <paramref name="role"/> (test) marks the tests of a code view, so SCP-COV-003 can skip them.</summary>
     internal void Files(IEnumerable<JsonNode> files, string? role = null)
     {
         foreach (var file in files)
@@ -60,9 +60,10 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
                     node["demoted"] = true;
                 }
 
-                if (role is not null)
+                var named = role ?? ScopeJson.Str(file, "role");
+                if (named is not null)
                 {
-                    node["role"] = role;
+                    node["role"] = named;
                 }
             }
         }

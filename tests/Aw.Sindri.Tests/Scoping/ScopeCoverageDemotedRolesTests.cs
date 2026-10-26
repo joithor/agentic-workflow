@@ -22,6 +22,8 @@ public sealed class ScopeCoverageDemotedRolesTests
     private const string Product = "src/links.ts";
     private const string Cov3 = "SCP-COV-003";
 
+    private static readonly Dictionary<string, string> _roleNames = new(StringComparer.Ordinal) { ["scripts/**"] = "script", ["tests/fixtures/**"] = "fixture" };
+
     private static readonly NodeKey _anchor = NodeKey.From(Anchor);
 
     private static LensFile File(string path) => new(path, [_anchor], [], Provenance.Deterministic, 1.0, Confirmed: true, Suggested: false, LinkId: null, path, NodeKind.Code, Trust.Untrusted);
@@ -29,7 +31,7 @@ public sealed class ScopeCoverageDemotedRolesTests
     /// <summary>A real lenses view whose code band is flagged by the real <see cref="DemotedFiles"/> over a repo that demotes the script and fixture roles, written with the host's JSON options.</summary>
     private static string LensesJson(params string[] demoteGlobs)
     {
-        var repo = new ContextRepo(ContextRepoName.From("web"), "/work/web") { DemotePaths = demoteGlobs };
+        var repo = new ContextRepo(ContextRepoName.From("web"), "/work/web") { DemotePaths = demoteGlobs, Roles = [.. demoteGlobs.Select(static g => new RepoRole(_roleNames.GetValueOrDefault(g, "demo"), Demoted: true, [g]))] };
         var band = DemotedFiles.Last(new CodeBand([File(Product), File(Script), File(Fixture)], LensSymbols.Unavailable, new CodeCounts(3, 0, 3)), [repo]);
         var view = new LensesView(1, new LensAnchor(_anchor, "Create link", NodeKind.Surface, Trust.Trusted), "v1", Draft: false, 2, DateTimeOffset.UnixEpoch,
             new LensBands(
@@ -71,6 +73,17 @@ public sealed class ScopeCoverageDemotedRolesTests
 
         Assert.Equal([Script, Fixture], files.Where(static f => f!["demoted"]?.GetValue<bool>() == true).Select(static f => f!["path"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Null(files.Single(static f => f!["path"]!.GetValue<string>() == Product)!["demoted"]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_gathered_nodes_carry_the_name_of_the_role_that_demotes_them()
+    {
+        var gathered = LensGather.Assemble(JsonNode.Parse(LensesJson("scripts/**", "tests/fixtures/**")), code: null, history: null, [Anchor]);
+
+        var nodes = gathered.Lenses["code"]!["nodes"]!.AsArray();
+        Assert.Equal("script", nodes.Single(static n => n!["key"]!.GetValue<string>() == $"code:{Script}")!["role"]!.GetValue<string>());
+        Assert.Equal("fixture", nodes.Single(static n => n!["key"]!.GetValue<string>() == $"code:{Fixture}")!["role"]!.GetValue<string>());
+        Assert.Null(nodes.Single(static n => n!["key"]!.GetValue<string>() == $"code:{Product}")!["role"]);
     }
 
     [Fact, Trait("Lane", "unit")]
