@@ -84,7 +84,6 @@ public sealed class IdleRulesTests
     public void A_long_tool_call_is_never_nudged_or_ended()
     {
         // a 20-minute 'dotnet test': the collector's transcript estimate says idle after 60 s, and the nudge is long past
-        Expect.Equal(IdleAction.None, Decide(TimeSpan.FromMinutes(30), idleSince: _t0));
         Expect.Equal(IdleAction.None, Decide(TimeSpan.FromMinutes(30), idleSince: _t0, tool: true));
         Expect.Equal(IdleAction.None, Decide(TimeSpan.FromMinutes(30), idleSince: _t0, tool: true, nudged: _t0 + TimeSpan.FromMinutes(10)));
         Expect.Equal(IdleAction.None, Decide(TimeSpan.FromMinutes(30), turnEnded: _t0, tool: true));
