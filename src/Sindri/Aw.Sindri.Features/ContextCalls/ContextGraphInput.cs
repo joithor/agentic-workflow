@@ -42,8 +42,8 @@ internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes
             new ParameterSpec("anchors", ParameterType.Text, Required: true, IsCapabilityField: false),
             new ParameterSpec("depth", ParameterType.Number, Required: false, IsCapabilityField: false),
             new ParameterSpec("hops", ParameterType.List, Required: false, IsCapabilityField: false),
-            new ParameterSpec("maxNodes", ParameterType.Number, Required: false, IsCapabilityField: false),
-            new ParameterSpec("maxBytes", ParameterType.Number, Required: false, IsCapabilityField: false),
+            new ParameterSpec("max-nodes", ParameterType.Number, Required: false, IsCapabilityField: false),
+            new ParameterSpec("max-bytes", ParameterType.Number, Required: false, IsCapabilityField: false),
             new ParameterSpec("brief", ParameterType.Text, Required: false, IsCapabilityField: false),
         ],
         Rung: null, DeskCapable: false);
@@ -74,7 +74,7 @@ internal sealed class ContextGraphInput(IContextEngine graph, ContextInputScopes
         }
 
         var query = new ScopeGraphQuery(anchors, MapRead.Current, new LensRange(Number(context, "depth", notes), Hops(context)), Text(context, "brief"),
-            Number(context, "maxNodes", notes) ?? DefaultMaxNodes, Number(context, "maxBytes", notes) ?? DefaultMaxBytes);
+            Number(context, "max-nodes", notes) ?? DefaultMaxNodes, Number(context, "max-bytes", notes) ?? DefaultMaxBytes);
         var view = await graph.ScopeGraph(query, scope.Value, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
         {

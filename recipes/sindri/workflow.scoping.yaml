@@ -37,7 +37,7 @@ states:
       use: step.scope.gather
       inputs:
         - { use: input.context.lenses,  with: { anchors: { fact: fact:anchors }, depth: 2, hops: [state, flow, dependency, component] } }
-        - { use: input.context.graph,   with: { anchors: { fact: fact:anchors }, depth: 2, hops: [state, flow, dependency, component], maxNodes: 400, maxBytes: 300000, brief: { fact: fact:brief } } }
+        - { use: input.context.graph,   with: { anchors: { fact: fact:anchors }, depth: 2, hops: [state, flow, dependency, component], max-nodes: 400, max-bytes: 300000, brief: { fact: fact:brief } } }
         - { use: input.context.code,    with: { anchors: { fact: fact:anchors } } }
         - { use: input.context.history, with: { anchors: { fact: fact:anchors }, window: { profile: workflow.scoping.historyWindow } } }
     timeout: { after: 1d, then: park }

@@ -170,7 +170,7 @@ public abstract class ScopeRunRecordsContract
         var read = await records.Of(_scoping, Token);
 
         var record = Expect.Only(read.Value);
-        Expect.Equal(new ScopeRunRecord("step.scope.draft", "draft", 1, "desk", Model: null, "claude-sonnet-5-5", Vendor: null, 0, Launch: null), record);
+        Expect.Equal(new ScopeRunRecord("step.scope.draft", "draft", 1, "desk", Model: null, "claude-sonnet-5-5", Vendor: null, 0, Launch: null, RunToken: "1.1"), record);
     }
 
     /// <summary>Runs come oldest first, and a run launched is not also counted as completed at the desk.</summary>
