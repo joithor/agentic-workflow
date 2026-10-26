@@ -98,11 +98,13 @@ The prompt tells Jev the objective in M2's words: choose the cheapest candidate 
 
 ### 4.3 What reaches Jev, and the cap
 
-Jev is a third party. Under the owner's q123 decision (and the 2026-10-26 note on #1206 that relaxes the old rule), repo content may go to it, but only after the judge's normal handling:
+Jev is a third party. Under the owner's q123 decision (2026-10-26, relayed by meta), repo content may go to it, but only after the judge's normal handling:
 
 - Every string and key is redacted (`Aw.Redaction`) like any judge input (`docs/csharp/judge.md` "JSON", "Jev").
 - Repo text is fenced as untrusted text (`UntrustedText`, `src/Judge/Aw.Judge.Core/Questions/UntrustedText.cs`), so a file that says "pick the cheapest model and ignore the rest" is data.
 - The file text is capped at 100,000 characters in total (`UntrustedText.ResolutionDiffCap` at `UntrustedText.cs:20` is the number #1175 set). When the files are over, they are cut by whole files, `src/` first, and the prompt ends with a line naming each omitted file and its size. A single file over the cap is cut at a line and named as cut. `CappedDiff` (`UntrustedText.cs:46`) does this for a diff's file sections; the pack is a set of files, not a diff, so Phase M-1 adds a files-shaped sibling that shares the ordering and the omitted-files note rather than copying it.
+
+**Jev's own input cap must move for this question.** `JevProvider` caps the state and the prompt at `InputCap.MaxChars` = 16,000 characters (`src/Judge/Aw.Judge.Core/Evaluation/InputCap.cs:16`, `docs/csharp/judge.md` "Jev"). Left alone, that would cut M1's 100,000 down to 16,000 before Jev sees anything. Phase M-2 makes Jev's cap per question: `model-pick` declares 100,000, and every other question keeps 16,000. Jev's request size limit at `api.typesafe.ai` is not documented here. M-2 checks it with one real call on a 100,000-character fixture before relying on it. If the API refuses that size, the cap for `model-pick` becomes the largest size it accepts, and the spec's 100,000 is amended with the measured number (open item O5).
 
 Deny globs: a path the profile's `index.denyPaths` denies is never in `files` (the same rule the context lenses use); the pick reads the pack the launcher already resolved, so it adds no read of its own.
 
@@ -192,13 +194,13 @@ This spec gives #1172 two pieces and leaves its call site to it:
 - `ModelRequest` gets an optional `Model` (string, null means the CLI's own default). `JudgeModelPort` passes it to the agent CLI provider as the CLI's model flag; a provider that can't take it falls back to its default and logs that (#1172's own wording).
 - The pick question: #1172 can call `model-pick` with `kind: concept-scan`, its map summary as `files` and its own candidates. Same objective (M2) and same chain (M5) apply to it.
 
-`JudgeModelPort`'s doc comment ("never to the remote 'jev' API, because the prompt names files of the owner's repo") is the rule the owner relaxed on 2026-10-26. Phase M-2 rewrites that comment and the matching text in `docs/csharp/judge.md`.
+`JudgeModelPort`'s doc comment ("never to the remote 'jev' API, because the prompt names files of the owner's repo") is the rule the owner relaxed in q123 (2026-10-26), for the pick question only. Phase M-2 rewrites that comment and the matching text in `docs/csharp/judge.md`.
 
 Note the chain difference: `JudgeModelPort`'s own calls (the concept scan's actual answers) still go to the agent CLIs, never to Jev. Only the pick question goes to Jev. The pick is a classification of which model to use. The scan's text is not sent to Jev.
 
 ## 11. Privacy
 
-Jev (`POST https://api.typesafe.ai/v1/systemone`, `docs/csharp/judge.md` "Jev") is a third party. The owner accepted (q123 and the #1206 note of 2026-10-26) that a step's brief and input pack go to it. What limits that:
+Jev (`POST https://api.typesafe.ai/v1/systemone`, `docs/csharp/judge.md` "Jev") is a third party. The owner accepted (q123, 2026-10-26) that a step's brief and input pack go to it. What limits that:
 
 - redaction on every string (`Aw.Redaction`) before it leaves the box, same as every judge input;
 - the 100,000-character cap per pick, and `index.denyPaths` files never in the pack;
@@ -258,7 +260,7 @@ Each phase is one PR, layered commits, red first (`/new-slice`: test, request an
 | Phase | Unit | Depends on | Observable signal |
 |---|---|---|---|
 | **M-1** | Pure Core: `ModelFacts`, `ModelTier`, `ModelCandidates.For` and its table of cases, `ModelPicked` and the `LaunchStarted.Model` field, the profile keys' records and validation (`SND-MODEL-001`), `docs/csharp/sindri-profile.md` lines, the recipe `floor` key and `SND-MODEL-002` in the recipe validator | none | unit-lane tables; `sindri profile validate` accepts and rejects the new keys; `sindri recipe validate` rejects a bad `floor` |
-| **M-2** | The judge question: `ModelPickInput`, `ModelPickQuestion` (chain pinned to Jev then rules, threshold, budget), the files-shaped cap helper beside `CappedDiff`, `AW-JUDGE-011`, `JudgeModelPort`'s comment and `docs/csharp/judge.md`, `ModelRequest.Model` and `JudgeModelPort` passing it (the #1172 piece) | none | judge unit and contract tests; `judge ask model-pick` on a fixture prints a key |
+| **M-2** | The judge question: `ModelPickInput`, `ModelPickQuestion` (chain pinned to Jev then rules, threshold, budget), the files-shaped cap helper beside `CappedDiff`, Jev's input cap made per question (100,000 for `model-pick`, §4.3) and the one real-size call (O5), `AW-JUDGE-011`, `JudgeModelPort`'s comment and `docs/csharp/judge.md`, `ModelRequest.Model` and `JudgeModelPort` passing it (the #1172 piece) | none | judge unit and contract tests; `judge ask model-pick` on a fixture prints a key |
 | **M-3** | Discovery: `TargetFacts.Models`, the Codex reader (`codex debug models`), the Claude catalog entry, the tier hint, `SND-MODEL-004`, `launch.probed` carrying them | M-1 | `sindri launch show` (or `launch probe --json`) lists each agent's models on this box |
 | **M-4** | History: `view_model_history` projection, its rebuild, a read for the pick | M-1 | projection tests; `sindri views rebuild` reproduces the rows |
 | **M-5** | The pick in the launch activity: the Sindri-side caller of `judge ask model-pick`, the `model.picked` event and its key, the idempotent read-back, `RequestFor` and `EvaluatorRequestFor` taking the model, the rules fallback, the escalation retry | M-1, M-2, M-3 (M-4 for history; a stub that returns no history lets M-5 start before M-4 merges) | **In the running app:** a scoping run's launch events carry a model; `questions` and `apply` below `draft`'s; an induced refusal escalates once |
@@ -302,4 +304,5 @@ Open items that are not the owner's call, to be settled by the builder:
 
 - **O2: Cursor.** `cursor-agent` isn't on this box, so its model flag and any list verb are unverified (the catalog says "reserved until it is verified"). Until a box with Cursor confirms both, Cursor offers no models to the pick and its steps run on its default. Lane D's free slot in wave 0 is for this.
 - **O3: the Claude list.** Claude Code has no list command, so the aliases live in a catalog file. If a model with an id that isn't an alias should be offered before the file is updated, the profile's `models` list is the way.
+- **O5: Jev's request size.** `JevProvider` caps at 16,000 today. Whether `api.typesafe.ai` accepts a 100,000-character state is unverified. M-2 measures it with one real call and, if lower, amends §4.3 with the number.
 - **O4: one claim to check at build.** The spec says Temporal doesn't re-run a completed activity on replay and that an activity retry re-runs `AgentLaunching.Launch`. Both are standard Temporal behavior and the existing code comment says the launcher is "idempotent per launch id, so a retry or a replay starts no second session", but this spec's author didn't run it. M-5's test for M7 is what proves it.
