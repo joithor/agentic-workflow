@@ -38,7 +38,7 @@ internal static class WaitStates
         {
             WaitState.Exists => true,
             WaitState.Gone => false,
-            WaitState.NotVisible => false,   // stub: the red check expects it to hold when no match is visible
+            WaitState.NotVisible => false,   // one node cannot say it: the overload over every match decides it
             WaitState.Visible => node.Visible,
             WaitState.Hidden => !node.Visible,
             WaitState.Enabled => node.Enabled,
