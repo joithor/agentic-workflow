@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Features.Launching;
@@ -128,8 +127,7 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(error);
         return Failed(grant, new LaunchFailed(request.Launch, request.Item, error.Code, error.Message, LaunchFailureDetail.Of(error, stage),
-            request.Instance, request.Step?.Ref.State, request.Run?.Number,
-            Reason: SandboxRefusal.ReasonOf(error), Source: SandboxRefusal.SourceTextOf(error)), cancellationToken);
+            request.Instance, request.Step?.Ref.State, request.Run?.Number), cancellationToken);
     }
 
     /// <summary>Records that a client attached to an 'unconfirmed' launch's session.</summary>
