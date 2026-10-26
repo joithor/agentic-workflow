@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Features.ApproveAllRecipes;
-using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
@@ -80,6 +79,7 @@ public sealed class WaitingShippedVersionsCheckTests
     [Fact(Timeout = 30_000)]
     public async Task The_list_shows_each_waiting_shipped_version_and_says_how_it_is_approved()
     {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         var shipping = new Shipping();
         await using var registry = shipping.Registry;
         _ = await shipping.Seed();
@@ -106,12 +106,13 @@ public sealed class WaitingShippedVersionsCheckTests
         Assert.True(step.IsSuccess && item.IsSuccess, step.IsError ? step.Error.ToString() : item.IsError ? item.Error.ToString() : null);
         Assert.Equal((2, shipping.StepV2, 2, shipping.ItemV2), (step.Value.Version, step.Value.Hash, item.Value.Version, item.Value.Hash));
         var stored = await registry.Recipes.Versions(_step, TestContext.Current.CancellationToken);
-        Assert.Single(stored.Value);   // why: showing a waiting version reads the embedded set, it does not register it
+        _ = Assert.Single(stored.Value);   // why: showing a waiting version reads the embedded set, it does not register it
     }
 
     [Fact(Timeout = 30_000)]
     public async Task Approving_a_parent_names_the_child_version_it_pins_and_warns_that_a_newer_shipped_child_waits()
     {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         var shipping = new Shipping();
         await using var registry = shipping.Registry;
         var parent = await shipping.Seed();
