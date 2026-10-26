@@ -2509,6 +2509,8 @@ Aw.Context.Core.Lenses.LensFile.Path.get -> string!
 Aw.Context.Core.Lenses.LensFile.Path.init -> void
 Aw.Context.Core.Lenses.LensFile.Provenance.get -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Lenses.LensFile.Provenance.init -> void
+Aw.Context.Core.Lenses.LensFile.Role.get -> string?
+Aw.Context.Core.Lenses.LensFile.Role.init -> void
 Aw.Context.Core.Lenses.LensFile.Suggested.get -> bool
 Aw.Context.Core.Lenses.LensFile.Suggested.init -> void
 Aw.Context.Core.Lenses.LensFile.Tests.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
