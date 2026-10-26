@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
@@ -11,8 +12,18 @@ namespace Aw.Sindri.Features.GetStatus;
 /// <param name="builtIns">The build's built-in services.</param>
 /// <param name="codeIndex">The code index's health rows; none when the build has no index.</param>
 /// <param name="stuck">The engine's stuck instances (API P13); none when this build has no engine read side.</param>
-internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInService> builtIns, ICodeIndexHealth? codeIndex = null, StuckInstanceCount? stuck = null)
+/// <param name="builds">The running and installed build stamps; none outside an install.</param>
+internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInService> builtIns, ICodeIndexHealth? codeIndex = null, StuckInstanceCount? stuck = null, IBuildStamps? builds = null)
 {
+    /// <summary>The stale build problem (#1032): the stamps this process runs and the install names join health when they differ.</summary>
+    public void CheckStaleBuild()
+    {
+        if (builds is not null)
+        {
+            throw new NotSupportedException("the stale build problem (#1032) is not built yet");   // red first
+        }
+    }
+
     /// <summary>How many workflow instances are stuck on a signal or update (API spec §3.8, E-30).</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The count; 0 when the engine doesn't answer.</returns>

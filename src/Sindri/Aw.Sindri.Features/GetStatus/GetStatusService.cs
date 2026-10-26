@@ -8,22 +8,16 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Sessions;
-using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
 
 internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, ILedgerReader ledger, EventFactory events,
-    IProjectorStatus projector, HealthServiceRows healthRows, ISessionSnapshot sessions, IBuildStamps? builds = null)
+    IProjectorStatus projector, HealthServiceRows healthRows, ISessionSnapshot sessions)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
     {
-        if (builds is not null)
-        {
-            throw new NotSupportedException("the stale build problem (#1032) is not built yet");   // red first: the problem joins health when the stamps differ
-        }
-
         var approved = await profiles.Approved(cancellationToken).ConfigureAwait(false);
         var loaded = await profiles.Live(cancellationToken).ConfigureAwait(false);
         var approvedProfile = approved.IsSuccess ? approved.Value : null;
@@ -56,6 +50,7 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
 
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
+        healthRows.CheckStaleBuild();
         var rows = await healthRows.Read(approved, cancellationToken).ConfigureAwait(false);
         var problems = await healthRows.CodeIndexProblems(approved, cancellationToken).ConfigureAwait(false);
         var standing = profile.ChangedSinceApproval ? ProfileApproval.Changed : profile.NeedsApproval ? ProfileApproval.NeedsApproval : ProfileApproval.Approved;

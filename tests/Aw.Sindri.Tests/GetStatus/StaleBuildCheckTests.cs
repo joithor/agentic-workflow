@@ -38,7 +38,7 @@ public sealed class StaleBuildCheckTests
         H.Profiles.Live = approved;
         _ = await H.HoldLease();
         _ = await new ApproveProfileService(H.Profiles, H.Profiles, H.Held, H.Store, H.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ApproveProfileRequest(approved.Hash, H.Confirm(approved.Hash)), Token);
-        var service = new GetStatusService(H.Held, new ProfileReads(H.Profiles, H.Profiles), H.Store, H.Events, _v.Progress, new HealthServiceRows(_v.Views, []), new InMemorySessionSnapshot(), stamps);
+        var service = new GetStatusService(H.Held, new ProfileReads(H.Profiles, H.Profiles), H.Store, H.Events, _v.Progress, new HealthServiceRows(_v.Views, [], builds: stamps), new InMemorySessionSnapshot());
         return (await service.Handle(new GetStatusRequest(), Token)).Value;
     }
 
@@ -47,7 +47,7 @@ public sealed class StaleBuildCheckTests
         var views = new InMemoryViewStore(SliceHarness.Json);
         var service = new RunDoctorService(H.Store, H.Probe, new LedgerFacts(H.Store, views), new ProfileFacts(H.Profiles, H.Profiles, H.Store, H.Events,
             new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(new MapPublishStatusReader(FakeContextEngine.Instance, new NoIndexOutlooks(), H.Store, H.Clock), H.Clock), new LinearDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Features.CodeIndexJobs.CodeIndexDoctor(new CodeIndex.Testing.FakeCodeIndex(), new CodeIndex.Testing.FakeRepoHeads(), new InMemoryJobViews(), new CodeIndex.Testing.FakeEmbedder(), new CodeIndex.Testing.FakePins(), H.Clock, H.Profiles))),
-            new FakeControlPlaneProbe(), new FakeTemporalServer(), H.Clock, stamps);
+            new RuntimeFacts(new FakeControlPlaneProbe(), new FakeTemporalServer(), stamps), H.Clock);
         return (await service.Handle(new RunDoctorRequest(), Token)).Value.Checks;
     }
 
