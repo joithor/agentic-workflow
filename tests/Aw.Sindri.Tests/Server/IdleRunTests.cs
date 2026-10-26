@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Text;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Events;
@@ -133,6 +134,7 @@ public sealed class IdleRunTests
             .AddSingleton<TimeProvider>(_h.Clock)
             .AddSingleton(_h.Callers)
             .AddSingleton<IIdGenerator>(_h.Ids)
+            .AddSingleton<ITextScrubber>(new PassThroughScrubber())
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddSingleton<IScheduledService>(tidy)
             .BuildServiceProvider();

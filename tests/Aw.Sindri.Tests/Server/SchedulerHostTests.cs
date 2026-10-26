@@ -1,3 +1,5 @@
+using Aw.Sindri.Testing;
+using Aw.Sindri.Core.Text;
 using System.Text.Json;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -216,6 +218,7 @@ public sealed class SchedulerHostTests
             .AddSingleton<TimeProvider>(_h.Clock)
             .AddSingleton(_h.Callers)
             .AddSingleton<IIdGenerator>(_h.Ids)
+            .AddSingleton<ITextScrubber>(new PassThroughScrubber())
             .AddScoped<IService<RecordHeartbeatRequest, RecordHeartbeatResponse>, RecordHeartbeatService>()
             .AddScoped<IService<RecordServiceRunRequest, RecordServiceRunResponse>, RecordServiceRunService>()
             .AddScoped<IScheduledService, HeartbeatService>()

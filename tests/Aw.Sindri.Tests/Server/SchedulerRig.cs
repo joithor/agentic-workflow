@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Text;
 using Aw.Kernel.Ids;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
@@ -33,6 +34,7 @@ internal sealed class SchedulerRig : IAsyncDisposable
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton(H.Callers)
             .AddSingleton<IIdGenerator>(H.Ids)
+            .AddSingleton<ITextScrubber>(new PassThroughScrubber())
             .AddRecordServiceRun();
         foreach (var service in services)
         {

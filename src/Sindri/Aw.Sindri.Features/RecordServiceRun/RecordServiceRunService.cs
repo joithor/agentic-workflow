@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.RecordServiceRun;
 /// ('service:&lt;name&gt;'), keyed by service, lease epoch and slot so a replayed slot records once.
 /// </summary>
 internal sealed class RecordServiceRunService(ILedgerStore ledger, EventFactory events, ICallerContextAccessor callers, IIdGenerator ids,
-    ITextScrubber? scrubber = null)
+    ITextScrubber scrubber)
     : IService<RecordServiceRunRequest, RecordServiceRunResponse>, IServiceRunRecorder
 {
     private const int DetailLimit = 500;
@@ -46,11 +46,6 @@ internal sealed class RecordServiceRunService(ILedgerStore ledger, EventFactory 
     /// <summary>The failure's message as the ledger keeps it: secrets scrubbed, cut to <see cref="DetailLimit"/> characters.</summary>
     private string? Detail(string message)
     {
-        if (scrubber is null)
-        {
-            return null;   // no scrubber registered (a bare scheduler host): keep no message rather than an unscrubbed one
-        }
-
         var text = scrubber.Scrub(message);
         return string.IsNullOrWhiteSpace(text) ? null : text.Length <= DetailLimit ? text : text[..DetailLimit];
     }
