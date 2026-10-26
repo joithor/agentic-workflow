@@ -878,3 +878,15 @@ The query's fusion (`RankFusion`, reciprocal rank fusion) is followed by two opt
 | `QUERY /sindri/context/history` | `{anchors[], since?, before?, draft?, mapVersion?}` |
 
 They sit in the queries group like the subgraph QUERY (`X-Sindri-After` honoured, no idempotency key, no ledger event, a foreign `Origin` is 403 `SND-API-008`, no catalog row; a POST is 405). The CLI (`sindri context lenses|code|history`) sends GET and switches to QUERY when the query string passes 4000 characters (`ControlPlaneClient.MaxGetQuery`); its output is unchanged. MCP `context_lenses` calls the service directly and has no request line. Goldens: `query-*` scenarios under `context-lenses`, `context-code` and `context-history`.
+
+## Parallel walks (issue 1101)
+
+The lenses set, the code lens and the history lens answer the same bytes at any degree of parallelism. `WalkOptions` (Core `Walks/`) carries the degree: `WalkOptions.Serial` is one at a time, and the engine's default is `Environment.ProcessorCount - 1`
+(`AddContextFeatures`; Core cannot read the environment). The services take it as an optional last constructor argument (none means serial; `AddContextFeatures` registers the default), and `MapWorld` takes one so a test can run degree 1 against degree 8.
+
+`BoundedParallel` (Core `Walks/`) runs independent read-only work items with at most `degree` in flight and returns one result per item at the item's index (`Map` for async work, `MapSync` for CPU work). Every use computes
+per-item results in parallel and merges them serially in input order, so first-one-wins de-duplication, tie-breaks and caps pick the same items as a serial run; nothing that shapes output sits in a completion-order collection.
+What runs over the cores: each anchor's scope and cascade (`AnchorSet.Resolve`; the names are still resolved one after another), each scope's product lists, intent records and decisions, conflicts and coverage counts (`LensSets`,
+`AnchorSet.Coverage`, `HistoryLens.Coverage`), and the per-repo git reads of the history lens (`HistoryPipeline`; the answers are taken in repo order up to the first that ran out of time). The shared graph indexes (`GraphIndex`,
+`EdgeLookup`) are built once before the workers start, so a lookup is never built twice. The code lens's per-file lexical reads keep their own `GetCode/Fanout` (at most 4 at once); the SQLite intent read stays serial.
+`WalkEquivalenceTests` pins the lenses, code and history answers byte for byte at degree 1 and 8 (when no history repo hits its deadline: under load a different repo can be the one that runs out of time than in a serial run). The degree is per call, not a box-wide cap: four lens calls at once each take `ProcessorCount - 1`. A work item that throws surfaces as its own exception type at any degree; `MapSync` unwraps the `AggregateException` that `Parallel.For` raises and rethrows the first inner exception it collected.

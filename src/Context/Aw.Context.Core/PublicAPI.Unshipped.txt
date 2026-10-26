@@ -2299,6 +2299,8 @@ Aw.Context.Core.Lenses.LensBasis.Deconstruct(out string! Map, out bool Draft, ou
 Aw.Context.Core.Lenses.LensBasis.Draft.get -> bool
 Aw.Context.Core.Lenses.LensBasis.Draft.init -> void
 Aw.Context.Core.Lenses.LensBasis.Equals(Aw.Context.Core.Lenses.LensBasis? other) -> bool
+Aw.Context.Core.Lenses.LensBasis.Walk.get -> Aw.Context.Core.Walks.WalkOptions!
+Aw.Context.Core.Lenses.LensBasis.Walk.init -> void
 Aw.Context.Core.Lenses.LensBasis.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Lenses.LensBasis.Files.init -> void
 Aw.Context.Core.Lenses.LensBasis.IntentSources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.SearchedSource!>!
@@ -7539,6 +7541,16 @@ const Aw.Context.Core.Engine.FillBands.History = "context.fill.history" -> strin
 const Aw.Context.Core.Engine.FillBands.Lenses = "context.fill.lenses" -> string!
 static Aw.Context.Core.Engine.FillBands.Source.get -> System.Diagnostics.ActivitySource!
 static Aw.Context.Core.Engine.FillBands.Start(string! band) -> System.Diagnostics.Activity?
+Aw.Context.Core.Walks.BoundedParallel
+Aw.Context.Core.Walks.WalkOptions
+Aw.Context.Core.Walks.WalkOptions.Degree.get -> int
+static Aw.Context.Core.Walks.BoundedParallel.Map<TIn, TOut>(System.Collections.Generic.IReadOnlyList<TIn>! items, System.Func<TIn, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<TOut>>! work, int degree, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<TOut[]!>
+static Aw.Context.Core.Walks.BoundedParallel.MapSync<TIn, TOut>(System.Collections.Generic.IReadOnlyList<TIn>! items, System.Func<TIn, TOut>! work, int degree) -> TOut[]!
+static Aw.Context.Core.Walks.WalkOptions.Of(int degree) -> Aw.Context.Core.Walks.WalkOptions!
+static Aw.Context.Core.Walks.WalkOptions.Serial.get -> Aw.Context.Core.Walks.WalkOptions!
+static Aw.Context.Core.Code.CodeLensBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.Walks.WalkOptions! walk) -> Aw.Kernel.Result<Aw.Context.Core.Code.CodeView!>!
+static Aw.Context.Core.History.HistoryLens.Resolve(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.Walks.WalkOptions! walk) -> Aw.Kernel.Result<Aw.Context.Core.History.HistoryScope!>!
+static Aw.Context.Core.History.HistoryLens.Coverage(Aw.Context.Core.History.HistoryScope! scope, Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Walks.WalkOptions! walk) -> Aw.Context.Core.Lenses.LensCoverage!
 Aw.Context.Core.Engine.RepoRole
 Aw.Context.Core.Engine.RepoRole.<Clone>$() -> Aw.Context.Core.Engine.RepoRole!
 Aw.Context.Core.Engine.RepoRole.Deconstruct(out string! Name, out bool Demoted, out System.Collections.Generic.IReadOnlyList<string!>! Globs) -> void
