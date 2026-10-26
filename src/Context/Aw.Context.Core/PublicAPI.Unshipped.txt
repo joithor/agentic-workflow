@@ -6440,6 +6440,7 @@ static readonly Aw.Context.Core.ContextErrors.OnyxKeyRefused -> Aw.Kernel.ErrorD
 static readonly Aw.Context.Core.ContextErrors.OnyxNotPinnedOrLoopback -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.OnyxUnexpectedReply -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PathInWorktree -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.PatternTimedOut -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbeFileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.ProbesRegressed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.PromoteRefused -> Aw.Kernel.ErrorDefinition!
