@@ -48,7 +48,8 @@
 #                                  features with 50 code nodes each (612 nodes, over the 500-node budget: the Context page opens by feature),
 #                                  under imports the tabs map again (10 nodes: the page draws every node). Each switch is a new map version
 #                                  and a repeat with the same map imports nothing; concepts imports a small authored map with two concepts
-#                                  (Self scheduling, Billing) over four features, so the Context page opens on its concept band
+#                                  (Self scheduling, Billing) over four features and a decision on Swaps, so the Context page opens on
+#                                  its concept band and a concept draws its Why, product and code
 #
 #   sindri-ui-fixture.sh context publish held|overdue|published|without-waiting|stale|by-hand|pause|resume
 #                                  the Health page's Context map card (F1P-c, code index spec 6.4; run after 'context up'): puts the
@@ -448,14 +449,16 @@ context_whole() {
           {key: "concept:billing", label: "Billing", attributes: {summary: "Invoices and payment.", source: "override", terms: ["invoice"]}},
           {key: "feature:shifts", label: "Shifts"}, {key: "feature:swaps", label: "Swaps"}, {key: "feature:invoices", label: "Invoices"}, {key: "feature:lone", label: "Loose end"},
           {key: "surface:screen/shifts", label: "Shifts screen"}, {key: "action:pick", label: "Pick a shift"},
-          {key: "code:src/shifts.ts", label: "shifts.ts", provenance: "deterministic"}, {key: "code:src/invoices.ts", label: "invoices.ts", provenance: "deterministic"}],
+          {key: "code:src/shifts.ts", label: "shifts.ts", provenance: "deterministic"}, {key: "code:src/invoices.ts", label: "invoices.ts", provenance: "deterministic"},
+          {key: "decision:swap-cutoff", label: "Swaps close a day before the shift"}],
         edges: [
           {from: "feature:shifts", to: "concept:scheduling", type: "belongs-to"}, {from: "feature:swaps", to: "concept:scheduling", type: "belongs-to"},
           {from: "feature:invoices", to: "concept:billing", type: "belongs-to"},
           {from: "code:src/shifts.ts", to: "feature:shifts", type: "implements", provenance: "deterministic"},
           {from: "code:src/invoices.ts", to: "feature:invoices", type: "implements", provenance: "deterministic"},
           {from: "feature:invoices", to: "feature:shifts", type: "depends-on"}, {from: "feature:swaps", to: "feature:invoices", type: "depends-on"},
-          {from: "surface:screen/shifts", to: "feature:shifts", type: "part-of"}, {from: "action:pick", to: "surface:screen/shifts", type: "on"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
+          {from: "surface:screen/shifts", to: "feature:shifts", type: "part-of"}, {from: "action:pick", to: "surface:screen/shifts", type: "on"},
+          {from: "decision:swap-cutoff", to: "feature:swaps", type: "decides"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
     over)
       map="$dir/over-map.json"
       jq -n --arg repo "$CONTEXT_REPO" '{schemaVersion: 1, kind: "authored", repo: $repo,

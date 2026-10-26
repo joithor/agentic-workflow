@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # tests/ui-checks/concept-band.sh — proof check for the Context page's concept band (ui #1012): the page opens on the product's
-# concepts, a click opens the bands scoped to that concept, Back returns to the concepts.
+# concepts, a click opens the bands scoped to that concept, Back returns to the concepts. Part of #1281: inside a concept the map draws
+# Why on top, the product in the middle and the code below.
 # Expected: the concept list shows FIRST (a card per concept, no whole-map size line yet); a click on Self scheduling shows the
-# scoped map (size line, zoom canvas, "Concepts" and "Self scheduling" crumbs, Back); Back shows the cards again; a click on Billing
+# scoped map (size line, zoom canvas with the Why, Product and Code bands in that order and the decision in Why, "Concepts" and
+# "Self scheduling" crumbs, Back); Back shows the cards again; a click on Billing
 # shows its scoped map. On main (no concept band) it FAILs at step 1; on the branch it passes.
 # It drives the REAL sindri-ui (UI driver, docs/csharp/ui-driver.md) against a guarded fixture home (context-lib.sh: sindri-ui-fixture.sh
 # up + context up, then `context whole concepts` for the concept map). Every driver call has `timeout 120`; a timeout is a setup failure.
@@ -56,6 +58,15 @@ click_card "Self scheduling" || fail "step 2: could not click the Self schedulin
 d wait-for --type TextBlock --contains "links" --state visible --wait-ms 60000 >/dev/null 2>&1 || fail "step 2: no scoped map (no size line) after opening Self scheduling"
 canvas="$(d search --type ZoomBorder --limit 5 2>/dev/null | jq -c 'first(.matches[] | select(.visible and .width > 0 and .height > 0)) // empty')"
 [ -n "$canvas" ] || fail "step 2: the scoped map's canvas (the bands) is not drawn"
+# #1281: the three bands, Why on top, product in the middle, code below; the decision on Swaps is in the Why band. The canvas's
+# accessible name reads the bands top to bottom ("The whole map: Why (1 decision), Product (...), Code (...)").
+bands="$(jq -r '.name // empty' <<<"$canvas")"
+echo "$bands" >"$OUT/bands.txt"
+why="${bands%%Why (*}"; product="${bands%%Product (*}"; code="${bands%%Code (*}"
+[ "$why" != "$bands" ] && [ "$product" != "$bands" ] && [ "$code" != "$bands" ] \
+  || fail "step 2: the scoped map does not draw all three bands, Why, Product and Code (canvas: '$bands')"
+[ "${#why}" -lt "${#product}" ] && [ "${#product}" -lt "${#code}" ] || fail "step 2: the bands are not Why, then Product, then Code top to bottom (canvas: '$bands')"
+case "$bands" in *"Why (1 decision"*) ;; *) fail "step 2: the Why band does not hold the decision on Swaps (canvas: '$bands')" ;; esac
 
 # Step 3: the path and the way back are on screen; the cards are gone.
 d search --type Button --contains "Concepts" --limit 20 2>/dev/null | jq -e 'any(.matches[]; .visible)' >/dev/null || fail "step 3: no 'Concepts' crumb"
