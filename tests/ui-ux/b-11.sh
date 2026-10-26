@@ -66,8 +66,10 @@ d click --type Button --name "Close sheet" >/dev/null 2>&1 || d key --chord Esca
 d wait-for --name SheetSubjectText --state hidden --wait-ms 10000 >/dev/null 2>&1 || true
 d action --do focus --type ListBoxItem --name Agents >/dev/null 2>&1 || true
 sleep 1
+# Classes.selected="{Binding}" is the attached property __AvaloniaReserved::Classes::selected, listed by props on every row as True or
+# False: the row must be found and read False (round 2 grepped for the name, which is always there).
 expect "the row is not highlighted after the sheet closes and focus has left the list" \
-  bash -c '! timeout 120 "$0" --dir "$1" props --type Border --name "$2" | grep -iE "Classes.*selected" >/dev/null' \
+  bash -c 'v="$(timeout 120 "$0" --dir "$1" props --type Border --name "$2" | jq -r "[.. | objects | .[\"__AvaloniaReserved::Classes::selected\"]? // empty] | first // \"missing\"")"; echo "selected=$v"; [ "$v" = False ]' \
   "$UXU_DRIVER" "$AW_UI_DRIVER_DIR" "$row"
 
 uxu_done
