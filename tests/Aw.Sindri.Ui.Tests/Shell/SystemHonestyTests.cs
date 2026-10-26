@@ -1,5 +1,6 @@
 using System.Net;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 
@@ -17,7 +18,7 @@ public sealed class SystemHonestyTests
     public async Task A_healthy_server_with_a_code_index_that_needs_a_look_does_not_say_everything_is_running()
     {
         var system = new SystemTestHarness();
-        await system.Show();
+        await system.Show(A.Status() with { Health = new HealthView("healthy", []) });
         Assert.Equal(Labels.AllRunning, system.Vm.Sentence);
         Assert.False(system.Vm.ToneWarn);
 
