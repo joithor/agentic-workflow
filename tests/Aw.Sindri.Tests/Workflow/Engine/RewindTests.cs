@@ -28,7 +28,7 @@ public sealed class RewindTests
 
     private static Recipe Scoping => RecipeComposition.ReadClean(ShippedRecipes.Read("sindri/workflow.scoping.yaml"), "workflow.scoping.yaml").Recipe;
 
-    private static CommandStamp Stamp(char c) => new(CommandNonce.From(new string(c, 32)), new string('0', 64));
+    private static CommandStamp Stamp(char c) => new(CommandNonce.From(string.Concat(Enumerable.Repeat(((byte)c).ToString("x2", System.Globalization.CultureInfo.InvariantCulture), 16))), new string('0', 64));
 
     private static RewindRequested Rewind(string to) => new("human:cli", Stamp('r'), to);
 
