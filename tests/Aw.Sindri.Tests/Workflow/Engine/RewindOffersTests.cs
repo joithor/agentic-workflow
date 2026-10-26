@@ -139,4 +139,17 @@ public sealed class RewindOffersTests
         var json = JsonSerializer.Serialize(detail, EvalComposition.Options);
         Assert.Equal("ApplyCommand:rewind", JsonDocument.Parse(json).RootElement.GetProperty("allowedCommands")[0].GetProperty("actionId").GetString());
     }
+
+    [Fact]
+    public void The_status_of_a_parked_run_renders_a_rewind_row_and_names_rewind_in_its_commands_line()
+    {
+        var view = View(ParkedOnEvidence());
+
+        var status = InstanceViews.Status(view, DateTimeOffset.UnixEpoch);
+
+        var rewind = status.Commands.First(static c => c.Verb == StatusVerb.Rewind);
+        Assert.Equal($"sindri workflow rewind {Address} --to evidence", rewind.Cli);
+        Assert.Equal("ApplyCommand:rewind", rewind.ActionId.Value);
+        Assert.Contains("rewind", StatusLayout.Commands(view), StringComparison.Ordinal);
+    }
 }
