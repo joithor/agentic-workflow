@@ -27,7 +27,6 @@ public static class CodeLensBuilder
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
-        ArgumentNullException.ThrowIfNull(walk);
         var resolved = AnchorSet.Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)], depth: 0, options: null, walk);
         if (resolved.IsError)
         {
@@ -36,10 +35,8 @@ public static class CodeLensBuilder
 
         var (scopes, missing) = resolved.Value;
         var reach = new CodeReach(graph, scopes);
-        var files = CodeFiles.Of(reach);
-        var tests = CodeTests.Of(reach);
         var things = CodeThings.Of(reach);
-        var (linkedFiles, linkedTests) = CodeFiles.Link(files, tests);
+        var (linkedFiles, linkedTests) = CodeFiles.Link(CodeFiles.Of(reach), CodeTests.Of(reach));
         var repoOf = NodeRepos.Index(graph, basis.MapRepo);
         var listedFiles = linkedFiles.Select(f => f with { Repo = repoOf.GetValueOrDefault("code:" + f.Path) }).ToList();
         var listedTests = linkedTests.Select(t => t with { Repo = repoOf.GetValueOrDefault("code:" + t.Path) }).ToList();

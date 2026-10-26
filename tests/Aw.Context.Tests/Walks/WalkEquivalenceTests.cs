@@ -130,7 +130,7 @@ public sealed class WalkEquivalenceTests
     private static async Task<string> FillLenses(int degree)
     {
         using var world = await World(degree);
-        return Json(await world.Engine.LensesOf(_anchors, MapRead.Current, (int?)2, MapWorld.Human, MapWorld.None));
+        return Json(await world.Engine.LensesOf(_anchors, MapRead.Current, 2, MapWorld.Human, MapWorld.None));
     }
 
     private static async Task<string> FillCode(int degree)

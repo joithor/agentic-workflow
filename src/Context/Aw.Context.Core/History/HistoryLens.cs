@@ -74,7 +74,7 @@ public static class HistoryLens
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(walk);
-        var counted = BoundedParallel.MapSync(scope.Scopes, s => LensCoverageBuilder.Of(s), walk.Degree);
+        var counted = BoundedParallel.MapSync(scope.Scopes, LensCoverageBuilder.Of, walk.Degree);
         var byAnchor = scope.Scopes.Select((s, i) => (Key: s.Anchor.Key.Value, Coverage: counted[i])).ToDictionary(c => c.Key, c => c.Coverage, StringComparer.Ordinal);
         return LensCoverageBuilder.Of(scope.Scopes[0].Graph, scope.Scopes[0].Nodes, [.. scope.Own.Select(NodeKey.From)]) with { Map = MapCoverageBuilder.Of(scope.Graph, scope.Own, basis), ByAnchor = byAnchor };
     }

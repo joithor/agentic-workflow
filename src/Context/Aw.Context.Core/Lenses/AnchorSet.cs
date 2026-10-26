@@ -68,7 +68,7 @@ internal static class AnchorSet
     /// <summary>The coverage over the union of the scopes' own scopes, with each anchor's own and the map's.</summary>
     internal static LensCoverage Coverage(LensBasis basis, GraphSnapshot graph, List<LensScope> scopes, IReadOnlySet<string> ownUnion, WalkOptions walk)
     {
-        var counted = BoundedParallel.MapSync(scopes, s => LensCoverageBuilder.Of(s), walk.Degree);
+        var counted = BoundedParallel.MapSync(scopes, LensCoverageBuilder.Of, walk.Degree);
         var byAnchor = scopes.Select((s, i) => (Key: s.Anchor.Key.Value, Coverage: counted[i])).ToDictionary(c => c.Key, c => c.Coverage, StringComparer.Ordinal);
         return LensCoverageBuilder.Of(scopes[0].Graph, scopes[0].Nodes, [.. ownUnion.Select(NodeKey.From)]) with { Map = MapCoverageBuilder.Of(graph, ownUnion, basis), ByAnchor = byAnchor };
     }

@@ -30,10 +30,7 @@ public static class BoundedParallel
         }
 
         var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Min(degree, items.Count), CancellationToken = cancellationToken };
-        await Parallel.ForEachAsync(Enumerable.Range(0, items.Count), options, async (index, token) =>
-        {
-            results[index] = await work(items[index], token).ConfigureAwait(false);
-        }).ConfigureAwait(false);
+        await Parallel.ForEachAsync(Enumerable.Range(0, items.Count), options, async (index, token) => results[index] = await work(items[index], token).ConfigureAwait(false)).ConfigureAwait(false);
         return results;
     }
 
@@ -59,10 +56,7 @@ public static class BoundedParallel
             return results;
         }
 
-        _ = Parallel.For(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(degree, results.Length) }, index =>
-        {
-            results[index] = work(items[index]);
-        });
+        _ = Parallel.For(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(degree, results.Length) }, index => results[index] = work(items[index]));
         return results;
     }
 }

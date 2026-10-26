@@ -17,8 +17,9 @@ internal static class LensSets
     private const int NeighborList = 1;
     private const int AffectList = 2;
 
-    internal static Result<LensesSetView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> given, int depth, IReadOnlyList<DecisionConflict> pairs, WalkOptions walk)
+    internal static Result<LensesSetView> Build(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> given, int depth, IReadOnlyList<DecisionConflict> pairs)
     {
+        var walk = basis.Walk;
         var distinct = given.Distinct(StringComparer.Ordinal).ToList();
         if (QueryRules.CheckAnchors(distinct, "lenses") is { } tooMany)
         {

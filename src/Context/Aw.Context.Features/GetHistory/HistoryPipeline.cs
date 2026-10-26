@@ -20,11 +20,11 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
 {
     private const string Capped = "capped";
 
-    private WalkOptions Walk => walk ?? WalkDefaults.Default;
+    private readonly WalkOptions _walk = walk ?? WalkDefaults.Default;
 
     internal async ValueTask<Result<HistoryView>> Run(HistoryInputs inputs, IReadOnlyList<string> anchors, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {
-        var resolved = HistoryLens.Resolve(inputs.Map.Graph, anchors, Walk);
+        var resolved = HistoryLens.Resolve(inputs.Map.Graph, anchors, _walk);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -59,7 +59,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var records = cut.Records.Select(r => r with { Repo = repoOf.GetValueOrDefault(r.Key.Value) }).ToList();
         var decisions = cut.Decisions.Select(d => d with { Repo = repoOf.GetValueOrDefault(d.Node.Value) }).ToList();
         return new HistoryView(1, found.Anchors, found.MissingAnchors, basis.Map, basis.Draft, basis.AsOf, inputs.Window, records, decisions, changes.Items,
-            HistoryIncidents.NotConfigured, HistoryLens.Edges(found, kept), counts, truncated, git.Repos, HistoryLens.Coverage(found, basis, Walk), searched, degraded,
+            HistoryIncidents.NotConfigured, HistoryLens.Edges(found, kept), counts, truncated, git.Repos, HistoryLens.Coverage(found, basis, _walk), searched, degraded,
             new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
 
@@ -99,7 +99,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var asked = repos.Where(r => chosen.Exists(f => f.Repo == r.Name)).ToList();
 
         // The repos are read over the cores; their answers are taken in repo order up to the first that ran out of time, as a one-by-one run takes them.
-        var answers = await BoundedParallel.Map(asked, (repo, _) => ReadRepo(repo, chosen, version, inputs.Window, (deadline.Token, cancellationToken)), Walk.Degree, cancellationToken).ConfigureAwait(false);
+        var answers = await BoundedParallel.Map(asked, (repo, _) => ReadRepo(repo, chosen, version, inputs.Window, (deadline.Token, cancellationToken)), _walk.Degree, cancellationToken).ConfigureAwait(false);
         foreach (var answer in answers)
         {
             if (answer.History is not { } history)

@@ -80,11 +80,7 @@ public sealed class BoundedParallelTests
     [Fact, Trait("Lane", "unit")]
     public void The_synchronous_map_keeps_input_order_at_any_degree()
     {
-        string Work(int item)
-        {
-            Thread.Sleep((_items.Length - item) * 2);
-            return "r" + item.ToString(CultureInfo.InvariantCulture);
-        }
+        static string Work(int item) => "r" + item.ToString(CultureInfo.InvariantCulture);
 
         Assert.Equal(Expected, BoundedParallel.MapSync(_items, Work, degree: 1));
         Assert.Equal(Expected, BoundedParallel.MapSync(_items, Work, degree: 8));

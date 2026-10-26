@@ -1,5 +1,4 @@
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Walks;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Lenses;
@@ -47,23 +46,11 @@ public static class LensesBuilder
     /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
     /// <param name="checkedPairs">The model-checked decision pairs.</param>
     /// <returns>The view; SND-CONTEXT-006 for no anchor or more than 20; SND-CONTEXT-037 for an ambiguous name; SND-CONTEXT-003 when none resolves.</returns>
-    public static Result<LensesSetView> BuildSet(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs = null) =>
-        BuildSet(basis, graph, anchors, depth, checkedPairs, WalkOptions.Serial);
-
-    /// <summary>Builds the schema 2 view as above, running the per-anchor walks over <paramref name="walk"/>'s cores; the answer is the same at any degree.</summary>
-    /// <param name="basis">The map read and when.</param>
-    /// <param name="graph">The graph a caller may see.</param>
-    /// <param name="anchors">The anchors as given (keys, aliases or labels); duplicates count once.</param>
-    /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
-    /// <param name="checkedPairs">The model-checked decision pairs.</param>
-    /// <param name="walk">How many anchors' walks may run at once.</param>
-    /// <returns>The view; SND-CONTEXT-006 for no anchor or more than 20; SND-CONTEXT-037 for an ambiguous name; SND-CONTEXT-003 when none resolves.</returns>
-    public static Result<LensesSetView> BuildSet(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs, WalkOptions walk)
+    public static Result<LensesSetView> BuildSet(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs = null)
     {
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
-        ArgumentNullException.ThrowIfNull(walk);
-        return LensSets.Build(basis, graph, anchors, Math.Clamp(depth, 0, GraphWalk.MaxDepth), checkedPairs ?? [], walk);
+        return LensSets.Build(basis, graph, anchors, Math.Clamp(depth, 0, GraphWalk.MaxDepth), checkedPairs ?? []);
     }
 }

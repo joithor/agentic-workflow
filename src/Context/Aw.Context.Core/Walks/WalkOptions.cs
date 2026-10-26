@@ -6,7 +6,10 @@ namespace Aw.Context.Core.Walks;
 /// </summary>
 public sealed class WalkOptions
 {
-    private WalkOptions(int degree) => Degree = degree;
+    private WalkOptions(int degree)
+    {
+        Degree = degree;
+    }
 
     /// <summary>One item at a time, on the calling thread.</summary>
     public static WalkOptions Serial { get; } = new(1);
