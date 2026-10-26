@@ -452,6 +452,7 @@ static Aw.Judge.Core.Ids.ToolUseId.TryParse(string? s, System.IFormatProvider? p
 static readonly Aw.Judge.Core.Errors.JudgeErrors.BriefExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.DecisionExists -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Judge.Core.Errors.JudgeErrors.UnknownDecision -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Judge.Core.Errors.JudgeErrors.UnreadableDecision -> Aw.Kernel.ErrorDefinition!
 Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Degraded = 2 -> Aw.Judge.Core.Health.HealthStatus
 Aw.Judge.Core.Health.HealthStatus.Down = 3 -> Aw.Judge.Core.Health.HealthStatus
