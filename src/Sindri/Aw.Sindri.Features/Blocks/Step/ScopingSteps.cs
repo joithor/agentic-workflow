@@ -106,11 +106,18 @@ internal static class ScopingSteps
     public static BlockDescriptor Propose { get; } = BlockStep("step.scope.propose", Capability.Tools)
         .Reads("fact:scopeMap", "fact:mapFixes").Reports("proposed", "skipped").Writes(Every("fact:scopeMap"), Every("fact:mapFixes"));
 
-    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' and 'converged' (the same findings as the last evidence round) re-report five facts, both record fact:runs from the ledger, 'incomplete', 'converged' and 'regather' carry findings and the round log.</summary>
+    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' and 'converged' (the same findings as the last evidence round) re-report five facts, both record fact:runs from the ledger, 'incomplete', 'uncovered' (SCP-COV-003 is the only failing rule), 'converged' and 'regather' carry findings and the round log.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions", "fact:relevance", "fact:gapSearch", "fact:mapFixes", "fact:roundLog")
-        .Reports("complete", "incomplete", "converged", "regather")
-        .Writes(On("fact:scopeMap", "complete", "converged"), On("fact:acceptance", "complete", "converged"), On("fact:coverage", "complete", "converged"), On("fact:openQuestions", "complete", "converged"), On("fact:scopePacket", "complete", "converged"), On("fact:runs", "complete", "converged"), On("fact:recommendation"), On("fact:findings", "incomplete", "converged", "regather"), On("fact:roundLog", "incomplete", "converged", "regather"));
+        .Reports("complete", "incomplete", "uncovered", "converged", "regather")
+        .Writes(On("fact:scopeMap", "complete", "converged"), On("fact:acceptance", "complete", "converged"), On("fact:coverage", "complete", "converged"), On("fact:openQuestions", "complete", "converged"), On("fact:scopePacket", "complete", "converged"), On("fact:runs", "complete", "converged"), On("fact:recommendation"), On("fact:findings", "incomplete", "uncovered", "converged", "regather"), On("fact:roundLog", "incomplete", "uncovered", "converged", "regather"));
+
+    /// <summary>'step.scope.exclude': closes the files SCP-COV-003 names that the map neither covers nor excludes, by adding excluded entries (or surfaces); 'excluded'.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
+    public static BlockDescriptor Exclude { get; } = AgentStep("step.scope.exclude", Capability.Tools)
+        .Takes(Text("model"))
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:roundLog", "fact:answerLog")
+        .Reports("excluded").Writes(On("fact:scopeMap", "excluded"));
 
     /// <summary>'step.scope.review': the owner's stop, human-only: approve, revise (notes become answers) or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.scope.review", Capability.None)

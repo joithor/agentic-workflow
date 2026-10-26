@@ -30,16 +30,7 @@ internal static partial class DeskBlocks
 
         if (report.Outcome is not ScopeOutcome.Complete)
         {
-            var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
-            var missing = report.Rules.Where(static r => r.Status == ScopeRuleStatus.NotRun).Select(static r => r.Rule).ToList();
-            var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail))).ToList();
-            var log = RoundLog.Append(facts, "evidence", "step.scope.evidence", findings);
-            if (outcome == "incomplete" && RoundLog.Repeats(facts, "evidence", findings) && assembled.Missing("decision", "questions").Count == 0)
-            {
-                return Converged(assembled, findings, log, report);
-            }
-
-            return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
+            return Unfinished(facts, assembled, report);
         }
 
         if (assembled.Missing("decision", "questions") is { Count: > 0 } lacking)
@@ -60,6 +51,29 @@ internal static partial class DeskBlocks
         }
 
         return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
+    }
+
+    /// <summary>
+    /// An evidence run that is not complete: 'regather', 'converged' (the same findings as the last evidence round, #1120), 'uncovered' (SCP-COV-003 is the only failing rule, #1114: a redraft can't add
+    /// what the exclusions step can) or 'incomplete'. It writes the findings and the round log with this round's entries added.
+    /// </summary>
+    private static Result<ScopingDeskResponse> Unfinished(ScopeFacts facts, ScopeFacts assembled, ScopingCheckResponse report)
+    {
+        var missing = report.Rules.Where(static r => r.Status == ScopeRuleStatus.NotRun).Select(static r => r.Rule).ToList();
+        var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail))).ToList();
+        var log = RoundLog.Append(facts, "evidence", "step.scope.evidence", findings);
+        var outcome = "regather";
+        if (report.Outcome != ScopeOutcome.Regather)
+        {
+            if (RoundLog.Repeats(facts, "evidence", findings) && assembled.Missing("decision", "questions").Count == 0)
+            {
+                return Converged(assembled, findings, log, report);
+            }
+
+            outcome = findings.Count > 0 && findings.TrueForAll(static f => string.Equals(f.Rule, ScopeRules.Cov3, StringComparison.Ordinal)) ? "uncovered" : "incomplete";
+        }
+
+        return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
     }
 
     /// <summary>
