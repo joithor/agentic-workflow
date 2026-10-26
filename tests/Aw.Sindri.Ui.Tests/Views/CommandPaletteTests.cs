@@ -118,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Check launch targets again, coming soon", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, " + Labels.CopyCli(shell.Health.Catalog.Row("ProbeLaunchTargets")!.Cli), names, StringComparer.Ordinal);   // why: the catalog serves the row
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");
@@ -253,8 +253,11 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(heading.TranslatePoint(default, scroll) is { Y: >= 0 } at && at.Y < scroll.Viewport.Height, "the Actions heading is in view");
         Frame(window, "palette-top");
 
-        Press(window, Key.Down, PhysicalKey.ArrowDown);
-        Press(window, Key.Down, PhysicalKey.ArrowDown);
+        for (var i = 0; i < 60 && scroll.Offset.Y <= 0; i++)
+        {
+            Press(window, Key.Down, PhysicalKey.ArrowDown);   // every row that runs is a stop now, so it takes more presses to leave the first screen
+        }
+
         Assert.True(scroll.Offset.Y > 0, "the arrows bring the selection into view");
 
         window.KeyTextInput("o");
@@ -419,6 +422,10 @@ public sealed class CommandPaletteTests : IDisposable
     public Task The_shortcuts_sheets_last_row_is_reachable_by_keyboard() => OnUi(async () =>
     {
         var (window, shell) = await Connected();
+        // The card has no MaxHeight and fits the window, so a tall window can fit every row and the sheet never scrolls.
+        // Size.WindowMinHeight (600) is the shortest the window gets, so the test asks for that and the rows overflow the card.
+        window.Height = 600;
+        Settle(window);
         Press(window, Key.OemQuestion, PhysicalKey.Slash, RawInputModifiers.Shift, "?");
         var scroll = Named<ScrollViewer>(window, "ShortcutsScroll");
 

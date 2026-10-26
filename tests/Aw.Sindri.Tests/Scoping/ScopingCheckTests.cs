@@ -100,6 +100,7 @@ public sealed class ScopingCheckTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("code", "unavailable", "index-not-built", null)]
     [InlineData("history", "unavailable", "not-synced", "SND-CONTEXT-161")]
+    [InlineData("code", "ok", "catching-up", null)]
     public async Task A_found_row_may_carry_a_recorded_limit(string lens, string state, string reason, string? code)
     {
         var facts = Limited(lens, state, reason, code, rowState: "found", count: 3);
@@ -111,6 +112,8 @@ public sealed class ScopingCheckTests
     [InlineData("history", "degraded", "timeout", null)]
     [InlineData("history", "degraded", "not-synced", "SND-CONTEXT-161")]
     [InlineData("code", "degraded", "index-not-built", null)]
+    [InlineData("code", "degraded", "stale", null)]
+    [InlineData("code", "degraded", "catching-up", null)]
     [InlineData("code", "unavailable", "something-else", null)]
     public async Task A_degraded_or_unmatched_source_is_SCP_COV_002_and_a_regather(string lens, string state, string reason, string? code)
     {
@@ -128,6 +131,7 @@ public sealed class ScopingCheckTests
     [InlineData("code", "unavailable", "history-unlinked")]
     [InlineData("code", "unavailable", "not-synced")]
     [InlineData("related", "unavailable", "commit-not-held")]
+    [InlineData("history", "ok", "catching-up")]
     public async Task A_limits_reason_on_the_wrong_lens_is_SCP_COV_002(string lens, string state, string reason)
     {
         var facts = Limited(lens, state, reason, code: null, rowState: "found", count: 3);
@@ -387,7 +391,12 @@ public sealed class ScopingCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_challenger_on_the_drafters_model_warns_once_the_second_opinion_is_spent_and_before_it_fails()
     {
-        static void SameModel(JsonNode n) => n["runs"]![1]!["model"] = n["runs"]![0]!["model"]!.DeepClone();
+        static void SameModel(JsonNode n)
+        {
+            n["runs"]![1]!["model"] = n["runs"]![0]!["model"]!.DeepClone();
+            n["runs"]![0]!["requested"] = "m-1";   // a fail needs both runs to have asked for a model
+            n["runs"]![1]!["requested"] = "m-1";
+        }
         static void Spend(JsonNode n)
         {
             var rounds = n["rounds"]!.AsArray();
