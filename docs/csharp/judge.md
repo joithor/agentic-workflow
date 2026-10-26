@@ -183,14 +183,14 @@ is not used. The stored input goes to the model redacted and inside the question
 **Transcripts.** `label outcomes` finds a session's transcript at `<projects dir>/<project>/<session>.jsonl`; the projects dir is
 `AW_JUDGE_PROJECTS_DIR`, else `~/.claude/projects`.
 
-**An older binary meets a newer database.** The tables come from migration `0004` (State files below). A `judge` binary built before it,
+**An older binary meets a newer database.** The tables come from migration `0005` (State files below). A `judge` binary built before it,
 run against a database that has it, refuses to open the file with AW-DATA-007 and every hook fails open (`judge health` reads down): re-run
 `./setup.sh` to replace the binary. Use a scratch `AW_STATE_DIR` for by-hand runs of a development build.
 
 `DecisionOutput` is the decision row with the `decisions` table's column names: `id`, `ts`, `question`,
 `content_class`, `provider`, `decision`, `confidence`, `reason_code`, `latency_ms`, `input_digest`, `undone_at`,
 `chain_position`, `skipped` (`[{provider, reason}]`, reason `unavailable|failed|timeout|below_threshold`), `outcome`
-(`decided|escalated|failed`), `approved_at`. Timestamps are UTC ISO-8601 (`AwJson`); `undone_at` and `approved_at`
+(`decided|escalated|failed`), `approved_at`, `reasons` (the model's reasons as a list of strings, from `decision_details`; null when not recorded: a row written before migration 0005, an answer that carried none, or details pruned after 30 days). Timestamps are UTC ISO-8601 (`AwJson`); `undone_at`, `approved_at` and `reasons`
 are null until set.
 
 `JudgeConfig` (`config.json`, written indented): `questions` (required: name → `{enabled, threshold?, providers?}`,
@@ -497,7 +497,7 @@ reads a TS-written file.
 
 | File | Holds |
 |---|---|
-| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`, `0003_prompt_sort.sql`, `0004_eval.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `prompt_sort_axes` and `prompt_sort_runs` (from 0003: one row per sorted axis of a `prompt-sort` decision, and one run row), `eval_items` (from 0004: one row per scoreable input, `id`, `question`, `input_json` redacted and capped, `source` unique (`decision:<id>` or `transcript:<session>:<turn>`, what keeps an import idempotent), `model_decision`, `created_at`) and `labels` (from 0004: one row per item and label source, `outcome`, `adjudicator` or `override`, with `label` and `labeled_at`), `schema_version` |
+| `decisions.sqlite` | WAL SQLite (`Aw.Kernel.Data`), migrations embedded in `Aw.Judge.Infrastructure/Sqlite/Migrations/` (`0001_judge.sql`, `0002_approved_at.sql`, `0003_prompt_sort.sql`, `0004_eval_labels.sql`, `0005_decision_reasons.sql`; a migration is never edited once merged): `decisions` (one row per decision, `approved_at` from 0002), `decision_details` (the redacted input and the provider's detail, pruned after 30 days; `reasons` from 0005: the model's reasons as a JSON array of strings, redacted and capped like the input, NULL when not recorded, which is different from `[]`), `failures` (provider failures, for `health`), `briefs` (the dispatch briefs, their texts redacted and capped), `prompt_sort_axes` and `prompt_sort_runs` (from 0003: one row per sorted axis of a `prompt-sort` decision, and one run row), `eval_items` (from 0004: one row per scoreable input, `id`, `question`, `input_json` redacted and capped, `source` unique (`decision:<id>` or `transcript:<session>:<turn>`, what keeps an import idempotent), `model_decision`, `created_at`) and `labels` (from 0004: one row per item and label source, `outcome`, `adjudicator` or `override`, with `label` and `labeled_at`), `schema_version` |
 | `sessions/<sid>.sort.json` | The prompt sorter's per-session state (`{prompts, lastFired, requirements}`), read and rewritten by `done-gate.sh`; the hooks sweep `sessions/*.json` after 24 h |
 | `evals/<question>-<provider>-<variant>-<ms>.json\|.md` | The reports of `eval` (redacted, 0600) |
 | `trait-check/log.jsonl` | One line per trait-check run (redacted) |
