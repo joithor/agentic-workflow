@@ -23,7 +23,6 @@ public sealed class JudgeCliTests : IDisposable
     // first 16 hex of the SHA-256 of what was sent (the judge's canonical digest of a compact input).
     private static readonly string _script = string.Join('\n',
     [
-        """#!/bin/bash""",
         """printf '%s\n' "$*" >> @DIR@/calls """,
         """env | grep '^AW_' > @DIR@/env || true """,
         """case "$1" in """,
