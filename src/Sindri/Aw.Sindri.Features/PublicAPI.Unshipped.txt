@@ -4864,3 +4864,5 @@ override Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.GetHashCode()
 override Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.operator !=(Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? left, Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? right) -> bool
 static Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult.operator ==(Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? left, Aw.Sindri.Features.ContextCalls.ScanContextConceptsResult? right) -> bool
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Unreadable.get -> string?
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Unreadable.init -> void
