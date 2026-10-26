@@ -25,7 +25,7 @@ public sealed class CheckEnvironmentTests : IDisposable
         var exit = runner.Run(["sh", "-c", "echo \"[${DOTNET_ROOT-unset}] [${XDG_RUNTIME_DIR-unset}]\""], _temp.Path, log, Key);
 
         Assert.Equal("[/opt/dotnet] [/run/user/1000]", File.ReadAllText(log).Trim());
-        Assert.Contains("DOTNET_ROOT", exit.Environment.Keys);
-        Assert.DoesNotContain("XDG_RUNTIME_DIR", exit.Environment.Keys);
+        Assert.True(exit.Environment.ContainsKey("DOTNET_ROOT"));
+        Assert.False(exit.Environment.ContainsKey("XDG_RUNTIME_DIR"));
     }
 }
