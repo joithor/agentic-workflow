@@ -32,6 +32,17 @@ public static class RoleCounter
         return [.. repos.Select(r => One(r, pathsByRepo.TryGetValue(r.Name.Value, out var paths) ? paths : [], dropped)).Where(static r => r.Roles.Count > 0 || r.Unassigned is not null)];
     }
 
+    /// <summary>How many of <paramref name="paths"/> a role's globs match.</summary>
+    /// <param name="globs">The role's globs.</param>
+    /// <param name="paths">Repo-relative paths.</param>
+    /// <returns>The number of matching paths.</returns>
+    public static int Matching(IReadOnlyList<string> globs, IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(globs);
+        ArgumentNullException.ThrowIfNull(paths);
+        return paths.Count(p => PathDenylist.Matches(p, globs));
+    }
+
     /// <summary>The tracked files each ignored role of <paramref name="repo"/> drops: a build can't index them, so it counts them from the tracked list and keeps the count with the map version (issue 1161).</summary>
     /// <param name="repo">The repo with its roles.</param>
     /// <param name="tracked">Its tracked files at the build's commit, deny globs not applied.</param>
@@ -40,13 +51,13 @@ public static class RoleCounter
     {
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(tracked);
-        return [.. repo.Roles.Where(static r => !r.Demoted).OrderBy(static r => r.Name, StringComparer.Ordinal).Select(r => new RoleDropped(repo.Name.Value, r.Name, tracked.Count(p => PathDenylist.Matches(p, r.Globs))))];
+        return [.. repo.Roles.Where(static r => !r.Demoted).OrderBy(static r => r.Name, StringComparer.Ordinal).Select(r => new RoleDropped(repo.Name.Value, r.Name, Matching(r.Globs, tracked)))];
     }
 
     private static RepoRoles One(ContextRepo repo, IReadOnlyList<string> paths, IReadOnlyList<RoleDropped>? dropped)
     {
         var counts = repo.Roles.OrderBy(static r => r.Name, StringComparer.Ordinal)
-            .Select(r => new RoleCount(r.Name, r.Demoted, paths.Count(p => PathDenylist.Matches(p, r.Globs))) { Ignored = r.Demoted ? null : dropped?.FirstOrDefault(d => d.Repo == repo.Name.Value && d.Role == r.Name)?.Files })
+            .Select(r => new RoleCount(r.Name, r.Demoted, Matching(r.Globs, paths)) { Ignored = r.Demoted ? null : dropped?.FirstOrDefault(d => d.Repo == repo.Name.Value && d.Role == r.Name)?.Files })
             .ToList();
         var loose = paths.Where(p => RoleLikePaths.Matches(p) && !Covered(repo, p)).Order(StringComparer.Ordinal).ToList();
         return new RepoRoles(repo.Name.Value, counts, loose.Count == 0 ? null : new UnassignedRoleFiles(loose.Count, [.. loose.Take(RoleLikePaths.ExampleLimit)]));

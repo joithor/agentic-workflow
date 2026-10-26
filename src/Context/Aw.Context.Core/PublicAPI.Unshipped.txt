@@ -7619,6 +7619,7 @@ static Aw.Context.Core.Roles.RoleLikePaths.Matches(string! path) -> bool
 static Aw.Context.Core.Roles.RoleLikePaths.Patterns.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Roles.RoleCounter
 static Aw.Context.Core.Roles.RoleCounter.CodePaths(Aw.Context.Core.Graph.GraphSnapshot! graph, string? mapRepo) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+static Aw.Context.Core.Roles.RoleCounter.Matching(System.Collections.Generic.IReadOnlyList<string!>! globs, System.Collections.Generic.IReadOnlyList<string!>! paths) -> int
 Aw.Context.Core.Map.RoleHealth
 static Aw.Context.Core.Map.RoleHealth.Check(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RepoRoles!>! roles) -> Aw.Context.Core.Map.MapHealth!
 Aw.Context.Core.Engine.ContextRepo.Roles.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.RepoRole!>!
