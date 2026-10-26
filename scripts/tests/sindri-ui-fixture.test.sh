@@ -579,6 +579,7 @@ check "the concepts map has two concepts" "$(jq '[.nodes[] | select(.key | start
 DKEY="decision:$(printf '%s\n%s' "$(jq -r '.decisions[0].record' "$M")" "$(jq -r '.decisions[0].quote' "$M")" | sha256sum | cut -c1-64)"
 check "every edge of the concepts map joins two of its nodes (a decision row implies its node)" "$(jq --arg d "$DKEY" '([.nodes[].key] + [$d]) as $k | [.edges[] | select((.from as $f | $k | index($f)) == null or (.to as $t | $k | index($t)) == null)] | length' "$M")" "0"
 check "the concepts map has one decision, on a Self scheduling feature, keyed as context keys it (the Why band, #1281)" "$(jq -r '[.edges[] | select(.type == "decides") | .from + ">" + .to] | join(",")' "$M")" "$DKEY>feature:swaps"
+check "the decision belongs to Self scheduling, so the concept opens it (ConceptScope)" "$(jq -r --arg d "$DKEY" '[.edges[] | select(.from == $d and .type == "belongs-to") | .to] | join(",")' "$M")" "concept:scheduling"
 
 # agent-run's wait is wall-clock seconds, not loop passes (issue #1123): a ledger call that takes 2 s and never shows
 # launch.started must still end the wait after FIXTURE_AGENT_WAIT=3 s. The sessions copy is faked (no uid needed): agent-run

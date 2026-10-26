@@ -444,6 +444,7 @@ context_whole() {
     concepts)
       map="$dir/concepts-map.json"
       # A decision's node is implied by its row: its key is 'decision:' and the sha256 of the record, a newline and the quote (DecisionRow.KeyFor).
+      # A concept opens only its own members, so the decision belongs to Self scheduling as well as deciding Swaps (ConceptScope).
       drec="repo:fixture/docs/decisions.md"; dquote="swaps close a day before the shift"
       dkey="decision:$(printf '%s\n%s' "$drec" "$dquote" | sha256sum | cut -c1-64)"
       jq -n --arg repo "$CONTEXT_REPO" --arg drec "$drec" --arg dquote "$dquote" --arg dkey "$dkey" '{schemaVersion: 1, kind: "authored", repo: $repo,
@@ -461,7 +462,7 @@ context_whole() {
           {from: "code:src/invoices.ts", to: "feature:invoices", type: "implements", provenance: "deterministic"},
           {from: "feature:invoices", to: "feature:shifts", type: "depends-on"}, {from: "feature:swaps", to: "feature:invoices", type: "depends-on"},
           {from: "surface:screen/shifts", to: "feature:shifts", type: "part-of"}, {from: "action:pick", to: "surface:screen/shifts", type: "on"},
-          {from: $dkey, to: "feature:swaps", type: "decides"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
+          {from: $dkey, to: "concept:scheduling", type: "belongs-to"}, {from: $dkey, to: "feature:swaps", type: "decides"}]}' > "$map" || die "context whole: can't write the concepts map" ;;
     over)
       map="$dir/over-map.json"
       jq -n --arg repo "$CONTEXT_REPO" '{schemaVersion: 1, kind: "authored", repo: $repo,
