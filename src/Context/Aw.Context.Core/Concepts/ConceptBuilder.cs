@@ -10,7 +10,6 @@ namespace Aw.Context.Core.Concepts;
 public static class ConceptBuilder
 {
     private const string OtherName = "Other";
-    private const int SummaryMax = 300;
 
     /// <summary>One page of the concepts of a graph.</summary>
     /// <param name="basis">The map version and repo the answer is for.</param>
@@ -95,7 +94,7 @@ public static class ConceptBuilder
     private static ConceptRow Row(ConceptIndex index, GraphNode node, MapText text)
     {
         var trust = TrustPolicy.ForNode(node, node.Provenance == Provenance.Human);
-        var summary = NodeAttributes.String(node, "summary") is { Length: > 0 } written ? text.Excerpt(written, trust, SummaryMax) : string.Empty;
+        var summary = NodeAttributes.String(node, "summary") is { Length: > 0 } written ? text.Excerpt(written, trust, NodeAttributes.SummaryMax) : string.Empty;
         var source = string.Equals(NodeAttributes.String(node, "source"), "override", StringComparison.Ordinal) ? "override" : "derived";
         var citations = node.EvidenceOrEmpty.Select(e => new ConceptCitation(text.Line(e.Key.Value), e.Span)).ToList();
         var terms = ConceptTermsAttribute.Of(node).Select(t => text.Label(t, trust)).ToList();

@@ -77,7 +77,7 @@ public static class ScopeGraphBuilder
             return candidate;
         }
 
-        return candidate with { Summary = text.Label(written, TrustPolicy.ForNode(node, node.Provenance == Provenance.Human)) };
+        return candidate with { Summary = text.Excerpt(written, TrustPolicy.ForNode(node, node.Provenance == Provenance.Human), NodeAttributes.SummaryMax) };
     }
 
     private static ScopeGraphCandidate CodeCandidate(LensFile file, Dictionary<string, GraphNode> byKey, MapText text)
