@@ -35,9 +35,10 @@ public static partial class UntrustedText
     }
 
     /// <summary>
-    /// A diff cut to <paramref name="cap"/> characters by whole files: files under a src/ directory first, then the rest, each in
-    /// diff order, a file kept only if it still fits (the first one is cut instead of dropped). What was dropped is named at the
-    /// end with each file's size, so the reader knows it did not see everything. A diff that fits is unchanged.
+    /// A diff cut to <paramref name="cap"/> characters of file text by whole files: files under a src/ directory first, then the
+    /// rest, each in diff order, a file kept only if it still fits. When no file fits (or the diff is a single file) the first
+    /// in that order is cut at a line boundary under the cap instead of dropped. Whatever was cut or dropped is named at the end,
+    /// with sizes, so the reader knows it did not see everything. A diff that fits is unchanged.
     /// </summary>
     /// <param name="diff">The unified diff, one 'diff --git' section per file.</param>
     /// <param name="cap">How many characters of file text to keep.</param>
@@ -51,31 +52,25 @@ public static partial class UntrustedText
         }
 
         var files = FileSections(diff);
-        if (files.Count < 2)
+        var order = Enumerable.Range(0, files.Count).OrderBy(i => IsSource(files[i].Path) ? 0 : 1).ThenBy(static i => i).ToList();
+        var kept = Fitting(files, order, cap);
+        int? cutIndex = kept.Count == 0 ? order[0] : null;
+        var texts = files.Select((file, i) => i == cutIndex ? CutAtLine(file.Text, cap) : kept.Contains(i) ? file.Text : string.Empty).ToList();
+        var notes = new List<string>();
+        if (cutIndex is { } cut)
         {
-            return Capped(diff, cap);
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"[diff cut: {files[cut].Path} after {texts[cut].Length} of {files[cut].Text.Length} chars]"));
         }
 
-        var kept = new HashSet<int>();
-        var used = 0;
-        foreach (var index in Enumerable.Range(0, files.Count).OrderBy(i => IsSource(files[i].Path) ? 0 : 1).ThenBy(static i => i))
+        var dropped = files.Where((_, i) => i != cutIndex && !kept.Contains(i))
+            .Select(static f => string.Create(CultureInfo.InvariantCulture, $"{f.Path} ({f.Text.Length} chars)")).ToList();
+        if (dropped.Count > 0)
         {
-            if (used + files[index].Text.Length <= cap)
-            {
-                _ = kept.Add(index);
-                used += files[index].Text.Length;
-            }
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"[omitted {dropped.Count} of {files.Count} files, over the {cap}-char cap: {string.Join(", ", dropped)}]"));
         }
 
-        if (kept.Count == 0)
-        {
-            return Capped(diff, cap);
-        }
-
-        var dropped = files.Where((_, i) => !kept.Contains(i))
-            .Select(static f => string.Create(CultureInfo.InvariantCulture, $"{f.Path} ({f.Text.Length} chars)"));
-        return string.Concat(files.Where((_, i) => kept.Contains(i)).Select(static f => f.Text))
-            + string.Create(CultureInfo.InvariantCulture, $"[omitted {files.Count - kept.Count} of {files.Count} files, over the {cap}-char cap: {string.Join(", ", dropped)}]");
+        var body = string.Concat(texts);
+        return (body.EndsWith('\n') ? body : body + "\n") + string.Join('\n', notes);
     }
 
     /// <summary>Renames the prompt's own delimiter tags inside the text ('&lt;/diff' becomes '&lt;/diff-text').</summary>
@@ -87,6 +82,30 @@ public static partial class UntrustedText
     /// <param name="text">The text.</param>
     /// <returns>One line.</returns>
     public static string OneLine(string text) => LineBreak.Replace(Capped(text, FieldCap), " ");
+
+    // The files, taken in priority order, that still fit whole under the cap.
+    private static HashSet<int> Fitting(List<(string Path, string Text)> files, List<int> order, int cap)
+    {
+        var kept = new HashSet<int>();
+        var used = 0;
+        foreach (var index in order)
+        {
+            if (used + files[index].Text.Length <= cap)
+            {
+                _ = kept.Add(index);
+                used += files[index].Text.Length;
+            }
+        }
+
+        return kept;
+    }
+
+    // Up to the last line break under the cap, or the cap itself for one longer line.
+    private static string CutAtLine(string text, int cap)
+    {
+        var lineEnd = text.LastIndexOf('\n', cap - 1);
+        return text[..(lineEnd >= 0 ? lineEnd + 1 : cap)];
+    }
 
     private static bool IsSource(string path) => path.StartsWith("src/", StringComparison.Ordinal) || path.Contains("/src/", StringComparison.Ordinal);
 
