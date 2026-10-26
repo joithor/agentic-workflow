@@ -7,9 +7,6 @@ internal static partial class ScopePacketChecks
 {
     private const double MapCoverageFloor = 0.5;
 
-    // why: a fixture or script is skipped through the profile's demoted roles (index.demote, which sets the node's demoted flag); only a code view's tests carry a role of their own
-    private const string TestRole = "test";
-
     /// <summary>The coverage rows, in the order the fact holds them.</summary>
     private static IEnumerable<JsonNode> Rows(ScopeContext c) => ScopeJson.Items(c.Facts["coverage"], "lenses");
 
@@ -193,7 +190,7 @@ internal static partial class ScopePacketChecks
 
     private static bool Accounted(string key, string item, HashSet<string> keys, HashSet<string> cited) => keys.Contains(key) || cited.Contains(item);
 
-    /// <summary>The nodes of a lens at depth 0 or 1: the anchors, the nodes with an edge to or from an anchor (their own implementers at depth 0, the nodes one edge away at depth 1), and not a file the repo demotes (its profile's demoted roles, such as a fixture or a script) or a test (the node's <c language="text">demoted</c> flag and <c language="text">role</c>, set by <see cref="LensGather"/>).</summary>
+    /// <summary>The nodes of a lens at depth 0 or 1: the anchors, the nodes with an edge to or from an anchor (their own implementers at depth 0, the nodes one edge away at depth 1), and not a file the repo demotes (its profile's demoted roles, such as a fixture or a script) or any node tagged with a role, a test included (the node's <c language="text">demoted</c> flag and <c language="text">role</c>, set by <see cref="LensGather"/>).</summary>
     private static IEnumerable<JsonNode> NearNodes(JsonObject? entry)
     {
         var anchors = ScopeJson.Strings(entry, "anchors").ToHashSet(StringComparer.Ordinal);
@@ -213,7 +210,7 @@ internal static partial class ScopePacketChecks
             }
         }
 
-        return ScopeJson.Items(entry, "nodes").Where(n => near.Contains(ScopeJson.Str(n, "key") ?? string.Empty) && ScopeJson.Bool(n, "demoted") != true && !string.Equals(ScopeJson.Str(n, "role"), TestRole, StringComparison.Ordinal));
+        return ScopeJson.Items(entry, "nodes").Where(n => near.Contains(ScopeJson.Str(n, "key") ?? string.Empty) && ScopeJson.Bool(n, "demoted") != true && string.IsNullOrEmpty(ScopeJson.Str(n, "role")));
     }
 
 

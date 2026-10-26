@@ -105,6 +105,34 @@ public sealed class ScopeCoverageDemotedRolesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_near_node_tagged_with_any_role_raises_no_COV_003_even_when_it_is_not_demoted_and_an_ordinary_one_does()
+    {
+        const string Tagged = "code:src/tagged.ts";
+        const string Plain = "code:src/plain.ts";
+        var facts = ScopingFacts.Expiry().Edit("scopeMap", ClearCitedLensItems).Edit("lenses", n =>
+        {
+            var code = n["code"]!;
+            foreach (var (key, role, item) in new (string, string?, string)[] { (Tagged, "fixture", "L-code-2001"), (Plain, null, "L-code-2002") })
+            {
+                var node = new JsonObject { ["key"] = key, ["kind"] = "file", ["label"] = key, ["band"] = "code", ["lensItem"] = item };
+                if (role is not null)
+                {
+                    node["role"] = role;
+                }
+
+                code["nodes"]!.AsArray().Add(node);
+                code["edges"]!.AsArray().Add(new JsonObject { ["from"] = key, ["to"] = Anchor, ["type"] = "implements", ["provenance"] = "deterministic", ["confirmed"] = true });
+            }
+        });
+
+        var response = (await new ScopingCheckService().Handle(new ScopingCheckRequest(facts, ScopeStage.Evidence), TestContext.Current.CancellationToken)).Value;
+
+        var items = response.Findings.Where(static f => string.Equals(f.Rule, Cov3, StringComparison.Ordinal)).Select(static f => f.Item).OfType<string>().ToList();
+        Assert.DoesNotContain(Tagged, items, StringComparer.Ordinal);
+        Assert.Contains(Plain, items, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_test_of_a_code_view_raises_no_COV_003()
     {
         var items = await Cov3Items(
