@@ -1456,7 +1456,7 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   nonce). While the instance is taken over the secret is refused and only the human completes it, through the desk.
 - **A park or a takeover leaves the session running;** the watch resumes after the handback and attaches to the same
   launch id. A `cancel` or the end of the run stops the session. A session that ends without a report is
-  `step.failed` (`exit`, `lost` when it vanished, or `idle` when its turn ended and nothing happened for 120 s), and the loop
+  `step.failed` (`exit`, `lost` when it vanished, or `idle` when its turn ended and nothing happened for 120 s, or an API error stopped it, it got one re-prompt and stayed idle another 10 min), and the loop
   rules apply to it as to any failure, after the recovery below.
 - **A restart does not strand a result (issue #1000).** `workflow complete` from a launched session (it carries
   `AW_SINDRI_LAUNCH_SECRET`) waits out a control plane that is down: on `SND-API-001` (no control plane recorded, or the
