@@ -75,7 +75,7 @@ public sealed class SessionSheetViewModelTests
 
         Assert.Equal(["○ Idle", "◐ Asking you", "● Working"], sheet.History.Select(h => h.Chip.Text), StringComparer.Ordinal);
         Assert.Equal([false, false, true], sheet.History.Select(h => h.IsNow));
-        Assert.Equal("◐ Asking you · approval · " + Aw.Sindri.Ui.ViewModels.Labels.SheetTime(new DateTimeOffset(2026, 10, 16, 11, 59, 0, TimeSpan.Zero)) + " · hook", sheet.History[1].Name);
+        Assert.Equal("◐ Asking you · approval · " + Labels.SheetTime(new DateTimeOffset(2026, 10, 16, 11, 59, 0, TimeSpan.Zero)) + " · hook", sheet.History[1].Name);
         Assert.EndsWith("· now · record", sheet.History[2].Detail, StringComparison.Ordinal);
         Assert.True(sheet.HasHistory);
     }
@@ -203,7 +203,7 @@ public sealed class SessionSheetViewModelTests
     {
         var at = new DateTimeOffset(2026, 10, 16, 11, 59, 0, TimeSpan.Zero);
 
-        var words = Aw.Sindri.Ui.ViewModels.Labels.SheetTime(at);
+        var words = Labels.SheetTime(at);
 
         Assert.Equal(at.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture), words);
         Assert.DoesNotContain("UTC", words, StringComparison.Ordinal);
