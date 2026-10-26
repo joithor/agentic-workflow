@@ -18712,10 +18712,15 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Checks.TestPaths.UnnamedExisting(System.Collections.Generic.IEnumerable<string!>! allowed, System.Collections.Generic.IReadOnlyCollection<string!>! named) -> System.Collections.Generic.IEnumerable<string!>!
+static Aw.Sindri.Core.Checks.TestPaths.AllowedEntries(System.Collections.Generic.IReadOnlyList<string!>! writeScope, System.Collections.Generic.IReadOnlyList<string!>! allowedFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Scoping.ChallengeRoundShape
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Covers(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> bool
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.LogShape(System.Text.Json.Nodes.JsonObject! round) -> string?
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Violation(System.ReadOnlySpan<byte> content) -> string?
+Aw.Sindri.Core.Scoping.JsonSchemaLite
+Aw.Sindri.Core.Scoping.JsonSchemaLite.JsonSchemaLite(System.Text.Json.Nodes.JsonNode! root) -> void
+Aw.Sindri.Core.Scoping.JsonSchemaLite.Validate(System.Text.Json.Nodes.JsonNode? instance, System.Text.Json.Nodes.JsonNode? schema) -> System.Collections.Generic.IReadOnlyList<(string! Path, string! Message)>!
 Aw.Sindri.Core.Profile.RepoRoleSets
 static Aw.Sindri.Core.Profile.RepoRoleSets.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.ProfileRole!>?
 Aw.Sindri.Core.Profile.ProfileRole
