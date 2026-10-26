@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.ListServices;
 /// A service the approval dropped leaves the list, though its row stays in the view.
 /// </summary>
 internal sealed class ListServicesService(IApprovedProfile approvals, IViewReader views, IProjectorStatus status, IJobViews jobs,
-    IEnumerable<BuiltInService> builtIns, TimeProvider clock)
+    IEnumerable<BuiltInService> builtIns, LiveSchedule live, TimeProvider clock)
     : IService<ListServicesRequest, ListServicesResponse>
 {
     public async ValueTask<Result<ListServicesResponse>> Handle(ListServicesRequest request, CancellationToken cancellationToken)
@@ -80,7 +80,13 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         var paused = row?.Paused == true;
         return new ServiceView(ServiceName.From(entry.Name), entry.Every, paused, row?.LastRun, paused ? null : NextSlot(entry.Every, row), job,
             ServiceActions.Allowed(entry.NamedByProfile, builtIn: !entry.NamedByProfile, paused, job is not null),
-            entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null);
+            entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null, OverdueSince(ServiceName.From(entry.Name), paused));
+    }
+
+    private DateTimeOffset? OverdueSince(ServiceName name, bool paused)
+    {
+        _ = (live, name, paused);
+        return null;
     }
 
     private DateTimeOffset? NextSlot(string every, ServiceRow? row)

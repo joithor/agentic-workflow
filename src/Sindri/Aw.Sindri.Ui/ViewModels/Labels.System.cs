@@ -65,6 +65,9 @@ internal static partial class Labels
     /// <summary>A service that runs on its schedule.</summary>
     internal const string ServiceScheduled = "Scheduled";
 
+    /// <summary>A service whose scheduled slot passed without the scheduler running it.</summary>
+    internal const string ServiceOverdue = "Overdue";
+
     /// <summary>A service whose manual run is in flight.</summary>
     internal const string ServiceRunning = "Running now";
 

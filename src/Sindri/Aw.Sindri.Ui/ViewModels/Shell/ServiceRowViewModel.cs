@@ -33,6 +33,12 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
     /// <summary>True while a manual run's job is in flight.</summary>
     public bool IsRunning { get; private set => Set(ref field, value); }
 
+    /// <summary>True when the scheduler missed the service's slot.</summary>
+    public bool IsOverdue { get; private set => Set(ref field, value); }
+
+    /// <summary>"missed its 12:01 run" while overdue, else empty.</summary>
+    public string OverdueDetail { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>True when its latest run failed.</summary>
     public bool HasFailed { get; private set => Set(ref field, value); }
 
