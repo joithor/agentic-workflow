@@ -1,3 +1,4 @@
+using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
@@ -39,4 +40,9 @@ public static class ConceptGlossaryBuilder
         var trust = TrustPolicy.ForNode(concept, concept.Provenance == Provenance.Human);
         return [.. ConceptTermsAttribute.Of(concept).Select(t => text.Label(t, trust))];
     }
+
+    /// <summary>The glossary the concept nodes of a graph carry: each stored term with the member features of the concepts that have it.</summary>
+    /// <param name="graph">The graph, concepts included.</param>
+    /// <returns>The glossary (no clusters), or null when no concept carries a term.</returns>
+    public static MapGlossary? Glossary(GraphSnapshot graph) => throw new NotSupportedException();
 }

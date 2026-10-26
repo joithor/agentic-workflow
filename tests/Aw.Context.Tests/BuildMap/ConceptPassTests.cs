@@ -2,12 +2,15 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Concepts;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Testing.Glossary;
+using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Concepts;
 using Aw.Kernel;
 
@@ -17,6 +20,9 @@ namespace Aw.Context.Tests.BuildMap;
 public sealed class ConceptPassTests
 {
     private static readonly ContextRepo[] _repos = [new(ContextRepoName.From("demo"), "/work/demo")];
+    private readonly FakeConceptHintStore _hints = new();
+    private readonly FakeGraphStore _store = new();
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     // Three areas of three features and one loose feature, each feature implemented by one file.
@@ -45,8 +51,8 @@ public sealed class ConceptPassTests
         .With("src/tabs.one.cs", "tabStripOrder", 0f, 0f, 1f)
         .With("src/lone.cs", "TabDrag", 0f, 0f, 1f);
 
-    private static ValueTask<ConceptOutcome> Run(ISymbolVectors vectors, IConceptNamer? namer = null, GraphSnapshot? graph = null) =>
-        new ConceptPass(namer ?? new DisabledConceptNamer(), vectors).Run(new ContextSettings(), graph ?? Product(), [], _repos, Ct);
+    private ValueTask<ConceptOutcome> Run(ISymbolVectors vectors, IConceptNamer? namer = null, GraphSnapshot? graph = null) =>
+        new ConceptPass(namer ?? new DisabledConceptNamer(), vectors, _hints, _store).Run(new ContextSettings(), graph ?? Product(), [], _repos, Ct);
 
     private static List<string> Terms(ConceptOutcome outcome, string concept)
     {
@@ -136,6 +142,36 @@ public sealed class ConceptPassTests
 
         Assert.Equal(["concepts"], outcome.Notes, StringComparer.Ordinal);
         Assert.Contains("strip", Terms(outcome, "concept:tabs"), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_last_scans_hints_shape_the_concepts()
+    {
+        var draft = await _store.SaveDraft(new MapImport(ContextRepoName.From("demo"), "abc123", Product(), []), DateTimeOffset.UnixEpoch, Ct);
+        _ = await _hints.Save(draft.Value.Number, [new ConceptHint("Tab work", ["feature:tabs", "feature:sched.one", "feature:billing.one"], [], 0.9)], DateTimeOffset.UnixEpoch, Ct);
+
+        var outcome = await Run(new DisabledSymbolVectors());
+
+        Assert.True(Belongs(outcome, "feature:sched.one", "concept:tabs"));
+        Assert.True(Belongs(outcome, "feature:billing.one", "concept:tabs"));
+    }
+
+    [Fact]
+    public async Task A_host_whose_hint_store_cannot_answer_builds_without_hints_and_without_a_note()
+    {
+        var outcome = await new ConceptPass(new DisabledConceptNamer(), new DisabledSymbolVectors(), new NoHints(), _store).Run(new ContextSettings(), Product(), [], _repos, Ct);
+
+        Assert.Empty(outcome.Notes);
+        Assert.True(Belongs(outcome, "feature:sched.one", "concept:sched"));
+    }
+
+    private sealed class NoHints : IConceptHintStore
+    {
+        public ValueTask<Result<Unit>> Save(int version, IReadOnlyList<ConceptHint> hints, DateTimeOffset scanned, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<Unit>>(ContextErrors.StoreUnavailable.With("no store"));
+
+        public ValueTask<Result<IReadOnlyList<ConceptHint>>> Read(int version, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<IReadOnlyList<ConceptHint>>>(ContextErrors.StoreUnavailable.With("no store"));
     }
 
     private sealed class CapturingNamer : IConceptNamer

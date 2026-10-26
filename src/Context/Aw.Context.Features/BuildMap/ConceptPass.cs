@@ -1,7 +1,9 @@
 using Aw.Context.Core.Concepts;
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Glossary;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Map;
 
 namespace Aw.Context.Features.BuildMap;
 
@@ -11,13 +13,16 @@ namespace Aw.Context.Features.BuildMap;
 /// </summary>
 /// <param name="namer">Names the derived concepts.</param>
 /// <param name="vectors">The stored symbol embeddings.</param>
-internal sealed class ConceptPass(IConceptNamer namer, ISymbolVectors vectors)
+/// <param name="hintStore">The concept hints of the last scan.</param>
+/// <param name="store">The map versions.</param>
+internal sealed class ConceptPass(IConceptNamer namer, ISymbolVectors vectors, IConceptHintStore hintStore, IGraphStore store)
 {
     // The code index answers at most this many files in one read.
     private const int MaxPaths = 2000;
 
     internal async ValueTask<ConceptOutcome> Run(ContextSettings settings, GraphSnapshot joined, IReadOnlyList<ConceptPin> pins, IReadOnlyList<ContextRepo> repos, CancellationToken cancellationToken)
     {
+        _ = (hintStore, store);
         var notes = new List<string>();
         var glossary = await Glossary(joined, repos, notes, cancellationToken).ConfigureAwait(false);
         ConceptNames? names = null;

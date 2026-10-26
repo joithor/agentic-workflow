@@ -5,6 +5,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Models;
+using Aw.Context.Core.Results;
 using Aw.Context.Testing.Graph;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
@@ -53,6 +54,21 @@ public sealed class ScanConceptsTests : IDisposable
         Assert.Equal("Self scheduling", hint.Name);
         Assert.Equal(["feature:shifts.swap", "feature:shifts.open"], hint.Members, StringComparer.Ordinal);   // 'feature:made.up' is no feature of the draft
         Assert.Equal(["src/shifts/swap.ts"], hint.Evidence, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_terms_a_build_stored_on_the_concepts_join_the_first_prompt()
+    {
+        var graph = Shifts().Build();
+        var attributes = System.Text.Json.JsonSerializer.SerializeToElement(new Dictionary<string, object?>(StringComparer.Ordinal) { ["summary"] = "", ["source"] = "derived", ["seed"] = "feature:shifts.swap", ["terms"] = new[] { "swap", "roster" } });
+        var concept = new GraphNode(NodeKey.From("concept:shifts"), "Shifts", Provenance.Deterministic, 0.5, Evidence: null, attributes);
+        var edge = new GraphEdge(NodeKey.From("feature:shifts.swap"), concept.Key, EdgeType.BelongsTo);
+        _ = await Seed(graph with { Nodes = [.. graph.Nodes, concept], Edges = [.. graph.Edges, edge] });
+        _world.Model.Responder = TwoPasses;
+
+        _ = await Scan();
+
+        Assert.Contains("term swap: feature:shifts.swap", _world.Model.Requests[0].Prompt, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

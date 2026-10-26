@@ -1,3 +1,4 @@
+using Aw.Context.Core.ConceptScan;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Glossary;
@@ -54,5 +55,30 @@ public static class ConceptDeriver
 
         var concepts = pinned.Concat(derived).Select(c => ConceptNodes.Concept(c, view, names)).ToList();
         return ConceptNodes.Join(view, concepts);
+    }
+
+    /// <summary>The derived groups, for the namer, shaped by the scan's concept hints.</summary>
+    /// <param name="graph">The map's graph, without concepts.</param>
+    /// <param name="pins">The owner's pinned concepts.</param>
+    /// <param name="glossary">The map's glossary, or null when it has none.</param>
+    /// <param name="hints">The concept hints of the last scan, or none.</param>
+    /// <returns>The groups in seed order.</returns>
+    public static IReadOnlyList<ConceptGroup> Groups(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, MapGlossary? glossary, IReadOnlyList<ConceptHint> hints)
+    {
+        _ = hints;
+        return Groups(graph, pins, glossary);
+    }
+
+    /// <summary>The concept nodes and the belongs-to edges of a map, shaped by the scan's concept hints.</summary>
+    /// <param name="graph">The map's graph, without concepts.</param>
+    /// <param name="pins">The owner's pinned concepts.</param>
+    /// <param name="names">What a model named the groups, or null for the fallback.</param>
+    /// <param name="glossary">The map's glossary, or null when it has none.</param>
+    /// <param name="hints">The concept hints of the last scan, or none.</param>
+    /// <returns>The concepts, 'concept:other' among them when the map has a feature, and the membership edges.</returns>
+    public static ExtractedMap Derive(GraphSnapshot graph, IReadOnlyList<ConceptPin> pins, ConceptNames? names, MapGlossary? glossary, IReadOnlyList<ConceptHint> hints)
+    {
+        _ = hints;
+        return Derive(graph, pins, names, glossary);
     }
 }
