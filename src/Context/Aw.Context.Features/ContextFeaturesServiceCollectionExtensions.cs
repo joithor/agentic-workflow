@@ -14,8 +14,10 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Symbols;
+using Aw.Context.Core.Walks;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.Adjudicate;
 using Aw.Context.Features.ApplyReviewFile;
@@ -55,6 +57,7 @@ using Aw.Context.Features.ReviewHistory;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.RunBacktest;
+using Aw.Context.Features.SearchMap;
 using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.ShowPublishStatus;
@@ -76,6 +79,8 @@ public static class ContextFeaturesServiceCollectionExtensions
     public static IServiceCollection AddContextFeatures(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<IMapSearchIndexFactory, UnconfiguredMapSearchIndexFactory>();   // the host that wires Aw.Context.Infrastructure replaces it with the SQLite FTS5 adapter
+        services.TryAddSingleton(WalkOptions.Of(Math.Max(1, Environment.ProcessorCount - 1)));   // every core but one, so the box keeps a core; a host or a test may register another degree
         services.TryAddSingleton(WholeMapRules.Default);   // a host or a test may register other limits
         services.TryAddSingleton<ICodeSymbolSource, NoCodeSymbolSource>();   // the host that wires the code index (Sindri's Host adapter) replaces it
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
@@ -161,6 +166,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetConceptMembersRequest, ConceptMembersView>, GetConceptMembersService>()
         .AddScoped<ConceptReader>()
         .AddSingleton<WholeMapCache>()
+        .AddScoped<IService<SearchMapRequest, MapSearchView>, SearchMapService>()
+        .AddSingleton<MapSearchCache>()
         .AddScoped<LensBasisReader>()
         .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()
