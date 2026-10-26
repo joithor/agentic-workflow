@@ -68,7 +68,8 @@ done
 [ -n "$empty" ] || uxu_die "no provider and status pair matched nothing"
 d wait-for --type Button --name "Clear filters" --state visible --wait-ms 10000 >/dev/null || uxu_die "no Clear filters button"
 
-align() { local id; id="$1"; dt props --node-id "$id" | grep -E "HorizontalAlignment" | head -1 | grep -oE "(Left|Center|Right|Stretch)" | head -1; }
+# props answers one JSON document: read exactly the HorizontalAlignment property, not the first alignment word anywhere in it.
+align() { local id; id="$1"; dt props --node-id "$id" | jq -r '.properties.HorizontalAlignment // empty'; }
 line_id="$(dt search --type TextBlock --text "No sessions match these filters." | jq -r '.matches[0].id // empty')"
 btn_id="$(nid Button "Clear filters")" || uxu_die "no Clear filters button node"
 [ -n "$line_id" ] || uxu_die "no no-match line"
