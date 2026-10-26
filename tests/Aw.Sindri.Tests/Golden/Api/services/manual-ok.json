@@ -23,6 +23,17 @@
       ]
     },
     {
+      "name": "context-concept-scan",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
       "name": "context-map-refresh",
       "every": "1m",
       "paused": false,
@@ -54,7 +65,7 @@
         "code": null,
         "ranAt": "2026-01-01T00:00:00.0000000Z"
       },
-      "nextSlot": "2025-12-31T23:59:05.0000000Z",
+      "nextSlot": "2026-01-01T00:00:05.0000000Z",
       "job": null,
       "actions": [
         "run",
