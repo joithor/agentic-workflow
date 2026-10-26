@@ -25,9 +25,9 @@ using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Ledger;
-using CompleteCommand = Aw.Sindri.Host.Commands.CompleteCommand;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using CompleteCommand = Aw.Sindri.Host.Commands.CompleteCommand;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -101,7 +101,7 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
             _fact = new GetInstanceFactService(instances, instances, new Contents(Questions), new Plain(), caller);
             _list = new ListInstancesService(instances, new NoRows(), new EndedInstanceViews(instances), new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), new InstanceRows(clock));
             var probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
-            Desk = new RecipeDesk(new ControlPlaneClient(probe, SliceHarness.Json, handler: this), TextReader.Null, static _ => throw new InvalidOperationException("the control plane is running"));
+            Desk = new RecipeDesk(new ControlPlaneClient(probe, SliceHarness.Json, handler: this), TextReader.Null, static _ => Task.FromResult<Error?>(null));   // complete checks it's running first: it is
         }
 
         public RecipeDesk Desk { get; }
@@ -157,7 +157,7 @@ public sealed partial class DeskQuestionsStatusRoundTripTests
     private static async Task<(int Exit, string Stdout)> Status(Routes routes, CancellationToken cancellationToken, params string[] extra)
     {
         var (stdout, stderr) = (new StringWriter(), new StringWriter());
-        var exit = await Aw.Sindri.Host.Commands.StatusCommand.Run([Address, .. extra], routes.Desk, new Output(stdout, stderr, SliceHarness.Json), cancellationToken);
+        var exit = await Host.Commands.StatusCommand.Run([Address, .. extra], routes.Desk, new Output(stdout, stderr, SliceHarness.Json), cancellationToken);
         return (exit, stdout.ToString());
     }
 
