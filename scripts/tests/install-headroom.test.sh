@@ -55,6 +55,7 @@ cat > "$WORK/bin/$t" <<SH
 echo "$t \$*" >> "\$FAKE_CALLS"
 echo "$t env ANTHROPIC_BASE_URL=\${ANTHROPIC_BASE_URL:-} OPENAI_BASE_URL=\${OPENAI_BASE_URL:-}" >> "\$FAKE_CALLS"
 case "\${1:-}" in mcp) echo "MCP \$*" >> "\$FAKE_CALLS" ;; esac
+[ -n "\${FAKE_SLEEP:-}" ] && sleep "\$FAKE_SLEEP"
 exit 0
 SH
 done
@@ -79,7 +80,7 @@ base_url = "http://127.0.0.1:8317/v1"
 wire_api = "responses"
 experimental_bearer_token = "$SECRET"
 TOML
-sum_before="$(cat "$CLAUDE_SETTINGS_FILE" "$CODEX_HOME/config.toml" | sha256sum)"
+sum_before="$(cat "$CLAUDE_SETTINGS_FILE" "$CODEX_HOME/config.toml" | cksum)"
 
 # --- upstream detection: claude ---
 check "claude upstream: settings.json env" "$(bash "$WRAP" upstream claude)" "http://127.0.0.1:8317"
@@ -117,7 +118,7 @@ contains "claude run: and in its environment" "$LOG" "claude env ANTHROPIC_BASE_
 lacks "claude run: the token is never printed or passed" "$OUT$LOG" "$SECRET"
 check "claude run: the proxy is stopped when the last session ends" "$(bash "$WRAP" status | head -1)" "claude: not running"
 check "claude run: no session files left" "$(ls "$AW_STATE_DIR/headroom/claude/users" 2>/dev/null | wc -l | tr -d ' ')" "0"
-check "provider configs untouched" "$(cat "$CLAUDE_SETTINGS_FILE" "$CODEX_HOME/config.toml" | sha256sum)" "$sum_before"
+check "provider configs untouched" "$(cat "$CLAUDE_SETTINGS_FILE" "$CODEX_HOME/config.toml" | cksum)" "$sum_before"
 
 # --- a wrapped Codex run: the /v1 prefix is stripped for headroom's target, the tool keeps /v1 ---
 : > "$CALLS"
@@ -155,7 +156,6 @@ check "codex upstream (explicit openai): the top-level openai_base_url" "$(CODEX
 check "codex upstream (provider without base_url): the default" "$(CODEX_HOME="$WORK/ch-nobase" bash "$WRAP" upstream codex)" "https://api.openai.com/v1"
 
 # --- concurrent starts: two wrappers at once share one proxy, both registered, and the last one out stops it ---
-sed -i 's|^exit 0$|[ -n "${FAKE_SLEEP:-}" ] \&\& sleep "$FAKE_SLEEP"\nexit 0|' "$WORK/bin/claude"
 : > "$CALLS"
 FAKE_SLEEP=3 bash "$WRAP" claude a >/dev/null 2>&1 &
 W1=$!
