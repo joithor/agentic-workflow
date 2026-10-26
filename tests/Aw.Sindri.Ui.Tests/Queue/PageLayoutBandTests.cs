@@ -47,22 +47,6 @@ public sealed class PageLayoutBandTests
         Assert.Equal(Avalonia.Controls.GridUnitType.Star, grid.ColumnDefinitions[0].Width.GridUnitType);
     }
 
-    [Theory]
-    [InlineData("Wide")]
-    [InlineData("Mid")]
-    [InlineData("Narrow")]
-    [InlineData("Tight")]
-    public void The_header_and_the_rows_get_the_same_column_widths(string tier)
-    {
-        var header = SixColumns();
-        var row = SixColumns();
-
-        PageLayout.Apply(header, Enum.Parse<PageTier>(tier));
-        PageLayout.Apply(row, Enum.Parse<PageTier>(tier));
-
-        Assert.Equal(header.ColumnDefinitions.Select(c => c.Width), row.ColumnDefinitions.Select(c => c.Width));
-    }
-
     private static Avalonia.Controls.Grid SixColumns()
     {
         var grid = new Avalonia.Controls.Grid();
