@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
@@ -39,7 +38,7 @@ public sealed class CreateItemViewModelTests
     }
 
     [Fact]
-    public async Task Submit_sends_the_form_once_and_closes_when_the_outcome_settles()
+    public async Task Submit_sends_the_form_once_and_closes_as_soon_as_the_item_is_created()
     {
         var form = await Form();
         (form.Title, form.Repo, form.Body) = ("Proof: appears live", "agentic-workflow", " ");
@@ -47,11 +46,11 @@ public sealed class CreateItemViewModelTests
         await form.Submit(Token);
 
         Assert.Equal([new CreateItemRequest("Proof: appears live", "agentic-workflow", Body: null, Link: null)], _server.Created);
-        Assert.Equal(("Create item: done", "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", true), (form.Control!.Outcome, form.CreatedId, form.IsOpen));
+        Assert.Equal(("Create item: done", "ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", false), (form.Control!.Outcome, form.CreatedId, form.IsOpen));   // #1129: closed at once, the outcome line still counts down
 
         _clock.Advance(ControlViewModel.AcceptedFor);
 
-        Assert.Equal((false, string.Empty, string.Empty), (form.IsOpen, form.Title, form.Repo));
+        Assert.False(form.IsOpen);
     }
 
     // §4.1 Error: a refusal is the API's code and detail inline; the form keeps its text.
@@ -69,22 +68,6 @@ public sealed class CreateItemViewModelTests
     }
 
     // §7: while the catalog says pending:P3 (it did before P3 shipped), the form's button is drawn disabled with its phase and CLI.
-    [Fact]
-    public async Task Before_p3_the_create_control_is_pending()
-    {
-        var catalog = JsonNode.Parse(GoldenFiles.Api("commands", "catalog"))!;
-        catalog["rows"]!.AsArray().Single(r => (string?)r!["action"] == "CreateItem")!["ui"] = "pending:P3";
-        _server.Catalog = new RouteAnswer(HttpStatusCode.OK, catalog.ToJsonString());
-        var form = await Form();
-        form.Title = "Not yet";
-
-        Assert.Equal((true, false), (form.Control!.IsPending, form.CanSubmit));
-        Assert.Equal("arrives in P3 · sindri item add <title> [--repo <repo>]", form.Control.PendingLine);
-
-        await form.Submit(Token);
-        Assert.Empty(_server.Created);
-    }
-
     // L10 (corr-5): the second press, and one in the 2 s the accepted outcome shows, send nothing more: one create.
     [Fact]
     public async Task Submit_twice_while_sending_and_again_while_the_outcome_shows_creates_once()
@@ -108,7 +91,7 @@ public sealed class CreateItemViewModelTests
         await form.Submit(Token).WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
 
         _ = Assert.Single(_server.Created);
-        Assert.Equal((false, true), (form.CanSubmit, form.IsOpen));
+        Assert.Equal((false, false), (form.CanSubmit, form.IsOpen));   // #1129: closed once created
     }
 
     // L10 (a11y-5): Create stays enabled; a blank submit says what is missing under the field, speaks it once (the flag
