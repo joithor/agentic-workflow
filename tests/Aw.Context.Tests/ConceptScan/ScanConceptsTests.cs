@@ -196,7 +196,7 @@ public sealed class ScanConceptsTests : IDisposable
 
         var report = (await Scan()).Value;
 
-        Assert.Equal(new ConceptScanReport(draft, OnDraft: true, ConceptScanOutcome.ModelUnavailable, Hints: 0, Searches: 0), report);
+        Assert.Equal(new ConceptScanReport(draft, OnDraft: true, ConceptScanOutcome.ModelUnavailable, Hints: 0, Searches: 0, ModelTier.Cheap), report);
         Assert.Equal(0, _world.Hints.Saves);
     }
 
@@ -258,7 +258,7 @@ public sealed class ScanConceptsTests : IDisposable
 
         var report = (await Scan()).Value;
 
-        Assert.Equal(new ConceptScanReport(saved.Value.Number, OnDraft: false, ConceptScanOutcome.Scanned, Hints: 1, Searches: 2), report);
+        Assert.Equal(new ConceptScanReport(saved.Value.Number, OnDraft: false, ConceptScanOutcome.Scanned, Hints: 1, Searches: 2, ModelTier.Cheap), report);
         _ = Assert.Single((await _world.Hints.Read(saved.Value.Number, MapWorld.None)).Value);
         Assert.Contains("feature:shifts.swap | Swap shifts", _world.Model.Requests[1].Prompt, StringComparison.Ordinal);   // the searches read the current map
     }

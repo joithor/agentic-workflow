@@ -1,6 +1,6 @@
 using Aw.Context.Core.Models;
 
-namespace Aw.Context.Core.ConceptScan;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>
 /// The size at which a concept scan needs the strong model (owner, q121): above either threshold the scan asks the strong tier, otherwise the cheap one.

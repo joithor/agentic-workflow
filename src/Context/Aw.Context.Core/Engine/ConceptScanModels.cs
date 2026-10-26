@@ -1,6 +1,6 @@
 using Aw.Context.Core.Models;
 
-namespace Aw.Context.Core.ConceptScan;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>
 /// The model each agent CLI runs for each tier ('context.conceptScan.models'). Only Claude Code has defaults, two aliases its `--model` takes;

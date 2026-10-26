@@ -1,4 +1,4 @@
-namespace Aw.Context.Core.ConceptScan;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>'context.conceptScan': when the scan needs the strong tier, and which model each agent CLI runs for each tier. A missing key is its default.</summary>
 public sealed record ConceptScanSettings
