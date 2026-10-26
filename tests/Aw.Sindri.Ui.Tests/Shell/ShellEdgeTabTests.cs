@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -54,14 +53,14 @@ public sealed partial class ShellEdgeTabTests
     {
         var shell = await Connected();
         var detail = FixtureInstances.Detail("project-build");
-        var gate = _server.InstancesGates[new InstanceQuery(Address: detail.Address)] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var gate = _server.InstanceGates[detail.Id] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         shell.OpenInstance(detail.Address, id: null);
         shell.CloseSheet();
         Assert.Equal(Labels.EdgeTabWorkflowRun, shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
 
-        gate.SetResult();   // the held instance read is served
+        gate.SetResult();   // the held instance read is served (the list already named its id)
         await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
         Assert.Equal(detail.Title, shell.EdgeTabText);
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabText);
@@ -90,14 +89,14 @@ public sealed partial class ShellEdgeTabTests
     {
         var shell = await Connected();
         var detail = FixtureInstances.Detail("project-build");
-        var gate = _server.InstancesGates[new InstanceQuery(Address: detail.Address)] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var gate = _server.InstanceGates[detail.Id] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         shell.OpenInstance(detail.Address, id: null);
         shell.CloseSheet();
         Assert.Equal(Labels.Reopen + " workflow", shell.EdgeTabName);
         Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
 
-        gate.SetResult();   // the held instance read is served
+        gate.SetResult();   // the held instance read is served (the list already named its id)
         await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
         Assert.Contains(detail.Title, shell.EdgeTabName, StringComparison.Ordinal);
         Assert.DoesNotContain(detail.Address, shell.EdgeTabName, StringComparison.Ordinal);
