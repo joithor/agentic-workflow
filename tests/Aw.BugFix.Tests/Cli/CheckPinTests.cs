@@ -80,7 +80,7 @@ public sealed class CheckPinTests : IDisposable
 
         var worktree = _w.Fix(Branch);
 
-        TempDirectory.Write(_w.Repo, Check, "grep -q keep src/app.txt\n# changed on main\n");
+        TempDirectory.Write(_w.Repo, Check, "echo checking\ngrep -q keep src/app.txt\n# changed on main\n");
         _ = TempDirectory.Git(_w.Repo, "add", "-A");
         _ = TempDirectory.Git(_w.Repo, "commit", "-q", "-m", "main changes the check");
         _ = TempDirectory.Git(worktree, "merge", "-q", "--no-edit", "main");
