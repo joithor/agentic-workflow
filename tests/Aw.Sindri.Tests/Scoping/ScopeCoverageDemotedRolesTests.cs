@@ -88,7 +88,7 @@ public sealed class ScopeCoverageDemotedRolesTests
     {
         var items = await Cov3Items(LensesJson("docs/**"));   // why: the repo demotes a role none of the three files belongs to
 
-        Assert.Equal([$"code:{Fixture}", $"code:{Product}", $"code:{Script}"], items.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal([$"code:{Script}", $"code:{Product}", $"code:{Fixture}"], items.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
