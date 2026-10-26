@@ -43,6 +43,7 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(JudgeConfig))]
 [JsonSerializable(typeof(IReadOnlyList<SkippedProvider>))]
 [JsonSerializable(typeof(IReadOnlyDictionary<string, double>))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
 [JsonSerializable(typeof(WakeGateInput))]
 [JsonSerializable(typeof(BriefScopeInput))]
 [JsonSerializable(typeof(AskCheckInput))]
