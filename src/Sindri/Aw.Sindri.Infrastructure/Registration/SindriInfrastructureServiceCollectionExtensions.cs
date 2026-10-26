@@ -155,6 +155,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddScoped<IDoctorChecks>(_ => new UiEvidenceDoctorChecks(environment, Environment.ProcessPath, new ProcessToolRunner()))   // cutover §3.1: `setup:ui-evidence`
             .AddSingleton<IPreCommitGit, GitPreCommit>()   // cutover §6.2: the scrub verb, the onboarding hook slot and the doctor read the hook through it
             .AddSingleton<IRecipeBuild, BuildInfoRecipeBuild>()   // setup-once §5.3: doctor compares the embedded recipe set's tree hash with HEAD's
+            .AddSingleton<IBuildStamps>(static _ => new InstalledBuildStamps(AppContext.BaseDirectory))   // #1032: status and doctor compare the running build with bin/cs/current
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>().AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>().AddSingleton<IProfileInitializer, FileProfileInitializer>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
             .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route

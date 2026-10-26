@@ -18687,6 +18687,15 @@ const Aw.Sindri.Core.Scheduling.ServiceDescriptions.HeartbeatName = "heartbeat" 
 const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbe = "Runs a short job so the job panel can be tried." -> string!
 const Aw.Sindri.Core.Scheduling.ServiceDescriptions.JobProbeName = "job-probe" -> string!
 static Aw.Sindri.Core.Scheduling.ServiceDescriptions.Of(string! name) -> string?
+Aw.Sindri.Core.Setup.IBuildStamps
+Aw.Sindri.Core.Setup.IBuildStamps.Installed() -> string?
+Aw.Sindri.Core.Setup.IBuildStamps.Running() -> string?
+const Aw.Sindri.Core.Doctor.StaleBuild.Fix = "sindri stop && sindri" -> string!
+Aw.Sindri.Core.Doctor.StaleBuild
+static Aw.Sindri.Core.Doctor.StaleBuild.Is(string? running, string? installed) -> bool
+static Aw.Sindri.Core.Doctor.StaleBuild.Sentence(string! running, string! installed) -> string!
+static Aw.Sindri.Core.Health.HealthSummary.WithStaleBuild(Aw.Sindri.Core.Health.HealthReport! report, string? running, string? installed) -> Aw.Sindri.Core.Health.HealthReport!
+static Aw.Sindri.Core.Doctor.DoctorRules.Build(string? running, string? installed) -> Aw.Sindri.Core.Doctor.DoctorCheck!
 Aw.Sindri.Core.Workflow.ApproveAll.WaitingShippedLines.Find(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile?>!>
 Aw.Sindri.Core.Workflow.Registry.ApprovalPreview.ChildNotes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.PreviewChildNote!>?
 Aw.Sindri.Core.Workflow.Registry.ApprovalPreview.ChildNotes.init -> void
