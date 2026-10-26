@@ -56,6 +56,8 @@ echo "$t \$*" >> "\$FAKE_CALLS"
 echo "$t env ANTHROPIC_BASE_URL=\${ANTHROPIC_BASE_URL:-} OPENAI_BASE_URL=\${OPENAI_BASE_URL:-}" >> "\$FAKE_CALLS"
 case "\${1:-}" in mcp) echo "MCP \$*" >> "\$FAKE_CALLS" ;; esac
 [ -n "\${FAKE_SLEEP:-}" ] && sleep "\$FAKE_SLEEP"
+# FAKE_HOLD: stay up until the test creates this file (at most 120 s), so a slow runner cannot end a session early.
+if [ -n "\${FAKE_HOLD:-}" ]; then for _ in \$(seq 1 1200); do [ -e "\$FAKE_HOLD" ] && break; sleep 0.1; done; fi
 exit 0
 SH
 done
@@ -156,13 +158,14 @@ check "codex upstream (explicit openai): the top-level openai_base_url" "$(CODEX
 check "codex upstream (provider without base_url): the default" "$(CODEX_HOME="$WORK/ch-nobase" bash "$WRAP" upstream codex)" "https://api.openai.com/v1"
 
 # --- concurrent starts: two wrappers at once share one proxy, both registered, and the last one out stops it ---
-# Each session lives 8 s: on a loaded macOS runner the second wrapper can take over 3 s to register, and the first would be gone.
+# Both sessions stay up until the checks are done (FAKE_HOLD): on a loaded macOS runner the second wrapper took over 8 s to register.
 : > "$CALLS"
-FAKE_SLEEP=8 bash "$WRAP" claude a >/dev/null 2>&1 &
+HOLD="$WORK/concurrent.release"
+FAKE_HOLD="$HOLD" bash "$WRAP" claude a >/dev/null 2>&1 &
 W1=$!
-FAKE_SLEEP=8 bash "$WRAP" claude b >/dev/null 2>&1 &
+FAKE_HOLD="$HOLD" bash "$WRAP" claude b >/dev/null 2>&1 &
 W2=$!
-for _ in $(seq 1 100); do
+for _ in $(seq 1 600); do
   [ "$(ls "$AW_STATE_DIR/headroom/claude/users" 2>/dev/null | wc -l | tr -d ' ')" = "2" ] && break
   sleep 0.1
 done
@@ -171,6 +174,7 @@ check "concurrent: exactly one proxy was started" "$(grep -c '^headroom proxy' "
 PIDF="$(cat "$AW_STATE_DIR/headroom/claude/proxy.pid" 2>/dev/null)"
 check "concurrent: proxy.pid is the live proxy" "$(kill -0 "$PIDF" 2>/dev/null && echo live || echo dead)" "live"
 check "concurrent: and it is the only one listening" "$(ps -eo args= | grep -c -- "[h]eadroom proxy --port $PC")" "1"
+touch "$HOLD"
 wait "$W1" "$W2"
 check "concurrent: the last session out stopped the proxy" "$(kill -0 "$PIDF" 2>/dev/null && echo live || echo dead)" "dead"
 check "concurrent: no lock is left behind" "$([ -e "$AW_STATE_DIR/headroom/claude/lock.d" ] && echo left || echo none)" "none"
