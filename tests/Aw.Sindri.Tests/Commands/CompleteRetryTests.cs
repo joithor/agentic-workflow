@@ -32,7 +32,7 @@ public sealed class CompleteRetryTests : IDisposable
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
             CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
-        var desk = new RecipeDesk(client, TextReader.Null, _ => Task.FromResult<Kernel.Error?>(++_ensured <= downFor ? SindriErrors.NotRunning.With("the control plane went away") : null),
+        var desk = new RecipeDesk(client, TextReader.Null, _ => Task.FromResult(++_ensured <= downFor ? SindriErrors.NotRunning.With("the control plane went away") : null),
             launched ? static name => name == "AW_SINDRI_LAUNCH_SECRET" ? "a-secret" : null : null);
         await using var services = new ServiceCollection().AddSingleton<TimeProvider>(_clock).BuildServiceProvider();
         return await _clock.Drive(CompleteCommand.Run(_args, desk, services, new Output(_out, _error, SliceHarness.Json), Token));

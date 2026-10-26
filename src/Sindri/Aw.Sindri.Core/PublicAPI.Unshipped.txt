@@ -18639,6 +18639,24 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.ShippedApprovalPlans(Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeRegistration? registration = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedApprovalPlans.Approve(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput.DurationMs.get -> long?
+Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput.DurationMs.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming!>?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Inputs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Input, out long DurationMs) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.DurationMs.get -> long
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.DurationMs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Input.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Input.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.InputTiming(Aw.Sindri.Core.Workflow.Ids.BlockId Input, long DurationMs) -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputTiming? right) -> bool
 Aw.Sindri.Core.Scheduling.MainMoveInput
 Aw.Sindri.Core.Scheduling.MainMoveInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.MainMoveInput!
 Aw.Sindri.Core.Scheduling.MainMoveInput.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! OnDefaultHeads, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? LastSucceededHeads, out bool RulesChanged) -> void
@@ -18662,6 +18680,8 @@ Aw.Sindri.Core.Profile.IndexSettings.Demote.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.IndexSettings.Demote.init -> void
 Aw.Sindri.Core.Profile.RepoDemoteGlobs
 static Aw.Sindri.Core.Profile.RepoDemoteGlobs.For(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.RepoEntry! repo) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Checks.TestPaths.UnnamedExisting(System.Collections.Generic.IEnumerable<string!>! allowed, System.Collections.Generic.IReadOnlyCollection<string!>! named) -> System.Collections.Generic.IEnumerable<string!>!
+static Aw.Sindri.Core.Checks.TestPaths.AllowedEntries(System.Collections.Generic.IReadOnlyList<string!>! writeScope, System.Collections.Generic.IReadOnlyList<string!>! allowedFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Scoping.ChallengeRoundShape
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.Covers(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> bool
 static Aw.Sindri.Core.Scoping.ChallengeRoundShape.LogShape(System.Text.Json.Nodes.JsonObject! round) -> string?
