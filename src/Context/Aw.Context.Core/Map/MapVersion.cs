@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Roles;
 
 namespace Aw.Context.Core.Map;
 
@@ -14,4 +15,7 @@ public sealed record MapVersion(int Number, ContextRepoName Repo, string? Commit
 {
     /// <summary>The hash of the map rules it was built under, or null when none was recorded (a version built before issue 1041, or imported).</summary>
     public string? Ruleset { get; init; }
+
+    /// <summary>The tracked files each ignored role dropped when it was built (issue 1161); null when none was recorded (a version built before, or imported), empty when no role was ignored.</summary>
+    public IReadOnlyList<RoleDropped>? Dropped { get; init; }
 }

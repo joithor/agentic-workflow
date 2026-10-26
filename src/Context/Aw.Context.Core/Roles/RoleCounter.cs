@@ -23,11 +23,13 @@ public static class RoleCounter
     /// <summary>The role counts of every repo that configures a role or has an unassigned role-like file.</summary>
     /// <param name="repos">The repos in scope.</param>
     /// <param name="pathsByRepo">The indexed paths per repo name.</param>
+    /// <param name="dropped">What the map build recorded each ignored role dropped, or null when it recorded nothing.</param>
     /// <returns>One entry per such repo, in the order of <paramref name="repos"/>.</returns>
-    public static IReadOnlyList<RepoRoles> Of(IReadOnlyList<ContextRepo> repos, IReadOnlyDictionary<string, IReadOnlyList<string>> pathsByRepo)
+    public static IReadOnlyList<RepoRoles> Of(IReadOnlyList<ContextRepo> repos, IReadOnlyDictionary<string, IReadOnlyList<string>> pathsByRepo, IReadOnlyList<RoleDropped>? dropped = null)
     {
         ArgumentNullException.ThrowIfNull(repos);
         ArgumentNullException.ThrowIfNull(pathsByRepo);
+        _ = dropped;   // red stub (issue 1161): the recorded counts are not read yet
         return [.. repos.Select(r => One(r, pathsByRepo.TryGetValue(r.Name.Value, out var paths) ? paths : [])).Where(static r => r.Roles.Count > 0 || r.Unassigned is not null)];
     }
 

@@ -7607,7 +7607,6 @@ static Aw.Context.Core.Roles.RoleLikePaths.Matches(string! path) -> bool
 static Aw.Context.Core.Roles.RoleLikePaths.Patterns.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Roles.RoleCounter
 static Aw.Context.Core.Roles.RoleCounter.CodePaths(Aw.Context.Core.Graph.GraphSnapshot! graph, string? mapRepo) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
-static Aw.Context.Core.Roles.RoleCounter.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! pathsByRepo) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RepoRoles!>!
 Aw.Context.Core.Map.RoleHealth
 static Aw.Context.Core.Map.RoleHealth.Check(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RepoRoles!>! roles) -> Aw.Context.Core.Map.MapHealth!
 Aw.Context.Core.Engine.ContextRepo.Roles.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.RepoRole!>!
@@ -7640,3 +7639,26 @@ static Aw.Context.Core.Lenses.DemotedFiles.Counts(System.Collections.Generic.IEn
 static Aw.Context.Core.Lenses.DemotedFiles.Counts(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Results.FilteredCounts?
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesView!
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesSetView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesSetView!
+Aw.Context.Core.Map.MapImport.Dropped.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RoleDropped!>?
+Aw.Context.Core.Map.MapImport.Dropped.init -> void
+Aw.Context.Core.Map.MapVersion.Dropped.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RoleDropped!>?
+Aw.Context.Core.Map.MapVersion.Dropped.init -> void
+Aw.Context.Core.Roles.RoleCount.Ignored.get -> int?
+Aw.Context.Core.Roles.RoleCount.Ignored.init -> void
+Aw.Context.Core.Roles.RoleDropped
+Aw.Context.Core.Roles.RoleDropped.<Clone>$() -> Aw.Context.Core.Roles.RoleDropped!
+Aw.Context.Core.Roles.RoleDropped.Deconstruct(out string! Repo, out string! Role, out int Files) -> void
+Aw.Context.Core.Roles.RoleDropped.Equals(Aw.Context.Core.Roles.RoleDropped? other) -> bool
+Aw.Context.Core.Roles.RoleDropped.Files.get -> int
+Aw.Context.Core.Roles.RoleDropped.Files.init -> void
+Aw.Context.Core.Roles.RoleDropped.Repo.get -> string!
+Aw.Context.Core.Roles.RoleDropped.Repo.init -> void
+Aw.Context.Core.Roles.RoleDropped.Role.get -> string!
+Aw.Context.Core.Roles.RoleDropped.Role.init -> void
+Aw.Context.Core.Roles.RoleDropped.RoleDropped(string! Repo, string! Role, int Files) -> void
+override Aw.Context.Core.Roles.RoleDropped.Equals(object? obj) -> bool
+override Aw.Context.Core.Roles.RoleDropped.GetHashCode() -> int
+override Aw.Context.Core.Roles.RoleDropped.ToString() -> string!
+static Aw.Context.Core.Roles.RoleCounter.Of(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! pathsByRepo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RoleDropped!>? dropped = null) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RepoRoles!>!
+static Aw.Context.Core.Roles.RoleDropped.operator !=(Aw.Context.Core.Roles.RoleDropped? left, Aw.Context.Core.Roles.RoleDropped? right) -> bool
+static Aw.Context.Core.Roles.RoleDropped.operator ==(Aw.Context.Core.Roles.RoleDropped? left, Aw.Context.Core.Roles.RoleDropped? right) -> bool
