@@ -1039,7 +1039,7 @@ refusal follows §5.8's precedence. A wait state's timer wakes the wait like a d
 | `Item`, `Recipe`, `Tenant`, `Ring` | From `InstanceStart`; `StartRequest` carries the tenant and ring into the instance |
 | `State` | The state after each change (`parked`, `escalated`, `taken-over` while suspended) |
 | `NeedsYou` | True while parked or escalated, or while an open desk task waits; false while taken over |
-| `Repo` | `fact:item`'s `repo`, read once on start by the `ReadItemRepo` local activity; unset without one |
+| `Repo` | `fact:item`'s `repo` (`{ id, repo?, spec? }`: `repo` and `spec` are optional), read once on start by the `ReadItemRepo` local activity; unset without one |
 
 The loop's tests run on the time-skipping server: `InterpreterEvalTests` runs every shipped `workflow.step` eval case
 through the interpreter and checks each line against the in-process `recipe eval`, and `InterpreterStateLoopTests`
@@ -1445,6 +1445,12 @@ session once (`LaunchAgentStep`, id `agent-launch:{run}:{n}`; a repeated request
 session), watches it (`WatchAgentStep`, heartbeating), and on an accepted report closes the run (`CloseAgentStep`: the
 usage, the measured empty diff, and the stop of the session) before it decides.
 
+- **A restart does not drop the report (#1109, #1000 ask 1).** `workflow complete` from a launched session (`AW_SINDRI_LAUNCH_SECRET`
+  set) waits out a control plane that is down: on `SND-API-001` it tries again for `AW_SINDRI_COMPLETE_WAIT` seconds (default 900,
+  enough for a reinstall; 0 is one try), pausing 1 s and doubling to 15 s, with one line on standard error per wait. It keeps the
+  nonce it was issued across the waits. A refusal, an invalid answer and a timeout are never retried; a human's call is tried
+  once. If the window ends it exits 1 and says the output stays in the files it was given: Sindri completes the run from the
+  run's `.sindri-out` folder when it is back (#1000), so the agent must not report the Step again by hand.
 - **The report is the `complete` Update**, validated like a desk report. The session sends `X-Sindri-Launch-Secret`
   (`AW_SINDRI_LAUNCH_SECRET` for the CLI); another caller gets `SND-AUTH-002`, a wrong secret `SND-AUTH-003` (it consumes no
   nonce). While the instance is taken over the secret is refused and only the human completes it, through the desk.
@@ -1454,10 +1460,8 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   rules apply to it as to any failure, after the recovery below.
 - **A restart does not strand a result (issue #1000).** `workflow complete` from a launched session (it carries
   `AW_SINDRI_LAUNCH_SECRET`) waits out a control plane that is down: on `SND-API-001` (no control plane recorded, or the
-  connection refused or broken) it tries again for up to 2 minutes, pausing 1 s and doubling to 15 s, one line on standard
-  error per wait (`SND-API-001 the control plane isn't answering; retrying in 4 s (up to 113 s more)`). It keeps the nonce it
-  was issued across the waits. A refusal, an invalid answer and a timeout are not retried, and a human's call (no secret) is
-  never held: it says `not running` at once. If the session ends first (its turn over, or the agent gone), the watch reads the
+  connection refused or broken) it waits as the item above says (#1109: `AW_SINDRI_COMPLETE_WAIT`, default 15 minutes; a human's
+  call is never held). If the session ends first (its turn over, or the agent gone), the watch reads the
   run directory's `.sindri-out` folder before it fails the Step (`RecoverAgentStep`, patched `recover-stranded-agent-result`;
   only files written after the launch count, because a phase workspace is shared by its Steps). `AgentRecovery.Decide` completes the
   run, as an `agent:recovered` report with the tokens and diff signal the close step read, only when exactly one of the Step's
