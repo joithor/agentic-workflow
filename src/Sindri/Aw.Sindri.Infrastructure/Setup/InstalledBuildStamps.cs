@@ -20,7 +20,13 @@ internal sealed class InstalledBuildStamps(string baseDirectory) : IBuildStamps
             return null;
         }
 
-        var target = Directory.ResolveLinkTarget(Path.Combine(stamp.Parent, "current"), returnFinalTarget: false);
+        var link = Path.Combine(stamp.Parent, "current");
+        if (!Path.Exists(link))
+        {
+            return null;   // why: ResolveLinkTarget throws on a path that isn't there; a missing or dangling link names no build
+        }
+
+        var target = Directory.ResolveLinkTarget(link, returnFinalTarget: false);
         return target is null ? null : Path.GetFileName(target.FullName.TrimEnd(Path.DirectorySeparatorChar));
     }
 

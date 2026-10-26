@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Setup;
+namespace Aw.Sindri.Core.Doctor;
 
 /// <summary>The one rule behind 'stale build' (#1032): the running control plane is stale when it and the install both name a build and the names differ.</summary>
 public static class StaleBuild

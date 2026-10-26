@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Core.Doctor;
