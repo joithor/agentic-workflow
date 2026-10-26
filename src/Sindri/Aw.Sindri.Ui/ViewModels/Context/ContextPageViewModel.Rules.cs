@@ -7,5 +7,5 @@ internal sealed partial class ContextPageViewModel
     public string RulesOlderText { get; } = string.Empty;
 
     /// <summary>Whether the older-rules line shows.</summary>
-    public bool ShowRulesOlder => false;
+    public bool ShowRulesOlder => ShowWhole && RulesOlderText.Length > 0;
 }
