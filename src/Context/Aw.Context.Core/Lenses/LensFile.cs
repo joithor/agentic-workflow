@@ -45,7 +45,7 @@ public sealed record LensFile(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Demoted { get; init; }
 
-    /// <summary>The name of the role that demotes it (<see cref="Aw.Context.Core.Graph.DemotedCode.Role"/>: 'test', 'fixture', 'script' or whatever the repo's index.roles call it); left out when it is not demoted.</summary>
+    /// <summary>The name of the role that demotes it (<see cref="Graph.DemotedCode.Role"/>: 'test', 'fixture', 'script' or whatever the repo's index.roles call it); left out when it is not demoted.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Role { get; init; }
 }
