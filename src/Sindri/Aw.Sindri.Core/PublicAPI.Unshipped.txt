@@ -11812,7 +11812,7 @@ Aw.Sindri.Core.Events.SandboxLimitHit.Launch.init -> void
 Aw.Sindri.Core.Events.SandboxLimitHit.Peak.get -> long
 Aw.Sindri.Core.Events.SandboxLimitHit.Peak.init -> void
 Aw.Sindri.Core.Events.SandboxLimitHit.SandboxLimitHit(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Events.LimitHitKind Kind, long Peak) -> void
-Aw.Sindri.Core.Events.SessionEndReason.Limit = 2 -> Aw.Sindri.Core.Events.SessionEndReason
+Aw.Sindri.Core.Events.SessionEndReason.Limit = 3 -> Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEnded.Kind.get -> Aw.Sindri.Core.Events.LimitKind?
 Aw.Sindri.Core.Events.SessionEnded.Kind.init -> void
 Aw.Sindri.Core.Events.SessionEnded.Limit.get -> long?
