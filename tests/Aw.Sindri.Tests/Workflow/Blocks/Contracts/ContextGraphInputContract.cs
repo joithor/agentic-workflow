@@ -24,7 +24,7 @@ public sealed class ContextGraphInputContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ContextGraphInput(new FakeContextEngine(), new ContextInputScopes(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile())), ContextInputFixtures.NoFacts(), ShippedComposition.Json).Fill(
+        _ = await new ContextGraphInput(FakeContextEngine.Instance, new ContextInputScopes(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile())), ContextInputFixtures.NoFacts(), ShippedComposition.Json).Fill(
             new StepInputContext(BlockId.From(ContextGraphInput.Id), BlockId.From("step.scope.gather"), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<FactKey, JsonElement>()),
             cancellationToken);
 }
