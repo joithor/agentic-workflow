@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Sandbox.Credentials;
 using Aw.Sindri.Core.Sandbox.Plan;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -39,6 +40,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<IJobContextAccessor, AsyncLocalJobContextAccessor>()
             .AddSingleton<HeldLease>()
+            .AddSingleton<LiveSchedule>()
             .AddSingleton<EndedInstanceViews>()
             .AddSingleton<TemporalRuntime>()
             .AddSingleton<HeldHumanToken>()
