@@ -21,7 +21,7 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
     /// <summary>One plain sentence for what it does, or empty for a service the app does not know.</summary>
     public string What { get; } = Labels.ServiceWhat(name);
 
-    /// <summary>Scheduled, Running now, Paused or Last run failed.</summary>
+    /// <summary>Scheduled, Running now, Paused, Overdue or Last run failed.</summary>
     public string Status { get; private set => Set(ref field, value); } = Labels.ServiceScheduled;
 
     /// <summary>"last run 12:01:30" or "not run yet".</summary>
@@ -139,11 +139,15 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
         IsRunning = !string.IsNullOrEmpty(view.Job);
         HasFailed = view.LastRun is { } run && string.Equals(run.Outcome, "failed", StringComparison.Ordinal);
         JobId = view.Job ?? string.Empty;
+        var missed = IsPaused ? null : view.OverdueSince;
+        IsOverdue = missed is not null;
+        OverdueDetail = missed is { } slot ? Labels.ServiceMissed(StatusText.Clock(slot)) : string.Empty;
         LastRun = view.LastRun is { } last ? "last run " + StatusText.Time(last.RanAt) : Labels.ServiceNotRun;
         Status = (IsRunning, IsPaused, HasFailed) switch
         {
             (true, _, _) => Labels.ServiceRunning,
             (false, true, _) => Labels.ServicePaused,
+            (false, false, _) when IsOverdue => Labels.ServiceOverdue,
             (false, false, true) => Labels.ServiceLastRunFailed,
             (false, false, false) => Labels.ServiceScheduled,
         };

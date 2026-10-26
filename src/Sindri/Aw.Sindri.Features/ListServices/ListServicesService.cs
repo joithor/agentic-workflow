@@ -16,6 +16,9 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
     IEnumerable<BuiltInService> builtIns, LiveSchedule live, TimeProvider clock)
     : IService<ListServicesRequest, ListServicesResponse>
 {
+    /// <summary>How far past its slot the scheduler's next slot may be before the service counts as overdue: the loop ticks every second, so a minute rules out a busy tick.</summary>
+    internal static readonly TimeSpan OverdueGrace = TimeSpan.FromMinutes(1);
+
     public async ValueTask<Result<ListServicesResponse>> Handle(ListServicesRequest request, CancellationToken cancellationToken)
     {
         var current = status.Current;
@@ -83,10 +86,19 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
             entry.Description, paused ? row?.PausedBy : null, paused ? row?.PausedAt : null, OverdueSince(ServiceName.From(entry.Name), paused));
     }
 
+    /// <summary>
+    /// The scheduler's own next slot when it is more than <see cref="OverdueGrace"/> past: the loop moves a due slot on within a tick while it
+    /// holds the lease (a paused service's slot passes unrun, a busy one is skipped), so a slot left behind was missed. Null while paused, before the
+    /// scheduler loads a schedule, and for a service it does not hold.
+    /// </summary>
     private DateTimeOffset? OverdueSince(ServiceName name, bool paused)
     {
-        _ = (live, name, paused);
-        return null;
+        if (paused || live.Current is not { } slots || !slots.TryGetValue(name, out var slot))
+        {
+            return null;
+        }
+
+        return clock.GetUtcNow() - slot > OverdueGrace ? slot : null;
     }
 
     private DateTimeOffset? NextSlot(string every, ServiceRow? row)

@@ -68,6 +68,12 @@ internal static partial class Labels
     /// <summary>A service whose scheduled slot passed without the scheduler running it.</summary>
     internal const string ServiceOverdue = "Overdue";
 
+    /// <summary>"missed its 12:01 run": the detail under an overdue service.</summary>
+    internal static string ServiceMissed(string time) => "missed its " + time + " run";
+
+    /// <summary>The overview's name for overdue services: "heartbeat overdue", "heartbeat, setup overdue".</summary>
+    internal static string ServicesOverdue(IEnumerable<string> names) => string.Join(", ", names) + " overdue";
+
     /// <summary>A service whose manual run is in flight.</summary>
     internal const string ServiceRunning = "Running now";
 
