@@ -30,7 +30,7 @@ title="$(d tree --name InstanceBody --depth 6 | jq -r '[.. | objects | select(.t
 
 edge_id() { "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" search --type Button --limit 200 | jq -r '[.matches[] | select((.name // "") | startswith("Reopen"))][0].id // empty'; }
 edge_text() { "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" tree --node-id "$(edge_id)" --depth 4 | jq -r '[.. | objects | select(.type == "TextBlock") | .text // empty][0] // empty'; }
-edge_shown() { local id; id="$(edge_id)"; [ -n "$id" ] && "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" props --node-id "$id" | grep "IsVisible" | grep -qi true; }
+edge_shown() { local id; id="$(edge_id)"; [ -n "$id" ] && "$UXU_DRIVER" --dir "$AW_UI_DRIVER_DIR" props --node-id "$id" | jq -e '.properties.IsVisible == "True"' >/dev/null; }
 export -f edge_id edge_text edge_shown
 export UXU_DRIVER AW_UI_DRIVER_DIR
 
