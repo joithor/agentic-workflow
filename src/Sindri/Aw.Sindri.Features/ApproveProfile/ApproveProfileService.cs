@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Worktrees;
 
 namespace Aw.Sindri.Features.ApproveProfile;
 
@@ -17,7 +18,7 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// A, B records every step and a retry computes the same key. Approving needs the live hash (a stale one is SND-PROFILE-003)
 /// and a profile that validates; it asks for no typed challenge (owner decision q93).
 /// </summary>
-internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, ProfileChecks checks)
+internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, ProfileChecks checks, ITrackedFiles? tracked = null)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
@@ -101,8 +102,21 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
         {
             StepArgv = checks.StepArgv(loaded.Profile, changes),
             Unreadable = latest.IsError ? latest.Error.Message : null,
+            UnlistedChange = IsUnlistedChange(previous, changes, loaded),
+            RoleCounts = await RoleCounts(previous, loaded, changes, cancellationToken).ConfigureAwait(false),
         };
     }
+
+    /// <summary>The file counts of the changed role keys (#1148); null, and left out of the JSON, when no role key changed.</summary>
+    private async ValueTask<IReadOnlyList<string>?> RoleCounts(LoadedProfile? previous, LoadedProfile loaded, IReadOnlyList<string> changes, CancellationToken cancellationToken)
+    {
+        var lines = await RoleCountLines.Of(tracked, previous?.Profile, loaded.Profile, changes, cancellationToken).ConfigureAwait(false);
+        return lines.Count == 0 ? null : lines;
+    }
+
+    /// <summary>The hash moved but the diff lists nothing: a change in a key the diff doesn't cover (#1147).</summary>
+    private static bool IsUnlistedChange(LoadedProfile? previous, IReadOnlyList<string> changes, LoadedProfile loaded) =>
+        previous is not null && changes.Count == 0 && previous.Hash != loaded.Hash;
 
     /// <summary>An approval that is there but whose content this build can't take (SND-PROFILE-005): the preview still shows the live hash and the diff against nothing, and says so.</summary>
     private static bool IsUnreadable(Error error) => string.Equals(error.Code, SindriErrors.ProfileNotApproved.Code, StringComparison.Ordinal);
