@@ -148,6 +148,12 @@ internal sealed partial class ShellWindow
     // (run 4, a11y-2). Over a covering sheet the page is disabled and cannot take focus: the usual keep-focus rule applies.
     private void KeepFocusOrReannounce()
     {
+        // A pointer click on a top-bar tab stays on the tab (ux-C-10b): the region is for keyboard, chord and palette navigation, which have nowhere else to put focus.
+        if (_lastMethod == NavigationMethod.Pointer && FocusManager?.GetFocusedElement() is Visual clicked && TopBar.Get<ListBox>("Navigation").IsVisualAncestorOf(clicked))
+        {
+            return;
+        }
+
         var page = this.Get<Border>("Page");
         if (!page.IsEffectivelyEnabled)
         {
