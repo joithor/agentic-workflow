@@ -21,6 +21,9 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
     /// <summary>One plain sentence for what it does, or empty for a service the app does not know.</summary>
     public string What { get; } = Labels.ServiceWhat(name);
 
+    /// <summary>Why the service is paused or failed, in plain words ("Paused by you, 14:02"), or empty.</summary>
+    public string Why { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>Scheduled, Running now, Paused, Overdue or Last run failed.</summary>
     public string Status { get; private set => Set(ref field, value); } = Labels.ServiceScheduled;
 
