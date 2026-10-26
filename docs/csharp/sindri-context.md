@@ -882,7 +882,7 @@ They sit in the queries group like the subgraph QUERY (`X-Sindri-After` honoured
 ## Parallel walks (issue 1101)
 
 The lenses set, the code lens and the history lens answer the same bytes at any degree of parallelism. `WalkOptions` (Core `Walks/`) carries the degree: `WalkOptions.Serial` is one at a time, and the engine's default is `Environment.ProcessorCount - 1`
-(`Features/Walks/WalkDefaults`; Core cannot read the environment). The services take it as an optional last constructor argument, and `MapWorld` takes one so a test can run degree 1 against degree 8.
+(`AddContextFeatures`; Core cannot read the environment). The services take it as an optional last constructor argument (none means serial; `AddContextFeatures` registers the default), and `MapWorld` takes one so a test can run degree 1 against degree 8.
 
 `BoundedParallel` (Core `Walks/`) runs independent read-only work items with at most `degree` in flight and returns one result per item at the item's index (`Map` for async work, `MapSync` for CPU work). Every use computes
 per-item results in parallel and merges them serially in input order, so first-one-wins de-duplication, tie-breaks and caps pick the same items as a serial run; nothing that shapes output sits in a completion-order collection.

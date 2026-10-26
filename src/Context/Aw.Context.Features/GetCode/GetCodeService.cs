@@ -3,7 +3,6 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Core.Walks;
-using Aw.Context.Features.Walks;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -44,7 +43,7 @@ internal sealed class GetCodeService(MapReader reader, LensBasisReader bases, Co
         }
 
         var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Draft, cancellationToken).ConfigureAwait(false);
-        var graphHalf = CodeLensBuilder.Build(basis, read.Value.Graph, anchors, walk ?? WalkDefaults.Default);
+        var graphHalf = CodeLensBuilder.Build(basis, read.Value.Graph, anchors, walk ?? WalkOptions.Serial);
         if (graphHalf.IsError)
         {
             return graphHalf.Error;

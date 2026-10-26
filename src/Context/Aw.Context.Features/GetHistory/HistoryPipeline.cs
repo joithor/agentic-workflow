@@ -8,7 +8,6 @@ using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Walks;
-using Aw.Context.Features.Walks;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.GetHistory;
@@ -21,7 +20,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
 {
     private const string Capped = "capped";
 
-    private readonly WalkOptions _walk = walk ?? WalkDefaults.Default;
+    private readonly WalkOptions _walk = walk ?? WalkOptions.Serial;
 
     internal async ValueTask<Result<HistoryView>> Run(HistoryInputs inputs, IReadOnlyList<string> anchors, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {

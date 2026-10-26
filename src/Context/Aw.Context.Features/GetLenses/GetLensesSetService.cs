@@ -4,7 +4,6 @@ using Aw.Context.Core.LensSupport;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Trust;
 using Aw.Context.Core.Walks;
-using Aw.Context.Features.Walks;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -44,7 +43,7 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
             return read.Error;
         }
 
-        var basis = (await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false)) with { Cascade = QueryRules.CascadeFor(hops.Value, settings.Value), Walk = walk ?? WalkDefaults.Default };
+        var basis = (await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false)) with { Cascade = QueryRules.CascadeFor(hops.Value, settings.Value), Walk = walk ?? WalkOptions.Serial };
         using var band = FillBands.Start(FillBands.Lenses);
         var view = LensesBuilder.BuildSet(basis, read.Value.Graph, anchors, depth, read.Value.Conflicts);
         return view.Map(v => LensTexts.Clean(DemotedFiles.Last(v, request.Scope.Repos), new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
