@@ -1,10 +1,14 @@
+using Aw.Context.Core;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Concepts;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.ScopeGraph;
+using Aw.Context.Core.Search;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.FindPath;
@@ -25,7 +29,7 @@ internal sealed class ContextGraph(
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
     IService<GetFileMapRequest, FileMapView> fileMap,
-    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory
+    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory, IContextConcepts
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -51,8 +55,15 @@ internal sealed class ContextGraph(
     public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         codeHistory.Subgraph(query, scope, cancellationToken);
 
+    // Issue 1005: until the context lane builds the scoping graph the facade answers a named error and Sindri's gather falls back to the lenses.
+    public ValueTask<Result<ScopeGraphView>> ScopeGraph(ScopeGraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<ScopeGraphView>>(ContextErrors.ScopeGraphUnavailable.With("the engine does not build the scoping graph yet"));
+
     public ValueTask<Result<WholeMapView>> WholeMap(WholeMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         codeHistory.WholeMap(query, scope, cancellationToken);
+
+    public ValueTask<Result<MapSearchView>> Search(MapSearchQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Search(query, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
@@ -62,4 +73,13 @@ internal sealed class ContextGraph(
 
     public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
         codeHistory.History(anchors, window, read, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptsView>> Concepts(ConceptsQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Concepts(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptMembersView>> ConceptMembers(ConceptMembersQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.ConceptMembers(query, scope, cancellationToken);
+
+    public ValueTask<Result<ConceptGlossaryView>> ConceptGlossary(ConceptGlossaryQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.ConceptGlossary(query, scope, cancellationToken);
 }
