@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -16,11 +17,11 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// serialized <see cref="FactValue"/>), never the content; so an input that wants the value (anchors, a window) reads it here through the same
 /// <see cref="IFactContents"/> port the effects use, checks it against the reference's SHA-256, and parses it as JSON (a content that isn't JSON is its text).
 /// A '{ profile: key }' argument is resolved here too, against the approved profile snapshot (never in workflow code, which must replay): a key the
-/// snapshot does not hold (no approved profile, or a key no input can read) is SND-WF-021; a key the profile leaves unset is the open window (see <see cref="Fails"/>), never the open window.
+/// snapshot can't give is an error: a key no input can read is SND-WF-021 (see <see cref="Fails"/>, it fails the fill), and no approved profile is SND-PROFILE-005 (an unavailable section, like an unreadable fact). A key the profile leaves unset is the open window.
 /// A reference that can't be read is an error that names the argument and the fact (an honest unavailable section); content that isn't what its SHA-256 says is SND-WF-018 (see <see cref="Fails"/>), which fails the fill.
 /// </summary>
 /// <param name="contents">The fact content port.</param>
-/// <param name="profile">The approved profile, for '{ profile: key }' arguments; without it every such argument is SND-WF-021.</param>
+/// <param name="profile">The approved profile, for '{ profile: key }' arguments; without it every such argument is SND-PROFILE-005.</param>
 internal sealed class ContextInputFacts(IFactContents contents, IApprovedProfile? profile = null)
 {
     /// <summary>The context with every fact-reference argument replaced by the fact's content.</summary>
@@ -78,7 +79,7 @@ internal sealed class ContextInputFacts(IFactContents contents, IApprovedProfile
     {
         if (profile is null)
         {
-            return WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, and this input has no profile to read it from");
+            return SindriErrors.ProfileNotApproved.With($"the {name} argument names profile key {key}, and this input has no profile to read it from");
         }
 
         var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
@@ -89,7 +90,7 @@ internal sealed class ContextInputFacts(IFactContents contents, IApprovedProfile
 
         if (approved.Value is not { } loaded)
         {
-            return WorkflowErrors.ProfileKeyMissing.With($"the {name} argument names profile key {key}, and no profile is approved (fix: sindri profile approve)");
+            return SindriErrors.ProfileNotApproved.With($"the {name} argument names profile key {key}, and no profile is approved (fix: sindri profile approve)");
         }
 
         return Setting(loaded.Profile, key) is { } setting
