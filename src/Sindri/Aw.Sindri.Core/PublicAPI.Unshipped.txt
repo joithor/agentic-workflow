@@ -18866,6 +18866,8 @@ override Aw.Sindri.Core.Profile.ProfileRole.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.ProfileRole.ToString() -> string!
 static Aw.Sindri.Core.Profile.ProfileRole.operator !=(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
 static Aw.Sindri.Core.Profile.ProfileRole.operator ==(Aw.Sindri.Core.Profile.ProfileRole? left, Aw.Sindri.Core.Profile.ProfileRole? right) -> bool
+Aw.Sindri.Core.Scoping.QuestionShape
+static Aw.Sindri.Core.Scoping.QuestionShape.Faults(System.Text.Json.Nodes.JsonNode? questions) -> System.Collections.Generic.IReadOnlyList<(string! Id, string! Message, string! Fix)>!
 Aw.Sindri.Core.Launch.ISessionNudges
 Aw.Sindri.Core.Launch.ISessionNudges.Send(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Aw.Sindri.Core.Launches.ILaunchFiles.MarkNudged(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.DateTimeOffset at) -> void
