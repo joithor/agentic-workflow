@@ -30,7 +30,7 @@ public sealed class ScopeCoverageDemotedFilesTests
             """{ "anchors": [ { "key": "surface:route/links-create" } ], "bands": { "code": { "files": [ { "path": "scripts/seed.ts", "implements": [ "surface:route/links-create" ], "demoted": true } ] } } }""",
             """{ "files": [] }""");
 
-        Assert.DoesNotContain("code:scripts/seed.ts", items);
+        Assert.DoesNotContain("code:scripts/seed.ts", items, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -40,7 +40,7 @@ public sealed class ScopeCoverageDemotedFilesTests
             """{ "anchors": [ { "key": "surface:route/links-create" } ] }""",
             """{ "tests": [ { "path": "src/links.test.ts" } ], "edges": [ { "from": "code:src/links.test.ts", "to": "surface:route/links-create", "type": "tests" } ] }""");
 
-        Assert.DoesNotContain("code:src/links.test.ts", items);
+        Assert.DoesNotContain("code:src/links.test.ts", items, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -50,6 +50,6 @@ public sealed class ScopeCoverageDemotedFilesTests
             """{ "anchors": [ { "key": "surface:route/links-create" } ], "bands": { "code": { "files": [ { "path": "src/links.ts", "implements": [ "surface:route/links-create" ] } ] } } }""",
             """{ "files": [] }""");
 
-        Assert.Contains("code:src/links.ts", items);
+        Assert.Contains("code:src/links.ts", items, StringComparer.Ordinal);
     }
 }
