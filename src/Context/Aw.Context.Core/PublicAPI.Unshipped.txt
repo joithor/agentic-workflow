@@ -7837,3 +7837,108 @@ static Aw.Context.Core.Lenses.DemotedFiles.Counts(System.Collections.Generic.IEn
 static Aw.Context.Core.Lenses.DemotedFiles.Counts(Aw.Context.Core.Lenses.LensBands! bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Results.FilteredCounts?
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesView!
 static Aw.Context.Core.Lenses.DemotedFiles.Last(Aw.Context.Core.Lenses.LensesSetView! view, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> Aw.Context.Core.Lenses.LensesSetView!
+Aw.Context.Core.Glossary.SymbolVectorsRead
+Aw.Context.Core.Glossary.SymbolVectorsRead.<Clone>$() -> Aw.Context.Core.Glossary.SymbolVectorsRead!
+Aw.Context.Core.Glossary.SymbolVectorsRead.Vectors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.PathVector!>!
+Aw.Context.Core.Glossary.SymbolVectorsRead.Vectors.init -> void
+Aw.Context.Core.Glossary.SymbolVectorsRead.Missing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Glossary.SymbolVectorsRead.Missing.init -> void
+Aw.Context.Core.Glossary.SymbolVectorsRead.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.PathVector!>! Vectors, out System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+Aw.Context.Core.Glossary.SymbolVectorsRead.Equals(Aw.Context.Core.Glossary.SymbolVectorsRead? other) -> bool
+Aw.Context.Core.Glossary.SymbolVectorsRead.SymbolVectorsRead(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Glossary.PathVector!>! Vectors, System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+override Aw.Context.Core.Glossary.SymbolVectorsRead.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.SymbolVectorsRead.GetHashCode() -> int
+override Aw.Context.Core.Glossary.SymbolVectorsRead.ToString() -> string!
+static Aw.Context.Core.Glossary.SymbolVectorsRead.operator !=(Aw.Context.Core.Glossary.SymbolVectorsRead? left, Aw.Context.Core.Glossary.SymbolVectorsRead? right) -> bool
+static Aw.Context.Core.Glossary.SymbolVectorsRead.operator ==(Aw.Context.Core.Glossary.SymbolVectorsRead? left, Aw.Context.Core.Glossary.SymbolVectorsRead? right) -> bool
+Aw.Context.Core.Glossary.PathVector
+Aw.Context.Core.Glossary.PathVector.<Clone>$() -> Aw.Context.Core.Glossary.PathVector!
+Aw.Context.Core.Glossary.PathVector.Path.get -> string!
+Aw.Context.Core.Glossary.PathVector.Path.init -> void
+Aw.Context.Core.Glossary.PathVector.Symbol.get -> Aw.Context.Core.Glossary.SymbolVector!
+Aw.Context.Core.Glossary.PathVector.Symbol.init -> void
+Aw.Context.Core.Glossary.PathVector.Deconstruct(out string! Path, out Aw.Context.Core.Glossary.SymbolVector! Symbol) -> void
+Aw.Context.Core.Glossary.PathVector.Equals(Aw.Context.Core.Glossary.PathVector? other) -> bool
+Aw.Context.Core.Glossary.PathVector.PathVector(string! Path, Aw.Context.Core.Glossary.SymbolVector! Symbol) -> void
+override Aw.Context.Core.Glossary.PathVector.Equals(object? obj) -> bool
+override Aw.Context.Core.Glossary.PathVector.GetHashCode() -> int
+override Aw.Context.Core.Glossary.PathVector.ToString() -> string!
+static Aw.Context.Core.Glossary.PathVector.operator !=(Aw.Context.Core.Glossary.PathVector? left, Aw.Context.Core.Glossary.PathVector? right) -> bool
+static Aw.Context.Core.Glossary.PathVector.operator ==(Aw.Context.Core.Glossary.PathVector? left, Aw.Context.Core.Glossary.PathVector? right) -> bool
+Aw.Context.Core.Concepts.ConceptGlossaryQuery
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.<Clone>$() -> Aw.Context.Core.Concepts.ConceptGlossaryQuery!
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Read.get -> Aw.Context.Core.Map.MapRead
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Read.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Deconstruct(out Aw.Context.Core.Map.MapRead Read, out string? Repo) -> void
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.Equals(Aw.Context.Core.Concepts.ConceptGlossaryQuery? other) -> bool
+Aw.Context.Core.Concepts.ConceptGlossaryQuery.ConceptGlossaryQuery(Aw.Context.Core.Map.MapRead Read, string? Repo = null) -> void
+override Aw.Context.Core.Concepts.ConceptGlossaryQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptGlossaryQuery.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptGlossaryQuery.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptGlossaryQuery.operator !=(Aw.Context.Core.Concepts.ConceptGlossaryQuery? left, Aw.Context.Core.Concepts.ConceptGlossaryQuery? right) -> bool
+static Aw.Context.Core.Concepts.ConceptGlossaryQuery.operator ==(Aw.Context.Core.Concepts.ConceptGlossaryQuery? left, Aw.Context.Core.Concepts.ConceptGlossaryQuery? right) -> bool
+Aw.Context.Core.Concepts.ConceptTermsRow
+Aw.Context.Core.Concepts.ConceptTermsRow.<Clone>$() -> Aw.Context.Core.Concepts.ConceptTermsRow!
+Aw.Context.Core.Concepts.ConceptTermsRow.Id.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Concepts.ConceptTermsRow.Id.init -> void
+Aw.Context.Core.Concepts.ConceptTermsRow.Name.get -> string!
+Aw.Context.Core.Concepts.ConceptTermsRow.Name.init -> void
+Aw.Context.Core.Concepts.ConceptTermsRow.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptTermsRow.Terms.init -> void
+Aw.Context.Core.Concepts.ConceptTermsRow.Deconstruct(out Aw.Context.Core.Graph.NodeKey Id, out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Terms) -> void
+Aw.Context.Core.Concepts.ConceptTermsRow.Equals(Aw.Context.Core.Concepts.ConceptTermsRow? other) -> bool
+Aw.Context.Core.Concepts.ConceptTermsRow.ConceptTermsRow(Aw.Context.Core.Graph.NodeKey Id, string! Name, System.Collections.Generic.IReadOnlyList<string!>! Terms) -> void
+override Aw.Context.Core.Concepts.ConceptTermsRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptTermsRow.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptTermsRow.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptTermsRow.operator !=(Aw.Context.Core.Concepts.ConceptTermsRow? left, Aw.Context.Core.Concepts.ConceptTermsRow? right) -> bool
+static Aw.Context.Core.Concepts.ConceptTermsRow.operator ==(Aw.Context.Core.Concepts.ConceptTermsRow? left, Aw.Context.Core.Concepts.ConceptTermsRow? right) -> bool
+Aw.Context.Core.Concepts.TermConceptsRow
+Aw.Context.Core.Concepts.TermConceptsRow.<Clone>$() -> Aw.Context.Core.Concepts.TermConceptsRow!
+Aw.Context.Core.Concepts.TermConceptsRow.Term.get -> string!
+Aw.Context.Core.Concepts.TermConceptsRow.Term.init -> void
+Aw.Context.Core.Concepts.TermConceptsRow.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Concepts.TermConceptsRow.Concepts.init -> void
+Aw.Context.Core.Concepts.TermConceptsRow.Deconstruct(out string! Term, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Concepts) -> void
+Aw.Context.Core.Concepts.TermConceptsRow.Equals(Aw.Context.Core.Concepts.TermConceptsRow? other) -> bool
+Aw.Context.Core.Concepts.TermConceptsRow.TermConceptsRow(string! Term, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Concepts) -> void
+override Aw.Context.Core.Concepts.TermConceptsRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.TermConceptsRow.GetHashCode() -> int
+override Aw.Context.Core.Concepts.TermConceptsRow.ToString() -> string!
+static Aw.Context.Core.Concepts.TermConceptsRow.operator !=(Aw.Context.Core.Concepts.TermConceptsRow? left, Aw.Context.Core.Concepts.TermConceptsRow? right) -> bool
+static Aw.Context.Core.Concepts.TermConceptsRow.operator ==(Aw.Context.Core.Concepts.TermConceptsRow? left, Aw.Context.Core.Concepts.TermConceptsRow? right) -> bool
+Aw.Context.Core.Concepts.ConceptGlossaryView
+Aw.Context.Core.Concepts.ConceptGlossaryView.<Clone>$() -> Aw.Context.Core.Concepts.ConceptGlossaryView!
+Aw.Context.Core.Concepts.ConceptGlossaryView.ApiVersion.get -> int
+Aw.Context.Core.Concepts.ConceptGlossaryView.ApiVersion.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.Repo.get -> string?
+Aw.Context.Core.Concepts.ConceptGlossaryView.Repo.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.MapVersion.get -> string!
+Aw.Context.Core.Concepts.ConceptGlossaryView.MapVersion.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.State.get -> string!
+Aw.Context.Core.Concepts.ConceptGlossaryView.State.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.Concepts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptTermsRow!>!
+Aw.Context.Core.Concepts.ConceptGlossaryView.Concepts.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.Terms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.TermConceptsRow!>!
+Aw.Context.Core.Concepts.ConceptGlossaryView.Terms.init -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.Deconstruct(out int ApiVersion, out string? Repo, out string! MapVersion, out string! State, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptTermsRow!>! Concepts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.TermConceptsRow!>! Terms) -> void
+Aw.Context.Core.Concepts.ConceptGlossaryView.Equals(Aw.Context.Core.Concepts.ConceptGlossaryView? other) -> bool
+Aw.Context.Core.Concepts.ConceptGlossaryView.ConceptGlossaryView(int ApiVersion, string? Repo, string! MapVersion, string! State, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptTermsRow!>! Concepts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.TermConceptsRow!>! Terms) -> void
+override Aw.Context.Core.Concepts.ConceptGlossaryView.Equals(object? obj) -> bool
+override Aw.Context.Core.Concepts.ConceptGlossaryView.GetHashCode() -> int
+override Aw.Context.Core.Concepts.ConceptGlossaryView.ToString() -> string!
+static Aw.Context.Core.Concepts.ConceptGlossaryView.operator !=(Aw.Context.Core.Concepts.ConceptGlossaryView? left, Aw.Context.Core.Concepts.ConceptGlossaryView? right) -> bool
+static Aw.Context.Core.Concepts.ConceptGlossaryView.operator ==(Aw.Context.Core.Concepts.ConceptGlossaryView? left, Aw.Context.Core.Concepts.ConceptGlossaryView? right) -> bool
+Aw.Context.Core.Glossary.ISymbolVectors
+Aw.Context.Core.Glossary.ISymbolVectors.Read(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Glossary.SymbolVectorsRead!>!>
+Aw.Context.Core.Concepts.ConceptGlossaryBuilder
+static Aw.Context.Core.Concepts.ConceptGlossaryBuilder.Build(Aw.Context.Core.Concepts.ConceptsBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Concepts.ConceptGlossaryView!
+static Aw.Context.Core.Concepts.ConceptDeriver.Groups(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>! pins, Aw.Context.Core.Glossary.MapGlossary? glossary) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Concepts.ConceptGroup!>!
+static Aw.Context.Core.Concepts.ConceptDeriver.Derive(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ConceptPin!>! pins, Aw.Context.Core.Concepts.ConceptNames? names, Aw.Context.Core.Glossary.MapGlossary? glossary) -> Aw.Context.Core.Extract.ExtractedMap!
+Aw.Context.Core.Concepts.ConceptGroup.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Concepts.ConceptGroup.Terms.init -> void
+Aw.Context.Core.Concepts.ConceptRow.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Concepts.ConceptRow.Terms.init -> void
+Aw.Context.Core.Facade.IContextConcepts.ConceptGlossary(Aw.Context.Core.Concepts.ConceptGlossaryQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Concepts.ConceptGlossaryView!>!>
