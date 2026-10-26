@@ -45,11 +45,6 @@ public static class SandboxRefusal
         _ => null,
     };
 
-    /// <summary>Reads back the credential source a refusal carries, as the text the ledger records ('owner-copy' or 'separate-login').</summary>
-    /// <param name="error">Any error.</param>
-    /// <returns>The source name, or null when the error has none.</returns>
-    public static string? SourceTextOf(Error error) => SourceOf(error) is { } source ? SandboxWire.Name(source) : null;
-
     private static string? Extension(Error error, string name)
     {
         ArgumentNullException.ThrowIfNull(error);

@@ -54,7 +54,7 @@ code form, and `Code_kinds_match_the_engine_table` pins them together.
 | `SND-LAUNCH-020` | resource wait | 503 | `sessions` |
 | `SND-LAUNCH-021` | step failure | 503 | `install-failed`, `lockfile-missing`, `timeout` |
 
-`FailedLaunch` carries the error. The reason and source also reach the ledger and the launches view: `launch.failed` gains `reason` and `source` (left out when null, written from the error by the launcher), and `GET /sindri/launches/{id}` serves them, so the engine's NoRuntime park and the app pick the sentence by `(code, reason)` without the in-process error. The named details stay on the in-process error until SB-5a needs them on the card. Build the error with `SandboxRefusal.For(definition, reason, detail, source)`, which refuses a reason the code does
+`FailedLaunch` carries the error. The reason and source also reach the ledger and the launches view: `launch.failed` carries them in its `detail` as `detail.reason` and `detail.source` (`LaunchFailureDetail.Of` reads the error's `reason` and `source` extensions; `source` is left out when null; there is no top-level `reason` or `source`), and `GET /sindri/launches/{id}` serves them (read from the detail), so the engine's NoRuntime park and the app pick the sentence by `(code, reason)` without the in-process error. The named details stay on the in-process error until SB-5a needs them on the card. Build the error with `SandboxRefusal.For(definition, reason, detail, source)`, which refuses a reason the code does
 not define. The sentence the owner sees for each `(code, reason)` is in `Golden/Sandbox/copy.json` (a Step wording and an attended wording;
 the `deskCapable` suffix is added to every `-014` and `-017` sentence). A golden test checks every owner string against the word list: the
 words "scope", "plan", "canary" and "confined" never appear.
@@ -65,8 +65,8 @@ words "scope", "plan", "canary" and "confined" never appear.
 |---|---|
 | `launch.started` | gains `sandbox` (the `SandboxSummary`) |
 | `session.ended` | `reason: limit` adds `kind`, `limit`, `peak` and `peaks`; a final usage sample precedes it. Written by `LaunchSessionEvents.EndByLimit`; the launches view's `ended` carries `kind`, `limit` and `peak` |
-| `sandbox.denied` | `{launch, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; at most 200 distinct targets, then one event with `overflow: true`, an empty `target`, rule `overflow` and `count` the denials not counted by target; a denied command line is never recorded whole |
-| `sandbox.limit-hit` | `{launch, kind: pids\|memory\|disk, peak}` |
+| `sandbox.denied` | `{launchId, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; at most 200 distinct targets, then one event with `overflow: true`, an empty `target`, rule `overflow` and `count` the denials not counted by target; a denied command line is never recorded whole |
+| `sandbox.limit-hit` | `{launchId, kind: pids\|memory\|disk, peak}` |
 
 Wire shapes are goldens under `Golden/Sandbox/events/`. The spec writes `launchId` in these payloads; on the wire the field is `launch`, as in every other launch event.
 

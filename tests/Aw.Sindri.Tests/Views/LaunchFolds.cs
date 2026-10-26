@@ -30,7 +30,7 @@ internal static class LaunchFolds
     /// <summary>Folds a 'launch.failed'.</summary>
     public static Task Fail(this ViewsHarness v, string code = "SND-LAUNCH-007", LaunchStage? stage = null, LaunchId? launch = null, string message = "the launch was interrupted",
         InstanceAddress? instance = null, string? state = null, int? attempt = null, string? reason = null, string? source = null) =>
-        v.Fold(EventTypes.LaunchFailed, new LaunchFailed(launch ?? A.FirstLaunchId, A.FirstItemId, code, message, stage is { } s ? new LaunchFailureDetail(s) : null, instance, state, attempt, reason, source), A.FirstItemId);
+        v.Fold(EventTypes.LaunchFailed, new LaunchFailed(launch ?? A.FirstLaunchId, A.FirstItemId, code, message, stage is null && reason is null && source is null ? null : new LaunchFailureDetail(stage, reason, Source: source), instance, state, attempt), A.FirstItemId);
 
     /// <summary>Folds a 'launch.viewer-attached'.</summary>
     public static Task Attached(this ViewsHarness v, LaunchId? launch = null) =>

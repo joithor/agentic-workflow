@@ -14,5 +14,5 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Rule">The rule that denied it.</param>
 /// <param name="Overflow">True for the one overflow event after 200 distinct targets in a run (spec §3.6); its Target is empty, its Rule is "overflow" and its Count is the denials not counted by target. Left out otherwise.</param>
 /// <param name="Count">The running count (1, 10 or 100).</param>
-public sealed record SandboxDenied(LaunchId Launch, DenialKind Kind, string Target, string Rule, int Count,
+public sealed record SandboxDenied([property: JsonPropertyName("launchId")] LaunchId Launch, DenialKind Kind, string Target, string Rule, int Count,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Overflow = false);

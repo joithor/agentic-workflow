@@ -48,11 +48,26 @@ public sealed class SandboxWireTests
 
     [Fact, Trait("Lane", "unit")]
     public void A_failed_launch_with_a_reason_has_its_wire_shape() =>
-        Match(JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-017", "The agent's sign-in isn't available for Steps (expired)", Reason: "expired", Source: "separate-login"), Json), "launch-failed-reason.json");
+        Match(JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-017", "The agent's sign-in isn't available for Steps (expired)", new LaunchFailureDetail(Stage: null, Reason: "expired", Source: "separate-login")), Json), "launch-failed-reason.json");
 
     [Fact, Trait("Lane", "unit")]
     public void A_failed_launch_without_a_reason_is_unchanged() =>
         Assert.DoesNotContain("reason", JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-003", "gone"), Json), StringComparison.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_denial_and_a_limit_hit_name_their_launch_launchId()
+    {
+        foreach (var json in new[]
+        {
+            JsonSerializer.Serialize(new SandboxDenied(A.FirstLaunchId, DenialKind.Network, "github.com", "group:github-off", 1), Json),
+            JsonSerializer.Serialize(new SandboxLimitHit(A.FirstLaunchId, LimitHitKind.Pids, 2048), Json),
+        })
+        {
+            using var document = JsonDocument.Parse(json);
+            Assert.Equal(A.FirstLaunchId.Value, document.RootElement.GetProperty("launchId").GetString());
+            Assert.False(document.RootElement.TryGetProperty("launch", out _));
+        }
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void An_overflow_denial_has_its_wire_shape() =>
