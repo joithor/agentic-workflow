@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features;
 using Aw.Sindri.Host.Server;
@@ -33,6 +34,7 @@ internal sealed class SchedulerRig : IAsyncDisposable
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton(H.Callers)
             .AddSingleton<IIdGenerator>(H.Ids)
+            .AddSingleton<ITextScrubber>(new PassThroughScrubber())
             .AddRecordServiceRun();
         foreach (var service in services)
         {
