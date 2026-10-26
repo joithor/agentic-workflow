@@ -79,12 +79,8 @@ internal sealed class JudgeDatabase(SqliteOptions options, TimeProvider clock)
         return Results.Ok();
     }
 
-    // #1280: stub, not built yet.
-    private ValueTask<Result<Unit>> ParkTsEvalTables(CancellationToken cancellationToken)
-    {
-        _ = (_connections, cancellationToken);
-        return ValueTask.FromResult(Results.Ok());
-    }
+    private ValueTask<Result<Unit>> ParkTsEvalTables(CancellationToken cancellationToken) =>
+        TsEvalTables.Park(_connections, options.DatabasePath, cancellationToken);
 
     private Result<Unit> MakeDirectory()
     {
