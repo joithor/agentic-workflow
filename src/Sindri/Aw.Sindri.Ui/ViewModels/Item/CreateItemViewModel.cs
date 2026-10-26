@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
@@ -42,6 +43,12 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     /// <summary>The repo, or empty for the API's default.</summary>
     public string Repo { get; set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The repos the Work page knows (without "All repos"), offered by the Repo field; refreshed each time the form opens.</summary>
+    public ObservableCollection<string> RepoChoices { get; } = [];
+
+    /// <summary>Where the known repos come from (the Work page's repo choices); none offers nothing.</summary>
+    internal Func<IReadOnlyList<string>>? KnownRepos { get; set; }
+
     /// <summary>The body, or empty.</summary>
     public string Body { get; set => Set(ref field, value); } = string.Empty;
 
@@ -60,6 +67,12 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
 
     /// <summary>True while <see cref="TitleError"/> shows.</summary>
     public bool HasTitleError { get; private set => Set(ref field, value); }
+
+    /// <summary>
+    /// What the error line under the title shows: the error, or a no-break space that keeps the line's height, so a blank
+    /// submit doesn't move the fields below it.
+    /// </summary>
+    public string TitleErrorLine => HasTitleError ? TitleError : "\u00A0";
 
     /// <summary>True while the title's live region is live (its gate, set before its text changes).</summary>
     public bool IsAnnouncing { get; private set => Set(ref field, value); }
@@ -98,6 +111,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         }
 
         (Title, Repo, Body, CreatedId) = (string.Empty, string.Empty, string.Empty, string.Empty);
+        Patch.To(RepoChoices, [.. (KnownRepos?.Invoke() ?? []).Where(r => r.Length > 0 && !string.Equals(r, Labels.AllRepos, StringComparison.Ordinal))]);
         ClearTitleError();
         IsOpen = true;
         OnChanged(nameof(CanSubmit));
@@ -133,6 +147,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
     private void RequireTitle()
     {
         (TitleError, HasTitleError) = (Labels.TitleIsRequired, true);
+        OnChanged(nameof(TitleErrorLine));
         Say(Labels.TitleIsRequired);
         TitleFocusRequests++;
     }
@@ -142,6 +157,7 @@ internal sealed class CreateItemViewModel(CatalogViewModel catalog, Func<Uri?> u
         if (HasTitleError)
         {
             (HasTitleError, TitleError) = (false, string.Empty);
+            OnChanged(nameof(TitleErrorLine));
         }
 
         IsAnnouncing = false;   // the region goes dark first; its text stays (never empty) and is not spoken
