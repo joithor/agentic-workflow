@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Tests.ContextCalls;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
@@ -15,6 +16,7 @@ namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 public sealed class ContextInputProfileTests
 {
     private const string Key = "workflow.scoping.historyWindow";
+    private static readonly string[] _anchors = ["feature:a"];
 
     private static LoadedProfile WithWindow(HistoryWindowSettings? window) =>
         ContextInputFixtures.Profile() with { Profile = ContextInputFixtures.Profile().Profile with { Workflow = new WorkflowSettings(Scoping: window is null ? null : new ScopingSettings(window)) } };
@@ -27,7 +29,7 @@ public sealed class ContextInputProfileTests
         BlockId.From(ContextHistoryInput.Id), BlockId.From("step.scope.gather"),
         new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
-            ["anchors"] = JsonSerializer.SerializeToElement(new[] { "feature:a" }),
+            ["anchors"] = JsonSerializer.SerializeToElement(_anchors),
             ["window"] = JsonDocument.Parse("{\"profile\":\"" + Key + "\"}").RootElement.Clone(),
         },
         new Dictionary<FactKey, JsonElement>(), ContextInputFixtures.Web);
@@ -71,7 +73,7 @@ public sealed class ContextInputProfileTests
     public async Task A_key_no_input_can_read_fails_the_fill_with_SND_WF_021()
     {
         var history = new ContextHistoryInputTests.StubHistory(() => ContextHistoryTextTests.View());
-        var other = Context() with { Arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = JsonSerializer.SerializeToElement(new[] { "feature:a" }), ["window"] = JsonDocument.Parse("{\"profile\":\"workflow.nope\"}").RootElement.Clone() } };
+        var other = Context() with { Arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = JsonSerializer.SerializeToElement(_anchors), ["window"] = JsonDocument.Parse("{\"profile\":\"workflow.nope\"}").RootElement.Clone() } };
 
         var filled = await Input(history, WithWindow(window: null)).Fill(other, TestContext.Current.CancellationToken);
 
