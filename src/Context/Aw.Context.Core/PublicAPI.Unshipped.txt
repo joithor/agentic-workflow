@@ -7745,8 +7745,6 @@ Aw.Context.Core.Models.ModelAnswer.Deconstruct(out string! Text, out int InputTo
 Aw.Context.Core.Models.ModelAnswer.Model.get -> string?
 Aw.Context.Core.Models.ModelAnswer.Model.init -> void
 Aw.Context.Core.Models.ModelAnswer.ModelAnswer(string! Text, int InputTokens, int OutputTokens, string? Model = null) -> void
-Aw.Context.Core.Models.ModelRequest.Deconstruct(out Aw.Context.Core.Models.ModelPurpose Purpose, out string! Prompt, out int MaxTokens, out System.TimeSpan Budget, out Aw.Context.Core.Models.ModelTier? Tier) -> void
-Aw.Context.Core.Models.ModelRequest.ModelRequest(Aw.Context.Core.Models.ModelPurpose Purpose, string! Prompt, int MaxTokens, System.TimeSpan Budget, Aw.Context.Core.Models.ModelTier? Tier = null) -> void
 Aw.Context.Core.Models.ModelRequest.Tier.get -> Aw.Context.Core.Models.ModelTier?
 Aw.Context.Core.Models.ModelRequest.Tier.init -> void
 Aw.Context.Core.Models.ModelTier
@@ -7759,3 +7757,54 @@ static Aw.Context.Core.ConceptScan.ConceptScanTiers.Default.get -> Aw.Context.Co
 static Aw.Context.Core.ConceptScan.ConceptScanTiers.EstimateTokens(string! prompt) -> int
 static Aw.Context.Core.ConceptScan.ConceptScanTiers.operator !=(Aw.Context.Core.ConceptScan.ConceptScanTiers? left, Aw.Context.Core.ConceptScan.ConceptScanTiers? right) -> bool
 static Aw.Context.Core.ConceptScan.ConceptScanTiers.operator ==(Aw.Context.Core.ConceptScan.ConceptScanTiers? left, Aw.Context.Core.ConceptScan.ConceptScanTiers? right) -> bool
+Aw.Context.Core.ConceptScan.CliModels
+Aw.Context.Core.ConceptScan.CliModels.<Clone>$() -> Aw.Context.Core.ConceptScan.CliModels!
+Aw.Context.Core.ConceptScan.CliModels.Equals(Aw.Context.Core.ConceptScan.CliModels? other) -> bool
+override Aw.Context.Core.ConceptScan.CliModels.Equals(object? obj) -> bool
+override Aw.Context.Core.ConceptScan.CliModels.GetHashCode() -> int
+override Aw.Context.Core.ConceptScan.CliModels.ToString() -> string!
+static Aw.Context.Core.ConceptScan.CliModels.operator !=(Aw.Context.Core.ConceptScan.CliModels? left, Aw.Context.Core.ConceptScan.CliModels? right) -> bool
+static Aw.Context.Core.ConceptScan.CliModels.operator ==(Aw.Context.Core.ConceptScan.CliModels? left, Aw.Context.Core.ConceptScan.CliModels? right) -> bool
+Aw.Context.Core.ConceptScan.CliModels.Deconstruct(out string? Cheap, out string? Strong) -> void
+Aw.Context.Core.ConceptScan.CliModels.CliModels(string? Cheap, string? Strong) -> void
+Aw.Context.Core.ConceptScan.CliModels.Cheap.get -> string?
+Aw.Context.Core.ConceptScan.CliModels.Cheap.init -> void
+Aw.Context.Core.ConceptScan.CliModels.Strong.get -> string?
+Aw.Context.Core.ConceptScan.CliModels.Strong.init -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels
+Aw.Context.Core.ConceptScan.ConceptScanModels.<Clone>$() -> Aw.Context.Core.ConceptScan.ConceptScanModels!
+Aw.Context.Core.ConceptScan.ConceptScanModels.Equals(Aw.Context.Core.ConceptScan.ConceptScanModels? other) -> bool
+override Aw.Context.Core.ConceptScan.ConceptScanModels.Equals(object? obj) -> bool
+override Aw.Context.Core.ConceptScan.ConceptScanModels.GetHashCode() -> int
+override Aw.Context.Core.ConceptScan.ConceptScanModels.ToString() -> string!
+static Aw.Context.Core.ConceptScan.ConceptScanModels.operator !=(Aw.Context.Core.ConceptScan.ConceptScanModels? left, Aw.Context.Core.ConceptScan.ConceptScanModels? right) -> bool
+static Aw.Context.Core.ConceptScan.ConceptScanModels.operator ==(Aw.Context.Core.ConceptScan.ConceptScanModels? left, Aw.Context.Core.ConceptScan.ConceptScanModels? right) -> bool
+Aw.Context.Core.ConceptScan.ConceptScanModels.Deconstruct(out Aw.Context.Core.ConceptScan.CliModels! Claude, out Aw.Context.Core.ConceptScan.CliModels! Codex, out Aw.Context.Core.ConceptScan.CliModels! Cursor) -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels.ConceptScanModels(Aw.Context.Core.ConceptScan.CliModels! Claude, Aw.Context.Core.ConceptScan.CliModels! Codex, Aw.Context.Core.ConceptScan.CliModels! Cursor) -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels.Claude.get -> Aw.Context.Core.ConceptScan.CliModels!
+Aw.Context.Core.ConceptScan.ConceptScanModels.Claude.init -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels.Codex.get -> Aw.Context.Core.ConceptScan.CliModels!
+Aw.Context.Core.ConceptScan.ConceptScanModels.Codex.init -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels.Cursor.get -> Aw.Context.Core.ConceptScan.CliModels!
+Aw.Context.Core.ConceptScan.ConceptScanModels.Cursor.init -> void
+Aw.Context.Core.ConceptScan.ConceptScanModels.For(Aw.Context.Core.Models.ModelTier tier) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.Context.Core.ConceptScan.ConceptScanModels.Default.get -> Aw.Context.Core.ConceptScan.ConceptScanModels!
+Aw.Context.Core.ConceptScan.ConceptScanSettings
+Aw.Context.Core.ConceptScan.ConceptScanSettings.<Clone>$() -> Aw.Context.Core.ConceptScan.ConceptScanSettings!
+Aw.Context.Core.ConceptScan.ConceptScanSettings.ConceptScanSettings() -> void
+Aw.Context.Core.ConceptScan.ConceptScanSettings.Equals(Aw.Context.Core.ConceptScan.ConceptScanSettings? other) -> bool
+override Aw.Context.Core.ConceptScan.ConceptScanSettings.Equals(object? obj) -> bool
+override Aw.Context.Core.ConceptScan.ConceptScanSettings.GetHashCode() -> int
+override Aw.Context.Core.ConceptScan.ConceptScanSettings.ToString() -> string!
+static Aw.Context.Core.ConceptScan.ConceptScanSettings.operator !=(Aw.Context.Core.ConceptScan.ConceptScanSettings? left, Aw.Context.Core.ConceptScan.ConceptScanSettings? right) -> bool
+static Aw.Context.Core.ConceptScan.ConceptScanSettings.operator ==(Aw.Context.Core.ConceptScan.ConceptScanSettings? left, Aw.Context.Core.ConceptScan.ConceptScanSettings? right) -> bool
+Aw.Context.Core.ConceptScan.ConceptScanSettings.Tiers.get -> Aw.Context.Core.ConceptScan.ConceptScanTiers!
+Aw.Context.Core.ConceptScan.ConceptScanSettings.Tiers.init -> void
+Aw.Context.Core.ConceptScan.ConceptScanSettings.Models.get -> Aw.Context.Core.ConceptScan.ConceptScanModels!
+Aw.Context.Core.ConceptScan.ConceptScanSettings.Models.init -> void
+Aw.Context.Core.Models.ModelRequest.Deconstruct(out Aw.Context.Core.Models.ModelPurpose Purpose, out string! Prompt, out int MaxTokens, out System.TimeSpan Budget, out Aw.Context.Core.Models.ModelTier? Tier, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Models) -> void
+Aw.Context.Core.Models.ModelRequest.ModelRequest(Aw.Context.Core.Models.ModelPurpose Purpose, string! Prompt, int MaxTokens, System.TimeSpan Budget, Aw.Context.Core.Models.ModelTier? Tier = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Models = null) -> void
+Aw.Context.Core.Models.ModelRequest.Models.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Context.Core.Models.ModelRequest.Models.init -> void
+Aw.Context.Core.Engine.ContextSettings.ConceptScan.get -> Aw.Context.Core.ConceptScan.ConceptScanSettings!
+Aw.Context.Core.Engine.ContextSettings.ConceptScan.init -> void

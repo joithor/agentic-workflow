@@ -9,7 +9,7 @@ namespace Aw.Context.Core.ConceptScan;
 /// <param name="StrongAbovePromptTokens">The most estimated tokens in the first prompt a cheap scan takes.</param>
 public sealed record ConceptScanTiers(int StrongAboveFeatures, int StrongAbovePromptTokens)
 {
-    /// <summary>150 features or 10,000 prompt tokens (of the 15,000 the input cap allows).</summary>
+    /// <summary>150 features or 10,000 prompt tokens (of the 15,000 the input cap allows); the profile's 'context.conceptScan' overrides them.</summary>
     public static ConceptScanTiers Default { get; } = new(150, 10_000);
 
     /// <summary>The tokens of a prompt, estimated the way the model port does: characters / 4, rounded up.</summary>

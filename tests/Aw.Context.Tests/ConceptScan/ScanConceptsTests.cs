@@ -38,7 +38,7 @@ public sealed class ScanConceptsTests : IDisposable
     // The first pass proposes, the second concludes; the second prompt is the one that names the proposed concepts.
     private static string TwoPasses(ModelRequest request) => request.Prompt.Contains("Proposed concepts:", StringComparison.Ordinal) ? Concluded : Proposed;
 
-    private Task<Kernel.Result<ConceptScanReport>> Scan(int? expected = null) => _world.Map.ScanConcepts(_scope, MapWorld.None, expected).AsTask();
+    private Task<Kernel.Result<ConceptScanReport>> Scan(int? expected = null, ContextScope? scope = null) => _world.Map.ScanConcepts(scope ?? _scope, MapWorld.None, expected).AsTask();
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_scan_stores_the_hints_the_second_pass_returns_for_the_draft()
@@ -102,6 +102,31 @@ public sealed class ScanConceptsTests : IDisposable
         Assert.Equal(2, _world.Model.Requests.Count);
         Assert.All(_world.Model.Requests, static r => Assert.Equal(ModelTier.Strong, r.Tier));
         Assert.Equal(ModelTier.Strong, report.Tier);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_default_models_are_haiku_for_cheap_and_sonnet_for_strong_on_claude_and_none_for_the_others()
+    {
+        _ = await Seed(Shifts().Build());
+        _world.Model.Responder = TwoPasses;
+
+        var report = (await Scan()).Value;
+
+        Assert.All(_world.Model.Requests, static r => Assert.Equal(new Dictionary<string, string>(StringComparer.Ordinal) { ["claude"] = "haiku" }, r.Models));
+        Assert.Equal(ModelTier.Cheap, report.Tier);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_profile_moves_the_thresholds_and_names_the_models()
+    {
+        _ = await Seed(Shifts().Build());   // three features
+        _world.Model.Responder = TwoPasses;
+        var scope = MapWorld.HumanWith("""{"repos":["aw-split-panes"],"conceptScan":{"strongAboveFeatures":2,"models":{"codex":{"strong":"codex-big"},"claude":{"strong":"opus"}}}}""");
+
+        var report = (await Scan(scope: scope)).Value;
+
+        Assert.Equal(ModelTier.Strong, report.Tier);
+        Assert.All(_world.Model.Requests, static r => Assert.Equal(new Dictionary<string, string>(StringComparer.Ordinal) { ["claude"] = "opus", ["codex"] = "codex-big" }, r.Models));
     }
 
     [Fact, Trait("Lane", "unit")]

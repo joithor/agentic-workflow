@@ -14,8 +14,7 @@ namespace Aw.Sindri.Host.Models;
 /// build reports as a degraded note and a sync as queued decisions, never a failure.
 /// </summary>
 /// <param name="catalog">Finds the provider lineup (resolved on the first request).</param>
-/// <param name="tiers">The model each agent CLI runs for the strong tier.</param>
-internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog, ModelTierNames? tiers = null) : IModelPort
+internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog) : IModelPort
 {
     private const string Decision = "answered";
     private const string TextKey = "text";
@@ -43,7 +42,7 @@ internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog, ModelTierNa
                 continue;
             }
 
-            var asked = Tiered(question, request.Tier, name);
+            var asked = question;   // the request's model names are not read yet
             var result = await provider.Decide(asked, input: null, request.Budget, cancellationToken).ConfigureAwait(false);
             if (result is ProviderDecided { Extra: { } extra } && extra[TextKey] is JsonValue value && value.TryGetValue<string>(out var text) && text.Length > 0)
             {
@@ -53,10 +52,6 @@ internal sealed class JudgeModelPort(Func<IProviderCatalog> catalog, ModelTierNa
 
         return ContextErrors.LabelingUnavailable.With("no agent CLI (claude, codex, cursor-agent) answered the request");
     }
-
-    // The cheap tier (and no tier) leaves the model to the CLI's own small default; the strong tier names this CLI's strong model.
-    private QuestionRef Tiered(QuestionRef question, ModelTier? tier, ProviderName provider) =>
-        tier == ModelTier.Strong && (tiers ?? ModelTierNames.Default).Strong(provider) is { } model ? question with { Model = model } : question;
 
     private static int Tokens(string text) => (text.Length + 3) / 4;
 }
