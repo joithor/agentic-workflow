@@ -41,7 +41,7 @@ public sealed class ContextConceptTermsTests
     {
         var page = await ConceptPage.Shown(Serving(new RouteAnswer(HttpStatusCode.OK, TermsBody)));
 
-        Expect.Equal(
+        Expect.Sequence(
             [("Terms: shift · swap · roster", true), ("Terms: invoice · shift", true), (string.Empty, false)],
             page.Concepts.Tiles.Take(3).Select(t => (t.TermsText, t.HasTerms)));
     }
