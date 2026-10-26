@@ -27,9 +27,9 @@ public sealed class ScopeCoverageDemotedRolesTests
     private static LensFile File(string path) => new(path, [_anchor], [], Provenance.Deterministic, 1.0, Confirmed: true, Suggested: false, LinkId: null, path, NodeKind.Code, Trust.Untrusted);
 
     /// <summary>A real lenses view whose code band is flagged by the real <see cref="DemotedFiles"/> over a repo that demotes the script and fixture roles, written with the host's JSON options.</summary>
-    private static string LensesJson()
+    private static string LensesJson(params string[] demoteGlobs)
     {
-        var repo = new ContextRepo(ContextRepoName.From("web"), "/work/web") { DemotePaths = ["scripts/**", "tests/fixtures/**"] };
+        var repo = new ContextRepo(ContextRepoName.From("web"), "/work/web") { DemotePaths = demoteGlobs };
         var band = DemotedFiles.Last(new CodeBand([File(Product), File(Script), File(Fixture)], LensSymbols.Unavailable, new CodeCounts(3, 0, 3)), [repo]);
         var view = new LensesView(1, new LensAnchor(_anchor, "Create link", NodeKind.Surface, Trust.Trusted), "v1", Draft: false, 2, DateTimeOffset.UnixEpoch,
             new LensBands(
@@ -67,7 +67,7 @@ public sealed class ScopeCoverageDemotedRolesTests
     [Fact, Trait("Lane", "unit")]
     public void The_hosts_lenses_json_carries_the_demoted_flag_of_the_demoted_files_only()
     {
-        var files = JsonNode.Parse(LensesJson())!["bands"]!["code"]!["files"]!.AsArray();
+        var files = JsonNode.Parse(LensesJson("scripts/**", "tests/fixtures/**"))!["bands"]!["code"]!["files"]!.AsArray();
 
         Assert.Equal([Script, Fixture], files.Where(static f => f!["demoted"]?.GetValue<bool>() == true).Select(static f => f!["path"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Null(files.Single(static f => f!["path"]!.GetValue<string>() == Product)!["demoted"]);
@@ -76,11 +76,19 @@ public sealed class ScopeCoverageDemotedRolesTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_script_and_a_fixture_the_profile_demotes_raise_no_COV_003_through_the_real_path_and_a_product_file_does()
     {
-        var items = await Cov3Items(LensesJson());
+        var items = await Cov3Items(LensesJson("scripts/**", "tests/fixtures/**"));
 
         Assert.DoesNotContain($"code:{Script}", items, StringComparer.Ordinal);
         Assert.DoesNotContain($"code:{Fixture}", items, StringComparer.Ordinal);
         Assert.Contains($"code:{Product}", items, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_ordinary_unmapped_file_next_to_an_anchor_still_raises_COV_003_when_no_demote_glob_matches_it()
+    {
+        var items = await Cov3Items(LensesJson("docs/**"));   // why: the repo demotes a role none of the three files belongs to
+
+        Assert.Equal([$"code:{Fixture}", $"code:{Product}", $"code:{Script}"], items.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
