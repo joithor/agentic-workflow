@@ -13,7 +13,7 @@ namespace Aw.Sindri.Tests.Launch;
 public sealed class StalledLaunchesTests
 {
     private static readonly DateTimeOffset _now = new(2026, 10, 26, 12, 0, 0, TimeSpan.Zero);
-    private static readonly ItemId _item = ItemId.From("ITM-" + new string('1', 26));
+    private static readonly ItemId _item = ItemId.From("ITM-" + new string('1', 32));
     private static readonly InstanceAddress _instance = InstanceAddress.From(_item.Value + "/step/1");
 
     private static LaunchRow Row(int n, SessionEndReason? ended, TimeSpan requestedAgo, InstanceAddress? instance, TimeSpan? endedAgo = null) =>
