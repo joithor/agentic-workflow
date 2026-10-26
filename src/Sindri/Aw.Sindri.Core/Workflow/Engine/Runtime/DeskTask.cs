@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -29,5 +30,6 @@ public sealed record DeskTask(
     public IReadOnlyList<InjectionEntry> Injection { get; init; } = Injection ?? [];
 
     /// <summary>How long each Step input took to fill, in declared order; null when the run kept none.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<InputTiming>? Timings { get; init; }
 }
