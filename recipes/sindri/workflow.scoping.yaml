@@ -197,6 +197,8 @@ transitions:
   - { label: "a source is missing: gather again", from: evidence, to: gather, on: step.completed, when: { outcome: regather },   produces: [fact:findings, fact:roundLog] }
   - { label: "the same findings twice: you decide, findings open", from: evidence, to: stop, on: step.completed, when: { outcome: converged },
       produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket, fact:recommendation, fact:runs, fact:findings, fact:roundLog] }
+  - { label: "an answer nothing cites, which a redraft can't fix: you decide, findings open", from: evidence, to: stop, on: step.completed, when: { outcome: open },
+      produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket, fact:recommendation, fact:runs, fact:findings, fact:roundLog] }
   - { label: "only code files left uncovered: rule them out", from: evidence, to: exclude, on: step.completed, when: { outcome: uncovered }, produces: [fact:findings, fact:roundLog] }
   - { from: exclude, to: check, on: step.completed, when: { outcome: excluded }, produces: [fact:scopeMap] }
   - { label: "proof is incomplete: draft again", from: evidence, to: draft,  on: step.completed, when: { outcome: incomplete }, produces: [fact:findings, fact:roundLog] }
@@ -207,7 +209,7 @@ transitions:
   - { label: "the document changed: check it again", from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
   - { from: withdraw, to: dropped, on: step.completed, when: { outcome: withdrawn } }
 loops: { rounds: { cap: 10 }, rescope: { cap: 6 }, interview: { cap: 6 }, challenge: { cap: 3 }, gapsearch: { cap: 3 }, exclusions: { cap: 4 }, refreeze: { cap: 5 }, revise: { cap: 8 } }
-evals:   # 51 cases: the 22 of Appendix B.1, the two recorded-limit cases of the line amendment (commit-not-held, not-synced), idea-child-unresolved and the challenge cap that routes to the desk or to size, and a spent challenge whose walk has a gap or whose model repeats the drafter's that reaches the stop, and a lens fault at evidence that regathers, and the 11 of the relevance review and the gap search (issue 966), where every older case also walks the relevance lines after gather and one clear gap round after its first passing check
+evals:   # 52 cases: the 22 of Appendix B.1, the two recorded-limit cases of the line amendment (commit-not-held, not-synced), idea-child-unresolved and the challenge cap that routes to the desk or to size, and a spent challenge whose walk has a gap or whose model repeats the drafter's that reaches the stop, and a lens fault at evidence that regathers, and the 11 of the relevance review and the gap search (issue 966), where every older case also walks the relevance lines after gather and one clear gap round after its first passing check
   - evals/workflow.scoping/brief-happy.jsonl
   - evals/workflow.scoping/tracker-happy.jsonl
   - evals/workflow.scoping/idea-child.jsonl
@@ -242,6 +244,7 @@ evals:   # 51 cases: the 22 of Appendix B.1, the two recorded-limit cases of the
   - evals/workflow.scoping/evidence-converged.jsonl
   - evals/workflow.scoping/evidence-cov003-exclusions.jsonl
   - evals/workflow.scoping/evidence-cov003-converged.jsonl
+  - evals/workflow.scoping/evidence-acc003-open.jsonl
   - evals/workflow.scoping/stop-revise.jsonl
   - evals/workflow.scoping/revise-after-caps.jsonl
   - evals/workflow.scoping/freeze-mismatch.jsonl

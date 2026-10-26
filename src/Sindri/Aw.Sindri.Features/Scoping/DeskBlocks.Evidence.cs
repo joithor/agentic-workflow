@@ -65,24 +65,49 @@ internal static partial class DeskBlocks
         var outcome = "regather";
         if (report.Outcome != ScopeOutcome.Regather)
         {
-            if (RoundLog.Repeats(facts, "evidence", findings) && assembled.Missing("decision", "questions").Count == 0)
+            var ready = assembled.Missing("decision", "questions").Count == 0;
+            if (ready && RoundLog.Repeats(facts, "evidence", findings))
             {
-                return Converged(assembled, findings, log, report);
+                return Converged(assembled, findings, log, report, "converged");
             }
 
-            outcome = findings.Count > 0 && findings.TrueForAll(static f => string.Equals(f.Rule, ScopeRules.Cov3, StringComparison.Ordinal)) ? "uncovered" : "incomplete";
+            outcome = Narrow(findings) ?? "incomplete";
+            if (outcome == "open" && !ready)
+            {
+                outcome = "incomplete";   // why: the stop's packet needs the size and the questions
+            }
+
+            if (outcome == "open")
+            {
+                return Converged(assembled, findings, log, report, "open");
+            }
         }
 
         return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
     }
 
     /// <summary>
+    /// The narrow outcome when every finding is one a redraft can't fix: 'uncovered' when SCP-COV-003 is among them (the exclusions step goes first; #1114), 'open' when they are SCP-ACC-003 alone (an answer nothing cites,
+    /// which the drafter can't write into the answer log; the owner's stop decides, #1205). Null when anything else fails too.
+    /// </summary>
+    private static string? Narrow(List<ScopeFinding> findings)
+    {
+        if (findings.Count == 0 || !findings.TrueForAll(static f => string.Equals(f.Rule, ScopeRules.Cov3, StringComparison.Ordinal) || string.Equals(f.Rule, ScopeRules.Acc3, StringComparison.Ordinal)))
+        {
+            return null;
+        }
+
+        return findings.Exists(static f => string.Equals(f.Rule, ScopeRules.Cov3, StringComparison.Ordinal)) ? "uncovered" : "open";
+    }
+
+    /// <summary>
     /// Two evidence rounds in a row found only the same things (#1120): another draft round would find them again, so the owner decides. The packet is assembled as on 'complete' (the stop reads it)
     /// and the findings stay open in 'fact:findings' and the round log; the recommendation is to revise, and the freeze re-checks the packet, so nothing is approved around a failing rule.
     /// </summary>
-    private static Result<ScopingDeskResponse> Converged(ScopeFacts assembled, List<ScopeFinding> findings, JsonArray log, ScopingCheckResponse report)
+    private static Result<ScopingDeskResponse> Converged(ScopeFacts assembled, List<ScopeFinding> findings, JsonArray log, ScopingCheckResponse report, string outcome)
     {
-        var open = string.Create(CultureInfo.InvariantCulture, $"{findings.Count} finding(s) are still open after two evidence rounds that found the same things.");
+        var because = outcome == "open" ? "that a redraft can't fix: an answer no item, surface or open question cites" : "after two evidence rounds that found the same things";
+        var open = string.Create(CultureInfo.InvariantCulture, $"{findings.Count} finding(s) are still open {because}.");
         var outputs = Outputs(
             ("scopeMap", assembled.Require("scopeMap")),
             ("acceptance", assembled.Require("acceptance")),
@@ -96,6 +121,6 @@ internal static partial class DeskBlocks
             outputs["runs"] = ScopeJson.Write(runs);   // why: the freeze re-checks the model checks from this fact, as after 'complete'
         }
 
-        return Reply("step.scope.evidence", "converged", outputs, ScopePacket.Build(assembled), report);
+        return Reply("step.scope.evidence", outcome, outputs, ScopePacket.Build(assembled), report);
     }
 }
