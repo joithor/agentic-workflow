@@ -26,8 +26,19 @@ internal sealed partial class ShellViewModel
     /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
     public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject : SheetSubject);
 
-    /// <summary>The edge tab's text: a workflow instance's readable title once read, else the subject.</summary>
-    public string EdgeTabText => IsInstanceSheet && Instance.Title.Length > 0 ? Instance.Title : SheetSubject;
+    /// <summary>The edge tab's text: the item's or workflow's readable title once read, else the sheet kind's plain word; never a raw address.</summary>
+#pragma warning disable IDE0072 // the kinds whose subject is already a readable name keep it
+    public string EdgeTabText => SheetLink?.Kind switch
+    {
+        DeepLinkKind.Item => Item.Title.Length > 0 ? Item.Title : Labels.EdgeTabItem,
+        DeepLinkKind.Workflow => Instance.Title.Length > 0 ? Instance.Title : Labels.EdgeTabWorkflowRun,
+        DeepLinkKind.NeedsYou => Labels.EdgeTabNeedsYou,
+        DeepLinkKind.Decision => Labels.EdgeTabDecision,
+        DeepLinkKind.Job => Labels.EdgeTabJob,
+        DeepLinkKind.Session => Labels.EdgeTabSession,
+        _ => SheetSubject,
+    };
+#pragma warning restore IDE0072
 
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page, on the page it was closed on.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected && _edgeTabPage == CurrentPage;

@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -133,6 +134,13 @@ internal sealed partial class ShellViewModel
         Instance.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(InstanceFrameViewModel.Title), StringComparison.Ordinal))
+            {
+                Changed(nameof(EdgeTabText));
+            }
+        };
+        Item.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(ItemSheetViewModel.Title), StringComparison.Ordinal))
             {
                 Changed(nameof(EdgeTabText));
             }
