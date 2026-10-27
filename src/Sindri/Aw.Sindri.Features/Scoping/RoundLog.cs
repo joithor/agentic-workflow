@@ -22,6 +22,19 @@ internal static class RoundLog
         return facts[Key] is JsonArray log ? (JsonArray)log.DeepClone() : [];
     }
 
+    /// <summary>The digest of the log (#1119): what the next Step reads instead of the raw log, set against the map and the answers as they stand now.</summary>
+    /// <param name="log">The round log.</param>
+    /// <param name="scopeMap">The scope map, or null when the instance holds none yet.</param>
+    /// <param name="answerLog">The answer log, or null.</param>
+    /// <returns>An object with open[], closed[], counts { byRule, byKind } and decisions[].</returns>
+    internal static JsonObject Digest(JsonArray log, JsonNode? scopeMap, JsonNode? answerLog) => throw new NotSupportedException();
+
+    /// <summary>Why a Step's output may not replace the log: it drops or rewrites an entry the log held before.</summary>
+    /// <param name="before">The log the Step read; null when the instance holds none.</param>
+    /// <param name="after">The log the Step wrote.</param>
+    /// <returns>The refusal, or null when <paramref name="after"/> keeps every earlier entry as it was and only adds.</returns>
+    internal static string? Refusal(JsonNode? before, JsonNode? after) => throw new NotSupportedException();
+
     /// <summary>The earlier entries unchanged plus one entry for each of <paramref name="findings"/>.</summary>
     /// <param name="facts">The Step's facts, which hold the log so far.</param>
     /// <param name="step">The Step's short name ('check', 'challenge-log', 'evidence').</param>
