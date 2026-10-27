@@ -7,6 +7,7 @@
 //   <dir>/colors.json    optional { "<key>": [["substring of node text", "blue"], ...] }; first match wins, default grey
 //   --out                where <name>.tldraw (created via POST /api/docs/create) and <key>.svg land
 //   --name               tldraw doc name (default: basename of --out). Always your OWN doc; never another session's.
+// Needs the tldraw offline app running. Exit: 0 drawn, 1 app not running or API error, 2 bad arguments or no .mmd files.
 // Colors are tldraw's names. Role mapping: blue = primary/new, violet = secondary/flagged, green = outcome, red = alert, grey = existing/context.
 import fs from "node:fs";
 import path from "node:path";
@@ -15,7 +16,11 @@ const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > -1 
 const SPEC = arg("spec"), OUT = arg("out"), ONLY = arg("only");
 if (!SPEC || !OUT) { console.error("usage: draw_diagrams.mjs --spec <dir> --out <dir> [--name n] [--only key]"); process.exit(2); }
 const NAME = arg("name", path.basename(path.resolve(OUT)));
-const SJ = process.env.TLDRAW_SERVER_JSON ?? `${process.env.HOME}/Library/Application Support/tldraw/server.json`;
+// Where the running app writes its port and token. Override with TLDRAW_SERVER_JSON.
+const SJ = process.env.TLDRAW_SERVER_JSON ?? (process.platform === "darwin"
+  ? `${process.env.HOME}/Library/Application Support/tldraw/server.json`
+  : `${process.env.XDG_CONFIG_HOME ?? `${process.env.HOME}/.config`}/tldraw/server.json`);
+if (!fs.existsSync(SJ)) { console.error(`tldraw offline is not running (no ${SJ}); start the app or set TLDRAW_SERVER_JSON`); process.exit(1); }
 
 async function call(method, p, body) {
   const { port, token } = JSON.parse(fs.readFileSync(SJ, "utf8")); // re-read: token is per launch
@@ -32,6 +37,7 @@ async function call(method, p, body) {
 const diagrams = Object.fromEntries(
   fs.readdirSync(SPEC).filter((f) => f.endsWith(".mmd")).map((f) => [f.slice(0, -4), fs.readFileSync(path.join(SPEC, f), "utf8")]),
 );
+if (!Object.keys(diagrams).length) { console.error(`no .mmd files in ${SPEC}`); process.exit(2); }
 const colorsPath = path.join(SPEC, "colors.json");
 const COLOR_RULES = fs.existsSync(colorsPath) ? JSON.parse(fs.readFileSync(colorsPath, "utf8")) : {};
 fs.mkdirSync(OUT, { recursive: true });
