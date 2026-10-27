@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
-#pragma warning disable MA0182 // until the watchdog (SB-3a, next builder) uses it
+#pragma warning disable MA0182 // the Host (assembly sindri) uses it, which this analyzer does not see
 /// <summary>
 /// The scope's loose RuntimeMaxSec (sandbox spec §3.3): systemd counts real time, parks included, so after a park the watchdog moves it out.
 /// It is a backstop, never the clock.

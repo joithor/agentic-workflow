@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
-#pragma warning disable MA0182 // until the watchdog (SB-3a, next builder) uses it
+#pragma warning disable MA0182 // the Host (assembly sindri) uses it, which this analyzer does not see
 /// <summary>
 /// The wall clock of one run (sandbox spec §3.3): time counts only while the run was not suspended. An interval between two samples counts
 /// when the run was unsuspended at both ends, so a park costs nothing and the tick that ends one does not count the park.

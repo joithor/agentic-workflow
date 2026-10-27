@@ -1,4 +1,5 @@
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -30,8 +31,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
     internal async Task<int> Run(string[] args, CancellationToken cancellationToken)
     {
         _resolved = WithSecretFromFile(environment);
-        _ = extras?.Watchdog;   // red: the watch is wired in the next commit
-        var (failed, begunLaunch, started) = await Begin(args).ConfigureAwait(false);
+        var (failed, begunLaunch, started, limits) = await Begin(args).ConfigureAwait(false);
         if (failed is { } failure)
         {
             return failure;
@@ -52,12 +52,16 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
             watchers.Add(Beats(launch, secret, stop.Token));
         }
 
+        var watch = limits is { } held && extras?.Watchdog is { } ports
+            ? new LimitWatchdog(ports.Scope, ports.Stats, calls, clock, held).Run(launch, proof, child.Exited, cancellationToken)
+            : Task.FromResult<LimitEnd?>(null);
         var code = await ExitCode(child, cancellationToken).ConfigureAwait(false);
         await stop.CancelAsync().ConfigureAwait(false);
         await Task.WhenAll(watchers).ConfigureAwait(false);
+        var limit = await watch.ConfigureAwait(false);
         if (proof is { } last)
         {
-            await Exit(launch, last, code, cancellationToken).ConfigureAwait(false);
+            await Exit(launch, last, new WrapExit(code, _found, limit), cancellationToken).ConfigureAwait(false);
         }
 
         return code;
@@ -105,30 +109,44 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
         return await child.Exited.ConfigureAwait(false);
     }
 
-    private async Task<(int? Failed, LaunchId? Launch, IWrapChild? Child)> Begin(string[] args)
+    private async Task<(int? Failed, LaunchId? Launch, IWrapChild? Child, WrapLimits? Limits)> Begin(string[] args)
     {
         var parsed = SessionWrapArguments.Parse(args);
         if (parsed.IsError)
         {
             await errors.WriteLineAsync($"{parsed.Error.Code}: {parsed.Error.Message}").ConfigureAwait(false);
-            return (2, null, null);
+            return (2, null, null, null);
         }
 
         var (launch, argv) = (parsed.Value.Launch, parsed.Value.Argv);
+        WrapLimits? limits = null;
+        if (parsed.Value.Limits is { } limitsFile)
+        {
+            // why: a sandboxed agent must never run unwatched, so nothing is started until the watch is certain
+            var read = extras?.Watchdog is null ? SindriErrors.RequestInvalid.With("this build cannot watch a scope, so --limits cannot be honoured") : WrapLimits.Read(limitsFile);
+            if (read.IsError)
+            {
+                await errors.WriteLineAsync($"{read.Error.Code}: {read.Error.Message}").ConfigureAwait(false);
+                return (2, launch, null, null);
+            }
+
+            limits = read.Value;
+        }
+
         if (!BinOnPath.Resolves(argv[0], Env("PATH")))
         {
             await errors.WriteLineAsync($"{argv[0]} not found ({SindriErrors.LaunchAgentMissing.Code}): install it, or run `sindri launch show` to see the catalog").ConfigureAwait(false);
-            return (127, launch, null);
+            return (127, launch, null, null);
         }
 
         var started = children.Start(argv, WrapEnvironment.For(launch, Env, Environment.ProcessPath ?? string.Empty));
         if (started.IsError)
         {
             await errors.WriteLineAsync($"{started.Error.Code}: {started.Error.Message}").ConfigureAwait(false);
-            return (127, launch, null);
+            return (127, launch, null, null);
         }
 
-        return (null, launch, started.Value);
+        return (null, launch, started.Value, limits);
     }
 
     private async Task Beats(LaunchId launch, LaunchSecret proof, CancellationToken token)
@@ -196,11 +214,11 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
         }
     }
 
-    private async Task Exit(LaunchId launch, LaunchSecret proof, int code, CancellationToken cancellationToken)
+    private async Task Exit(LaunchId launch, LaunchSecret proof, WrapExit ended, CancellationToken cancellationToken)
     {
         for (var attempt = 1; attempt <= ExitAttempts; attempt++)
         {
-            if ((await calls.Exit(launch, proof, new WrapExit(code, _found), cancellationToken).ConfigureAwait(false)).IsSuccess || attempt == ExitAttempts)
+            if ((await calls.Exit(launch, proof, ended, cancellationToken).ConfigureAwait(false)).IsSuccess || attempt == ExitAttempts)
             {
                 return;   // after the last try the 120 s silence timer ends the session
             }
