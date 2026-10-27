@@ -10,11 +10,13 @@ namespace Aw.Sindri.Features.SessionExit;
 /// reason exit and the code, and deletes the launch's hash and per-launch files, so a late call from a dead launch can't validate.
 /// </summary>
 /// <param name="session">The session events and the secret check.</param>
-internal sealed class SessionExitService(LaunchSessionEvents session) : IService<SessionExitRequest, SessionExitResponse>
+/// <param name="sampler">Takes the final usage sample.</param>
+internal sealed class SessionExitService(LaunchSessionEvents session, ISessionUsageSampler sampler) : IService<SessionExitRequest, SessionExitResponse>
 {
     public async ValueTask<Result<SessionExitResponse>> Handle(SessionExitRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(sampler);
         var proven = session.Verify(request.LaunchId, request.Secret);
         if (proven.IsError)
         {

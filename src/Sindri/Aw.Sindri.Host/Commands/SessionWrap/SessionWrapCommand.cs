@@ -199,7 +199,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
     {
         for (var attempt = 1; attempt <= ExitAttempts; attempt++)
         {
-            if ((await calls.Exit(launch, proof, code, _found, cancellationToken).ConfigureAwait(false)).IsSuccess || attempt == ExitAttempts)
+            if ((await calls.Exit(launch, proof, new WrapExit(code, _found), cancellationToken).ConfigureAwait(false)).IsSuccess || attempt == ExitAttempts)
             {
                 return;   // after the last try the 120 s silence timer ends the session
             }
