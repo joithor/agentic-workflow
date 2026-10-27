@@ -154,7 +154,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         var reason = AgentEndReasons.Of(ended.EndedAs);
-        return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, recovery?.Reason ?? ended.Detail) with { FailureKind = AgentFailureKinds.Of(ended, checkFailed: recovery?.Reason is not null) }, reportId: null, context).ConfigureAwait(true);
+        return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, recovery?.Reason ?? ended.Detail) with { FailureKind = AgentFailureKinds.Of(ended.Refused, checkFailed: recovery?.Reason is not null) }, reportId: null, context).ConfigureAwait(true);
     }
 
     // The session's own report: closes the run (usage, diff signal, stop), then decides it like a desk report and answers the Update that carried it.

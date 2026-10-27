@@ -49,5 +49,5 @@ public sealed class AgentEscalationTests
     [InlineData(false, false, AgentSessionEnd.Lost, AgentFailureKinds.Crashed)]
     [InlineData(false, false, AgentSessionEnd.Idle, AgentFailureKinds.Crashed)]
     public void A_failed_agent_run_is_refused_check_failed_or_crashed(bool refused, bool checkFailed, AgentSessionEnd end, string expected) =>
-        Assert.Equal(expected, AgentFailureKinds.Of(new AgentSessionState(end, ExitCode: null, Detail: null, Refused: refused), checkFailed));
+        Assert.Equal(expected, AgentFailureKinds.Of(new AgentSessionState(end, ExitCode: null, Detail: null, Refused: refused).Refused, checkFailed));
 }

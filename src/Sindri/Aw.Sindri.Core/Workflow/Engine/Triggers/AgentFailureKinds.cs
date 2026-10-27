@@ -13,12 +13,9 @@ public static class AgentFailureKinds
     public const string Crashed = "crashed";
 
     /// <summary>The kind of a failed agent run.</summary>
-    /// <param name="ended">How the session ended (its <see cref="Runtime.AgentSessionState.Refused"/> says a report was refused).</param>
+    /// <param name="refused">True when the session's report was refused (its <c>AgentSessionState.Refused</c>).</param>
     /// <param name="checkFailed">True when the output folder was read and the Step failed its check.</param>
     /// <returns>refused, check_failed or crashed.</returns>
-    public static string Of(Runtime.AgentSessionState ended, bool checkFailed)
-    {
-        ArgumentNullException.ThrowIfNull(ended);
-        return ended.Refused ? Refused : checkFailed ? CheckFailed : Crashed;
-    }
+    public static string Of(bool refused, bool checkFailed) =>
+        refused ? Refused : checkFailed ? CheckFailed : Crashed;
 }

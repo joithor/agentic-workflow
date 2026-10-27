@@ -20268,7 +20268,7 @@ const Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.CheckFailed = "c
 const Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.Crashed = "crashed" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ModelPicked = "model.picked" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ModelPicking = "model.picking" -> string!
-static Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState! ended, bool checkFailed) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.Of(bool refused, bool checkFailed) -> string!
 Aw.Sindri.Core.Workflow.Recipes.StateModel
 Aw.Sindri.Core.Workflow.Recipes.StateModel.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.StateModel!
 Aw.Sindri.Core.Workflow.Recipes.StateModel.Deconstruct(out string? Floor) -> void
