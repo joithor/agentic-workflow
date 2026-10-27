@@ -79,6 +79,7 @@ public sealed class GoldenContractTests
         ["onyx-setup"] = As<JobStarted>,   // POST /onyx/setup's 202 (SetupOnyx, spec-shaped)
         ["onyx-account"] = As<JobStarted>,   // POST /onyx/account's 202 (ConnectOnyx, spec-shaped); the refusals are ProblemDetails
         ["onyx-defer"] = As<OnyxDeferView>,   // POST /onyx/defer's 200 (DeferOnyx, spec-shaped)
+        ["launch-picks"] = As<LaunchPicksView>,   // GET /launch/picks: the model picks of the runs (model-pick spec §6.1)
         ["launches-id"] = As<LaunchView>,   // GET /launches/{id}: the launch an Open started (Attach, the run line)
         // The approve-all plan and result are the engine's real goldens (workflow-recipes-approve-all); the start, job and refusal bodies below stay SPEC-SHAPED (the engine has none).
         ["workflow-recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused): the engine's real goldens

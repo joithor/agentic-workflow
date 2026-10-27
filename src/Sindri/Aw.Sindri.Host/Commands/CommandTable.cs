@@ -173,6 +173,7 @@ internal static partial class CommandTable
         {
             ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services, io.Environment, signals.Interrupt).ConfigureAwait(false),
             ["launch", "probe", .. var probe] => await new LaunchProbeVerb(client, io.Output, new JobFollower(client, io.Output, services.GetRequiredService<TimeProvider>())).Run(probe, signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["launch", "picks", .. var picks] => await new LaunchPicksVerb(client, io.Output).Run(picks, signals.Interrupt).ConfigureAwait(false),
             ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), io.Output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, io.Output).ConfigureAwait(false),
         };

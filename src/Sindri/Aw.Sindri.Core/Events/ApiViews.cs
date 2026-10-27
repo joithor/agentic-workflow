@@ -54,6 +54,9 @@ public static class ApiViews
     /// <summary>GET /sindri/launches/{launchId}.</summary>
     public const string Launch = "launch";
 
+    /// <summary>GET /sindri/launch/picks.</summary>
+    public const string LaunchPicks = "launch-picks";
+
     /// <summary>GET /sindri/launch/targets.</summary>
     public const string LaunchTargets = "launch-targets";
 
