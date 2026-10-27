@@ -10,7 +10,7 @@ internal sealed class TsResolver
     private readonly IReadOnlyList<PackageRoot> _packages;
     private readonly IReadOnlyList<PathAlias> _aliases;
 
-    internal TsResolver(IReadOnlyList<RepoFile> files)
+    internal TsResolver(IReadOnlyList<SourceFile> files)
     {
         _paths = files.Select(f => f.Path).ToHashSet(StringComparer.Ordinal);
         _packages = TsWorkspace.Packages(files);

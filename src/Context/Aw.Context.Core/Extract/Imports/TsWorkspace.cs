@@ -8,15 +8,15 @@ internal static class TsWorkspace
     private static readonly JsonDocumentOptions _lenient = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
     private static readonly string[] _targetKeys = [".", "types", "import", "default", "require"];
 
-    internal static IReadOnlyList<PackageRoot> Packages(IEnumerable<RepoFile> files) =>
+    internal static IReadOnlyList<PackageRoot> Packages(IEnumerable<SourceFile> files) =>
         [.. files.Where(f => Named(f.Path, "package.json")).Select(Package).OfType<PackageRoot>()];
 
-    internal static IReadOnlyList<PathAlias> Aliases(IEnumerable<RepoFile> files) =>
+    internal static IReadOnlyList<PathAlias> Aliases(IEnumerable<SourceFile> files) =>
         [.. files.Where(f => Named(f.Path, "tsconfig.json") || Named(f.Path, "jsconfig.json")).SelectMany(Config)];
 
     private static bool Named(string path, string name) => path == name || path.EndsWith("/" + name, StringComparison.Ordinal);
 
-    private static PackageRoot? Package(RepoFile file)
+    private static PackageRoot? Package(SourceFile file)
     {
         using var doc = Parse(file.Text);
         if (doc is null || doc.RootElement.ValueKind != JsonValueKind.Object || Text(doc.RootElement, "name") is not { Length: > 0 } name)
@@ -46,7 +46,7 @@ internal static class TsWorkspace
         return _targetKeys.Where(k => element.TryGetProperty(k, out _)).Select(k => Target(element.GetProperty(k))).FirstOrDefault(t => t is not null);
     }
 
-    private static IEnumerable<PathAlias> Config(RepoFile file)
+    private static IEnumerable<PathAlias> Config(SourceFile file)
     {
         using var doc = Parse(file.Text);
         if (doc is null || !doc.RootElement.TryGetProperty("compilerOptions", out var options) || options.ValueKind != JsonValueKind.Object
