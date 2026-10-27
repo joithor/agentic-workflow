@@ -19,9 +19,9 @@ vui=h264_metadata=colour_primaries=1:transfer_characteristics=1:matrix_coefficie
 full=$out/$name-1080p.mp4 slack=$out/$name-720p-slack.mp4
 
 ffmpeg -v error -y -i "$src" -vf "scale=1920:1080:out_color_matrix=bt709:out_range=tv,format=yuv420p" \
-  -c:v libx264 -crf 14 -preset slow "${tags[@]}" -bsf:v "$vui" -an -movflags +faststart "$full"
+  -c:v libx264 -crf 14 -preset slow -profile:v high -level 4.1 -bf 0 "${tags[@]}" -bsf:v "$vui" -an -movflags +faststart "$full"
 ffmpeg -v error -y -i "$full" -vf "scale=1280:720:flags=lanczos:out_color_matrix=bt709:out_range=tv,format=yuv420p" \
-  -c:v libx264 -crf 26 -preset slow -profile:v high "${tags[@]}" -bsf:v "$vui" -an -movflags +faststart "$slack"
+  -c:v libx264 -crf 26 -preset slow -profile:v high -level 4.1 -bf 0 "${tags[@]}" -bsf:v "$vui" -an -movflags +faststart "$slack"
 
 check() {
   local file=$1 px=$2 at rgb want
@@ -37,4 +37,5 @@ check() {
 }
 check "$full" 24
 check "$slack" 16
+"$(dirname "$0")/playback-check.sh" "$full" "$slack"
 echo "deliverables: $full $slack"

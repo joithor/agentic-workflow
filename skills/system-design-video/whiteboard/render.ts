@@ -141,7 +141,7 @@ if (stills) {
 const tail = 0.5; // a beat of rest after the last frame of drawing
 const [from, to] = (flag("--range") ?? `0..${layout.total + tail}`).split("..").map(Number);
 const ff = spawn("ffmpeg", ["-v", "error", "-y", "-f", "image2pipe", "-framerate", String(fps), "-c:v", "png", "-i", "-",
-  "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p", "-c:v", "libx264", "-crf", "12", "-preset", "slow",
+  "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p", "-c:v", "libx264", "-crf", "12", "-preset", "slow", "-profile:v", "high", "-level", "4.1", "-bf", "0", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
   "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv", join(out, "footage.mp4")], { stdio: ["pipe", "inherit", "inherit"] });
 const done = new Promise((r) => ff.on("close", r));
 const frames = Math.round((to - from) * fps);

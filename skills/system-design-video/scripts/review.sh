@@ -9,6 +9,7 @@
 # drawn, nothing is clipped, no label overlaps another, the caption matches.
 set -euo pipefail
 [ $# -ge 1 ] || { echo "usage: $0 <take-dir>" >&2; exit 1; }
+here=$(cd "$(dirname "$0")" && pwd)
 take=$(cd "$1" && pwd)
 cd "$take"
 mkdir -p check
@@ -30,4 +31,5 @@ for ((k = 0; k < ${#files[@]}; k += 4)); do
   n=$((n + 1))
 done
 cat check/index.txt
+"$here/playback-check.sh" footage.mp4 || echo "FIX THE ENCODE before delivery (render.ts flags)"
 echo "sheets: $n in $take/check (tiles run left to right, top to bottom, in index order)"
