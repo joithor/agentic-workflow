@@ -34,16 +34,36 @@ public sealed class ExplainDecisionTimestampTests : IDisposable
         Assert.Contains("ts", line, StringComparison.Ordinal);
     }
 
-    // Records an ordinary decision, then rewrites its ts the way another writer could have stored it.
-    private async Task Record(string id, string ts)
+    // Any other column of the row that holds text where the judge writes a number is the same case as a bad ts: named, exit 2.
+    [Fact, Trait("Lane", "integration")]
+    public async Task Why_exits_2_with_one_stderr_line_naming_the_decision_and_the_column_when_confidence_is_text()
+    {
+        await Record("d-conf", ts: "2026-10-26T01:08:26.971Z", column: "confidence", value: "high");
+
+        var run = await new JudgeCli(_state).Run("why", "d-conf");
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Equal("", run.Stdout);
+        var line = Assert.Single(run.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Contains("d-conf", line, StringComparison.Ordinal);
+        Assert.Contains("confidence", line, StringComparison.Ordinal);
+    }
+
+    // Records an ordinary decision, then rewrites its ts (or another column) the way another writer could have stored it.
+    private async Task Record(string id, string ts, string column = "ts", string value = "")
     {
         var ct = TestContext.Current.CancellationToken;
         _ = await _state.DecisionLog().Record(A.Decision().WithId(id).Build(), ct);
         var factory = new SqliteConnectionFactory(JudgeDatabase.OptionsFor(Path.Combine(_state.Path, "judge")));
         await using var connection = (await factory.Open(ct)).Value;
         await using var update = connection.CreateCommand();
-        update.CommandText = "UPDATE decisions SET ts = $ts WHERE id = $id";
+        update.CommandText = column == "ts" ? "UPDATE decisions SET ts = $ts WHERE id = $id" : $"UPDATE decisions SET ts = $ts, {column} = $value WHERE id = $id";
         _ = update.Bind("$ts", ts);
+        if (column != "ts")
+        {
+            _ = update.Bind("$value", value);
+        }
+
         _ = update.Bind("$id", id);
         _ = await update.ExecuteNonQueryAsync(ct);
     }

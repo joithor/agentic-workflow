@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Approvals;
@@ -79,6 +80,52 @@ internal sealed partial class ShellViewModel
         else if (request.Action.OptionId.Length > 0)
         {
             _ = AnswerDecision(request.RowId, request.Action.OptionId, note: null);
+        }
+        else if (NeedsYou.Row(request.RowId) is { Entry.Subject: not null } row)
+        {
+            _ = SendHomeAction(request.Action.CatalogId, row);
+        }
+    }
+
+    // Home's Pause service pauses the service the row names; its Complete reports the desk run of the row's instance as approved, the way
+    // the inbox bar's Approve does. What can't be sent, or is refused, is said on the row, with the command when a terminal does it.
+    private async Task SendHomeAction(string catalogId, NeedsYouRowViewModel row)
+    {
+        var subject = row.Entry.Subject!;   // why: Decide only calls this for a row with a subject
+        if (Health.ApiUrl() is not { } url)
+        {
+            return;
+        }
+
+        row.ActionNote = "";
+        if (string.Equals(catalogId, "PauseService", StringComparison.Ordinal) && string.Equals(subject.Kind, NeedsYouKinds.Service, StringComparison.Ordinal))
+        {
+            Say(row, await _api.PauseService(url, subject.Id, CancellationToken.None).ConfigureAwait(true));
+        }
+        else if (string.Equals(catalogId, "CompleteStep", StringComparison.Ordinal) && string.Equals(subject.Kind, "instance", StringComparison.Ordinal) && _desk is { } desk)
+        {
+            await CompleteFromHome(row, desk, subject.Id).ConfigureAwait(true);
+        }
+    }
+
+    private static async Task CompleteFromHome(NeedsYouRowViewModel row, DeskReporter desk, string instance)
+    {
+        var target = await desk.Load(instance).ConfigureAwait(true);
+        if (target is null || target.IsTerminalOnly)
+        {
+            row.ActionNote = Labels.CompleteInTerminal(target?.Complete?.Cli ?? "");
+        }
+        else if (await desk.Complete(target, "approve", answers: null).ConfigureAwait(true) is { } answer)
+        {
+            Say(row, answer);
+        }
+    }
+
+    private static void Say<T>(NeedsYouRowViewModel row, Result<T> answer)
+    {
+        if (answer.IsError)
+        {
+            row.ActionNote = Labels.ActionRefused(answer.Error.Code, answer.Error.Message);
         }
     }
 

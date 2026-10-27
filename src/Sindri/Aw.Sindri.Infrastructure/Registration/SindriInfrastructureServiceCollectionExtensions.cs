@@ -16,6 +16,7 @@ using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
@@ -139,6 +140,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IRecipeStatsCache, SqliteRecipeStatsCache>()
+            .AddSingleton<IModelHistory, SqliteModelHistory>()
             .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
             .AddSingleton<IProfileSource>(sp => new YamlProfileSource(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<JsonSerializerOptions>(), () => HeavyCap.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory)))
             .AddSingleton<IApprovals, FileApprovals>()
