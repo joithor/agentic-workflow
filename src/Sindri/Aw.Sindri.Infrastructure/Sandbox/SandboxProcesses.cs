@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
@@ -9,13 +10,11 @@ internal sealed class SandboxProcesses : ISandboxProcesses
     /// <inheritdoc />
     public ProcessResult Run(string program, IReadOnlyList<string> arguments, TimeSpan timeout)
     {
-        var start = new ProcessStartInfo(program, arguments)
-        {
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start(program, arguments);
+        start.UseShellExecute = false;
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         Process? process;
         try
         {
