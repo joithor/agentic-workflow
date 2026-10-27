@@ -230,7 +230,29 @@ public sealed partial class SandboxBox : IDisposable
             _ = Directory.CreateSymbolicLink(stamp, target.FullName);
         }
 
+        WriteWrappers();
+
         return stamp;
+    }
+
+    // The installed wrappers in ~/.local/bin have the owner's real state path baked in, which the box (a temp state directory) doesn't bind. These have the same shape
+    // (scripts/install-cs.sh write_wrapper) with the box's own bin/cs/current, in bin-r1b, which is on the sandbox PATH, so the canary runs what a launch runs.
+    private void WriteWrappers()
+    {
+        foreach (var name in new[] { "judge", "sindri" })
+        {
+            var path = State + "/bin-r1b/" + name;
+            File.WriteAllText(
+                path,
+                "#!/usr/bin/env bash\n"
+                + $"cur=\"$(cd '{State}/bin/cs/current' 2> /dev/null && pwd -P)\" || {{ echo \"{name}: no C# build is linked\" >&2; exit 1; }}\n"
+                + (name == "sindri" ? "export AW_SINDRI_JUDGE=\"${AW_SINDRI_JUDGE:-$cur/judge}\"\n" : string.Empty)
+                + $"exec \"$cur/{name}\" \"$@\"\n");
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
+        }
     }
 
     /// <summary>Makes what the launcher makes before a launch (sandbox spec §3.1, rev 7): the real home's launches and approved directories, and the launch's session home with control.json and gh-config.</summary>
