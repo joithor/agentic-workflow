@@ -1,0 +1,153 @@
+using Aw.Kernel.Testing;
+using Aw.Sindri.Core.ModelHistory;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.Views;
+
+/// <summary>The 'model-history' view fold (model-pick spec §7.2): a launch's model joined to how its Step run ended, one row per (recipe, version, state, model).</summary>
+[Lane(TestLane.Unit)]
+public sealed class ModelHistoryProjectionTests
+{
+    private const string Sonnet = "claude-sonnet-5-5";
+    private const string Opus = "claude-opus-5-5";
+    private readonly ViewsHarness _v = new();
+
+    [Fact]
+    public async Task A_completed_run_counts_one_ok_run_with_the_time_it_ended()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+
+        var row = (await _v.Row("draft", Sonnet))!;
+
+        Expect.Equal((1, 0, 0, 0, 0), (row.Runs, row.Refused, row.CheckFailed, row.Crashed, row.RedraftCaused));
+        Expect.Sequence([ModelOutcome.Ok], row.Recent);
+        Assert.Equal(_v.Slice.Clock.GetUtcNow(), row.LastRunAt);
+        Assert.Equal((ModelHistoryFolds.Recipe, ModelHistoryFolds.Version), (row.Recipe, row.Version));
+    }
+
+    [Theory]
+    [InlineData("invalid-result: the report is not json", ModelOutcome.Refused)]
+    [InlineData("exit", ModelOutcome.Crashed)]
+    [InlineData("lost", ModelOutcome.Crashed)]
+    [InlineData("idle", ModelOutcome.Crashed)]
+    [InlineData("launch", ModelOutcome.Crashed)]
+    [InlineData("tests-failed", ModelOutcome.CheckFailed)]
+    public async Task A_failed_run_counts_by_the_kind_of_its_reason(string reason, ModelOutcome expected)
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Failed("draft", ModelHistoryFolds.Run(1), reason);
+
+        var row = (await _v.Row("draft", Sonnet))!;
+
+        Expect.Equal(1, row.Runs);
+        Expect.Sequence([expected], row.Recent);
+        Expect.Equal((expected == ModelOutcome.Refused ? 1 : 0, expected == ModelOutcome.CheckFailed ? 1 : 0, expected == ModelOutcome.Crashed ? 1 : 0), (row.Refused, row.CheckFailed, row.Crashed));
+    }
+
+    [Fact]
+    public async Task Each_model_and_each_state_has_its_own_row()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Launched(ModelHistoryFolds.Run(2), Opus, "check");
+        await _v.Failed("check", ModelHistoryFolds.Run(2), "tests-failed");
+
+        Expect.Equal((1, 1), ((await _v.Row("draft", Sonnet))!.Runs, (await _v.Row("check", Opus))!.CheckFailed));
+        Assert.Null(await _v.Row("check", Sonnet));
+        Assert.Null(await _v.Row("draft", Opus));
+    }
+
+    [Fact]
+    public async Task A_run_with_no_launch_or_a_launch_that_names_no_model_makes_no_row()
+    {
+        await _v.Begin();
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));   // a desk or block run: no launch at all
+        await _v.Launched(ModelHistoryFolds.Run(2), model: null, "check");
+        await _v.Completed("check", "apply", ModelHistoryFolds.Run(2));
+
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+    }
+
+    [Fact]
+    public async Task A_recipe_registered_after_its_instance_started_cannot_be_told_its_version_so_makes_no_row()
+    {
+        await _v.Begin(register: false);
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+    }
+
+    [Fact]
+    public async Task A_transition_back_into_a_state_whose_run_completed_charges_a_redraft_to_that_runs_model()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Launched(ModelHistoryFolds.Run(2), Sonnet, "check");
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(2));   // the 'gaps' transition
+
+        var draft = (await _v.Row("draft", Opus))!;
+        var check = (await _v.Row("check", Sonnet))!;
+
+        Expect.Equal((1, 1), (draft.Runs, draft.RedraftCaused));
+        Expect.Sequence([ModelOutcome.Redraft], draft.Recent);
+        Expect.Equal((1, 0), (check.Runs, check.RedraftCaused));   // the check did its job
+        Expect.Sequence([ModelOutcome.Ok], check.Recent);
+    }
+
+    [Fact]
+    public async Task A_redraft_is_charged_once_per_completed_run()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(2));   // back to draft: charged
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(3));   // a desk redraft: no launch, so no run to count
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(4));   // back again, but no completed run of the model's is left to blame
+
+        Expect.Equal((1, 1), ((await _v.Row("draft", Opus))!.Runs, (await _v.Row("draft", Opus))!.RedraftCaused));
+    }
+
+    [Fact]
+    public async Task Moving_forward_or_staying_in_a_state_charges_no_redraft()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Completed("check", "apply", ModelHistoryFolds.Run(2));
+        await _v.Completed("apply", "apply", ModelHistoryFolds.Run(3));
+
+        var row = (await _v.Row("draft", Opus))!;
+
+        Expect.Equal(0, row.RedraftCaused);
+        Expect.Sequence([ModelOutcome.Ok], row.Recent);
+    }
+
+    [Fact]
+    public async Task Only_the_last_twenty_outcomes_are_kept_but_the_counters_are_for_life()
+    {
+        await _v.Begin();
+        for (var entry = 1; entry <= 25; entry++)
+        {
+            await _v.Launched(ModelHistoryFolds.Run(entry), Sonnet);
+            if (entry <= 5)
+            {
+                await _v.Failed("draft", ModelHistoryFolds.Run(entry), "tests-failed");
+            }
+            else
+            {
+                await _v.Completed("draft", "draft", ModelHistoryFolds.Run(entry));
+            }
+        }
+
+        var row = (await _v.Row("draft", Sonnet))!;
+
+        Expect.Equal((25, 5, 20, 0), (row.Runs, row.CheckFailed, row.Recent.Count, row.Recent.Count(static o => o != ModelOutcome.Ok)));   // the five old failures have faded
+        Assert.Equal(0, row.EscalationRate);
+    }
+}

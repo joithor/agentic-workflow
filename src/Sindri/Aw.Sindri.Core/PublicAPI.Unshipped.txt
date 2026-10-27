@@ -5923,7 +5923,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 14 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 15 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -19498,3 +19498,81 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Deconstruct(out string! 
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.RewindRequested(string! Actor, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, string! To, string? EndedLaunch = null) -> void
+Aw.Sindri.Core.ModelHistory.IModelHistory
+Aw.Sindri.Core.ModelHistory.IModelHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.ModelHistory.ModelHistoryRow!>!>!>
+Aw.Sindri.Core.ModelHistory.ModelHistoryKeys
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.<Clone>$() -> Aw.Sindri.Core.ModelHistory.ModelHistoryRow!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.After(Aw.Sindri.Core.ModelHistory.ModelOutcome outcome, System.DateTimeOffset at) -> Aw.Sindri.Core.ModelHistory.ModelHistoryRow!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.CheckFailed.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.CheckFailed.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Crashed.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Crashed.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Recipe, out int Version, out string! State, out string! Model, out int Runs, out int Refused, out int CheckFailed, out int Crashed, out int RedraftCaused, out System.DateTimeOffset? LastRunAt, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.ModelHistory.ModelOutcome>! Recent) -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Equals(Aw.Sindri.Core.ModelHistory.ModelHistoryRow? other) -> bool
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.EscalationRate.get -> double
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.LastRunAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.LastRunAt.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Model.get -> string!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Model.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.ModelHistoryRow(Aw.Sindri.Core.Workflow.Ids.RecipeId Recipe, int Version, string! State, string! Model, int Runs, int Refused, int CheckFailed, int Crashed, int RedraftCaused, System.DateTimeOffset? LastRunAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.ModelHistory.ModelOutcome>! Recent) -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Recent.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.ModelHistory.ModelOutcome>!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Recent.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Recipe.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Recipe.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.RedraftCaused.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.RedraftCaused.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Redrafted() -> Aw.Sindri.Core.ModelHistory.ModelHistoryRow!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Refused.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Refused.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Runs.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Runs.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.State.get -> string!
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.State.init -> void
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Unusual.get -> bool
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Version.get -> int
+Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Version.init -> void
+Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcome.CheckFailed = 3 -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcome.Crashed = 4 -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcome.Ok = 1 -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcome.Redraft = 5 -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcome.Refused = 2 -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+Aw.Sindri.Core.ModelHistory.ModelOutcomes
+Aw.Sindri.Core.ModelHistory.RunModel
+Aw.Sindri.Core.ModelHistory.RunModel.<Clone>$() -> Aw.Sindri.Core.ModelHistory.RunModel!
+Aw.Sindri.Core.ModelHistory.RunModel.Deconstruct(out string! Model) -> void
+Aw.Sindri.Core.ModelHistory.RunModel.Equals(Aw.Sindri.Core.ModelHistory.RunModel? other) -> bool
+Aw.Sindri.Core.ModelHistory.RunModel.Model.get -> string!
+Aw.Sindri.Core.ModelHistory.RunModel.Model.init -> void
+Aw.Sindri.Core.ModelHistory.RunModel.RunModel(string! Model) -> void
+Aw.Sindri.Core.ModelHistory.RunScope
+Aw.Sindri.Core.ModelHistory.RunScope.<Clone>$() -> Aw.Sindri.Core.ModelHistory.RunScope!
+Aw.Sindri.Core.ModelHistory.RunScope.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Recipe, out int Version) -> void
+Aw.Sindri.Core.ModelHistory.RunScope.Equals(Aw.Sindri.Core.ModelHistory.RunScope? other) -> bool
+Aw.Sindri.Core.ModelHistory.RunScope.Recipe.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
+Aw.Sindri.Core.ModelHistory.RunScope.Recipe.init -> void
+Aw.Sindri.Core.ModelHistory.RunScope.RunScope(Aw.Sindri.Core.Workflow.Ids.RecipeId Recipe, int Version) -> void
+Aw.Sindri.Core.ModelHistory.RunScope.Version.get -> int
+Aw.Sindri.Core.ModelHistory.RunScope.Version.init -> void
+const Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Window = 20 -> int
+const Aw.Sindri.Core.Views.ViewNames.ModelHistory = "model-history" -> string!
+const Aw.Sindri.Core.Views.ViewNames.ModelRuns = "model-runs" -> string!
+override Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.ModelHistory.ModelHistoryRow.GetHashCode() -> int
+override Aw.Sindri.Core.ModelHistory.ModelHistoryRow.ToString() -> string!
+override Aw.Sindri.Core.ModelHistory.RunModel.Equals(object? obj) -> bool
+override Aw.Sindri.Core.ModelHistory.RunModel.GetHashCode() -> int
+override Aw.Sindri.Core.ModelHistory.RunModel.ToString() -> string!
+override Aw.Sindri.Core.ModelHistory.RunScope.Equals(object? obj) -> bool
+override Aw.Sindri.Core.ModelHistory.RunScope.GetHashCode() -> int
+override Aw.Sindri.Core.ModelHistory.RunScope.ToString() -> string!
+static Aw.Sindri.Core.ModelHistory.ModelHistoryKeys.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, string! model) -> string!
+static Aw.Sindri.Core.ModelHistory.ModelHistoryRow.Empty(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, string! model) -> Aw.Sindri.Core.ModelHistory.ModelHistoryRow!
+static Aw.Sindri.Core.ModelHistory.ModelHistoryRow.operator !=(Aw.Sindri.Core.ModelHistory.ModelHistoryRow? left, Aw.Sindri.Core.ModelHistory.ModelHistoryRow? right) -> bool
+static Aw.Sindri.Core.ModelHistory.ModelHistoryRow.operator ==(Aw.Sindri.Core.ModelHistory.ModelHistoryRow? left, Aw.Sindri.Core.ModelHistory.ModelHistoryRow? right) -> bool
+static Aw.Sindri.Core.ModelHistory.ModelOutcomes.OfFailure(string? failureKind, string? reason) -> Aw.Sindri.Core.ModelHistory.ModelOutcome
+static Aw.Sindri.Core.ModelHistory.RunModel.operator !=(Aw.Sindri.Core.ModelHistory.RunModel? left, Aw.Sindri.Core.ModelHistory.RunModel? right) -> bool
+static Aw.Sindri.Core.ModelHistory.RunModel.operator ==(Aw.Sindri.Core.ModelHistory.RunModel? left, Aw.Sindri.Core.ModelHistory.RunModel? right) -> bool
+static Aw.Sindri.Core.ModelHistory.RunScope.operator !=(Aw.Sindri.Core.ModelHistory.RunScope? left, Aw.Sindri.Core.ModelHistory.RunScope? right) -> bool
+static Aw.Sindri.Core.ModelHistory.RunScope.operator ==(Aw.Sindri.Core.ModelHistory.RunScope? left, Aw.Sindri.Core.ModelHistory.RunScope? right) -> bool
