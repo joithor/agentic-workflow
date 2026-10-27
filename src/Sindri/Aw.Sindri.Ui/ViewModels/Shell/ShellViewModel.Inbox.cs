@@ -70,10 +70,13 @@ internal sealed partial class ShellViewModel
         return true;
     }
 
+    private DeskReporter? _desk;
+
     private NeedsYouPageViewModel InitInbox(ISindriApi api, IClipboard clipboard, ILauncher launcher)
     {
         var commands = new InstanceCommander(api, Health.ApiUrl);
-        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, new DeskReporter(api, Health.ApiUrl, launcher), new NeedsYouConfirm(Health.Catalog, Health.ApiUrl, api, _clock),
+        _desk = new DeskReporter(api, Health.ApiUrl, launcher);   // the one reporter: Home's Complete and the inbox bar share its in-flight guard
+        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, _desk, new NeedsYouConfirm(Health.Catalog, Health.ApiUrl, api, _clock),
             new PausedAnswerViewModel(commands), new TakeoverViewModel(api, Health.ApiUrl, commands, _clock));
         inbox.LeaveRequested += (_, _) => LeaveNeedsYouInbox();
         inbox.Bar.DecisionRequested += (_, e) => e.Settled = AnswerDecision(e.RowId, e.OptionId, e.Note);
