@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract.DataStores;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
@@ -9,7 +10,7 @@ namespace Aw.Context.Core.Extract;
 public static class MapExtractor
 {
     /// <summary>The recognizers' version. A backtest's as-of map cache is keyed by it, so a change to what the recognizers find bumps it.</summary>
-    public const int Version = 2;
+    public const int Version = 3;
 
     /// <summary>Extracts the map from the files.</summary>
     /// <param name="repo">The repo (its name joins the evidence keys).</param>
@@ -21,8 +22,9 @@ public static class MapExtractor
     /// <param name="repo">The repo (its name joins the evidence keys).</param>
     /// <param name="files">The files at the commit.</param>
     /// <param name="recognizers">The profile's recognizers; their matches are suggested at confidence 0.8.</param>
+    /// <param name="schemaGlobs">'context.code.schemaGlobs': the files that declare data stores; null means the defaults.</param>
     /// <returns>The map, and whether a recognizer timed out on some file.</returns>
-    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers)
+    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers, IReadOnlyList<string>? schemaGlobs = null)
     {
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(recognizers);
@@ -37,7 +39,8 @@ public static class MapExtractor
         var known = nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         var implements = hits.Select(h => new GraphEdge(CodeKey(h.File.Path)!.Value, h.Found.Key, EdgeType.Implements, Provenance.Deterministic, 1.0, [Evidence(repo, h.File.Path)!]));   // why: hits keep only files whose keys are valid
         var related = hits.SelectMany(h => h.Found.Edges.Where(e => known.Contains(e.To.Value)).Select(e => e with { Evidence = [Evidence(repo, h.File.Path)!] }));   // why: as above
-        return new MapExtraction(ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes], [.. implements, .. related])), timedOut);
+        var found = ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes], [.. implements, .. related]));
+        return new MapExtraction(found.Plus(DataStorePass.Run(repo, files, DataStoreAdapters.All, schemaGlobs ?? ContextSettings.DefaultSchemaGlobs)), timedOut);
     }
 
     private static GraphNode Node(ContextRepoName repo, List<(RepoFile File, Found Found)> hits)
@@ -53,8 +56,8 @@ public static class MapExtractor
         return new GraphNode(CodeKey(path)!.Value, name, Provenance.Deterministic);   // why: only files with valid keys get here
     }
 
-    private static NodeKey? CodeKey(string path) => NodeKey.TryFrom("code:" + path, out var key) ? key : null;
+    internal static NodeKey? CodeKey(string path) => NodeKey.TryFrom("code:" + path, out var key) ? key : null;
 
-    private static EvidenceRef? Evidence(ContextRepoName repo, string path) =>
+    internal static EvidenceRef? Evidence(ContextRepoName repo, string path) =>
         RecordKey.TryFrom($"repo:{repo.Value}/{path}", out var key) ? new EvidenceRef(key) : null;
 }

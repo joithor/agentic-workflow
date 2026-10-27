@@ -18,11 +18,11 @@ public enum EdgeType
     [JsonStringEnumMemberName("moves-to")]
     MovesTo,
 
-    /// <summary>Surface or Action → Thing.</summary>
+    /// <summary>Surface, Action or Code → Thing (a code file that reads a data store).</summary>
     [JsonStringEnumMemberName("reads")]
     Reads,
 
-    /// <summary>Surface or Action → Thing.</summary>
+    /// <summary>Surface, Action or Code → Thing (a code file that writes a data store).</summary>
     [JsonStringEnumMemberName("writes")]
     Writes,
 
