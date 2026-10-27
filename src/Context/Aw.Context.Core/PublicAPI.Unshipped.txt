@@ -8246,22 +8246,22 @@ static Aw.Context.Core.Roles.RoleCounter.Dropped(Aw.Context.Core.Engine.ContextR
 Aw.Context.Core.Extract.DataStores.DataAccess
 Aw.Context.Core.Extract.DataStores.DataAccess.Read = 0 -> Aw.Context.Core.Extract.DataStores.DataAccess
 Aw.Context.Core.Extract.DataStores.DataAccess.Write = 1 -> Aw.Context.Core.Extract.DataStores.DataAccess
-Aw.Context.Core.Extract.DataStores.DataStorePass
+Aw.Context.Core.Extract.DataStorePass
 Aw.Context.Core.Extract.DataStores.GenericSqlAdapter
-Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Accesses(Aw.Context.Core.Extract.RepoFile! file, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
-Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Declared(Aw.Context.Core.Extract.RepoFile! file) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Accesses(string! text, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Declared(string! text) -> System.Collections.Generic.IEnumerable<string!>!
 Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.GenericSqlAdapter() -> void
 Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Name.get -> string!
 Aw.Context.Core.Extract.DataStores.IDataStoreAdapter
-Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Accesses(Aw.Context.Core.Extract.RepoFile! file, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
-Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Declared(Aw.Context.Core.Extract.RepoFile! file) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Accesses(string! text, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Declared(string! text) -> System.Collections.Generic.IEnumerable<string!>!
 Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Name.get -> string!
 Aw.Context.Core.Extract.DataStores.StoreAccess
 Aw.Context.Core.Extract.DataStores.StoreAccess.Access.get -> Aw.Context.Core.Extract.DataStores.DataAccess
 Aw.Context.Core.Extract.DataStores.StoreAccess.Match.get -> string!
 Aw.Context.Core.Extract.DataStores.StoreAccess.Store.get -> string!
 Aw.Context.Core.Extract.DataStores.StoreAccess.StoreAccess(string! store, Aw.Context.Core.Extract.DataStores.DataAccess access, string! match) -> void
-static Aw.Context.Core.Extract.DataStores.DataStorePass.Run(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>! adapters, System.Collections.Generic.IReadOnlyList<string!>! schemaGlobs) -> Aw.Context.Core.Extract.ExtractedMap!
+static Aw.Context.Core.Extract.DataStorePass.Run(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>! adapters, System.Collections.Generic.IReadOnlyList<string!>! schemaGlobs) -> Aw.Context.Core.Extract.ExtractedMap!
 static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, Aw.Context.Core.Extract.RecognizerSet! recognizers, System.Collections.Generic.IReadOnlyList<string!>? schemaGlobs = null) -> Aw.Context.Core.Extract.MapExtraction!
 Aw.Context.Core.Extract.DataStores.DataStoreAdapters
 static Aw.Context.Core.Extract.DataStores.DataStoreAdapters.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>!

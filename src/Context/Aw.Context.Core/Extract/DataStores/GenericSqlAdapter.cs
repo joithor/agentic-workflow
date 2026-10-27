@@ -18,18 +18,18 @@ public sealed partial class GenericSqlAdapter : IDataStoreAdapter
     public string Name => "sql";
 
     /// <inheritdoc />
-    public IEnumerable<string> Declared(RepoFile file)
+    public IEnumerable<string> Declared(string text)
     {
-        ArgumentNullException.ThrowIfNull(file);
-        return Safe<string>(() => [.. CreateTable.Matches(file.Text).Select(m => m.Groups["t"].Value)]);
+        ArgumentNullException.ThrowIfNull(text);
+        return Safe<string>(() => [.. CreateTable.Matches(text).Select(m => m.Groups["t"].Value)]);
     }
 
     /// <inheritdoc />
-    public IEnumerable<StoreAccess> Accesses(RepoFile file, IReadOnlySet<string> stores)
+    public IEnumerable<StoreAccess> Accesses(string text, IReadOnlySet<string> stores)
     {
-        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(stores);
-        return Safe<StoreAccess>(() => [.. SqlReads(file.Text).Concat(SqlWrites(file.Text)).Concat(Builder(file.Text))
+        return Safe<StoreAccess>(() => [.. SqlReads(text).Concat(SqlWrites(text)).Concat(Builder(text))
             .Where(a => stores.Contains(a.Store.ToLowerInvariant()))
             .DistinctBy(a => (a.Store.ToLowerInvariant(), a.Access))]);
     }

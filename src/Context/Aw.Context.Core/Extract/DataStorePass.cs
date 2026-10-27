@@ -1,9 +1,10 @@
 using System.Text;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract.DataStores;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
-namespace Aw.Context.Core.Extract.DataStores;
+namespace Aw.Context.Core.Extract;
 
 /// <summary>
 /// Finds the data stores a repo declares and the code files that read or write them (S-4's deterministic anchors for things). A schema file
@@ -40,7 +41,7 @@ public static class DataStorePass
         List<GraphEdge> edges = [];
         foreach (var file in ordered.Where(f => !schemaPaths.Contains(f.Path) && Recognizers.Source(f)))
         {
-            var uses = adapters.SelectMany(a => a.Accesses(file, names))
+            var uses = adapters.SelectMany(a => a.Accesses(file.Text, names))
                 .Where(a => byName.ContainsKey(a.Store.ToLowerInvariant()))
                 .Select(a => (Key: byName[a.Store.ToLowerInvariant()], a.Access)).Distinct().ToList();
             if (uses.Count > 0 && MapExtractor.CodeKey(file.Path) is { } code && MapExtractor.Evidence(repo, file.Path) is { } evidence)
@@ -61,7 +62,7 @@ public static class DataStorePass
         var stores = new Dictionary<string, Store>(StringComparer.Ordinal);
         foreach (var file in schema)
         {
-            foreach (var name in adapters.SelectMany(a => a.Declared(file)).Distinct(StringComparer.Ordinal))
+            foreach (var name in adapters.SelectMany(a => a.Declared(file.Text)).Distinct(StringComparer.Ordinal))
             {
                 if (ThingKey(name) is not { } key || MapExtractor.Evidence(repo, file.Path) is not { } evidence)
                 {

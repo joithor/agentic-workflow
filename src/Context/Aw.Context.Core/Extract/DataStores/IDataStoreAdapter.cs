@@ -10,13 +10,13 @@ public interface IDataStoreAdapter
     public string Name { get; }
 
     /// <summary>The stores (tables, collections) a schema file declares.</summary>
-    /// <param name="file">A file that matches the schema globs.</param>
+    /// <param name="text">The text of a file that matches the schema globs.</param>
     /// <returns>The store names as written, without quotes or schema qualifiers.</returns>
-    public IEnumerable<string> Declared(RepoFile file);
+    public IEnumerable<string> Declared(string text);
 
     /// <summary>The uses of the declared stores a code file shows. A store named only in a comment or a log text is not a use.</summary>
-    /// <param name="file">A code file.</param>
+    /// <param name="text">The text of a code file.</param>
     /// <param name="stores">The declared store names, lower case.</param>
     /// <returns>One entry per use found.</returns>
-    public IEnumerable<StoreAccess> Accesses(RepoFile file, IReadOnlySet<string> stores);
+    public IEnumerable<StoreAccess> Accesses(string text, IReadOnlySet<string> stores);
 }
