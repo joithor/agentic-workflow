@@ -73,15 +73,15 @@ public static class AgentLaunches
     /// <param name="target">Where it runs.</param>
     /// <param name="evaluator">The head sha, the holdout set and the phase worktree to keep out of reach.</param>
     /// <param name="descriptor">The Step's descriptor, for the brief; null when the catalog doesn't know it.</param>
-    /// <param name="instructions">What the Step is told to do, for the brief; none when it has none.</param>
+    /// <param name="extras">What the Step is told to do (its instructions, for the brief) and the model it runs on (the pick); null for none and the agent's default.</param>
     /// <returns>The request.</returns>
-    public static LaunchRequest EvaluatorRequestFor(AgentStepRun run, AgentStepTarget target, EvaluatorLaunch evaluator, BlockDescriptor? descriptor = null, IReadOnlyList<string>? instructions = null)
+    public static LaunchRequest EvaluatorRequestFor(AgentStepRun run, AgentStepTarget target, EvaluatorLaunch evaluator, BlockDescriptor? descriptor = null, AgentLaunchExtras? extras = null)
     {
         ArgumentNullException.ThrowIfNull(evaluator);
         // The launcher fills in the writable path: the scratch checkout it makes. No commit rights: the evaluator reports, it doesn't change the repo.
         var policy = new StepPolicy([.. _report, .. _evidence], StepPermissionMode.Default, WritablePath: null, ReadOnlyPaths: [evaluator.HoldoutPath], DeniedPaths: [evaluator.PhaseWorktree]);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, Worktree: null,
-            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor, instructions)), run.Run, Evaluator: evaluator);
+            new StepArgs(Model: extras?.Model, policy, run.Step, AgentStepBrief.Render(run, descriptor, extras?.Instructions)), run.Run, Evaluator: evaluator);
     }
 }

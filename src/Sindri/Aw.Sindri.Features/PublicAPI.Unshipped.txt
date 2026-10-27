@@ -4961,6 +4961,124 @@ Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! 
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, out string? To) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.get -> string?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.init -> void
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest!
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Deconstruct(out Aw.Sindri.Core.Ids.ItemRef? Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance) -> void
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Equals(Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.GetLaunchPicksRequest(Aw.Sindri.Core.Ids.ItemRef? Item = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Instance.init -> void
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef?
+Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Item.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.LaunchPicks!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Equals(Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Picks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.LaunchPickView!>!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Picks.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.At.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.At.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Attempt.get -> int
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Attempt.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.LaunchPickView!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.CostUsd.get -> decimal?
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.CostUsd.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out string! State, out int Attempt, out int Escalation, out bool Picking, out Aw.Sindri.Core.Events.ModelPicked? Pick, out long InputTokens, out long OutputTokens, out decimal? CostUsd, out string! Outcome, out string! Why, out System.DateTimeOffset At) -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Equals(Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Escalation.get -> int
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Escalation.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.InputTokens.get -> long
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.InputTokens.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Instance.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Item.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Launch.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.LaunchPickView(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, string! State, int Attempt, int Escalation, bool Picking, Aw.Sindri.Core.Events.ModelPicked? Pick, long InputTokens, long OutputTokens, decimal? CostUsd, string! Outcome, string! Why, System.DateTimeOffset At) -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Outcome.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Outcome.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.OutputTokens.get -> long
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.OutputTokens.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Pick.get -> Aw.Sindri.Core.Events.ModelPicked?
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Picking.get -> bool
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Picking.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Pick.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.State.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.State.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Why.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Why.init -> void
+override Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.ToString() -> string!
+static Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.operator !=(Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest? left, Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest.operator ==(Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest? left, Aw.Sindri.Features.GetLaunchPicks.GetLaunchPicksRequest? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.operator !=(Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.operator ==(Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.operator !=(Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.operator ==(Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? right) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunDelta!
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Deconstruct(out Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? Frame) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Frame.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunFrame?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Frame.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.PickRunDelta(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? Frame = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunDetail!
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Deconstruct(out string? FailureKind, out Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? Delta) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Delta.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunDelta?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Delta.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.FailureKind.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.FailureKind.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.PickRunDetail(string? FailureKind = null, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? Delta = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Actor.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Actor.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunFrame!
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Deconstruct(out string? Run, out string? Actor) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.PickRunFrame(string? Run = null, string? Actor = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Run.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Run.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunRow!
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Deconstruct(out string? Trigger, out string? Run, out Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? Detail) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Detail.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunDetail?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Detail.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.PickRunRow(string? Trigger = null, string? Run = null, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? Detail = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Run.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Run.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Trigger.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Trigger.init -> void
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.ToString() -> string!
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? left, Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? left, Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool
 Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.init -> void
 Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest
@@ -4989,6 +5107,31 @@ static Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.operator !=(A
 static Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.operator ==(Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? left, Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? right) -> bool
 static Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.operator !=(Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? left, Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? right) -> bool
 static Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.operator ==(Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? left, Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? right) -> bool
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.LaunchPickView!>! Picks, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.StateEscalation!>? Escalation) -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Escalation.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.StateEscalation!>?
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.Escalation.init -> void
+Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.LaunchPicks(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.LaunchPickView!>! Picks, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetLaunchPicks.StateEscalation!>? Escalation = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.StateEscalation!
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Deconstruct(out string! State, out string! Model, out int Runs, out int Retried, out double EscalationRate) -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Equals(Aw.Sindri.Features.GetLaunchPicks.StateEscalation? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.EscalationRate.get -> double
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.EscalationRate.init -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Model.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Model.init -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Retried.get -> int
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Retried.init -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Runs.get -> int
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Runs.init -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Sentence.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.StateEscalation(string! State, string! Model, int Runs, int Retried, double EscalationRate) -> void
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.State.get -> string!
+Aw.Sindri.Features.GetLaunchPicks.StateEscalation.State.init -> void
+override Aw.Sindri.Features.GetLaunchPicks.StateEscalation.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.StateEscalation.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.StateEscalation.ToString() -> string!
+static Aw.Sindri.Features.GetLaunchPicks.StateEscalation.operator !=(Aw.Sindri.Features.GetLaunchPicks.StateEscalation? left, Aw.Sindri.Features.GetLaunchPicks.StateEscalation? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.StateEscalation.operator ==(Aw.Sindri.Features.GetLaunchPicks.StateEscalation? left, Aw.Sindri.Features.GetLaunchPicks.StateEscalation? right) -> bool
 Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest
 Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.<Clone>$() -> Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest!
 Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out Aw.Sindri.Core.Events.LimitHitKind Kind, out long Peak) -> void

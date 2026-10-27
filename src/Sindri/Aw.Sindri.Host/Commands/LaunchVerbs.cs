@@ -14,7 +14,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verb writes.</param>
 internal sealed class LaunchVerbs(ILaunchSetup setup, Output output)
 {
-    internal const string Usage = "launch init [--viewer <name>] [--force] [--stdout] | launch show [<id>] [--json]";
+    internal const string Usage = "launch init [--viewer <name>] [--force] [--stdout] | launch show [<id>] [--json] | launch picks [--item X] [--json]";
 
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {

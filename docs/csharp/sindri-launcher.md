@@ -167,6 +167,13 @@ first, each with the bands it sits in: `haiku  cheap`, `sonnet  standard`, `opus
 and its probed target says `no-model-list` (`SND-MODEL-004`, informational); a model with no place prints
 `(unordered: ...)` and is ranked last. `launch.probed` carries the same lists as each target's `models`.
 
+## Picks in `launch picks`
+
+Usage: `sindri launch picks [--item X] [--json]`. Read-only: it reads `GET /sindri/launch/picks` and never starts the control plane (exit 1
+with `SND-API-001` when serve is down). One line per run that has a model pick, oldest first: item, step (a retry on a stronger model
+ends in `.e1`), agent, model, who picked it (`jev`, `constraint`, `rules`, `default`), the plain reason, tokens, cost and what Jev's pick
+cost (`jev 1 call 2.1 s`, or `jev not asked`). `--json` prints the route's answer. The sentences are `PickWhy` (model-pick spec §6.1).
+
 ## The t3 host
 
 With `"host": { "kind": "t3" }`, a human open starts a [T3 Code](https://github.com/pingdotgg/t3code) thread instead of a tmux

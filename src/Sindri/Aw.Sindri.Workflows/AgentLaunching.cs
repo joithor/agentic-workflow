@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Judge;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -18,7 +19,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="diff">Reads the start commit.</param>
 /// <param name="catalog">The blocks' descriptors, for the Step's brief.</param>
 /// <param name="inputs">What a launch reads beside the target: the pack bundles, the stored facts and the Steps' instructions.</param>
-internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff, BlockCatalog catalog, AgentLaunchInputs inputs)
+/// <param name="picker">Picks the model the session runs on (model-pick spec 5).</param>
+internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff, BlockCatalog catalog, AgentLaunchInputs inputs, ModelPicker picker)
 {
     /// <summary>Launches the run's session.</summary>
     /// <param name="run">The run.</param>
@@ -56,7 +58,13 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return StepFailed(asked.Error);
         }
 
-        return await Start(asked.Value, cancellationToken).ConfigureAwait(false);
+        var chosen = await picker.Pick(new ModelPickWork(run, target.Value, asked.Value.Request, asked.Value.Files), cancellationToken).ConfigureAwait(false);
+        if (chosen.Refusal is { } refusal)
+        {
+            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.Park, refusal.Code, refusal.Message));   // SND-MODEL-003: no model is allowed, the owner fixes the cap or floor
+        }
+
+        return await Start(string.Equals(chosen.Model, asked.Value.Request.Step?.Model, StringComparison.Ordinal) ? asked.Value.Request : asked.Value.WithModel(chosen.Model), cancellationToken).ConfigureAwait(false);
     }
 
     // Asks the launcher for the session and records the outcome; the worktree and start commit, or the failure.
@@ -78,13 +86,26 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
     }
 
     // The launcher's request: the Step's brief and policy, its pack, and its declared read facts as files (read and scrubbed here); the failure when a fact can't be read.
-    private async ValueTask<Result<LaunchRequest>> Request(AgentLaunchRun run, AgentStepTarget target, string? workspace, PackBundle? bundle, CancellationToken cancellationToken)
+    private async ValueTask<Result<PreparedLaunch>> Request(AgentLaunchRun run, AgentStepTarget target, string? workspace, PackBundle? bundle, CancellationToken cancellationToken)
     {
         var block = BlockId.From(run.Run.Step.Block);
         var descriptor = catalog.Find(block);
         var facts = await StepFactFiles.Build(new FactFileStep(descriptor, run.Subject), run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
-        return facts.IsError ? facts.Error : AgentLaunches.RequestFor(run.Run, target, descriptor, new AgentLaunchExtras(PayloadFacts.WithShapes(Told(block), run.Payloads), workspace, bundle, facts.Value, run.Model));   // the Step's own lines, then the shape of each payload output
+        if (facts.IsError)
+        {
+            return facts.Error;
+        }
+
+        var extras = new AgentLaunchExtras(PayloadFacts.WithShapes(Told(block), run.Payloads), workspace, bundle, facts.Value, run.Model);
+        return new PreparedLaunch(AgentLaunches.RequestFor(run.Run, target, descriptor, extras), Files(bundle, facts.Value), model => AgentLaunches.RequestFor(run.Run, target, descriptor, extras with { Model = model }));
     }
+
+    // The files the model-pick question shows: the pack's files and the written facts, each as path and text.
+    private static List<PickFileText> Files(PackBundle? bundle, IReadOnlyDictionary<string, string>? facts) =>
+    [
+        .. bundle?.Files.Select(static f => new PickFileText(f.Key, f.Value)) ?? [],
+        .. facts?.Select(static f => new PickFileText(f.Key, f.Value)) ?? [],
+    ];
 
     // An unpinned or changed pack parks for the owner (SND-PACK-002); any other pack failure ends the Step.
     private static AgentLaunched BundleFailed(Error error) =>

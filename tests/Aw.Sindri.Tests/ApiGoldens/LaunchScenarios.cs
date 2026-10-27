@@ -32,6 +32,7 @@ internal static class LaunchScenarios
         ("launches-id", "requested"), ("launches-id", "started-opened"), ("launches-id", "started-unconfirmed"), ("launches-id", "started-late-attach"),
         ("launches-id", "started-viewer-failed"), ("launches-id", "started-print"), ("launches-id", "failed-host-stage"), ("launches-id", "failed-expired-007"),
         ("launches-id", "started-engine"), ("launches-id", "failed-engine"), ("items-id", "live-session"), ("launches-id", "not-found"), ("launches-id", "bad-id"), ("launches-id", "session-other-repo"),
+        ("launch-picks", "empty"), ("launch-picks", "picked-with-usage"),
         .. LaunchTargetScenarios.All,
     ];
 
@@ -73,6 +74,7 @@ internal static class LaunchScenarios
         {
             "items-id-open" => await Open(host, item, scenario, ct),
             "items-id" => await LiveSession(host, item, ct),
+            "launch-picks" => await Picks(host, item, scenario, ct),
             _ => await Launch(host, item, scenario, ct),
         };
     }
@@ -129,6 +131,28 @@ internal static class LaunchScenarios
         }
 
         return json.ToJsonString();
+    }
+
+    /// <summary>GET /launch/picks: nothing picked yet, or one engine run's pick with two usage samples (the last one counts) and its start.</summary>
+    private static async Task<string> Picks(GoldenHost host, string item, string scenario, CancellationToken ct)
+    {
+        if (scenario == "picked-with-usage")
+        {
+            var launch = A.FirstLaunchId;
+            var step = EngineStep(item);
+            await ViewScenarios.Append(host, EventTypes.ModelPicked,
+                new ModelPicked(
+                    Launch: launch, Item: ItemId.From(item), Instance: step.Instance!.Value, State: step.State!, Attempt: step.Attempt!.Value, Target: AgentId.From("claude-code"), Model: "claude-haiku-4-5",
+                    By: "jev", Reason: null, Decision: "JD-1", Candidates: ["m1", "m2"], BriefHash: new string('b', 64), Files: [new PickedFile("src/App.cs", 1200)],
+                    Omitted: [new OmittedFile("big.log", 500000, "cap")], JevMs: 2100, JevCalls: 1, ContentSent: true, Unusual: false, EscalatedFrom: null),
+                $"model.pick:{launch.Value}", ct);
+            await ViewScenarios.Append(host, EventTypes.SessionUsage, new SessionUsage(launch, Sample: 1, InputTokens: 1000, OutputTokens: 200, AgentId.From("claude-code"), "claude-haiku-4-5"), $"session.usage:{launch.Value}:1", ct);
+            await ViewScenarios.Append(host, EventTypes.SessionUsage, new SessionUsage(launch, Sample: 2, InputTokens: 3000, OutputTokens: 500, AgentId.From("claude-code"), "claude-haiku-4-5"), $"session.usage:{launch.Value}:2", ct);
+            await Started(host, launch, item, ViewerOutcomeKind.Skipped, ct, ViewerOf("none", "none", ViewerOutcomeKind.Skipped), step);
+            await ViewScenarios.CatchUp(host, ct);
+        }
+
+        return await Send(host, Get("/sindri/launch/picks", ItemScenarios.Human(host)));
     }
 
     private static async Task<string> Launch(GoldenHost host, string item, string scenario, CancellationToken ct)
