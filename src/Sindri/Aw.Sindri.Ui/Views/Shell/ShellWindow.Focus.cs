@@ -232,6 +232,18 @@ internal sealed partial class ShellWindow
         }
     }
 
+    // A tab was selected without the keyboard's arrows: focus rests on the selected tab (a pointer press already put it there; a screen reader's or the driver's activation did not).
+    private void FocusSelectedTab()
+    {
+        var nav = TopBar.Get<ListBox>("Navigation");
+        if (FocusManager?.GetFocusedElement() is Visual focused && nav.IsVisualAncestorOf(focused))
+        {
+            return;
+        }
+
+        _ = Usable(nav.ContainerFromIndex(nav.SelectedIndex))?.Focus(Method());
+    }
+
     // The page region takes focus (named, so the page is spoken); the Context page then sends it on to its anchor box. One path for a page change and the window opening.
     private void LandOnPage()
     {

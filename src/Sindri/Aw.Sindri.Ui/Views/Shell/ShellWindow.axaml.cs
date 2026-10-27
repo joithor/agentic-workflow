@@ -202,7 +202,12 @@ internal sealed partial class ShellWindow : Window
 
         var arrowing = _navArrowing;
         _navArrowing = false;
-        if (arrowing)
+        if (Shell is { IsSelectingTab: true } && !arrowing)
+        {
+            Dispatcher.UIThread.Post(FocusSelectedTab, DispatcherPriority.Loaded);   // a tab was activated: focus rests on that tab, not on the page region
+            FocusContextAnchor();
+        }
+        else if (arrowing)
         {
             Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);   // arrows keep focus on the tab (Y1)
         }

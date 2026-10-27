@@ -133,7 +133,9 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             if (value is not null)
             {
+                IsSelectingTab = true;
                 GoTo(value.Page);
+                IsSelectingTab = false;
             }
         }
     }
