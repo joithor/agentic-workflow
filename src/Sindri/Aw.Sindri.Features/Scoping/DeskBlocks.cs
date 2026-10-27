@@ -136,12 +136,20 @@ internal static partial class DeskBlocks
         }
 
         var round = Round(facts, report);
-        var checkLog = RoundLog.Append(facts, "check", "step.scope.check", report.Findings, ScopeJson.Int(round, "round"));
+        var files = new[] { new ScopingDeskFile("rounds.jsonl", ScopeJson.Write(round) + "\n", Append: true) };
+        var number = ScopeJson.Int(round, "round");
+        if (report.Outcome == ScopeOutcome.Regather && ScopeStall.Repeated(facts, report.Findings))
+        {
+            var named = ScopeStall.Named(facts, report.Findings);
+            var stalledLog = RoundLog.AppendStalled(facts, named, number);
+            return Reply("step.scope.check", "stalled", Outputs(("findings", FindingsFact(named)), (RoundLog.Key, stalledLog), Digest(facts, stalledLog)), files, report);
+        }
+
+        var checkLog = RoundLog.Append(facts, "check", "step.scope.check", report.Findings, number);
         var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
             ? Outputs(("findings", FindingsFact(report.Findings)), (RoundLog.Key, checkLog), Digest(facts, checkLog))
             : [];
-        return Reply("step.scope.check", report.Outcome == ScopeOutcome.Pass ? "pass" : report.Outcome == ScopeOutcome.Gaps ? "gaps" : "regather", outputs,
-            [new ScopingDeskFile("rounds.jsonl", ScopeJson.Write(round) + "\n", Append: true)], report);
+        return Reply("step.scope.check", report.Outcome == ScopeOutcome.Pass ? "pass" : report.Outcome == ScopeOutcome.Gaps ? "gaps" : "regather", outputs, files, report);
     }
 
     /// <summary>The line appended to rounds.jsonl: the round, why it ran, the items added, removed or changed by id (against the last round's digest), and the cause.</summary>

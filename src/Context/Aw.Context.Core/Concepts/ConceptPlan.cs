@@ -6,10 +6,9 @@ using Aw.Context.Core.WholeMap;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>The grouping half of <see cref="ConceptDeriver"/>: pins first, then the area groups of what is left, merged down to at most 15.</summary>
+/// <summary>The grouping half of <see cref="ConceptDeriver"/>: pins first, then the area groups of what is left, small or strongly linked groups merged, with no fixed number of concepts.</summary>
 internal static class ConceptPlan
 {
-    internal const int MaxConcepts = 15;
     internal const int MinFeatures = 3;
     internal const int WholeBelow = 5;
     internal const int TermsPerConcept = 6;

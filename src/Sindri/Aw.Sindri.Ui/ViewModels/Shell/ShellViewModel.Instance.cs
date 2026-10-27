@@ -19,8 +19,8 @@ internal sealed partial class ShellViewModel
     /// <summary>True when the sheet's subject is a workflow instance (its own view in the sheet's content).</summary>
     public bool IsInstanceSheet => SheetLink?.Kind == DeepLinkKind.Workflow;
 
-    /// <summary>The sheet's width as it is shown: an instance's is the widest, every other sheet keeps the human's.</summary>
-    public double ShownSheetWidth => IsInstanceSheet || IsRecipeSheet ? UiPreferences.MaxSheetWidth : SheetWidth;
+    /// <summary>The sheet's width as it is shown: an instance's is the widest, every other sheet keeps the human's (a recipe's covers the page instead).</summary>
+    public double ShownSheetWidth => IsInstanceSheet ? UiPreferences.MaxSheetWidth : SheetWidth;
 
     /// <summary>True when the sheet was stacked from a frame: its Back has a frame to return to, at every width.</summary>
     public bool HasTrail => _trail.Count > 0;

@@ -59,10 +59,10 @@ internal static class ScopingSteps
         .Reads("fact:brief", "fact:graph", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:roundLog", "fact:roundDigest", "fact:answerLog", "fact:challenge")
         .Reports("drafted").Writes(On("fact:scopeMap", "drafted"), On("fact:acceptance", "drafted"));
 
-    /// <summary>'step.scope.check': the draft-stage checks; 'pass', or findings on 'gaps' (the drafter can fix) and 'regather' (a lens must run again).</summary>
+    /// <summary>'step.scope.check': the draft-stage checks; 'pass', or findings on 'gaps' (the drafter can fix), 'regather' (a lens must run again) and 'stalled' (the same lens degraded the same way after a regather, #1239).</summary>
     public static BlockDescriptor Check { get; } = BlockStep("step.scope.check", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:roundLog")
-        .Reports("pass", "gaps", "regather").Writes(On("fact:findings", "gaps", "regather"), On("fact:roundLog", "gaps", "regather"), On("fact:roundDigest", "gaps", "regather"));
+        .Reports("pass", "gaps", "regather", "stalled").Writes(On("fact:findings", "gaps", "regather", "stalled"), On("fact:roundLog", "gaps", "regather", "stalled"), On("fact:roundDigest", "gaps", "regather", "stalled"));
 
     /// <summary>'step.interview.questions': the behaviour gaps as up to five questions; 'asked' or 'none'.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)

@@ -69,6 +69,9 @@
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <TextBlock x:Name="ContextTitle" Classes="page-title" Text="{Binding Title}" />
         <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" IsVisible="{Binding HasHead}" VerticalAlignment="Center" />
+        <TextBlock x:Name="ContextItemNote" Classes="caption" Text="{Binding ItemNote}" IsVisible="{Binding HasItemNote}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                   AutomationProperties.Name="{Binding ItemNote}" />
+        <Button x:Name="ItemRetry" Content="{Binding ItemRetryText}" IsVisible="{Binding IsItemFailed}" Click="OnRetryItem" AutomationProperties.Name="{Binding ItemRetryText}" />
         <TextBlock x:Name="ContextRulesOlder" Classes="caption" Text="{Binding RulesOlderText}" IsVisible="{Binding ShowRulesOlder}" VerticalAlignment="Center" AutomationProperties.Name="{Binding RulesOlderText}" />
         <Panel IsVisible="{Binding ShowRulesRefresh}">
           <ctl:CommandControl x:Name="ContextRefresh" DataContext="{Binding RefreshControl}" VerticalAlignment="Center" />

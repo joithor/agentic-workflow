@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -14,8 +16,19 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet's visible title: the subject's name once drawn (an agent's heading), else the subject itself; the ref stays in the tooltip.</summary>
     public string SheetTitle => NamedSubject;
 
+    private void OnDecisionChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(DecisionSheetViewModel.Heading), StringComparison.Ordinal))
+        {
+            Changed(nameof(SheetTitle), nameof(SheetName), nameof(EdgeTabName));
+        }
+    }
+
     /// <summary>The link the sheet was opened by (its kind and subject); null before the first.</summary>
     public DeepLink? SheetLink { get; private set; }
+
+    /// <summary>True when the sheet's last subject was a child pushed on a frame, or Back to the frame it came from: such a change keeps the sheet's scroll.</summary>
+    public bool SheetChangeIsStacked { get; private set; }
 
     /// <summary>True when the closed sheet shows its edge tab (a subject was opened before).</summary>
     public bool HasEdgeTab => SheetSubject.Length > 0;
@@ -85,6 +98,7 @@ internal sealed partial class ShellViewModel
     internal void OpenSheet(DeepLink link)
     {
         SheetLink = link;
+        SheetChangeIsStacked = _stacking;
         IsSheetOpen = true;
         ForgetRowSheetUnless(link);
         OnSheetOpened(link);
@@ -108,6 +122,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
+        SheetChangeIsStacked = false;
         (IsSheetOpen, OpenerRow, OpenerStrip, OpenerRecipeGroup, OpenerSession) = (true, null, null, null, null);
         OnJobSheetReopened();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
