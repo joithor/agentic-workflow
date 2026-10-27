@@ -64,7 +64,13 @@ internal sealed class UiTree
             return _nodes.First(n => ReferenceEquals(n.Facts, found));
         }
 
-        return SelectorMatcher.All(selector, facts) is { Count: > 0 } matches && matches.All(static m => !m.Visible)
+        var matches = SelectorMatcher.All(selector, facts);
+        if (matches.Count == 0)
+        {
+            return UiDriverErrors.NoMatch.With($"no element matches {selector.Describe()}");
+        }
+
+        return matches.All(static m => !m.Visible)
             ? UiDriverErrors.NotActionable.With($"{selector.Describe()} matches only hidden elements")
             : UiDriverErrors.NoMatch.With($"no visible element matches {selector.Describe()}");
     }
