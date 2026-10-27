@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Scoping;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -41,12 +42,13 @@ internal static partial class DeskBlocks
     /// <param name="block">The Step's id.</param>
     /// <param name="facts">The facts.</param>
     /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds) => block switch
+    /// <param name="gapCap">The running recipe's loops.gapsearch.cap; the shipped default where no recipe runs the helper (the desk).</param>
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds, int gapCap = ScopeRules.DefaultGapRounds) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
         "step.scope.challenge-log" => ChallengeLog(facts),
-        "step.scope.evidence" => Evidence(facts, challengeCap),
+        "step.scope.evidence" => Evidence(facts, challengeCap, gapCap),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
@@ -108,10 +110,10 @@ internal static partial class DeskBlocks
             return lens;
         }
 
-        var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
-            ? Outputs(("findings", FindingsFact(report.Findings)))
-            : [];
         var round = Round(facts, report);
+        var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
+            ? Outputs(("findings", FindingsFact(report.Findings)), (RoundLog.Key, RoundLog.Append(facts, "check", "step.scope.check", report.Findings, ScopeJson.Int(round, "round"))))
+            : [];
         return Reply("step.scope.check", report.Outcome == ScopeOutcome.Pass ? "pass" : report.Outcome == ScopeOutcome.Gaps ? "gaps" : "regather", outputs,
             [new ScopingDeskFile("rounds.jsonl", ScopeJson.Write(round) + "\n", Append: true)], report);
     }
@@ -173,6 +175,11 @@ internal static partial class DeskBlocks
         }
 
         var round = facts.ObjectCopy("challengeRound");
+        if (ChallengeRoundShape.LogShape(round) is { } shape)
+        {
+            return SindriErrors.InvalidInput.With(shape);
+        }
+
         var verdict = ScopeJson.Str(round, "verdict");
         var surfaces = ScopeJson.Items(round, "surfaces").ToList();
         var behaviours = ScopeJson.Items(round, "behaviours").ToList();
@@ -189,7 +196,9 @@ internal static partial class DeskBlocks
         ScopeJson.Append(rounds, round);
         var findings = surfaces.Select(s => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(s, "title"), $"the challenger found a surface the map misses: {ScopeJson.Str(s, "title")}", "Add it to the map, or exclude it with a reason, then run the challenger again.", ScopeSeverity.Fail))
             .Concat(behaviours.Select(b => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(b, "text"), $"the challenger found a behaviour the map misses: {ScopeJson.Str(b, "text")} (question: {ScopeJson.Str(b, "question")})", "Add an acceptance item or an open question for it, then run the challenger again.", ScopeSeverity.Fail))).ToList();
-        var outputs = found ? Outputs(("challenge", log), ("findings", FindingsFact(findings))) : Outputs(("challenge", log));
+        var outputs = found
+            ? Outputs(("challenge", log), ("findings", FindingsFact(findings)), (RoundLog.Key, RoundLog.Append(facts, "challenge-log", "step.scope.challenge-log", findings)))
+            : Outputs(("challenge", log));
         return Reply("step.scope.challenge-log", verdict ?? string.Empty, outputs, []);
     }
 
@@ -201,64 +210,31 @@ internal static partial class DeskBlocks
         }
 
         var log = (facts.Require("answerLog").DeepClone() as JsonArray) ?? [];
-        if (ScopeJson.Items(facts["answers"]).LastOrDefault() is { } batch)
+        var items = ScopeJson.Items(facts["answers"]).ToList();
+        // why: a batch carries its own answers[] (the latest one is this round's); a flat list is the round's answers, each logged on its own
+        var batches = items.Exists(static i => ScopeJson.Arr(i, "answers") is not null) ? items.TakeLast(1) : items;
+        foreach (var batch in batches)
         {
             var digest = $"sha256:{Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(ScopeJson.Write(batch))))}";
             if (!ScopeJson.Items(log).Any(e => string.Equals(ScopeJson.Str(e, "digest"), digest, StringComparison.Ordinal)))
             {
-                var entry = new JsonObject { ["id"] = string.Create(CultureInfo.InvariantCulture, $"A{log.Count + 1}") };
-                foreach (var (name, value) in (batch as JsonObject ?? []).Where(static p => !string.Equals(p.Key, "id", StringComparison.Ordinal) && !string.Equals(p.Key, "digest", StringComparison.Ordinal)))
-                {
-                    entry[name] = value?.DeepClone();
-                }
-
-                entry["digest"] = digest;
-                ScopeJson.Append(log, entry);
+                ScopeJson.Append(log, LogEntry(batch, log.Count + 1, digest));
             }
         }
 
         return Reply("step.interview.record", "recorded", Outputs(("answerLog", log)), []);
     }
 
-    /// <summary>'fact:recommendation' for the owner's stop: approve when no question is left open, else revise (the stop's form shows it as the recommended outcome).</summary>
-    private static JsonObject Recommendation(JsonNode openQuestions)
+    private static JsonObject LogEntry(JsonNode batch, int number, string digest)
     {
-        var open = ScopeJson.Items(openQuestions).Count();
-        return new JsonObject
+        var entry = new JsonObject { ["id"] = string.Create(CultureInfo.InvariantCulture, $"A{number}") };
+        foreach (var (name, value) in (batch as JsonObject ?? []).Where(static p => !string.Equals(p.Key, "id", StringComparison.Ordinal) && !string.Equals(p.Key, "digest", StringComparison.Ordinal)))
         {
-            ["outcome"] = open == 0 ? "approve" : "revise",
-            ["why"] = open == 0 ? "Every check passed and no question is left open." : string.Create(CultureInfo.InvariantCulture, $"{open} question(s) are still open."),
-        };
-    }
-
-    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap)
-    {
-        var assembled = ScopeEvidence.FlagUncited(facts);
-        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap);
-        if (LensFaultAt("step.scope.evidence", report) is { } lens)
-        {
-            return lens;
+            entry[name] = value?.DeepClone();
         }
 
-        if (report.Outcome is not ScopeOutcome.Complete)
-        {
-            var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
-            var missing = report.Rules.Where(static r => r.Status == ScopeRuleStatus.NotRun).Select(static r => r.Rule).ToList();
-            var findings = report.Findings.Concat(missing.Select(static r => new ScopeFinding(r, Item: null, $"{r} did not run: a fact it needs is missing", "Write the missing facts into the Step directory.", ScopeSeverity.Fail)));
-            return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings))), [], report);
-        }
-
-        if (assembled.Missing("decision", "questions") is { Count: > 0 } lacking)
-        {
-            return SindriErrors.InvalidInput.With($"evidence assembles size.json and questions.json from {string.Join(", ", lacking)} (fix: write them into the facts directory)");
-        }
-
-        var outputs = Outputs(
-            ("scopeMap", assembled.Require("scopeMap")),
-            ("acceptance", assembled.Require("acceptance")),
-            ("coverage", assembled.Require("coverage")),
-            ("openQuestions", assembled.Require("openQuestions")),
-            ("recommendation", Recommendation(assembled.Require("openQuestions"))));
-        return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
+        entry["digest"] = digest;
+        // why: recordedAs is never defaulted here; SCP-ACC-003 finds the entry through the items, surfaces and open questions that cite its id
+        return entry;
     }
 }

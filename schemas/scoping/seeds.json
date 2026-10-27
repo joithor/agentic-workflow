@@ -18,5 +18,10 @@
     "rounds": []
   },
   "fact:questions": [],
-  "fact:openQuestions": []
+  "fact:openQuestions": [],
+  "fact:gapSearch": {
+    "rounds": []
+  },
+  "fact:gapAnchors": [],
+  "fact:roundLog": []
 }
