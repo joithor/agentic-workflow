@@ -334,20 +334,19 @@ fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one f
   esac
 }
 
-# The dev recipes are not shipped ones: register and approve each as the owner (typing id and version) before its first start.
+# The dev recipes aren't embedded (the host ships recipes/sindri only), so a start needs its recipe approved first, which registers it (#1343).
+# Approves recipes/dev's recipe with id $1 as the owner, typing "approve <id> <version>"; a recipe outside recipes/dev is left alone.
 approve_dev_recipe() { # $1 recipe id
-  local file version out
-  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml | head -1)"
+  local file out
+  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml 2>/dev/null | head -1)"
   [ -n "$file" ] || return 0
-  version="$(sed -n 's/^version: *//p' "$file" | head -1)"
-  out="$(printf 'approve %s %s\n' "$1" "$version" | "$PROVE" human recipe approve "$file" 2>&1)"
-  printf '%s\n' "$out" | grep -qE '^(approved|already approved)' || die "recipe approve $1 was refused: $out"
+  out="$(printf 'approve %s %s\n' "$1" "$(sed -n 's/^version: *//p' "$file" | head -1)" | "$PROVE" human recipe approve "$file" 2>&1)" \
+    || die "the recipe $1 was not approved: $out"
 }
 
 start_on_new_item() { # $1 recipe, $2 item title; prints the item
   local item facts=() line out
   need jq
-  approve_dev_recipe "$1" || return
   item="$(new_item "$2")" || return
   while IFS= read -r line; do facts+=("$line"); done < <(fact_args "$1" "$item" "$2")
   # The pty the owner's verbs run under joins stderr into stdout, so the output is kept to show on a refusal.
@@ -356,16 +355,6 @@ start_on_new_item() { # $1 recipe, $2 item title; prints the item
   fi
   printf 'started %s on %s\n' "$1" "$item" >&2
   printf '%s\n' "$item"
-}
-
-# The dev recipes aren't embedded (the host ships recipes/sindri only), so a start needs its recipe approved first, which registers it (#1343).
-# Approves recipes/dev's recipe with id $1 as the owner, typing "approve <id> <version>"; a repeat at the same version is a no-op.
-approve_dev_recipe() {
-  local file out
-  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml 2>/dev/null | head -1)"
-  [ -n "$file" ] || die "no recipe with id $1 in recipes/dev"
-  out="$(printf 'approve %s %s\n' "$1" "$(sed -n 's/^version: *//p' "$file" | head -1)" | "$PROVE" human recipe approve "$file" 2>&1)" \
-    || die "the recipe $1 was not approved: $out"
 }
 
 # One triage and two work instances (screens §8.2); --large: twelve roots, four on each of three recipes.
@@ -440,6 +429,7 @@ hide_item() {
 }
 
 park_timeout() {
+  approve_dev_recipe workflow.dev-timeout || return
   start_on_new_item workflow.dev-timeout "Fixture timeout park"
 }
 
