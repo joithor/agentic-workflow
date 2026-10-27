@@ -36,7 +36,7 @@ public sealed class SessionWrapTests : IDisposable
 
     private static string[] Args => ["--launch", A.FirstLaunchId.Value, "--", "/bin/sh", "-c", "agent"];
 
-    private SessionWrapCommand Command(Task? hangup = null) => new(_calls, _children, name => _env.GetValueOrDefault(name), _clock, _errors, _ids, hangup);
+    private SessionWrapCommand Command(Task? hangup = null) => new(_calls, _children, name => _env.GetValueOrDefault(name), _clock, _errors, _ids, new WrapExtras(hangup));
 
     private static async Task Until(Func<bool> condition)
     {
