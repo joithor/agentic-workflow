@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Sindri.Core.Launch;
@@ -18,7 +19,7 @@ public static class AgentLaunches
     public static LaunchId LaunchIdFor(AgentStepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        return LaunchIdFor(run.Workflow, run.Run);
+        return LaunchIdFor(run.Workflow, run.Run, run.Escalation);
     }
 
     /// <summary>The launch id of a run, from the instance and the run token alone: what a status read names before the launch activity has run.</summary>
@@ -28,8 +29,8 @@ public static class AgentLaunches
     /// <param name="escalation">0 for the first launch of the run, n for its n-th retry on a stronger model; 0 keeps every id that exists today.</param>
     public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run, int escalation = 0)
     {
-        _ = escalation;   // red stub: the escalated id comes in the fix
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value));
+        var escalated = escalation > 0 ? string.Create(CultureInfo.InvariantCulture, $":escalation:{escalation}") : string.Empty;   // why: n = 0 keeps every id that exists today
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value + escalated));
         return LaunchId.From("LCH-" + Convert.ToHexStringLower(digest)[..32]);
     }
 

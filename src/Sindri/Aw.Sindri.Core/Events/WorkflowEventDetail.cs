@@ -90,7 +90,7 @@ public sealed record WorkflowEventDetail(
     // The agent's launch id (the session is not started yet when the row is written; the id is a pure function of the instance and the run), 'block', or the human desk.
     private string OpenerOf(WorkflowInstance after, OpenRun open) => open.Runtime switch
     {
-        StepRuntime.Agent => AgentLaunches.LaunchIdFor(after.Id, open.Token).Value,
+        StepRuntime.Agent => AgentLaunches.LaunchIdFor(after.Id, open.Token, open.Escalation).Value,
         StepRuntime.Block => "block",
         StepRuntime.Desk => TriggerActor.StartsWith("human:", StringComparison.Ordinal) ? TriggerActor : "human",
         _ => throw new ArgumentOutOfRangeException(nameof(open), open.Runtime, "an unknown runtime"),

@@ -19,7 +19,6 @@ public static class AgentFailureKinds
     public static string Of(Runtime.AgentSessionState ended, bool checkFailed)
     {
         ArgumentNullException.ThrowIfNull(ended);
-        _ = checkFailed;   // red stub: the kinds come in the fix
-        return Crashed;
+        return ended.Refused ? Refused : checkFailed ? CheckFailed : Crashed;
     }
 }
