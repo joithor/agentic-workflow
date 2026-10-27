@@ -168,7 +168,7 @@ The setup script:
 
 | Stage | Skills |
 |-------|--------|
-| Ideation & planning | `withInterview`, `enhancePrompt`, `officeHours`, `autoplan`, `productReview`, `archReview`, `planDesignReview`, `planDevexReview` |
+| Ideation & planning | `withInterview`, `enhancePrompt`, `officeHours`, `autoplan`, `productReview`, `archReview`, `planDesignReview`, `planDevexReview`, `system-design`, `system-design-video` |
 | Design | `design-analyze`, `design-language`, `design-evolve`, `design-shotgun`, `design-mockup`, `design-implement`, `design-refine`, `design-verify` (dispatchers auto-detect web/iOS and route to their `-web` / `-ios` sub-skills) |
 | Build & verify | `specToProvenPR`, `verify-app` (→ `verify-web`, `verify-ios`, `verify-desktop`), `ui-evidence` |
 | C# scaffolds | `new-package`, `new-slice` |
