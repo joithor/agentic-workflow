@@ -54,6 +54,9 @@ internal sealed record WorktreeFacts
     /// <summary>That pull request's state.</summary>
     public PrState? PrState { get; init; }
 
+    /// <summary>Whether a branch with no pull request is kept whatever else holds (a sweep without --include-no-pr).</summary>
+    public bool KeepNoPr { get; init; }
+
     /// <summary>The pull request a gate tree belongs to; null for any other worktree.</summary>
     public int? GatePr { get; init; }
 
