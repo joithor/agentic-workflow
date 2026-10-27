@@ -256,7 +256,7 @@
                 <Button x:Name="SheetBack" Classes="back" Classes.trail="{Binding HasTrail}" Content="{Binding Text.Back}" Click="OnBack"
                         AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
                 <!-- The focus target is a Text-typed wrapper named for the kind and subject ("Workflow WFI-1"); the visible subject inside it is Raw, as ChordHint's key is (a TextBlock's peer reads its Text and ignores a Name). -->
-                <Border x:Name="SheetTitle" Grid.Column="1" Focusable="True" VerticalAlignment="Center"
+                <Border x:Name="SheetTitle" Classes="sheet-title" Grid.Column="1" Focusable="True" VerticalAlignment="Center"
                         AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text"
                         AutomationProperties.Name="{Binding SheetName}">
                   <TextBlock x:Name="SheetSubjectText" Classes="detail-title mono" Text="{Binding SheetTitle}" TextTrimming="CharacterEllipsis"
