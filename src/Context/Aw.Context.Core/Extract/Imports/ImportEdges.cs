@@ -12,6 +12,13 @@ internal static class ImportEdges
     internal static ImportScan Find(IReadOnlyList<RepoFile> files)
     {
         ArgumentNullException.ThrowIfNull(files);
-        return new ImportScan([], 0);
+        var own = files.Where(f => !RepoPath.InDependencyFolder(f.Path)).ToList();
+        var csharp = CsImports.Find(own, MaxNamespaceFiles);
+        var pairs = TsImports.Find(own).Concat(csharp.Pairs)
+            .Where(p => !string.Equals(p.From, p.To, StringComparison.Ordinal))
+            .Distinct()
+            .OrderBy(p => p.From, StringComparer.Ordinal).ThenBy(p => p.To, StringComparer.Ordinal)
+            .ToList();
+        return new ImportScan(pairs, csharp.SkippedNamespaces);
     }
 }
