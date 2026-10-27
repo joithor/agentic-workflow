@@ -17,7 +17,7 @@ namespace Aw.Sindri.Tests.SessionWrap;
 [Lane(TestLane.Unit)]
 public sealed class ControlPlaneWrapCallsTests
 {
-    private static readonly FakeControlPlaneProbe _probe = FakeControlPlane_probe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
+    private static readonly FakeControlPlaneProbe _probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
     private static readonly LaunchSecret _proof = new("a-proof");
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;

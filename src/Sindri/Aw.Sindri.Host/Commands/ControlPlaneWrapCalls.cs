@@ -25,5 +25,9 @@ internal sealed class ControlPlaneWrapCalls(ControlPlaneClient client) : IWrapCa
         return sent.IsError ? sent.Error : Unit.Value;
     }
 
-    public ValueTask<Result<bool>> Suspended(LaunchId launch, LaunchSecret proof, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<bool>> Suspended(LaunchId launch, LaunchSecret proof, CancellationToken cancellationToken)
+    {
+        var asked = await client.GetProven<SuspendedAnswer>($"/sindri/launches/{launch.Value}/suspended", proof.Value, cancellationToken).ConfigureAwait(false);
+        return asked.IsError ? asked.Error : asked.Value.Value.Suspended;
+    }
 }
