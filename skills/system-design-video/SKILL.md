@@ -19,6 +19,15 @@ Explain a design the way an engineer whiteboards it in an interview: a dark boar
 
 Same four gates as a product demo film (scope, brief, storyboard, produce), but the footage is a drawing, not a screen recording. Works for any project; everything project-specific comes from the project (see Inputs).
 
+**The default film is the engineering system design, not the concept.** It is built from the design doc's sections, and a run walks them in this order:
+
+1. **The model:** the old tables against the new ones, each table and key drawn, and how old rows map onto new ones (the backfill arrows).
+2. **The write and read paths:** who writes, what each write touches and in which transaction, which readers run, what picks the one that serves, where mismatches go.
+3. **The rollout and its gates:** every state a unit passes through, the check that lets it move on, the way back at each step, and the point of no return.
+4. **The work breakdown:** every PR or milestone, with its dependencies and a few words on what it changes. Mark which dependencies the doc states and which you inferred.
+
+A concept or product cut (the idea, the worked example, what changes for the people using it) is a secondary persona and is never the only film a run produces. Each beat names the design-doc section it comes from (`src` in the storyboard, shown top-left on screen); a beat with no section behind it does not belong.
+
 Read before starting: `references/style.md` (look, motion, legibility), `references/storyboard-format.md` (the storyboard file), `references/personas.md`. Read on trouble: `references/gotchas.md`. A runnable worked example, with generic content, is in `examples/base-limit/`.
 
 `$SKILL` = this skill's directory (`$HOME/.agentic-workflow/toolkit/skills/system-design-video`). Output: `$HOME/.agentic-workflow/$REPO_SLUG/videos/<design>/<persona>/` (`$D` below): `brief.md`, `storyboard.json`, `narration.md`, `take/`, `deliverables/`.
@@ -43,7 +52,7 @@ It checks ffmpeg, bun, and playwright-core with its Chromium. It prints the inst
 
 ## Step 1: Scope (gate)
 
-One video per audience, each answering one person's question (`references/personas.md`). Defaults: an engineering cut (model, write and read paths, rollout, PR order) and a product cut (one thing to set, a rule per workflow, what changes for the people using it). Merge cuts that would draw the same board; drop an audience with nothing to see. Write the film table (audience, question, story from start to payoff, the shared worked example). **Ask the user** to approve the list before continuing.
+One video per audience, each answering one person's question (`references/personas.md`). Defaults: the engineering cut first (model, write and read paths, rollout and gates, work breakdown: the four parts above) and, second, a product cut (one thing to set, a rule per workflow, what changes for the people using it). An engineering film of 90 to 150 seconds is normal; a product film is shorter. Merge cuts that would draw the same board; drop an audience with nothing to see. Write the film table (audience, question, story from start to payoff, the shared worked example). **Ask the user** to approve the list before continuing.
 
 ## Step 2: Brief (gate)
 
@@ -51,7 +60,7 @@ One video per audience, each answering one person's question (`references/person
 
 ## Step 3: Storyboard (gate)
 
-`$D/storyboard.json` per `references/storyboard-format.md`: one scene per diagram or concept, one beat per sentence, items in the order the pen draws them, one new idea per beat, 30 to 60 seconds in total. `inks` bind each ink name to a token path. **Ask the user** to review.
+`$D/storyboard.json` per `references/storyboard-format.md`: one scene per design-doc section (model, paths, rollout, work), one beat per sentence, each beat's `src` naming its section, items in the order the pen draws them, one new idea per beat, 90 to 150 seconds for the engineering cut and 30 to 60 for a concept cut. `inks` bind each ink name to a token path. **Ask the user** to review.
 
 ## Step 4: Produce
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Contact-sheet a rendered board at every beat's land (its last stroke done), so
+# Contact-sheet a rendered board at the end of every beat's drawing and camera move, so
 # each beat can be read as a still before any scene work.
 #
 #   review.sh <take-dir>     # the dir render.ts wrote (footage.mp4, layout.json)
@@ -15,7 +15,7 @@ cd "$take"
 mkdir -p check
 bun -e '
   const l = JSON.parse(await Bun.file("layout.json").text());
-  l.beats.forEach((b, i) => console.log(`${String(i).padStart(2, "0")} ${b.id} ${(b.land + 0.2).toFixed(2)}`));
+  l.beats.forEach((b, i) => console.log(`${String(i).padStart(2, "0")} ${b.id} ${Math.min(b.end - 0.05, Math.max(b.land + 0.2, (b.settle ?? b.start) + 0.2)).toFixed(2)}`));
 ' >check/index.txt
 # -nostdin: ffmpeg otherwise eats the index this loop reads from stdin.
 while read -r i id at; do

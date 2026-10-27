@@ -32,5 +32,11 @@ Drawn in order; each starts when the previous ends unless `at` (seconds from the
 ## Output of render.ts
 `footage.mp4` (silent, 30 fps), `layout.json` (each beat's `start`, `land` (its last stroke done) and `end`, plus the caption), `resolved-inks.json`. `--still t1,t2` writes PNGs only; `--range a..b` renders a slice.
 
+## Beat fields added for design walkthroughs
+- `src`: the design-doc section the beat comes from (for example `TDD #schema`). Shown top-left, small, so a viewer can find the source. Every beat in an engineering cut has one.
+- `speed` (storyboard level, default 1): divides every item's default duration; `hold` (storyboard level, default 1.1): rest after a beat's last stroke. A beat is never shorter than its caption's reading time (about 0.32 s per word plus a second), so long sentences set the pace.
+- Item `alpha` (0 to 1) draws a box or arrow fainter: use it for dependencies the doc does not state (inferred) and say so in a legend.
+- Captions over 58 characters wrap onto two lines; keep a sentence under about 25 words.
+
 ## Planning a design into beats
-One diagram or concept is a scene of 2 to 4 beats, one spoken sentence each; each scene gets its own region of the world and the camera pans between them. Data model: draw the table, then the key columns, then an example row. A flow: draw the input, one arrow per function, the result inside the receiving box. Rollout: draw the states left to right and move a marker. PR order: draw the boxes, then the dependency arrows.
+The engineering cut walks the design doc in order: model, write and read paths, rollout and gates, work breakdown. Each section is a scene of 3 to 8 beats, one spoken sentence each; each scene gets its own region of the world and the camera pans between them. Use the doc's own words and numbers; invent none. Data model, with old against new and the backfill arrows from old rows to new ones: draw the table, then the key columns, then an example row. A flow: draw the input, one arrow per function, the result inside the receiving box. Write and read paths: writers, the tables each write touches and the transaction around them, both readers, the flag that picks one, the log that catches differences. Rollout: draw the states left to right, the gate on each arrow, the way back and the point of no return. Work breakdown: a column per milestone, a box per PR with a few words on what it changes, solid arrows for stated dependencies and faint ones for inferred.
