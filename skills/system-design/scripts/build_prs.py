@@ -2,7 +2,8 @@
 Usage: build_prs.py <page.html> <prs-dir> [--shots shots.json]
 The page marks the card spot with <!-- PR-CARDS --> (or the PR-CARDS:START/END pair an earlier run left). The dialog, the
 per-PR deep dives (markdown rendered here, so the page needs no script from a CDN) and the styles are written between
-PR-DETAIL:START/END before </body>. Front matter and file shape: templates/pr-cards.md."""
+PR-DETAIL:START/END before </body>. Front matter and file shape: templates/pr-cards.md.
+Exit 0 on success; 1 with a message on bad input (no pr-NN.md, no placeholder, unmatched markers, bad arguments)."""
 import html, json, os, re, sys
 
 CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates", "pr-cards.css")
@@ -79,11 +80,13 @@ def first_sentence(s):
 
 def load(prs_dir):
     prs = []
+    if not os.path.isdir(prs_dir):
+        sys.exit(f"{prs_dir}: not a directory")
     for f in sorted(os.listdir(prs_dir)):
         m = re.fullmatch(r"pr-(\d+)\.md", f)
         if not m:
             continue
-        raw = open(os.path.join(prs_dir, f)).read()
+        raw = open(os.path.join(prs_dir, f), encoding="utf-8").read()
         meta, body = front(raw)
         n = int(m.group(1))
         h1 = re.search(r"^# (.+)$", body, re.M)
@@ -97,7 +100,7 @@ def load(prs_dir):
             ms = f"Milestone {t.group(1)}" if t else "PRs"
         prs.append(dict(n=n, title=title, ms=ms, ms_note=meta.get("milestone_note", ""), body=re.sub(r"\A# .*\n", "", body.lstrip()),
                         change=meta.get("change") or first_sentence(summ), rollback=meta.get("rollback") or (rb.group(1) if rb else "not stated")))
-    return prs
+    return sorted(prs, key=lambda p: p["n"])  # numeric: pr-2 before pr-10
 
 def build(page, prs_dir, shots_path):
     prs = load(prs_dir)
@@ -106,7 +109,7 @@ def build(page, prs_dir, shots_path):
     shots = []
     if shots_path:
         base = os.path.dirname(os.path.abspath(shots_path))
-        shots = json.load(open(shots_path))
+        shots = json.load(open(shots_path, encoding="utf-8"))
         for s in shots:
             s["_src"] = os.path.relpath(os.path.join(base, s["file"]), os.path.dirname(os.path.abspath(page)))
     groups = {}
@@ -122,7 +125,7 @@ def build(page, prs_dir, shots_path):
                          f'<div class="t"><b>{esc(p["title"])}</b><span>{inline(p["change"])}</span></div><div class="rb"><b>Rollback</b>{inline(p["rollback"])}</div></div>')
         cards.append("</div></div>")
     cards += ["</div>", C1]
-    detail = [D0, "<style>", open(CSS).read(), "</style>"]
+    detail = [D0, "<style>", open(CSS, encoding="utf-8").read(), "</style>"]
     for p in prs:
         figs = []
         for s in shots:
@@ -153,7 +156,10 @@ def build(page, prs_dir, shots_path):
 })();
 </script>""")
     detail.append(D1)
-    s = open(page).read()
+    s = open(page, encoding="utf-8").read()
+    for a, b in ((C0, C1), (D0, D1)):
+        if (a in s) != (b in s):
+            sys.exit(f"{page}: unmatched {a} / {b} markers; fix or remove them by hand")
     block = "\n".join(cards)
     if C0 in s:
         s = s[:s.index(C0)] + block + s[s.index(C1) + len(C1):]
@@ -163,11 +169,13 @@ def build(page, prs_dir, shots_path):
         sys.exit("page has no <!-- PR-CARDS --> placeholder")
     d = "\n".join(detail)
     s = s[:s.index(D0)] + d + s[s.index(D1) + len(D1):] if D0 in s else s.replace("</body>", d + "\n</body>", 1)
-    open(page, "w").write(s)
+    open(page, "w", encoding="utf-8").write(s)
     print(f"wrote {len(prs)} cards in {len(groups)} milestones, {len(shots)} screenshots ->", page)
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    if "--shots" in a and a.index("--shots") + 1 >= len(a):
+        sys.exit("--shots needs a file")
     shots = a[a.index("--shots") + 1] if "--shots" in a else None
     pos = [x for i, x in enumerate(a) if not x.startswith("--") and (i == 0 or a[i - 1] != "--shots")]
     if len(pos) != 2:
