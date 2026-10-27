@@ -50,6 +50,10 @@ A **selector** names an element; every field given must match: `nodeId` (`0/2/1`
 in tree order). The text an element shows is a `TextBlock`'s or `TextBox`'s text, or a content/header that is a string; a label that is a child `TextBlock`
 is that child's text.
 
+The verbs that act (`click`, `action`, `type`, `key`, `scroll`) pick among the **visible** matches only, so `index` counts visible matches for them; a selector
+that matches only hidden elements is `AW-UIDRIVER-003` ("matches only hidden elements"), never an act on a hidden control. `tree`, `search`, `props`,
+`screenshot` and `wait-for` still see hidden elements and count every match.
+
 **Popups.** A menu, flyout, context menu or popup that Avalonia draws in its own popup window (the default on X11, Win32 and macOS) is not in the window's visual
 tree. The driver follows `Popup.IsOpen` from the moment it starts (a popup opened before that is not seen) and lists the content of each open one as an extra child
 of the window, node ids `p3`, `p3/0`, ... (`p` plus the popup's open number, then child positions), so `tree`, `search`, `wait-for`, `click`, `props` and `screenshot`

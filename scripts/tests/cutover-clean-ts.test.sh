@@ -96,6 +96,10 @@ EOF
   echo '{"schemaVersion":1,"ticket":"c1","phase":"reproduce"}' > "$s/myrepo-slug/bugfix/c1/state.json"; echo 'log' > "$s/myrepo-slug/bugfix/c1/events.jsonl"
   echo '{"version":1,"ticket":"t2","phase":"fix"}' > "$s/myrepo-slug/bugfix/t2/state.json"
   echo old > "$s/logs/older.log"; echo bin > "$s/bin/aw-meta"
+  # a published C# bugfix-state build the lanes call by absolute path: a directory named bugfix that holds a binary, not
+  # bug-fix state (#1391: an older cleanup removed every $STATE/*/bugfix outside a fixed list)
+  mkdir -p "$s/bin-main-tools-cs/bugfix"; printf '\177ELF' > "$s/bin-main-tools-cs/bugfix/bugfix-state"
+  chmod +x "$s/bin-main-tools-cs/bugfix/bugfix-state"; echo dll > "$s/bin-main-tools-cs/bugfix/Aw.BugFix.Host.dll"
   ln -s "$d/root" "$s/toolkit"
   cat > "$d/home/.claude/settings.json" <<'EOF'
 {"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/x/prompt-sort.sh # aw:prompt-sort"}]}],"PreToolUse":[{"hooks":[{"type":"command","command":"/x/trait-check.sh # aw:trait-check"}]}]}}
@@ -152,7 +156,8 @@ snap() {
 # kept <dir>: the paths of the §8.1 kept list, checksummed.
 kept() {
   (cd "$1/state" && for p in judge/sessions judge/outbox judge/teammate-names.jsonl judge/evals judge/trait-check context-guard locks hooks fleet \
-      ui-evidence/runs myrepo-slug/plans myrepo-slug/reviews myrepo-slug/bugfix digests meta cache sindri-app bugfix bin/aw-meta bin/cs/stamp1; do
+      ui-evidence/runs myrepo-slug/plans myrepo-slug/reviews myrepo-slug/bugfix digests meta cache sindri-app bugfix bin/aw-meta bin/cs/stamp1 \
+      bin-main-tools-cs/bugfix; do
     find "$p" -type f -exec cksum {} \; 2> /dev/null; done | sort
     readlink toolkit
   ) ; cksum < "$1/home/.claude/settings.json"; cksum < "$1/state/logs/older.log"
@@ -241,6 +246,9 @@ names_after="$(names "$D4")"
 expected="$(printf '%s\n' "$names_before" | grep -vE '^\./(state/(sindri|scorer|audit|profile)(/|$)|state/bin/sindri-app(/|$)|state/judge/(config\.json|decisions\.sqlite(-shm|-wal)?)$'"$plists"'|bin/(scorer|sindri-next|sindri-app)$|root/judge/node_modules(/|$)|root/sindri/dist(/|$))' | grep -vx './state/logs' )"
 check "exactly the §8 list was removed (backups aside)" "$(printf '%s\n' "$names_after" | grep -vE '^\./state/backups(/|$)')" "$expected"
 check "the kept list is byte-identical" "$(kept "$D4")" "$kept_before"
+[ -x "$D4/state/bin-main-tools-cs/bugfix/bugfix-state" ] && [ -f "$D4/state/bin-main-tools-cs/bugfix/Aw.BugFix.Host.dll" ] \
+  && ok "a published bugfix-state build in a dir named bugfix is kept (#1391)" \
+  || bad "a published bugfix-state build in a dir named bugfix is kept (#1391)"
 # live bug-fix state survives, byte for byte, both shapes (#1104)
 check "C#-shaped bug-fix state survives" "$(cat "$D4/state/myrepo-slug/bugfix/c1/state.json")" '{"schemaVersion":1,"ticket":"c1","phase":"reproduce"}'
 check "C# bug-fix event log survives" "$(cat "$D4/state/myrepo-slug/bugfix/c1/events.jsonl")" log

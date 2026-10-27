@@ -106,7 +106,7 @@ public static class FixtureRecipes
     /// ('fact:questions' from 'questions', 'fact:answers' from the 'interview' desk, 'fact:answerLog' from 'record') declared beside the six outputs the file lists, so the facts list shows them.
     /// The recipe golden is the real recipe's view (WorkflowViewGoldenTests), so the hash here is the file's.
     /// </summary>
-    public static RecipeShape Scoping { get; } = new("workflow.scoping", 15, "6731f4163cdcef192cf2f69126909ba2941a8faa7c0ba0952c418c5f40889361", RecipeUrgency.Work,
+    public static RecipeShape Scoping { get; } = new("workflow.scoping", 16, "d427391a0171984bd0e31641e78119687081b51f210f66cd6f402757ae429a6b", RecipeUrgency.Work,
         [S("intake", 1, desk: true, block: "step.scope.intake", timeout: T(Day, TimeoutAction.Park)),
             S("read-brief", 2, desk: true, block: "step.scope.read-brief", timeout: T(Day, TimeoutAction.Park)),
             S("gather", 3, desk: true, block: "step.scope.gather", timeout: T(Day, TimeoutAction.Park)),

@@ -18,7 +18,7 @@ public sealed class ScopeEvidenceStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ScopingSteps.Evidence;
 
-    protected override string ExpectedHash => "sha256:0399777e021284ff84db274fc37482f347da4f2b0f22197024c09fa6173da8c8";
+    protected override string ExpectedHash => "sha256:0642b99faa2246448802631c14466a0da270a858a3d82a335210df76fafa1df1";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
