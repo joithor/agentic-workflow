@@ -122,7 +122,7 @@ public sealed class ShellSheetKindTests
     // a11y-1: the kind is part of the name, so "workflow/X" and "recipe/X" are not both "X". Ids that name themselves (ITM-, REQ-, JOB-) stay bare.
     [Theory]
     [InlineData("workflow/WFI-1", "Workflow WFI-1", "Reopen workflow")]
-    [InlineData("recipe/workflow.project", "Recipe workflow.project", "Reopen recipe workflow.project")]
+    [InlineData("recipe/workflow.project", "Recipe Project", "Reopen recipe Project")]
     [InlineData("node/src.Api", "Node src.Api", "Reopen node src.Api")]
     [InlineData("session/codex/S1", "Session codex/S1", "Reopen session codex/S1")]
     [InlineData("system/docker", "System docker", "Reopen system docker")]

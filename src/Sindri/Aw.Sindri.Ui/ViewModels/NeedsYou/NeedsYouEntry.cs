@@ -70,6 +70,9 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>The address of the child instance that decides the answer, served on a via child row; null when none is served.</summary>
     internal string? Child { get; init; }
 
+    /// <summary>Who filed the request a decision row stands for, as served ("session:cli"); empty for any other row.</summary>
+    internal string FiledBy { get; init; } = "";
+
     /// <summary>What a decision row's decision asks, as the pending list serves it; empty for any other row.</summary>
     internal string Question { get; init; } = "";
 
