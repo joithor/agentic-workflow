@@ -70,7 +70,7 @@ public sealed class ScopingPureStepTests
         var result = await Run(new ScopeCheckStep(new InMemoryRunArea()), "step.scope.check", ScopingCheckTests.Limited("history", "degraded", "timeout", code: null, "not-searched", 0));
 
         Assert.Equal("regather", result.Result!.Outcome.Value);
-        Assert.Equal(["findings"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
+        Assert.Equal(["findings", "roundLog"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class ScopingPureStepTests
         var result = await Run(new ScopeGatherStep(), "step.scope.gather", new ScopingFacts { ["anchors"] = ScopingFacts.Expiry()["anchors"] }, Views());
 
         Assert.Equal("gathered", result.Result!.Outcome.Value);
-        Assert.Equal(["coverage", "lenses"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
+        Assert.Equal(["coverage", "graph", "lenses"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
         Assert.Equal(["code", "product", "related", "history"], Out(result, "coverage")["lenses"]!.AsArray().Select(static r => r!["lens"]!.GetValue<string>()), StringComparer.Ordinal);
     }
 

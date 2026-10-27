@@ -15,12 +15,24 @@ public sealed class ScopingUnrecordedAnswerRouteTests
 {
     private const string EvidenceEval = "sindri/evals/workflow.scoping/evidence-incomplete.jsonl";
 
-    // why: the gold answer log has an entry; renumbered to A9, no item, surface or open question cites it and it names no recordedAs
-    private static ScopingFacts Unrecorded() => ScopingFacts.Expiry().Edit("answerLog", n =>
+    // why: the gold answer log's first entry A1 is cited by acceptance items and surfaces; with those citations gone and no recordedAs, nothing records it
+    private static ScopingFacts Unrecorded() => ScopingFacts.Expiry()
+        .Edit("answerLog", static n => n[0]!["recordedAs"] = new JsonArray())
+        .Edit("acceptance", static n => Uncite(n["items"]))
+        .Edit("scopeMap", static n => Uncite(n["surfaces"]))
+        .Edit("openQuestions", static n => Uncite(n));
+
+    /// <summary>Takes A1 out of the citations of every object in the list: the places ACC-003 looks for a citation.</summary>
+    private static void Uncite(JsonNode? list)
     {
-        n[0]!["id"] = "A9";
-        n[0]!["recordedAs"] = new JsonArray();
-    });
+        foreach (var citations in (list as JsonArray ?? []).Select(static x => x?["citations"] as JsonArray).OfType<JsonArray>())
+        {
+            foreach (var cited in citations.Where(static c => string.Equals(c?.GetValue<string>(), "A1", StringComparison.Ordinal)).ToList())
+            {
+                _ = citations.Remove(cited);
+            }
+        }
+    }
 
     private static ScopingDeskResponse Evidence(ScopingFacts facts)
     {
@@ -56,6 +68,13 @@ public sealed class ScopingUnrecordedAnswerRouteTests
         var first = Array.FindIndex(lines, static l => l.Contains("\"outcome\":\"incomplete\"", StringComparison.Ordinal));
         var open = JsonNode.Parse(lines[first])!;   // why: the eval line is JSON
         open["trigger"]!["outcome"] = "open";   // why: a trigger line has a trigger object
+        var carried = JsonNode.Parse("""{"fact:scopeMap":{},"fact:acceptance":{"items":[]},"fact:coverage":{"lenses":[]},"fact:openQuestions":[],"fact:scopePacket":{"hash":"sha256:0"},"fact:runs":[]}""")!.AsObject();   // why: the literal is a JSON object
+        foreach (var (name, value) in carried.ToList())   // a real open carries the packet the stop reads, beside the findings
+        {
+            _ = carried.Remove(name);
+            open["trigger"]!["outputs"]![name] = value;   // why: the replayed incomplete line has a trigger with outputs
+        }
+
         open["expect"] = JsonNode.Parse("""{"state":"stop"}""");
         var read = EvalCaseReader.Read("open", string.Join('\n', [.. lines[..first], open.ToJsonString()]), EvalComposition.Options);
         var evalCase = Assert.IsType<EvalCase>(read.Case);
