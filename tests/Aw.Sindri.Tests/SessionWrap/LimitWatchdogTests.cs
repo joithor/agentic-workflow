@@ -99,7 +99,7 @@ public sealed class LimitWatchdogTests
         Expect.Equal("SIGTERM", termSignal);
 
         await Advance(TimeSpan.FromSeconds(10));
-        Expect.Equal(["SIGTERM", "SIGKILL"], _scope.Kills.Select(k => k.Signal).ToArray());
+        Assert.Equal(["SIGTERM", "SIGKILL"], [.. _scope.Kills.Select(k => k.Signal)]);
         Expect.True(_scope.Kills[1].At - termAt >= TimeSpan.FromSeconds(10));
 
         var end = await Verdict(run);
@@ -118,7 +118,7 @@ public sealed class LimitWatchdogTests
         var end = await run.WaitAsync(_deadline, TimeProvider.System, Token);
         await Advance(TimeSpan.FromSeconds(15));
 
-        Expect.Equal(["SIGTERM"], _scope.Kills.Select(k => k.Signal).ToArray());
+        Assert.Equal(["SIGTERM"], [.. _scope.Kills.Select(k => k.Signal)]);
         Expect.Equal(LimitKind.Wall, end!.Kind);
     }
 
