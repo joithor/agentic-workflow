@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Infrastructure.Sandbox;
 using Aw.Sindri.Testing.Sandbox;
@@ -49,7 +50,7 @@ public sealed class SessionCapTests : IDisposable
     {
         var cap = Cap();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             cap.Start<int>(1, _ => throw new InvalidOperationException("boom"), TestContext.Current.CancellationToken));
         var again = await cap.Start(1, _ => Task.FromResult<Result<int>>(2), TestContext.Current.CancellationToken);
 
@@ -63,7 +64,7 @@ public sealed class SessionCapTests : IDisposable
         var one = Cap();
         var two = Cap(); // a second instance: only the lock file is shared, as between two serve threads
 
-        async Task<Result<int>> Launch(FileSessionCap c, string unit) => await c.Start(1, async inner =>
+        async Task<Result<int>> Launch(FileSessionCap c, string unit) => await c.Start<int>(1, async Task<Result<int>> (inner) =>
         {
             await Task.Delay(150, inner);
             _scopes.Add(unit);
@@ -75,7 +76,7 @@ public sealed class SessionCapTests : IDisposable
         Assert.Equal(1, results.Count(r => r.IsSuccess));
         var refused = Assert.Single(results, r => r.IsError);
         Assert.Equal(SindriErrors.LaunchSessionWait.Code, refused.Error.Code);
-        Assert.Single(await _scopes.Live(ct));
+        _ = Assert.Single(await _scopes.Live(ct));
     }
 
     private FileSessionCap Cap() => new(Path.Combine(_dir, "locks", "sessions.lock"), _scopes);

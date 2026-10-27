@@ -6,7 +6,7 @@ namespace Aw.Sindri.Testing.Sandbox;
 public sealed class FakeSliceScopes : ISliceScopes
 {
     private readonly List<string> _live = [];
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
 
     /// <summary>Adds a live scope.</summary>
     /// <param name="unit">The scope unit.</param>
