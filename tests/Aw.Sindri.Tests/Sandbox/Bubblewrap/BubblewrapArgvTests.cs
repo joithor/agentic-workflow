@@ -159,4 +159,30 @@ public sealed class BubblewrapArgvTests
         Assert.True(Find(args, "--tmpfs", "/srv/aw") >= 0);
         Assert.False(Find(args, "--remount-ro", "/srv/aw") >= 0);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_sized_mask_comes_before_the_binds_below_it_in_plan_order()
+    {
+        // Rev 7: Sindri's real home is a 1 MiB tmpfs, then the session home's entries are bound into it, shallow to deep.
+        var args = Args(Req.WriteScope);
+        var sindri = Req.Home + "/.agentic-workflow/sindri-app";
+        var session = Req.Home + "/.agentic-workflow/sindri-app-sessions/" + Req.WriteScope.Launch.Value;
+
+        var mask = Find(args, "--perms", "0700", "--size", "1048576", "--tmpfs", sindri);
+        var launches = Find(args, "--bind", sindri + "/launches", sindri + "/launches");
+        var sessionHome = Find(args, "--ro-bind", session, session);
+        var control = Find(args, "--ro-bind", session + "/control.json", session + "/control.json");
+        var gh = Find(args, "--bind", session + "/gh-config", session + "/gh-config");
+        Assert.True(mask >= 0 && mask < launches);
+        Assert.True(sessionHome >= 0 && sessionHome < control && sessionHome < gh);   // a read-write bind under a read-only parent, and a single read-only file
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_read_only_bind_with_a_source_binds_the_source_at_the_path()
+    {
+        var args = Args(Req.WriteScope);
+
+        Assert.True(Find(args, "--ro-bind", Req.CsBinDir, Req.StateDir + "/bin/cs/current") >= 0);   // 'current' is the stamp
+        Assert.True(Find(args, "--ro-bind", Req.CsBinDir, Req.CsBinDir) >= 0);
+    }
 }
