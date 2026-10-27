@@ -61,16 +61,25 @@ internal sealed class LaunchPicksVerb(ControlPlaneClient client, Output output)
         var text = new StringBuilder();
         foreach (var pick in picks.Picks)
         {
-            var step = pick.State + (pick.Escalation > 0 ? ".e" + pick.Escalation.ToString(CultureInfo.InvariantCulture) : string.Empty);
-            string[] columns =
-            [
-                pick.Item.Value, step, pick.Pick?.Target.Value ?? "-", pick.Pick is { } picked ? picked.Model ?? "(agent default)" : "choosing model…", pick.Pick?.By ?? "-", pick.Why,
-                Tokens(pick.InputTokens + pick.OutputTokens), Cost(pick), Jev(pick.Pick),
-            ];
-            _ = text.AppendJoin("  ", columns).Append('\n');
+            _ = text.AppendJoin("  ", Columns(pick)).Append('\n');
+        }
+
+        foreach (var rate in picks.Escalation ?? [])
+        {
+            _ = text.Append(rate.State).Append("  ").Append(rate.Model).Append("  ").Append(rate.Sentence).Append('\n');
         }
 
         return text.ToString();
+    }
+
+    private static string[] Columns(LaunchPickView pick)
+    {
+        var step = pick.State + (pick.Escalation > 0 ? ".e" + pick.Escalation.ToString(CultureInfo.InvariantCulture) : string.Empty);
+        return
+        [
+            pick.Item.Value, step, pick.Pick?.Target.Value ?? "-", pick.Pick is { } picked ? picked.Model ?? "(agent default)" : "choosing model…", pick.Pick?.By ?? "-", pick.Why,
+            Tokens(pick.InputTokens + pick.OutputTokens), Cost(pick), Jev(pick.Pick),
+        ];
     }
 
     private static string Tokens(long total) =>

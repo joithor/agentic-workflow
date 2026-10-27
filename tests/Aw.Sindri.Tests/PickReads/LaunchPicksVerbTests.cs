@@ -83,6 +83,19 @@ public sealed class LaunchPicksVerbTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_escalation_rate_is_one_line_under_the_picks_and_json_carries_it()
+    {
+        var rate = new StateEscalation("questions", "haiku", Runs: 20, Retried: 3, EscalationRate: 0.15);
+        var body = Encoding.UTF8.GetString(AwJson.Serialize(new LaunchPicks([Row(Picked("haiku", "jev", reason: null, calls: 1, ms: 100))], [rate]), SliceHarness.Json));
+
+        _ = await Verb(new Api(HttpStatusCode.OK, body)).Run([], TestContext.Current.CancellationToken);
+        var lines = _out.ToString().ReplaceLineEndings("\n").TrimEnd('\n').Split('\n');
+
+        Assert.Equal("questions  haiku  retried on a stronger model in 3 of 20 runs", lines[^1]);
+        Assert.Contains("\"escalation\":[{\"state\":\"questions\",\"model\":\"haiku\",\"runs\":20,\"retried\":3", body, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task No_picks_says_so()
     {
         _ = await Verb(new Api(HttpStatusCode.OK, Body())).Run([], TestContext.Current.CancellationToken);

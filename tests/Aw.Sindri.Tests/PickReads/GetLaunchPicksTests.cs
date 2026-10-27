@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetLaunchPicks;
 using Aw.Sindri.Testing;
@@ -28,9 +29,9 @@ public sealed class GetLaunchPicksTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private async Task<LaunchPicks> Read(GetLaunchPicksRequest? request = null)
+    private async Task<LaunchPicks> Read(GetLaunchPicksRequest? request = null, params ModelHistoryRow[] history)
     {
-        var service = new GetLaunchPicksService(_h.Store, _h.Events, new NoItems(), StreamEventsServices.Repos(_h), _h.Callers);
+        var service = new GetLaunchPicksService(_h.Store, _h.Events, new NoItems(), StreamEventsServices.Repos(_h), _h.Callers, new FakeModelHistory(history));
         using var entered = _h.Callers.Enter(new CallerContextBuilder().Human().Build());
         return (await service.Handle(request ?? new GetLaunchPicksRequest(), Ct)).Value;
     }
@@ -182,6 +183,27 @@ public sealed class GetLaunchPicksTests
         Assert.Equal([0, 1], picks.Select(static p => p.Escalation));
         Assert.Equal(["refused", "passed"], picks.Select(static p => p.Outcome), StringComparer.Ordinal);
         Assert.Equal("Retried on claude-sonnet-4-5 after claude-haiku-4-5 was refused.", picks[1].Why);
+    }
+
+    [Fact]
+    public async Task With_no_history_for_the_picked_model_there_is_no_escalation_footer()
+    {
+        await Picked(_first, _one);
+
+        Assert.Empty((await Read()).Escalation ?? []);
+    }
+
+    [Fact]
+    public async Task A_picked_models_recent_runs_give_its_escalation_rate_for_the_state()
+    {
+        await Picked(_first, _one);
+        ModelOutcome[] recent = [ModelOutcome.Ok, ModelOutcome.Ok, ModelOutcome.Refused, ModelOutcome.CheckFailed, ModelOutcome.Crashed];
+        var row = new ModelHistoryRow(FakeModelHistory.Recipe, 1, "questions", "claude-haiku-4-5", Runs: 5, Refused: 1, CheckFailed: 1, Crashed: 1, RedraftCaused: 0, LastRunAt: null, recent);
+
+        var rate = Assert.Single((await Read(history: row)).Escalation!);   // why: the model has history, so the list is there
+
+        Assert.Equal(("questions", "claude-haiku-4-5", 4, 2, 0.5), (rate.State, rate.Model, rate.Runs, rate.Retried, rate.EscalationRate));
+        Assert.Equal("retried on a stronger model in 2 of 4 runs", rate.Sentence);
     }
 
     [Fact]

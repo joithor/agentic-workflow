@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -22,7 +23,8 @@ namespace Aw.Sindri.Features.GetLaunchPicks;
 /// <param name="items">Resolves an item named by alias.</param>
 /// <param name="repos">Resolves an item named by id, from the ledger.</param>
 /// <param name="callers">The caller.</param>
-internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory events, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers)
+/// <param name="history">The model history, for the escalation rates.</param>
+internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory events, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers, IModelHistory history)
     : IService<GetLaunchPicksRequest, LaunchPicks>
 {
     private const int Page = 500;
@@ -52,7 +54,47 @@ internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory e
 
         var picks = read.Picks;
         var ended = await Ended(picks, cancellationToken).ConfigureAwait(false);
-        return ended.IsError ? ended.Error : new LaunchPicks(View(picks, read, ended.Value));
+        if (ended.IsError)
+        {
+            return ended.Error;
+        }
+
+        var rates = await Rates(picks, cancellationToken).ConfigureAwait(false);
+        return rates.IsError ? rates.Error : new LaunchPicks(View(picks, read, ended.Value), rates.Value);
+    }
+
+    /// <summary>For each state and model the picks used, how often that model was retried on a stronger one over its last 20 runs (from the model history); none when it has no counted run.</summary>
+    private async ValueTask<Result<List<StateEscalation>>> Rates(IReadOnlyList<PickEntry> picks, CancellationToken cancellationToken)
+    {
+        var rates = new List<StateEscalation>();
+        var wanted = picks.Where(static p => p.Picked?.Model is not null).Select(static p => (p.Instance, p.State, Model: p.Picked!.Model!)).Distinct();   // why: the filter keeps only picks with a model
+        foreach (var (instance, state, model) in wanted)
+        {
+            var scope = await history.ScopeOf(WorkflowInstanceId.Of(instance), cancellationToken).ConfigureAwait(false);
+            if (scope.IsError)
+            {
+                return scope.Error;
+            }
+
+            if (scope.Value is not { } known)
+            {
+                continue;
+            }
+
+            var rows = await history.For(known.Recipe, known.Version, state, [model], cancellationToken).ConfigureAwait(false);
+            if (rows.IsError)
+            {
+                return rows.Error;
+            }
+
+            var counted = rows.Value[0].Recent.Count(static o => o != ModelOutcome.Crashed);
+            if (counted > 0 && !rates.Exists(r => string.Equals(r.State, state, StringComparison.Ordinal) && string.Equals(r.Model, model, StringComparison.Ordinal)))
+            {
+                rates.Add(new StateEscalation(state, model, counted, rows.Value[0].Recent.Count(static o => o is ModelOutcome.Refused or ModelOutcome.CheckFailed), rows.Value[0].EscalationRate));
+            }
+        }
+
+        return rates;
     }
 
     /// <summary>How each launch ended, from the instances' own rows after the first pick.</summary>
