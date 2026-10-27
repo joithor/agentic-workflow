@@ -20440,17 +20440,17 @@ Aw.Sindri.Core.Judge.ModelPickAsk.Brief.get -> string!
 Aw.Sindri.Core.Judge.ModelPickAsk.Brief.init -> void
 Aw.Sindri.Core.Judge.ModelPickAsk.Candidates.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickCandidate!>!
 Aw.Sindri.Core.Judge.ModelPickAsk.Candidates.init -> void
-Aw.Sindri.Core.Judge.ModelPickAsk.Deconstruct(out string! Step, out string! Kind, out string! Brief, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickFileText!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickCandidate!>! Candidates, out System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelHistoryRow!>! History) -> void
+Aw.Sindri.Core.Judge.ModelPickAsk.Deconstruct(out string! Step, out string! Kind, out string! Brief, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickFileText!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickCandidate!>! Candidates, out System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelPickHistoryRow!>! History) -> void
 Aw.Sindri.Core.Judge.ModelPickAsk.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Judge.ModelPickAsk.DenyPaths.init -> void
 Aw.Sindri.Core.Judge.ModelPickAsk.Equals(Aw.Sindri.Core.Judge.ModelPickAsk? other) -> bool
 Aw.Sindri.Core.Judge.ModelPickAsk.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickFileText!>!
 Aw.Sindri.Core.Judge.ModelPickAsk.Files.init -> void
-Aw.Sindri.Core.Judge.ModelPickAsk.History.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelHistoryRow!>!
+Aw.Sindri.Core.Judge.ModelPickAsk.History.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelPickHistoryRow!>!
 Aw.Sindri.Core.Judge.ModelPickAsk.History.init -> void
 Aw.Sindri.Core.Judge.ModelPickAsk.Kind.get -> string!
 Aw.Sindri.Core.Judge.ModelPickAsk.Kind.init -> void
-Aw.Sindri.Core.Judge.ModelPickAsk.ModelPickAsk(string! Step, string! Kind, string! Brief, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickFileText!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickCandidate!>! Candidates, System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelHistoryRow!>! History) -> void
+Aw.Sindri.Core.Judge.ModelPickAsk.ModelPickAsk(string! Step, string! Kind, string! Brief, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickFileText!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Judge.PickCandidate!>! Candidates, System.Collections.Generic.IReadOnlyList<string!>! DenyPaths, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelPickHistoryRow!>! History) -> void
 Aw.Sindri.Core.Judge.ModelPickAsk.Step.get -> string!
 Aw.Sindri.Core.Judge.ModelPickAsk.Step.init -> void
 Aw.Sindri.Core.Judge.PickCandidate
@@ -20474,26 +20474,26 @@ Aw.Sindri.Core.Judge.PickFileText.PickFileText(string! Path, string! Text) -> vo
 Aw.Sindri.Core.Judge.PickFileText.Text.get -> string!
 Aw.Sindri.Core.Judge.PickFileText.Text.init -> void
 Aw.Sindri.Core.Launch.IModelPickHistory
-Aw.Sindri.Core.Launch.IModelPickHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelHistoryRow!>!>
+Aw.Sindri.Core.Launch.IModelPickHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelPickHistoryRow!>!>
 Aw.Sindri.Core.Launch.IModelPickSettings
 Aw.Sindri.Core.Launch.IModelPickSettings.For(Aw.Sindri.Core.Launch.AgentId agent, string! state, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launch.ModelPickSettings!>
 Aw.Sindri.Core.Launch.IModelPickSettings.PickEnabled(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
-Aw.Sindri.Core.Launch.ModelHistoryRow
-Aw.Sindri.Core.Launch.ModelHistoryRow.<Clone>$() -> Aw.Sindri.Core.Launch.ModelHistoryRow!
-Aw.Sindri.Core.Launch.ModelHistoryRow.CheckFailed.get -> int
-Aw.Sindri.Core.Launch.ModelHistoryRow.CheckFailed.init -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Deconstruct(out string! Model, out int Runs, out int Refused, out int CheckFailed, out int Redraft) -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Equals(Aw.Sindri.Core.Launch.ModelHistoryRow? other) -> bool
-Aw.Sindri.Core.Launch.ModelHistoryRow.Model.get -> string!
-Aw.Sindri.Core.Launch.ModelHistoryRow.Model.init -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.ModelHistoryRow(string! Model, int Runs, int Refused, int CheckFailed, int Redraft) -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Redraft.get -> int
-Aw.Sindri.Core.Launch.ModelHistoryRow.Redraft.init -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Refused.get -> int
-Aw.Sindri.Core.Launch.ModelHistoryRow.Refused.init -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Runs.get -> int
-Aw.Sindri.Core.Launch.ModelHistoryRow.Runs.init -> void
-Aw.Sindri.Core.Launch.ModelHistoryRow.Unusual.get -> bool
+Aw.Sindri.Core.Launch.ModelPickHistoryRow
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.<Clone>$() -> Aw.Sindri.Core.Launch.ModelPickHistoryRow!
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.CheckFailed.get -> int
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.CheckFailed.init -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Deconstruct(out string! Model, out int Runs, out int Refused, out int CheckFailed, out int Redraft) -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Equals(Aw.Sindri.Core.Launch.ModelPickHistoryRow? other) -> bool
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Model.get -> string!
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Model.init -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.ModelPickHistoryRow(string! Model, int Runs, int Refused, int CheckFailed, int Redraft) -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Redraft.get -> int
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Redraft.init -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Refused.get -> int
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Refused.init -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Runs.get -> int
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Runs.init -> void
+Aw.Sindri.Core.Launch.ModelPickHistoryRow.Unusual.get -> bool
 Aw.Sindri.Core.Launch.ModelPickSettings
 Aw.Sindri.Core.Launch.ModelPickSettings.<Clone>$() -> Aw.Sindri.Core.Launch.ModelPickSettings!
 Aw.Sindri.Core.Launch.ModelPickSettings.Cap.get -> string?
@@ -20512,7 +20512,7 @@ Aw.Sindri.Core.Launch.ModelPickSettings.PickOn.init -> void
 Aw.Sindri.Core.Launch.ModelPickSettings.Pin.get -> string?
 Aw.Sindri.Core.Launch.ModelPickSettings.Pin.init -> void
 Aw.Sindri.Core.Launch.NoModelPickHistory
-Aw.Sindri.Core.Launch.NoModelPickHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelHistoryRow!>!>
+Aw.Sindri.Core.Launch.NoModelPickHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelPickHistoryRow!>!>
 Aw.Sindri.Core.Launch.NoModelPickHistory.NoModelPickHistory() -> void
 Aw.Sindri.Core.Launch.NoModelPickSettings
 Aw.Sindri.Core.Launch.NoModelPickSettings.For(Aw.Sindri.Core.Launch.AgentId agent, string! state, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launch.ModelPickSettings!>
@@ -20527,9 +20527,9 @@ override Aw.Sindri.Core.Judge.PickCandidate.ToString() -> string!
 override Aw.Sindri.Core.Judge.PickFileText.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Judge.PickFileText.GetHashCode() -> int
 override Aw.Sindri.Core.Judge.PickFileText.ToString() -> string!
-override Aw.Sindri.Core.Launch.ModelHistoryRow.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.ModelHistoryRow.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.ModelHistoryRow.ToString() -> string!
+override Aw.Sindri.Core.Launch.ModelPickHistoryRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.ModelPickHistoryRow.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.ModelPickHistoryRow.ToString() -> string!
 override Aw.Sindri.Core.Launch.ModelPickSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.ModelPickSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.ModelPickSettings.ToString() -> string!
@@ -20539,8 +20539,8 @@ static Aw.Sindri.Core.Judge.PickCandidate.operator !=(Aw.Sindri.Core.Judge.PickC
 static Aw.Sindri.Core.Judge.PickCandidate.operator ==(Aw.Sindri.Core.Judge.PickCandidate? left, Aw.Sindri.Core.Judge.PickCandidate? right) -> bool
 static Aw.Sindri.Core.Judge.PickFileText.operator !=(Aw.Sindri.Core.Judge.PickFileText? left, Aw.Sindri.Core.Judge.PickFileText? right) -> bool
 static Aw.Sindri.Core.Judge.PickFileText.operator ==(Aw.Sindri.Core.Judge.PickFileText? left, Aw.Sindri.Core.Judge.PickFileText? right) -> bool
-static Aw.Sindri.Core.Launch.ModelHistoryRow.operator !=(Aw.Sindri.Core.Launch.ModelHistoryRow? left, Aw.Sindri.Core.Launch.ModelHistoryRow? right) -> bool
-static Aw.Sindri.Core.Launch.ModelHistoryRow.operator ==(Aw.Sindri.Core.Launch.ModelHistoryRow? left, Aw.Sindri.Core.Launch.ModelHistoryRow? right) -> bool
+static Aw.Sindri.Core.Launch.ModelPickHistoryRow.operator !=(Aw.Sindri.Core.Launch.ModelPickHistoryRow? left, Aw.Sindri.Core.Launch.ModelPickHistoryRow? right) -> bool
+static Aw.Sindri.Core.Launch.ModelPickHistoryRow.operator ==(Aw.Sindri.Core.Launch.ModelPickHistoryRow? left, Aw.Sindri.Core.Launch.ModelPickHistoryRow? right) -> bool
 static Aw.Sindri.Core.Launch.ModelPickSettings.Off.get -> Aw.Sindri.Core.Launch.ModelPickSettings!
 static Aw.Sindri.Core.Launch.ModelPickSettings.operator !=(Aw.Sindri.Core.Launch.ModelPickSettings? left, Aw.Sindri.Core.Launch.ModelPickSettings? right) -> bool
 static Aw.Sindri.Core.Launch.ModelPickSettings.operator ==(Aw.Sindri.Core.Launch.ModelPickSettings? left, Aw.Sindri.Core.Launch.ModelPickSettings? right) -> bool

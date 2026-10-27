@@ -6,6 +6,6 @@ namespace Aw.Sindri.Core.Launch;
 public sealed class NoModelPickHistory : IModelPickHistory
 {
     /// <inheritdoc/>
-    public ValueTask<IReadOnlyList<ModelHistoryRow>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<IReadOnlyList<ModelHistoryRow>>([]);
+    public ValueTask<IReadOnlyList<ModelPickHistoryRow>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<IReadOnlyList<ModelPickHistoryRow>>([]);
 }

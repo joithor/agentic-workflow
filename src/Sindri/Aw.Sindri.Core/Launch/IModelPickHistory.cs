@@ -12,5 +12,5 @@ public interface IModelPickHistory
     /// <param name="models">The model ids asked about.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The rows.</returns>
-    public ValueTask<IReadOnlyList<ModelHistoryRow>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken);
+    public ValueTask<IReadOnlyList<ModelPickHistoryRow>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken);
 }
