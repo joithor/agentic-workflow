@@ -79,20 +79,46 @@ APP_WRAPPER_PID=$!
 drv ready --wait-ms 120000 >/dev/null 2>&1 || setup_fail "the app's driver never answered (see $OUT/app.log)"
 
 # 3. Workflows -> the instance -> its run drawer (the Take over button of the drawer, named "Take over").
-opened=0
-for type in Button RadioButton ListItem TabItem; do
-  if drv click --type "$type" --text "Workflows" >/dev/null 2>&1; then opened=1; break; fi
+# The top bar's pages are ListBoxItems named by their label.
+drv click --type ListBoxItem --name Workflows >"$OUT/nav.log" 2>&1 \
+  || setup_fail "the Workflows nav item was not clicked (driver: $(tr -d '\n' <"$OUT/nav.log" | cut -c1-160))"
+# The page opens as the board, which holds only runs on a lane; the List toggle shows every run.
+drv click --type ListBoxItem --name List >"$OUT/list.log" 2>&1 \
+  || setup_fail "the List toggle was not clicked (driver: $(tr -d '\n' <"$OUT/list.log" | cut -c1-160))"
+# The run's title button is in the row; focus arriving on it selects the row (WorkflowsPage.OnSelect) and opens the drawer without opening the run.
+# Find the run's row by its accessible name ("<title>, <workflow>, <status>, ..." on the focusable row border) in a complete search, polling up to 60 s.
+row_id=""
+for _ in $(seq 1 30); do
+  nodes="$(drv search --limit 5000 2>/dev/null)" || nodes=""
+  if [ -n "$nodes" ]; then
+    [ "$(printf '%s' "$nodes" | jq '(.total // 0) > (.matches | length)')" = false ] || setup_fail "the node search is incomplete (more nodes than --limit 5000)"
+    row_id="$(printf '%s' "$nodes" | jq -r '[.matches[] | select(.visible == true and ((.name // "") | startswith("Fixture agent run, ")))][0].id // empty')"
+    [ -n "$row_id" ] && break
+  fi
+  sleep 2
 done
-[ "$opened" = 1 ] || setup_fail "no Workflows entry to click (see $OUT/app.log)"
-drv wait-for --type ListItem --state visible --wait-ms 60000 >/dev/null 2>&1 || setup_fail "Workflows lists no instance"
-drv click --type ListItem --index 0 >/dev/null 2>&1 || setup_fail "the instance row click was not accepted by the driver"
-drv wait-for --type Button --text "Take over" --state visible --wait-ms 30000 >/dev/null 2>&1 \
-  || setup_fail "the run drawer shows no Take over button for the live agent run"
+[ -n "$row_id" ] || setup_fail "Workflows lists no row for Fixture agent run"
+# Focus selects the row; Enter on the selected row opens the drawer on it (a second Enter would open the run). The row border is not a button, so the key reaches the page.
+drv action --do focus --node-id "$row_id" >"$OUT/select.log" 2>&1 \
+  || setup_fail "the run's row could not take focus (driver: $(tr -d '\n' <"$OUT/select.log" | cut -c1-160))"
+drv key --chord Enter --node-id "$row_id" >"$OUT/enter.log" 2>&1 \
+  || setup_fail "Enter on the run's row was not accepted (driver: $(tr -d '\n' <"$OUT/enter.log" | cut -c1-160))"
+drv wait-for --name "Run details" --state visible --wait-ms 30000 >/dev/null 2>&1 \
+  || setup_fail "the run drawer (Run details) never opened after Enter on the row"
+# The drawer's button may carry its label as its automation name or as its text, so look for either, visible, any type.
+take_id=""
+for _ in $(seq 1 30); do
+  take_id="$( { drv search --name "Take over" --limit 50; drv search --text "Take over" --limit 50; } 2>/dev/null \
+    | jq -rs '[.[].matches[]? | select(.visible)][0].id // empty')"
+  [ -n "$take_id" ] && break
+  sleep 1
+done
+[ -n "$take_id" ] || setup_fail "the run drawer shows no Take over button for the live agent run"
 drv screenshot --out "$OUT/before-click.png" >/dev/null 2>&1
 before="$(takeovers_by_ui)"
 
 # 4. Press it once. Within 10 s the ledger must hold ONE new takeover accepted from human:ui.
-drv click --type Button --text "Take over" --index 0 >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
+drv click --node-id "$take_id" >/dev/null 2>&1 || setup_fail "the Take over click was not accepted by the driver"
 sent=0
 for _ in $(seq 1 20); do
   now="$(takeovers_by_ui)"

@@ -76,7 +76,7 @@ public sealed class RecipeFramesTests : FrameHost
         await Open(window, shell, "workflow.unknown", FramePhase.NotFound);
 
         Assert.Equal(shell.Recipe.ProblemText, Named<TextBlock>(window, "RecipeProblem").Text);
-        Assert.True(Visible(window, "RecipeBack"));
+        Assert.True(Visible(window, "SheetBack"));   // the sheet covers the page, so the header's Back is the one (the body's hides)
         Frame(window, "not-found");
     });
 }

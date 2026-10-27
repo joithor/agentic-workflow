@@ -4695,7 +4695,7 @@ const Aw.Context.Core.Eval.MapQuality.MapQualityBars.UnmappedRate = 0.2 -> doubl
 const Aw.Context.Core.Eval.MapQuality.MapQualityReport.CurrentSchemaVersion = 1 -> int
 const Aw.Context.Core.Eval.ProbeReport.CurrentSchemaVersion = 1 -> int
 const Aw.Context.Core.Eval.ProbeScoring.K = 5 -> int
-const Aw.Context.Core.Extract.MapExtractor.Version = 2 -> int
+const Aw.Context.Core.Extract.MapExtractor.Version = 3 -> int
 const Aw.Context.Core.Graph.EntryKey.Version = 1 -> int
 const Aw.Context.Core.Graph.GraphWalk.MaxDepth = 8 -> int
 const Aw.Context.Core.History.HistoryRules.ChangesPerRepo = 2147483646 -> int
@@ -5789,7 +5789,6 @@ static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.Lab
 static Aw.Context.Core.Extract.MapExtraction.operator !=(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool
 static Aw.Context.Core.Extract.MapExtraction.operator ==(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool
 static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files) -> Aw.Context.Core.Extract.ExtractedMap!
-static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, Aw.Context.Core.Extract.RecognizerSet! recognizers) -> Aw.Context.Core.Extract.MapExtraction!
 static Aw.Context.Core.Extract.Recognizer.operator !=(Aw.Context.Core.Extract.Recognizer? left, Aw.Context.Core.Extract.Recognizer? right) -> bool
 static Aw.Context.Core.Extract.Recognizer.operator ==(Aw.Context.Core.Extract.Recognizer? left, Aw.Context.Core.Extract.Recognizer? right) -> bool
 static Aw.Context.Core.Extract.Recognizers.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.Recognizer!>!
@@ -7861,13 +7860,13 @@ Aw.Context.Core.ConceptScan.ConceptScanLimits
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxInputChars = 60000 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxOutputTokens = 4000 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxScansPerDay = 6 -> int
-const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxConcepts = 15 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxSearches = 24 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.HitsPerSearch = 6 -> int
 static Aw.Context.Core.ConceptScan.ConceptScanLimits.CallTimeout.get -> System.TimeSpan
 static Aw.Context.Core.ConceptScan.ConceptScanLimits.Window.get -> System.TimeSpan
 Aw.Context.Core.ConceptScan.ConceptScanReplies
 static Aw.Context.Core.ConceptScan.ConceptScanReplies.Candidates(string! reply) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ConceptScan.ConceptCandidate!>!
+static Aw.Context.Core.ConceptScan.ConceptScanReplies.IsCutOff(string! reply) -> bool
 static Aw.Context.Core.ConceptScan.ConceptScanReplies.Hints(string! reply, System.Collections.Generic.IReadOnlySet<string!>! featureKeys) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.ConceptScan.ConceptHint!>!
 Aw.Context.Core.ConceptScan.ConceptScanPrompts
 static Aw.Context.Core.ConceptScan.ConceptScanPrompts.Propose(string! summary) -> string!
@@ -7913,8 +7912,10 @@ const Aw.Context.Core.Engine.FillBands.History = "context.fill.history" -> strin
 const Aw.Context.Core.Engine.FillBands.Lenses = "context.fill.lenses" -> string!
 static Aw.Context.Core.Engine.FillBands.Source.get -> System.Diagnostics.ActivitySource!
 static Aw.Context.Core.Engine.FillBands.Start(string! band) -> System.Diagnostics.Activity?
-Aw.Context.Core.ConceptScan.ConceptScanReport.ConceptScanReport(int Version, bool OnDraft, Aw.Context.Core.ConceptScan.ConceptScanOutcome Outcome, int Hints, int Searches, Aw.Context.Core.Models.ModelTier? Tier = null, string? Model = null) -> void
-Aw.Context.Core.ConceptScan.ConceptScanReport.Deconstruct(out int Version, out bool OnDraft, out Aw.Context.Core.ConceptScan.ConceptScanOutcome Outcome, out int Hints, out int Searches, out Aw.Context.Core.Models.ModelTier? Tier, out string? Model) -> void
+Aw.Context.Core.ConceptScan.ConceptScanReport.ConceptScanReport(int Version, bool OnDraft, Aw.Context.Core.ConceptScan.ConceptScanOutcome Outcome, int Hints, int Searches, Aw.Context.Core.Models.ModelTier? Tier = null, string? Model = null, bool CutOff = false) -> void
+Aw.Context.Core.ConceptScan.ConceptScanReport.Deconstruct(out int Version, out bool OnDraft, out Aw.Context.Core.ConceptScan.ConceptScanOutcome Outcome, out int Hints, out int Searches, out Aw.Context.Core.Models.ModelTier? Tier, out string? Model, out bool CutOff) -> void
+Aw.Context.Core.ConceptScan.ConceptScanReport.CutOff.get -> bool
+Aw.Context.Core.ConceptScan.ConceptScanReport.CutOff.init -> void
 Aw.Context.Core.ConceptScan.ConceptScanReport.Model.get -> string?
 Aw.Context.Core.ConceptScan.ConceptScanReport.Model.init -> void
 Aw.Context.Core.ConceptScan.ConceptScanReport.Tier.get -> Aw.Context.Core.Models.ModelTier?
@@ -8242,3 +8243,25 @@ static Aw.Context.Core.Roles.RoleDropped.operator !=(Aw.Context.Core.Roles.RoleD
 static Aw.Context.Core.Roles.RoleDropped.operator ==(Aw.Context.Core.Roles.RoleDropped? left, Aw.Context.Core.Roles.RoleDropped? right) -> bool
 Aw.Context.Core.Extract.IRepoReader.ListTracked(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 static Aw.Context.Core.Roles.RoleCounter.Dropped(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! tracked) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RoleDropped!>!
+Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.DataAccess.Read = 0 -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.DataAccess.Write = 1 -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStorePass
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Accesses(string! text, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Declared(string! text) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.GenericSqlAdapter() -> void
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Name.get -> string!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Accesses(string! text, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Declared(string! text) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Name.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess
+Aw.Context.Core.Extract.DataStores.StoreAccess.Access.get -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.StoreAccess.Match.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess.Store.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess.StoreAccess(string! store, Aw.Context.Core.Extract.DataStores.DataAccess access, string! match) -> void
+static Aw.Context.Core.Extract.DataStorePass.Run(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>! adapters, System.Collections.Generic.IReadOnlyList<string!>! schemaGlobs) -> Aw.Context.Core.Extract.ExtractedMap!
+static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, Aw.Context.Core.Extract.RecognizerSet! recognizers, System.Collections.Generic.IReadOnlyList<string!>? schemaGlobs = null) -> Aw.Context.Core.Extract.MapExtraction!
+Aw.Context.Core.Extract.DataStores.DataStoreAdapters
+static Aw.Context.Core.Extract.DataStores.DataStoreAdapters.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>!

@@ -19,6 +19,8 @@ internal sealed partial class ShellViewModel
         DeepLinkKind.Job => JobSheet.Heading,
         DeepLinkKind.Item => Item.Title,
         DeepLinkKind.Workflow => Instance.Title,
+        DeepLinkKind.Recipe => Recipe.Title,
+        DeepLinkKind.Decision => Decision.Heading,
         _ => string.Empty,
     };
 #pragma warning restore IDE0072

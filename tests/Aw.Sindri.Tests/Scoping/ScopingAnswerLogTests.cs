@@ -61,4 +61,28 @@ public sealed class ScopingAnswerLogTests
         Assert.Contains(response.Findings, static f => f.Rule == "SCP-ACC-003" && string.Equals(f.Item, "A3", StringComparison.Ordinal));
         Assert.DoesNotContain(response.Findings, static f => f.Rule == "SCP-ACC-003" && string.Equals(f.Item, "A1", StringComparison.Ordinal));
     }
+
+    private static async Task<ScopingCheckResponse> RecordedAs(string question, string recordedAs)
+    {
+        var facts = ScopingFacts.Expiry();
+        facts["answerLog"] = $$"""[{"id":"A1","question":"{{question}}","pick":"{{question}}.a","recordedAs":["{{recordedAs}}"],"digest":"d1"}]""";
+        facts["questions"] = """[{"id":"Q9"}]""";   // why: a later round overwrote fact:questions, so Q1 is no longer in it
+        return await Evidence(facts);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_answer_recorded_as_an_earlier_rounds_question_passes_SCP_ACC_003()
+    {
+        var response = await RecordedAs("Q1", "Q1");
+
+        Assert.DoesNotContain(response.Findings, static f => f.Rule == "SCP-ACC-003" && string.Equals(f.Item, "A1", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_answer_recorded_as_a_question_no_round_asked_still_fails_SCP_ACC_003()
+    {
+        var response = await RecordedAs("Q1", "Q99");
+
+        Assert.Contains(response.Findings, static f => f.Rule == "SCP-ACC-003" && string.Equals(f.Item, "A1", StringComparison.Ordinal) && f.Message.Contains("recorded as Q99, which does not exist", StringComparison.Ordinal));
+    }
 }

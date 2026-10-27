@@ -30,6 +30,17 @@
 #                                  start the strip's instances through the CLI (sindri workflow start, as the owner, each on a
 #                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
 #                                  (each dev recipe is approved as the owner first, which registers it: they aren't embedded)
+#   sindri-ui-fixture.sh line-run  (run after 'context up')
+#                                  start a workflow.line instance (the run page's recipe) on a new item in the context repo, as the
+#                                  owner; prints the item. The item has no frozen scope: no scoping packet was approved for it
+#   sindri-ui-fixture.sh hide-item <ITM-id>
+#                                  delete the item's row from <home>/views.db (view_items): the control plane stays up and the run
+#                                  still serves, but GET /sindri/items/<id> and /scope answer SND-ITEM-404 for it (gh-1046: the
+#                                  Context page's "Could not read the context of <item>"). Derived state: 'views rebuild' brings it back
+#   sindri-ui-fixture.sh park-timeout
+#                                  start workflow.dev-timeout (a desk Step with a 1m timeout that parks) on a new item and print the item; after
+#                                  about a minute the instance is parked by its timeout and offers answer kind resume (ApplyCommand:answer-resume).
+#                                  Run 'up' with FIXTURE_DESK_TIMEOUT=1m first, or the desk floor (default 2d) holds the park back
 #   sindri-ui-fixture.sh incident start|stop
 #                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml, approved first; it tops the strip) or cancel it
 #   sindri-ui-fixture.sh context up|draft|down
@@ -94,6 +105,7 @@
 #                                  busy lock delays the launch. Exit 1 when no launch started in time; needs jq and git.
 #
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
+# FIXTURE_DESK_TIMEOUT (up only): writes workflow.deskTimeout into the fixture profile, the floor of every desk Step timeout (park-timeout).
 # FIXTURE_AGENT_WAIT is how many seconds agent-run waits for launch.started (default 120; a saturated box needs more).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
@@ -165,6 +177,10 @@ services:
   heartbeat: { every: 5s }
 api: { port: 0 }
 YAML
+  # The desk floor (workflow.deskTimeout, default 2d) raises every desk Step's timeout; park-timeout needs it low.
+  if [ -n "${FIXTURE_DESK_TIMEOUT:-}" ]; then
+    printf 'workflow:\n  deskTimeout: %s\n' "$FIXTURE_DESK_TIMEOUT" >> "$profile"
+  fi
   approve || return
   "$PROVE" human --headless
 }
@@ -318,6 +334,16 @@ fact_args() { # $1 recipe, $2 item, $3 title; prints the --fact arguments, one f
   esac
 }
 
+# The dev recipes aren't embedded (the host ships recipes/sindri only), so a start needs its recipe approved first, which registers it (#1343).
+# Approves recipes/dev's recipe with id $1 as the owner, typing "approve <id> <version>"; a recipe outside recipes/dev is left alone.
+approve_dev_recipe() { # $1 recipe id
+  local file out
+  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml 2>/dev/null | head -1)"
+  [ -n "$file" ] || return 0
+  out="$(printf 'approve %s %s\n' "$1" "$(sed -n 's/^version: *//p' "$file" | head -1)" | "$PROVE" human recipe approve "$file" 2>&1)" \
+    || die "the recipe $1 was not approved: $out"
+}
+
 start_on_new_item() { # $1 recipe, $2 item title; prints the item
   local item facts=() line out
   need jq
@@ -329,16 +355,6 @@ start_on_new_item() { # $1 recipe, $2 item title; prints the item
   fi
   printf 'started %s on %s\n' "$1" "$item" >&2
   printf '%s\n' "$item"
-}
-
-# The dev recipes aren't embedded (the host ships recipes/sindri only), so a start needs its recipe approved first, which registers it (#1343).
-# Approves recipes/dev's recipe with id $1 as the owner, typing "approve <id> <version>"; a repeat at the same version is a no-op.
-approve_dev_recipe() {
-  local file out
-  file="$(grep -lx "id: $1" "$ROOT"/recipes/dev/*.yaml 2>/dev/null | head -1)"
-  [ -n "$file" ] || die "no recipe with id $1 in recipes/dev"
-  out="$(printf 'approve %s %s\n' "$1" "$(sed -n 's/^version: *//p' "$file" | head -1)" | "$PROVE" human recipe approve "$file" 2>&1)" \
-    || die "the recipe $1 was not approved: $out"
 }
 
 # One triage and two work instances (screens §8.2); --large: twelve roots, four on each of three recipes.
@@ -358,6 +374,63 @@ workflows() {
   start_on_new_item workflow.dev-triage-three-state "Fixture triage" >/dev/null || return
   start_on_new_item workflow.dev-desk-round-trip "Fixture work one" >/dev/null || return
   start_on_new_item workflow.dev-desk-round-trip "Fixture work two" >/dev/null
+}
+
+# workflow.line is not in the fixture's registry: its effects go into the live profile (as sindri-sandbox-e2e.sh writes them), the profile
+# is approved again, and the owner's approve-all approves every shipped recipe, children first. Idempotent.
+line_recipes_approved() {
+  local profile out i
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "line-run: no live profile at $profile: run 'up' first"
+  if "$PROVE" human recipe list 2>&1 | grep -Eq '^workflow\.line@[0-9a-f]+ approved'; then return 0; fi
+  if ! grep -q 'effect.line.start-phase' "$profile"; then
+    grep -q '^workflow:' "$profile" && die "line-run: the live profile already has a workflow: section; add the line's effects to it"
+    {
+      echo "workflow:"
+      echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
+      echo "  forge: { adapter: file, hosts: [forge.test] }"
+      echo "  build:"
+      echo "    commands:"
+      echo "      - 'true'"
+    } >> "$profile" || return
+  fi
+  if needs_approval; then approve >&2 || return; fi
+  out="$("$PROVE" human recipe approve-all 2>&1)" || die "line-run: recipe approve-all was refused: $out"
+  for i in $(seq 1 120); do
+    if "$PROVE" human recipe list 2>&1 | grep -Eq '^workflow\.line@[0-9a-f]+ approved'; then return 0; fi
+    sleep 1
+  done
+  die "line-run: workflow.line is not approved 120 s after approve-all: $("$PROVE" human recipe list 2>&1 | tail -5 | tr '\n' ' ')"
+}
+
+# A line run on a new item of the context repo (gh-1046: the run page's See its context needs a run with an item). The item has no
+# frozen scope, as a fresh item never has.
+line_run() {
+  local item dir out facts="$AW_SINDRI_HOME/ui-fixture-facts"
+  need jq
+  dir="$(context_dir)/$CONTEXT_REPO"
+  [ -d "$dir/.git" ] || die "line-run: run 'context up' first"
+  mkdir -p "$facts" || return
+  line_recipes_approved || return
+  item="$(FIXTURE_REPO="$CONTEXT_REPO" new_item "Fixture line run")" || return
+  printf '{"kind":"brief","repo":"%s","path":"README.md"}\n' "$CONTEXT_REPO" > "$facts/scopeInput.json"
+  printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$(git -C "$dir" rev-parse HEAD)" > "$facts/lineContext.json"
+  if ! out="$("$PROVE" human workflow start workflow.line --item "$item" --fact "fact:scopeInput=$facts/scopeInput.json" --fact "fact:lineContext=$facts/lineContext.json" 2>&1)"; then
+    die "workflow start workflow.line on $item was refused: $out"
+  fi
+  printf '%s\n' "$item"
+}
+
+hide_item() {
+  need_sql
+  local db="$AW_SINDRI_HOME/views.db"
+  [ -f "$db" ] || die "no views at $db: run 'up' first"
+  sql_on "$db" "DELETE FROM view_items WHERE key = '$1'; SELECT changes() || ' row(s) removed';"
+}
+
+park_timeout() {
+  approve_dev_recipe workflow.dev-timeout || return
+  start_on_new_item workflow.dev-timeout "Fixture timeout park"
 }
 
 incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
@@ -822,6 +895,8 @@ case "$verb" in
   items) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: items [--large]" ;;
   close) [ "$#" -eq 2 ] || { [ "$#" -eq 3 ] && [ "$3" = "--cancelled" ]; } || die "usage: close <item> [--cancelled]" ;;
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
+  line-run) [ "$#" -eq 1 ] || die "'line-run' takes no arguments" ;;
+  park-timeout) [ "$#" -eq 1 ] || die "'$verb' takes no arguments" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
   context)
@@ -839,6 +914,7 @@ case "$verb" in
       ask | end | back) [ "$#" -eq 3 ] || die "usage: sessions $2 <pid>" ;;
       *) die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
     esac ;;
+  hide-item) { [ "$#" -eq 2 ] && case "$2" in ITM-*[!0-9a-f]* | ITM-) false ;; ITM-*) true ;; *) false ;; esac; } || die "usage: hide-item <ITM-id>" ;;
   agent-run) [ "$#" -eq 1 ] || die "'agent-run' takes no arguments" ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;

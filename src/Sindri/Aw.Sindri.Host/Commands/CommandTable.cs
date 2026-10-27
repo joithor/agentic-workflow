@@ -171,7 +171,7 @@ internal static partial class CommandTable
     private static async Task<int> LaunchOrSession(string[] args, ControlPlaneClient client, (Output Output, Func<string, string?> Environment) io, IServiceProvider services, (CancellationToken Interrupt, CancellationToken Again) signals) =>
         args switch
         {
-            ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services.GetRequiredService<ISindriHome>(), io.Environment, signals.Interrupt).ConfigureAwait(false),
+            ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services, io.Environment, signals.Interrupt).ConfigureAwait(false),
             ["launch", "probe", .. var probe] => await new LaunchProbeVerb(client, io.Output, new JobFollower(client, io.Output, services.GetRequiredService<TimeProvider>())).Run(probe, signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), io.Output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, io.Output).ConfigureAwait(false),
