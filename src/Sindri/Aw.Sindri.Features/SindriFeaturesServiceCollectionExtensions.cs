@@ -74,7 +74,6 @@ using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
-using Aw.Sindri.Features.PlanSandbox;
 using Aw.Sindri.Features.PrWatch;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
@@ -129,7 +128,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecordServiceRun()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
-            .AddScoped<IService<PlanSandboxRequest, PlanSandboxResponse>, PlanSandboxService>()
+            .AddPlanSandbox()
             .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
             .AddScoped<IService<ScrubRequest, ScrubResponse>, ScrubService>()
             .AddDoctor()

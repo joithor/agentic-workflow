@@ -19,6 +19,9 @@ public static class SandboxRequests
     /// <summary>The fixture sindri home.</summary>
     public const string SindriHome = "/home/owner/.agentic-workflow/sindri-app";
 
+    /// <summary>The fixture stamp directory of the installed C# binaries (the host resolved bin/cs/current to it).</summary>
+    public const string CsBinDir = "/home/owner/.agentic-workflow/bin/cs/20261025T101500-ab12cd3";
+
     /// <summary>The fixture repo checkout.</summary>
     public const string Repo = "/work/web";
 
@@ -33,7 +36,7 @@ public static class SandboxRequests
 
     /// <summary>The box facts: 32 GiB, 8 cores.</summary>
     public static SandboxHostFacts Host { get; } = new(
-        Home, StateDir, SindriHome, "/home/owner/repos/toolkit", 1000, 32L * 1024 * 1024 * 1024, 8, IsMacOs: false,
+        Home, StateDir, SindriHome, CsBinDir, 1000, 32L * 1024 * 1024 * 1024, 8, IsMacOs: false,
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["PATH"] = "/usr/local/bin:/usr/bin:/bin:/home/owner/.dotnet:/home/owner/.local/bin",
@@ -42,7 +45,6 @@ public static class SandboxRequests
             ["USER"] = "owner",
             ["SHELL"] = "/bin/bash",
             ["DOTNET_ROOT"] = "/home/owner/.dotnet",
-            ["NVM_DIR"] = "/home/owner/.nvm",
             ["GH_TOKEN"] = "ghp_planted",
             ["AWS_SECRET_ACCESS_KEY"] = "planted",
             ["AW_HEAVY_LOCK_HELD"] = "1",

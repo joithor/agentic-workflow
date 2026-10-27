@@ -15,7 +15,7 @@ namespace Aw.Sindri.Testing.Sandbox;
 /// <summary>
 /// A throw-away box for the sandbox contract (sandbox spec §10): a real git repository with a run worktree and a run branch, a state directory with the hook inventory,
 /// a run area, a net directory and a fake login copy, all under one directory that is not in /tmp (a bubblewrap sandbox replaces /tmp). The home is the owner's real
-/// home by default, so the real toolchains, hooks and the judge wrapper are what the sandbox binds; the state directory is the fixture's, so nothing of the owner's
+/// home by default, so the real toolchains, hooks and the installed C# binaries are what the sandbox binds; the state directory is the fixture's, so nothing of the owner's
 /// state is touched. Nothing here ever reads or writes the owner's login: the login is a fake in the fixture.
 /// </summary>
 public sealed partial class SandboxBox : IDisposable
@@ -69,8 +69,8 @@ public sealed partial class SandboxBox : IDisposable
     /// <summary>Gets the fake login copy's directory.</summary>
     public string LoginCopy { get; }
 
-    /// <summary>Gets a value indicating whether the box has the owner's installed hooks and a judge wrapper, so the hook canary can run.</summary>
-    public bool HasHooks => File.Exists(Home + "/.claude/hooks/block-destructive.sh") && ToolkitDir().Length > 0;
+    /// <summary>Gets a value indicating whether the box has the owner's installed hooks and C# binaries, so the hook canary can run.</summary>
+    public bool HasHooks => File.Exists(Home + "/.claude/hooks/block-destructive.sh") && CsBinDir().Length > 0;
 
     /// <summary>Gets a value indicating whether git and the .NET SDK the restore fixture needs are on this box.</summary>
     public bool HasDotnet => File.Exists(Home + "/.dotnet/dotnet") || Environment.GetEnvironmentVariable("DOTNET_ROOT") is { Length: > 0 };
@@ -124,7 +124,7 @@ public sealed partial class SandboxBox : IDisposable
     public SandboxHostFacts Host()
     {
         var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["GH_TOKEN"] = "ghp_planted", ["AW_HEAVY_LOCK_HELD"] = "1" };
-        foreach (var name in new[] { "PATH", "LANG", "TERM", "USER", "SHELL", "DOTNET_ROOT", "NVM_DIR" })
+        foreach (var name in new[] { "PATH", "LANG", "TERM", "USER", "SHELL", "DOTNET_ROOT" })
         {
             if (Environment.GetEnvironmentVariable(name) is { Length: > 0 } value)
             {
@@ -133,7 +133,7 @@ public sealed partial class SandboxBox : IDisposable
         }
 
         environment["PATH"] = environment.GetValueOrDefault("PATH", "/usr/local/bin:/usr/bin:/bin");
-        return new SandboxHostFacts(Home, State, SindriHome, ToolkitDir(), Uid(), TotalMemory(), Environment.ProcessorCount, IsMacOs: false, environment, []);
+        return new SandboxHostFacts(Home, State, SindriHome, CsBinDir(), Uid(), TotalMemory(), Environment.ProcessorCount, IsMacOs: false, environment, []);
     }
 
     /// <summary>Gets the login a copy source would hand over, with a fake login in the box: the agent home read-only and the copy directory at the config path.</summary>
@@ -199,9 +199,6 @@ public sealed partial class SandboxBox : IDisposable
     [GeneratedRegex("[^A-Za-z0-9]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex NonAlphanumeric { get; }
 
-    [GeneratedRegex("exec node \"(?<dir>[^\"]+)/judge/dist/cli\\.js\"", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex JudgeWrapper { get; }
-
     private static bool ProbeGit()
     {
         try
@@ -216,16 +213,11 @@ public sealed partial class SandboxBox : IDisposable
 
     private static string ProjectKeyOf(string path) => NonAlphanumeric.Replace(path, "-");
 
-    private string ToolkitDir()
+    // The stamp directory the owner's installed 'bin/cs/current' link points at (rev 7); empty when this box has no C# install.
+    private string CsBinDir()
     {
-        var wrapper = Home + "/.local/bin/judge";
-        if (!File.Exists(wrapper))
-        {
-            return string.Empty;
-        }
-
-        var match = JudgeWrapper.Match(File.ReadAllText(wrapper));
-        return match.Success && File.Exists(match.Groups["dir"].Value + "/judge/dist/cli.js") ? match.Groups["dir"].Value : string.Empty;
+        var link = new DirectoryInfo(Home + "/.agentic-workflow/bin/cs/current");
+        return link.Exists && link.ResolveLinkTarget(returnFinalTarget: true) is { Exists: true } target ? target.FullName : string.Empty;
     }
 
     private static int Uid()

@@ -49,10 +49,20 @@ internal static partial class PlanChecks
             return Unconfinable("the worktree is not inside the repo");
         }
 
+        if (Stamp(r.Host) is { } stamp)
+        {
+            return stamp;
+        }
+
         return !Inside(p.RunDirectory, r.Host.SindriHome) || !Inside(p.RunArea, r.Host.SindriHome)
             ? Unconfinable("the run directory and the run area belong inside the Sindri home")
             : null;
     }
+
+    private static Error? Stamp(SandboxHostFacts host) =>
+        host.CsBinDir.Length > 0 && (!IsClean(host.CsBinDir) || !Inside(host.CsBinDir, host.StateDir + "/bin/cs"))
+            ? Unconfinable("the C# binaries' stamp directory is not a clean path inside bin/cs")
+            : null;
 
     private static Error? Namespace(PlanContext c)
     {

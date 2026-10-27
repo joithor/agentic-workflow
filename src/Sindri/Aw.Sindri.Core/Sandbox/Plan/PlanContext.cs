@@ -21,6 +21,8 @@ internal sealed record PlanContext(
 
     internal string StateDir => Request.Host.StateDir;
 
+    internal string SessionHome => SessionHomePaths.For(Request.Host.SindriHome, Request.Launch);
+
     internal string RunArea => Request.Paths.RunArea;
 
     internal string? Worktree => Request.Paths.Worktree;
@@ -50,6 +52,7 @@ internal sealed record PlanContext(
             denied.Add(new DeniedPath(host.SindriHome, Always + "Sindri's own state: the ledger, tokens and other runs' areas"));
         }
 
+        denied.Add(new DeniedPath(SessionHomePaths.Sessions(host.SindriHome), Always + "other launches' session homes"));
         denied.Add(new DeniedPath("/var/run/docker.sock", Always + "the Docker socket is root on the host"));
         denied.Add(new DeniedPath("/run/podman", Always + "the Podman socket is root on the host"));
         denied.Add(new DeniedPath("/run/user/" + host.Uid.ToString(System.Globalization.CultureInfo.InvariantCulture), Always + "the ssh, gpg and dbus agent sockets sign as the owner"));

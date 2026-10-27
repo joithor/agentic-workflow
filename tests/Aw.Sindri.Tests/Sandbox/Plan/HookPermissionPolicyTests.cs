@@ -14,6 +14,7 @@ public sealed class HookPermissionPolicyTests
     [InlineData("done-gate", HookTreatment.Keep)]
     [InlineData("done-gate-annotate", HookTreatment.Keep)]
     [InlineData("external-write-guard", HookTreatment.Drop)]
+    [InlineData("fleet-state", HookTreatment.Keep)]
     [InlineData("git-context", HookTreatment.Keep)]
     [InlineData("judge-health", HookTreatment.Keep)]
     [InlineData("meta-lane-gate", HookTreatment.Keep)]
@@ -30,9 +31,9 @@ public sealed class HookPermissionPolicyTests
     [InlineData("session-id-report", HookTreatment.Keep)]
     [InlineData("sindri-nudge", HookTreatment.Keep)]
     [InlineData("subagent-start-map", HookTreatment.Keep)]
+    [InlineData("trait-check", HookTreatment.Keep)]
     [InlineData("turn-origin", HookTreatment.Keep)]
     [InlineData("winch", HookTreatment.Keep)]
-    [InlineData("aw-live", HookTreatment.Keep)]
     public void Each_inventory_row_gets_its_treatment_in_the_session(string hook, HookTreatment treatment)
     {
         var hooks = HookPermissionPolicy.ForSession();
