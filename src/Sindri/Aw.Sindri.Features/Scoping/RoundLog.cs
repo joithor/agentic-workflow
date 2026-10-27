@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Aw.Sindri.Features.Scoping;
@@ -33,7 +34,7 @@ internal static class RoundLog
         var excluded = ScopeJson.Items(scopeMap, "excluded").ToList();
         var coverage = new Coverage(
             excluded.Select(static x => ScopeJson.Str(x, "item")).OfType<string>().ToHashSet(StringComparer.Ordinal),
-            excluded.Select(static x => ScopeJson.Str(x, "glob")).OfType<string>().ToList(),
+            [.. excluded.Select(static x => ScopeJson.Str(x, "glob")).OfType<string>()],
             ScopeJson.Items(scopeMap, "surfaces").SelectMany(static s => new[] { ScopeJson.Str(s, "key"), ScopeJson.Str(s, "id") }.Concat(ScopeJson.Strings(s, "citations"))).OfType<string>().ToHashSet(StringComparer.Ordinal),
             ScopeJson.Items(answerLog).SelectMany(static a => ScopeJson.Strings(a, "recordedAs")).ToHashSet(StringComparer.Ordinal));
         var entries = ScopeJson.Items(log).Where(static e => string.Equals(ScopeJson.Str(e, "kind"), Finding, StringComparison.Ordinal)).ToList();
@@ -89,7 +90,7 @@ internal static class RoundLog
         {
             if (!JsonNode.DeepEquals(earlier[i], later[i]))
             {
-                return $"fact:{Key} may only be added to: the output rewrites entry {i + 1} ({ScopeJson.Str(earlier[i], "key")}), which an earlier round wrote";
+                return $"fact:{Key} may only be added to: the output rewrites entry {(i + 1).ToString(CultureInfo.InvariantCulture)} ({ScopeJson.Str(earlier[i], "key")}), which an earlier round wrote";
             }
         }
 
