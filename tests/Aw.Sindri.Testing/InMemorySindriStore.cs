@@ -156,6 +156,9 @@ public sealed class InMemorySindriStore(TimeProvider clock, IProcessProbe probe)
         }
     }
 
+    /// <inheritdoc cref="ILedgerReader.ByKey"/>
+    public ValueTask<Result<LedgerEvent?>> ByKey(string idempotencyKey, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     /// <inheritdoc cref="ILedgerStore.Head"/>
     public ValueTask<Result<long>> Head(CancellationToken cancellationToken)
     {
