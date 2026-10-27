@@ -82,6 +82,31 @@ public sealed class ModelHistoryProjectionTests
         Assert.Null(await _v.Row("draft", Sonnet));
     }
 
+    [Theory]
+    [InlineData("refused", ModelOutcome.Refused)]
+    [InlineData("check_failed", ModelOutcome.CheckFailed)]
+    public async Task An_escalation_counts_the_run_it_escalated_from_for_that_model(string kind, ModelOutcome expected)
+    {
+        await _v.Begin();
+        await _v.Picked("draft", from: Sonnet, kind);
+
+        var row = (await _v.Row("draft", Sonnet))!;
+
+        Expect.Equal(1, row.Runs);
+        Expect.Sequence([expected], row.Recent);
+    }
+
+    [Fact]
+    public async Task A_pick_that_is_not_an_escalation_or_names_no_kind_changes_nothing()
+    {
+        await _v.Begin();
+        await _v.Picked("draft", from: null, kind: null);
+        await _v.Picked("draft", from: Sonnet, kind: null);
+        await _v.Picked("draft", from: Sonnet, kind: "crashed");
+
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+    }
+
     [Fact]
     public async Task Each_model_and_each_state_has_its_own_row()
     {

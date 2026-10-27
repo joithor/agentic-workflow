@@ -50,6 +50,16 @@ internal static class ModelHistoryFolds
         new(AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(Address), RunToken.From(run)), A.FirstItemId, LaunchMode.Open, AgentId.From("claude-code"), SessionId: null, "sindri",
             new LaunchViewer("warp", "Warp", ViewerOutcomeKind.Opened, Code: null, Detail: null), ["tmux", "attach"], CatalogSource.Builtin, "sha256:abc", Address, state, Attempt: 1);
 
+    /// <summary>Folds a 'model.picked' for the instance's <paramref name="state"/>, escalated from <paramref name="from"/> when it is not null.</summary>
+    public static Task Picked(this ViewsHarness v, string state, string? from, string? kind) =>
+        v.Fold(ModelHistoryProjection.ModelPicked, new object(), A.FirstItemId, _ =>
+        {
+            var node = new JsonObject { ["instance"] = Address.Value, ["state"] = state, ["model"] = "claude-opus-5-5" };
+            node["escalatedFrom"] = from;
+            node["escalatedFromKind"] = kind;
+            return node.ToJsonString();
+        });
+
     /// <summary>The payload text with the model the launch ran on (the launch record has no such field yet); unchanged when <paramref name="model"/> is null.</summary>
     public static string WithModel(string text, string? model)
     {

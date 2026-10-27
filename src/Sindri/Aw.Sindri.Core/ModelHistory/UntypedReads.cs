@@ -17,6 +17,18 @@ internal static class UntypedReads
     /// <returns>The kind as written, or null.</returns>
     internal static string? FailureKind(string payload) => Text(payload, "detail", "failureKind");
 
+    /// <summary>
+    /// The escalation a 'model.picked' payload records: the instance, state, the model that was escalated from ('escalatedFrom') and how it failed ('escalatedFromKind', 'refused' or
+    /// 'check_failed'). Null when the pick is not an escalation or names no kind.
+    /// </summary>
+    /// <param name="payload">The payload's JSON text.</param>
+    /// <returns>The escalation, or null.</returns>
+    internal static EscalatedPick? Escalation(string payload) =>
+        Text(payload, "instance") is { } instance && Text(payload, "state") is { } state && Text(payload, "escalatedFrom") is { } from
+            && Text(payload, "escalatedFromKind") switch { "refused" => ModelOutcome.Refused, "check_failed" => ModelOutcome.CheckFailed, _ => (ModelOutcome?)null } is { } outcome
+                ? new EscalatedPick(instance, state, from, outcome)
+                : null;
+
     private static string? Text(string payload, params string[] path)
     {
         try
