@@ -25,8 +25,10 @@ public static class AgentLaunches
     /// <param name="workflow">The instance.</param>
     /// <param name="run">The run token.</param>
     /// <returns>The id.</returns>
-    public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run)
+    /// <param name="escalation">0 for the first launch of the run, n for its n-th retry on a stronger model; 0 keeps every id that exists today.</param>
+    public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run, int escalation = 0)
     {
+        _ = escalation;   // red stub: the escalated id comes in the fix
         var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value));
         return LaunchId.From("LCH-" + Convert.ToHexStringLower(digest)[..32]);
     }
