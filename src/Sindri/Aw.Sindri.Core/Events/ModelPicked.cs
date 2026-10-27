@@ -28,6 +28,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="ContentSent">True when any file text or brief text went to Jev.</param>
 /// <param name="Unusual">True when the picked model failed its check or was refused in more than half of its last 20 runs for this step (spec 4.5).</param>
 /// <param name="EscalatedFrom">The model that failed, for an escalation (spec 7); else null.</param>
+/// <param name="EscalatedFromKind"><see cref="Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds"/> of the run that failed (refused or check_failed), for an escalation; else null.</param>
 public sealed record ModelPicked(
     [property: JsonPropertyName("launchId")] LaunchId Launch,
     ItemId Item,
@@ -47,4 +48,5 @@ public sealed record ModelPicked(
     int JevCalls,
     bool ContentSent,
     bool Unusual,
-    string? EscalatedFrom);
+    string? EscalatedFrom,
+    string? EscalatedFromKind = null);
