@@ -85,7 +85,7 @@ internal static partial class ScopePacketChecks
         var known = Items(c).Select(static i => ScopeJson.Str(i, "id")).Concat(Surfaces(c).Select(static x => ScopeJson.Str(x, "id")))
             .Concat(ScopeJson.Items(c.Facts["openQuestions"]).Select(static q => ScopeJson.Str(q, "id")))
             .Concat(ScopeJson.Items(c.Facts["questions"]).Select(static q => ScopeJson.Str(q, "id")))
-            .OfType<string>().ToHashSet(StringComparer.Ordinal);
+            .OfType<string>().Concat(AnsweredQuestions(ScopeJson.Items(c.Facts["answerLog"]))).ToHashSet(StringComparer.Ordinal);
         var cited = Items(c).Concat(Surfaces(c)).Concat(ScopeJson.Items(c.Facts["openQuestions"])).SelectMany(static x => ScopeJson.Strings(x, "citations")).ToHashSet(StringComparer.Ordinal);
         var log = ScopeJson.Items(c.Facts["answerLog"]).ToList();
         var superseded = log.SelectMany(static e => ScopeJson.Strings(e, "supersedes")).ToHashSet(StringComparer.Ordinal);
@@ -109,6 +109,12 @@ internal static partial class ScopePacketChecks
             }
         }
     }
+
+    /// <summary>Every question id the answer log answered: a single entry's question, its questionIds, or the questions of a batch's answers.</summary>
+    private static IEnumerable<string> AnsweredQuestions(IEnumerable<JsonNode> log) =>
+        log.SelectMany(static e => ScopeJson.Strings(e, "questionIds")
+            .Concat(ScopeJson.Items(e, "answers").Select(static a => ScopeJson.Str(a, "question")).OfType<string>())
+            .Concat(ScopeJson.Str(e, "question") is { } q ? [q] : []));
 
     /// <summary>SCP-ACC-004: item and surface ids are unique.</summary>
     private static void IdsUnique(ScopeContext c, RuleSink s)

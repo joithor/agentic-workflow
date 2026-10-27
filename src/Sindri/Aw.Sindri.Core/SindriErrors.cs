@@ -20,6 +20,9 @@ public static partial class SindriErrors
     /// <summary>SND-PROFILE-002: the profile doesn't parse or doesn't match the schema.</summary>
     public static readonly ErrorDefinition ProfileInvalid = new("SND-PROFILE-002", ErrorKind.Invalid, "The profile is invalid");
 
+    /// <summary>SND-MODEL-001: a 'workflow.agent' model key names an agent or a state that isn't there, or a default that isn't in its list (model-pick spec §8); the message names the nearest id.</summary>
+    public static readonly ErrorDefinition ModelKeyInvalid = new("SND-MODEL-001", ErrorKind.Invalid, "A model key doesn't match anything");
+
     /// <summary>SND-PROFILE-003: the hash to approve isn't the live profile's hash.</summary>
     public static readonly ErrorDefinition ProfileHashMismatch = new("SND-PROFILE-003", ErrorKind.Conflict, "The hash doesn't match the profile");
 
@@ -263,7 +266,7 @@ public static partial class SindriErrors
     // A method, not a static initializer: the codes live in several partial files, whose static initializers run in file order.
     private static ErrorDefinition[] Every() =>
     [
-        LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch,
+        LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ModelKeyInvalid, ProfileHashMismatch,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,

@@ -24,7 +24,7 @@ public sealed class AsOfMapCacheKeyTests
 
         var key = AsOfMapCache.Key(_repo, Commit, MapExtractor.Version, clustered: false, flags);
 
-        Assert.Equal($"aw-split-panes-0123456789ab-x2-c0-{flags.Hash}", key, StringComparer.Ordinal);
+        Assert.Equal($"aw-split-panes-0123456789ab-x3-c0-{flags.Hash}", key, StringComparer.Ordinal);
         Assert.NotEqual(key, AsOfMapCache.Key(_repo, Commit, MapExtractor.Version, clustered: false, other), StringComparer.Ordinal);
     }
 }
