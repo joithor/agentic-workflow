@@ -73,7 +73,7 @@ ctx_reap() {
       pid="${d#/proc/}"
       case "$skip" in *" $pid "*) continue ;; esac
       [ -O "$d" ] || continue
-      if tr '\0' '\n' <"$d/environ" 2>/dev/null | grep -qxF "AW_SINDRI_HOME=$AW_SINDRI_HOME"; then found="$found $pid"; fi
+      if tr '\0' '\n' 2>/dev/null <"$d/environ" | grep -qxF "AW_SINDRI_HOME=$AW_SINDRI_HOME"; then found="$found $pid"; fi
     done
     [ -n "$found" ] || return 0
     if [ "$i" = 1 ]; then
