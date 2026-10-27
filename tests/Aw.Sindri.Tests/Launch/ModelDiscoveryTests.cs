@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.Launch;
 
 public sealed class ModelDiscoveryTests
 {
-    private static string CodexFixture => File.ReadAllText(Path.Combine(SessionFixtures.Launcher, "codex-models.json"));
+    private static string CodexFixture => File.ReadAllText(Path.Combine(SessionFixtures.Launcher, "models", "codex-models.json"));
 
     [Fact, Trait("Lane", "unit")]
     public void Codex_reader_keeps_the_listed_models_in_printed_order()
