@@ -20286,3 +20286,13 @@ Aw.Sindri.Core.Launch.TargetFacts.Models.init -> void
 Aw.Sindri.Core.Launch.LaunchShowEntry.Models.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.RankedModel!>?
 Aw.Sindri.Core.Launch.LaunchShowEntry.Models.init -> void
 static readonly Aw.Sindri.Core.SindriErrors.ModelListUnavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Launch.LaunchPickOutcomes
+Aw.Sindri.Core.Launch.PickWhy
+const Aw.Sindri.Core.Events.ApiViews.LaunchPicks = "launch-picks" -> string!
+const Aw.Sindri.Core.Launch.LaunchPickOutcomes.Failed = "failed" -> string!
+const Aw.Sindri.Core.Launch.LaunchPickOutcomes.Passed = "passed" -> string!
+const Aw.Sindri.Core.Launch.LaunchPickOutcomes.Refused = "refused" -> string!
+const Aw.Sindri.Core.Launch.LaunchPickOutcomes.Running = "running" -> string!
+const Aw.Sindri.Core.Launch.PickWhy.Asking = "Asking Jev." -> string!
+const Aw.Sindri.Core.Launch.PickWhy.PickOff = "pick-off" -> string!
+static Aw.Sindri.Core.Launch.PickWhy.Sentence(Aw.Sindri.Core.Events.ModelPicked! pick) -> string!
