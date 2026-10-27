@@ -1,7 +1,7 @@
 {
   "id": "workflow.scoping",
-  "hash": "sha256:e4a699458909ed096050b355da537eae55152da737dc705de9567105cc5f6ea0",
-  "version": 14,
+  "hash": "sha256:6731f4163cdcef192cf2f69126909ba2941a8faa7c0ba0952c418c5f40889361",
+  "version": 15,
   "name": null,
   "inputs": [
     {
@@ -341,6 +341,14 @@
       ],
       "to": "size",
       "on": "step.completed",
+      "label": "same lens degraded again: size it, you decide"
+    },
+    {
+      "from": [
+        "check"
+      ],
+      "to": "size",
+      "on": "step.completed",
       "label": "the second opinion is spent: size it"
     },
     {
@@ -637,6 +645,15 @@
       ],
       "on": "step.completed",
       "to": "challenge"
+    },
+    {
+      "from": [
+        "check"
+      ],
+      "on": "step.completed",
+      "to": "size",
+      "outcome": "stalled",
+      "label": "same lens degraded again: size it, you decide"
     },
     {
       "from": [
