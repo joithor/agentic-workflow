@@ -158,6 +158,18 @@ public sealed class ModelKeyTests
         Assert.Equal(["pin claude-code/questions = haiku: matches workflow.design state questions, workflow.scoping state questions"], lines);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("claude-code", "questions", "haiku-state")]
+    [InlineData("claude-code", "draft", "sonnet-agent")]
+    [InlineData("codex", "questions", null)]
+    public void A_state_pin_beats_the_agent_pin_and_no_pin_is_null(string agentId, string state, string? expected)
+    {
+        var agent = Agent(pin: Map(("claude-code", "sonnet-agent"), ("claude-code/questions", "haiku-state")));
+
+        Assert.Equal(expected, ModelKeyRules.PinFor(agent, AgentId.From(agentId), state));
+        Assert.Null(ModelKeyRules.PinFor(agent: null, agentId: AgentId.From(agentId), state: state));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void An_agent_pin_and_a_cap_say_what_they_cover_pins_first()
     {

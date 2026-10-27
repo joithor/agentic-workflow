@@ -40,6 +40,21 @@ public static partial class ModelKeyRules
         ];
     }
 
+    /// <summary>The model a pin fixes for a step: the 'agent/stateId' entry when there is one, else the plain 'agent' entry.</summary>
+    /// <param name="agent">The 'workflow.agent' block, or null.</param>
+    /// <param name="agentId">The agent the step runs on.</param>
+    /// <param name="state">The state the step belongs to (a state name).</param>
+    /// <returns>The pinned model id, or null when nothing pins this step.</returns>
+    public static string? PinFor(WorkflowAgentSettings? agent, AgentId agentId, string state)
+    {
+        if (agent?.Pin is not { } pin)
+        {
+            return null;
+        }
+
+        return pin.TryGetValue($"{agentId.Value}/{state}", out var byState) ? byState : pin.TryGetValue(agentId.Value, out var byAgent) ? byAgent : null;
+    }
+
     private static string PinMatch(string key, IReadOnlyList<RecipeStateRef> states)
     {
         var (id, state) = Split(key);
