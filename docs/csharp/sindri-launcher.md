@@ -71,7 +71,7 @@ never hashed, so one approval holds across runs; changing a form name changes th
 Scoping-station spec section 12.5, row L-17. An entry names, like `mcp`, which built-in form passes a per-run model id
 (`model`) and a Step's policy (`policy`: a settings file for `claude-settings-file`, typed `-c` overrides with no file for
 `codex-overrides`) to its CLI. The Step's policy is target-neutral (owner, 2026-10-17, amending L-17(a)):
-`StepPolicy(AllowedTools, Mode {ReadOnly, Plan, Default}, WritablePath)`. The engine writes no policy file; the launcher renders
+`StepPolicy(AllowedTools, Mode {ReadOnly, Plan, Default}, WritablePath, LoginSource?)`; `LoginSource` (`owner-copy` < `separate-login`, sandbox spec SB18) is the stricter model login a Step asks for, null for no ask and left out of the JSON. The engine writes no policy file; the launcher renders
 it per form, writes any file 0600 and deletes it with the launch. A Step only tightens the profile: bypass or full access is never a
 Step mode, and a mode the entry can't express is `SND-LAUNCH-013`. Both are enums, default `none`, and an added entry defaults to
 `none`; an override keeps the built-in's forms unless it names them. A form adds its arguments only on an **unattended Step
@@ -95,6 +95,17 @@ id and `<path>` the 0600 settings file the launcher renders from the Step's poli
 A Step that requests a model or a policy on an entry whose matching form is `none`, or a reserved form (`cursor-flag`,
 `cursor-config`), parks with `SND-LAUNCH-013` and never
 launches unrestricted (the API implements the check).
+
+### The sandboxed launch flow (sandbox spec §6; SB-0 contract, built in SB-1 to SB-5b)
+
+For a Step run `ILauncher.Launch` becomes, with the new steps in bold: resolve the agent, SL8 (`-012`), L-17's form check (`-013`),
+**build the sandbox plan from the `StepPolicy` (pure; `-025`)**, **probe the mechanism (cached per box, refreshed by Check again; `-014`)**,
+**the session cap (`-020`: an atomic count; a wait, not a failure)**, **prepare credentials from the Step's credential source (`-017`, `-018`)**,
+**the host-side prepare of the repo's packages (`-021`)**, budget (E-28), **write the plan file, start the outside half of the network, run the
+self-check (`-016`)**, start in the host, return. The launcher appends nothing: the engine's launch activity writes `launch.outcome`, and the
+sandbox summary rides on `StartedLaunch.Sandbox`. A launch whose confinement can't be built or proven never falls back to unconfined. Until
+SB-5a the product Host registers `UnavailableSandbox`, so every Step launch is `-014`; a `sindri open` session opens as today until SB-5b.
+The codes, kinds and reasons are in `docs/csharp/sindri-sandbox.md`.
 
 ## Worked examples for `exec-template`
 
@@ -146,6 +157,15 @@ verdict (`valid` or `invalid`) and the `bash` tag (`accept` or `refuse`) the SL-
 class and `strict: false` (the schema's `x-aw-keys` block, which the bash reader reads for its key lists and placeholder
 set, is an unknown keyword to 2020-12), and `bash scripts/tests/check-launcher.test.sh` proves each kind of drift
 fails. Ajv is a dev dependency of `scripts/` (`npm ci --prefix scripts`; the test installs it when missing).
+
+## Models in `launch show`
+
+Usage: `sindri launch show [<id>] [--json]`. Under each installed agent it lists the models the agent offers, cheapest
+first, each with the bands it sits in: `haiku  cheap`, `sonnet  standard`, `opus  strong` (an agent's only model is
+`cheap/standard/strong`). Claude Code's list is the catalog entry's aliases (it has no list command); Codex's is
+`codex debug models`, keeping `visibility: list` rows (5 s limit). An agent whose list can't be read prints no models
+and its probed target says `no-model-list` (`SND-MODEL-004`, informational); a model with no place prints
+`(unordered: ...)` and is ranked last. `launch.probed` carries the same lists as each target's `models`.
 
 ## The t3 host
 

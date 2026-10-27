@@ -599,7 +599,7 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
-| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the ten seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`, `gapSearch`, `gapAnchors`) on all four |
+| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eleven seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`, `gapSearch`, `gapAnchors`, `roundLog`) on all four |
 | `step.scope.read-brief`, `step.scope.read-change` | block | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
 | `step.scope.read-tracker` | block (`Network`) | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
 | `step.brief.seed` | block | - | `seeded` | `answers`, `answerLog` on seeded |
@@ -610,11 +610,11 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.scope.relevance-review` | agent | `brief`, `lenses`, `coverage`, `anchors` | `reviewed` | `relevanceVerdicts` on reviewed |
 | `step.scope.relevance-judge` | block (judge, long) | `brief`, `lenses`, `relevanceVerdicts` | `ruled` | `relevanceRulings` on ruled |
 | `step.scope.relevance-apply` | block | `lenses`, `coverage`, `brief`, `relevanceVerdicts`, `relevanceRulings` | `applied` | `lenses`, `coverage`, `relevance`, `mapFixes` on applied |
-| `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
+| `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `roundLog`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
 | `step.scope.gap-search` | agent | `brief`, `acceptance`, `answerLog` | `searched` | `gapCandidates` on searched |
 | `step.scope.gap-judge` | block (judge, long) | `brief`, `acceptance`, `scopeMap`, `lenses`, `gapCandidates` | `ruled` | `gapRulings` on ruled |
 | `step.scope.gap-log` | block | `gapSearch`, `gapCandidates`, `gapRulings`, `findings` | `clear`, `confirmed` | `gapSearch`, `gapAnchors` on both; `findings` on confirmed; `gapSearchClosed` on clear |
-| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog` | `pass`, `gaps`, `regather` | `findings` on gaps, regather |
+| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `roundLog` | `pass`, `gaps`, `regather` | `findings` and `roundLog` (the earlier entries plus this round's) on gaps, regather |
 | `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
 | `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
 | `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
@@ -623,7 +623,8 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.scope.challenge` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answerLog`, `challenge` | `nothingNew`, `found` | `challengeRound` (every outcome) |
 | `step.scope.challenge-log` | block | `challenge`, `challengeRound` | `nothingNew`, `found` | `challenge` (every outcome); `findings` on found |
 | `step.scope.propose` | block | `scopeMap`, `mapFixes` | `proposed`, `skipped` | `scopeMap`, `mapFixes` (every outcome) |
-| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions`, `relevance`, `gapSearch`, `mapFixes` | `complete`, `incomplete`, `regather` | six facts on complete (`runs` from the ledger among them); `findings` on incomplete, regather |
+| `step.scope.exclude` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `roundLog`, `answerLog` | `excluded` | `scopeMap` on excluded; reached when evidence reports `uncovered` (SCP-COV-003 is the only failing rule), then back to `check` |
+| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions`, `relevance`, `gapSearch`, `mapFixes`, `roundLog` | `complete`, `incomplete`, `uncovered`, `open`, `converged`, `regather` | six facts on complete, converged and open (`runs` from the ledger among them); `findings` and `roundLog` on incomplete, uncovered, open, converged, regather. `uncovered`: SCP-COV-003 is among the failing rules and nothing else but SCP-ACC-003 is (goes to `step.scope.exclude` first); `open`: SCP-ACC-003 alone, an answer nothing cites, so the owner's stop gets the packet with the finding open `converged`: the same finding keys as the step's last round in `roundLog`, so the owner's stop gets the packet with the findings open instead of another draft round |
 | `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
 | `step.scope.freeze` | block | `scopePacket` and the twelve facts `step.scope.evidence` reads (it re-runs the evidence checks) | `frozen`, `mismatch` | `scopePacket` = `{hash, dir}` on frozen (the run area's `scope-packet/` stays in place); `findings` on mismatch. The engine appends `scoping.approved` under the lease for each `frozen` report (key `scoping.approved:<packetHash>`; `Instance` is the address, the row's item is set, and the hash is aw-packets' hash of that directory) |
 | `step.scope.withdraw` | block | - | `withdrawn` | - |
@@ -1495,7 +1496,13 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   a new run in the same entry with no loop round counted (`OpenRun.Retries`, `Unavailables.MaxRetries` = 2 reruns, three tries
   in all, as many as a launch gets); the third failure parks the instance with `ParkReason.unavailable` (kind step, resume
   `rerun`). The park's words name the dependency, the retries and the last error (`step.produce is unavailable after 2
-  retries; the last error: exit`); `StepFailed.Dependency` names the dependency where the runtime knows it (an input's block
+  retries; the last error: exit`); an agent session that exited or was lost says so instead (`Unavailables.Gone`: `step.produce's agent
+  session is gone (exit), relaunched 2 times; the last error: exit`), and one the idle sweep ended says it went idle
+  (`Unavailables.Idle`: `step.produce's agent session went idle with no report (agent-stalled), relaunched 2 times; the last error: idle:
+  agent-stalled: …`, the parenthesis being the first word of the failure's detail). The list row reads `agent stalled: idle, no report`
+  for that park (not `waiting on a dependency that is down`), and `agent stalled in <item>: idle, no report` while the instance's current
+  agent launch is ended as idle in the `launches` view and the engine hasn't yet applied the failure (`InstanceSummaryContext.AgentIdle`,
+  filled by `ListInstancesService`); `StepFailed.Dependency` names the dependency where the runtime knows it (an input's block
   id, `the agent launcher`; the Step itself otherwise), and `StepFailed.Code` (or `BlockStepResult.Unavailable`'s code) becomes the
   park's `Suspension.Code`, served as the status's `reasonCode` (`SND-LAUNCH-007`, `SND-WF-016` …; none when the failure had
   no typed code). `answer --resume` runs the Step again and starts the retries from 0; it is the only answer (served through the
@@ -1551,4 +1558,4 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 
 `sindri workflow answer <address> --record <batch.json>` hands the `interview` desk an answer batch without the form: the CLI reads the instance, finds the open run of `step.interview.answer` (`AnswerRecording.InterviewRun`; any other state is refused with "rewind to interview first") and reports it `answered` with the file as `fact:answers` through the `complete` route, so `step.interview.record` runs as normal. A batch may carry `supersedes` (earlier answer ids) and must carry `recordedAs` naming ids the facts hold, or an item, surface or open question must cite its id, or SCP-ACC-003 fails on it like on any answer. A `supersedes` id the answer log does not hold is refused, naming it. After the batch, `apply` (an agent Step) and everything after it run again.
 
-Not in this change: `allowedCommands` and the state views' actions do not list `rewind` yet, and the park text does not name it (the second PR, asks 3 and 4).
+A parked run says which rewind would unblock it (asks 3 and 4). Re-running a check after the build was fixed needs no new verb: `sindri workflow rewind <address> --to <the check's state>` (for workflow.scoping's evidence check, `--to evidence`) runs the check again on the facts the run already holds, with no redraft and no loop round. For a rounds or no-progress park the status text names it ("Grant more rounds at a terminal, rewind to re-run evidence on the same facts (`sindri workflow rewind <address> --to evidence`), or cancel."): the state is the one the withheld transition leaves when a rewind accepts it, else the text lists the states a rewind would accept. A parked instance's `allowedCommands` (status and the detail JSON) gains one `ApplyCommand:rewind` entry per such state, the withheld transition's state first (`TransitionDecision.RewindTargets`, which applies the rewind's own target rules, input facts included); a running instance lists none, and neither does a park that waits on a child or holds refused effects. `RewindEvidenceUpgradeTests` drives the case: evidence incomplete twice with the same findings parks the run, the check is replaced by one that passes on the same facts, and a rewind to `evidence` reaches the stop without drafting, sizing or proposing again.
