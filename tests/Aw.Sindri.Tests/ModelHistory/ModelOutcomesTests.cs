@@ -4,7 +4,7 @@ using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.ModelHistory;
 
-/// <summary>What a failed Step run counts as for the model that ran it (the interim rule, until the engine records the outcome, model-pick M-1b).</summary>
+/// <summary>What a failed Step run counts as for the model that ran it (the recorded failure kind first, the reason rule when the row has none).</summary>
 [Lane(TestLane.Unit)]
 public sealed class ModelOutcomesTests
 {

@@ -76,7 +76,7 @@ public sealed class ModelHistoryProjectionTests
     public async Task A_launch_with_no_instance_makes_no_row()
     {
         await _v.Begin();
-        await _v.Fold(Aw.Sindri.Core.Events.EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(ModelHistoryFolds.Run(1), "draft") with { Instance = null }, Aw.Sindri.Testing.A.FirstItemId, text => ModelHistoryFolds.WithModel(text, Sonnet));
+        await _v.Fold(Aw.Sindri.Core.Events.EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(ModelHistoryFolds.Run(1), "draft", Sonnet) with { Instance = null }, Aw.Sindri.Testing.A.FirstItemId);
         await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
 
         Assert.Null(await _v.Row("draft", Sonnet));

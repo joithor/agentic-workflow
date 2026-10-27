@@ -17,16 +17,13 @@ namespace Aw.Sindri.Core.ModelHistory;
 /// <param name="events">Reads the payloads through the package's AwJson options.</param>
 internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 {
-    /// <summary>The 'model.picked' event type; read by name until the engine's typed event merges.</summary>
-    internal const string ModelPicked = "model.picked";
-
     public IReadOnlyList<string> Views => [ViewNames.ModelHistory, ViewNames.ModelRuns];
 
     public bool Handles(string eventType) =>
         string.Equals(eventType, EventTypes.RecipeRegistered, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.WorkflowStarted, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.LaunchStarted, StringComparison.Ordinal)
-        || string.Equals(eventType, ModelPicked, StringComparison.Ordinal)
+        || string.Equals(eventType, EventTypes.ModelPicked, StringComparison.Ordinal)
         || string.Equals(eventType, EventTypes.WorkflowTransition, StringComparison.Ordinal);
 
     public async ValueTask<Result<Unit>> Apply(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
@@ -38,7 +35,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             EventTypes.RecipeRegistered => await Registered(recorded, rows, cancellationToken).ConfigureAwait(false),
             EventTypes.WorkflowStarted => await Started(recorded, rows, cancellationToken).ConfigureAwait(false),
             EventTypes.LaunchStarted => await Launched(recorded, rows, cancellationToken).ConfigureAwait(false),
-            ModelPicked => await Picked(recorded, rows, cancellationToken).ConfigureAwait(false),
+            EventTypes.ModelPicked => await Picked(recorded, rows, cancellationToken).ConfigureAwait(false),
             _ => await Transitioned(recorded, rows, cancellationToken).ConfigureAwait(false),
         };
     }
@@ -79,15 +76,10 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 
     private async ValueTask<Result<Unit>> Launched(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
     {
-        if (UntypedReads.LaunchModel(recorded.Envelope.Payload) is not { } model)
-        {
-            return Unit.Value;
-        }
-
         var started = events.Payload<LaunchStarted>(recorded);
-        if (started.IsError || started.Value is not { Instance: { } instance, State: { } state, Attempt: { } attempt })
+        if (started.IsError || started.Value is not { Model: { } model, Instance: { } instance, State: { } state, Attempt: { } attempt })
         {
-            return started.IsError ? started.Error : Unit.Value;   // a launch outside an instance has no Step report to join
+            return started.IsError ? started.Error : Unit.Value;   // a launch outside an instance, or one that names no model, has nothing to join
         }
 
         // The run is named by instance, state and attempt, not by launch id: an escalated retry is a new launch of the same run, and the one that ran last owns the outcome
@@ -95,27 +87,28 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
     }
 
     // A pick that escalated from a model: the failed run of that model counts for it, as a run, at the state the pick is for. The failed run wrote no step.failed of its own.
-    private static async ValueTask<Result<Unit>> Picked(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> Picked(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
     {
-        if (UntypedReads.Escalation(recorded.Envelope.Payload) is not { } escalation)
+        var picked = events.Payload<ModelPicked>(recorded);
+        if (picked.IsError || picked.Value is not { EscalatedFrom: { } from, EscalatedFromKind: { } kind } pick)
         {
-            return Unit.Value;
+            return picked.IsError ? picked.Error : Unit.Value;
         }
 
-        var instance = WorkflowInstanceId.TryFrom(escalation.Instance, out var id) ? id : InstanceAddress.TryFrom(escalation.Instance, out var address) ? WorkflowInstanceId.Of(address) : (WorkflowInstanceId?)null;
-        if (instance is null)
+        var outcome = ModelOutcomes.OfFailure(kind, reason: null);
+        if (outcome is not (ModelOutcome.Refused or ModelOutcome.CheckFailed))
         {
-            return Unit.Value;
+            return Unit.Value;   // only a refused or failed-check run is escalated from
         }
 
-        var scope = await rows.Get<RunScope>(ViewNames.ModelRuns, ModelHistoryKeys.Instance(instance.Value.Value), cancellationToken).ConfigureAwait(false);
+        var scope = await rows.Get<RunScope>(ViewNames.ModelRuns, ModelHistoryKeys.Instance(WorkflowInstanceId.Of(pick.Instance).Value), cancellationToken).ConfigureAwait(false);
         if (scope.IsError || scope.Value is null)
         {
             return scope.IsError ? scope.Error : Unit.Value;
         }
 
         var at = recorded.Envelope.OccurredAt;
-        return await Change(rows, new Slot(scope.Value, escalation.State, escalation.From), row => row.After(escalation.Outcome, at), cancellationToken).ConfigureAwait(false);
+        return await Change(rows, new Slot(scope.Value, pick.State, from), row => row.After(outcome, at), cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<Unit>> Transitioned(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
@@ -147,7 +140,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
         var report = new Report(payload.Value, scope.Value, recorded.Envelope.OccurredAt, back.Value);
         return completed
             ? await Completed(report, rows, cancellationToken).ConfigureAwait(false)
-            : await Failed(report, UntypedReads.FailureKind(recorded.Envelope.Payload), rows, cancellationToken).ConfigureAwait(false);
+            : await Failed(report, rows, cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<Result<Unit>> Completed(Report report, IViewRows rows, CancellationToken cancellationToken)
@@ -174,7 +167,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             : await rows.Put(ViewNames.ModelRuns, ModelHistoryKeys.Completed(payload.Instance, payload.From), model.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async ValueTask<Result<Unit>> Failed(Report report, string? failureKind, IViewRows rows, CancellationToken cancellationToken)
+    private static async ValueTask<Result<Unit>> Failed(Report report, IViewRows rows, CancellationToken cancellationToken)
     {
         var (payload, scope, at, _) = report;
         var model = await ModelOf(payload, rows, cancellationToken).ConfigureAwait(false);
@@ -183,7 +176,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             return model.IsError ? model.Error : Unit.Value;
         }
 
-        var outcome = ModelOutcomes.OfFailure(failureKind, payload.Detail?.Reason);
+        var outcome = ModelOutcomes.OfFailure(payload.Detail?.FailureKind, payload.Detail?.Reason);
         return await Change(rows, new Slot(scope, payload.From, model.Value.Model), row => row.After(outcome, at), cancellationToken).ConfigureAwait(false);
     }
 

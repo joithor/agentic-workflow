@@ -23,8 +23,7 @@ internal sealed class ModelHistoryLedger(EventFactory events)
 
     public ModelHistoryLedger Launched(string run, string model, string state = "draft")
     {
-        var row = Recorded.Of(events, EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(run, state), _rows.Count + 1L, A.FirstItemId);
-        _rows.Add(row with { Envelope = row.Envelope with { Payload = ModelHistoryFolds.WithModel(row.Envelope.Payload, model) } });
+        _rows.Add(Recorded.Of(events, EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(run, state, model), _rows.Count + 1L, A.FirstItemId));
         return this;
     }
 

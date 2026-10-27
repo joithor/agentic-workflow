@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.ModelHistory;
@@ -43,35 +42,19 @@ internal static class ModelHistoryFolds
 
     /// <summary>Folds the 'launch.started' of the agent run <paramref name="run"/> of the instance, naming <paramref name="model"/> (none when null).</summary>
     public static Task Launched(this ViewsHarness v, string run, string? model, string state = "draft") =>
-        v.Fold(EventTypes.LaunchStarted, LaunchPayload(run, state), A.FirstItemId, text => WithModel(text, model));
+        v.Fold(EventTypes.LaunchStarted, LaunchPayload(run, state, model), A.FirstItemId);
 
     /// <summary>The 'launch.started' payload of the agent run <paramref name="run"/> of the instance in <paramref name="state"/>.</summary>
-    public static LaunchStarted LaunchPayload(string run, string state) =>
+    public static LaunchStarted LaunchPayload(string run, string state, string? model) =>
         new(AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(Address), RunToken.From(run)), A.FirstItemId, LaunchMode.Open, AgentId.From("claude-code"), SessionId: null, "sindri",
-            new LaunchViewer("warp", "Warp", ViewerOutcomeKind.Opened, Code: null, Detail: null), ["tmux", "attach"], CatalogSource.Builtin, "sha256:abc", Address, state, Attempt: 1);
+            new LaunchViewer("warp", "Warp", ViewerOutcomeKind.Opened, Code: null, Detail: null), ["tmux", "attach"], CatalogSource.Builtin, "sha256:abc", Address, state, Attempt: 1, Model: model);
 
     /// <summary>Folds a 'model.picked' for the instance's <paramref name="state"/>, escalated from <paramref name="from"/> when it is not null.</summary>
     public static Task Picked(this ViewsHarness v, string state, string? from, string? kind) =>
-        v.Fold(ModelHistoryProjection.ModelPicked, new object(), A.FirstItemId, _ =>
-        {
-            var node = new JsonObject { ["instance"] = Address.Value, ["state"] = state, ["model"] = "claude-opus-5-5" };
-            node["escalatedFrom"] = from;
-            node["escalatedFromKind"] = kind;
-            return node.ToJsonString();
-        });
-
-    /// <summary>The payload text with the model the launch ran on (the launch record has no such field yet); unchanged when <paramref name="model"/> is null.</summary>
-    public static string WithModel(string text, string? model)
-    {
-        if (model is null)
-        {
-            return text;
-        }
-
-        var node = JsonNode.Parse(text)!.AsObject();
-        node["model"] = model;
-        return node.ToJsonString();
-    }
+        v.Fold(EventTypes.ModelPicked,
+            new ModelPicked(AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(Address), RunToken.From("1.1"), escalation: 1), A.FirstItemId, Address, state, Attempt: 1, AgentId.From("claude-code"),
+                Model: "claude-opus-5-5", By: "rules", Reason: null, Decision: null, Candidates: [], BriefHash: "sha256:abc", Files: [], Omitted: [], JevMs: 0, JevCalls: 0, ContentSent: false, Unusual: false, from, kind),
+            A.FirstItemId);
 
     /// <summary>Folds a 'step.completed' that leaves <paramref name="from"/> for <paramref name="to"/>.</summary>
     public static Task Completed(this ViewsHarness v, string from, string to, string run) =>
@@ -79,23 +62,10 @@ internal static class ModelHistoryFolds
 
     /// <summary>Folds a 'step.failed' in <paramref name="state"/> with <paramref name="reason"/>.</summary>
     public static Task Failed(this ViewsHarness v, string state, string run, string reason, string? failureKind = null) =>
-        v.Fold(EventTypes.WorkflowTransition, Payload(state, state, TriggerNames.StepFailed, run, reason, started: false), A.FirstItemId, text => WithFailureKind(text, failureKind));
-
-    /// <summary>The payload text with the failure kind the engine records in the detail (the detail record has no such field yet); unchanged when <paramref name="failureKind"/> is null.</summary>
-    public static string WithFailureKind(string text, string? failureKind)
-    {
-        if (failureKind is null)
-        {
-            return text;
-        }
-
-        var node = JsonNode.Parse(text)!.AsObject();
-        node["detail"]!.AsObject()["failureKind"] = failureKind;
-        return node.ToJsonString();
-    }
+        v.Fold(EventTypes.WorkflowTransition, Payload(state, state, TriggerNames.StepFailed, run, reason, started: false, failureKind), A.FirstItemId);
 
     /// <summary>The mirrored workflow payload of a start or a transition.</summary>
-    public static WorkflowEventPayload Payload(string state, string to, string trigger, string? run, string? reason, bool started)
+    public static WorkflowEventPayload Payload(string state, string to, string trigger, string? run, string? reason, bool started, string? failureKind = null)
     {
         var delta = new WorkflowEventDelta(Frame: null, Suspension: null, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, Outcome: null)
         {
@@ -104,7 +74,10 @@ internal static class ModelHistoryFolds
         };
         var id = WorkflowInstanceId.Of(Address);
         var detail = new WorkflowEventDetail(TriggerKey.For(id, "t"), "agent:session", SourceSequence: null, ArgumentsSha256: null, ReportSha256: null, Answer: null, Amount: null, reason,
-            Gates: [], Evidence: [], Grant: null, Override: null, Refusal: null, Effects: [], delta);
+            Gates: [], Evidence: [], Grant: null, Override: null, Refusal: null, Effects: [], delta)
+        {
+            FailureKind = failureKind,
+        };
         return new WorkflowEventPayload(id.Value, state, to, trigger, Outcome: null, run, detail);
     }
 }
