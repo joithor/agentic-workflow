@@ -133,7 +133,7 @@ internal sealed partial class ShellWindow : Window
     private void Cover(double width)
     {
         var below = this.TryFindResource("Size.SheetCoversBelow", out var value) && value is double limit ? limit : 1100;
-        var covers = width > 0 && width < below;
+        var covers = (width > 0 && width < below) || Shell is { SheetCoversPage: true };
         var changed = covers != SheetPanel.Classes.Contains("covers");
         SheetPanel.Classes.Set("covers", covers);
         SheetPanel.Width = covers ? double.NaN : Shell?.ShownSheetWidth ?? double.NaN;
@@ -169,7 +169,7 @@ internal sealed partial class ShellWindow : Window
     {
         switch (e.PropertyName)
         {
-            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth):
+            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth) or nameof(ShellViewModel.SheetCoversPage):
                 Cover(Bounds.Width);
                 break;
             case nameof(ShellViewModel.State):
