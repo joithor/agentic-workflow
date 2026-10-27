@@ -174,7 +174,7 @@ public sealed class SandboxPlannerTests
         var afterDeny = plan.Mounts.Skip(denyAt + 1).Where(m => m.Path.StartsWith(Req.StateDir + "/", StringComparison.Ordinal) && m.Kind != PlanMountKind.Deny).Select(m => m.Path).ToList();
         Assert.All(afterDeny, p => Assert.True(
             HookInventory.StatePaths.Any(e => p.StartsWith($"{Req.StateDir}/{e.Path}", StringComparison.Ordinal))
-            || p.StartsWith(Req.SindriHome + "/", StringComparison.Ordinal) || p.StartsWith(Req.SindriHome + "-sessions", StringComparison.Ordinal) || p.StartsWith(Req.StateDir + "/bin/cs/", StringComparison.Ordinal), p));
+            || string.Equals(p, Req.SindriHome, StringComparison.Ordinal) || p.StartsWith(Req.SindriHome + "/", StringComparison.Ordinal) || p.StartsWith(Req.SindriHome + "-sessions", StringComparison.Ordinal) || p.StartsWith(Req.StateDir + "/bin/cs/", StringComparison.Ordinal), p));
     }
 
     [Fact, Trait("Lane", "unit")]

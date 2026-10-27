@@ -188,7 +188,7 @@ only `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and the model key (`-016 env` otherwise),
 in `AgentHomeWriteSet` (Claude: projects, sessions, session-env, shell-snapshots, file-history, todos, history.jsonl, backups, cache, state; Codex: sessions, log, memories, shell_snapshots, cache, tmp).
 The credential masks follow what is bound: the owner's `.credentials.json` and `auth.json` are masked whenever the owner's real home covers them (a `homeAllow` entry included), and not when a
 `separate-login` home from another host path is bound there. `PATH` is the shims, then `$AW_STATE_DIR/bin-r1b` (so the shims find `heavy`), then the host tools outside the state directory.
-The `-015 worktree-outside-repo` reason also covers a bad home, state directory, Sindri home or socket directory (a Sindri fault either way; the detail names the path).
+The `-015 worktree-outside-repo` reason also covers a bad home, state directory, Sindri home, socket directory or C# binaries stamp (`bin/cs/<stamp>`, not a clean path inside `bin/cs`) (a Sindri fault either way; the detail names the path).
 A repo declaration cannot add `github` or `packages` beyond what the session kind allows. The inner policy carries `DefaultMode` (`dontAsk` for a Step, `default` for an attended session) and
 `DisableBypassPermissions`: **SB-5a's rendered settings must write `permissions.defaultMode` and `disableBypassPermissionsMode: "disable"` explicitly**, because the owner's own settings may say
 `bypassPermissions` (spike items 1 and 6); an attended session gets `Ask` rules for Bash, Edit and Write and no Bash allow. SB-5a test names: `Rendered_settings_set_the_default_mode_explicitly`,
