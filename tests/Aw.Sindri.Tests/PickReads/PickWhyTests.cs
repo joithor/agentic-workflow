@@ -22,6 +22,7 @@ public sealed class PickWhyTests
         { "constraint", "cap", "Only one model was allowed here (your cap)." },
         { "constraint", "pin", "Only one model was allowed here (your pin)." },
         { "constraint", "floor", "Only one model was allowed here (the step's floor)." },
+        { "constraint", "step", "The recipe names this step's model." },
         { "constraint", "challenger", "Only one model was allowed here (the challenger rule)." },
         { "rules", "no-api-key", "Jev isn't set up on this machine, " + Cheapest },
         { "rules", "timeout", "Jev didn't answer in 20 seconds, " + Cheapest },

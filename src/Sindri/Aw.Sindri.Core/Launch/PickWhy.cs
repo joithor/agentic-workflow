@@ -33,6 +33,7 @@ public static class PickWhy
     private static string Chosen(ModelPicked pick) => pick.By switch
     {
         ModelPickedBy.Jev => "Picked by Jev: the cheapest model it expects to pass.",
+        ModelPickedBy.Constraint when string.Equals(pick.Reason, "step", StringComparison.Ordinal) => "The recipe names this step's model.",
         ModelPickedBy.Constraint => "Only one model was allowed here" + Rule(pick.Reason) + ".",
         ModelPickedBy.Rules => Fallback(pick.Reason),
         ModelPickedBy.Default => string.Equals(pick.Reason, PickOff, StringComparison.Ordinal)
