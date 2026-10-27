@@ -195,4 +195,46 @@ public sealed class LimitWatchdogTests
 
         Expect.True(await Verdict(run) is null);
     }
+
+    [Fact]
+    public async Task Refused_forks_are_recorded_once_across_ticks_and_never_kill()
+    {
+        _stats.Sample = new CgroupSample(OomKills: 0, MemoryCurrent: 10 * Mib, MemoryPeak: 12 * Mib, Pids: 2040, CpuMicroseconds: 0, PidsMax: 3, PidsPeak: 2048);
+        var run = Start(Limits(wall: null));
+
+        await Advance(TimeSpan.FromSeconds(20));
+        _stats.Sample = _stats.Sample with { PidsMax = 9 };
+        await Advance(TimeSpan.FromSeconds(10));
+        var verdict = await Verdict(run);
+
+        Expect.Equal((LimitHitKind.Pids, 2048L), Assert.Single(_calls.Hits));
+        Expect.True(_scope.Kills.Count == 0 && verdict is null);
+    }
+
+    [Fact]
+    public async Task A_failed_record_is_tried_again_on_the_next_tick()
+    {
+        _stats.Sample = new CgroupSample(OomKills: 0, MemoryCurrent: 10 * Mib, MemoryPeak: 12 * Mib, Pids: 2048, CpuMicroseconds: 0, PidsMax: 1, PidsPeak: 2048);
+        _calls.LimitHitUnavailable = true;
+        var run = Start(Limits(wall: null));
+        await Advance(TimeSpan.FromSeconds(10));
+
+        _calls.LimitHitUnavailable = false;
+        await Advance(TimeSpan.FromSeconds(10));
+        _ = await Verdict(run);
+
+        _ = Assert.Single(_calls.Hits);
+    }
+
+    [Fact]
+    public async Task No_refused_fork_records_nothing()
+    {
+        _stats.Sample = new CgroupSample(OomKills: 0, MemoryCurrent: 10 * Mib, MemoryPeak: 12 * Mib, Pids: 30, CpuMicroseconds: 0);
+        var run = Start(Limits(wall: null));
+
+        await Advance(TimeSpan.FromSeconds(15));
+        _ = await Verdict(run);
+
+        Expect.Equal(0, _calls.Hits.Count);
+    }
 }

@@ -827,6 +827,24 @@
       "confirm": null
     },
     {
+      "action": "RecordLimitHit",
+      "class": "issue",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "session"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/launches/{launchId}/limit-hit",
+      "cli": "sindri session wrap --launch <launchId>",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "RefreshContextMap",
       "class": "job",
       "allowedCallers": [
