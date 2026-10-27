@@ -20476,3 +20476,5 @@ Aw.Sindri.Core.Sandbox.ISliceScopes
 Aw.Sindri.Core.Sandbox.ISliceScopes.Live(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.Sindri.Core.Sandbox.ISessionCap
 Aw.Sindri.Core.Sandbox.ISessionCap.Start<T>(int cap, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<Aw.Kernel.Result<T>!>!>! start, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<T>!>!
+Aw.Sindri.Core.Locks.IHeavyLockSweep
+Aw.Sindri.Core.Locks.IHeavyLockSweep.Sweep(string! locksDir) -> int
