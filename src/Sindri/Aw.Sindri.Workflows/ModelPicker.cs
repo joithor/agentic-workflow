@@ -133,13 +133,13 @@ internal sealed class ModelPicker(IModelPickSettings settings, IModelCatalog cat
         work.Request.Launch, work.Request.Item, work.Run.Run.Address, work.Run.Run.Step.State, work.Request.Run?.Number ?? 0, work.Target.Agent, model, by, reason, Decision: null,
         candidates, BriefHash(Brief(work.Request)), Files: [], Omitted: [], JevMs: 0, JevCalls: 0, ContentSent: false, Unusual: false, work.Run.Previous?.Model, work.Run.Previous?.Kind);
 
-    // The rule that left one model, for the Why sentence: the pin, else the cap, else the floor, else the challenger rule; null when the agent offers one model and nothing removed it.
+    // The rule that left one model, for the Why sentence: the pin, else the cap, else the floor, else the challenger rule; 'only-model' when the agent offers one model and nothing removed it.
     private static string? RuleOf(ModelSelection selection) =>
         selection.Removed.Any(static r => r.Constraint == ModelConstraint.Pin) ? "pin"
         : selection.Removed.Any(static r => r.Constraint == ModelConstraint.Cap) ? "cap"
         : selection.Removed.Any(static r => r.Constraint == ModelConstraint.Floor) ? "floor"
         : selection.Removed.Any(static r => r.Constraint is ModelConstraint.Drafter or ModelConstraint.DrafterUnknown) ? "challenger"
-        : null;
+        : "only-model";
 
     private static string Brief(LaunchRequest request) => request.Step?.Brief ?? string.Empty;
 

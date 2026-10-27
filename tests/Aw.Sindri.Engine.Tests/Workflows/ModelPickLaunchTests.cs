@@ -77,6 +77,19 @@ public sealed class ModelPickLaunchTests : IDisposable
     }
 
     [Fact(Timeout = 120_000)]
+    public async Task An_agent_that_offers_one_model_picks_it_with_the_reason_only_model()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var rig = await Rig(new ModelPickSettings(PickOn: true, Models: [new ModelFacts("sonnet", "Sonnet", ModelSource.Profile, 0)]), ct);
+
+        _ = await rig.Launch(Run(1), floor: null, ct);
+
+        Expect.Equal(0, rig.Judge.Asks.Count);
+        Expect.Equal("constraint/sonnet", await rig.Picked("by", "model", ct));
+        Expect.Equal("constraint/only-model", await rig.Picked("by", "reason", ct));
+    }
+
+    [Fact(Timeout = 120_000)]
     public async Task A_strong_floor_leaves_one_candidate()
     {
         await using var rig = await Rig(new ModelPickSettings(PickOn: true), TestContext.Current.CancellationToken);

@@ -49,6 +49,7 @@ public static class PickWhy
         "pin" => " (your pin)",
         "floor" => " (the step's floor)",
         "challenger" => " (the challenger rule)",
+        "only-model" => " (the agent offers no other)",
         _ => string.Empty,
     };
 
