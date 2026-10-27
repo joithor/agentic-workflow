@@ -32,6 +32,7 @@ Files, bottom to top (a later line wins):
   this run  /home/owner/.agentic-workflow/digests  (context-guard writes digests; a Step can't read other sessions' excerpts)
   read-only /home/owner/.agentic-workflow/context-guard  (context-guard reads its configuration)
   writable  /home/owner/.agentic-workflow/context-guard/state  (context-guard writes per-session state)
+  writable  /home/owner/.agentic-workflow/fleet  (fleet-state writes this session's state file for Sindri's session collector)
   writable  /home/owner/.agentic-workflow/locks  (heavy: mkdir mutexes, heavy-job.lock and heavy-session)
   read-only /home/owner/.agentic-workflow/heavy-slots-cap  (heavy reads the box-wide cap)
   read-only /home/owner/.agentic-workflow/heavy-meta-reserve  (heavy reads the meta reserve)
