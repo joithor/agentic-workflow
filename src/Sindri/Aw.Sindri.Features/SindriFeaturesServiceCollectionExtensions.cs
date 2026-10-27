@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Jobs;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
@@ -178,7 +177,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<CreateItemRequest>, CreateItemValidator>().AddCommand<CreateItemRequest, ItemCreatedResponse, CreateItemService>();
         _ = services.AddScoped<IValidator<RebuildViewsRequest>, AcceptAllValidator<RebuildViewsRequest>>().AddCommand<RebuildViewsRequest, CommandAccepted, RebuildViewsService>();
         _ = services.AddScoped<IValidator<ImportContextMapRequest>, AcceptAllValidator<ImportContextMapRequest>>().AddCommand<ImportContextMapRequest, ImportContextMapResponse, ImportContextMapService>();
-        _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>().AddScoped<ProfileChecks>().AddScoped<ModelKeyChecks>();
+        _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>().AddScoped<ProfileChecks>().AddScoped<Aw.Sindri.Core.Profile.ModelKeyChecks>();
         _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddStopCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();   // never behind the gate: a stop cancels its holder
         return services;
     }

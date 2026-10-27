@@ -211,7 +211,7 @@ public sealed class ModelKeyTests
             pick: "on")));
 
         Assert.Equal(
-            ["workflow.agent.models.claude-code", "workflow.agent.pin.claude-code/questions", "workflow.agent.pin.codex", "workflow.agent.cap.claude-code", "workflow.agent.pick"],
+            ["workflow.agent.cap.claude-code", "workflow.agent.models.claude-code", "workflow.agent.pick", "workflow.agent.pin.claude-code/questions", "workflow.agent.pin.codex"],   // the diff is sorted by path
             changed);
     }
 
