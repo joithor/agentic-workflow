@@ -30,6 +30,14 @@ internal static class SandboxShims
         ["npx"] = [],
     };
 
+    // Options whose next argument is their value, so it is never the subcommand.
+    private static readonly Dictionary<string, string[]> _valueOptions = new(StringComparer.Ordinal)
+    {
+        ["dotnet"] = ["-v", "--verbosity"],
+        ["npm"] = ["--prefix", "-C", "--workspace", "-w"],
+        ["npx"] = ["-p", "--package"],
+    };
+
     /// <summary>The subcommands a shim always sends to `heavy --expensive`.</summary>
     internal static IReadOnlyList<string> ExpensiveSubcommands(string tool) => _expensive[tool];
 
@@ -69,7 +77,9 @@ internal static class SandboxShims
         script.Append("case \" $* \" in\n  ")
             .AppendJoin('|', AnywhereMarkers.Select(m => "*" + Quote(m) + "*"))
             .Append(") exec \"$heavy\" --expensive \"$real\" \"$@\" ;;\nesac\n");
-        script.Append("sub=; nobuild=0\nfor a in \"$@\"; do\n  case \"$a\" in\n    --no-build) nobuild=1 ;;\n    -*) ;;\n    *) [ -n \"$sub\" ] || sub=$a ;;\n  esac\ndone\n");
+        script.Append("sub=; nobuild=0; skip=0\nfor a in \"$@\"; do\n  if [ \"$skip\" = 1 ]; then skip=0; continue; fi\n  case \"$a\" in\n    --no-build) nobuild=1 ;;\n    ")
+            .AppendJoin('|', _valueOptions[tool])
+            .Append(") skip=1 ;;\n    -*) ;;\n    *) [ -n \"$sub\" ] || sub=$a ;;\n  esac\ndone\n");
         script.Append("case \"$sub\" in\n  ").AppendJoin('|', ExpensiveSubcommands(tool)).Append(") exec \"$heavy\" --expensive \"$real\" \"$@\" ;;\n");
         if (string.Equals(tool, "dotnet", StringComparison.Ordinal))
         {
