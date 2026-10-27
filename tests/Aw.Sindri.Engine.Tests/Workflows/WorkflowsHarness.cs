@@ -33,7 +33,7 @@ namespace Aw.Sindri.Tests.Workflows;
 /// </summary>
 internal sealed class WorkflowsHarness : IDisposable
 {
-    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(string.Equals(System.Environment.GetEnvironmentVariable("CI"), "true", StringComparison.Ordinal) ? 60 : 20);   // a loaded CI runner needs longer to answer its first Query
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.Ordinal) ? 60 : 20);   // a loaded CI runner needs longer to answer its first Query
     private readonly TempHome _home = new();
     private readonly TempHome _work = new();
 
