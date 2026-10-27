@@ -4,7 +4,7 @@
 #   cutover-clean-ts.sh [--pre-link | --post-link] [--dry-run]
 #
 #   --pre-link   steps 1 to 5: refuse if a TS job runs, reinstall the pre-commit hook of every repo in the TS profile,
-#                bootout and delete the launchd plists, unset the TS git template, back up and remove a TS-shaped judge database
+#                bootout and delete the launchd plists, unset the TS git template, delete a TS-shaped judge database
 #   --post-link  steps 6b to 10: the judge health gate, the TS wrappers, the TS state, the aw-live mod, retired build
 #                output, the report. Reuses the log the pre-link run opened
 #   (neither)    both halves, with `install-cs.sh --link` (step 6) between them
@@ -14,10 +14,6 @@
 #
 # Exit: 0 done or nothing to do; 1 refused at step 1 or the log could not be written (nothing changed); 2 usage;
 # 3 stopped partway or the judge health gate failed (re-run ./setup.sh: every step is idempotent). The log path is printed on exit.
-#
-# Nothing in $STATE is deleted outright: a removed state path is moved to $STATE/backups/cutover-<stamp>/<its path under $STATE>
-# (one stamp per run; nothing is created on a dry run). Bug-fix state ($STATE/<slug>/bugfix/) is kept: the C# bugfix-state and
-# the TS helper that lanes still run share that layout (#1104).
 #
 # It removes by shape and runs on every ./setup.sh, so each delete is gated on something only the TS install has. The C#
 # home ($AW_STATE_DIR/sindri-app) and the kept list of spec §8.1 are never touched. No process is killed: step 1 refuses.
@@ -89,54 +85,27 @@ in_state() {
 }
 count_entries() { find "$1" 2>/dev/null | wc -l | tr -d ' '; }
 
-# backup_dest <path>: where a removed state path is kept: $STATE/backups/cutover-<stamp>/<path relative to $STATE>. One stamp
-# per run, taken from the log's name (the post-link half reuses the pre-link log, so both halves share one directory).
-BACKUP_STAMP=""
-backup_dest() {
-  local p="$1" parent real rel dest
-  if [ -z "$BACKUP_STAMP" ]; then
-    if [ -n "$LOG" ]; then BACKUP_STAMP="$(basename "$LOG" .log)"; BACKUP_STAMP="${BACKUP_STAMP#cutover-}"
-    else BACKUP_STAMP="$(date +%Y%m%dT%H%M%S)"; fi
-  fi
-  parent="$(cd -P "$(dirname "$p")" && pwd)"; real="$parent/$(basename "$p")"
-  rel="${real#"$STATE_REAL"/}"
-  dest="$STATE/backups/cutover-$BACKUP_STAMP/$rel"
-  [ ! -e "$dest" ] && [ ! -L "$dest" ] || dest="$dest.$$"
-  echo "$dest"
-}
-# keep_state <path>: move a state path (a link stays a link) under the backups directory. Returns 1 on failure.
-keep_state() {
-  local dest
-  dest="$(backup_dest "$1")" || return 1
-  mkdir -p "$(dirname "$dest")" && mv "$1" "$dest" || return 1
-  L "backed up $1 -> $dest"
-}
-
-# del_state <path> <label>: back up and remove a file, a link (moved as a link, never followed) or a tree inside the state dir.
+# del_state <path> <label>: delete a file, a link (unlinked, never followed) or a tree inside the state dir.
 del_state() {
   local p="$1" label="$2" n
   [ -e "$p" ] || [ -L "$p" ] || return 0
-  if ! in_state "$p"; then warn "refusing to remove $p: it resolves outside $STATE"; partial=1; return 0; fi
+  if ! in_state "$p"; then warn "refusing to delete $p: it resolves outside $STATE"; partial=1; return 0; fi
   if [ -L "$p" ]; then
-    say "$(would "back up and unlink $label ($p)")"
+    say "$(would "unlink $label ($p)")"
+    [ "$dry" = 1 ] || rm -f "$p" || { partial=1; return 0; }
   else
     n="$(count_entries "$p")"
-    say "$(would "back up and remove $label ($p, $n entries)")"
+    say "$(would "remove $label ($p, $n entries)")"
+    [ "$dry" = 1 ] || rm -rf "$p" || { partial=1; return 0; }
   fi
-  [ "$dry" = 1 ] || keep_state "$p" || { partial=1; return 0; }
   removed=$((removed + 1))
   [ "$dry" = 1 ] || L "removed $label ($p)"
 }
-del_file() { # del_file <path> <label>: a plain file anywhere (a wrapper, a plist); a file inside the state dir is backed up first
+del_file() { # del_file <path> <label>: a plain file anywhere (a wrapper, a plist)
   local p="$1" label="$2"
   [ -e "$p" ] || [ -L "$p" ] || return 0
-  if in_state "$p"; then
-    say "$(would "back up and remove $label ($p)")"
-    [ "$dry" = 1 ] || keep_state "$p" || { partial=1; return 0; }
-  else
-    say "$(would "remove $label ($p)")"
-    [ "$dry" = 1 ] || rm -f "$p" || { partial=1; return 0; }
-  fi
+  say "$(would "remove $label ($p)")"
+  [ "$dry" = 1 ] || rm -f "$p" || { partial=1; return 0; }
   removed=$((removed + 1))
   [ "$dry" = 1 ] || L "removed $label ($p)"
 }
@@ -204,42 +173,20 @@ read_repos() {
   done
 }
 
-# The running Sindri control plane (#1032). serve writes control.json as one compact line, {"url":..,"pid":N,"epoch":..,
-# "temporal":{"pid":M,..}}: the serve's pid is the TOP-LEVEL one, never the Temporal server's. (Same helper as install-cs.sh;
-# the two scripts are copied alone in their tests, so it is repeated, not sourced.)
-serve_pid() { # the live serve pid, or nothing
-  local f="${AW_SINDRI_HOME:-$STATE/sindri-app}/control.json" pid
-  [ -f "$f" ] || return 0
-  pid="$(jq -r '.pid // empty' "$f" 2> /dev/null || true)"
-  if [ -z "$pid" ]; then
-    pid="$(tr -d '\n' < "$f" | sed -E 's/"temporal"[ ]*:.*//' | sed -nE 's/.*"pid"[ ]*:[ ]*([0-9]+).*/\1/p' | head -n 1)"
-  fi
-  case "$pid" in ''|*[!0-9]*) return 0 ;; esac
-  if kill -0 "$pid" 2> /dev/null; then echo "$pid"; fi
-}
-serve_cmd() { # $1 = pid: its executable (Linux, " (deleted)" stripped) and its command line, one per line
-  local exe=""
-  if [ -d /proc/self ]; then exe="$(readlink "/proc/$1/exe" 2> /dev/null || true)"; exe="${exe% (deleted)}"; fi
-  printf '%s\n%s\n' "$exe" "$(ps -o args= -p "$1" 2> /dev/null || true)"
-}
-serve_runs_in() { # $1 = a directory: does the running serve execute from it?
-  local pid
-  pid="$(serve_pid)"
-  [ -n "$pid" ] || return 1
-  case "$(serve_cmd "$pid")" in *"$1/"*) return 0 ;; *) return 1 ;; esac
-}
-
 # ---- step 1: refuse while a TS job runs -------------------------------------------------------------------------------
 
 step1() {
   local pid cmd label uid
   # a C# serve running from the retired bin/sindri-app/ build
-  pid="$(serve_pid)"
-  if [ -n "$pid" ]; then
-    case "$(serve_cmd "$pid")" in *"$STATE/bin/sindri-app/"*)
-      say "refused: the Sindri control plane (pid $pid) runs from $STATE/bin/sindri-app/. Nothing was changed. Run: sindri-app stop (or sindri stop), then re-run ./setup.sh"
-      exit 1 ;;
-    esac
+  if [ -d "$STATE/bin/sindri-app" ] && [ -f "$STATE/sindri-app/control.json" ]; then
+    pid="$(sed -nE 's/.*"pid"[ ]*:[ ]*([0-9]+).*/\1/p' "$STATE/sindri-app/control.json" | head -n 1)"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      cmd="$(ps -o args= -p "$pid" 2>/dev/null)"
+      case "$cmd" in *"$STATE/bin/sindri-app/"*)
+        say "refused: the Sindri control plane (pid $pid) runs from $STATE/bin/sindri-app/. Nothing was changed. Run: sindri-app stop, then re-run ./setup.sh"
+        exit 1 ;;
+      esac
+    fi
   fi
   # a loaded launchd job that is running (macOS)
   if [ "$(uname)" = Darwin ] && command -v launchctl > /dev/null 2>&1; then
@@ -415,6 +362,7 @@ post_link() {
   [ -d "$STATE/bin/sindri-app" ] && work=1
   for f in sindri scorer audit; do [ -e "$STATE/$f" ] || [ -L "$STATE/$f" ] && work=1; done
   [ -e "$PROFILE" ] || [ -L "$PROFILE" ] && work=1
+  for d in "$STATE"/*/bugfix; do [ -d "$d" ] && work=1; done
   for f in judge scorer sindri; do for d in dist node_modules; do retirable "$ROOT" "$f/$d" && work=1; done; done
   if command -v claude > /dev/null 2>&1; then
     claude plugin list --json 2> /dev/null | grep -q 'aw-live@agentic-workflow-mods' && work=1
@@ -447,12 +395,7 @@ post_link() {
   if [ -L "$BIN/sindri-app" ]; then
     case "$(readlink "$BIN/sindri-app")" in */sindri-app.sh) del_file "$BIN/sindri-app" "the sindri-app link" ;; esac
   fi
-  if serve_runs_in "$STATE/bin/sindri-app"; then
-    say "kept $STATE/bin/sindri-app: Sindri is still running from it; run \`sindri stop\`, then re-run ./setup.sh"
-    L "kept $STATE/bin/sindri-app: Sindri is still running from it"
-  else
-    del_state "$STATE/bin/sindri-app" "the retired sindri-app builds"
-  fi
+  del_state "$STATE/bin/sindri-app" "the retired sindri-app builds"
   left=""
   for f in "$BIN"/sindri-*; do
     [ -e "$f" ] || [ -L "$f" ] || continue
@@ -460,9 +403,14 @@ post_link() {
   done
   [ -z "$left" ] || { say "left alone (not a TS wrapper this script knows):$left"; L "left alone:$left"; }
 
-  # step 8: the TS state (bug-fix state, $STATE/<slug>/bugfix/, is never touched: the C# and TS helpers share that layout)
+  # step 8: the TS state
   for f in sindri scorer audit; do del_state "$STATE/$f" "TS state $f/"; done
   del_state "$PROFILE" "the TS profile"
+  for d in "$STATE"/*/bugfix; do
+    [ -d "$d" ] || continue
+    case "$(basename "$(dirname "$d")")" in bugfix|sindri-app|meta|bin|cache|logs|locks|hooks|fleet|context-guard|judge|digests|toolkit|ui-evidence) continue ;; esac
+    del_state "$d" "TS bug-fix state"
+  done
   [ "$partial" = 0 ] || { say "stopped at step 8; re-run ./setup.sh"; exit 3; }
 
   # step 9: the aw-live mod, retired build output
