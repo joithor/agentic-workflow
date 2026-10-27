@@ -120,7 +120,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         services.TryAddSingleton<IModelPickSettings, NoModelPickSettings>();   // the profile adapter replaces these two
         services.TryAddSingleton<IModelPickHistory, NoModelPickHistory>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
         return services
-        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<ModelPicker>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
+        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<ModelPicker>().AddSingleton<ModelPickStore>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
         .AddSingleton<AgentRecovering>().AddSingleton<IStepOutputs, DiskStepOutputs>()
         .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
