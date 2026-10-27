@@ -51,6 +51,7 @@ internal static partial class Labels
         ["SetupOnyx"] = "Set up Onyx",
         ["ShowLineHoldout"] = "Show hidden scenarios",
         ["SessionExit"] = "Report session exit",
+        ["RecordLimitHit"] = "Record a sandbox limit hit",
         ["SessionHeartbeat"] = "Report session heartbeat",
         ["OpenItem:open"] = "Open",
         ["OpenItem:resume"] = "Resume session",
