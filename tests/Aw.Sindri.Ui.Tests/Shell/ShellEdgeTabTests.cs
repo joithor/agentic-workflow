@@ -103,6 +103,20 @@ public sealed partial class ShellEdgeTabTests
         Assert.DoesNotMatch(RawAddress, shell.EdgeTabName);
     }, Token);
 
+    [Fact]
+    public Task A_workflow_type_sheets_edge_tab_reads_the_workflows_name_never_the_recipe_id() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        Assert.True(DeepLink.TryParse("recipe/workflow.scoping", out var parsed));
+
+        shell.Navigate(parsed);
+        shell.CloseSheet();
+
+        Assert.NotEmpty(shell.Recipe.Title);   // the sheet's title, which is never the id
+        Assert.Equal(shell.Recipe.Title, shell.EdgeTabText);
+        Assert.DoesNotContain("workflow.scoping", shell.EdgeTabText, StringComparison.Ordinal);
+    }, Token);
+
     [Theory]
     [InlineData("job/JOB-9")]
     public Task Other_sheets_never_show_a_raw_address(string link) => UiThread.Run(async () =>
