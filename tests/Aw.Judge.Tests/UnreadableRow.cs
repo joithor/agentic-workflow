@@ -20,12 +20,13 @@ internal static class UnreadableRow
         _ = await update.ExecuteNonQueryAsync(ct);
     }
 
-    internal static void AssertNamed(CliRun run, string id)
+    internal static void AssertNamed(CliRun run, string id, string took)
     {
         Assert.Equal(2, run.ExitCode);
         Assert.Equal("", run.Stdout);
         var line = Assert.Single(run.Stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries));
         Assert.Contains(id, line, StringComparison.Ordinal);
+        Assert.Contains(took, line, StringComparison.Ordinal);   // the row was marked before the read failed: say so, or someone retries
         Assert.Contains("ts", line, StringComparison.Ordinal);
     }
 }

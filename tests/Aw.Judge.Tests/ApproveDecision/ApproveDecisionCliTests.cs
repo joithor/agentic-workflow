@@ -49,7 +49,7 @@ public sealed class ApproveDecisionCliTests : IDisposable
     {
         await UnreadableRow.WithTs(_state, "d-bad", "yesterday");
 
-        UnreadableRow.AssertNamed(await new JudgeCli(_state).Run("approve", "d-bad"), "d-bad");
+        UnreadableRow.AssertNamed(await new JudgeCli(_state).Run("approve", "d-bad"), "d-bad", "approved");
     }
 
     public void Dispose() => _state.Dispose();

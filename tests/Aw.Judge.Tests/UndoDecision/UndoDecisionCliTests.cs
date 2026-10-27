@@ -35,7 +35,7 @@ public sealed class UndoDecisionCliTests : IDisposable
     {
         await UnreadableRow.WithTs(_state, "d-bad", "yesterday");
 
-        UnreadableRow.AssertNamed(await new JudgeCli(_state).Run("undo", "d-bad"), "d-bad");
+        UnreadableRow.AssertNamed(await new JudgeCli(_state).Run("undo", "d-bad"), "d-bad", "undone");
     }
 
     public void Dispose() => _state.Dispose();
