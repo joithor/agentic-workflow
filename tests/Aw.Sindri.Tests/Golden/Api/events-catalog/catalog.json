@@ -140,6 +140,7 @@
       "keyShape": "launch.outcome:<launchId>",
       "invalidates": [
         "launch",
+        "launch-picks",
         "item",
         "items",
         "timeline",
@@ -168,6 +169,7 @@
       "keyShape": "launch.outcome:<launchId>",
       "invalidates": [
         "launch",
+        "launch-picks",
         "item",
         "items",
         "timeline",
@@ -202,6 +204,7 @@
       "keyShape": "model.pick:<launchId>",
       "invalidates": [
         "launch",
+        "launch-picks",
         "timeline"
       ]
     },
@@ -210,6 +213,7 @@
       "keyShape": "model.picking:<launchId>",
       "invalidates": [
         "launch",
+        "launch-picks",
         "timeline"
       ]
     },
@@ -341,6 +345,7 @@
       "keyShape": "session.ended:<launch>",
       "invalidates": [
         "launch",
+        "launch-picks",
         "item",
         "items",
         "timeline"

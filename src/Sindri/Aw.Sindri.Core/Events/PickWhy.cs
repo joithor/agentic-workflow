@@ -1,7 +1,6 @@
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Events;
 
 /// <summary>
 /// The one plain sentence for why a step got its model (model-pick spec §6.1, "Why, in plain words"). Pure: 'sindri launch picks'
