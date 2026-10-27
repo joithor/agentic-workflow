@@ -153,7 +153,7 @@ internal static class EndpointTable
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();
         _ = commands.MapSessionHeartbeat();
-        _ = commands.MapSessionExit();
+        _ = commands.MapSessionExit().MapRecordLimitHit();   // the wrap's calls, proven by the launch secret
         return commands;
     }
 }

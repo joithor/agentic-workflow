@@ -35,6 +35,7 @@ public sealed class LaunchedSessionAuthorizationTests
     [InlineData("IssueNonce")]
     [InlineData("SessionHeartbeat")]
     [InlineData("SessionExit")]
+    [InlineData("RecordLimitHit")]
     [InlineData("FileRequest")]
     public void A_launched_session_keeps_what_its_own_Step_needs(string action)
     {

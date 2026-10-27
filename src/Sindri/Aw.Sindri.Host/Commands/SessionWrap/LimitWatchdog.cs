@@ -28,6 +28,8 @@ internal sealed class LimitWatchdog(IScopeControl scope, ICgroupStats stats, IWr
     private long _memoryPeak;
     private int _tasksPeak;
     private int _cpuPeak;
+    private long _pidsHits;
+    private bool _pidsRecorded;
 
     /// <summary>Watches until the agent exits.</summary>
     /// <param name="launch">The launch.</param>
@@ -62,6 +64,7 @@ internal sealed class LimitWatchdog(IScopeControl scope, ICgroupStats stats, IWr
     {
         var now = clock.GetUtcNow();
         await Sample(now, token).ConfigureAwait(false);
+        await RecordPidsHit(launch, proof, token).ConfigureAwait(false);
         var resumed = _budget.Tick(now, await IsSuspended(launch, proof, token).ConfigureAwait(false));
         if (limits.WallSeconds is null)
         {
@@ -125,6 +128,25 @@ internal sealed class LimitWatchdog(IScopeControl scope, ICgroupStats stats, IWr
         }
     }
 
+    /// <summary>The first tick that sees a refused fork tells the control plane once (never kills); a failed call is tried again next tick.</summary>
+    private async Task RecordPidsHit(LaunchId launch, LaunchSecret? proof, CancellationToken token)
+    {
+        if (_pidsRecorded || _pidsHits == 0 || proof is not { } secret)
+        {
+            return;
+        }
+
+        try
+        {
+            var sent = await calls.LimitHit(launch, secret, LimitHitKind.Pids, _tasksPeak, token).ConfigureAwait(false);
+            _pidsRecorded = sent.IsSuccess;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // why: a record of a limit is a fact for the reader, never a reason to stop the watch; the next tick tries again
+        }
+    }
+
     private async Task<string?> UnitResult()
     {
         try
@@ -147,7 +169,8 @@ internal sealed class LimitWatchdog(IScopeControl scope, ICgroupStats stats, IWr
 
         _oomKills = Math.Max(_oomKills, sample.OomKills);
         _memoryPeak = Math.Max(_memoryPeak, Math.Max(sample.MemoryPeak, sample.MemoryCurrent));
-        _tasksPeak = Math.Max(_tasksPeak, sample.Pids);
+        _tasksPeak = Math.Max(_tasksPeak, Math.Max(sample.Pids, (int)Math.Min(sample.PidsPeak, int.MaxValue)));
+        _pidsHits = Math.Max(_pidsHits, sample.PidsMax);
         if (_last is { } before && _lastAt is { } at && now > at && sample.CpuMicroseconds >= before.CpuMicroseconds)
         {
             var percent = (sample.CpuMicroseconds - before.CpuMicroseconds) * 100 / (now - at).TotalMicroseconds;

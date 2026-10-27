@@ -20433,11 +20433,15 @@ Aw.Sindri.Core.Launch.LaunchShowEntry.Models.get -> System.Collections.Generic.I
 Aw.Sindri.Core.Launch.LaunchShowEntry.Models.init -> void
 static readonly Aw.Sindri.Core.SindriErrors.ModelListUnavailable -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Sandbox.CgroupSample
-Aw.Sindri.Core.Sandbox.CgroupSample.CgroupSample(long OomKills, long MemoryCurrent, long MemoryPeak, int Pids, long CpuMicroseconds) -> void
+Aw.Sindri.Core.Sandbox.CgroupSample.CgroupSample(long OomKills, long MemoryCurrent, long MemoryPeak, int Pids, long CpuMicroseconds, long PidsMax = 0, long PidsPeak = 0) -> void
 Aw.Sindri.Core.Sandbox.CgroupSample.<Clone>$() -> Aw.Sindri.Core.Sandbox.CgroupSample!
 Aw.Sindri.Core.Sandbox.CgroupSample.CpuMicroseconds.get -> long
 Aw.Sindri.Core.Sandbox.CgroupSample.CpuMicroseconds.init -> void
-Aw.Sindri.Core.Sandbox.CgroupSample.Deconstruct(out long OomKills, out long MemoryCurrent, out long MemoryPeak, out int Pids, out long CpuMicroseconds) -> void
+Aw.Sindri.Core.Sandbox.CgroupSample.Deconstruct(out long OomKills, out long MemoryCurrent, out long MemoryPeak, out int Pids, out long CpuMicroseconds, out long PidsMax, out long PidsPeak) -> void
+Aw.Sindri.Core.Sandbox.CgroupSample.PidsMax.get -> long
+Aw.Sindri.Core.Sandbox.CgroupSample.PidsMax.init -> void
+Aw.Sindri.Core.Sandbox.CgroupSample.PidsPeak.get -> long
+Aw.Sindri.Core.Sandbox.CgroupSample.PidsPeak.init -> void
 Aw.Sindri.Core.Sandbox.CgroupSample.Equals(Aw.Sindri.Core.Sandbox.CgroupSample? other) -> bool
 Aw.Sindri.Core.Sandbox.CgroupSample.MemoryCurrent.get -> long
 Aw.Sindri.Core.Sandbox.CgroupSample.MemoryCurrent.init -> void
@@ -20478,3 +20482,4 @@ Aw.Sindri.Core.Sandbox.ISessionCap
 Aw.Sindri.Core.Sandbox.ISessionCap.Start<T>(int cap, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<Aw.Kernel.Result<T>!>!>! start, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<T>!>!
 Aw.Sindri.Core.Locks.IHeavyLockSweep
 Aw.Sindri.Core.Locks.IHeavyLockSweep.Sweep(string! locksDir) -> int
+Aw.Sindri.Core.Launches.LaunchSessionEvents.LimitHit(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Events.LimitHitKind kind, long peak, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
