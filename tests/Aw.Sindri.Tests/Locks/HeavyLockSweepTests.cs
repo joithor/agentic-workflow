@@ -36,7 +36,7 @@ public sealed class HeavyLockSweepTests : IDisposable
         return dir;
     }
 
-    private static string OwnerLine(int pid) => $"{pid} {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ} session=x dotnet build\n";
+    private static string OwnerLine(int pid) => string.Create(CultureInfo.InvariantCulture, $"{pid} {RealTime.NowDateTime:yyyy-MM-ddTHH:mm:ssZ} session=x dotnet build\n");
 
     private int Sweep() => new HeavyLockSweep(_clock).Sweep(_locks);
 
