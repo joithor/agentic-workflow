@@ -76,7 +76,7 @@ public sealed class ModelHistoryProjectionTests
     public async Task A_launch_with_no_instance_makes_no_row()
     {
         await _v.Begin();
-        await _v.Fold(Aw.Sindri.Core.Events.EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(ModelHistoryFolds.Run(1), "draft", Sonnet) with { Instance = null }, Aw.Sindri.Testing.A.FirstItemId);
+        await _v.Fold(Core.Events.EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(ModelHistoryFolds.Run(1), "draft", Sonnet) with { Instance = null }, A.FirstItemId);
         await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
 
         Assert.Null(await _v.Row("draft", Sonnet));
@@ -104,7 +104,7 @@ public sealed class ModelHistoryProjectionTests
         await _v.Picked("draft", from: Sonnet, kind: null);
         await _v.Picked("draft", from: Sonnet, kind: "crashed");
 
-        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class ModelHistoryProjectionTests
         await _v.Launched(ModelHistoryFolds.Run(2), model: null, "check");
         await _v.Completed("check", "apply", ModelHistoryFolds.Run(2));
 
-        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class ModelHistoryProjectionTests
         await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
         await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
 
-        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Aw.Sindri.Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
+        Assert.Empty((await _v.Views.List<ModelHistoryRow>(Core.Views.ViewNames.ModelHistory, TestContext.Current.CancellationToken)).Value);
     }
 
     [Fact]

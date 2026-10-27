@@ -64,7 +64,7 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     /// <summary>Where it runs, in one line: host, lane or launch.</summary>
     public string WhereText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The Repository column: the repo, then the last folder of its worktree.</summary>
+    /// <summary>The Repository column: the repo, then the last folder of its worktree; the empty-cell dash when it has neither.</summary>
     public string RepoText { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>True under the page width where only Status, Agent and For stay.</summary>
@@ -161,7 +161,7 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         StepText = Row.Launch is { } launch && launch.Instance is { Length: > 0 } ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
         StepName = Row.Launch is { } named && named.Instance is { Length: > 0 } ? Labels.SessionStepName(StepText, named.State) : string.Empty;
         WhereText = string.Join(" · ", new[] { HostText, LaneText }.Where(p => p.Length > 0));
-        RepoText = string.Join(" · ", new[] { Row.Repo ?? string.Empty, LastFolder(WorktreeText) }.Where(p => p.Length > 0));
+        RepoText = string.Join(" · ", new[] { Row.Repo ?? string.Empty, LastFolder(WorktreeText) }.Where(p => p.Length > 0)) is { Length: > 0 } repoText ? repoText : Labels.EmptyCell;
         Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
         Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method, Row.Repo);
         Focus.Show(Row.Ref);

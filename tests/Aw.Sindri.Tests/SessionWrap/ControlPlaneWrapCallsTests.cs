@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Features.GetRunSuspension;
+using Aw.Sindri.Features.RecordLimitHit;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -64,6 +65,19 @@ public sealed class ControlPlaneWrapCallsTests
         Assert.True(sent.IsSuccess, sent.IsError ? sent.Error.ToString() : null);
         var body = Assert.Single(api.Calls, static c => string.Equals(c.Method, "POST", StringComparison.Ordinal)).Body!;
         Expect.True(body.Contains("\"kind\":\"wall\"", StringComparison.Ordinal) && body.Contains("\"limit\":3600", StringComparison.Ordinal) && body.Contains("\"peak\":3601", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task LimitHit_posts_the_kind_and_peak_with_the_launch_secret()
+    {
+        var api = new RoutedApi().OnPost($"/sindri/launches/{A.FirstLaunchId.Value}/limit-hit", HttpStatusCode.OK, new RecordLimitHitResponse(A.FirstLaunchId));
+
+        var sent = await Calls(api).LimitHit(A.FirstLaunchId, _proof, LimitHitKind.Pids, 2048, Token);
+
+        Assert.True(sent.IsSuccess, sent.IsError ? sent.Error.ToString() : null);
+        var call = Assert.Single(api.Calls, static c => string.Equals(c.Method, "POST", StringComparison.Ordinal));
+        Expect.True(call.Body!.Contains("\"kind\":\"pids\"", StringComparison.Ordinal) && call.Body.Contains("\"peak\":2048", StringComparison.Ordinal));
+        Expect.Equal("a-proof", call.Headers[SindriHeaders.LaunchSecret]);
     }
 
     private sealed class Unreachable : HttpMessageHandler

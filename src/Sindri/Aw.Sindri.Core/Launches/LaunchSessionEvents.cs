@@ -111,6 +111,25 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
     public ValueTask<Result<Unit>> EndByLimit(LaunchId launch, LimitEnd limit, CancellationToken cancellationToken) =>
         Append(SessionEnded.Limited(launch, limit), cancellationToken);
 
+    /// <summary>Appends 'sandbox.limit-hit' for a limit reached without ending the session, once per launch and kind (the key carries n=1, so a repeat is recorded already and succeeds).</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="kind">Which limit.</param>
+    /// <param name="peak">The peak: a count for pids, bytes for memory and disk.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>Success (also for a repeat), or why the ledger refused.</returns>
+    public async ValueTask<Result<Unit>> LimitHit(LaunchId launch, LimitHitKind kind, long peak, CancellationToken cancellationToken)
+    {
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
+        }
+
+        var admitted = await admission.Admit(launch, id: null, cancellationToken).ConfigureAwait(false);
+        var key = $"{EventTypes.SandboxLimitHit}:{launch.Value}:{kind.ToString().ToLowerInvariant()}:1";
+        var appended = await ledger.Append(events.Entry(EventTypes.SandboxLimitHit, new SandboxLimitHit(launch, kind, peak), key, admitted.Item), grant, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Unit.Value;
+    }
+
     private async ValueTask<Result<Unit>> Append(SessionEnded ended, CancellationToken cancellationToken)
     {
         if (held.Current is not { } grant)

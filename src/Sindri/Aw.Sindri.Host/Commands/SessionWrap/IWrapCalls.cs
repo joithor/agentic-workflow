@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -30,4 +31,13 @@ internal interface IWrapCalls
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>Whether it is suspended, or why the control plane refused or was unreachable.</returns>
     public ValueTask<Result<bool>> Suspended(LaunchId launch, LaunchSecret proof, CancellationToken cancellationToken);
+
+    /// <summary>Says the scope reached a limit that does not end the session (sandbox spec §3.3), recorded once per launch and kind.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="proof">The launch secret.</param>
+    /// <param name="kind">Which limit.</param>
+    /// <param name="peak">The peak: a count for pids, bytes for memory and disk.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Success, or why the control plane refused or was unreachable.</returns>
+    public ValueTask<Result<Unit>> LimitHit(LaunchId launch, LaunchSecret proof, LimitHitKind kind, long peak, CancellationToken cancellationToken);
 }

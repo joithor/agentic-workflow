@@ -22,7 +22,7 @@
           <TextBlock x:Name="IdText" Grid.Column="1" Margin="8,0,0,0" MaxWidth="120" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
         </Grid>
       </Button>
-      <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="1" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding RepoCell}" Grid.Column="1" Classes="caption subtle" Text="{Binding RepoCell}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <TextBlock x:Name="StateText" AutomationProperties.Name="{Binding StateWord}" Classes="body" Text="{Binding StateWord}" VerticalAlignment="Center" />
         <Border x:Name="Badge" Classes="badge" IsVisible="{Binding HasBadge}" VerticalAlignment="Center">

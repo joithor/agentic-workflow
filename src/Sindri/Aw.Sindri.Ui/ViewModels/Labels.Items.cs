@@ -53,6 +53,9 @@ internal static partial class Labels
     /// <summary>The since column.</summary>
     internal const string ColumnSince = "Age";
 
+    /// <summary>What an empty cell reads (the same dash a blocked stage shows).</summary>
+    internal const string EmptyCell = BlockedMark;
+
     /// <summary>The stage of an item that has no step yet.</summary>
     internal const string NotStarted = "Not started";
 

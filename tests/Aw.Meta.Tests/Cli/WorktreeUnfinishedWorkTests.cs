@@ -40,9 +40,9 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
         var (fresh, _, _) = await Box();
 
         _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));   // the recorded start must be later than the trees' files
-        var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
+        var first = await _lab.Cli.Run("worktree-sweep", "--include-no-pr");   // no previous sweep: kept, and it records its start
         Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
-        var sweep = await _lab.Cli.Run("worktree-sweep");
+        var sweep = await _lab.Cli.Run("worktree-sweep", "--include-no-pr");
 
         Assert.Equal(0, sweep.Exit);
         Assert.False(Directory.Exists(fresh), sweep.Out);
@@ -54,11 +54,25 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
         var (_, reachable, _) = await Box();
 
         _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));   // the recorded start must be later than the trees' files
-        var first = await _lab.Cli.Run("worktree-sweep");   // no previous sweep: kept, and it records its start
+        var first = await _lab.Cli.Run("worktree-sweep", "--include-no-pr");   // no previous sweep: kept, and it records its start
         Assert.Contains("no previous sweep to compare with", first.Out, StringComparison.Ordinal);
-        var sweep = await _lab.Cli.Run("worktree-sweep");
+        var sweep = await _lab.Cli.Run("worktree-sweep", "--include-no-pr");
 
         Assert.False(Directory.Exists(reachable), sweep.Out);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Without_include_no_pr_a_no_pr_branch_survives_every_sweep()
+    {
+        var (fresh, reachable, _) = await Box();
+
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));
+        _ = await _lab.Cli.Run("worktree-sweep");
+        var sweep = await _lab.Cli.Run("worktree-sweep");
+
+        Assert.True(Directory.Exists(fresh), sweep.Out);
+        Assert.True(Directory.Exists(reachable), sweep.Out);
+        Assert.Contains("no PR (pass --include-no-pr to remove)", sweep.Out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

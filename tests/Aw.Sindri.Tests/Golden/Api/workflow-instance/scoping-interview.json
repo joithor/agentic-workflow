@@ -6,8 +6,8 @@
   "title": "Expiry for shared links",
   "recipe": {
     "id": "workflow.scoping",
-    "hash": "sha256:6731f4163cdcef192cf2f69126909ba2941a8faa7c0ba0952c418c5f40889361",
-    "version": 15,
+    "hash": "sha256:d427391a0171984bd0e31641e78119687081b51f210f66cd6f402757ae429a6b",
+    "version": 16,
     "urgency": "work",
     "displayName": "Scoping"
   },
@@ -521,8 +521,8 @@
       "header": {
         "address": "ITM-01JN3/scoping/1",
         "recipe": "workflow.scoping",
-        "hash12": "6731f4163cdc",
-        "version": 15,
+        "hash12": "d427391a0171",
+        "version": 16,
         "state": "interview",
         "detail": "desk task",
         "since": "2026-10-12T12:10:00.0000000Z",
@@ -569,7 +569,7 @@
           "confirm": "Cancel ITM-01JN3/scoping/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JN3/scoping/1  workflow.scoping@6731f4163cdc  v15  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JN3/scoping/1  workflow.scoping@d427391a0171  v16  interview: desk task  since 12:10 (16m)\n  next      Answer the 3 questions on ITM-01JN3, then run:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>\n            or, to stop asking and close the interview:\n            sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>\n  inputs    fact:questions  questions.json  sha256:7e3a...\n  timeout   parks in 2d (desk)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },

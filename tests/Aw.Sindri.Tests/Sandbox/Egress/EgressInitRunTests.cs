@@ -15,8 +15,31 @@ namespace Aw.Sindri.Tests.Sandbox.Egress;
 public sealed class EgressInitRunTests : IDisposable
 {
     private readonly TempDirectory _temp = new();
+    private readonly List<int> _started = [];
 
-    public void Dispose() => _temp.Dispose();
+    // A test that fails mid-way (a timed-out wait) must not leave its init, agent or socats running (#1398). The test's own
+    // `using` has disposed the Process by now, so kill by the recorded pid, and only while that pid still runs this test's init.
+    public void Dispose()
+    {
+        foreach (var pid in _started)
+        {
+            var cmdline = "/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/cmdline";
+            try
+            {
+                if (File.Exists(cmdline) && File.ReadAllText(cmdline).Contains(_temp.Path, StringComparison.Ordinal))
+                {
+                    using var init = Process.GetProcessById(pid);
+                    init.Kill(entireProcessTree: true);
+                }
+            }
+            catch (Exception e) when (e is IOException or ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                // Gone between the check and the kill.
+            }
+        }
+
+        _temp.Dispose();
+    }
 
     // Every script here starts with its own shebang; ExecutableScript takes it apart so the warm-up guard goes right after it.
     private string Write(string name, string text)
@@ -37,7 +60,9 @@ public sealed class EgressInitRunTests : IDisposable
         // The outer sh opens fd 5 on a file, then becomes the init: the init must close it before anything else runs.
         var outer = $"exec 5>'{Path.Combine(_temp.Path, "fd5")}'; exec {shell} '{init}' \"$@\"";
         var info = new ProcessStartInfo("/bin/sh", ["-c", outer, "sh", .. agent]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
-        return Process.Start(info)!;
+        var started = Process.Start(info)!;
+        _started.Add(started.Id);
+        return started;
     }
 
     private static bool Alive(int pid)
@@ -90,6 +115,7 @@ public sealed class EgressInitRunTests : IDisposable
     {
         Assert.SkipWhen(!Directory.Exists("/proc/self/fd"), "needs /proc");
         Assert.SkipWhen(signal == "INT" && SignalIgnoredHere(2), "the test host started with SIGINT ignored, which a shell cannot trap");
+        Assert.SkipWhen(signal == "HUP" && SignalIgnoredHere(1), "the test host started with SIGHUP ignored (nohup), which a shell cannot trap");
         var socat = FakeSocat($"echo $$ >> '{_temp.Path}/socat-pids'; exec sleep 30\n");
         var agent = Write("agent", $"#!/bin/sh\ntrap 'echo got-term > \"{_temp.Path}/agent-term\"; exit 3' TERM INT HUP\necho $$ > '{_temp.Path}/agent-pid'\nwhile :; do sleep 0.1; done\n");
 

@@ -218,7 +218,7 @@ public sealed class ModelKeyTests
     [Fact, Trait("Lane", "unit")]
     public void A_profile_without_the_keys_keeps_its_hash()
     {
-        var plain = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(ProfileRules.Check(_valid with { Workflow = new(Agent: new(AgentId.From("claude-code"))) }).Value, SliceHarness.Json));
+        var plain = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(ProfileRules.Check(_valid with { Workflow = new(Agent: new(AgentId.From("claude-code"))) }).Value, SliceHarness.Json));
 
         Assert.DoesNotContain("models", plain, StringComparison.Ordinal);
         Assert.DoesNotContain("pin", plain, StringComparison.Ordinal);

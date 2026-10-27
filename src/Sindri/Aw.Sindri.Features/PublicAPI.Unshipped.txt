@@ -5132,3 +5132,33 @@ override Aw.Sindri.Features.GetLaunchPicks.StateEscalation.GetHashCode() -> int
 override Aw.Sindri.Features.GetLaunchPicks.StateEscalation.ToString() -> string!
 static Aw.Sindri.Features.GetLaunchPicks.StateEscalation.operator !=(Aw.Sindri.Features.GetLaunchPicks.StateEscalation? left, Aw.Sindri.Features.GetLaunchPicks.StateEscalation? right) -> bool
 static Aw.Sindri.Features.GetLaunchPicks.StateEscalation.operator ==(Aw.Sindri.Features.GetLaunchPicks.StateEscalation? left, Aw.Sindri.Features.GetLaunchPicks.StateEscalation? right) -> bool
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.<Clone>$() -> Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest!
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out Aw.Sindri.Core.Events.LimitHitKind Kind, out long Peak) -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Equals(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest? other) -> bool
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Kind.get -> Aw.Sindri.Core.Events.LimitHitKind
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Kind.init -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.LaunchId.init -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Peak.get -> long
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Peak.init -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.RecordLimitHitRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret, Aw.Sindri.Core.Events.LimitHitKind Kind, long Peak) -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Secret.get -> Aw.Sindri.Core.Launches.LaunchSecret
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Secret.init -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.<Clone>$() -> Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse!
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.Equals(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse? other) -> bool
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.Launch.init -> void
+Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.RecordLimitHitResponse(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.ToString() -> string!
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.GetHashCode() -> int
+override Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.ToString() -> string!
+static Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.operator !=(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest? left, Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest? right) -> bool
+static Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest.operator ==(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest? left, Aw.Sindri.Features.RecordLimitHit.RecordLimitHitRequest? right) -> bool
+static Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.operator !=(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse? left, Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse? right) -> bool
+static Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse.operator ==(Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse? left, Aw.Sindri.Features.RecordLimitHit.RecordLimitHitResponse? right) -> bool
