@@ -5,7 +5,8 @@
 //
 // The storyboard's `inks` map each ink name to a design-token path (for example
 // "color.brand.primary") or a literal hex; --tokens is the project's
-// design-tokens.json (W3C DTCG). Colors come from the project, never from this file.
+// design-tokens.json (W3C DTCG). Colors come from the project; a token it lacks falls back to a neutral
+// default for the standard ink names (board, chalk, primary, secondary, tertiary, warning, danger) and is reported.
 //
 // Writes <out-dir>/footage.mp4 (board.html drawn by headless Chromium at each frame
 // time), <out-dir>/layout.json (each beat's start, land and end seconds, for review)
@@ -36,7 +37,14 @@ const story = JSON.parse(readFileSync(resolve(storyPath), "utf8"));
 
 // ---- inks: token path or literal hex -> hex --------------------------------
 const tokensPath = flag("--tokens");
-const tokens = tokensPath ? JSON.parse(readFileSync(resolve(tokensPath), "utf8")) : undefined;
+let tokens: any;
+if (tokensPath) {
+  try {
+    tokens = JSON.parse(readFileSync(resolve(tokensPath), "utf8"));
+  } catch (error) {
+    console.warn(`cannot read tokens ${tokensPath}: ${(error as Error).message}`);
+  }
+}
 
 const toHex = (value: unknown): string | undefined => {
   if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)) return value;
@@ -58,14 +66,27 @@ const tokenHex = (path: string, depth = 0): string => {
   return hex;
 };
 
-const resolveInk = (ink: string): string => {
+// Neutral fallbacks for inks the project's tokens cannot supply (same idea as a stylesheet's neutral defaults):
+// used only when the token is missing, and always reported so the run can ask the user or run /design-language.
+const NEUTRAL: Record<string, string> = {
+  board: "#22252B", chalk: "#F2EFE6", primary: "#4C8DFF", secondary: "#8A7BE8", tertiary: "#34A27A", warning: "#D9A441", danger: "#E5645F",
+};
+const fellBack: string[] = [];
+const resolveInk = (name: string, ink: string): string => {
   if (ink.startsWith("#")) {
     const hex = toHex(ink);
     if (!hex) throw new Error(`bad hex ink ${ink}`);
     return hex;
   }
-  if (!tokens) throw new Error(`ink "${ink}" is a token path; pass --tokens <design-tokens.json> (run /design-language if the project has none)`);
-  return tokenHex(ink);
+  try {
+    if (!tokens) throw new Error("no --tokens file");
+    return tokenHex(ink);
+  } catch (error) {
+    const fallback = NEUTRAL[name];
+    if (!fallback) throw error;
+    fellBack.push(`${name} (${ink}: ${(error as Error).message})`);
+    return fallback;
+  }
 };
 
 const inks: Record<string, string> = story.inks ?? {};
@@ -73,7 +94,8 @@ for (const need of ["board", "chalk"]) {
   if (!inks[need]) throw new Error(`storyboard.inks needs "${need}" (the board surface and the neutral ink)`);
 }
 const resolved: Record<string, string> = {};
-for (const [name, ink] of Object.entries(inks)) resolved[name] = resolveInk(ink);
+for (const [name, ink] of Object.entries(inks)) resolved[name] = resolveInk(name, ink);
+if (fellBack.length) console.warn(`neutral fallback used for: ${fellBack.join("; ")}. Ask the user for the token, or run /design-language.`);
 story.colors = resolved;
 story.board = resolved.board;
 writeFileSync(join(out, "resolved-inks.json"), JSON.stringify(resolved, null, 2));
