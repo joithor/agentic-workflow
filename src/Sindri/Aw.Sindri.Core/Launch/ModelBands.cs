@@ -9,5 +9,24 @@ public static class ModelBands
     /// </summary>
     /// <param name="models">The agent's models in any order.</param>
     /// <returns>The ranked models, cheapest first.</returns>
-    public static IReadOnlyList<RankedModel> Rank(IReadOnlyList<ModelFacts> models) => throw new NotSupportedException();
+    public static IReadOnlyList<RankedModel> Rank(IReadOnlyList<ModelFacts> models)
+    {
+        ArgumentNullException.ThrowIfNull(models);
+        // OrderBy is stable, so models with the same place keep the order given
+        var ordered = models.Where(static m => m.Order is not null).OrderBy(static m => m.Order).Concat(models.Where(static m => m.Order is null)).ToList();
+        var count = ordered.Count;
+        var third = (count + 2) / 3;
+        var hasMiddle = count - (2 * third) > 0;
+        var ranked = new List<RankedModel>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var tiers = ModelTier.None;
+            tiers |= i < third ? ModelTier.Cheap : ModelTier.None;
+            tiers |= i >= count - third ? ModelTier.Strong : ModelTier.None;
+            tiers |= !hasMiddle || (i >= third && i < count - third) ? ModelTier.Standard : ModelTier.None;
+            ranked.Add(new RankedModel(ordered[i], tiers, Unordered: ordered[i].Order is null));
+        }
+
+        return ranked;
+    }
 }
