@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Features.GetLaunchPicks;
 
@@ -24,7 +25,8 @@ namespace Aw.Sindri.Features.GetLaunchPicks;
 /// <param name="repos">Resolves an item named by id, from the ledger.</param>
 /// <param name="callers">The caller.</param>
 /// <param name="history">The model history, for the escalation rates.</param>
-internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory events, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers, IModelHistory history)
+/// <param name="instances">Reads an instance, for the recipe and version its history is keyed by.</param>
+internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory events, IItemResolver items, IItemRepos repos, ICallerContextAccessor callers, IModelHistory history, IInstanceReader instances)
     : IService<GetLaunchPicksRequest, LaunchPicks>
 {
     private const int Page = 500;
@@ -70,18 +72,13 @@ internal sealed class GetLaunchPicksService(ILedgerReader ledger, EventFactory e
         var wanted = picks.Where(static p => p.Picked?.Model is not null).Select(static p => (p.Instance, p.State, Model: p.Picked!.Model!)).Distinct();   // why: the filter keeps only picks with a model
         foreach (var (instance, state, model) in wanted)
         {
-            var scope = await history.ScopeOf(WorkflowInstanceId.Of(instance), cancellationToken).ConfigureAwait(false);
-            if (scope.IsError)
+            var read = await instances.Get(instance, cancellationToken).ConfigureAwait(false);
+            if (read.IsError)
             {
-                return scope.Error;
+                continue;   // an instance Temporal no longer knows has no recipe to look the history up by: no footer, not a failed read
             }
 
-            if (scope.Value is not { } known)
-            {
-                continue;
-            }
-
-            var rows = await history.For(known.Recipe, known.Version, state, [model], cancellationToken).ConfigureAwait(false);
+            var rows = await history.For(read.Value.Recipe.Id, read.Value.Recipe.Version, state, [model], cancellationToken).ConfigureAwait(false);
             if (rows.IsError)
             {
                 return rows.Error;

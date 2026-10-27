@@ -9,6 +9,8 @@ using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetLaunchPicks;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.StreamEvents;
 
 namespace Aw.Sindri.Tests.PickReads;
@@ -31,7 +33,7 @@ public sealed class GetLaunchPicksTests
 
     private async Task<LaunchPicks> Read(GetLaunchPicksRequest? request = null, params ModelHistoryRow[] history)
     {
-        var service = new GetLaunchPicksService(_h.Store, _h.Events, new NoItems(), StreamEventsServices.Repos(_h), _h.Callers, new FakeModelHistory(history));
+        var service = new GetLaunchPicksService(_h.Store, _h.Events, new NoItems(), StreamEventsServices.Repos(_h), _h.Callers, new FakeModelHistory(history), new OneInstance(StatusCases.View("questions") with { Address = _one, Id = WorkflowInstanceId.Of(_one) }));
         using var entered = _h.Callers.Enter(new CallerContextBuilder().Human().Build());
         return (await service.Handle(request ?? new GetLaunchPicksRequest(), Ct)).Value;
     }

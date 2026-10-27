@@ -1,7 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Views;
@@ -27,11 +26,5 @@ internal sealed class SqliteModelHistory(IViewReader reader) : IModelHistory
         }
 
         return rows;
-    }
-
-    public async ValueTask<Result<RunScope?>> ScopeOf(WorkflowInstanceId instance, CancellationToken cancellationToken)
-    {
-        var found = await reader.Get<RunScope>(ViewNames.ModelRuns, ModelHistoryKeys.Instance(instance.Value), cancellationToken).ConfigureAwait(false);
-        return found.IsError ? found.Error : found.Value;
     }
 }

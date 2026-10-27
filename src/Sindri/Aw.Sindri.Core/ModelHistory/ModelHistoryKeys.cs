@@ -17,10 +17,7 @@ public static class ModelHistoryKeys
 
     internal static string Recipe(string hash) => "recipe/" + hash;
 
-    /// <summary>The key of a started instance's recipe scope in the 'model-runs' view.</summary>
-    /// <param name="instance">The instance id.</param>
-    /// <returns>'instance/&lt;id&gt;'.</returns>
-    public static string Instance(string instance) => "instance/" + instance;
+    internal static string Instance(string instance) => "instance/" + instance;
 
     internal static string Run(string instance, string state, int attempt) => string.Create(CultureInfo.InvariantCulture, $"run/{instance}/{state}/{attempt}");
 

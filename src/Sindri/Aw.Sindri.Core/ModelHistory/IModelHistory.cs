@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.ModelHistory;
@@ -15,10 +14,4 @@ public interface IModelHistory
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>One row per model, in the order given; a model with no history gets an empty row.</returns>
     public ValueTask<Result<IReadOnlyList<ModelHistoryRow>>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken);
-
-    /// <summary>The recipe and version a started instance runs, as the fold remembered them.</summary>
-    /// <param name="instance">The instance.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The scope, or null when the instance's recipe was never registered in the ledger.</returns>
-    public ValueTask<Result<RunScope?>> ScopeOf(WorkflowInstanceId instance, CancellationToken cancellationToken);
 }

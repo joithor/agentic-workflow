@@ -20442,5 +20442,3 @@ const Aw.Sindri.Core.Launch.LaunchPickOutcomes.Running = "running" -> string!
 const Aw.Sindri.Core.Launch.PickWhy.Asking = "Asking Jev." -> string!
 const Aw.Sindri.Core.Launch.PickWhy.PickOff = "pick-off" -> string!
 static Aw.Sindri.Core.Launch.PickWhy.Sentence(Aw.Sindri.Core.Events.ModelPicked! pick) -> string!
-Aw.Sindri.Core.ModelHistory.IModelHistory.ScopeOf(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.ModelHistory.RunScope?>!>
-static Aw.Sindri.Core.ModelHistory.ModelHistoryKeys.Instance(string! instance) -> string!
