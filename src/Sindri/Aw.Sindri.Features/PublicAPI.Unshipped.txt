@@ -5023,3 +5023,59 @@ static Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.GetLaunchPicks.LaunchPicks.operator ==(Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPicks? right) -> bool
 static Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.operator !=(Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? right) -> bool
 static Aw.Sindri.Features.GetLaunchPicks.LaunchPickView.operator ==(Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? left, Aw.Sindri.Features.GetLaunchPicks.LaunchPickView? right) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunDelta!
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Deconstruct(out Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? Frame) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Frame.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunFrame?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Frame.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.PickRunDelta(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? Frame = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunDetail!
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Deconstruct(out string? FailureKind, out Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? Delta) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Delta.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunDelta?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Delta.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.FailureKind.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.FailureKind.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.PickRunDetail(string? FailureKind = null, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? Delta = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Actor.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Actor.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunFrame!
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Deconstruct(out string? Run, out string? Actor) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.PickRunFrame(string? Run = null, string? Actor = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Run.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Run.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.<Clone>$() -> Aw.Sindri.Features.GetLaunchPicks.PickRunRow!
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Deconstruct(out string? Trigger, out string? Run, out Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? Detail) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Detail.get -> Aw.Sindri.Features.GetLaunchPicks.PickRunDetail?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Detail.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Equals(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? other) -> bool
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.PickRunRow(string? Trigger = null, string? Run = null, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? Detail = null) -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Run.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Run.init -> void
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Trigger.get -> string?
+Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Trigger.init -> void
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchPicks.PickRunRow.ToString() -> string!
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDelta.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDelta? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunDetail.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? left, Aw.Sindri.Features.GetLaunchPicks.PickRunDetail? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? left, Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? left, Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool
+static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool

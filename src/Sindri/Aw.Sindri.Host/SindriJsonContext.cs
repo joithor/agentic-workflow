@@ -180,7 +180,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(FleetChanged))]
 [JsonSerializable(typeof(Features.CodeIndexReads.CodeIndexStatusView)), JsonSerializable(typeof(Features.CodeIndexReads.RepoHealth)), JsonSerializable(typeof(CodeIndex.Core.Facade.FindSymbolsAnswer)), JsonSerializable(typeof(CodeIndex.Core.Values.RepoName), TypeInfoPropertyName = "CodeIndexRepoName"), JsonSerializable(typeof(Features.CodeIndexReads.CodeCallsView)), JsonSerializable(typeof(CodeIndex.Core.Facade.RepoStatus), TypeInfoPropertyName = "CodeIndexRepoStatus")]   // code-index reads (CI-10a)
 [JsonSerializable(typeof(SessionList)), JsonSerializable(typeof(SessionView)), JsonSerializable(typeof(SessionRow)), JsonSerializable(typeof(EndedSessionRow)), JsonSerializable(typeof(SessionStatus))]   // collector spec CA-1, CA-2, CA-8
-[JsonSerializable(typeof(LaunchPicks)), JsonSerializable(typeof(LaunchPickView))]   // model-pick spec §6.1: GET /sindri/launch/picks
+[JsonSerializable(typeof(LaunchPicks)), JsonSerializable(typeof(LaunchPickView)), JsonSerializable(typeof(PickRunRow)), JsonSerializable(typeof(PickRunDetail)), JsonSerializable(typeof(PickRunDelta)), JsonSerializable(typeof(PickRunFrame))]   // model-pick spec §6.1: GET /sindri/launch/picks
 [JsonSerializable(typeof(DeskNotice))]   // engine P6 unit (c): a line of notifications.jsonl
 [JsonSerializable(typeof(EffectRow))]            // engine P6: an effect's ledger row (§5.7)
 [JsonSerializable(typeof(RoutedItem))]           // engine P7 plan D8: the router stub's item.routed event
