@@ -142,7 +142,7 @@ transitions:
   - { from: relevance-apply, to: draft,           on: step.completed, when: { outcome: applied },  produces: [fact:lenses, fact:graph, fact:coverage, fact:relevance, fact:mapFixes] }
   - { from: draft,  to: check, on: step.completed, when: { outcome: drafted },  produces: [fact:scopeMap, fact:acceptance] }
   - { label: "a source is missing: gather again", from: check,  to: gather,    on: step.completed, when: { outcome: regather }, produces: [fact:findings, fact:roundLog] }
-  - { label: "the same lens degraded the same way again: size it and let you decide at the stop", from: check, to: size, on: step.completed, when: { outcome: stalled }, produces: [fact:findings, fact:roundLog] }
+  - { label: "same lens degraded again: size it, you decide", from: check, to: size, on: step.completed, when: { outcome: stalled }, produces: [fact:findings, fact:roundLog] }
   - { label: "gaps found: draft again", from: check,  to: draft,     on: step.completed, when: { outcome: gaps },     produces: [fact:findings, fact:roundLog] }
   - { label: "the draft passed: another AI searches for what is missing", from: check, to: gap-search, on: step.completed,
       when: { all: [ { outcome: pass }, { loop: gapsearch, below: cap }, { fact: fact:gapSearchClosed, is: absent } ] } }
