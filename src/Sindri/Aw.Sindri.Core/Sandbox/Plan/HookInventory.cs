@@ -13,6 +13,7 @@ public static class HookInventory
         new("digests", StatePathKind.PerLaunchDir, "context-guard writes digests; a Step can't read other sessions' excerpts"),
         new("context-guard", StatePathKind.ReadOnly, "context-guard reads its configuration"),
         new("context-guard/state", StatePathKind.ReadWrite, "context-guard writes per-session state"),
+        new("fleet", StatePathKind.ReadWrite, "fleet-state writes this session's state file for Sindri's session collector"),
         new("locks", StatePathKind.ReadWrite, "heavy: mkdir mutexes, heavy-job.lock and heavy-session"),
         new("heavy-slots-cap", StatePathKind.ReadOnly, "heavy reads the box-wide cap"),
         new("heavy-meta-reserve", StatePathKind.ReadOnly, "heavy reads the meta reserve"),
@@ -36,6 +37,7 @@ public static class HookInventory
         Keep("done-gate-annotate", "PostToolUse Agent", "annotates the result; never blocks or answers"),
         new("external-write-guard", Hook("external-write-guard"), "PreToolUse *", AnswersPermissions: true, RewritesInput: false, HookTreatment.Drop,
             "answers 'allow' to every tool call it doesn't match, so with it every tool would pass 'dontAsk'; its external writes stay refused by the deny rule 'gh:*' and by 'dontAsk' for tools outside the Step's list"),
+        Keep("fleet-state", "SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Notification, Stop, SessionEnd", "writes this session's state file for Sindri's session collector; answers nothing"),
         Keep("git-context", "SessionStart", "prints git context; answers nothing"),
         Keep("judge-health", "SessionStart", "warns when the judge is degraded; answers nothing"),
         Keep("meta-lane-gate", "UserPromptSubmit, SessionStart, PostToolUse, Stop (Codex and Cursor lanes)", "acts only in a Meta lane (does nothing in a Sindri launch); blocks a stop, answers no permission"),
@@ -57,11 +59,10 @@ public static class HookInventory
         Keep("session-id-report", "SessionStart (Codex and Cursor)", "reports the session id to Sindri's launcher; answers nothing"),
         Keep("sindri-nudge", "SessionStart", "prints a reminder; answers nothing"),
         Keep("subagent-start-map", "SubagentStart", "maps a subagent to its brief; answers nothing"),
+        Keep("trait-check", "PostToolUse Edit/Write, Stop", "feeds trait violations back (exit 2) or blocks a stop once; answers no permission"),
         Keep("turn-origin", "UserPromptSubmit", "marks the turn's origin; answers nothing"),
         new("winch", "config/settings.json", "PreToolUse *, Stop (inline)", AnswersPermissions: false, RewritesInput: false, HookTreatment.Keep,
             "asks the owner's terminal to redraw; answers nothing"),
-        new("aw-live", "mods/aw-live", "in-process mod (the /live pane)", AnswersPermissions: false, RewritesInput: false, HookTreatment.Keep,
-            "draws this session's numbers; answers nothing"),
     ];
 
     private static HookScript Keep(string name, string events, string why) =>

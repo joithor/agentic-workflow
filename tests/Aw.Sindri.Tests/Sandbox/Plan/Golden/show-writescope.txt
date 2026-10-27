@@ -63,5 +63,5 @@ Limits:
 
 Credentials: GitHub none, model login owner-copy
 The agent's own policy: refuses, 64 rules; its own sandbox: auto
-Hooks kept: block-destructive, block-push-main, context-guard, detect-secrets, done-gate, done-gate-annotate, git-context, judge-health, meta-lane-gate, meta-outbox, meta-stop-gate, outbox-flush, prism-context, probe-log, prompt-sort, rtk-rewrite, session-id-report, sindri-nudge, subagent-start-map, turn-origin, winch, aw-live
+Hooks kept: block-destructive, block-push-main, context-guard, detect-secrets, done-gate, done-gate-annotate, fleet-state, git-context, judge-health, meta-lane-gate, meta-outbox, meta-stop-gate, outbox-flush, prism-context, probe-log, prompt-sort, rtk-rewrite, session-id-report, sindri-nudge, subagent-start-map, trait-check, turn-origin, winch
 Hooks left out: external-write-guard, record-teammate-name, scope-gate, send-gate
