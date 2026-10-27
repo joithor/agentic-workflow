@@ -339,6 +339,8 @@ Any state may also carry two optional plain-words fields the app shows (setup-on
 `displayName` (sentence case, at most 60 characters, no id; `RCP-DISPLAY-003`) names the step instead of the state id, and `why` (one plain sentence, at most 200
 characters, no id or code name; `RCP-DISPLAY-002`) says why the state is in the recipe. Neither is on a block descriptor.
 
+An active state that runs an agent may also say `model: { floor: strong }` (model-pick spec 8): the lowest tier of model the state accepts, `cheap`, `standard` or `strong`, never a model id (`SND-MODEL-002` at `recipe validate`; written into the hashed form only when set, so a recipe that gains one bumps its version).
+
 A state that runs a Step may also carry `onOutcome`, a map from an outcome of its Step to one plain sentence (at most 200 characters, no id or code name) on what choosing that outcome does:
 `onOutcome: { approve: "Locks the scope in and moves on to design.", revise: "Sends your notes back, then asks you again." }`. Each key must be an outcome of the state's Step
 (`StepOutcomes`, so a choice Step's own choices count) and each text plain words, both `RCP-DISPLAY-002`. The app shows the texts on the desk state's outcome buttons, in the Step's outcome
