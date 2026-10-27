@@ -1,12 +1,14 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Host.Commands.SessionWrap;
 using Aw.Sindri.Tests.Sandbox.Egress;
 
 namespace Aw.Sindri.Tests.Sandbox.Scope;
 
 /// <summary>The limits file 'session wrap --limits' reads (sandbox spec §3.3; SB-3a).</summary>
+[Lane(TestLane.Unit)]
 public sealed class WrapLimitsTests
 {
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void A_limits_file_round_trips()
     {
         using var temp = new TempDirectory();
@@ -16,10 +18,10 @@ public sealed class WrapLimitsTests
         var read = WrapLimits.Read(path);
 
         Assert.True(read.IsSuccess);
-        Assert.Equal(new WrapLimits("sindri-LCH-1.scope", 1800, 600, 86400, 8589934592), read.Value);
+        Assert.Equal(new WrapLimits("sindri-LCH-1.scope", 600, 86400, 8589934592, 1800), read.Value);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void An_attended_file_has_no_wall()
     {
         using var temp = new TempDirectory();
@@ -29,7 +31,7 @@ public sealed class WrapLimitsTests
         Assert.Null(WrapLimits.Read(path).Value.WallSeconds);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void A_limits_file_without_a_unit_is_refused()
     {
         using var temp = new TempDirectory();
@@ -42,7 +44,7 @@ public sealed class WrapLimitsTests
         Assert.Equal("SND-REQ-001", read.Error.Code);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void An_unreadable_limits_file_is_refused()
     {
         using var temp = new TempDirectory();

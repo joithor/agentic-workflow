@@ -1,14 +1,16 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Tests.Sandbox.Scope;
 
 /// <summary>The wall clock counts unsuspended time only, and the loose ceiling follows it (sandbox spec §3.3).</summary>
+[Lane(TestLane.Unit)]
 public sealed class WallBudgetTests
 {
     private static readonly DateTimeOffset _t0 = new(2026, 10, 26, 9, 0, 0, TimeSpan.Zero);
     private static DateTimeOffset At(int minutes) => _t0.AddMinutes(minutes);
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void An_interval_counts_only_when_unsuspended_at_both_ends()
     {
         var b = new WallBudget(TimeSpan.FromMinutes(60));
@@ -23,7 +25,7 @@ public sealed class WallBudgetTests
         Assert.Equal(TimeSpan.FromMinutes(50), b.Left);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void Wall_is_exhausted_after_unsuspended_time_reaches_it()
     {
         var b = new WallBudget(TimeSpan.FromMinutes(20));
@@ -37,7 +39,7 @@ public sealed class WallBudgetTests
         Assert.Equal(TimeSpan.Zero, b.Left);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void Only_a_tick_that_leaves_a_suspension_signals_a_resume()
     {
         var b = new WallBudget(TimeSpan.FromMinutes(20));
@@ -49,7 +51,7 @@ public sealed class WallBudgetTests
         Assert.False(b.Tick(At(4), suspended: false));
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void Park_longer_than_wallGrace_keeps_the_scope()
     {
         var wall = TimeSpan.FromMinutes(20);
@@ -70,7 +72,7 @@ public sealed class WallBudgetTests
         Assert.Equal(elapsedReal + b.Left + parkMax, ceiling);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact]
     public void Ceiling_after_several_parks_is_elapsed_plus_left_plus_parkMax()
     {
         var b = new WallBudget(TimeSpan.FromMinutes(60));

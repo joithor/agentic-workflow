@@ -10,16 +10,16 @@ namespace Aw.Sindri.Host.Commands.SessionWrap;
 /// unwatched, so a file that cannot be read or names no unit refuses the start.
 /// </summary>
 /// <param name="Unit">The scope unit.</param>
-/// <param name="WallSeconds">The unsuspended run time allowed, grace included; absent for an attended session.</param>
 /// <param name="WallGraceSeconds">The grace inside the wall.</param>
 /// <param name="ParkMaxSeconds">The longest single suspension the ceiling allows for.</param>
 /// <param name="MemoryMaxBytes">The memory kill line, for the limit report.</param>
+/// <param name="WallSeconds">The unsuspended run time allowed, grace included; absent for an attended session.</param>
 internal sealed record WrapLimits(
     string Unit,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? WallSeconds,
     long WallGraceSeconds,
     long ParkMaxSeconds,
-    long MemoryMaxBytes)
+    long MemoryMaxBytes,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? WallSeconds = null)
 {
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(SindriJsonContext.Default);
 

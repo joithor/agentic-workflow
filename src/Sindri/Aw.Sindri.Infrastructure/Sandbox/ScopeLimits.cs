@@ -39,7 +39,7 @@ internal sealed partial record ScopeLimits(long MemoryMaxBytes, long MemoryHighB
         var grace = Duration(Or(p.WallGrace, SandboxDefaults.WallGrace));
         return new ScopeLimits(
             max,
-            max / 10 * 8,
+            max * 4 / 5,
             Total(Or(p.Total, SandboxDefaults.Total), box.RamBytes),
             Math.Max(1, box.Cores) * Percent(Or(p.Cpu, SandboxDefaults.Cpu)),
             50,
