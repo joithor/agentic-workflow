@@ -612,7 +612,7 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.scope.gap-search` | agent | `brief`, `acceptance`, `answerLog` | `searched` | `gapCandidates` on searched |
 | `step.scope.gap-judge` | block (judge, long) | `brief`, `acceptance`, `scopeMap`, `lenses`, `gapCandidates` | `ruled` | `gapRulings` on ruled |
 | `step.scope.gap-log` | block | `gapSearch`, `gapCandidates`, `gapRulings`, `findings` | `clear`, `confirmed` | `gapSearch`, `gapAnchors` on both; `findings` on confirmed; `gapSearchClosed` on clear |
-| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `roundLog` | `pass`, `gaps`, `regather` | `findings` and `roundLog` (the earlier entries plus this round's) on gaps, regather |
+| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `roundLog` | `pass`, `gaps`, `regather`, `stalled` | `findings` and `roundLog` (the earlier entries plus this round's) on gaps, regather, stalled. `stalled`: SCP-COV-002 alone, the same lens and text as the check's last round, so a regather would repeat it; the finding names the lens, the degraded source and its code or reason; the run goes on to size and evidence reports `converged` for the owner's stop |
 | `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
 | `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
 | `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
