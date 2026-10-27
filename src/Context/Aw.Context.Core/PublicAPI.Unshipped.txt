@@ -8244,3 +8244,22 @@ static Aw.Context.Core.Roles.RoleDropped.operator !=(Aw.Context.Core.Roles.RoleD
 static Aw.Context.Core.Roles.RoleDropped.operator ==(Aw.Context.Core.Roles.RoleDropped? left, Aw.Context.Core.Roles.RoleDropped? right) -> bool
 Aw.Context.Core.Extract.IRepoReader.ListTracked(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 static Aw.Context.Core.Roles.RoleCounter.Dropped(Aw.Context.Core.Engine.ContextRepo! repo, System.Collections.Generic.IReadOnlyList<string!>! tracked) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Roles.RoleDropped!>!
+Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.DataAccess.Read = 0 -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.DataAccess.Write = 1 -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.DataStorePass
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Accesses(Aw.Context.Core.Extract.RepoFile! file, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Declared(Aw.Context.Core.Extract.RepoFile! file) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.GenericSqlAdapter() -> void
+Aw.Context.Core.Extract.DataStores.GenericSqlAdapter.Name.get -> string!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Accesses(Aw.Context.Core.Extract.RepoFile! file, System.Collections.Generic.IReadOnlySet<string!>! stores) -> System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.DataStores.StoreAccess!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Declared(Aw.Context.Core.Extract.RepoFile! file) -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Context.Core.Extract.DataStores.IDataStoreAdapter.Name.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess
+Aw.Context.Core.Extract.DataStores.StoreAccess.Access.get -> Aw.Context.Core.Extract.DataStores.DataAccess
+Aw.Context.Core.Extract.DataStores.StoreAccess.Match.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess.Store.get -> string!
+Aw.Context.Core.Extract.DataStores.StoreAccess.StoreAccess(string! store, Aw.Context.Core.Extract.DataStores.DataAccess access, string! match) -> void
+static Aw.Context.Core.Extract.DataStores.DataStorePass.Run(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.DataStores.IDataStoreAdapter!>! adapters, System.Collections.Generic.IReadOnlyList<string!>! schemaGlobs) -> Aw.Context.Core.Extract.ExtractedMap!
