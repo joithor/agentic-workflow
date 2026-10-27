@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.ModelHistory;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
@@ -85,6 +86,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, JobsProjection>()
             .AddSingleton<IProjection, LaunchesProjection>()
             .AddSingleton<IProjection, RecipeStatsProjection>()
+            .AddSingleton<IProjection, ModelHistoryProjection>()
             .AddSingleton<IProjection, CodeIndexProjection>();
 
     /// <summary>

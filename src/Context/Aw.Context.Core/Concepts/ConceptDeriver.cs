@@ -6,7 +6,7 @@ using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>Derives the concepts of a map (concepts note §2): groups of features from the part-of roots, merged to at most 15, pins first, names from a model or a deterministic fallback.</summary>
+/// <summary>Derives the concepts of a map (concepts note §2): groups of features from the part-of roots, small or strongly linked groups merged (no fixed count; ties go to the smaller group and none passes 3x the average area), pins first, names from a model or a deterministic fallback.</summary>
 public static class ConceptDeriver
 {
     /// <summary>The derived groups, for the namer: pinned concepts are not among them.</summary>
