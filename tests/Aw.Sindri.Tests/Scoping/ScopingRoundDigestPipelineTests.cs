@@ -24,7 +24,7 @@ public sealed class ScopingRoundDigestPipelineTests
     [MemberData(nameof(AgentSteps))]
     public void No_agent_step_declares_the_round_log_or_digest_as_an_output(string step)
     {
-        var descriptor = EvalComposition.Catalog.Find(Aw.Sindri.Core.Workflow.Ids.BlockId.From(step));
+        var descriptor = EvalComposition.Catalog.Find(Core.Workflow.Ids.BlockId.From(step));
 
         Assert.NotNull(descriptor);
         Assert.DoesNotContain(descriptor.Outputs, static o => string.Equals(o.Fact.Value, "fact:roundLog", StringComparison.Ordinal) || string.Equals(o.Fact.Value, "fact:roundDigest", StringComparison.Ordinal));
