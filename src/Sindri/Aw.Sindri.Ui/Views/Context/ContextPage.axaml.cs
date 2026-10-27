@@ -158,6 +158,15 @@ internal sealed partial class ContextPage : UserControl
         }
     }
 
+    // Retry on the item note: See its context is made again.
+    private void OnRetryItem(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ContextPageViewModel page)
+        {
+            _ = page.RetryItem(CancellationToken.None);
+        }
+    }
+
     // View build job on the Building overlay: the Jobs page opens on that job.
     private void OnViewBuildJob(object? sender, RoutedEventArgs e)
     {

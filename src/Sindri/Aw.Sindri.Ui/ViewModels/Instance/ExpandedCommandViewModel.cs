@@ -6,7 +6,7 @@ using Aw.Sindri.Ui.ViewModels.Controls;
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
 /// <summary>
-/// One command the engine lists for the state. The app sends none of them yet (the send is U8b): each shows the CLI the
+/// One command the engine lists for the state. The app sends Cancel and Take over; each other one shows the CLI the
 /// engine served with a Copy, and a protected one is the lock button with its popover. A CLI line that holds a control
 /// or bidi character is not shown.
 /// </summary>
@@ -18,7 +18,7 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
         // Each answer variant is its own entry (answer-accept, answer-reject, ...), named by its own action id rather than the status line's kind.
         Label = command.Verb == StatusVerb.Answer && Labels.HasLabel(command.ActionId) ? Labels.Action(command.ActionId) : Labels.CommandLabel(command.Verb, command.Verb == StatusVerb.Answer ? answer : null);
         var isProtected = string.Equals(command.Class, "protected", StringComparison.Ordinal);
-        PendingChip = isProtected || command.Verb == StatusVerb.Takeover ? string.Empty : Labels.AvailableWithU8b;
+        PendingChip = isProtected || command.Verb is StatusVerb.Takeover or StatusVerb.Cancel ? string.Empty : Labels.AvailableWithU8b;
         Name = Labels.CommandName(Label, address, PendingChip);
         Cli = ControlViewModel.Safe(command.Cli) ? command.Cli : string.Empty;
         Confirm = command.Confirm;

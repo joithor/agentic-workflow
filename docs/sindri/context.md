@@ -348,9 +348,12 @@ overrides:                                  # human decisions that outlive rebui
 
 - **Kinds:** `feature`, `surface`, `action`, `thing`, `flow`, `decision`, `record`, `code`. **Edges** (from → to):
   `part-of` (feature or surface → feature), `on` (action → surface), `moves-to` (surface → surface), `reads`/`writes`
-  (surface or action → thing), `depends-on` (feature → feature), `step-of` (surface or action → flow, with `order`),
+  (surface or action → thing), `depends-on` (feature → feature, or code → code), `step-of` (surface or action → flow, with `order`),
   `implements`/`tests` (code → feature, surface or action), `decides` (decision → any), `mentions` (record → any),
-  `quotes` (decision → record), `supersedes` (decision → decision).
+  `quotes` (decision → record), `supersedes` (decision → decision). The deterministic pass makes the code → code
+  `depends-on` edges itself, one per file that imports another file of the repo (resolved TS/JS imports, workspace
+  packages and tsconfig `paths` aliases included, and C# `using`s matched to the files declaring the namespace; a
+  namespace declared in more than 50 files makes none), at confidence 1.0.
 - Every node and edge may carry `provenance` (`deterministic`, `model`, `human`), `confidence` (0 to 1), `evidence`
   (record keys, with an optional `span`) and `at`. **Trust is never in the file**: it is recomputed from provenance.
 - Override actions: `accept`, `reject`, `rename` (`label`), `merge` and `move` (`other`), `add` (`label`, `other` =
@@ -641,7 +644,7 @@ with the map search over the same version; the second reads the hits and returns
 `over-budget` and the reason `over budget: 6 concept scans started in the last 24 hours (the limit is 6)`. A model that does not answer (`model-unavailable`), a reply
 that is not JSON or holds no usable concept (`no-concepts`) and a map with no feature (`nothing-to-scan`) also end `succeeded` with that outcome: the scan never fails a
 build, and only an engine error (the store, the profile) fails the job. A member that is not a feature of the map is dropped, a feature stays in the hint of the highest
-confidence that names it, and at most 15 hints are kept. The hints are stored in `context.db` (`map_concept_hint`, one row per map version) beside the map, not in it:
+confidence that names it, and every hint that passes is kept (there is no limit on their number). A model answer cut off partway keeps the hints that arrived whole and the scan report says so (`CutOff`). The hints are stored in `context.db` (`map_concept_hint`, one row per map version) beside the map, not in it:
 the scan itself never touches the graph, the overrides or the pins, and a feature no hint names stays where the area rules put it. The next map build reads the hints of the newest map version and groups with them (see the glossary section). The job summary reads
 `map v<N>: <hints> concept hint(s) from <searches> search(es) (<tier> model[: <model>])`, and the job result carries the version, the outcome, the counts, the tier and the model.
 

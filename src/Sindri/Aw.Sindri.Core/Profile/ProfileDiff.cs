@@ -206,9 +206,20 @@ public static partial class ProfileDiff
     private static (string Key, string? Value)[] Runtimes(WorkflowSettings? workflow) =>
     [
         ("workflow.agent.target", workflow?.Agent?.Target?.Value),
+        .. ModelKeys(workflow?.Agent),
         ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
         ("workflow.route.startable", workflow?.Route?.Startable),
     ];
+
+    /// <summary>The model keys (model-pick spec §8): one entry per agent under 'models', 'pin' and 'cap', so the summary names the agent or state that changed, and 'pick'.</summary>
+    private static IEnumerable<(string Key, string? Value)> ModelKeys(WorkflowAgentSettings? agent) =>
+        Ordered(agent?.Models).Select(static p => ($"workflow.agent.models.{p.Key}", (string?)$"list={string.Join(", ", p.Value.List)}, default={p.Value.Default}"))
+            .Concat(Ordered(agent?.Pin).Select(static p => ($"workflow.agent.pin.{p.Key}", (string?)p.Value)))
+            .Concat(Ordered(agent?.Cap).Select(static p => ($"workflow.agent.cap.{p.Key}", (string?)p.Value)))
+            .Append(("workflow.agent.pick", agent?.Pick));
+
+    private static IEnumerable<KeyValuePair<string, T>> Ordered<T>(IReadOnlyDictionary<string, T>? map) =>
+        (map ?? new Dictionary<string, T>(StringComparer.Ordinal)).OrderBy(static p => p.Key, StringComparer.Ordinal);
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [
