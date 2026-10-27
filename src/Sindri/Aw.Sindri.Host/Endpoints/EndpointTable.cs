@@ -154,6 +154,7 @@ internal static class EndpointTable
         _ = commands.MapCompleteStep();
         _ = commands.MapSessionHeartbeat();
         _ = commands.MapSessionExit();
+        _ = commands.MapRecordLimitHit();
         return commands;
     }
 }

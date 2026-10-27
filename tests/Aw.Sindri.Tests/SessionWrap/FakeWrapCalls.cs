@@ -13,6 +13,7 @@ internal sealed class FakeWrapCalls(TimeProvider clock) : IWrapCalls
     private readonly List<(DateTimeOffset At, SessionId? Session)> _beats = [];
     private readonly List<(int Code, SessionId? Session, string Proof)> _exits = [];
     private readonly List<LimitEnd?> _limits = [];
+    private readonly List<(LimitHitKind Kind, long Peak)> _hits = [];
 
     public IReadOnlyList<(DateTimeOffset At, SessionId? Session)> Beats { get { lock (_beats) { return [.. _beats]; } } }
 
@@ -20,6 +21,12 @@ internal sealed class FakeWrapCalls(TimeProvider clock) : IWrapCalls
 
     /// <summary>The limit each exit carried, in order (null for an ordinary exit).</summary>
     public IReadOnlyList<LimitEnd?> Limits { get { lock (_exits) { return [.. _limits]; } } }
+
+    /// <summary>The limit hits the wrap reported, in order.</summary>
+    public IReadOnlyList<(LimitHitKind Kind, long Peak)> Hits { get { lock (_hits) { return [.. _hits]; } } }
+
+    /// <summary>When true, <see cref="LimitHit"/> answers an error, as an unreachable control plane does.</summary>
+    public bool LimitHitUnavailable { get; set; }
 
     /// <summary>What <see cref="Suspended"/> answers.</summary>
     public bool IsSuspended { get; set; }
@@ -62,4 +69,19 @@ internal sealed class FakeWrapCalls(TimeProvider clock) : IWrapCalls
 
     public ValueTask<Result<bool>> Suspended(LaunchId launch, LaunchSecret proof, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<bool>>(SuspendedUnavailable ? SindriErrors.NotRunning.With("the control plane went away") : IsSuspended);
+
+    public ValueTask<Result<Unit>> LimitHit(LaunchId launch, LaunchSecret proof, LimitHitKind kind, long peak, CancellationToken cancellationToken)
+    {
+        if (LimitHitUnavailable)
+        {
+            return ValueTask.FromResult<Result<Unit>>(SindriErrors.NotRunning.With("the control plane went away"));
+        }
+
+        lock (_hits)
+        {
+            _hits.Add((kind, peak));
+        }
+
+        return ValueTask.FromResult(Answer());
+    }
 }
