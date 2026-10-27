@@ -23,4 +23,13 @@ public sealed class ModelOutcomesTests
     [InlineData(null, ModelOutcome.CheckFailed)]
     public void A_reason_reads_as_the_outcome_of_its_kind(string? reason, ModelOutcome expected) =>
         Expect.Equal(expected, ModelOutcomes.OfFailure(failureKind: null, reason));
+
+    [Theory]
+    [InlineData("refused", "tests-failed", ModelOutcome.Refused)]
+    [InlineData("check_failed", "invalid-result: x", ModelOutcome.CheckFailed)]
+    [InlineData("crashed", "tests-failed", ModelOutcome.Crashed)]
+    [InlineData("a-kind-from-the-future", "exit", ModelOutcome.Crashed)]
+    [InlineData("", "invalid-result: x", ModelOutcome.Refused)]
+    public void A_recorded_failure_kind_wins_over_the_reason_and_an_unknown_one_leaves_it_to_the_reason(string failureKind, string reason, ModelOutcome expected) =>
+        Expect.Equal(expected, ModelOutcomes.OfFailure(failureKind, reason));
 }

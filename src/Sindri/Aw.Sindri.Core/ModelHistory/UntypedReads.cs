@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Aw.Sindri.Core.ModelHistory;
 
 /// <summary>The two ledger fields the model-history fold reads as raw JSON until the typed records carry them, in one place.</summary>
@@ -8,10 +10,32 @@ internal static class UntypedReads
     /// <summary>The model a 'launch.started' payload names ('model'), or null when it names none (a run without a model has no history row).</summary>
     /// <param name="payload">The payload's JSON text.</param>
     /// <returns>The model id, or null.</returns>
-    internal static string? LaunchModel(string payload) => throw new NotSupportedException();
+    internal static string? LaunchModel(string payload) => Text(payload, "model");
 
     /// <summary>The failure kind a 'step.failed' row's detail names ('detail.failureKind'), or null when it names none.</summary>
     /// <param name="payload">The workflow row's JSON text.</param>
     /// <returns>The kind as written, or null.</returns>
-    internal static string? FailureKind(string payload) => throw new NotSupportedException();
+    internal static string? FailureKind(string payload) => Text(payload, "detail", "failureKind");
+
+    private static string? Text(string payload, params string[] path)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            var node = document.RootElement;
+            foreach (var name in path)
+            {
+                if (node.ValueKind != JsonValueKind.Object || !node.TryGetProperty(name, out node))
+                {
+                    return null;
+                }
+            }
+
+            return node is { ValueKind: JsonValueKind.String } && node.GetString() is { Length: > 0 } text ? text : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }

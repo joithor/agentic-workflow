@@ -47,6 +47,19 @@ public sealed class ModelHistoryProjectionTests
         Expect.Equal((expected == ModelOutcome.Refused ? 1 : 0, expected == ModelOutcome.CheckFailed ? 1 : 0, expected == ModelOutcome.Crashed ? 1 : 0), (row.Refused, row.CheckFailed, row.Crashed));
     }
 
+    [Theory]
+    [InlineData("refused", "tests-failed", ModelOutcome.Refused)]
+    [InlineData("check_failed", "invalid-result: x", ModelOutcome.CheckFailed)]
+    [InlineData("crashed", "tests-failed", ModelOutcome.Crashed)]
+    public async Task A_failure_kind_the_engine_recorded_is_used_as_it_is_whatever_the_reason_says(string kind, string reason, ModelOutcome expected)
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Failed("draft", ModelHistoryFolds.Run(1), reason, kind);
+
+        Expect.Sequence([expected], (await _v.Row("draft", Sonnet))!.Recent);
+    }
+
     [Fact]
     public async Task Each_model_and_each_state_has_its_own_row()
     {

@@ -68,8 +68,21 @@ internal static class ModelHistoryFolds
         v.Fold(EventTypes.WorkflowTransition, Payload(from, to, TriggerNames.StepCompleted, run, reason: null, started: false), A.FirstItemId);
 
     /// <summary>Folds a 'step.failed' in <paramref name="state"/> with <paramref name="reason"/>.</summary>
-    public static Task Failed(this ViewsHarness v, string state, string run, string reason) =>
-        v.Fold(EventTypes.WorkflowTransition, Payload(state, state, TriggerNames.StepFailed, run, reason, started: false), A.FirstItemId);
+    public static Task Failed(this ViewsHarness v, string state, string run, string reason, string? failureKind = null) =>
+        v.Fold(EventTypes.WorkflowTransition, Payload(state, state, TriggerNames.StepFailed, run, reason, started: false), A.FirstItemId, text => WithFailureKind(text, failureKind));
+
+    /// <summary>The payload text with the failure kind the engine records in the detail (the detail record has no such field yet); unchanged when <paramref name="failureKind"/> is null.</summary>
+    public static string WithFailureKind(string text, string? failureKind)
+    {
+        if (failureKind is null)
+        {
+            return text;
+        }
+
+        var node = JsonNode.Parse(text)!.AsObject();
+        node["detail"]!.AsObject()["failureKind"] = failureKind;
+        return node.ToJsonString();
+    }
 
     /// <summary>The mirrored workflow payload of a start or a transition.</summary>
     public static WorkflowEventPayload Payload(string state, string to, string trigger, string? run, string? reason, bool started)
