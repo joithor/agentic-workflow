@@ -237,6 +237,8 @@ S3 and S5 start together as two builders; S4 starts when S3 merges; S6 and S7 st
 
 ## 8. Open questions for the owner
 
+**Owner decision, 2026-10-27:** every recommendation below is taken as written. Q11 as corrected: the first pin in the profile list wins, and `sindri doctor` warns on overlapping pin globs.
+
 1. **Is 150 files the right cap?** It makes the 1,704-file package 18 features, the biggest 150. 100 gives more, smaller ones; 300 fewer. *Recommend 150, re-measured on the real map; move it if the median feature is under 10 files.*
 2. **Does the model or the path name a home feature?** The model names it; the key is the path, the fallback name too. *Recommend that: renaming never moves a feature.*
 3. **A flat directory with 400 files.** It can't be split by directory. *Recommend leaving it one over-cap feature and letting check (b) count it, rather than splitting by file-name letter, which is arbitrary and unstable.*
