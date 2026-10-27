@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Host.Commands.SessionWrap;
 

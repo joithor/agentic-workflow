@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands.SessionWrap;
 using Aw.Sindri.Infrastructure.Sandbox;
 using Aw.Sindri.Testing;

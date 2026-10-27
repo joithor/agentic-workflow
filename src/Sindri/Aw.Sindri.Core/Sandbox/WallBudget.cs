@@ -1,33 +1,32 @@
-namespace Aw.Sindri.Infrastructure.Sandbox;
+namespace Aw.Sindri.Core.Sandbox;
 
-#pragma warning disable MA0182 // the Host (assembly sindri) uses it, which this analyzer does not see
 /// <summary>
 /// The wall clock of one run (sandbox spec §3.3): time counts only while the run was not suspended. An interval between two samples counts
 /// when the run was unsuspended at both ends, so a park costs nothing and the tick that ends one does not count the park.
 /// </summary>
 /// <param name="wall">The unsuspended time allowed.</param>
-internal sealed class WallBudget(TimeSpan wall)
+public sealed class WallBudget(TimeSpan wall)
 {
     private DateTimeOffset? _lastAt;
     private bool _lastSuspended;
 
     /// <summary>Gets the wall.</summary>
-    internal TimeSpan Wall { get; } = wall;
+    public TimeSpan Wall { get; } = wall;
 
     /// <summary>Gets the unsuspended time used so far.</summary>
-    internal TimeSpan Used { get; private set; }
+    public TimeSpan Used { get; private set; }
 
     /// <summary>Gets the unsuspended time left (never below zero).</summary>
-    internal TimeSpan Left => Used >= Wall ? TimeSpan.Zero : Wall - Used;
+    public TimeSpan Left => Used >= Wall ? TimeSpan.Zero : Wall - Used;
 
     /// <summary>Gets a value indicating whether the wall is used up.</summary>
-    internal bool Exhausted => Used >= Wall;
+    public bool Exhausted => Used >= Wall;
 
     /// <summary>Records a sample.</summary>
     /// <param name="at">When the sample was taken.</param>
     /// <param name="suspended">Whether the run was suspended then.</param>
     /// <returns>True when this sample ends a suspension (the watchdog then moves the ceiling).</returns>
-    internal bool Tick(DateTimeOffset at, bool suspended)
+    public bool Tick(DateTimeOffset at, bool suspended)
     {
         var resumed = _lastAt is not null && _lastSuspended && !suspended;
         if (_lastAt is { } before && !_lastSuspended && !suspended && at > before)
@@ -40,4 +39,3 @@ internal sealed class WallBudget(TimeSpan wall)
         return resumed;
     }
 }
-#pragma warning restore MA0182

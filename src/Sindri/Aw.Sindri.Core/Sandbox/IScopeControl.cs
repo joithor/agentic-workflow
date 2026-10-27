@@ -1,7 +1,7 @@
-namespace Aw.Sindri.Infrastructure.Sandbox;
+namespace Aw.Sindri.Core.Sandbox;
 
 /// <summary>What the watchdog asks systemd about a session's scope (sandbox spec §3.3, §15 item 4): 'systemctl --user' over one unit.</summary>
-internal interface IScopeControl
+public interface IScopeControl
 {
     /// <summary>Reads the scope's cgroup path.</summary>
     /// <param name="unit">The scope unit.</param>

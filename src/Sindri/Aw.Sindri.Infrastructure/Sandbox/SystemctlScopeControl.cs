@@ -1,6 +1,7 @@
+using Aw.Sindri.Core.Sandbox;
+
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
-#pragma warning disable MA0182 // the Host (assembly sindri) uses it, which this analyzer does not see
 /// <summary>IScopeControl over 'systemctl --user' (sandbox spec §3.3), run through the sandbox's process runner: an argument list, a timeout, no shell.</summary>
 /// <param name="processes">Runs systemctl.</param>
 /// <param name="systemctl">The systemctl program.</param>
@@ -34,4 +35,3 @@ internal sealed class SystemctlScopeControl(ISandboxProcesses processes, string 
             },
             cancellationToken);
 }
-#pragma warning restore MA0182

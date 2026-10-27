@@ -1,4 +1,4 @@
-using Aw.Sindri.Infrastructure.Sandbox;
+using Aw.Sindri.Core.Sandbox;
 
 namespace Aw.Sindri.Tests.SessionWrap;
 

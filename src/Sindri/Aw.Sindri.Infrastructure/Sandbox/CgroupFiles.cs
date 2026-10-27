@@ -1,8 +1,8 @@
 using System.Globalization;
+using Aw.Sindri.Core.Sandbox;
 
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
-#pragma warning disable MA0182 // the Host (assembly sindri) uses it, which this analyzer does not see
 /// <summary>ICgroupStats over the cgroup v2 files under the cgroup root. A file that is not there (the scope ended) is a gone scope, never an exception.</summary>
 /// <param name="root">The cgroup root.</param>
 internal sealed class CgroupFiles(string root = "/sys/fs/cgroup") : ICgroupStats
@@ -56,4 +56,3 @@ internal sealed class CgroupFiles(string root = "/sys/fs/cgroup") : ICgroupStats
         return null;
     }
 }
-#pragma warning restore MA0182

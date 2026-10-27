@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Host.Commands.SessionWrap;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>The body of GET /sindri/launches/{launch}/suspended: '{suspended}'.</summary>
 /// <param name="Suspended">True while the launch's run is suspended.</param>

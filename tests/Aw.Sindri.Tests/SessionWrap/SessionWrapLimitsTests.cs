@@ -1,7 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Host.Commands.SessionWrap;
-using Aw.Sindri.Infrastructure.Sandbox;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
 

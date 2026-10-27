@@ -3,7 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 
-namespace Aw.Sindri.Host.Commands.SessionWrap;
+namespace Aw.Sindri.Host;
 
 /// <summary>
 /// The limits file the launcher writes beside the plan and 'session wrap --limits' reads (sandbox spec §3.3; SB-3a). A sandboxed agent must never run

@@ -1,5 +1,5 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Infrastructure.Sandbox;
+using Aw.Sindri.Core.Sandbox;
 
 namespace Aw.Sindri.Tests.Sandbox.Scope;
 
