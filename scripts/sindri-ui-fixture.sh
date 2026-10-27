@@ -32,6 +32,10 @@
 #   sindri-ui-fixture.sh line-run  (run after 'context up')
 #                                  start a workflow.line instance (the run page's recipe) on a new item in the context repo, as the
 #                                  owner; prints the item. The item has no frozen scope: no scoping packet was approved for it
+#   sindri-ui-fixture.sh hide-item <ITM-id>
+#                                  delete the item's row from <home>/views.db (view_items): the control plane stays up and the run
+#                                  still serves, but GET /sindri/items/<id> and /scope answer SND-ITEM-404 for it (gh-1046: the
+#                                  Context page's "Could not read the context of <item>"). Derived state: 'views rebuild' brings it back
 #   sindri-ui-fixture.sh incident start|stop
 #                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
 #   sindri-ui-fixture.sh context up|draft|down
@@ -372,6 +376,13 @@ line_run() {
     die "workflow start workflow.line on $item was refused: $out"
   fi
   printf '%s\n' "$item"
+}
+
+hide_item() {
+  need_sql
+  local db="$AW_SINDRI_HOME/views.db"
+  [ -f "$db" ] || die "no views at $db: run 'up' first"
+  sql_on "$db" "DELETE FROM view_items WHERE key = '$1'; SELECT changes() || ' row(s) removed';"
 }
 
 incident_file() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-incident-item"; }
@@ -754,6 +765,7 @@ case "$verb" in
       ask | end | back) [ "$#" -eq 3 ] || die "usage: sessions $2 <pid>" ;;
       *) die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
     esac ;;
+  hide-item) { [ "$#" -eq 2 ] && case "$2" in ITM-*[!0-9a-f]* | ITM-) false ;; ITM-*) true ;; *) false ;; esac; } || die "usage: hide-item <ITM-id>" ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac
