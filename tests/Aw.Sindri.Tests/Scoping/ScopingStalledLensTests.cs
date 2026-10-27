@@ -94,7 +94,7 @@ public sealed class ScopingStalledLensTests
         var response = Evidence(facts);
 
         Assert.Equal("converged", response.Outcome);
-        Assert.Contains("scopePacket", response.Outputs.Keys, StringComparer.Ordinal);
+        Assert.Contains("a lens stayed degraded", response.Outputs["recommendation"], StringComparison.Ordinal);
         Assert.Contains(response.Findings, static f => f.Rule == Cov2 && f.Item == "history");
     }
 
