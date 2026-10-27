@@ -23,8 +23,8 @@ internal sealed class ApproveDecisionService(IDecisionLog decisions, TimeProvide
         }
         catch (InvalidDataException exception)
         {
-            // A row the mapper can't read is the row's problem, not a crash (the same answer as 'why').
-            return JudgeErrors.UnreadableDecision.With($"decision {request.DecisionId.Value} can't be read: {exception.Message.ReplaceLineEndings(" ")}");
+            // A row the mapper can't read is the row's problem, not a crash (the same answer as 'why'); the change was already made, so say so.
+            return JudgeErrors.UnreadableDecision.With($"decision {request.DecisionId.Value} was approved, but it can't be read: {exception.Message.ReplaceLineEndings(" ")}");
         }
     }
 }
