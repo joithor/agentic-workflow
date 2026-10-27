@@ -43,7 +43,29 @@ internal static partial class DeskBlocks
     /// <param name="facts">The facts.</param>
     /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
     /// <param name="gapCap">The running recipe's loops.gapsearch.cap; the shipped default where no recipe runs the helper (the desk).</param>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds, int gapCap = ScopeRules.DefaultGapRounds) => block switch
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds, int gapCap = ScopeRules.DefaultGapRounds)
+    {
+        var result = RunBlock(block, facts, challengeCap, gapCap);
+        return result.IsError ? result : AppendOnly(block, facts, result.Value);
+    }
+
+    /// <summary>A Step's output may add to 'fact:roundLog' and never drop or rewrite an earlier entry (#1119): the output is refused, nothing is stored.</summary>
+    private static Result<ScopingDeskResponse> AppendOnly(string block, ScopeFacts facts, ScopingDeskResponse response)
+    {
+        if (!response.Outputs.TryGetValue(RoundLog.Key, out var written))
+        {
+            return response;
+        }
+
+        if (RoundLog.Refusal(facts[RoundLog.Key], JsonNode.Parse(written)) is { } refusal)
+        {
+            return SindriErrors.InvalidInput.With($"{block}: {refusal}");
+        }
+
+        return response;
+    }
+
+    private static Result<ScopingDeskResponse> RunBlock(string block, ScopeFacts facts, int challengeCap, int gapCap) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
@@ -66,6 +88,9 @@ internal static partial class DeskBlocks
 
     private static Dictionary<string, string> Outputs(params (string Key, JsonNode Value)[] facts) =>
         facts.ToDictionary(static f => f.Key, static f => ScopeJson.Write(f.Value), StringComparer.Ordinal);
+
+    /// <summary>The 'fact:roundDigest' output for a log, set against the map and the answers the facts hold (#1119).</summary>
+    private static (string Key, JsonNode Value) Digest(ScopeFacts facts, JsonArray log) => ("roundDigest", RoundLog.Digest(log, facts["scopeMap"], facts["answerLog"]));
 
     private static JsonArray FindingsFact(IEnumerable<ScopeFinding> findings)
     {
@@ -111,8 +136,9 @@ internal static partial class DeskBlocks
         }
 
         var round = Round(facts, report);
+        var checkLog = RoundLog.Append(facts, "check", "step.scope.check", report.Findings, ScopeJson.Int(round, "round"));
         var outputs = report.Outcome is ScopeOutcome.Gaps or ScopeOutcome.Regather
-            ? Outputs(("findings", FindingsFact(report.Findings)), (RoundLog.Key, RoundLog.Append(facts, "check", "step.scope.check", report.Findings, ScopeJson.Int(round, "round"))))
+            ? Outputs(("findings", FindingsFact(report.Findings)), (RoundLog.Key, checkLog), Digest(facts, checkLog))
             : [];
         return Reply("step.scope.check", report.Outcome == ScopeOutcome.Pass ? "pass" : report.Outcome == ScopeOutcome.Gaps ? "gaps" : "regather", outputs,
             [new ScopingDeskFile("rounds.jsonl", ScopeJson.Write(round) + "\n", Append: true)], report);
@@ -196,8 +222,9 @@ internal static partial class DeskBlocks
         ScopeJson.Append(rounds, round);
         var findings = surfaces.Select(s => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(s, "title"), $"the challenger found a surface the map misses: {ScopeJson.Str(s, "title")}", "Add it to the map, or exclude it with a reason, then run the challenger again.", ScopeSeverity.Fail))
             .Concat(behaviours.Select(b => new ScopeFinding(ScopeRules.Chal1, ScopeJson.Str(b, "text"), $"the challenger found a behaviour the map misses: {ScopeJson.Str(b, "text")} (question: {ScopeJson.Str(b, "question")})", "Add an acceptance item or an open question for it, then run the challenger again.", ScopeSeverity.Fail))).ToList();
+        var logged = RoundLog.Append(facts, "challenge-log", "step.scope.challenge-log", findings);
         var outputs = found
-            ? Outputs(("challenge", log), ("findings", FindingsFact(findings)), (RoundLog.Key, RoundLog.Append(facts, "challenge-log", "step.scope.challenge-log", findings)))
+            ? Outputs(("challenge", log), ("findings", FindingsFact(findings)), (RoundLog.Key, logged), Digest(facts, logged))
             : Outputs(("challenge", log));
         return Reply("step.scope.challenge-log", verdict ?? string.Empty, outputs, []);
     }

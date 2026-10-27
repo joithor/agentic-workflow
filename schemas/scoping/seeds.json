@@ -23,5 +23,14 @@
     "rounds": []
   },
   "fact:gapAnchors": [],
-  "fact:roundLog": []
+  "fact:roundLog": [],
+  "fact:roundDigest": {
+    "open": [],
+    "closed": [],
+    "counts": {
+      "byRule": {},
+      "byKind": {}
+    },
+    "decisions": []
+  }
 }
