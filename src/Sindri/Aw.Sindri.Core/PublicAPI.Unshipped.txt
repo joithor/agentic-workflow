@@ -20141,3 +20141,8 @@ static Aw.Sindri.Core.Launch.ModelSelection.operator !=(Aw.Sindri.Core.Launch.Mo
 static Aw.Sindri.Core.Launch.ModelSelection.operator ==(Aw.Sindri.Core.Launch.ModelSelection? left, Aw.Sindri.Core.Launch.ModelSelection? right) -> bool
 static Aw.Sindri.Core.Launch.RankedModel.operator !=(Aw.Sindri.Core.Launch.RankedModel? left, Aw.Sindri.Core.Launch.RankedModel? right) -> bool
 static Aw.Sindri.Core.Launch.RankedModel.operator ==(Aw.Sindri.Core.Launch.RankedModel? left, Aw.Sindri.Core.Launch.RankedModel? right) -> bool
+Aw.Sindri.Core.Launch.TargetFacts.Models.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.ModelFacts!>?
+Aw.Sindri.Core.Launch.TargetFacts.Models.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.Models.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.RankedModel!>?
+Aw.Sindri.Core.Launch.LaunchShowEntry.Models.init -> void
+static readonly Aw.Sindri.Core.SindriErrors.ModelListUnavailable -> Aw.Kernel.ErrorDefinition!
