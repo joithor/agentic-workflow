@@ -97,7 +97,7 @@ public sealed class SessionExitTests
 
         Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
         var payload = _s.Views.Slice.Events.Payload<SessionEnded>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
-        Expect.Equal([(A.FirstLaunchId, 0)], _sampler.Flushed);
+        Assert.Equal([(A.FirstLaunchId, 0)], _sampler.Flushed);
         Expect.Equal((SessionEndReason.Limit, LimitKind.Memory, 2_000_000_000L, 2_200_000_000L, peaks, null), (payload.Reason, payload.Kind, payload.Limit, payload.Peak, payload.Peaks, payload.ExitCode));
     }
 
@@ -108,7 +108,7 @@ public sealed class SessionExitTests
 
         _ = await Service().Handle(A.SessionExitRequest().Build(), Token);
 
-        Expect.Equal([(A.FirstLaunchId, 0)], _sampler.Flushed);   // the flush ran while the ledger held no session.ended yet
+        Assert.Equal([(A.FirstLaunchId, 0)], _sampler.Flushed);   // the flush ran while the ledger held no session.ended yet
     }
 
     [Fact]
