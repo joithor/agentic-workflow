@@ -11064,11 +11064,9 @@ Aw.Sindri.Core.Launches.ILaunchFiles.Launches() -> System.Collections.Generic.IR
 Aw.Sindri.Core.Launches.ILostSessions.SweepFiles(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
 Aw.Sindri.Core.Profile.WorkflowAgentSettings
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowAgentSettings!
-Aw.Sindri.Core.Profile.WorkflowAgentSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Target) -> void
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(Aw.Sindri.Core.Profile.WorkflowAgentSettings? other) -> bool
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.get -> Aw.Sindri.Core.Launch.AgentId?
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.init -> void
-Aw.Sindri.Core.Profile.WorkflowAgentSettings.WorkflowAgentSettings(Aw.Sindri.Core.Launch.AgentId? Target = null) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Agent.get -> Aw.Sindri.Core.Profile.WorkflowAgentSettings?
 Aw.Sindri.Core.Profile.WorkflowSettings.Agent.init -> void
 override Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(object? obj) -> bool
@@ -20035,6 +20033,58 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.Deconstruct(out string! 
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.RewindRequested(string! Actor, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, string! To, string? EndedLaunch = null) -> void
+Aw.Sindri.Core.Profile.AgentModels
+Aw.Sindri.Core.Profile.AgentModels.<Clone>$() -> Aw.Sindri.Core.Profile.AgentModels!
+Aw.Sindri.Core.Profile.AgentModels.AgentModels(System.Collections.Generic.IReadOnlyList<string!>! List, string! Default) -> void
+Aw.Sindri.Core.Profile.AgentModels.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! List, out string! Default) -> void
+Aw.Sindri.Core.Profile.AgentModels.Default.get -> string!
+Aw.Sindri.Core.Profile.AgentModels.Default.init -> void
+Aw.Sindri.Core.Profile.AgentModels.Equals(Aw.Sindri.Core.Profile.AgentModels? other) -> bool
+Aw.Sindri.Core.Profile.AgentModels.List.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Profile.AgentModels.List.init -> void
+Aw.Sindri.Core.Profile.IRecipeStateCatalog
+Aw.Sindri.Core.Profile.IRecipeStateCatalog.All(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RecipeStateRef!>!>!>
+Aw.Sindri.Core.Profile.ModelKeyRules
+Aw.Sindri.Core.Profile.RecipeStateRef
+Aw.Sindri.Core.Profile.RecipeStateRef.<Clone>$() -> Aw.Sindri.Core.Profile.RecipeStateRef!
+Aw.Sindri.Core.Profile.RecipeStateRef.Deconstruct(out string! Recipe, out string! State) -> void
+Aw.Sindri.Core.Profile.RecipeStateRef.Equals(Aw.Sindri.Core.Profile.RecipeStateRef? other) -> bool
+Aw.Sindri.Core.Profile.RecipeStateRef.Recipe.get -> string!
+Aw.Sindri.Core.Profile.RecipeStateRef.Recipe.init -> void
+Aw.Sindri.Core.Profile.RecipeStateRef.RecipeStateRef(string! Recipe, string! State) -> void
+Aw.Sindri.Core.Profile.RecipeStateRef.State.get -> string!
+Aw.Sindri.Core.Profile.RecipeStateRef.State.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Target, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentModels!>? Models, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Pin, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Cap, out string? Pick) -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Models.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentModels!>?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Models.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.WorkflowAgentSettings(Aw.Sindri.Core.Launch.AgentId? Target = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentModels!>? Models = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Pin = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Cap = null, string? Pick = null) -> void
+override Aw.Sindri.Core.Profile.AgentModels.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.AgentModels.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.AgentModels.ToString() -> string!
+override Aw.Sindri.Core.Profile.RecipeStateRef.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RecipeStateRef.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RecipeStateRef.ToString() -> string!
+static Aw.Sindri.Core.Profile.AgentModels.operator !=(Aw.Sindri.Core.Profile.AgentModels? left, Aw.Sindri.Core.Profile.AgentModels? right) -> bool
+static Aw.Sindri.Core.Profile.AgentModels.operator ==(Aw.Sindri.Core.Profile.AgentModels? left, Aw.Sindri.Core.Profile.AgentModels? right) -> bool
+static Aw.Sindri.Core.Profile.ModelKeyRules.Matches(Aw.Sindri.Core.Profile.WorkflowAgentSettings? agent, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RecipeStateRef!>! states) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.ModelKeyRules.Shape(Aw.Sindri.Core.Profile.WorkflowAgentSettings? agent) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Profile.RecipeStateRef.operator !=(Aw.Sindri.Core.Profile.RecipeStateRef? left, Aw.Sindri.Core.Profile.RecipeStateRef? right) -> bool
+static Aw.Sindri.Core.Profile.RecipeStateRef.operator ==(Aw.Sindri.Core.Profile.RecipeStateRef? left, Aw.Sindri.Core.Profile.RecipeStateRef? right) -> bool
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Cap.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Cap.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Pick.get -> string?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Pick.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Pin.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Pin.init -> void
+const Aw.Sindri.Core.Profile.WorkflowAgentSettings.Off = "off" -> string!
+const Aw.Sindri.Core.Profile.WorkflowAgentSettings.On = "on" -> string!
+static Aw.Sindri.Core.Profile.ModelKeyRules.Check(Aw.Sindri.Core.Profile.WorkflowAgentSettings? agent, System.Collections.Generic.IReadOnlyCollection<Aw.Sindri.Core.Launch.AgentId>? agentIds, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RecipeStateRef!>? states) -> Aw.Kernel.Error?
+static readonly Aw.Sindri.Core.SindriErrors.ModelKeyInvalid -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Profile.ModelKeyChecks
+Aw.Sindri.Core.Profile.ModelKeyChecks.ModelKeyChecks(Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Profile.IRecipeStateCatalog? states = null) -> void
+Aw.Sindri.Core.Profile.ModelKeyChecks.Models(Aw.Sindri.Core.Profile.SindriProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
+Aw.Sindri.Core.Profile.ModelKeyChecks.PinMatches(Aw.Sindri.Core.Profile.SindriProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>
+static Aw.Sindri.Core.Profile.ModelKeyRules.PinFor(Aw.Sindri.Core.Profile.WorkflowAgentSettings? agent, Aw.Sindri.Core.Launch.AgentId agentId, string! state) -> string?
 Aw.Sindri.Core.ModelHistory.IModelHistory
 Aw.Sindri.Core.ModelHistory.IModelHistory.For(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, int version, string! state, System.Collections.Generic.IReadOnlyList<string!>! models, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.ModelHistory.ModelHistoryRow!>!>!>
 Aw.Sindri.Core.ModelHistory.ModelHistoryKeys

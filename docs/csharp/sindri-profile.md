@@ -56,7 +56,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `eventHold` | duration | no | `24h` | How long a buffered event signal waits for its wait before it is dropped with `workflow.expired` (§5.4) |
 | `effects` | string[] (`effect.*` block ids) | no | none | The effect allowlist (§5.7, RCP-EFFECT-001): the effects a recipe may dispatch. Absent: RCP-EFFECT-001 is skipped and every recipe effect is refused at dispatch (SND-WF-011). An entry that isn't an `effect.*` id is refused before approval |
 | `dispatchDelay` | duration (`5s` to `24h`, unit `s`, `m` or `h`) | no | `10s` | The undo window before each effect's activity runs (§5.7); the dev profile sets `60s` |
-| `agent` | object (`target`) | no | none | The agent runtime (engine spec §6.5, launcher L-14). `agent.target` is the agent a Step whose runtime is `agent` launches: any `AgentId` (pattern `^[a-z][a-z0-9-]{1,31}$`), checked by pattern only, never against the catalog (the catalog is per box). Read from the approved profile when an instance starts. Absent, or with no launcher registered: there is no agent runtime, a deskCapable Step runs at the desk and any other parks with `SND-WF-010`. The per-Step permission mode comes from the Step's policy, so the spec's `workflow.agent.permissionMode` is dropped |
+| `agent` | object (`target`, `models`, `pin`, `cap`, `pick`) | no | none | The agent runtime (engine spec §6.5, launcher L-14). `agent.target` is the agent a Step whose runtime is `agent` launches: any `AgentId` (pattern `^[a-z][a-z0-9-]{1,31}$`), checked by pattern only, never against the catalog (the catalog is per box). Read from the approved profile when an instance starts. Absent, or with no launcher registered: there is no agent runtime, a deskCapable Step runs at the desk and any other parks with `SND-WF-010`. The per-Step permission mode comes from the Step's policy, so the spec's `workflow.agent.permissionMode` is dropped. The model keys are under `workflow.agent` below |
 | `judge` | object (`providers`) | no | none | Which providers a Judge Step (`step.judge.choose`) may ask (DT-J plan Q8). `judge.providers` is a list of `jev`, `claude-cli`, `codex-cli`, `cursor-cli`, `rules`; absent: `claude-cli`, `codex-cli`, `cursor-cli`, `rules`. `jev` runs only when listed, so it is opt-in. `rules` is always kept, last. A recipe's own `providers` list only narrows this one and never adds `jev`. A name that is not one of the five is refused before approval (`workflow.judge.providers[i]`). A repo may set its own list under `repos[].workflow.judge.providers`; it wins over the box's |
 | `forge` | object | no | none | The forge port's settings: `adapter`, `hosts` and `credential` (see `workflow.forge` below) |
 | `pr` | object | no | none | The PR babysitter's settings (see `workflow.pr` below) |
@@ -72,6 +72,21 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `steps` | object (`longMax`) | no | none | The longest a block Step may declare (line spec LN-WF7) |
 | `docs` | object (`globs`, `sync`) | no | none | Where docs sync may write (line spec §7.6) and whether it runs (`workflow.docs.sync`, below) |
 | `scoping` | object (`historyWindow`) | no | none | The scoping recipe's keys (see `workflow.scoping.historyWindow` below) |
+
+### `workflow.agent` model keys
+
+Which model an agent step runs on (model-pick spec `2026-10-26-sindri-model-pick-design.md` §8, phase M-1). Each key is a re-approval, so `profile approve` names a change to it. A model id is any plain text matching `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$` (a dot is allowed, for `gpt-5.1`), checked by that pattern only and never against a catalog, like the agent keys above. The other ids are checked at `profile validate` and `profile approve` against this box: an agent id not in the launcher catalog, or a `pin` state that no embedded or approved recipe has, is `SND-MODEL-001` and names the nearest id ("no state `question` in any recipe; did you mean `questions`?").
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `agent.models` | object: agent id to `{ list, default }` | no | none | Overrides discovery: the models of that agent, cheapest first. A new Claude Code alias goes here |
+| `agent.models.<id>.list` | string[] | yes, with `models.<id>` | none | The model ids, cheapest first; at least one |
+| `agent.models.<id>.default` | model id | yes, with `models.<id>` | none | The model a step runs on when nothing picks one; must be in `list` (`SND-MODEL-001`) |
+| `agent.pin` | object: agent id, or `agent/stateId`, to a model id | no | none | Every step of that agent (or of that state) runs on that model, with no Jev call |
+| `agent.cap` | object: agent id to a model id | no | none | No pick goes above this model |
+| `agent.pick` | `on` or `off` | no | absent = `off` | `off` is the privacy switch and the old behaviour: nothing is picked and nothing is sent to Jev. `on` takes effect only once the owner has approved a profile whose summary showed the Jev notice (spec §8 "Consent") |
+
+`sindri profile validate` prints, for each `pin` and `cap`, what it matches, for example `pin claude-code/questions = haiku: matches workflow.scoping state questions, workflow.design state questions`.
 
 ### The line's keys (`workflow.packs`, `.line`, `.plan`, `.prove`, `.build`, `.ship`, `.design`, `.review`, `.steps`, `.docs`)
 
