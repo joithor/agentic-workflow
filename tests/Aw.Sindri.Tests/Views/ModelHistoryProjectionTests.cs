@@ -127,6 +127,49 @@ public sealed class ModelHistoryProjectionTests
     }
 
     [Fact]
+    public async Task Re_entering_a_state_going_forward_charges_nobody_a_redraft()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Launched(ModelHistoryFolds.Run(2), Sonnet, "check");
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(2));   // back: the draft is charged
+        await _v.Launched(ModelHistoryFolds.Run(3), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(3));   // forward again: the check's work was not rejected
+
+        var draft = (await _v.Row("draft", Opus))!;
+        var check = (await _v.Row("check", Sonnet))!;
+
+        Expect.Equal((2, 1), (draft.Runs, draft.RedraftCaused));
+        Expect.Sequence([ModelOutcome.Redraft, ModelOutcome.Ok], draft.Recent);
+        Expect.Equal((1, 0), (check.Runs, check.RedraftCaused));
+        Expect.Sequence([ModelOutcome.Ok], check.Recent);
+    }
+
+    [Fact]
+    public async Task Two_rounds_of_gaps_charge_each_draft_once_and_the_check_never()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+        await _v.Launched(ModelHistoryFolds.Run(2), Sonnet, "check");
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(2));
+        await _v.Launched(ModelHistoryFolds.Run(3), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(3));
+        await _v.Launched(ModelHistoryFolds.Run(4), Sonnet, "check");
+        await _v.Completed("check", "draft", ModelHistoryFolds.Run(4));
+        await _v.Launched(ModelHistoryFolds.Run(5), Opus);
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(5));
+
+        var draft = (await _v.Row("draft", Opus))!;
+        var check = (await _v.Row("check", Sonnet))!;
+
+        Expect.Equal((3, 2), (draft.Runs, draft.RedraftCaused));
+        Expect.Sequence([ModelOutcome.Redraft, ModelOutcome.Redraft, ModelOutcome.Ok], draft.Recent);
+        Expect.Equal((2, 0), (check.Runs, check.RedraftCaused));
+    }
+
+    [Fact]
     public async Task Moving_forward_or_staying_in_a_state_charges_no_redraft()
     {
         await _v.Begin();

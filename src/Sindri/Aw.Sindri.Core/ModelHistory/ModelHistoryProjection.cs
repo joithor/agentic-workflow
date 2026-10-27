@@ -55,9 +55,10 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             return started.Error;
         }
 
-        if (started.Value.Detail?.Delta.RecipeHash is not { } hash)
+        var ordered = await rows.Put(ViewNames.ModelRuns, ModelHistoryKeys.Order(started.Value.Instance), new StateOrder([started.Value.To]), cancellationToken).ConfigureAwait(false);
+        if (ordered.IsError || started.Value.Detail?.Delta.RecipeHash is not { } hash)
         {
-            return Unit.Value;
+            return ordered;
         }
 
         var scope = await rows.Get<RunScope>(ViewNames.ModelRuns, ModelHistoryKeys.Recipe(hash), cancellationToken).ConfigureAwait(false);
@@ -93,6 +94,12 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             return payload.Error;
         }
 
+        var back = await Entered(payload.Value, rows, cancellationToken).ConfigureAwait(false);
+        if (back.IsError)
+        {
+            return back.Error;
+        }
+
         var completed = string.Equals(payload.Value.Trigger, TriggerNames.StepCompleted, StringComparison.Ordinal);
         if (!completed && !string.Equals(payload.Value.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal))
         {
@@ -105,7 +112,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             return scope.IsError ? scope.Error : Unit.Value;
         }
 
-        var report = new Report(payload.Value, scope.Value, recorded.Envelope.OccurredAt);
+        var report = new Report(payload.Value, scope.Value, recorded.Envelope.OccurredAt, back.Value);
         return completed
             ? await Completed(report, rows, cancellationToken).ConfigureAwait(false)
             : await Failed(report, UntypedReads.FailureKind(recorded.Envelope.Payload), rows, cancellationToken).ConfigureAwait(false);
@@ -113,8 +120,8 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 
     private static async ValueTask<Result<Unit>> Completed(Report report, IViewRows rows, CancellationToken cancellationToken)
     {
-        var (payload, scope, at) = report;
-        if (!string.Equals(payload.From, payload.To, StringComparison.Ordinal))
+        var (payload, scope, at, _) = report;
+        if (report.Back)
         {
             var redrafted = await Redraft(report, rows, cancellationToken).ConfigureAwait(false);
             if (redrafted.IsError)
@@ -137,7 +144,7 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 
     private static async ValueTask<Result<Unit>> Failed(Report report, string? failureKind, IViewRows rows, CancellationToken cancellationToken)
     {
-        var (payload, scope, at) = report;
+        var (payload, scope, at, _) = report;
         var model = await ModelOf(payload, rows, cancellationToken).ConfigureAwait(false);
         if (model.IsError || model.Value is null)
         {
@@ -146,6 +153,30 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 
         var outcome = ModelOutcomes.OfFailure(failureKind, payload.Detail?.Reason);
         return await Change(rows, new Slot(scope, payload.From, model.Value.Model), row => row.After(outcome, at), cancellationToken).ConfigureAwait(false);
+    }
+
+    // Records that the transition entered its To state, and says whether it went back: To was first entered before From. The order is per instance, so this is not tied to any recipe.
+    private static async ValueTask<Result<bool>> Entered(WorkflowEventPayload payload, IViewRows rows, CancellationToken cancellationToken)
+    {
+        var key = ModelHistoryKeys.Order(payload.Instance);
+        var current = await rows.Get<StateOrder>(ViewNames.ModelRuns, key, cancellationToken).ConfigureAwait(false);
+        if (current.IsError)
+        {
+            return current.Error;
+        }
+
+        var order = current.Value?.Entered ?? [];
+        var to = order.ToList().IndexOf(payload.To);
+        var from = order.ToList().IndexOf(payload.From);
+        var back = to >= 0 && from >= 0 && to < from;
+        List<string> next = [.. order];
+        foreach (var state in new[] { payload.From, payload.To }.Where(state => !next.Contains(state, StringComparer.Ordinal)))
+        {
+            next.Add(state);
+        }
+
+        var put = next.Count == order.Count ? Unit.Value : await rows.Put(ViewNames.ModelRuns, key, new StateOrder(next), cancellationToken).ConfigureAwait(false);
+        return put.IsError ? put.Error : back;
     }
 
     // A transition back into a state whose run completed: that run's model made what the instance is now redoing. Charged once per completed run.
@@ -185,8 +216,8 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             : await rows.Put(ViewNames.ModelHistory, key, change(current.Value ?? ModelHistoryRow.Empty(scope.Recipe, scope.Version, state, model)), cancellationToken).ConfigureAwait(false);
     }
 
-    // A Step report: the mirrored row, the recipe its instance runs, and when it was recorded.
-    private sealed record Report(WorkflowEventPayload Payload, RunScope Scope, DateTimeOffset At);
+    // A Step report: the mirrored row, the recipe its instance runs, when it was recorded, and whether the transition went back to an earlier state.
+    private sealed record Report(WorkflowEventPayload Payload, RunScope Scope, DateTimeOffset At, bool Back);
 
     // One row of the model-history view: a model at a state of a recipe version.
     private readonly record struct Slot(RunScope Scope, string State, string Model);

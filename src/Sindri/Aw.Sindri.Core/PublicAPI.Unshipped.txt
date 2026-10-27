@@ -19576,3 +19576,15 @@ static Aw.Sindri.Core.ModelHistory.RunModel.operator !=(Aw.Sindri.Core.ModelHist
 static Aw.Sindri.Core.ModelHistory.RunModel.operator ==(Aw.Sindri.Core.ModelHistory.RunModel? left, Aw.Sindri.Core.ModelHistory.RunModel? right) -> bool
 static Aw.Sindri.Core.ModelHistory.RunScope.operator !=(Aw.Sindri.Core.ModelHistory.RunScope? left, Aw.Sindri.Core.ModelHistory.RunScope? right) -> bool
 static Aw.Sindri.Core.ModelHistory.RunScope.operator ==(Aw.Sindri.Core.ModelHistory.RunScope? left, Aw.Sindri.Core.ModelHistory.RunScope? right) -> bool
+Aw.Sindri.Core.ModelHistory.StateOrder
+Aw.Sindri.Core.ModelHistory.StateOrder.<Clone>$() -> Aw.Sindri.Core.ModelHistory.StateOrder!
+Aw.Sindri.Core.ModelHistory.StateOrder.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Entered) -> void
+Aw.Sindri.Core.ModelHistory.StateOrder.Entered.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.ModelHistory.StateOrder.Entered.init -> void
+Aw.Sindri.Core.ModelHistory.StateOrder.Equals(Aw.Sindri.Core.ModelHistory.StateOrder? other) -> bool
+Aw.Sindri.Core.ModelHistory.StateOrder.StateOrder(System.Collections.Generic.IReadOnlyList<string!>! Entered) -> void
+override Aw.Sindri.Core.ModelHistory.StateOrder.Equals(object? obj) -> bool
+override Aw.Sindri.Core.ModelHistory.StateOrder.GetHashCode() -> int
+override Aw.Sindri.Core.ModelHistory.StateOrder.ToString() -> string!
+static Aw.Sindri.Core.ModelHistory.StateOrder.operator !=(Aw.Sindri.Core.ModelHistory.StateOrder? left, Aw.Sindri.Core.ModelHistory.StateOrder? right) -> bool
+static Aw.Sindri.Core.ModelHistory.StateOrder.operator ==(Aw.Sindri.Core.ModelHistory.StateOrder? left, Aw.Sindri.Core.ModelHistory.StateOrder? right) -> bool

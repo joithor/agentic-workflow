@@ -24,7 +24,7 @@ public sealed class ViewRowShapeTests
     [
         typeof(ServiceRow), typeof(ProfileRow), typeof(ItemRow), typeof(AliasRow), typeof(TimelineRow), typeof(RequestRow),
         typeof(HumanDecisionRow), typeof(NeedsYouRowRecord), typeof(JobRow), typeof(LaunchRow), typeof(CodeIndexRow), typeof(RecipeStatsRow),
-        typeof(ModelHistoryRow), typeof(RunScope), typeof(RunModel),
+        typeof(ModelHistoryRow), typeof(RunScope), typeof(RunModel), typeof(StateOrder),
     ];
 
     [Fact, Trait("Lane", "unit")]

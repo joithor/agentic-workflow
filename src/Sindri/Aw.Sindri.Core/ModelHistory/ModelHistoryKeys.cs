@@ -21,5 +21,7 @@ public static class ModelHistoryKeys
 
     internal static string Launch(string launch) => "launch/" + launch;
 
+    internal static string Order(string instance) => "order/" + instance;
+
     internal static string Completed(string instance, string state) => "completed/" + instance + "/" + state;
 }
