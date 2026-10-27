@@ -242,16 +242,12 @@ public sealed partial class SandboxBox : IDisposable
         foreach (var name in new[] { "judge", "sindri" })
         {
             var path = State + "/bin-r1b/" + name;
-            File.WriteAllText(
+            _ = ExecutableScript.Write(
                 path,
-                "#!/usr/bin/env bash\n"
-                + $"cur=\"$(cd '{State}/bin/cs/current' 2> /dev/null && pwd -P)\" || {{ echo \"{name}: no C# build is linked\" >&2; exit 1; }}\n"
+                $"cur=\"$(cd '{State}/bin/cs/current' 2> /dev/null && pwd -P)\" || {{ echo \"{name}: no C# build is linked\" >&2; exit 1; }}\n"
                 + (name == "sindri" ? "export AW_SINDRI_JUDGE=\"${AW_SINDRI_JUDGE:-$cur/judge}\"\n" : string.Empty)
-                + $"exec \"$cur/{name}\" \"$@\"\n");
-            if (!OperatingSystem.IsWindows())
-            {
-                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-            }
+                + $"exec \"$cur/{name}\" \"$@\"\n",
+                "/usr/bin/env bash");
         }
     }
 
