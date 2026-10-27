@@ -1,4 +1,7 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
@@ -15,10 +18,11 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 /// <param name="Wall">The unsuspended run time allowed, grace included; null for an attended session (no wall).</param>
 /// <param name="WallGrace">The grace already inside <paramref name="Wall"/>.</param>
 /// <param name="ParkMax">The longest single suspension the scope's loose ceiling allows for.</param>
-internal sealed record ScopeLimits(long MemoryMaxBytes, long MemoryHighBytes, long SliceTotalBytes, int CpuQuotaPercent, int CpuWeight, int TasksMax,
+internal sealed partial record ScopeLimits(long MemoryMaxBytes, long MemoryHighBytes, long SliceTotalBytes, int CpuQuotaPercent, int CpuWeight, int TasksMax,
     TimeSpan? Wall, TimeSpan WallGrace, TimeSpan ParkMax)
 {
     internal const long Gib = 1024L * 1024 * 1024;
+    private static readonly TimeSpan _noTimeoutWall = TimeSpan.FromHours(4);
 
     /// <summary>Resolves the limits for one launch.</summary>
     /// <param name="profile">The profile's 'sandbox.limits', or null.</param>
@@ -27,6 +31,58 @@ internal sealed record ScopeLimits(long MemoryMaxBytes, long MemoryHighBytes, lo
     /// <param name="longMax">The longest wall any Step gets before the grace.</param>
     /// <param name="attended">True for a session the owner opened: no wall.</param>
     /// <returns>The limits.</returns>
-    internal static ScopeLimits From(SandboxLimits? profile, BoxFacts box, TimeSpan? stepTimeout, TimeSpan longMax, bool attended) =>
-        throw new NotSupportedException();
+    internal static ScopeLimits From(SandboxLimits? profile, BoxFacts box, TimeSpan? stepTimeout, TimeSpan longMax, bool attended)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+        var p = profile ?? new SandboxLimits();
+        var max = MemoryMax(Or(p.Memory, SandboxDefaults.Memory), box.RamBytes);
+        var grace = Duration(Or(p.WallGrace, SandboxDefaults.WallGrace));
+        return new ScopeLimits(
+            max,
+            max / 10 * 8,
+            Total(Or(p.Total, SandboxDefaults.Total), box.RamBytes),
+            Math.Max(1, box.Cores) * Percent(Or(p.Cpu, SandboxDefaults.Cpu)),
+            50,
+            p.Tasks ?? SandboxDefaults.Tasks,
+            WallFor(stepTimeout, longMax, attended, grace),
+            grace,
+            Duration(Or(p.ParkMax, SandboxDefaults.ParkMax)));
+    }
+
+    private static string Or(string? value, string fallback) => value ?? fallback;
+
+    private static TimeSpan? WallFor(TimeSpan? stepTimeout, TimeSpan longMax, bool attended, TimeSpan grace) =>
+        attended ? null : Min(stepTimeout ?? _noTimeoutWall, longMax) + grace;
+
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+
+    private static TimeSpan Duration(string text) => RecipeDuration.TryFrom(text, out var d) ? d.Span : throw new ArgumentException($"not a duration: {text}", nameof(text));
+
+    private static int Percent(string text) => int.Parse(text.AsSpan(0, text.Length - 1), NumberStyles.None, CultureInfo.InvariantCulture);
+
+    private static long MemoryMax(string text, long ram) =>
+        string.Equals(text, "auto", StringComparison.Ordinal) ? Math.Min(ram / 5, 12 * Gib) : Bytes(text);
+
+    private static long Total(string text, long ram) => text.EndsWith('%') ? ram / 100 * Percent(text) : Bytes(text);
+
+    private static long Bytes(string size)
+    {
+        var m = SizeShape.Match(size);
+        if (!m.Success)
+        {
+            throw new ArgumentException($"not a size: {size}", nameof(size));
+        }
+
+        var n = long.Parse(m.Groups["n"].Value, NumberStyles.None, CultureInfo.InvariantCulture);
+        return m.Groups["u"].Value switch
+        {
+            "KiB" => n * 1024,
+            "MiB" => n * 1024 * 1024,
+            "GiB" => n * Gib,
+            _ => n * Gib * 1024,
+        };
+    }
+
+    [GeneratedRegex("^(?<n>[1-9][0-9]*)(?<u>KiB|MiB|GiB|TiB)\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    private static partial Regex SizeShape { get; }
 }

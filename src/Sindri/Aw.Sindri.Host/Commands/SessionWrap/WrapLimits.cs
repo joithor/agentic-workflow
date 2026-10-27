@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using Aw.Kernel;
+using Aw.Kernel.Json;
+using Aw.Sindri.Core;
 
 namespace Aw.Sindri.Host.Commands.SessionWrap;
 
@@ -19,8 +21,31 @@ internal sealed record WrapLimits(
     long ParkMaxSeconds,
     long MemoryMaxBytes)
 {
+    private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(SindriJsonContext.Default);
+
     /// <summary>Reads a limits file.</summary>
     /// <param name="path">The file.</param>
     /// <returns>The limits, or SND-REQ-001 when the file is unreadable, malformed or has no unit.</returns>
-    internal static Result<WrapLimits> Read(string path) => throw new NotSupportedException();
+    internal static Result<WrapLimits> Read(string path)
+    {
+        byte[] bytes;
+        try
+        {
+            bytes = File.ReadAllBytes(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return SindriErrors.RequestInvalid.With($"the limits file {path} cannot be read: {e.Message}");
+        }
+
+        var read = AwJson.Deserialize<WrapLimits>(bytes, _json);
+        if (!read.IsSuccess)
+        {
+            return SindriErrors.RequestInvalid.With($"the limits file {path} is not valid: {read.Error.Message}");
+        }
+
+        return string.IsNullOrWhiteSpace(read.Value.Unit)
+            ? SindriErrors.RequestInvalid.With($"the limits file {path} names no unit")
+            : read.Value;
+    }
 }

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
 #pragma warning disable MA0182 // until the watchdog (SB-3a, next builder) uses it
@@ -12,13 +14,14 @@ internal static class RuntimeCeiling
     /// <param name="wallLeft">Unsuspended wall time still left (the wall already holds the grace).</param>
     /// <param name="parkMax">The longest single suspension to allow for.</param>
     /// <returns>The ceiling.</returns>
-    internal static TimeSpan Next(TimeSpan elapsedReal, TimeSpan wallLeft, TimeSpan parkMax) => throw new NotSupportedException();
+    internal static TimeSpan Next(TimeSpan elapsedReal, TimeSpan wallLeft, TimeSpan parkMax) => elapsedReal + wallLeft + parkMax;
 
     /// <summary>Builds the systemctl command that moves the ceiling.</summary>
     /// <param name="systemctl">The systemctl program.</param>
     /// <param name="unit">The scope unit.</param>
     /// <param name="ceiling">The new ceiling.</param>
     /// <returns>The argv.</returns>
-    internal static IReadOnlyList<string> Argv(string systemctl, string unit, TimeSpan ceiling) => throw new NotSupportedException();
+    internal static IReadOnlyList<string> Argv(string systemctl, string unit, TimeSpan ceiling) =>
+        [systemctl, "--user", "set-property", "--runtime", unit, $"RuntimeMaxSec={((long)ceiling.TotalSeconds).ToString(CultureInfo.InvariantCulture)}"];
 }
 #pragma warning restore MA0182
