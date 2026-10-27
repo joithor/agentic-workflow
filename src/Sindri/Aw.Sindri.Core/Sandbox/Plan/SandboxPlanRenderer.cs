@@ -99,7 +99,8 @@ public static partial class SandboxPlanRenderer
 
     private static string ExplainPath(SandboxPlan plan, string query)
     {
-        var home = plan.Mounts.FirstOrDefault(m => m.Kind == PlanMountKind.Tmpfs)?.Path ?? string.Empty;
+        // The home is the first tmpfs other than /run: SB-2 lists the empty /run before it.
+        var home = plan.Mounts.FirstOrDefault(m => m.Kind == PlanMountKind.Tmpfs && !string.Equals(m.Path, "/run", StringComparison.Ordinal))?.Path ?? string.Empty;
         var path = Normalize(query.StartsWith('~') ? home + query[1..] : query);
         var mount = plan.Mounts.LastOrDefault(m => string.Equals(m.Path, path, StringComparison.Ordinal) || path.StartsWith(m.Path.TrimEnd('/') + "/", StringComparison.Ordinal));
         return mount switch
