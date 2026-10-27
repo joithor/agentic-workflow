@@ -108,7 +108,7 @@ internal sealed class BuildMapService(
         // A namer or a code index that can't answer leaves the deterministic names or the plain grouping and says so as a degraded note.
         var concepts = await namers.Concepts.Run(read.Settings, Join(WithoutDerivedConcepts(kept), read.Found), [.. mappedRepos.SelectMany(r => r.Concepts)], mappedRepos, cancellationToken).ConfigureAwait(false);
         var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, concepts.Graph, undo, read.Heads) { Ruleset = ruleset, Dropped = read.Dropped }, at, cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), [.. read.Degraded, .. concepts.Notes], read.Heads);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found, mappedRepos.Select(r => r.Name.Value).ToList()), [.. read.Degraded, .. concepts.Notes], read.Heads);
     }
 
     private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads, ContextSettings Settings)
@@ -132,14 +132,14 @@ internal sealed class BuildMapService(
     private async ValueTask<Result<RepoExtraction>> Extract(IProgress<string>? progress, ContextSettings settings, ContextRepo repo, CancellationToken cancellationToken)
     {
         var recognizers = RecognizerSet.From(settings.Recognizers);
-        var read = await ReadFiles(progress, repo, recognizers, cancellationToken).ConfigureAwait(false);
+        var read = await ReadFiles(progress, repo, (recognizers, settings.SchemaGlobs), cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
             return read.Error;
         }
 
         var (commit, files) = read.Value;
-        var (extracted, timedOut) = MapExtractor.Extract(repo.Name, files, recognizers);
+        var (extracted, timedOut) = MapExtractor.Extract(repo.Name, files, recognizers, settings.SchemaGlobs);
         var clusters = await Clusters(repo, commit, settings.Graphify, cancellationToken).ConfigureAwait(false);
         var labels = await Labels(progress, settings, clusters, cancellationToken).ConfigureAwait(false);
         if (labels.IsError && labels.Error.Code == ContextErrors.LabelingUnavailable.Code)
@@ -171,11 +171,12 @@ internal sealed class BuildMapService(
         labels is { IsError: false, Value.Unavailable: { } why } ? [$"labels: {ContextErrors.LabelingUnavailable.Code}: {why}"]
         : labels.IsError || !labels.Value.Complete ? ["labels"] : [];
 
-    // A denied path is never read, whatever a recognizer wants.
-    private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
+    // A denied path is never read, whatever a recognizer wants; a schema file (the globs that name where stores are declared) is read for the data-store pass.
+    private static bool Readable(ContextRepo repo, (RecognizerSet Recognizers, IReadOnlyList<string> SchemaGlobs) wants, string path) =>
+        !repo.Denies(path) && (Recognizers.MayRead(path) || wants.Recognizers.Wants(path) || PathDenylist.Matches(path, wants.SchemaGlobs));
 
     // HEAD's tree minus the denied paths, and the text of each file the extractor may read.
-    private async ValueTask<Result<(string Commit, List<RepoFile> Files)>> ReadFiles(IProgress<string>? progress, ContextRepo repo, RecognizerSet recognizers, CancellationToken cancellationToken)
+    private async ValueTask<Result<(string Commit, List<RepoFile> Files)>> ReadFiles(IProgress<string>? progress, ContextRepo repo, (RecognizerSet Recognizers, IReadOnlyList<string> SchemaGlobs) wants, CancellationToken cancellationToken)
     {
         var head = await repos.Head(repo, cancellationToken).ConfigureAwait(false);
         var listed = head.IsError ? head.Error : await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
@@ -184,7 +185,7 @@ internal sealed class BuildMapService(
             return head.IsError ? head.Error : listed.Error;
         }
 
-        var wanted = listed.Value.Where(p => Readable(repo, recognizers, p)).ToList();
+        var wanted = listed.Value.Where(p => Readable(repo, wants, p)).ToList();
         var files = new List<RepoFile>(wanted.Count);
         foreach (var path in wanted)
         {
@@ -251,12 +252,26 @@ internal sealed class BuildMapService(
             Edges = [.. kept.Edges.Concat(found.Edges).DistinctBy(e => (e.From.Value, e.To.Value, e.Type))],
         };
 
-    private static List<ProposedNode> Proposed(GraphSnapshot current, ExtractedMap found) =>
+    private static List<ProposedNode> Proposed(GraphSnapshot current, ExtractedMap found, List<string> repoNames) =>
     [
         .. found.Nodes.Where(n => n.Key.Kind != NodeKind.Code && current.Resolve(n.Key) is null).OrderBy(n => n.Key.Value, StringComparer.Ordinal)
             .Select(n => new ProposedNode(n.Key, n.Provenance, n.Confidence,
-                [.. found.Edges.Where(e => e.Type == EdgeType.Implements && e.To.Value == n.Key.Value && e.From.Kind == NodeKind.Code).Select(e => e.From).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)])),
+                Files(found, n, repoNames))),
     ];
+
+    // The code files behind a proposed node: those that implement it; a thing (a data store) has none, so its files are the ones that declare it.
+    private static List<NodeKey> Files(ExtractedMap found, GraphNode node, List<string> repoNames) =>
+        [.. (node.Key.Kind == NodeKind.Thing
+            ? node.EvidenceOrEmpty.Select(e => e.Key.Value).Select(r => DeclaringFile(r, repoNames)).OfType<NodeKey>()
+            : found.Edges.Where(e => e.Type == EdgeType.Implements && e.To.Value == node.Key.Value && e.From.Kind == NodeKind.Code).Select(e => e.From))
+            .DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)];
+
+    // "repo:<name>/<path>" -> code:<path>, stripping the exact prefix of a mapped repo (a name may hold '/').
+    private static NodeKey? DeclaringFile(string record, List<string> repoNames)
+    {
+        var prefix = repoNames.Select(n => $"repo:{n}/").Where(p => record.StartsWith(p, StringComparison.Ordinal)).OrderByDescending(p => p.Length).FirstOrDefault();
+        return prefix is not null && NodeKey.TryFrom("code:" + record[prefix.Length..], out var key) ? key : null;
+    }
 
     private sealed record RepoExtraction(ExtractedMap Map, string Commit, IReadOnlyList<string> Degraded, IReadOnlyList<RoleDropped> Dropped);
 }
