@@ -29,7 +29,7 @@ public sealed class ModelPickHistoryAdapterTests
 
         Expect.Equal(("haiku", 6, 2, 1, 1), (rows[0].Model, rows[0].Runs, rows[0].Refused, rows[0].CheckFailed, rows[0].Redraft));
         Expect.Equal(("opus", 0, false), (rows[1].Model, rows[1].Runs, rows[1].Unusual));
-        Assert.True(rows[0].Unusual);
+        Assert.False(rows[0].Unusual);   // 2 refused + 1 check failed of 6 is exactly half, not more than half
     }
 
     [Fact]

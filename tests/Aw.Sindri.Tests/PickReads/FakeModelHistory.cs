@@ -11,6 +11,6 @@ internal sealed class FakeModelHistory(params ModelHistoryRow[] rows) : IModelHi
     public static RecipeId Recipe { get; } = RecipeId.From("workflow.step");
 
     public ValueTask<Result<IReadOnlyList<ModelHistoryRow>>> For(RecipeId recipe, int version, string state, IReadOnlyList<string> models, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyList<ModelHistoryRow>>>(Results.Success<IReadOnlyList<ModelHistoryRow>>([.. models.Select(m =>
+        ValueTask.FromResult(Results.Success<IReadOnlyList<ModelHistoryRow>>([.. models.Select(m =>
             rows.FirstOrDefault(r => r.State == state && r.Model == m) ?? ModelHistoryRow.Empty(recipe, version, state, m))]));
 }
