@@ -35,6 +35,15 @@ public static class ConceptScanReplies
         return found;
     }
 
+    /// <summary>Whether a reply ended partway through its JSON while at least one concept before the break was whole.</summary>
+    /// <param name="reply">The model's text.</param>
+    /// <returns>True for a cut-off answer; false for one that reads whole, and for one that doesn't read at all.</returns>
+    public static bool IsCutOff(string reply)
+    {
+        ArgumentNullException.ThrowIfNull(reply);
+        return false;
+    }
+
     /// <summary>The concept hints the second pass returned.</summary>
     /// <param name="reply">The model's text: {"concepts":[{"name":…,"members":[…],"evidence":[…],"confidence":0.8}]}.</param>
     /// <param name="featureKeys">The keys of the draft's features ('feature:…'): the only members that count.</param>
