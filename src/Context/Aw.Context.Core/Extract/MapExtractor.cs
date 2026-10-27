@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract.DataStores;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
@@ -21,8 +22,9 @@ public static class MapExtractor
     /// <param name="repo">The repo (its name joins the evidence keys).</param>
     /// <param name="files">The files at the commit.</param>
     /// <param name="recognizers">The profile's recognizers; their matches are suggested at confidence 0.8.</param>
+    /// <param name="schemaGlobs">'context.code.schemaGlobs': the files that declare data stores; null means the defaults.</param>
     /// <returns>The map, and whether a recognizer timed out on some file.</returns>
-    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers)
+    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers, IReadOnlyList<string>? schemaGlobs = null)
     {
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(recognizers);
@@ -40,7 +42,8 @@ public static class MapExtractor
         var imports = ImportEdges.Find(files).Pairs.Where(p => CodeKey(p.From) is not null && CodeKey(p.To) is not null).ToList();
         var importNodes = imports.SelectMany(p => new[] { p.From, p.To }).Except(codeNodes.Select(n => n.Key.Value[5..]), StringComparer.Ordinal).Distinct(StringComparer.Ordinal).Select(CodeNode);
         var depends = imports.Select(p => new GraphEdge(CodeKey(p.From)!.Value, CodeKey(p.To)!.Value, EdgeType.DependsOn, Provenance.Deterministic, 1.0, Evidence(repo, p.From) is { } e ? [e] : null));   // why: the filter above keeps valid keys
-        return new MapExtraction(ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes, .. importNodes], [.. implements, .. related, .. depends])), timedOut);
+        var found = ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes, .. importNodes], [.. implements, .. related, .. depends]));
+        return new MapExtraction(found.Plus(DataStorePass.Run(repo, files, DataStoreAdapters.All, schemaGlobs ?? ContextSettings.DefaultSchemaGlobs)), timedOut);
     }
 
     private static GraphNode Node(ContextRepoName repo, List<(RepoFile File, Found Found)> hits)
@@ -58,6 +61,6 @@ public static class MapExtractor
 
     internal static NodeKey? CodeKey(string path) => NodeKey.TryFrom("code:" + path, out var key) ? key : null;
 
-    private static EvidenceRef? Evidence(ContextRepoName repo, string path) =>
+    internal static EvidenceRef? Evidence(ContextRepoName repo, string path) =>
         RecordKey.TryFrom($"repo:{repo.Value}/{path}", out var key) ? new EvidenceRef(key) : null;
 }
