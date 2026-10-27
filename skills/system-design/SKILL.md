@@ -5,15 +5,17 @@ argument-hint: "[ticket-or-project] [--personas engineering,product-design,...]"
 allowed-tools: Bash(git *), Bash(mkdir *), Bash(SHARED_DIR=*), Bash(source *), Bash(python3 *), Bash(node *), Read, Write, Edit, Glob, Grep, Skill, AskUserQuestion, Agent
 ---
 
-# System Design
-
-One run turns a project into a status doc (the source of truth), one page per persona, mockups, and diagrams. Pages are plain HTML so they can be shared without a build step.
-
 <!-- preamble -->
 **Before anything else:** read `$HOME/.agentic-workflow/toolkit/skills/_preamble.md` and follow it (skill index, provider capability map, bootstrap check, session context). Run its **Session Close** section when this skill finishes.
 
 <!-- design-preamble -->
 **Design context:** read `$HOME/.agentic-workflow/toolkit/skills/_design-preamble.md` and follow it before continuing.
+
+# System Design
+
+One run turns a project into a status doc (the source of truth), one page per persona, mockups, and diagrams. Pages are plain HTML so they can be shared without a build step.
+
+**Prerequisites (checked in Diagrams and Style and build, not before):** `python3` (stdlib only); Node 20+; the tldraw offline app running (diagrams); Playwright installed in some directory's `node_modules` (page verification, passed as `--playwright-root`). If one is missing, say which step it blocks and **Ask the user**; do not skip the step.
 
 ```bash
 SHARED_DIR="$HOME/.agentic-workflow/toolkit/skills/_shared"
@@ -28,7 +30,7 @@ If the user names another deliverables folder (a notes vault, a docs dir), use i
 ## Inputs
 
 - **Subject:** a ticket or project from the project's tracker, plus any brief. Read the ticket's decisions and the owner's replies first; never re-ask what they already answered. Reach the tracker through whatever the project provides (an MCP server or CLI named in `AGENTS.md`); if there is none, ask the user to paste the ticket.
-- **Code and surfaces:** Sindri context (`mcp: sindri/context_lenses`, `context_query`, `context_neighbors`, line runs) plus the repo's `AGENTS.md`. Sindri output is a lead, not a verdict: reconcile it against a hand map of readers, writers and screens, read from the remote default branch (`git fetch`, then `git show origin/<default>:<path>`), never a stale checkout.
+- **Code and surfaces:** Sindri context when the `sindri` MCP server is registered for the repo (`mcp: sindri/context_lenses`, `context_query`, `context_neighbors`, line runs) plus the repo's `AGENTS.md`. Sindri output is a lead, not a verdict: reconcile it against a hand map of readers, writers and screens, read from the remote default branch (`git fetch`, then `git show origin/<default>:<path>`), never a stale checkout.
 - **Data:** read-only counts from whatever read access the project documents (`AGENTS.md` or its rules). Writes are out of scope. If none is documented, say so in the status doc and ask the user rather than guessing sizes.
 - **Style:** `design-tokens.json` and `.impeccable.md` from `/design-language` (see `_shared/design-artifact-paths.md`), or the tokens file the repo's `AGENTS.md` points to. If neither exists, run **Invoke skill** `design-language` first.
 
@@ -60,7 +62,7 @@ Each step writes to `$SD/status.md`, the one living doc. Sections: surfaces, cou
 
 ## Diagrams
 
-Uses the tldraw offline app and its `tq.mjs` helper (see the tldraw-offline skill the app installs; run `./setup.sh` if missing). The app must be running (`server.json` present).
+Uses the tldraw offline app (`./setup.sh` installs it; the app's Develop -> Install Agent Skills step adds the `tldraw-offline` skill). The app must be running, so its `server.json` exists. `draw_diagrams.mjs` looks for it at `~/Library/Application Support/tldraw/server.json` on macOS and `${XDG_CONFIG_HOME:-~/.config}/tldraw/server.json` elsewhere; set `TLDRAW_SERVER_JSON` if yours is somewhere else.
 
 1. One mermaid file per diagram in `$SD/diagrams/src/` (`flowchart TB|LR`, `stateDiagram-v2`). Prefer top-to-bottom when a graph is wide. Optional `colors.json`: `{ "<diagram>": [["node text substring", "blue"], ...] }`, first match wins, default grey. Roles: blue = new or primary, violet = flagged or secondary, green = outcome, red = alert, grey = existing context.
 2. Draw:
@@ -76,13 +78,14 @@ It creates your own tldraw doc (`POST /api/docs/create`; never edit another sess
 ## Style and build
 
 ```bash
-python3 "$S/scripts/tokens_to_css.py" design-tokens.json "$SD/doc-style.css"   # prints tokens it could not map
-python3 "$S/scripts/apply_doc_style.py" "$SD/pages/tdd.html" "$SD/doc-style.css"          # rerunnable
-python3 "$S/scripts/build_page.py" "$SD/pages/product-design.src.html" "$SD/pages/product-design.html" "$SD/doc-style.css"
+python3 -I "$S/scripts/tokens_to_css.py" design-tokens.json "$SD/doc-style.css"   # prints tokens it could not map
+python3 -I "$S/scripts/apply_doc_style.py" "$SD/pages/tdd.html" "$SD/doc-style.css"          # rerunnable
+python3 -I "$S/scripts/build_page.py" "$SD/pages/product-design.src.html" "$SD/pages/product-design.html" "$SD/doc-style.css"
 node "$S/scripts/verify_page.mjs" "$SD/pages/product-design.html" "$SD/shots" --playwright-root <dir whose node_modules has playwright>
 ```
 
 - `tokens_to_css.py` maps `color.*`, `font.*`, `radius.*` tokens onto the semantic variables in `templates/doc-base.css`. For any it lists as unmapped, ask the user for the value or fix `design-tokens.json`; do not invent brand colors.
+- Exit codes: the Python scripts exit 0 on success and 2 on bad arguments or unreadable input; `draw_diagrams.mjs` exits 0 when every diagram is drawn, 2 on bad arguments, 1 on an API error; `verify_page.mjs` exits 0 clean, 1 on a broken image or horizontal scroll, 2 on bad arguments.
 - `build_page.py` inlines every `<img>` as a data URI and fails on a missing image. `verify_page.mjs` exits 1 on a broken image or horizontal scroll at 1280 or 390px.
 - Start new pages from `templates/page-skeleton.html`. A generic sketch of a full run is in `references/example-run.md`.
 
