@@ -9,9 +9,9 @@ internal static class ClaudeModels
     /// <summary>The catalog entry's models.</summary>
     public static IReadOnlyList<ModelFacts> Catalog { get; } =
     [
-        new("haiku", "Haiku", ModelSource.Catalog, Order: null),
-        new("sonnet", "Sonnet", ModelSource.Catalog, Order: null),
-        new("opus", "Opus", ModelSource.Catalog, Order: null),
+        new("haiku", "Haiku", ModelSource.Catalog, Order: 0),
+        new("sonnet", "Sonnet", ModelSource.Catalog, Order: 1),
+        new("opus", "Opus", ModelSource.Catalog, Order: 2),
     ];
 }
 #pragma warning restore MA0182

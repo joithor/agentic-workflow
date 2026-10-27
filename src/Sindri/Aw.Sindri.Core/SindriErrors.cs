@@ -155,6 +155,9 @@ public static partial class SindriErrors
     /// <summary>SND-LAUNCH-012: the agent entry isn't approved for unattended Steps (detail 'not-approved' or 'hash-changed'; launcher SL8).</summary>
     public static readonly ErrorDefinition LaunchNotApproved = new("SND-LAUNCH-012", ErrorKind.Forbidden, "This agent entry isn't approved for unattended Steps");
 
+    /// <summary>SND-MODEL-004: the launch probe couldn't read an agent's model list (the command failed, took over 5 s, or isn't there). Informational: shown as 'no-model-list' in the target's limits, never fails a launch (model-pick spec §3).</summary>
+    public static readonly ErrorDefinition ModelListUnavailable = new("SND-MODEL-004", ErrorKind.Unavailable, "The agent's model list couldn't be read");
+
     /// <summary>SND-LAUNCH-015: the agent entry's session id pattern timed out on an id, so the id was refused unjudged (not as a mismatch). -014 is reserved by the sandbox spec.</summary>
     public static readonly ErrorDefinition LaunchSessionIdTimedOut = new("SND-LAUNCH-015", ErrorKind.Unavailable, "The session id pattern timed out");
 
