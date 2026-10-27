@@ -8,7 +8,7 @@
 set -uo pipefail
 ok=0
 need() { command -v "$1" >/dev/null 2>&1 && echo "ok    $1" || { echo "MISSING $1: $2"; ok=1; }; }
-need ffmpeg "install ffmpeg with libx264 (brew install ffmpeg)"
+need ffmpeg "install ffmpeg with libx264 (brew install ffmpeg, or apt-get install ffmpeg)"
 need ffprobe "ships with ffmpeg"
 need bun "install bun (https://bun.sh)"
 home=${AW_STATE_DIR:-$HOME/.agentic-workflow}/system-design-video

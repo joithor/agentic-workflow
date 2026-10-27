@@ -30,7 +30,19 @@ A concept or product cut (the idea, the worked example, what changes for the peo
 
 Read before starting: `references/style.md` (look, motion, legibility), `references/storyboard-format.md` (the storyboard file), `references/personas.md`. Read on trouble: `references/gotchas.md`. A runnable worked example, with generic content, is in `examples/base-limit/`.
 
-`$SKILL` = this skill's directory (`$HOME/.agentic-workflow/toolkit/skills/system-design-video`). Output: `$HOME/.agentic-workflow/$REPO_SLUG/videos/<design>/<persona>/` (`$D` below): `brief.md`, `storyboard.json`, `narration.md`, `take/`, `deliverables/`.
+```bash
+SHARED_DIR="$HOME/.agentic-workflow/toolkit/skills/_shared"
+source "$SHARED_DIR/repo-slug.sh"          # sets REPO_SLUG, AW_DIR
+SKILL="$HOME/.agentic-workflow/toolkit/skills/system-design-video"
+D="$AW_DIR/videos/<design>/<persona>"      # brief.md, storyboard.json, narration.md, take/, deliverables/
+mkdir -p "$D"
+```
+
+Output goes under `$AW_DIR/videos/` (never into the code repo): `brief.md`, `storyboard.json`, `narration.md`, `take/`, `deliverables/`.
+
+**Prerequisites:** `ffmpeg` and `ffprobe` with libx264, `bun`, and `playwright-core` with its Chromium (Step 0 checks all four). The renderer needs a desktop-capable machine for headless Chromium and a few minutes of CPU per film.
+
+**Exit codes:** `doctor.sh` 0 ready, 1 something missing; `deliver.sh` and `playback-check.sh` 0 ok, 1 usage error or a failed check (`playback-check.sh` and `deliver.sh` fail on a decode error, codec other than h264, level above 4.1 or B-frames; `review.sh` exits 1 on usage error only and prints a warning when its own playback check fails); `render.ts` 0 done, 1 bad arguments, any other non-zero is a thrown error (bad storyboard, unknown token, no playwright-core).
 
 ## Inputs (all from the project, nothing baked in)
 
