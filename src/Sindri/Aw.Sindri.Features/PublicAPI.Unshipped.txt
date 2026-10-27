@@ -5079,3 +5079,5 @@ static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator !=(Aw.Sindri.Feat
 static Aw.Sindri.Features.GetLaunchPicks.PickRunFrame.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? left, Aw.Sindri.Features.GetLaunchPicks.PickRunFrame? right) -> bool
 static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator !=(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool
 static Aw.Sindri.Features.GetLaunchPicks.PickRunRow.operator ==(Aw.Sindri.Features.GetLaunchPicks.PickRunRow? left, Aw.Sindri.Features.GetLaunchPicks.PickRunRow? right) -> bool
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.init -> void

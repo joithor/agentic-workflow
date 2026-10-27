@@ -6,4 +6,9 @@ namespace Aw.Sindri.Features.ValidateProfile;
 /// <param name="Hash">Its hash (what 'profile approve' would record).</param>
 /// <param name="Source">The file.</param>
 /// <param name="Approved">Whether that hash is the latest approval.</param>
-public sealed record ValidateProfileResponse(ProfileHash Hash, string Source, bool Approved);
+public sealed record ValidateProfileResponse(ProfileHash Hash, string Source, bool Approved)
+{
+    /// <summary>What each 'workflow.agent' pin and cap matches, one line each ('pin claude-code/questions = haiku: matches workflow.scoping state questions'); null, and left out of the JSON, when the profile has none.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Matches { get; init; }
+}

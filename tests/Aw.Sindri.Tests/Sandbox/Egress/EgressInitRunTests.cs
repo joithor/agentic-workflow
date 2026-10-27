@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Plan;
 using Aw.Sindri.Infrastructure.Sandbox;
@@ -17,16 +18,11 @@ public sealed class EgressInitRunTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
+    // Every script here starts with its own shebang; ExecutableScript takes it apart so the warm-up guard goes right after it.
     private string Write(string name, string text)
     {
-        var path = Path.Combine(_temp.Path, name);
-        File.WriteAllText(path, text);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-
-        return path;
+        var newline = text.IndexOf('\n', StringComparison.Ordinal);
+        return ExecutableScript.Write(Path.Combine(_temp.Path, name), text[(newline + 1)..], text[2..newline]);
     }
 
     private string FakeSocat(string body) => Write("socat", "#!/bin/sh\n" + body);
