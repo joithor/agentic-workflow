@@ -2521,6 +2521,8 @@ Aw.Sindri.Features.SessionExit.SessionExitRequest.<Clone>$() -> Aw.Sindri.Featur
 Aw.Sindri.Features.SessionExit.SessionExitRequest.Equals(Aw.Sindri.Features.SessionExit.SessionExitRequest? other) -> bool
 Aw.Sindri.Features.SessionExit.SessionExitRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 Aw.Sindri.Features.SessionExit.SessionExitRequest.LaunchId.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Limit.get -> Aw.Sindri.Core.Events.LimitEnd?
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Limit.init -> void
 Aw.Sindri.Features.SessionExit.SessionExitResponse
 Aw.Sindri.Features.SessionExit.SessionExitResponse.<Clone>$() -> Aw.Sindri.Features.SessionExit.SessionExitResponse!
 Aw.Sindri.Features.SessionExit.SessionExitResponse.Equals(Aw.Sindri.Features.SessionExit.SessionExitResponse? other) -> bool
@@ -2878,12 +2880,12 @@ override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.GetHashC
 override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.ToString() -> string!
 static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.operator !=(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? right) -> bool
 static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.operator ==(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? right) -> bool
-Aw.Sindri.Features.SessionExit.SessionExitRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out int ExitCode, out Aw.Sindri.Core.Ids.SessionId? SessionId) -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out int ExitCode, out Aw.Sindri.Core.Ids.SessionId? SessionId, out Aw.Sindri.Core.Events.LimitEnd? Limit) -> void
 Aw.Sindri.Features.SessionExit.SessionExitRequest.ExitCode.get -> int
 Aw.Sindri.Features.SessionExit.SessionExitRequest.ExitCode.init -> void
 Aw.Sindri.Features.SessionExit.SessionExitRequest.Secret.get -> Aw.Sindri.Core.Launches.LaunchSecret
 Aw.Sindri.Features.SessionExit.SessionExitRequest.Secret.init -> void
-Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionExitRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret, int ExitCode, Aw.Sindri.Core.Ids.SessionId? SessionId = null) -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionExitRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret, int ExitCode, Aw.Sindri.Core.Ids.SessionId? SessionId = null, Aw.Sindri.Core.Events.LimitEnd? Limit = null) -> void
 Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionId.get -> Aw.Sindri.Core.Ids.SessionId?
 Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionId.init -> void
 Aw.Sindri.Features.SessionExit.SessionExitResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
@@ -4959,3 +4961,31 @@ Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! 
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, out string? To) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.get -> string?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.init -> void
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.init -> void
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.<Clone>$() -> Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest!
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret) -> void
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.Equals(Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? other) -> bool
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.GetRunSuspensionRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret) -> void
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.LaunchId.init -> void
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.Secret.get -> Aw.Sindri.Core.Launches.LaunchSecret
+Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.Secret.init -> void
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.<Clone>$() -> Aw.Sindri.Features.GetRunSuspension.RunSuspensionView!
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.Deconstruct(out bool Suspended) -> void
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.Equals(Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? other) -> bool
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.RunSuspensionView(bool Suspended) -> void
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.Suspended.get -> bool
+Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.Suspended.init -> void
+override Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.ToString() -> string!
+override Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.GetHashCode() -> int
+override Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.ToString() -> string!
+static Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.operator !=(Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? left, Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? right) -> bool
+static Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest.operator ==(Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? left, Aw.Sindri.Features.GetRunSuspension.GetRunSuspensionRequest? right) -> bool
+static Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.operator !=(Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? left, Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? right) -> bool
+static Aw.Sindri.Features.GetRunSuspension.RunSuspensionView.operator ==(Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? left, Aw.Sindri.Features.GetRunSuspension.RunSuspensionView? right) -> bool

@@ -78,6 +78,10 @@ public sealed class ManifestClusterTests
         Assert.Contains(map.Nodes, n => n.Key.Value == "code:apps/web/package.json");
     }
 
+    // A key made from a package.json stem: the bare stem, its "-2" duplicate suffix, or the root-prefixed form. A source dir such as packages.auth.src is not one.
+    private static bool IsManifestStem(string key, string kind) =>
+        key == kind + "package" || key.StartsWith(kind + "package-", StringComparison.Ordinal) || key.StartsWith(kind + "root.package", StringComparison.Ordinal);
+
     [Fact, Trait("Lane", "unit")]
     public void Concepts_over_a_monorepo_map_are_not_keyed_from_manifest_features()
     {
@@ -86,7 +90,7 @@ public sealed class ManifestClusterTests
 
         var concepts = ConceptDeriver.Derive(graph, [], names: null);
 
-        Assert.DoesNotContain(concepts.Nodes, n => n.Key.Value.StartsWith("concept:root.package", StringComparison.Ordinal) || n.Key.Value.StartsWith("concept:package", StringComparison.Ordinal));
-        Assert.DoesNotContain(concepts.Edges, e => e.From.Value == "feature:package" || e.From.Value.StartsWith("feature:root.package", StringComparison.Ordinal));
+        Assert.DoesNotContain(concepts.Nodes, n => IsManifestStem(n.Key.Value, "concept:"));
+        Assert.DoesNotContain(concepts.Edges, e => IsManifestStem(e.From.Value, "feature:"));
     }
 }

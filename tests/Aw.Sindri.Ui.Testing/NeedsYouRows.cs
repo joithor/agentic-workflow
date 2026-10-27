@@ -66,6 +66,7 @@ internal static class NeedsYouRows
         Title = "Re-scope: drop the iOS head from this item",
         Repo = "sindri-app",
         Label = "decision · re-scope",
+        FiledBy = "session:cli",
         Reason = "re-scope request from session:cli",
         Since = A.Noon.AddMinutes(-26),
         PrimaryAction = "Decide",

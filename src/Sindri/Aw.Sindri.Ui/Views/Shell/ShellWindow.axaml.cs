@@ -34,11 +34,13 @@ internal sealed partial class ShellWindow : Window
 
     // What had focus when the palette or the ? sheet opened: it gets focus back when they close (§8, §11.2).
     private Control? _overlayOpener;
+    private Control? _invoker;   // the button that is opening an overlay, noted just before it opens
 
     public ShellWindow()
     {
         InitializeComponent();
         AddHandler(GotFocusEvent, OnGotFocus, handledEventsToo: true);
+        AddHandler(OpenerNote.NotedEvent, NoteInvoker);
         PagePanel.SizeChanged += (_, e) => PageLayout.SetTier(PagePanel, PageLayout.For(e.NewSize.Width));
         WatchNavigationKeys();
     }
@@ -131,7 +133,7 @@ internal sealed partial class ShellWindow : Window
     private void Cover(double width)
     {
         var below = this.TryFindResource("Size.SheetCoversBelow", out var value) && value is double limit ? limit : 1100;
-        var covers = width > 0 && width < below;
+        var covers = (width > 0 && width < below) || Shell is { SheetCoversPage: true };
         var changed = covers != SheetPanel.Classes.Contains("covers");
         SheetPanel.Classes.Set("covers", covers);
         SheetPanel.Width = covers ? double.NaN : Shell?.ShownSheetWidth ?? double.NaN;
@@ -167,7 +169,7 @@ internal sealed partial class ShellWindow : Window
     {
         switch (e.PropertyName)
         {
-            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth):
+            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth) or nameof(ShellViewModel.SheetCoversPage):
                 Cover(Bounds.Width);
                 break;
             case nameof(ShellViewModel.State):
@@ -180,13 +182,26 @@ internal sealed partial class ShellWindow : Window
             case nameof(ShellViewModel.IsNeedsYouInbox):
                 FollowInbox();
                 break;
+            case nameof(ShellViewModel.SheetSubject) when Shell is { SheetChangeIsStacked: false }:
+                ResetSheetScroll();   // another row opened on the open sheet; a pushed child and Back keep their scroll
+                break;
             case nameof(ShellViewModel.IsSheetShown):
-                CoverPage();
-                Dispatcher.UIThread.Post(Shell is { IsSheetShown: true } ? FocusOpenedSheet : KeepFocus, DispatcherPriority.Loaded);
+                OnSheetShownChanged();
                 break;
             default:
                 break;
         }
+    }
+
+    private void OnSheetShownChanged()
+    {
+        CoverPage();
+        if (Shell is { IsSheetShown: true, SheetChangeIsStacked: false })
+        {
+            ResetSheetScroll();   // a sheet that opens starts at its top; a pushed child and Back keep their scroll
+        }
+
+        Dispatcher.UIThread.Post(Shell is { IsSheetShown: true } ? FocusOpenedSheet : KeepFocus, DispatcherPriority.Loaded);
     }
 
     // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
@@ -200,7 +215,12 @@ internal sealed partial class ShellWindow : Window
 
         var arrowing = _navArrowing;
         _navArrowing = false;
-        if (arrowing)
+        if (Shell is { IsSelectingTab: true } && !arrowing)
+        {
+            Dispatcher.UIThread.Post(FocusSelectedTab, DispatcherPriority.Loaded);   // a tab was activated: focus rests on that tab, not on the page region
+            FocusContextAnchor();
+        }
+        else if (arrowing)
         {
             Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);   // arrows keep focus on the tab (Y1)
         }
