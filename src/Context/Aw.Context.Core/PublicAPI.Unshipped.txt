@@ -7861,7 +7861,6 @@ Aw.Context.Core.ConceptScan.ConceptScanLimits
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxInputChars = 60000 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxOutputTokens = 4000 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxScansPerDay = 6 -> int
-const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxConcepts = 15 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.MaxSearches = 24 -> int
 const Aw.Context.Core.ConceptScan.ConceptScanLimits.HitsPerSearch = 6 -> int
 static Aw.Context.Core.ConceptScan.ConceptScanLimits.CallTimeout.get -> System.TimeSpan
