@@ -1,5 +1,6 @@
 // Render a whiteboard storyboard into silent footage, frame by frame.
 //
+// Exit: 0 done, 1 bad arguments; a bad storyboard, token or missing playwright-core throws (non-zero).
 //   bun render.ts <storyboard.json> <out-dir> --tokens <design-tokens.json>
 //                 [--fps 30] [--still t1,t2,...] [--range a..b]
 //
@@ -101,10 +102,10 @@ story.board = resolved.board;
 writeFileSync(join(out, "resolved-inks.json"), JSON.stringify(resolved, null, 2));
 
 // ---- browser ---------------------------------------------------------------
-// playwright-core: $PLAYWRIGHT_CORE, the toolkit's own install, or the working directory's.
+// playwright-core: $PLAYWRIGHT_CORE, the toolkit's own install under $AW_STATE_DIR, or the working directory's.
 const candidates = [
   process.env.PLAYWRIGHT_CORE,
-  join(homedir(), ".agentic-workflow/system-design-video/node_modules/playwright-core"),
+  join(process.env.AW_STATE_DIR ?? join(homedir(), ".agentic-workflow"), "system-design-video/node_modules/playwright-core"),
   join(process.cwd(), "node_modules/playwright-core"),
 ].filter((p): p is string => !!p);
 const core = candidates.find((p) => existsSync(join(p, "package.json")));
