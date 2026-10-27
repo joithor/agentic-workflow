@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Features.GetRunSuspension;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
@@ -36,7 +37,7 @@ public sealed class ControlPlaneWrapCallsTests
     [InlineData(false)]
     public async Task Suspended_reads_the_answer(bool suspended)
     {
-        var api = new RoutedApi().On(Route, HttpStatusCode.OK, new SuspendedAnswer(suspended));
+        var api = new RoutedApi().On(Route, HttpStatusCode.OK, new RunSuspensionView(suspended));
 
         var answer = await Calls(api).Suspended(A.FirstLaunchId, _proof, Token);
 

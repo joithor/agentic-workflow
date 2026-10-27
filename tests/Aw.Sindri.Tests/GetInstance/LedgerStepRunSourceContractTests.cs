@@ -89,6 +89,9 @@ public sealed class LedgerStepRunSourceContractTests : StepRunSourceContract, ID
         public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) =>
             ValueTask.FromResult(Results.Failure<LedgerEvent?>(_failure));
 
+        public ValueTask<Result<LedgerEvent?>> ByKey(string idempotencyKey, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(Results.Failure<LedgerEvent?>(_failure));
+
         public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => ValueTask.FromResult(Results.Failure<long>(_failure));
     }
 }

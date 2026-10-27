@@ -82,6 +82,30 @@ public sealed class SessionRoutesTests
     }
 
     [Fact]
+    public async Task Suspended_answers_false_for_a_running_launch_with_its_secret_and_no_bearer_token()
+    {
+        await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
+        var launch = await WrapSessionScenarios.StartLaunch(host, Token);
+
+        var answer = await host.Http.Ask(Get($"/sindri/launches/{launch.Value}/suspended", WrapSessionScenarios.Wrap(WrapSessionScenarios.Proof)));
+
+        Expect.Equal(HttpStatusCode.OK, answer.Status);
+        Expect.True(answer.Body.Contains("\"suspended\":false", StringComparison.Ordinal) || answer.Body.Contains("\"suspended\": false", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Suspended_with_a_wrong_secret_is_SND_AUTH_003()
+    {
+        await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
+        var launch = await WrapSessionScenarios.StartLaunch(host, Token);
+
+        var answer = await host.Http.Ask(Get($"/sindri/launches/{launch.Value}/suspended", WrapSessionScenarios.Wrap("not-the-proof")));
+
+        Expect.Equal(HttpStatusCode.Forbidden, answer.Status);
+        Expect.True(answer.Body.Contains("SND-AUTH-003", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_malformed_launch_id_is_a_400()
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);

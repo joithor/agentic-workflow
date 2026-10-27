@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Features.GetRunSuspension;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Host.Commands.SessionWrap;
@@ -27,7 +28,7 @@ internal sealed class ControlPlaneWrapCalls(ControlPlaneClient client) : IWrapCa
 
     public async ValueTask<Result<bool>> Suspended(LaunchId launch, LaunchSecret proof, CancellationToken cancellationToken)
     {
-        var asked = await client.GetProven<SuspendedAnswer>($"/sindri/launches/{launch.Value}/suspended", proof.Value, cancellationToken).ConfigureAwait(false);
+        var asked = await client.GetProven<RunSuspensionView>($"/sindri/launches/{launch.Value}/suspended", proof.Value, cancellationToken).ConfigureAwait(false);
         return asked.IsError ? asked.Error : asked.Value.Value.Suspended;
     }
 }

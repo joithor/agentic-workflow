@@ -5,7 +5,7 @@ namespace Aw.Context.Core.Extract.Imports;
 /// <summary>The C# usings that name a namespace some other file of the repo declares.</summary>
 internal static partial class CsImports
 {
-    internal static ImportScan Find(IReadOnlyList<RepoFile> files, int maxDeclaringFiles)
+    internal static ImportScan Find(IReadOnlyList<SourceFile> files, int maxDeclaringFiles)
     {
         var sources = files.Where(f => f.Path.EndsWith(".cs", StringComparison.Ordinal)).Select(f => (f.Path, Text: Comments.Strip(f.Text))).ToList();
         try
