@@ -70,13 +70,13 @@ Each step writes to `$SD/status.md`, the one living doc. Sections: surfaces, cou
 2. **Counts.** Read-only queries that size every claim (rows, tenants, cells). Keep the query text next to the doc.
 3. **Decisions with the owner.** **Ask the user** one decision at a time: background, the gap, a concrete example with real numbers, options in words. Record the answer in their words under the next D-number (re-read the file for the max first; sessions add concurrently). Stop asking if they reject the question.
 4. **Scope.** Acceptance criteria in EARS form. Mark "waiting on approval" until approved.
-5. **TDD.** Engineering page from the approved scope; PR cards last. Write one `prs/pr-NN.md` per PR (summary, `path:line | change` table, Sindri graph context, tests; `templates/pr-cards.md`), put `<!-- PR-CARDS -->` in the PR-order section and run `python3 "$S/scripts/build_prs.py" "$SD/tdd.html" "$SD/prs" [--shots shots.json]`. It writes milestone-grouped cards (number, title, one-line change, rollback box, "Open the deep dive") and one shared dialog; click a card in the rendered page to confirm it opens.
+5. **TDD.** Engineering page from the approved scope; PR cards last. Write one `prs/pr-NN.md` per PR (summary, `path:line | change` table, Sindri graph context, tests; `templates/pr-cards.md`), put `<!-- PR-CARDS -->` in the PR-order section and run `python3 -I "$S/scripts/build_prs.py" "$SD/tdd.html" "$SD/prs" [--shots shots.json]`. It writes milestone-grouped cards (number, title, one-line change, rollback box, "Open the deep dive") and one shared dialog; click a card in the rendered page to confirm it opens.
 6. **Product + design page.** Mockups first.
 7. **Mockups.** Build only from the project's real components and tokens (**Invoke skill** `design-mockup-web` for the HTML). Render each beside a real screenshot of the same screen and compare before showing anyone. Reuse filters and creation flows that already exist; never re-mock them.
 8. **Diagrams.** Next section.
 9. **Style pass.** **Invoke skill** `design-refine` on each page, then re-apply the style (below).
 10. **Verify.** Every page rendered, 0 broken images, no horizontal scroll at 390px, every screenshot opened and read by you. The script gives metrics; the metrics are not the review.
-11. **Packet.** `python3 "$S/scripts/write_packet.py" "$SD" --slug <slug> --title "<title>"` after the last page and diagram change; open `packet.json` and check every path exists.
+11. **Packet.** `python3 -I "$S/scripts/write_packet.py" "$SD" --slug <slug> --title "<title>"` after the last page and diagram change; open `packet.json` and check every path exists.
 12. **Tracker last.** Create issues only after the owner approves scope and pages, in whatever state the project's tracker uses for "not started".
 
 ## Diagrams
