@@ -2,7 +2,7 @@ using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Lenses;
 
-/// <summary>The product band (spec §8.9): the own scope, the neighbors at the depth and the nodes the cascade reaches, each node in the first list that holds it.</summary>
+/// <summary>The product band (spec §8.9): the own scope, the neighbors at the depth and the nodes the cascade reaches, each node in the first list that holds it. Neighbors are reached over structure edges only (part-of, on, reads, writes, step-of, depends-on, moves-to), so features that only share a concept, a record or a code unit with the anchor are not neighbors.</summary>
 internal static class LensProduct
 {
     private static readonly NodeKind[] _kinds = [NodeKind.Feature, NodeKind.Surface, NodeKind.Action, NodeKind.Thing, NodeKind.Flow];
@@ -27,6 +27,14 @@ internal static class LensProduct
             new ProductCounts(own.Count, affects.Count) { Neighbors = neighbors.Count, Edges = edges.Count }, [.. edges]);
     }
 
+    /// <summary>Builds the graph indexes the lists read, so workers that build the lists at once only read them.</summary>
+    internal static void Warm(GraphSnapshot graph)
+    {
+        _ = GraphIndex.For(graph);
+        _ = GraphIndex.Of(graph, _structure);
+        _ = EdgeLookup.For(graph);
+    }
+
     /// <summary>The whole lists of one anchor's scope (nothing cut) and the keys of every item.</summary>
     internal static ProductLists Lists(LensScope scope, int depth)
     {
@@ -41,7 +49,7 @@ internal static class LensProduct
 
     private static List<LensReach> Neighbors(LensScope scope, int depth, HashSet<string> taken)
     {
-        var near = GraphWalk.Neighbors(scope.Graph, scope.Anchor.Key, depth).Nodes.Where(n => n.Depth > 0 && _kinds.Contains(n.Node.Key.Kind) && !taken.Contains(n.Node.Key.Value)).ToList();
+        var near = GraphWalk.Neighbors(GraphIndex.Of(scope.Graph, _structure), scope.Anchor.Key, depth).Nodes.Where(n => n.Depth > 0 && _kinds.Contains(n.Node.Key.Kind) && !taken.Contains(n.Node.Key.Value)).ToList();
         if (near.Count == 0)
         {
             return [];

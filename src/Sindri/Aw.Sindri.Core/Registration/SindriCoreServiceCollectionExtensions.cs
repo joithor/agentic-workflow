@@ -10,6 +10,9 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Sandbox.Credentials;
+using Aw.Sindri.Core.Sandbox.Plan;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -37,6 +40,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<ICallerContextAccessor, AsyncLocalCallerContextAccessor>()
             .AddSingleton<IJobContextAccessor, AsyncLocalJobContextAccessor>()
             .AddSingleton<HeldLease>()
+            .AddSingleton<LiveSchedule>()
             .AddSingleton<EndedInstanceViews>()
             .AddSingleton<TemporalRuntime>()
             .AddSingleton<HeldHumanToken>()
@@ -65,7 +69,8 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
             .AddSingleton<IPinRenewals, PinRenewals>()
-            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
+            .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>()
+            .AddSandboxCore();
 
     /// <summary>The views' projections, in the order the projector folds them.</summary>
     private static IServiceCollection AddProjections(this IServiceCollection services)
@@ -81,4 +86,13 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, LaunchesProjection>()
             .AddSingleton<IProjection, RecipeStatsProjection>()
             .AddSingleton<IProjection, CodeIndexProjection>();
+
+    /// <summary>
+    /// The sandbox port and the credential registry (sandbox spec SB12, SB18). The product registers only <see cref="UnavailableSandbox"/> until SB-5a; test hosts replace it
+    /// with the Testing sandboxes. Credential adapters are registered by SB-2 (owner-copy) and SB-8 (separate-login).
+    /// </summary>
+    private static IServiceCollection AddSandboxCore(this IServiceCollection services)
+        => services
+            .AddSingleton<ISandbox, UnavailableSandbox>()
+            .AddSingleton<ModelCredentialSources>();
 }

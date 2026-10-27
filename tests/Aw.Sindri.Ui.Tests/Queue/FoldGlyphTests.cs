@@ -54,13 +54,13 @@ public sealed class FoldGlyphTests
         var changed = new List<string?>();
         queue.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
-        Assert.Equal(Labels.FoldFolded, queue.ClosedGlyph);
+        Assert.Equal(Labels.FoldFolded, queue.ClosedArrow);
 
         await queue.ToggleClosed(_api, Token);
-        Assert.Equal(Labels.FoldOpen, queue.ClosedGlyph);
-        Assert.Contains(nameof(QueueViewModel.ClosedGlyph), changed, StringComparer.Ordinal);
+        Assert.Equal(Labels.FoldOpen, queue.ClosedArrow);
+        Assert.Contains(nameof(QueueViewModel.ClosedArrow), changed, StringComparer.Ordinal);
 
         await queue.ToggleClosed(_api, Token);
-        Assert.Equal(Labels.FoldFolded, queue.ClosedGlyph);
+        Assert.Equal(Labels.FoldFolded, queue.ClosedArrow);
     }
 }
