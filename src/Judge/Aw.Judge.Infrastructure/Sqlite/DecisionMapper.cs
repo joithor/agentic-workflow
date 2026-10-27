@@ -38,6 +38,12 @@ internal sealed class DecisionMapper(DecisionJson json) : IRowMapper<DecisionRec
 
     private static T Read<T>(SqliteDataReader reader, int ordinal, Func<SqliteDataReader, int, T> get)
     {
+        // SQLite coerces text to a number (0 for 'high') instead of failing, so look at what is stored first.
+        if (reader.GetFieldType(ordinal) != typeof(long) && reader.GetFieldType(ordinal) != typeof(double))
+        {
+            throw new InvalidDataException($"Column {reader.GetName(ordinal)} holds {reader.GetValue(ordinal).GetType().Name} '{reader.GetValue(ordinal)}', not a number.");
+        }
+
         try
         {
             return get(reader, ordinal);
