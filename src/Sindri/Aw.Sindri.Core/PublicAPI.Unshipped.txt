@@ -20012,3 +20012,6 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.get -> strin
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.EndedLaunch.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.RewindRequested.RewindRequested(string! Actor, Aw.Sindri.Core.Workflow.Engine.Triggers.CommandStamp! Stamp, string! To, string? EndedLaunch = null) -> void
 static Aw.Sindri.Core.Sandbox.SandboxRefusal.SourceTextOf(Aw.Kernel.Error! error) -> string?
+Aw.Sindri.Core.Sandbox.Plan.SessionHomePaths
+static Aw.Sindri.Core.Sandbox.Plan.SessionHomePaths.For(string! sindriHome, Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Sandbox.Plan.SessionHomePaths.Sessions(string! sindriHome) -> string!

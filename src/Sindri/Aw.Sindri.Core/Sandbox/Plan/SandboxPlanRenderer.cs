@@ -106,6 +106,7 @@ public static partial class SandboxPlanRenderer
         {
             null => $"{path} is not listed; the system is read-only.\n",
             { Kind: PlanMountKind.Deny } => ExplainDenied(path, mount),
+            { Kind: PlanMountKind.Tmpfs } when !string.Equals(mount.Path, home, StringComparison.Ordinal) => ExplainDenied(path, new PlanMount(path, PlanMountKind.Deny, Reason: Always + "Sindri's own state is not visible to a session")),
             { Kind: PlanMountKind.Tmpfs } => $"{path} is not bound in the sandbox home, so it does not exist for this session (a tool that writes there loses it with the run).\nThe owner can allow it for this repo: add it to sandbox.repos.<repo>.homeAllow in the profile.\n",
             { Kind: PlanMountKind.ReadOnly } => $"{path} can be read, not changed ({mount.Reason}).\n",
             _ => $"{path} is writable ({mount.Reason}).\n",
