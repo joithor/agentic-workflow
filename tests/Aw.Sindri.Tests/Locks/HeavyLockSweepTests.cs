@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Locks;
+using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Locks;

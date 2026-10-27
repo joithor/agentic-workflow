@@ -80,7 +80,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
         {
             _ = sweep.Sweep(locks);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             // best effort: heavy reclaims a dead slot itself when it next tries that key
         }
