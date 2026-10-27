@@ -3,11 +3,14 @@ using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Core.Concepts;
 
-/// <summary>Merges the smallest groups into the group they share the most edges with, until there are at most 15 and none holds under 3 features. The glossary adds one more pull: the terms the two groups' code shares.</summary>
+/// <summary>Merges the smallest groups into the group they share the most edges with, until there are at most 15 and none holds under 3 features. The glossary adds one more pull: the terms the two groups' code shares. On a tie the smallest target wins, and no merge grows a concept past about 3x the average size a map this big would have (merging stops there, even above 15 concepts).</summary>
 internal static class ConceptGrouping
 {
     // A group whose code carries all the terms of another pulls as hard as this many shared edges.
     private const double GlossaryWeight = 4.0;
+
+    // A merged concept may hold at most this many times the average size of the concepts a map this big gets (about one per MinFeatures features, up to MaxConcepts).
+    private const double SizeCapFactor = 3.0;
 
     // The groups in 'frozen' (the scan's hinted groups) are the hint's own: nothing merges into them and they merge into nothing, however small.
     internal static Dictionary<string, List<string>> Merge(GraphSnapshot graph, Dictionary<string, List<string>> groups, GlossaryTermIndex? terms = null, IReadOnlySet<string>? frozen = null)
@@ -16,15 +19,28 @@ internal static class ConceptGrouping
         while (Open(groups, frozen) is { Count: > 1 } open && (groups.Count > ConceptPlan.MaxConcepts || open.Exists(k => groups[k].Count < ConceptPlan.MinFeatures)) && Total(groups) >= ConceptPlan.WholeBelow)
         {
             var smallest = open.OrderBy(k => groups[k].Count).ThenBy(k => k, StringComparer.Ordinal).First();
-            var target = open.Where(k => k != smallest)
+            var cap = SizeCap(open.Sum(k => groups[k].Count));
+            var candidates = open.Where(k => k != smallest && groups[k].Count + groups[smallest].Count <= cap).ToList();
+            if (candidates.Count == 0)
+            {
+                break;
+            }
+
+            var target = candidates
                 .OrderByDescending(k => Connection(groups[smallest], groups[k], neighbors) + (terms is null ? 0 : GlossaryWeight * terms.Between(groups[smallest], groups[k])))
-                .ThenByDescending(k => groups[k].Count)
+                .ThenBy(k => groups[k].Count)
                 .ThenBy(k => k, StringComparer.Ordinal).First();
             groups[target] = [.. groups[target].Concat(groups[smallest]).Order(StringComparer.Ordinal)];
             _ = groups.Remove(smallest);
         }
 
         return groups;
+    }
+
+    private static int SizeCap(int total)
+    {
+        var concepts = Math.Clamp(total / ConceptPlan.MinFeatures, 1, ConceptPlan.MaxConcepts);
+        return Math.Max(2 * ConceptPlan.MinFeatures, (int)Math.Ceiling(SizeCapFactor * total / concepts));
     }
 
     private static List<string> Open(Dictionary<string, List<string>> groups, IReadOnlySet<string>? frozen) =>
