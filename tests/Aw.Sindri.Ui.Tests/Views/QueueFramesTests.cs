@@ -115,6 +115,18 @@ public sealed class QueueFramesTests : IDisposable
     }
 
     [Fact]
+    public Task Every_group_header_keeps_a_gap_above_it() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+
+        var heads = Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Classes.Contains("group-head") && t.IsEffectivelyVisible).ToList();
+        Assert.NotEmpty(heads);
+        Assert.All(heads, h => Assert.True(h.Margin.Top > 0, AutomationProperties.GetName(h) + " sits flush against the row above it"));
+    });
+
+    [Fact]
     public Task The_queue_page_shows_the_apis_groups_and_rows() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => !s.Queue.IsLoading);
