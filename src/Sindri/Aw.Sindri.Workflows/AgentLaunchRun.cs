@@ -16,5 +16,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Model">The Step's 'model' parameter, a model id; null runs the agent's default.</param>
 /// <param name="Previous">For an escalation: the run that failed (spec 5); null for a first run.</param>
 /// <param name="Escalation">0 for the first run, 1 for its one retry on a stronger model (spec 7.1).</param>
+/// <param name="Floor">The state's model floor ('cheap', 'standard' or 'strong'), or null for none (model-pick spec 8).</param>
+/// <param name="Recipe">The recipe the instance runs, for the step's model history; null when unknown.</param>
+/// <param name="RecipeVersion">The recipe's version.</param>
 /// <param name="ModelProfile">The profile key when the Step's 'model' is '{ profile: … }'; the launch refuses it (<see cref="AgentModels.Refusal"/>).</param>
-internal sealed record AgentLaunchRun(AgentStepRun Run, FactValue? Item, FactValue? Workspace = null, string? Bundle = null, string? Subject = null, FactValue? LensQueue = null, IReadOnlyDictionary<FactKey, FactValue>? Facts = null, IReadOnlyList<FactKey>? Payloads = null, string? Model = null, string? ModelProfile = null, PreviousRun? Previous = null, int Escalation = 0);
+internal sealed record AgentLaunchRun(AgentStepRun Run, FactValue? Item, FactValue? Workspace = null, string? Bundle = null, string? Subject = null, FactValue? LensQueue = null, IReadOnlyDictionary<FactKey, FactValue>? Facts = null, IReadOnlyList<FactKey>? Payloads = null, string? Model = null, string? ModelProfile = null, PreviousRun? Previous = null, int Escalation = 0, string? Floor = null, RecipeId? Recipe = null, int RecipeVersion = 0);

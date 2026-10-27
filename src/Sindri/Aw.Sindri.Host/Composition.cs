@@ -6,6 +6,8 @@ using Aw.Context.Features;
 using Aw.Context.Infrastructure;
 using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
+using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Features;
 using Aw.Sindri.Host.Forge;
@@ -43,6 +45,7 @@ internal static class Composition
             .AddCodeIndexInfrastructure(environment)   // the code index: $AW_SINDRI_HOME/code-index (compose edge)
             .AddContextLabeling()   // the labeling pass over IModelPort; a build asks it only when the approved profile turns 'context.labeling' on
             .AddSingleton<IModelPort>(sp => new JudgeModelPort(new JudgeCatalog(environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<System.Text.Json.JsonSerializerOptions>()).Get))
+            .AddScoped<IDoctorChecks>(sp => new ModelPickDoctorChecks(sp.GetRequiredService<IModelPickSettings>(), environment))   // the 'model:pick' row (model-pick spec 8)
             .AddPullRequests(environment)   // IPullRequests over the forge the approved profile names (workflow.forge; compose edge to Aw.Forge.Infrastructure in Forge/ForgeAdapters)
             .AddProveBlocks(environment)   // input.prove.echo, only under AW_SINDRI_PROVE_BLOCKS=1 in a prover home
             .AddSindriHost();

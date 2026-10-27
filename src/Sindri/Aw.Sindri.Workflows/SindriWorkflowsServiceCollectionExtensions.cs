@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Scheduling;
@@ -115,9 +116,11 @@ public static class SindriWorkflowsServiceCollectionExtensions
     // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
     private static IServiceCollection AddAgentRuntime(this IServiceCollection services)
     {
-        services.TryAddSingleton<ReportRefusals>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
+        services.TryAddSingleton<ReportRefusals>();
+        services.TryAddSingleton<IModelPickSettings, NoModelPickSettings>();   // the profile adapter replaces these two
+        services.TryAddSingleton<IModelPickHistory, NoModelPickHistory>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
         return services
-        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
+        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<ModelPicker>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
         .AddSingleton<AgentRecovering>().AddSingleton<IStepOutputs, DiskStepOutputs>()
         .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
