@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host.Commands.SessionWrap;
+using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -16,7 +17,7 @@ internal static class SessionWrapVerb
     internal static async Task<int> Run(string[] args, ControlPlaneClient client, ISindriHome home, Func<string, string?> environment, CancellationToken ct)
     {
         using var held = WrapSignals.Hold();
-        var command = new SessionWrapCommand(new ControlPlaneWrapCalls(client), new ProcessChildLauncher(), environment, TimeProvider.System, Console.Error, new SessionIdFiles(home.Path), held.Hangup);
+        var command = new SessionWrapCommand(new ControlPlaneWrapCalls(client), new ProcessChildLauncher(), environment, TimeProvider.System, Console.Error, new SessionIdFiles(home.Path), new WrapExtras(held.Hangup, new WatchdogPorts(new SystemctlScopeControl(new SandboxProcesses()), new CgroupFiles())));
         return await command.Run(args, ct).ConfigureAwait(false);
     }
 }

@@ -16,8 +16,8 @@ namespace Aw.Sindri.Host.Commands.SessionWrap;
 /// <param name="clock">The time the heartbeat and the id wait run on.</param>
 /// <param name="errors">Where wrap writes its own messages (never the agent's output).</param>
 /// <param name="ids">Where the session id is looked for.</param>
-/// <param name="hangup">Completes when wrap is told to hang up or terminate (its terminal closed); null when nothing can tell it.</param>
-internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher children, Func<string, string?> environment, TimeProvider clock, TextWriter errors, ISessionIdSource ids, Task? hangup = null)
+/// <param name="extras">The hang-up signal and the limit watchdog's ports, when there are any.</param>
+internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher children, Func<string, string?> environment, TimeProvider clock, TextWriter errors, ISessionIdSource ids, WrapExtras? extras = null)
 {
     private static readonly TimeSpan _idWait = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _idPoll = TimeSpan.FromMilliseconds(500);
@@ -30,6 +30,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
     internal async Task<int> Run(string[] args, CancellationToken cancellationToken)
     {
         _resolved = WithSecretFromFile(environment);
+        _ = extras?.Watchdog;   // red: the watch is wired in the next commit
         var (failed, begunLaunch, started) = await Begin(args).ConfigureAwait(false);
         if (failed is { } failure)
         {
@@ -92,7 +93,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
     /// <summary>Waits for the agent. A hang-up (the terminal closed) is also sent to the agent by the kernel, but an agent that doesn't read its terminal can outlive it; after the grace it is killed, so the session ends and its exit is reported.</summary>
     private async Task<int> ExitCode(IWrapChild child, CancellationToken cancellationToken)
     {
-        if (hangup is not null && await Task.WhenAny(child.Exited, hangup).ConfigureAwait(false) == hangup && !child.Exited.IsCompleted)
+        if (extras?.Hangup is { } hangup && await Task.WhenAny(child.Exited, hangup).ConfigureAwait(false) == hangup && !child.Exited.IsCompleted)
         {
             var grace = Task.Delay(_hangupGrace, clock, cancellationToken);
             if (await Task.WhenAny(child.Exited, grace).ConfigureAwait(false) == grace)
