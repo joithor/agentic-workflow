@@ -26,7 +26,7 @@ public sealed class SystemdScopeArgvTests
                 "systemd-run", "--user", "--scope", "--quiet", $"--unit={_unit}", "--slice=sindri-steps.slice",
                 "-p", "MemoryHigh=6871947673", "-p", "MemoryMax=8589934592", "-p", "MemorySwapMax=0", "-p", "OOMPolicy=kill",
                 "-p", "CPUWeight=50", "-p", "CPUQuota=200%", "-p", "TasksMax=2048",
-                "-p", "RuntimeMaxSec=88800",   // (10 min + 10 min grace + 24 h) in seconds
+                "-p", "RuntimeMaxSec=87600",   // (10 min + 10 min grace + 24 h) in seconds
                 "--", "bwrap", "--", "claude",
             ],
             argv);
