@@ -88,7 +88,7 @@ internal static partial class DeskBlocks
             }
         }
 
-        return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log)), [], report);
+        return Reply("step.scope.evidence", outcome, Outputs(("findings", FindingsFact(findings)), (RoundLog.Key, log), Digest(facts, log)), [], report);
     }
 
     /// <summary>The stop for a lens the check stalled on (#1239): evidence's only failures are the lens findings the check named, so the owner decides instead of another gather. Null otherwise.</summary>
@@ -141,7 +141,8 @@ internal static partial class DeskBlocks
             ("openQuestions", assembled.Require("openQuestions")),
             ("recommendation", new JsonObject { ["outcome"] = "revise", ["why"] = open }),
             ("findings", FindingsFact(findings)),
-            (RoundLog.Key, log));
+            (RoundLog.Key, log),
+            Digest(assembled, log));
         if (assembled["runs"] is { } runs)
         {
             outputs["runs"] = ScopeJson.Write(runs);   // why: the freeze re-checks the model checks from this fact, as after 'complete'

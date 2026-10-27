@@ -13,6 +13,7 @@ internal sealed class ScopeExcludeInstructions : IAgentStepInstructions
         "fact:findings lists SCP-COV-003 findings only: code-lens files near an anchor that fact:scopeMap neither maps nor excludes. Group them by directory and decide each group.",
         "Add to scopeMap.excluded one entry with a reason for each group you leave out, as {\"glob\": \"src/gen/**\", \"reason\": \"...\"} (or {\"item\": <key>, \"reason\": \"...\"} for one file); add a surface and map the file to it when it belongs in the scope.",
         "Change nothing else: not the acceptance list, not the other map fields, not an existing entry. fact:roundLog shows what earlier rounds already decided.",
+        "fact:roundDigest (roundDigest.json) says what earlier rounds found and what has been settled: read its open findings first, they are what nothing has answered yet; a closed one is covered by an exclusion, a map row or an answer, so do not redo it. fact:roundLog is the raw record.",
     ];
 
     /// <inheritdoc/>
