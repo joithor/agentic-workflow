@@ -44,7 +44,7 @@ public sealed class StripAnswerDeskTests
         return (shell, shell.Strip.Rows[0].Address, deskId);
     }
 
-    [Fact]
+    [Fact(Skip = "superseded by StripAnswerDeskServedTests: its fixture serves no instance for the desk row (#1057)")]
     public Task Answer_on_a_desk_step_opens_the_inbox_on_its_row_with_the_answer_bar_and_sends_one_CompleteStep() => UiThread.Run(async () =>
     {
         var (shell, address, deskId) = await Connected();
