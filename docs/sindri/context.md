@@ -348,9 +348,12 @@ overrides:                                  # human decisions that outlive rebui
 
 - **Kinds:** `feature`, `surface`, `action`, `thing`, `flow`, `decision`, `record`, `code`. **Edges** (from → to):
   `part-of` (feature or surface → feature), `on` (action → surface), `moves-to` (surface → surface), `reads`/`writes`
-  (surface or action → thing), `depends-on` (feature → feature), `step-of` (surface or action → flow, with `order`),
+  (surface or action → thing), `depends-on` (feature → feature, or code → code), `step-of` (surface or action → flow, with `order`),
   `implements`/`tests` (code → feature, surface or action), `decides` (decision → any), `mentions` (record → any),
-  `quotes` (decision → record), `supersedes` (decision → decision).
+  `quotes` (decision → record), `supersedes` (decision → decision). The deterministic pass makes the code → code
+  `depends-on` edges itself, one per file that imports another file of the repo (resolved TS/JS imports, workspace
+  packages and tsconfig `paths` aliases included, and C# `using`s matched to the files declaring the namespace; a
+  namespace declared in more than 50 files makes none), at confidence 1.0.
 - Every node and edge may carry `provenance` (`deterministic`, `model`, `human`), `confidence` (0 to 1), `evidence`
   (record keys, with an optional `span`) and `at`. **Trust is never in the file**: it is recomputed from provenance.
 - Override actions: `accept`, `reject`, `rename` (`label`), `merge` and `move` (`other`), `add` (`label`, `other` =
