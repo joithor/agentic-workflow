@@ -1,9 +1,7 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Testing;
-using Aw.Context.Testing.Engine;
 
 namespace Aw.Sindri.Tests.Profile;
 
@@ -171,7 +169,7 @@ public sealed class ModelKeyTests
     [Fact, Trait("Lane", "unit")]
     public async Task Profile_validate_prints_what_each_pin_matches()
     {
-        var checks = new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog(Entry("claude-code")), new FixedRecipeStateCatalog("workflow.scoping/questions", "workflow.design/questions"));
+        var checks = new ModelKeyChecks(new FixedAgentCatalog(Entry("claude-code")), new FixedRecipeStateCatalog("workflow.scoping/questions", "workflow.design/questions"));
         var profile = With(Agent(pin: Map(("claude-code/questions", "haiku"))));
 
         var lines = await checks.PinMatches(profile, TestContext.Current.CancellationToken);
@@ -182,7 +180,7 @@ public sealed class ModelKeyTests
     [Fact, Trait("Lane", "unit")]
     public async Task Approval_checks_the_keys_against_the_catalog_and_the_recipes()
     {
-        var checks = new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog(Entry("claude-code")), new FixedRecipeStateCatalog("workflow.scoping/questions"));
+        var checks = new ModelKeyChecks(new FixedAgentCatalog(Entry("claude-code")), new FixedRecipeStateCatalog("workflow.scoping/questions"));
 
         var typo = await checks.Models(With(Agent(pin: Map(("claude-code/question", "haiku")))), TestContext.Current.CancellationToken);
         var fine = await checks.Models(With(Agent(pin: Map(("claude-code/questions", "haiku")))), TestContext.Current.CancellationToken);

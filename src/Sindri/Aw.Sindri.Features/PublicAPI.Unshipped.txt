@@ -4935,3 +4935,5 @@ Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.ApplyCommandRequest(string! 
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.Deconstruct(out string! Instance, out Aw.Sindri.Features.ApplyCommand.ApplyCommandKind Kind, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out string? Text, out int? Amount, out Aw.Sindri.Core.Workflow.Engine.CommandVerb? Verb, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Challenges.ChallengeAnswer? Challenge, out string? To) -> void
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.get -> string?
 Aw.Sindri.Features.ApplyCommand.ApplyCommandRequest.To.init -> void
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ValidateProfile.ValidateProfileResponse.Matches.init -> void

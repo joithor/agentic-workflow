@@ -135,6 +135,11 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return loaded;
         }
 
-        return checks.Context(loaded.Value.Profile) is { } invalid ? invalid : loaded;
+        if (checks.Context(loaded.Value.Profile) is { } invalid)
+        {
+            return invalid;
+        }
+
+        return await checks.Models(loaded.Value.Profile, cancellationToken).ConfigureAwait(false) is { } badModel ? badModel : loaded;   // SND-MODEL-001
     }
 }

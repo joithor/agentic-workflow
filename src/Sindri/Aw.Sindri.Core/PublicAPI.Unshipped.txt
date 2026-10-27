@@ -19543,3 +19543,7 @@ const Aw.Sindri.Core.Profile.WorkflowAgentSettings.Off = "off" -> string!
 const Aw.Sindri.Core.Profile.WorkflowAgentSettings.On = "on" -> string!
 static Aw.Sindri.Core.Profile.ModelKeyRules.Check(Aw.Sindri.Core.Profile.WorkflowAgentSettings? agent, System.Collections.Generic.IReadOnlyCollection<Aw.Sindri.Core.Launch.AgentId>? agentIds, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RecipeStateRef!>? states) -> Aw.Kernel.Error?
 static readonly Aw.Sindri.Core.SindriErrors.ModelKeyInvalid -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Profile.ModelKeyChecks
+Aw.Sindri.Core.Profile.ModelKeyChecks.ModelKeyChecks(Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Profile.IRecipeStateCatalog? states = null) -> void
+Aw.Sindri.Core.Profile.ModelKeyChecks.Models(Aw.Sindri.Core.Profile.SindriProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Error?>
+Aw.Sindri.Core.Profile.ModelKeyChecks.PinMatches(Aw.Sindri.Core.Profile.SindriProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>

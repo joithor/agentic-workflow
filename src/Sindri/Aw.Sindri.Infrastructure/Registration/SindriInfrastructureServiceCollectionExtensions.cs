@@ -140,6 +140,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IRecipeStatsCache, SqliteRecipeStatsCache>()
             .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
+            .AddScoped<IRecipeStateCatalog, RecipeStateCatalog>()
             .AddSingleton<IProfileSource>(sp => new YamlProfileSource(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<JsonSerializerOptions>(), () => HeavyCap.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory)))
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IBoxLimitsSource>(sp => new HeavyCapSource(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))
