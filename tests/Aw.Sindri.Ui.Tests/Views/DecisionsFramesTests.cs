@@ -69,7 +69,10 @@ public sealed class DecisionsFramesTests : FrameHost
         Settle(window);
 
         Assert.Equal("SND-ITEM-409", shell.Decision.RefusalCode);
-        Assert.Equal((string)GoldenFiles.Node("decisions-id", "decided-elsewhere")["detail"]!, Named<TextBlock>(window, "DecisionRefusal").Text);
+        var refusal = Named<TextBlock>(window, "DecisionRefusal").Text ?? "";   // why: the served detail has the id and the raw actor; the sheet says it once, in words
+        Assert.StartsWith("Already decided: ", refusal, StringComparison.Ordinal);
+        Assert.DoesNotContain("DEC-", refusal, StringComparison.Ordinal);
+        Assert.DoesNotContain("human:", refusal, StringComparison.Ordinal);
         Assert.Equal("accept", window.FocusManager?.GetFocusedElement() is Button { DataContext: DecisionOption focused } ? focused.Id : "", StringComparer.Ordinal); // why: the buttons are rebuilt, so the same option's new button
         Frame(window, "decision-409");
     });
