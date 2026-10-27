@@ -55,7 +55,7 @@ internal sealed partial class ShellViewModel
         {
             if (string.Equals(e.PropertyName, nameof(RecipeSheetViewModel.Title), StringComparison.Ordinal))
             {
-                Changed(nameof(SheetHeading), nameof(SheetName), nameof(EdgeTabName));
+                Changed(nameof(SheetTitle), nameof(SheetName), nameof(EdgeTabName));
             }
         };
         RecipesPage.OpenRequested += (_, e) => OpenSheet(e.Link);

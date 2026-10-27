@@ -13,24 +13,14 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet's subject (the deep link's subject); kept after the sheet closes for the edge tab; empty before the first.</summary>
     public string SheetSubject => SheetLink?.Subject ?? string.Empty;
 
-    /// <summary>The sheet's title text: a workflow's name for its sheet, a decision's request for its sheet, else the link's subject.</summary>
-    public string SheetHeading => NamedHeading is { Length: > 0 } heading ? heading : SheetSubject;
-
-    // The title of the sheets whose subject is an id nobody reads (a workflow's slug, a decision's DEC id); empty for the others.
-    private string NamedHeading => SheetLink?.Kind switch
-    {
-        DeepLinkKind.Recipe => Recipe.Title,
-        DeepLinkKind.Decision => Decision.Heading,
-        null or DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Service or DeepLinkKind.Job or DeepLinkKind.Workflow
-            or DeepLinkKind.Node or DeepLinkKind.ContextItem or DeepLinkKind.Session or DeepLinkKind.System or DeepLinkKind.Setup => string.Empty,
-        _ => throw new InvalidOperationException("a sheet link of an unknown kind"),
-    };
+    /// <summary>The sheet's visible title: the subject's name once drawn (an agent's heading), else the subject itself; the ref stays in the tooltip.</summary>
+    public string SheetTitle => NamedSubject;
 
     private void OnDecisionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (string.Equals(e.PropertyName, nameof(DecisionSheetViewModel.Heading), StringComparison.Ordinal))
         {
-            Changed(nameof(SheetHeading), nameof(SheetName), nameof(EdgeTabName));
+            Changed(nameof(SheetTitle), nameof(SheetName), nameof(EdgeTabName));
         }
     }
 
@@ -46,11 +36,40 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet's accessible name: the kind's noun and the subject ("Workflow X"); an id that names itself stays bare.</summary>
     public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + NamedSubject : SheetSubject;
 
-    /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject : SheetSubject);
+    /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case; an item or workflow reads its title, or the bare noun while it loads, never the raw address.</summary>
+    public string EdgeTabName => Labels.Reopen + " " + EdgeTabSubject;
 
-    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
-    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
+#pragma warning disable IDE0072 // every other kind falls to the noun arm
+    private string EdgeTabSubject => SheetLink?.Kind switch
+    {
+        DeepLinkKind.Item => Joined("item", Item.Title),
+        DeepLinkKind.Workflow => Joined("workflow", Instance.Title),
+        { } kind when Labels.KindNoun(kind) is { Length: > 0 } noun => char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject,
+        _ => SheetSubject,
+    };
+#pragma warning restore IDE0072
+
+    private static string Joined(string noun, string title) => title.Length > 0 ? noun + " " + title : noun;
+
+    /// <summary>The edge tab's text: the item's or workflow's readable title once read, else the sheet kind's plain word; never a raw address.</summary>
+#pragma warning disable IDE0072 // the kinds whose subject is already a readable name keep it
+    public string EdgeTabText => SheetLink?.Kind switch
+    {
+        DeepLinkKind.Item => Item.Title.Length > 0 ? Item.Title : Labels.EdgeTabItem,
+        DeepLinkKind.Workflow => Instance.Title.Length > 0 ? Instance.Title : Labels.EdgeTabWorkflowRun,
+        DeepLinkKind.NeedsYou => Labels.EdgeTabNeedsYou,
+        DeepLinkKind.Decision => Labels.EdgeTabDecision,
+        DeepLinkKind.Job => Labels.EdgeTabJob,
+        DeepLinkKind.Session => Labels.EdgeTabSession,
+        _ => SheetSubject,
+    };
+#pragma warning restore IDE0072
+
+    /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page, on the page it was closed on.</summary>
+    public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected && _edgeTabPage == CurrentPage;
+
+    // The page the sheet was closed on: the edge tab belongs to it and goes when the page is left.
+    private PageId? _edgeTabPage;
 
     /// <summary>True while the sheet shows its "not served yet" placeholder: until a lane's content claims the link's kind.</summary>
 #pragma warning disable IDE0072 // the lanes populate the kinds they claim; every other kind keeps the placeholder
@@ -79,13 +98,14 @@ internal sealed partial class ShellViewModel
         IsSheetOpen = true;
         ForgetRowSheetUnless(link);
         OnSheetOpened(link);
-        Changed(nameof(IsItemSheet), nameof(IsNeedsYouSheet), nameof(IsDecisionSheet), nameof(SheetLink), nameof(SheetSubject), nameof(SheetHeading), nameof(SheetName), nameof(EdgeTabName), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
+        Changed(nameof(IsItemSheet), nameof(IsNeedsYouSheet), nameof(IsDecisionSheet), nameof(SheetLink), nameof(SheetSubject), nameof(SheetTitle), nameof(SheetName), nameof(EdgeTabName), nameof(EdgeTabText), nameof(IsSheetOpen), nameof(HasEdgeTab), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsSheetPlaceholderShown));
     }
 
     /// <summary>Closes the sheet (Esc); its subject stays on the edge tab.</summary>
     internal void CloseSheet()
     {
         IsSheetOpen = false;
+        _edgeTabPage = CurrentPage;
         _ = NeedsYou.CloseSheet();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }

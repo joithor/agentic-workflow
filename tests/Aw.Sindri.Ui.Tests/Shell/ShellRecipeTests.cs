@@ -64,10 +64,10 @@ public sealed class ShellRecipeTests
         shell.Navigate(Link("recipe/" + Id));
 
         Assert.NotEqual(Id, shell.Recipe.Title, StringComparer.Ordinal);
-        Assert.Equal(shell.Recipe.Title, shell.SheetHeading);
+        Assert.Equal(shell.Recipe.Title, shell.SheetTitle);
         Assert.Equal("Reopen recipe " + shell.Recipe.Title, shell.EdgeTabName);
         shell.Navigate(Link("item/ITM-1"));
-        Assert.Equal("ITM-1", shell.SheetHeading);
+        Assert.Equal("ITM-1", shell.SheetTitle);
     }
 
     private readonly InMemoryEndpointRecords _records = new();

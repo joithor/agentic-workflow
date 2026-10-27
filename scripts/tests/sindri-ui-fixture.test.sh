@@ -122,6 +122,8 @@ case "$*" in
   "workflow start "*)
     for a in "$@"; do case "$a" in fact:*=*) echo "fact ${a%%=*} $(cat "${a#*=}")" >> "$STUB_LOG" ;; esac; done
     if [ -n "${STUB_FAIL_START:-}" ]; then echo "SND-CLI-003 refused" >&2; exit 2; fi ;;
+  "recipe approve "*) IFS= read -r line; echo "typed=$line" >> "$STUB_LOG" ;;
+  "ledger "*) sleep "${STUB_LEDGER_SLEEP:-0}" ;;
 esac
 exit 0
 EOF
@@ -244,6 +246,12 @@ check "workflows_starts_one_triage_and_two_work_instances_through_the_cli: three
 check "one triage" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-triage-three-state --item ITM-')" "1"
 check "two work" "$(printf '%s\n' "$starts" | grep -c 'workflow start workflow.dev-desk-round-trip --item ITM-')" "2"
 check "each start has an item of its own" "$(printf '%s\n' "$starts" | grep -o 'ITM-[A-Za-z0-9]*' | sort -u | wc -l | tr -d ' ')" "3"
+# #1343: the dev recipes aren't embedded, so each is approved (which registers it) before its first start, typing "approve <id> <version>".
+check "workflows_approves_each_dev_recipe_once_before_starting_it: two approvals" "$(grep -c '^recipe approve ' "$STUB_LOG")" "2"
+contains "the triage recipe is approved from recipes/dev" "$(grep '^recipe approve ' "$STUB_LOG")" "recipe approve $ROOT/recipes/dev/triage-three-state.yaml"
+contains "the work recipe is approved from recipes/dev" "$(grep '^recipe approve ' "$STUB_LOG")" "recipe approve $ROOT/recipes/dev/desk-round-trip.yaml"
+contains "the approval types the id and version" "$(grep '^typed=' "$STUB_LOG")" "typed=approve workflow.dev-triage-three-state $(sed -n 's/^version: *//p' "$ROOT/recipes/dev/triage-three-state.yaml" | head -1)"
+check "the approval comes before the first start" "$(grep -n '^recipe approve .*triage-three-state\|^workflow start workflow.dev-triage' "$STUB_LOG" | head -1 | grep -c 'recipe approve')" "1"
 # F3: the recipes' required inputs go with the start: fact:item as JSON naming the item, fact:request as text.
 check "the triage start passes fact:item" "$(printf '%s\n' "$starts" | grep 'dev-triage-three-state' | grep -c -- '--fact fact:item=')" "1"
 check "each work start passes fact:request" "$(printf '%s\n' "$starts" | grep 'dev-desk-round-trip' | grep -c -- '--fact fact:request=')" "2"
@@ -264,9 +272,13 @@ AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" workflows --large >/dev/null 
 starts="$(grep '^workflow start' "$STUB_LOG")"
 check "workflows_large_starts_twelve_roots_across_three_recipes: twelve starts" "$(printf '%s\n' "$starts" | grep -c .)" "12"
 check "three recipes" "$(printf '%s\n' "$starts" | awk '{print $3}' | sort -u | wc -l | tr -d ' ')" "3"
+check "workflows --large approves each of its three recipes once" "$(grep -c '^recipe approve ' "$STUB_LOG")" "3"
+contains "workflows --large approves the notify recipe" "$(grep '^recipe approve ' "$STUB_LOG")" "recipe approve $ROOT/recipes/dev/workflow.dev-notify.yaml"
 : > "$STUB_LOG"; echo 0 > "$STUB_LOG.n"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident start >/dev/null 2>&1; check "incident start exits 0" "$?" "0"
 contains "incident_start_starts_an_incident_urgency_instance: the incident recipe" "$(grep '^workflow start' "$STUB_LOG")" "workflow start workflow.dev-incident-hold --item ITM-01"
+check "incident_start_approves_the_incident_recipe_first" "$(grep '^recipe approve \|^workflow start ' "$STUB_LOG" | head -1)" "recipe approve $ROOT/recipes/dev/incident-hold.yaml"
+contains "incident start types the incident recipe's id and version" "$(grep '^typed=' "$STUB_LOG")" "typed=approve workflow.dev-incident-hold $(sed -n 's/^version: *//p' "$ROOT/recipes/dev/incident-hold.yaml" | head -1)"
 : > "$STUB_LOG"
 AW_SINDRI_HOME="$U" SINDRI="$STUB" bash "$FIXTURE" incident stop >/dev/null 2>&1; check "incident stop exits 0" "$?" "0"
 check "incident_stop_cancels_it" "$(cat "$STUB_LOG")" "workflow cancel ITM-01"
@@ -300,7 +312,7 @@ for f in src/tabs/TabManager.ts src/tabs/TabGroups.ts src/tabs/Pinned.ts src/lay
 done
 check "the repo is a git repo on main with one commit" "$(git -C "$R" rev-list --count main 2>/dev/null)" "1"
 check "the repo is clean" "$(git -C "$R" status --porcelain)" ""
-check "the repo's sha is the same on every run (fixed author and date)" "$(git -C "$R" log -1 --format='%an|%aI')" "Fixture Author|2026-07-01T09:00:00+00:00"
+check "the repo's sha is the same on every run (fixed author and date)" "$(git -C "$R" log -1 --format='%an|%at')" "Fixture Author|1782896400"
 contains "the repo is one of the profile's repos" "$(cat "$C/profile/profile.yaml")" "name: aw-split-panes, path: $R"
 contains "the profile keeps its other keys" "$(cat "$C/profile/profile.yaml")" "heartbeat: { every: 5s }"
 calls="$(tr '\n' ';' < "$STUB_LOG")"
@@ -398,6 +410,13 @@ AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions ask >/dev/null 2>&1; check "session
 AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions up 1 >/dev/null 2>&1; check "sessions up takes no argument (exit 2)" "$?" "2"
 AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 211 >/dev/null 2>&1; check "sessions end before up exits 2" "$?" "2"
 AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask x >/dev/null 2>&1; check "sessions ask refuses a non-pid (exit 2)" "$?" "2"
+
+# agent-run (issue #1004): the usage and the refusals that need no control plane.
+contains "the usage lists agent-run" "$(bash "$FIXTURE" --help 2>&1)" "sindri-ui-fixture.sh agent-run"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" agent-run extra >/dev/null 2>&1; check "agent-run takes no argument (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" agent-run >/dev/null 2>&1; check "agent-run refuses an unguarded home" "$?" "2"
+out="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" agent-run 2>&1)"; check "agent-run before sessions up exits 2" "$?" "2"
+contains "agent-run names the missing sessions copy" "$out" "run 'sessions up' first"
 
 own="$(jq -r '.ownUid' "$ROOT/tests/fixtures/sessions/manifest.json")"
 if [ "$(id -u)" != "$own" ]; then
@@ -562,5 +581,30 @@ absent "a repeat of context whole over imports nothing" "$(cat "$STUB_LOG")" "co
 out="$(AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context whole under 2>/dev/null)"; check "context whole under exits 0 and prints its word" "$out" "under"
 contains "context whole under imports the tabs map again" "$(cat "$STUB_LOG")" "context map import"
 check "the under map is the tabs map (10 nodes)" "$(jq '.nodes | length' "$W/ui-fixture-context/tabs-map.json")" "10"
+: > "$STUB_LOG"
+out="$(AW_SINDRI_HOME="$W" SINDRI="$STUB" bash "$FIXTURE" context whole concepts 2>/dev/null)"; check "context whole concepts exits 0 and prints its word" "$out" "concepts"
+contains "context whole concepts imports the map as the owner" "$(cat "$STUB_LOG")" "context map import"
+M="$W/ui-fixture-context/concepts-map.json"
+check "the concepts map has two concepts" "$(jq '[.nodes[] | select(.key | startswith("concept:"))] | length' "$M")" "2"
+check "each concept of the concepts map carries its glossary terms" "$(jq -c '[.nodes[] | select(.key | startswith("concept:")) | .attributes.terms]' "$M")" '[["shift","swap","roster","rota"],["invoice"]]'
+DKEY="decision:$(printf '%s\n%s' "$(jq -r '.decisions[0].record' "$M")" "$(jq -r '.decisions[0].quote' "$M")" | sha256sum | cut -c1-64)"
+check "every edge of the concepts map joins two of its nodes (a decision row implies its node)" "$(jq --arg d "$DKEY" '([.nodes[].key] + [$d]) as $k | [.edges[] | select((.from as $f | $k | index($f)) == null or (.to as $t | $k | index($t)) == null)] | length' "$M")" "0"
+check "the concepts map has one decision, on a Self scheduling feature, keyed as context keys it (the Why band, #1281)" "$(jq -r '[.edges[] | select(.type == "decides") | .from + ">" + .to] | join(",")' "$M")" "$DKEY>feature:swaps"
+check "the decision belongs to Self scheduling, so the concept opens it (ConceptScope)" "$(jq -r --arg d "$DKEY" '[.edges[] | select(.from == $d and .type == "belongs-to") | .to] | join(",")' "$M")" "concept:scheduling"
+
+# agent-run's wait is wall-clock seconds, not loop passes (issue #1123): a ledger call that takes 2 s and never shows
+# launch.started must still end the wait after FIXTURE_AGENT_WAIT=3 s. The sessions copy is faked (no uid needed): agent-run
+# only checks that its proc folder exists and edits its launcher.json.
+A="$TMPDIR/agentwait"
+mkdir -p "$A"
+AW_SINDRI_HOME="$A" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1
+mkdir -p "$A/ui-fixture-sessions/proc"
+echo '{"schema":1}' > "$A/ui-fixture-sessions/launcher.json"
+start=$SECONDS
+out="$(STUB_LEDGER_SLEEP=2 FIXTURE_AGENT_WAIT=3 AW_SINDRI_HOME="$A" SINDRI="$STUB" bash "$FIXTURE" agent-run 2>&1 >/dev/null)"; rc=$?
+took=$((SECONDS - start))
+check "agent-run's wait is bounded in seconds: exits 1 when launch.started never comes" "$rc" "1"
+contains "agent-run's wait is bounded in seconds: names the missing launch.started" "$out" "no launch.started"
+check "agent-run's wait is bounded in seconds: a 2 s ledger call with FIXTURE_AGENT_WAIT=3 ends in under 10 s (took ${took}s)" "$([ "$took" -lt 10 ] && echo yes || echo no)" "yes"
 
 exit "$fail"

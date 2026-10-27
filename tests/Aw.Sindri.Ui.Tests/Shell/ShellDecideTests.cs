@@ -200,7 +200,7 @@ public sealed class ShellDecideTests
         shell.Navigate(new DeepLink(DeepLinkKind.Decision, "DEC-1"));
 
         Assert.Equal("Re-scope: drop the iOS head from this item", shell.Decision.Heading);
-        Assert.Equal(shell.Decision.Heading, shell.SheetHeading);
+        Assert.Equal(shell.Decision.Heading, shell.SheetTitle);
         Assert.Equal("Filed by an agent session \u00b7 26m ago \u00b7 on ITM-01JD2", shell.Decision.FiledLine);
     }, Token);
 
