@@ -92,6 +92,7 @@ Result: `org-repo` (e.g., `myorg-myrepo`). All output paths use `~/.agentic-work
 | Releases | `/shipRelease`, `/landAndDeploy`, `/canary`, `/syncDocs` | `releases/` |
 | Retrospectives | `/weeklyRetro` | `retros/` |
 | Planning | `/officeHours`, `/productReview`, `/archReview`, `/planDesignReview`, `/planDevexReview`, `/autoplan` | `plans/` (`officeHours` and `autoplan` write to `plans/<feature>/`) |
+| System design | `/system-design` | `system-design/<slug>/` (status.md, pages/, diagrams/, mockups/, shots/) |
 | Design | `/design-mockup`, `/design-verify`, `/design-shotgun` | `design/` (`design-shotgun` writes to `design/shotgun/`) |
 | Verification | `/verify-app` | `verification/` |
 | Security | `/cso` | `security/` |
