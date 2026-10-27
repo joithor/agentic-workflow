@@ -50,6 +50,12 @@ A **selector** names an element; every field given must match: `nodeId` (`0/2/1`
 in tree order). The text an element shows is a `TextBlock`'s or `TextBox`'s text, or a content/header that is a string; a label that is a child `TextBlock`
 is that child's text.
 
+**Popups.** A menu, flyout, context menu or popup that Avalonia draws in its own popup window (the default on X11, Win32 and macOS) is not in the window's visual
+tree. The driver follows `Popup.IsOpen` from the moment it starts (a popup opened before that is not seen) and lists the content of each open one as an extra child
+of the window, node ids `p3`, `p3/0`, ... (`p` plus the popup's open number, then child positions), so `tree`, `search`, `wait-for`, `click`, `props` and `screenshot`
+reach a `MenuItem` like any other element. Popups drawn in the window's overlay layer are in the tree already and are not listed twice. Bounds of a popup's
+elements are in its own popup window, not the main window. A popup leaves the tree when it closes, so wait for `notVisible` or `gone` to see it close.
+
 | Verb | Request | Answer |
 |---|---|---|
 | `tree` | `{from?: selector, depth?: 6}` | the element and its children to the depth: id, type, automationId, name, text, visible, enabled, bounds (window coordinates) |
