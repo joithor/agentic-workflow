@@ -19,7 +19,9 @@ internal sealed class CgroupFiles(string root = "/sys/fs/cgroup") : ICgroupStats
                 MemoryCurrent: Single(dir, "memory.current"),
                 MemoryPeak: Single(dir, "memory.peak"),
                 Pids: (int)Single(dir, "pids.current"),
-                CpuMicroseconds: Keyed(Text(dir, "cpu.stat"), "usage_usec") ?? 0);
+                CpuMicroseconds: Keyed(Text(dir, "cpu.stat"), "usage_usec") ?? 0,
+                PidsMax: Keyed(Text(dir, "pids.events"), "max") ?? 0,
+                PidsPeak: Single(dir, "pids.peak"));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

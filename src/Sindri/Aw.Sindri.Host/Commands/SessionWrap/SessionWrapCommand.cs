@@ -64,7 +64,26 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
             await Exit(launch, last, new WrapExit(code, _found, limit), cancellationToken).ConfigureAwait(false);
         }
 
+        SweepHeavySlots();
         return code;
+    }
+
+    /// <summary>The scope has ended: slots a killed scope left in the heavy wrapper's folder are litter now. Never blocks or fails the exit.</summary>
+    private void SweepHeavySlots()
+    {
+        if (extras is not { Sweep: { } sweep, LocksDir: { Length: > 0 } locks })
+        {
+            return;
+        }
+
+        try
+        {
+            _ = sweep.Sweep(locks);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // best effort: heavy reclaims a dead slot itself when it next tries that key
+        }
     }
 
     private string? Env(string name) => (_resolved ?? environment)(name);
