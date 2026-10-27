@@ -80,6 +80,32 @@ internal sealed partial class ShellViewModel
         {
             _ = AnswerDecision(request.RowId, request.Action.OptionId, note: null);
         }
+        else if (NeedsYou.Row(request.RowId)?.Entry.Subject is { } subject)
+        {
+            _ = SendHomeAction(request.Action.CatalogId, subject);
+        }
+    }
+
+    // Home's Pause service pauses the service the row names; its Complete reports the desk run of the row's instance as approved, the
+    // way the inbox bar's Approve does (a step whose complete command is protected is a terminal's, so nothing is sent).
+    private async Task SendHomeAction(string catalogId, NeedsYouSubject subject)
+    {
+        if (Health.ApiUrl() is not { } url)
+        {
+            return;
+        }
+
+        if (string.Equals(catalogId, "PauseService", StringComparison.Ordinal) && string.Equals(subject.Kind, NeedsYouKinds.Service, StringComparison.Ordinal))
+        {
+            _ = await _api.PauseService(url, subject.Id, CancellationToken.None).ConfigureAwait(true);
+        }
+        else if (string.Equals(catalogId, "CompleteStep", StringComparison.Ordinal) && string.Equals(subject.Kind, "instance", StringComparison.Ordinal))
+        {
+            if (_desk is { } desk && await desk.Load(subject.Id).ConfigureAwait(true) is { IsTerminalOnly: false } target)
+            {
+                _ = await desk.Complete(target, "approve", answers: null).ConfigureAwait(true);
+            }
+        }
     }
 
     // A decision answered from a key, a button or the inbox's action bar: the sheet takes the option (and the note, when the bar has one) and sends them once.

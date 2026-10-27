@@ -184,9 +184,11 @@ internal sealed partial class NeedsYouRowViewModel : ObservableObject
     private NeedsYouActionControl[] BuildControls() =>
     [
         .. Entry.Actions
-            .Select(a => new NeedsYouActionControl(a, IsPrimary(a), a.IsReady && !_rebuilding, Tooltip(a, _rebuilding), IdShown))
+            .Select(a => new NeedsYouActionControl(a, IsPrimary(a), a.IsReady && !_rebuilding && !IsCliOnlyComplete(a), IsCliOnlyComplete(a) ? Entry.Cli : Tooltip(a, _rebuilding), IdShown))
             .OrderByDescending(c => c.IsPrimary && c.Action.OptionId.Length == 0),
     ];
+
+    private bool IsCliOnlyComplete(NeedsYouAction action) => string.Equals(action.CatalogId, "CompleteStep", StringComparison.Ordinal) && !string.Equals(Entry.Subject?.Kind, "instance", StringComparison.Ordinal);   // Complete reports an instance's desk run; elsewhere it is a command to run
 
     private bool IsPrimary(NeedsYouAction action) =>
         action.OptionId.Length > 0 ? action.Recommended : string.Equals(action.CatalogId, Entry.PrimaryAction, StringComparison.Ordinal);
