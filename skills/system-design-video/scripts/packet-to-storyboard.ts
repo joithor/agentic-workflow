@@ -4,6 +4,7 @@
 //
 // Reads <packet>/packet.json for each diagram key's .mmd path and the section that embeds it (the beat's `src`), and
 // <packet>/diagrams/colors.json (the same file the doc's diagrams were styled with) for node colors.
+// Exit: 0 written, 1 bad arguments; an unknown diagram key, a missing packet.json or an empty .mmd throws (non-zero).
 // Supports the mermaid subset /system-design draws: flowchart TB|LR with nested subgraphs, node shapes ["x"] [("x")] {"x"} ("x"),
 // edges --> -.-> ==> --- with |labels|, and stateDiagram-v2 with [*], "A --> B: label" and "A: description".
 // Layout: layered (longest path, barycenter order), subgraphs laid out first and placed as one block, arrows clipped to box edges.
@@ -32,11 +33,12 @@ const wrap = (label: string, width = WRAP): string[] =>
     return out.concat(cur);
   });
 
-const NODE = /^\s*([A-Za-z_]\w*)(?:\[\(\s*"?(.*?)"?\s*\)\]|\[\s*"(.*?)"\s*\]|\{\s*"?(.*?)"?\s*\}|\(\s*"(.*?)"\s*\)|\[([^\]"]*)\])?/;
+const NODE = /^\s*([A-Za-z_]\w*)(?:\[\(\s*"?(.*?)"?\s*\)\]|\[\s*"(.*?)"\s*\]|\{\s*"?(.*?)"?\s*\}|\(+\s*"?(.*?)"?\s*\)+|\[([^\]"]*)\])?/;
 const EDGE = /^\s*(-->|-\.->|==>|---|-\.-)(?:\s*\|"?([^|]*?)"?\|)?/;
 
 export function parseMermaid(src: string): Graph {
   const lines = src.split("\n").map((l) => l.replace(/%%.*$/, "")).filter((l) => l.trim());
+  if (!lines.length) throw new Error("empty mermaid source");
   const head = lines[0].trim();
   const state = head.startsWith("stateDiagram");
   const g: Graph = { dir: /\b(LR|RL)\b/.test(head) ? "LR" : "TB", nodes: new Map(), groups: new Map(), edges: [] };
