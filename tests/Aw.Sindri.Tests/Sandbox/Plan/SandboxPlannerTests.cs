@@ -73,14 +73,15 @@ public sealed class SandboxPlannerTests
         Assert.Null(Last(plan, Req.Home + "/.ssh"));
         Assert.Null(Last(plan, Req.Home + "/.gitconfig"));
         Assert.Null(Last(plan, Req.Home + "/.config"));
-        foreach (var ro in new[] { ".dotnet", ".nvm", ".cargo", ".rustup", ".local/bin" })
+        foreach (var ro in new[] { ".dotnet", ".cargo", ".rustup", ".local/bin" })
         {
             Assert.Equal(PlanMountKind.ReadOnly, Last(plan, $"{Req.Home}/{ro}")!.Kind);
         }
 
         Assert.Equal(PlanMountKind.ReadWrite, Last(plan, Req.Home + "/.nuget/packages")!.Kind);
         Assert.Equal(PlanMountKind.ReadWrite, Last(plan, Req.Home + "/.npm/_cacache")!.Kind);
-        Assert.Equal(PlanMountKind.ReadOnly, Last(plan, Req.Host.ToolkitDir)!.Kind);
+        Assert.Null(Last(plan, Req.Home + "/.nvm"));   // rev 7: the TS judge's node is gone
+        Assert.DoesNotContain(plan.Mounts, m => m.Path.Contains("/repos/toolkit", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -169,10 +170,11 @@ public sealed class SandboxPlannerTests
         }
 
         Assert.Equal(PlanMountKind.ReadOnly, Last(plan, Req.StateDir + "/judge/config.json")!.Kind);
-        Assert.Equal(PlanMountKind.PerLaunchDir, Last(plan, Req.SindriHome + "/launches")!.Kind);
+        Assert.Equal(PlanMountKind.ReadWrite, Last(plan, Req.SindriHome + "/launches")!.Kind);   // rev 7: the real folder, at its real path
         var afterDeny = plan.Mounts.Skip(denyAt + 1).Where(m => m.Path.StartsWith(Req.StateDir + "/", StringComparison.Ordinal) && m.Kind != PlanMountKind.Deny).Select(m => m.Path).ToList();
         Assert.All(afterDeny, p => Assert.True(
-            HookInventory.StatePaths.Any(e => p.StartsWith($"{Req.StateDir}/{e.Path}", StringComparison.Ordinal)) || p.StartsWith(Req.SindriHome + "/", StringComparison.Ordinal), p));
+            HookInventory.StatePaths.Any(e => p.StartsWith($"{Req.StateDir}/{e.Path}", StringComparison.Ordinal))
+            || p.StartsWith(Req.SindriHome + "/", StringComparison.Ordinal) || p.StartsWith(Req.SindriHome + "-sessions", StringComparison.Ordinal) || p.StartsWith(Req.StateDir + "/bin/cs/", StringComparison.Ordinal), p));
     }
 
     [Fact, Trait("Lane", "unit")]

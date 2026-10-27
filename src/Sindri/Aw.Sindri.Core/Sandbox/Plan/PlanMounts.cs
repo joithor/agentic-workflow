@@ -40,11 +40,6 @@ internal static class PlanMounts
     private static void AddHomeAllow(List<PlanMount> m, PlanContext c)
     {
         m.AddRange(_homeDefaults.Select(d => new PlanMount($"{c.Home}/{d.Path}", d.Kind, Reason: d.Reason)));
-        if (c.Request.Host.ToolkitDir.Length > 0)
-        {
-            m.Add(new PlanMount(c.Request.Host.ToolkitDir, PlanMountKind.ReadOnly, Reason: "the toolkit checkout the judge wrapper runs"));
-        }
-
         IEnumerable<HomeAllowEntry> declared = [.. c.Request.Settings?.Fs?.HomeAllow ?? [], .. c.Repo.HomeAllow ?? []];
         m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile")));
         m.AddRange((c.Repo.CachePaths ?? []).Select(p => new PlanMount($"{c.Home}/{p}", PlanMountKind.ReadWrite, Reason: "a cache path this repo declares")));

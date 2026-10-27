@@ -3,8 +3,8 @@ namespace Aw.Sindri.Core.Sandbox.Plan;
 /// <summary>What the host tells the pure builder (Core reads no environment): the Host or the adapter fills it from the box.</summary>
 /// <param name="Home">The owner's home directory.</param>
 /// <param name="StateDir">AW_STATE_DIR (default ~/.agentic-workflow).</param>
-/// <param name="SindriHome">AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app).</param>
-/// <param name="ToolkitDir">The toolkit checkout the judge wrapper points at.</param>
+/// <param name="SindriHome">The real AW_SINDRI_HOME as the control plane has it (default $AW_STATE_DIR/sindri-app); a launch sees its session home instead (spec §3.1, rev 7).</param>
+/// <param name="CsBinDir">The installed C# binaries' stamp directory, $AW_STATE_DIR/bin/cs/&lt;stamp&gt;, with bin/cs/current already resolved by the host (Core touches no file system); empty when none is installed.</param>
 /// <param name="Uid">The owner's user id.</param>
 /// <param name="TotalMemoryBytes">The box's RAM.</param>
 /// <param name="CpuCores">The number of cores.</param>
@@ -16,7 +16,7 @@ public sealed record SandboxHostFacts(
     string Home,
     string StateDir,
     string SindriHome,
-    string ToolkitDir,
+    string CsBinDir,
     int Uid,
     long TotalMemoryBytes,
     int CpuCores,

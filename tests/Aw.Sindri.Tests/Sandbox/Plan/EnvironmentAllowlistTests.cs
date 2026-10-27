@@ -29,6 +29,7 @@ public sealed class EnvironmentAllowlistTests
         string[] names = ["GH_TOKEN", "PATH", "AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "AGENT_APP_ID"];
 
         Assert.Equal(["GH_TOKEN", "AGENT_APP_ID"], EnvironmentAllowlist.Violations(names));
+        Assert.Empty(EnvironmentAllowlist.Violations(["GH_CONFIG_DIR"]));   // rev 7: the session home's empty gh-config/
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -37,7 +38,8 @@ public sealed class EnvironmentAllowlistTests
         Assert.NotEmpty(EnvironmentAllowlist.Names);
         Assert.All(EnvironmentAllowlist.Names, n => Assert.False(string.IsNullOrWhiteSpace(n.Value), n.Key));
         Assert.DoesNotContain("AW_HEAVY_LOCK_HELD", EnvironmentAllowlist.Names.Keys, StringComparer.Ordinal);
-        foreach (var name in new[] { "PATH", "HOME", "LANG", "TERM", "TMPDIR", "USER", "SHELL", "DOTNET_ROOT", "DOTNET_CLI_HOME", "NUGET_PACKAGES", "NVM_DIR", "npm_config_ignore_scripts", "GIT_CONFIG_GLOBAL", "AW_SANDBOX", "AW_SANDBOX_PLAN", "AW_SINDRI_LAUNCH_SECRET", "HTTPS_PROXY", "NO_PROXY", "DOTNET_PROCESSOR_COUNT", "MSBUILDDISABLENODEREUSE", "DOTNET_CLI_USE_MSBUILD_SERVER" })
+        Assert.DoesNotContain("NVM_DIR", EnvironmentAllowlist.Names.Keys, StringComparer.Ordinal);   // rev 7: node was the TS judge's
+        foreach (var name in new[] { "PATH", "HOME", "LANG", "TERM", "TMPDIR", "USER", "SHELL", "DOTNET_ROOT", "DOTNET_CLI_HOME", "NUGET_PACKAGES", "GH_CONFIG_DIR", "npm_config_ignore_scripts", "GIT_CONFIG_GLOBAL", "AW_SANDBOX", "AW_SANDBOX_PLAN", "AW_SINDRI_LAUNCH_SECRET", "HTTPS_PROXY", "NO_PROXY", "DOTNET_PROCESSOR_COUNT", "MSBUILDDISABLENODEREUSE", "DOTNET_CLI_USE_MSBUILD_SERVER" })
         {
             Assert.Contains(name, EnvironmentAllowlist.Names.Keys, StringComparer.Ordinal);
         }
