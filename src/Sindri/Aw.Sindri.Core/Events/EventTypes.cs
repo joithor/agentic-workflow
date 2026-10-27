@@ -149,6 +149,12 @@ public static class EventTypes
     /// <summary>A launch failed before any session started (API P10a).</summary>
     public const string LaunchFailed = "launch.failed";
 
+    /// <summary>The model an engine launch was given, and how it was chosen (model-pick spec §6).</summary>
+    public const string ModelPicked = "model.picked";
+
+    /// <summary>Just before the pick asks Jev: "choosing model…" until model.picked for the same launch ends it (model-pick spec §6).</summary>
+    public const string ModelPicking = "model.picking";
+
     /// <summary>The launcher probed the viewer, the host, the targets and the repos (API P10a, UI E-3).</summary>
     public const string LaunchProbed = "launch.probed";
 
@@ -163,6 +169,12 @@ public static class EventTypes
 
     /// <summary>A client attached to a session whose viewer had not confirmed (API P10a, launcher L-10).</summary>
     public const string LaunchViewerAttached = "launch.viewer-attached";
+
+    /// <summary>The 1st, 10th or 100th denial of a (kind, target) in a sandboxed session (sandbox spec §8).</summary>
+    public const string SandboxDenied = "sandbox.denied";
+
+    /// <summary>A sandbox limit was reached without ending the session: pids, memory high or disk growth (sandbox spec §8).</summary>
+    public const string SandboxLimitHit = "sandbox.limit-hit";
 
     /// <summary>A takeover tried to open the taken-over Step's live session in a viewer (issue 1004).</summary>
     public const string LaunchTakeoverOpened = "launch.takeover-opened";

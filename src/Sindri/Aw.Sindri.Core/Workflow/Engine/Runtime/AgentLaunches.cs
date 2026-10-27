@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Sindri.Core.Launch;
@@ -18,16 +19,18 @@ public static class AgentLaunches
     public static LaunchId LaunchIdFor(AgentStepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        return LaunchIdFor(run.Workflow, run.Run);
+        return LaunchIdFor(run.Workflow, run.Run, run.Escalation);
     }
 
     /// <summary>The launch id of a run, from the instance and the run token alone: what a status read names before the launch activity has run.</summary>
     /// <param name="workflow">The instance.</param>
     /// <param name="run">The run token.</param>
     /// <returns>The id.</returns>
-    public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run)
+    /// <param name="escalation">0 for the first launch of the run, n for its n-th retry on a stronger model; 0 keeps every id that exists today.</param>
+    public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run, int escalation = 0)
     {
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value));
+        var escalated = escalation > 0 ? string.Create(CultureInfo.InvariantCulture, $":escalation:{escalation}") : string.Empty;   // why: n = 0 keeps every id that exists today
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value + escalated));
         return LaunchId.From("LCH-" + Convert.ToHexStringLower(digest)[..32]);
     }
 
@@ -58,8 +61,12 @@ public static class AgentLaunches
         var policy = new StepPolicy(tools, StepPermissionMode.Default, run.WriteScope ? worktree : null);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, worktree,
-            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor, extras?.Instructions, extras?.Facts?.Keys), extras?.Bundle, extras?.Facts is { Count: > 0 } facts ? facts : null), run.Run);   // Model null: per-Step models are SC-R
+            StepArgsFor(run, descriptor, extras, policy), run.Run);
     }
+
+    // The Step's 'model' parameter (null runs the agent's default), its brief and the pack and facts it is given.
+    private static StepArgs StepArgsFor(AgentStepRun run, BlockDescriptor? descriptor, AgentLaunchExtras? extras, StepPolicy policy) =>
+        new(Model: extras?.Model, policy, run.Step, AgentStepBrief.Render(run, descriptor, extras?.Instructions, extras?.Facts?.Keys), extras?.Bundle, extras?.Facts is { Count: > 0 } facts ? facts : null);
 
     /// <summary>The holdout evaluator's request (LN-LCH2): it runs in a scratch checkout at the head sha, reads the holdout set and never writes it, can't touch the phase worktree, and may run the evidence CLIs.</summary>
     /// <param name="run">The run.</param>
