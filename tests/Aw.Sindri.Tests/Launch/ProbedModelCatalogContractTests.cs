@@ -9,5 +9,5 @@ namespace Aw.Sindri.Tests.Launch;
 public sealed class ProbedModelCatalogContractTests : ModelCatalogContract
 {
     protected override IModelCatalog Create(AgentId agent, IReadOnlyList<ModelFacts> models) =>
-        new ProbedModelCatalog((asked, _) => ValueTask.FromResult<IReadOnlyList<ModelFacts>?>(asked.Equals(agent) ? models : null));
+        new ProbedModelCatalog((asked, _) => ValueTask.FromResult(asked.Equals(agent) ? models : null));
 }
