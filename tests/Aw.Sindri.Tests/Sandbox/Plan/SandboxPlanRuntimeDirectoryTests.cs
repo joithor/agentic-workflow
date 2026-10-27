@@ -25,7 +25,7 @@ public sealed class SandboxPlanRuntimeDirectoryTests
     [Fact, Trait("Lane", "unit")]
     public void A_state_directory_elsewhere_is_in_the_environment_so_the_hooks_find_it()
     {
-        var host = Req.Host with { StateDir = "/srv/aw", SindriHome = "/srv/aw/sindri-app" };
+        var host = Req.Host with { StateDir = "/srv/aw", SindriHome = "/srv/aw/sindri-app", CsBinDir = "/srv/aw/bin/cs/stamp-1" };
 
         var plan = SandboxPlannerTests.Build(Req.WriteScope with
         {

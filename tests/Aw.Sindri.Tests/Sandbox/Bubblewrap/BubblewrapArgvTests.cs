@@ -153,7 +153,7 @@ public sealed class BubblewrapArgvTests
     public void A_denied_directory_that_later_entries_bind_into_stays_writable_until_they_are_made()
     {
         // The state directory outside a tmpfs home: hidden by an empty tmpfs, which the hook inventory is then bound into.
-        var host = Req.Host with { StateDir = "/srv/aw", SindriHome = "/srv/aw/sindri-app" };
+        var host = Req.Host with { StateDir = "/srv/aw", SindriHome = "/srv/aw/sindri-app", CsBinDir = "/srv/aw/bin/cs/stamp-1" };
         var args = Args(Req.WriteScope with { Host = host, Paths = Req.WriteScope.Paths with { RunDirectory = "/srv/aw/sindri-app/runs/x/s/1", RunArea = "/srv/aw/sindri-app/areas/run-1" } });
 
         Assert.True(Find(args, "--tmpfs", "/srv/aw") >= 0);

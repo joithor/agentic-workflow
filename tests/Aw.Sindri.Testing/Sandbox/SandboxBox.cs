@@ -213,11 +213,37 @@ public sealed partial class SandboxBox : IDisposable
 
     private static string ProjectKeyOf(string path) => NonAlphanumeric.Replace(path, "-");
 
-    // The stamp directory the owner's installed 'bin/cs/current' link points at (rev 7); empty when this box has no C# install.
+    // Rev 7: the plan refuses a stamp directory outside <state>/bin/cs, so the box has its own, a link to the stamp the owner's 'bin/cs/current' points at.
+    // Empty when this box has no C# install (the hook canary then skips).
     private string CsBinDir()
     {
-        var link = new DirectoryInfo(Home + "/.agentic-workflow/bin/cs/current");
-        return link.Exists && link.ResolveLinkTarget(returnFinalTarget: true) is { Exists: true } target ? target.FullName : string.Empty;
+        var current = new DirectoryInfo(Home + "/.agentic-workflow/bin/cs/current");
+        if (!current.Exists || current.ResolveLinkTarget(returnFinalTarget: true) is not { Exists: true } target)
+        {
+            return string.Empty;
+        }
+
+        var stamp = State + "/bin/cs/" + target.Name;
+        if (!Directory.Exists(stamp))
+        {
+            _ = Directory.CreateDirectory(State + "/bin/cs");
+            _ = Directory.CreateSymbolicLink(stamp, target.FullName);
+        }
+
+        return stamp;
+    }
+
+    /// <summary>Makes what the launcher makes before a launch (sandbox spec §3.1, rev 7): the real home's launches and approved directories, and the launch's session home with control.json and gh-config.</summary>
+    /// <param name="launch">The launch.</param>
+    public void PrepareSessionHome(LaunchId launch)
+    {
+        var session = SessionHomePaths.For(SindriHome, launch);
+        foreach (var directory in new[] { SindriHome + "/launches", SindriHome + "/approved", session + "/gh-config" })
+        {
+            _ = Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(session + "/control.json", "{}");
     }
 
     private static int Uid()
@@ -234,6 +260,7 @@ public sealed partial class SandboxBox : IDisposable
 
     private void Build()
     {
+        PrepareSessionHome(LaunchId.From("LCH-" + new string('a', 32)));
         foreach (var directory in new[] { Repo, State + "/judge", State + "/locks", State + "/context-guard/state", State + "/bin-r1b", RunArea, RunDirectory, NetDir, LoginCopy })
         {
             _ = Directory.CreateDirectory(directory);
