@@ -310,6 +310,7 @@ working untouched. `team-migrate` moves it into `teams/<its team name>/` on requ
 | Field | Meaning |
 |-------|---------|
 | `team`, `metaLane`, `lanes` | Session and tmux names are `<team>-<lane>` |
+| `agent` | Catalog agent id (`cursor`, `codex`, `claude-code`, or an id added in `launcher.json`). Every lane, including the meta lane, runs it, and it wins over `launcher.json`'s `meta.lanesAgent` and `meta.lanes` for this team. Absent: those fields decide, and with neither the team stays on Claude Code. A value that is not `^[a-z][a-z0-9-]{1,31}$` is AW-META-003 at load. The binary and argv still come from the built-in catalog plus `launcher.json`'s `agents` overrides, so a team does not need its own launcher file |
 | `repo` | Absolute path of the shared checkout (Warp needs an absolute cwd) |
 | `prompts` | Directory of `<lane>.md` kickoff prompts for fresh lane sessions |
 | `log` | The running log (default `$AW_STATE_DIR/meta/teams/<team>/log.md`) |
@@ -356,11 +357,12 @@ SL-1). With no file the launcher is what it was apart from the team's own tmux s
 | `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux -L <team> attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
 | `viewer.kind: print` | Prints `tmux -L <team> attach -t =<team>-<lane>` per lane |
 | `host` | Checked, not used: lanes always run in tmux |
-| `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane. `lanesAgent` is the default for the lanes and never reaches the meta lane, which is Claude Code unless `meta.lanes.<metaLane>` names another agent. Every lane must resolve to the meta lane's agent (see "One agent per team" below). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
+| `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane, when `team.json` has no `agent`. `lanesAgent` is the default for the lanes and never reaches the meta lane, which is Claude Code unless `meta.lanes.<metaLane>` names another agent. Every lane must resolve to the meta lane's agent (see "One agent per team" below). `team.json` `agent` replaces both fields for that team, including the meta lane. The catalog is `config/launcher/builtins.json` plus the file's `agents` |
 | `agents.<id>` | `open`/`resume` argv templates (`{bin}`, `{cwd}`, `{name}`, `{seed}`, `{sessionId}`), `processName` (the pane check that restarts a lane whose agent exited) and `transcripts` (the glob that decides resume) |
 
 **One agent per team.** A team is all Claude Code or all Codex (or another single catalog agent): there is no mixed team and no
-meta-to-lane delivery across agents. Before it creates anything (the `--dry-run` too) `aw-meta-launch` resolves every lane of the
+meta-to-lane delivery across agents. Set that agent with `team.json` `agent` (every lane, including the meta lane). Without it,
+`launcher.json` decides, and `lanesAgent` alone still does not reach the meta lane. Before it creates anything (the `--dry-run` too) `aw-meta-launch` resolves every lane of the
 team config, not only those `--lanes` selects, and exits 1 when any differs from the meta lane's agent:
 `meta-launch: a team runs one agent: the meta lane 'meta' runs claude-code, but api (codex), ui (codex) do not. Make them agree in
 launcher.json ...`. An all-Claude team (no `launcher.json`) is unaffected. A Codex team is written with `meta.lanes.<metaLane>`
