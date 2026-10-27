@@ -61,6 +61,9 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     /// <summary>Where the map is, as a breadcrumb: "~" on the whole map, "~ / Billing" in an open feature, "~ / Starting points" on a query's answer. "~" goes back to the whole map.</summary>
     public IReadOnlyList<Crumb> Crumbs => CrumbList();
 
+    /// <summary>Whether the crumb row is shown: only when there is a path to walk back along, not for the root alone.</summary>
+    public bool ShowCrumbs => Crumbs.Count > 0;
+
     /// <summary>The breadcrumb's name.</summary>
     public string CrumbsName { get; } = Labels.ContextMapCrumbsName;
 
