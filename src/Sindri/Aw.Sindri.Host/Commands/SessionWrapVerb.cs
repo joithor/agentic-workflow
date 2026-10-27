@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Host.Commands.SessionWrap;
 
 namespace Aw.Sindri.Host.Commands;
@@ -9,14 +10,14 @@ internal static class SessionWrapVerb
     /// <summary>Runs the wrap.</summary>
     /// <param name="args">The arguments after 'session wrap'.</param>
     /// <param name="client">The CLI's control plane client.</param>
-    /// <param name="home">Sindri's home.</param>
+    /// <param name="services">Sindri's home and the limit watchdog's ports come from here.</param>
     /// <param name="environment">The process environment.</param>
     /// <param name="ct">Cancels the run.</param>
     /// <returns>The agent's exit code; 127 when its CLI is missing; 2 for bad arguments.</returns>
-    internal static async Task<int> Run(string[] args, ControlPlaneClient client, ISindriHome home, Func<string, string?> environment, CancellationToken ct)
+    internal static async Task<int> Run(string[] args, ControlPlaneClient client, IServiceProvider services, Func<string, string?> environment, CancellationToken ct)
     {
         using var held = WrapSignals.Hold();
-        var command = new SessionWrapCommand(new ControlPlaneWrapCalls(client), new ProcessChildLauncher(), environment, TimeProvider.System, Console.Error, new SessionIdFiles(home.Path), held.Hangup);
+        var command = new SessionWrapCommand(new ControlPlaneWrapCalls(client), new ProcessChildLauncher(), environment, TimeProvider.System, Console.Error, new SessionIdFiles(services.GetRequiredService<ISindriHome>().Path), new WrapExtras(held.Hangup, new WatchdogPorts(services.GetRequiredService<IScopeControl>(), services.GetRequiredService<ICgroupStats>())));
         return await command.Run(args, ct).ConfigureAwait(false);
     }
 }

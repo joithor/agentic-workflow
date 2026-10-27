@@ -52,6 +52,22 @@ public sealed class SessionRoutesTests
     }
 
     [Fact]
+    public async Task An_exit_with_a_memory_limit_appends_session_ended_reason_limit()
+    {
+        await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
+        var launch = await WrapSessionScenarios.StartLaunch(host, Token);
+
+        var exited = await host.Http.Ask(Post(WrapSessionScenarios.Route(launch, "exit"),
+            """{"exitCode":137,"limit":{"kind":"memory","limit":2000000000,"peak":2200000000,"peaks":{"memoryBytes":2200000000,"cpuPercent":80,"tasks":12,"wallSeconds":300}}}""",
+            WrapSessionScenarios.Wrap(WrapSessionScenarios.Proof)));
+
+        Expect.Equal(HttpStatusCode.OK, exited.Status);
+        var payload = Assert.Single(await Ledger(host), static e => e.Envelope.Type == EventTypes.SessionEnded).Envelope.Payload.Replace(" ", string.Empty, StringComparison.Ordinal);
+        Expect.True(payload.Contains("\"reason\":\"limit\"", StringComparison.Ordinal) && payload.Contains("\"kind\":\"memory\"", StringComparison.Ordinal)
+            && payload.Contains("\"limit\":2000000000", StringComparison.Ordinal) && payload.Contains("\"peak\":2200000000", StringComparison.Ordinal) && payload.Contains("\"peaks\":{", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Wrong_secret_is_SND_AUTH_003()
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
