@@ -4567,6 +4567,8 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeState.<Clone>$() -> Aw.Sindri.Core.Workflo
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Budget.get -> Aw.Sindri.Core.Workflow.Recipes.BudgetSpec?
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Budget.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Equals(Aw.Sindri.Core.Workflow.Recipes.RecipeState? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.RecipeState.Model.get -> Aw.Sindri.Core.Workflow.Recipes.StateModel?
+Aw.Sindri.Core.Workflow.Recipes.RecipeState.Model.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Kind.get -> Aw.Sindri.Core.Workflow.Recipes.StateKind
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Kind.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.Loop.get -> string?
@@ -17861,10 +17863,10 @@ Aw.Sindri.Core.Workflow.Recipes.Recipe.Deconstruct(out int Schema, out Aw.Sindri
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Recipe(int Schema, Aw.Sindri.Core.Workflow.Ids.RecipeId Id, int Version, string? Description, Aw.Sindri.Core.Workflow.Recipes.RecipeRef? Base, string! Urgency, string? Name, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, string! Initial, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.RecipeState!>! States, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!>! Transitions, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Recipes.LoopSpec!>! Loops, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, System.Collections.Generic.IReadOnlyList<string!>! Evals, Aw.Sindri.Core.Workflow.Ids.RecipeHash? Hash, string? DisplayName = null, string? Why = null) -> void
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Why.get -> string?
 Aw.Sindri.Core.Workflow.Recipes.Recipe.Why.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeState.Deconstruct(out Aw.Sindri.Core.Workflow.Recipes.StateKind Kind, out Aw.Sindri.Core.Workflow.Recipes.StepUse? Step, out Aw.Sindri.Core.Workflow.Recipes.WaitFor? WaitFor, out Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? Timeout, out string? Loop, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out string? Next, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out string? Why, out string? DisplayName, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? OnOutcome) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeState.Deconstruct(out Aw.Sindri.Core.Workflow.Recipes.StateKind Kind, out Aw.Sindri.Core.Workflow.Recipes.StepUse? Step, out Aw.Sindri.Core.Workflow.Recipes.WaitFor? WaitFor, out Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? Timeout, out string? Loop, out Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, out string? Next, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out string? Why, out string? DisplayName, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? OnOutcome, out Aw.Sindri.Core.Workflow.Recipes.StateModel? Model) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.OnOutcome.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.OnOutcome.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeState.RecipeState(Aw.Sindri.Core.Workflow.Recipes.StateKind Kind, Aw.Sindri.Core.Workflow.Recipes.StepUse? Step, Aw.Sindri.Core.Workflow.Recipes.WaitFor? WaitFor, Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? Timeout, string? Loop, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, string? Next, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Why = null, string? DisplayName = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? OnOutcome = null) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeState.RecipeState(Aw.Sindri.Core.Workflow.Recipes.StateKind Kind, Aw.Sindri.Core.Workflow.Recipes.StepUse? Step, Aw.Sindri.Core.Workflow.Recipes.WaitFor? WaitFor, Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? Timeout, string? Loop, Aw.Sindri.Core.Workflow.Recipes.BudgetSpec? Budget, string? Next, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Why = null, string? DisplayName = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? OnOutcome = null, Aw.Sindri.Core.Workflow.Recipes.StateModel? Model = null) -> void
 Aw.Sindri.Core.Workflow.Views.RecipeFactView
 Aw.Sindri.Core.Workflow.Views.RecipeFactView.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.RecipeFactView!
 Aw.Sindri.Core.Workflow.Views.RecipeFactView.Deconstruct(out string! Key, out string? Label) -> void
@@ -19152,3 +19154,15 @@ const Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.Crashed = "crash
 const Aw.Sindri.Core.Events.EventTypes.ModelPicked = "model.picked" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ModelPicking = "model.picking" -> string!
 static Aw.Sindri.Core.Workflow.Engine.Triggers.AgentFailureKinds.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState! ended, bool checkFailed) -> string!
+Aw.Sindri.Core.Workflow.Recipes.StateModel
+Aw.Sindri.Core.Workflow.Recipes.StateModel.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.StateModel!
+Aw.Sindri.Core.Workflow.Recipes.StateModel.Deconstruct(out string? Floor) -> void
+Aw.Sindri.Core.Workflow.Recipes.StateModel.Equals(Aw.Sindri.Core.Workflow.Recipes.StateModel? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.StateModel.Floor.get -> string?
+Aw.Sindri.Core.Workflow.Recipes.StateModel.Floor.init -> void
+Aw.Sindri.Core.Workflow.Recipes.StateModel.StateModel(string? Floor = null) -> void
+override Aw.Sindri.Core.Workflow.Recipes.StateModel.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Recipes.StateModel.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Recipes.StateModel.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Recipes.StateModel.operator !=(Aw.Sindri.Core.Workflow.Recipes.StateModel? left, Aw.Sindri.Core.Workflow.Recipes.StateModel? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.StateModel.operator ==(Aw.Sindri.Core.Workflow.Recipes.StateModel? left, Aw.Sindri.Core.Workflow.Recipes.StateModel? right) -> bool
