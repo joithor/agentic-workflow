@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>Which settings changed between two profiles, as key paths, for 'profile approve' to show before it records anything.</summary>
-public static class ProfileDiff
+public static partial class ProfileDiff
 {
     /// <summary>The key paths whose values differ; every path when there is no earlier approval.</summary>
     /// <param name="approved">The latest approved profile, if any.</param>
@@ -36,6 +36,16 @@ public static class ProfileDiff
         }
 
         foreach (var (key, value) in LaunchAndAgents(p))
+        {
+            values[key] = value;
+        }
+
+        foreach (var (key, value) in IndexKeys("index", p.Index).Concat(SetupAndContext(p)))
+        {
+            values[key] = value;
+        }
+
+        foreach (var (key, value) in SandboxDiff.Keys(p.Sandbox))
         {
             values[key] = value;
         }
@@ -110,6 +120,11 @@ public static class ProfileDiff
             {
                 yield return ($"repos.{repo.Name}.workflow.judge.providers", string.Join(", ", providers));
             }
+
+            foreach (var entry in IndexKeys($"repos.{repo.Name}.index", repo.Index))
+            {
+                yield return entry;
+            }
         }
     }
 
@@ -181,6 +196,7 @@ public static class ProfileDiff
     [
         ("workflow.steps.longMax", workflow?.Steps?.LongMax),
         ("workflow.docs.globs", Joined(workflow?.Docs?.Globs)),
+        ("workflow.scoping.historyWindow", workflow?.Scoping?.HistoryWindow is { } window ? $"since={window.Since}, before={window.Before}" : null),
     ];
 
     private static string? Number(long? value) => value?.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -190,9 +206,20 @@ public static class ProfileDiff
     private static (string Key, string? Value)[] Runtimes(WorkflowSettings? workflow) =>
     [
         ("workflow.agent.target", workflow?.Agent?.Target?.Value),
+        .. ModelKeys(workflow?.Agent),
         ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
         ("workflow.route.startable", workflow?.Route?.Startable),
     ];
+
+    /// <summary>The model keys (model-pick spec §8): one entry per agent under 'models', 'pin' and 'cap', so the summary names the agent or state that changed, and 'pick'.</summary>
+    private static IEnumerable<(string Key, string? Value)> ModelKeys(WorkflowAgentSettings? agent) =>
+        Ordered(agent?.Models).Select(static p => ($"workflow.agent.models.{p.Key}", (string?)$"list={string.Join(", ", p.Value.List)}, default={p.Value.Default}"))
+            .Concat(Ordered(agent?.Pin).Select(static p => ($"workflow.agent.pin.{p.Key}", (string?)p.Value)))
+            .Concat(Ordered(agent?.Cap).Select(static p => ($"workflow.agent.cap.{p.Key}", (string?)p.Value)))
+            .Append(("workflow.agent.pick", agent?.Pick));
+
+    private static IEnumerable<KeyValuePair<string, T>> Ordered<T>(IReadOnlyDictionary<string, T>? map) =>
+        (map ?? new Dictionary<string, T>(StringComparer.Ordinal)).OrderBy(static p => p.Key, StringComparer.Ordinal);
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [

@@ -89,6 +89,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitContext(api, clipboard, window.Launcher);
         InitRunPage(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
+        Create.Created += (_, created) => Queue.Reveal(created.ItemId);
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
     }
@@ -133,7 +134,9 @@ internal sealed partial class ShellViewModel : ObservableObject
         {
             if (value is not null)
             {
+                IsSelectingTab = true;
                 GoTo(value.Page);
+                IsSelectingTab = false;
             }
         }
     }
