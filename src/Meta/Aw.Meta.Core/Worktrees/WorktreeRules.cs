@@ -79,6 +79,12 @@ internal static class WorktreeRules
         }
         else
         {
+            // A fresh branch cut from main looks finished (head in origin/main, nothing inside at this instant); only an explicit --include-no-pr sweep may remove one.
+            if (facts.KeepNoPr)
+            {
+                reasons.Add("kept: no PR (pass --include-no-pr to remove)");
+            }
+
             if (!facts.HeadMerged && facts.UnpushedCommits > 0)
             {
                 reasons.Add("no pull request: work not finished (not all of it is pushed)");

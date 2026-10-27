@@ -1228,6 +1228,7 @@ Aw.Meta.Core.Worktrees.WorktreeReport.Reasons.init -> void
 Aw.Meta.Core.Worktrees.WorktreeReport.WorktreeReport(string! Path, string? Branch, string! Head, int? Pr, Aw.Meta.Core.Watch.PrState? PrState, Aw.Meta.Core.Worktrees.WorktreeDecision Decision, System.Collections.Generic.IReadOnlyList<string!>! Reasons) -> void
 Aw.Meta.Core.Worktrees.WorktreeScope
 Aw.Meta.Core.Worktrees.WorktreeScope.<Clone>$() -> Aw.Meta.Core.Worktrees.WorktreeScope!
+Aw.Meta.Core.Worktrees.WorktreeScope.IncludeNoPr.get -> bool
 Aw.Meta.Core.Worktrees.WorktreeScope.Equals(Aw.Meta.Core.Worktrees.WorktreeScope? other) -> bool
 Aw.Meta.Core.Worktrees.WorktreeScope.Prs.get -> System.Collections.Generic.IReadOnlySet<int>?
 Aw.Meta.Core.Worktrees.WorktreeSweeper
@@ -1723,6 +1724,7 @@ static Aw.Meta.Core.Worktrees.SweepOutcome.operator ==(Aw.Meta.Core.Worktrees.Sw
 static Aw.Meta.Core.Worktrees.WorktreeReport.operator !=(Aw.Meta.Core.Worktrees.WorktreeReport? left, Aw.Meta.Core.Worktrees.WorktreeReport? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeReport.operator ==(Aw.Meta.Core.Worktrees.WorktreeReport? left, Aw.Meta.Core.Worktrees.WorktreeReport? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeScope.All.get -> Aw.Meta.Core.Worktrees.WorktreeScope!
+static Aw.Meta.Core.Worktrees.WorktreeScope.AllIncludingNoPr.get -> Aw.Meta.Core.Worktrees.WorktreeScope!
 static Aw.Meta.Core.Worktrees.WorktreeScope.ForPrs(System.Collections.Generic.IEnumerable<int>! prs) -> Aw.Meta.Core.Worktrees.WorktreeScope!
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator !=(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator ==(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
