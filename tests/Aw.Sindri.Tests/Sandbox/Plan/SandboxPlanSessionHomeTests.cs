@@ -1,6 +1,7 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Plan;
+using Aw.Sindri.Core.Workflow.Engine;
 using Req = Aw.Sindri.Testing.Sandbox.SandboxRequests;
 
 namespace Aw.Sindri.Tests.Sandbox.Plan;
@@ -65,7 +66,7 @@ public sealed class SandboxPlanSessionHomeTests
     public void The_session_home_is_not_in_the_plan_hash()
     {
         var a = SandboxPlannerTests.Build(Req.WriteScope);
-        var b = SandboxPlannerTests.Build(Req.WriteScope with { Launch = Aw.Sindri.Core.Workflow.Engine.LaunchId.From("LCH-" + new string('c', 32)) });
+        var b = SandboxPlannerTests.Build(Req.WriteScope with { Launch = LaunchId.From("LCH-" + new string('c', 32)) });
 
         Assert.Equal(a.PlanHash, b.PlanHash);
     }
