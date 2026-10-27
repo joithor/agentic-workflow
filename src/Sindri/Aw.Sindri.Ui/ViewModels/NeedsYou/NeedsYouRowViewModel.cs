@@ -96,7 +96,7 @@ internal sealed partial class NeedsYouRowViewModel : ObservableObject
     public DeepLink? ItemLink => Entry.ItemId is { } item ? new DeepLink(DeepLinkKind.Item, item) : null;
 
     /// <summary>The served recorded-only sentence; empty when the row isn't recorded-only.</summary>
-    public string Notice => Entry.RecordedOnly ? Entry.Notice : "";
+    public string Notice => Entry.RecordedOnly ? Entry.Notice : ActionNote;
 
     /// <summary>True when the row shows <see cref="Notice"/>.</summary>
     public bool HasNotice => Notice.Length > 0;
@@ -188,7 +188,6 @@ internal sealed partial class NeedsYouRowViewModel : ObservableObject
             .OrderByDescending(c => c.IsPrimary && c.Action.OptionId.Length == 0),
     ];
 
-    private bool IsCliOnlyComplete(NeedsYouAction action) => string.Equals(action.CatalogId, "CompleteStep", StringComparison.Ordinal) && !string.Equals(Entry.Subject?.Kind, "instance", StringComparison.Ordinal);   // Complete reports an instance's desk run; elsewhere it is a command to run
 
     private bool IsPrimary(NeedsYouAction action) =>
         action.OptionId.Length > 0 ? action.Recommended : string.Equals(action.CatalogId, Entry.PrimaryAction, StringComparison.Ordinal);
