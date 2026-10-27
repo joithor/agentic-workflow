@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Testing;
@@ -15,7 +16,7 @@ public sealed class ModelBandsTests
     private static ModelFacts Model(string id, int? order) => new(id, id, ModelSource.Catalog, order);
 
     private static string Shown(IReadOnlyList<RankedModel> ranked) =>
-        string.Join(" ", ranked.Select(r => $"{r.Model.Slug}:{r.Tiers}{(r.Unordered ? ":unordered" : string.Empty)}"));
+        string.Join(' ', ranked.Select(r => $"{r.Model.Slug}:{r.Tiers}{(r.Unordered ? ":unordered" : string.Empty)}"));
 
     public static TheoryData<int, ModelTier[]> Bands => new()
     {
@@ -30,11 +31,11 @@ public sealed class ModelBandsTests
     [MemberData(nameof(Bands))]
     public void N_models_are_cut_into_thirds_with_standard_the_middle_or_everything(int count, ModelTier[] expected)
     {
-        var models = Enumerable.Range(0, count).Select(i => Model("m" + i, i)).ToList();
+        var models = Enumerable.Range(0, count).Select(i => Model(string.Create(CultureInfo.InvariantCulture, $"m{i}"), i)).ToList();
 
         var ranked = ModelBands.Rank(models);
 
-        Expect.Equal(string.Join(" ", expected.Select((tiers, i) => $"m{i}:{tiers}")), Shown(ranked));
+        Expect.Equal(string.Join(' ', expected.Select((tiers, i) => string.Create(CultureInfo.InvariantCulture, $"m{i}:{tiers}"))), Shown(ranked));
     }
 
     [Fact]
@@ -48,7 +49,7 @@ public sealed class ModelBandsTests
     [Fact]
     public void A_model_with_no_place_goes_last_in_the_order_given_and_is_marked_unordered()
     {
-        var ranked = ModelBands.Rank([Model("mystery-b", null), Model("sonnet", 1), Model("mystery-a", null), Model("haiku", 0)]);
+        var ranked = ModelBands.Rank([Model("mystery-b", order: null), Model("sonnet", 1), Model("mystery-a", order: null), Model("haiku", 0)]);
 
         Expect.Equal("haiku:Cheap, Standard sonnet:Cheap, Standard mystery-b:Standard, Strong:unordered mystery-a:Standard, Strong:unordered", Shown(ranked));
     }
@@ -62,8 +63,5 @@ public sealed class ModelBandsTests
     }
 
     [Fact]
-    public void No_models_rank_to_nothing()
-    {
-        Expect.Equal(0, ModelBands.Rank([]).Count);
-    }
+    public void No_models_rank_to_nothing() => Expect.Equal(0, ModelBands.Rank([]).Count);
 }
