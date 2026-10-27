@@ -89,7 +89,6 @@ using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.SampleSessionUsage;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.Scrub;
-using Aw.Sindri.Features.RecordLimitHit;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
@@ -130,7 +129,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecordServiceRun()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
-            .AddPlanSandbox()
+            .AddPlanSandbox().AddRecordLimitHit()
             .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
             .AddScoped<IService<ScrubRequest, ScrubResponse>, ScrubService>()
             .AddDoctor()
@@ -172,8 +171,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<ISessionUsageSampler, SessionUsageSampler>();   // API P10a U11: the 60 s sample of what a live session has used
         _ = services.AddScoped<IIdleSessions, IdleSessions>().AddScoped<IdleReads>().AddScoped<StepTakeovers>().AddScoped<IStalledAgentRuns, StalledAgentRuns>();   // a Step session whose agent ended its turn with no report
         _ = services.AddScoped<ILostSessions, LostSessions>()   // API P10a U10: 'session wrap' says the session is alive and when it exited (issues, proven by the launch secret)
-            .AddScoped<IValidator<SessionHeartbeatRequest>, AcceptAllValidator<SessionHeartbeatRequest>>().AddIssue<SessionHeartbeatRequest, SessionHeartbeatResponse, SessionHeartbeatService>().AddScoped<IValidator<SessionExitRequest>, AcceptAllValidator<SessionExitRequest>>().AddIssue<SessionExitRequest, SessionExitResponse, SessionExitService>()
-            .AddScoped<IValidator<RecordLimitHitRequest>, AcceptAllValidator<RecordLimitHitRequest>>().AddIssue<RecordLimitHitRequest, RecordLimitHitResponse, RecordLimitHitService>();
+            .AddScoped<IValidator<SessionHeartbeatRequest>, AcceptAllValidator<SessionHeartbeatRequest>>().AddIssue<SessionHeartbeatRequest, SessionHeartbeatResponse, SessionHeartbeatService>().AddScoped<IValidator<SessionExitRequest>, AcceptAllValidator<SessionExitRequest>>().AddIssue<SessionExitRequest, SessionExitResponse, SessionExitService>();
         _ = services.AddScoped<IValidator<DecideRequest>, DecideValidator>().AddCommand<DecideRequest, CommandAccepted, DecideService>();
         _ = services.AddScoped<IValidator<FileRequestRequest>, FileRequestValidator>().AddCommand<FileRequestRequest, RequestFiledResponse, FileRequestService>();
         _ = services.AddScoped<IValidator<CreateItemRequest>, CreateItemValidator>().AddCommand<CreateItemRequest, ItemCreatedResponse, CreateItemService>();
