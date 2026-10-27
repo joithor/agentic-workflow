@@ -162,8 +162,9 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
         }
 
         var counted = await Change(rows, new Slot(scope, payload.From, model.Value.Model), row => row.After(ModelOutcome.Ok, at), cancellationToken).ConfigureAwait(false);
-        return counted.IsError
-            ? counted
+        var consumed = counted.IsError ? counted : await Consume(payload, rows, cancellationToken).ConfigureAwait(false);
+        return consumed.IsError
+            ? consumed
             : await rows.Put(ViewNames.ModelRuns, ModelHistoryKeys.Completed(payload.Instance, payload.From), model.Value, cancellationToken).ConfigureAwait(false);
     }
 
@@ -177,7 +178,8 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
         }
 
         var outcome = ModelOutcomes.OfFailure(payload.Detail?.FailureKind, payload.Detail?.Reason);
-        return await Change(rows, new Slot(scope, payload.From, model.Value.Model), row => row.After(outcome, at), cancellationToken).ConfigureAwait(false);
+        var counted = await Change(rows, new Slot(scope, payload.From, model.Value.Model), row => row.After(outcome, at), cancellationToken).ConfigureAwait(false);
+        return counted.IsError ? counted : await Consume(payload, rows, cancellationToken).ConfigureAwait(false);
     }
 
     // Records that the transition entered its To state, and says whether it went back: To was first entered before From. The order is per instance, so this is not tied to any recipe.
@@ -230,6 +232,12 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
 
         return await rows.Get<RunModel>(ViewNames.ModelRuns, ModelHistoryKeys.Run(payload.Instance, payload.From, run.Number), cancellationToken).ConfigureAwait(false);
     }
+
+    // A report owns its launch's model once: the run number restarts at 1 in every frame entry, so a later run with no launch (a desk redraft) must not find this one's.
+    private static async ValueTask<Result<Unit>> Consume(WorkflowEventPayload payload, IViewRows rows, CancellationToken cancellationToken) =>
+        payload.Run is not null && RunToken.TryFrom(payload.Run, out var run)
+            ? await rows.Delete(ViewNames.ModelRuns, ModelHistoryKeys.Run(payload.Instance, payload.From, run.Number), cancellationToken).ConfigureAwait(false)
+            : Unit.Value;
 
     private static async ValueTask<Result<Unit>> Change(IViewRows rows, Slot slot, Func<ModelHistoryRow, ModelHistoryRow> change, CancellationToken cancellationToken)
     {
