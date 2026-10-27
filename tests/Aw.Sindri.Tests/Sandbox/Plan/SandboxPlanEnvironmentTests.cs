@@ -85,11 +85,11 @@ public sealed class SandboxPlanEnvironmentTests
         Assert.Equal("http://127.0.0.1:41234", env["HTTPS_PROXY"]);
         Assert.Equal("http://127.0.0.1:41234", env["https_proxy"]);
         Assert.Equal("127.0.0.1,localhost,::1", env["NO_PROXY"]);
-        Assert.DoesNotContain("AW_SINDRI_HOME", env.Keys, StringComparer.Ordinal);   // it is the default
+        Assert.Equal(Req.SindriHome + "-sessions/" + Req.WriteScope.Launch.Value, env["AW_SINDRI_HOME"]);   // rev 7: always the session home, even at the default
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Sindri_home_is_set_only_when_it_is_not_the_default_and_heavy_cpus_feeds_the_processor_count()
+    public void Sindri_home_is_the_session_home_of_a_custom_home_and_heavy_cpus_feeds_the_processor_count()
     {
         var host = Req.Host with
         {
@@ -101,7 +101,7 @@ public sealed class SandboxPlanEnvironmentTests
 
         var env = Env(SandboxPlannerTests.Build(Req.WriteScope with { Host = host, Paths = paths }));
 
-        Assert.Equal("/custom/home", env["AW_SINDRI_HOME"]);
+        Assert.Equal("/custom/home-sessions/" + Req.WriteScope.Launch.Value, env["AW_SINDRI_HOME"]);
         Assert.Equal("6", env["DOTNET_PROCESSOR_COUNT"]);
     }
 

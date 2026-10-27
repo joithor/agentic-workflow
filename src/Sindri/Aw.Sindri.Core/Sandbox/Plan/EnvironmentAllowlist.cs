@@ -9,7 +9,7 @@ public static class EnvironmentAllowlist
     private static readonly string[] _secretSuffixes = ["_TOKEN", "_KEY", "_SECRET"];
     private static readonly string[] _secretPrefixes = ["AWS_", "GH_", "GITHUB_", "AGENT_APP_"];
     private static readonly string[] _credentialNames = ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
-    private static readonly string[] _secretExceptions = ["AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
+    private static readonly string[] _secretExceptions = ["AW_SINDRI_LAUNCH_SECRET", "GH_CONFIG_DIR", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
 
     /// <summary>Every name the plan may set, with the reason it is on the list. 'GIT_CONFIG_KEY_n' and 'GIT_CONFIG_VALUE_n' are listed by <see cref="IsListed"/>.</summary>
     public static IReadOnlyDictionary<string, string> Names { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -28,7 +28,6 @@ public static class EnvironmentAllowlist
         ["DOTNET_NOLOGO"] = "no banner",
         ["NUGET_PACKAGES"] = "the shared package cache",
         ["NUGET_HTTP_CACHE_PATH"] = "the HTTP cache goes to scratch",
-        ["NVM_DIR"] = "node version manager location",
         ["npm_config_cache"] = "the shared npm cache",
         ["npm_config_logs_dir"] = "npm logs go to scratch",
         ["npm_config_ignore_scripts"] = "install scripts are off",
@@ -63,7 +62,8 @@ public static class EnvironmentAllowlist
         ["AW_SINDRI_CHILD"] = "marks a Sindri-launched process",
         ["AW_SINDRI_ITEM"] = "the item",
         ["AW_SINDRI_LAUNCH"] = "the launch",
-        ["AW_SINDRI_HOME"] = "only when it is not the default",
+        ["AW_SINDRI_HOME"] = "the launch's session home, never the real home (rev 7)",
+        ["GH_CONFIG_DIR"] = "the session home's empty gh-config/, so gh finds no login (rev 7)",
         ["AW_SINDRI_LAUNCH_SECRET"] = "the launch secret, supplied by session wrap at start",
     };
 

@@ -5,13 +5,14 @@ namespace Aw.Sindri.Core.Sandbox.Plan;
 /// <summary>Builds the mount stack, bottom to top (sandbox spec §3.1): the root, an empty home, the allowlist, the agent home, the denies, the hook inventory, the writable set, the owner's last word.</summary>
 internal static class PlanMounts
 {
+    private const long MaskBytes = 1024 * 1024;
+
     private static readonly (string Path, PlanMountKind Kind, string Reason)[] _homeDefaults =
     [
         (".dotnet", PlanMountKind.ReadOnly, "the .NET SDK"),
-        (".nvm", PlanMountKind.ReadOnly, "node versions"),
         (".cargo", PlanMountKind.ReadOnly, "Rust tools"),
         (".rustup", PlanMountKind.ReadOnly, "Rust toolchains"),
-        (".local/bin", PlanMountKind.ReadOnly, "tools, and the judge wrapper"),
+        (".local/bin", PlanMountKind.ReadOnly, "tools, and the sindri and judge wrappers"),
         (".nuget/packages", PlanMountKind.ReadWrite, "a restore writes new packages; shared with the owner's builds"),
         (".npm/_cacache", PlanMountKind.ReadWrite, "the npm cache; shared with the owner's builds"),
     ];
@@ -40,11 +41,6 @@ internal static class PlanMounts
     private static void AddHomeAllow(List<PlanMount> m, PlanContext c)
     {
         m.AddRange(_homeDefaults.Select(d => new PlanMount($"{c.Home}/{d.Path}", d.Kind, Reason: d.Reason)));
-        if (c.Request.Host.ToolkitDir.Length > 0)
-        {
-            m.Add(new PlanMount(c.Request.Host.ToolkitDir, PlanMountKind.ReadOnly, Reason: "the toolkit checkout the judge wrapper runs"));
-        }
-
         IEnumerable<HomeAllowEntry> declared = [.. c.Request.Settings?.Fs?.HomeAllow ?? [], .. c.Repo.HomeAllow ?? []];
         m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile")));
         m.AddRange((c.Repo.CachePaths ?? []).Select(p => new PlanMount($"{c.Home}/{p}", PlanMountKind.ReadWrite, Reason: "a cache path this repo declares")));
@@ -89,7 +85,38 @@ internal static class PlanMounts
             m.Add(Inventory($"{c.StateDir}/{entry.Path}", entry, $"{c.RunArea}/spool/{entry.Path}"));
         }
 
-        m.Add(new PlanMount(c.Request.Host.SindriHome + "/launches", PlanMountKind.PerLaunchDir, $"{c.RunArea}/spool/launches", Reason: "session-id-report writes here; thrown away with the run"));
+        AddBinaries(m, c);
+        AddSindriHome(m, c);
+    }
+
+    // The state directory is otherwise absent, so the wrappers in ~/.local/bin would fail at exec without the stamp; 'current' is a sibling link the sandbox does not have.
+    private static void AddBinaries(List<PlanMount> m, PlanContext c)
+    {
+        if (c.Request.Host.CsBinDir.Length > 0)
+        {
+            m.Add(new PlanMount(c.Request.Host.CsBinDir, PlanMountKind.ReadOnly, Reason: "the installed C# sindri and judge"));
+            m.Add(new PlanMount(c.StateDir + "/bin/cs/current", PlanMountKind.ReadOnly, c.Request.Host.CsBinDir, Reason: "the wrappers exec into 'current': resolved to the stamp at plan time"));
+        }
+
+        var dotnet = c.Request.Host.Environment.TryGetValue("DOTNET_ROOT", out var root) ? root : string.Empty;
+        if (dotnet.Length > 0 && !string.Equals(dotnet, c.Home + "/.dotnet", StringComparison.Ordinal))
+        {
+            m.Add(new PlanMount(dotnet, PlanMountKind.ReadOnly, Reason: "DOTNET_ROOT, the native binaries' runtime"));
+        }
+    }
+
+    // Rev 7: the real home and the other launches' session homes are masked so the mountpoints exist, then only what the session home's links need is bound, shallow to deep.
+    private static void AddSindriHome(List<PlanMount> m, PlanContext c)
+    {
+        var home = c.Request.Host.SindriHome;
+        var session = c.SessionHome;
+        m.Add(new PlanMount(home, PlanMountKind.Tmpfs, Size: MaskBytes, Reason: "Sindri's real home is empty here: only the entries below exist"));
+        m.Add(new PlanMount(SessionHomePaths.Sessions(home), PlanMountKind.Tmpfs, Size: MaskBytes, Reason: "other launches' session homes are absent"));
+        m.Add(new PlanMount(home + "/launches", PlanMountKind.ReadWrite, Reason: "the session home's launches link resolves here; session-id-report and the turn-ended marker write to it"));
+        m.Add(new PlanMount(home + "/approved", PlanMountKind.ReadOnly, Reason: "the session home's approved link resolves here: the CLI finds its repo in the approved profile snapshot"));
+        m.Add(new PlanMount(session, PlanMountKind.ReadOnly, Reason: "this launch's session home: the Step's policy file and MCP config; the agent can't rewrite its own policy"));
+        m.Add(new PlanMount(session + "/control.json", PlanMountKind.ReadOnly, Reason: "written by the launcher: the endpoint record with the forwarder's URL"));
+        m.Add(new PlanMount(session + "/gh-config", PlanMountKind.ReadWrite, Reason: "the GitHub CLI's empty config directory, so gh finds no login"));
     }
 
     private static PlanMount Inventory(string path, StatePathEntry entry, string spool)

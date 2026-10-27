@@ -28,7 +28,6 @@ internal static class PlanEnvironment
             Var("DOTNET_NOLOGO", "1"),
             Var("NUGET_PACKAGES", FromHost("NUGET_PACKAGES", c.Home + "/.nuget/packages")),
             Var("NUGET_HTTP_CACHE_PATH", "/tmp/nuget-http"),
-            Var("NVM_DIR", FromHost("NVM_DIR", c.Home + "/.nvm")),
             Var("npm_config_cache", c.Home + "/.npm"),
             Var("npm_config_logs_dir", "/tmp/npm-logs"),
             Var("npm_config_ignore_scripts", "true"),
@@ -92,10 +91,8 @@ internal static class PlanEnvironment
         yield return Var("AW_SINDRI_CHILD", "1");
         yield return Var("AW_SINDRI_ITEM", r.Item.Value);
         yield return Var("AW_SINDRI_LAUNCH", r.Launch.Value);
-        if (!string.Equals(r.Host.SindriHome, r.Host.StateDir + "/sindri-app", StringComparison.Ordinal))
-        {
-            yield return Var("AW_SINDRI_HOME", r.Host.SindriHome);
-        }
+        yield return Var("AW_SINDRI_HOME", c.SessionHome);   // rev 7: never the real home
+        yield return Var("GH_CONFIG_DIR", c.SessionHome + "/gh-config");
 
         if (r.SlotHeld)
         {
