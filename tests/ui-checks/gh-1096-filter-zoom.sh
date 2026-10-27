@@ -12,7 +12,8 @@
 # WorldBounds, which is what this asserts: (1) the zoom didn't drop below 0.9 x the whole-map fit (the opened feature is 51 nodes in a tall column, so
 # its fit is close to the whole map's: the first run on main framed it at 0.497 against a whole-map fit of 0.502, filling ~80% of the canvas height, so a
 # "zoomed in" rule would fail a correct frame); (2) the world point at the canvas centre is in the first fifth of the world's width (the opened feature's
-# column), not near the world's middle, which a re-fit of the whole map would give.
+# column), not near the world's middle, which a re-fit of the whole map would give. The fraction is of the world read before the search: after it,
+# WorldBounds can be the shown set only (seen after a main merge: 294 wide instead of 2030), while world coordinates stay the same.
 # It drives the REAL sindri-ui. This check only measures: red or green on main is the answer.
 #   bash tests/ui-checks/gh-1096-filter-zoom.sh        exit 0 pass; 1 FAIL (one line on stderr); 2 the setup broke
 # Env: CTXUX_OUT (screenshots; default a new temp dir), AW_SINDRI_UI (a built sindri-ui), SINDRI (a built sindri).
@@ -45,7 +46,7 @@ settle() {
   done
 }
 settle
-S0="$VIEW_S"
+S0="$VIEW_S"; WB_X0="$WB_X"; WB_W0="$WB_W"   # the whole world, before the search: the filter keeps world coordinates, but WorldBounds may shrink to the shown set
 shot before-filter
 
 term="Area 3"
@@ -57,7 +58,7 @@ shot after-filter
 
 lt "$(awk -v s0="$S0" 'BEGIN { print s0 * 0.9 }')" "$VIEW_S" || fail "filtering to '$term' (1 feature of 12) zoomed out to $VIEW_S (whole-map fit $S0): the matches are not framed"
 
-read -r cx rel < <(awk -v cw="$CANVAS_W" -v s="$VIEW_S" -v vx="$VIEW_X" -v wx="$WB_X" -v ww="$WB_W" \
+read -r cx rel < <(awk -v cw="$CANVAS_W" -v s="$VIEW_S" -v vx="$VIEW_X" -v wx="$WB_X0" -v ww="$WB_W0" \
   'BEGIN { mx = (cw / 2 - vx) / s; printf "%.1f %.3f\n", mx, (mx - wx) / ww }')
 lt "$rel" 0.2 || fail "filtering to '$term' put the middle of the canvas at world x=$cx, $(awk -v r="$rel" 'BEGIN { printf "%d", r * 100 }')% across the world: not on the feature's column (the first fifth)"
 echo "PASS: filtering to '$term' framed the feature's column: zoom $S0 -> $VIEW_S, canvas middle at world x=$cx ($(awk -v r="$rel" 'BEGIN { printf "%d", r * 100 }')% across)"
