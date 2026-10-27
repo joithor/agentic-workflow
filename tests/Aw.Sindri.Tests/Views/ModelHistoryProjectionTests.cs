@@ -61,6 +61,28 @@ public sealed class ModelHistoryProjectionTests
     }
 
     [Fact]
+    public async Task A_second_launch_of_the_same_run_owns_the_outcome()
+    {
+        await _v.Begin();
+        await _v.Launched(ModelHistoryFolds.Run(1), Sonnet);
+        await _v.Launched(ModelHistoryFolds.Run(1), Opus);   // the escalated retry of the same run
+        await _v.Failed("draft", ModelHistoryFolds.Run(1), "tests-failed");
+
+        Assert.Null(await _v.Row("draft", Sonnet));
+        Expect.Equal(1, (await _v.Row("draft", Opus))!.CheckFailed);
+    }
+
+    [Fact]
+    public async Task A_launch_with_no_instance_makes_no_row()
+    {
+        await _v.Begin();
+        await _v.Fold(Aw.Sindri.Core.Events.EventTypes.LaunchStarted, ModelHistoryFolds.LaunchPayload(ModelHistoryFolds.Run(1), "draft") with { Instance = null }, Aw.Sindri.Testing.A.FirstItemId, text => ModelHistoryFolds.WithModel(text, Sonnet));
+        await _v.Completed("draft", "check", ModelHistoryFolds.Run(1));
+
+        Assert.Null(await _v.Row("draft", Sonnet));
+    }
+
+    [Fact]
     public async Task Each_model_and_each_state_has_its_own_row()
     {
         await _v.Begin();

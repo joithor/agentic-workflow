@@ -19,7 +19,7 @@ public static class ModelHistoryKeys
 
     internal static string Instance(string instance) => "instance/" + instance;
 
-    internal static string Launch(string launch) => "launch/" + launch;
+    internal static string Run(string instance, string state, int attempt) => string.Create(CultureInfo.InvariantCulture, $"run/{instance}/{state}/{attempt}");
 
     internal static string Order(string instance) => "order/" + instance;
 

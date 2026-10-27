@@ -3,7 +3,6 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Registry;
 
@@ -81,9 +80,13 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
         }
 
         var started = events.Payload<LaunchStarted>(recorded);
-        return started.IsError
-            ? started.Error
-            : await rows.Put(ViewNames.ModelRuns, ModelHistoryKeys.Launch(started.Value.Launch.Value), new RunModel(model), cancellationToken).ConfigureAwait(false);
+        if (started.IsError || started.Value is not { Instance: { } instance, State: { } state, Attempt: { } attempt })
+        {
+            return started.IsError ? started.Error : Unit.Value;   // a launch outside an instance has no Step report to join
+        }
+
+        // The run is named by instance, state and attempt, not by launch id: an escalated retry is a new launch of the same run, and the one that ran last owns the outcome
+        return await rows.Put(ViewNames.ModelRuns, ModelHistoryKeys.Run(WorkflowInstanceId.Of(instance).Value, state, attempt), new RunModel(model), cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<Unit>> Transitioned(LedgerEvent recorded, IViewRows rows, CancellationToken cancellationToken)
@@ -195,15 +198,15 @@ internal sealed class ModelHistoryProjection(EventFactory events) : IProjection
             : await Change(rows, new Slot(report.Scope, report.Payload.To, earlier.Value.Model), static row => row.Redrafted(), cancellationToken).ConfigureAwait(false);
     }
 
-    // The model of the run a report is about: the launch id is a hash of the instance and the run token, so it is worked out and not looked for.
+    // The model of the run a report is about: the report's run token carries the attempt, which with the instance and the state names the run the launch.started named.
     private static async ValueTask<Result<RunModel?>> ModelOf(WorkflowEventPayload payload, IViewRows rows, CancellationToken cancellationToken)
     {
-        if (payload.Run is null || !WorkflowInstanceId.TryFrom(payload.Instance, out var instance) || !RunToken.TryFrom(payload.Run, out var run))
+        if (payload.Run is null || !RunToken.TryFrom(payload.Run, out var run))
         {
             return Results.Success<RunModel?>(value: null);
         }
 
-        return await rows.Get<RunModel>(ViewNames.ModelRuns, ModelHistoryKeys.Launch(AgentLaunches.LaunchIdFor(instance, run).Value), cancellationToken).ConfigureAwait(false);
+        return await rows.Get<RunModel>(ViewNames.ModelRuns, ModelHistoryKeys.Run(payload.Instance, payload.From, run.Number), cancellationToken).ConfigureAwait(false);
     }
 
     private static async ValueTask<Result<Unit>> Change(IViewRows rows, Slot slot, Func<ModelHistoryRow, ModelHistoryRow> change, CancellationToken cancellationToken)
