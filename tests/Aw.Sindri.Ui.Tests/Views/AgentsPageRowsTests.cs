@@ -52,4 +52,15 @@ public sealed class AgentsPageRowsTests : FrameHost
             Assert.Equal(0, Named<Grid>(r, "SessionRowGrid").ColumnDefinitions[2].Width.Value);
         });
     });
+
+    [Fact]
+    public Task A_session_with_no_repository_shows_the_dash_in_the_Repository_column() => OnUi(async () =>
+    {
+        var (window, _) = await Shown(1920);
+
+        var repos = window.GetVisualDescendants().OfType<SessionRow>().Select(r => Named<Border>(r, "SessionRowRepo")).Where(b => b.IsEffectivelyVisible).Select(b => Avalonia.Automation.AutomationProperties.GetName(b)).ToList();
+        Assert.Equal(3, repos.Count);
+        Assert.DoesNotContain(string.Empty, repos, StringComparer.Ordinal);
+        Assert.Contains("—", repos, StringComparer.Ordinal);
+    });
 }
