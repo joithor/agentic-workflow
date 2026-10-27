@@ -54,12 +54,13 @@ internal sealed partial class ShellViewModel
 
     private static string Joined(string noun, string title) => title.Length > 0 ? noun + " " + title : noun;
 
-    /// <summary>The edge tab's text: the item's or workflow's readable title once read, else the sheet kind's plain word; never a raw address.</summary>
+    /// <summary>The edge tab's text: the item's, workflow run's or workflow type's readable title once read, else the sheet kind's plain word; never a raw address.</summary>
 #pragma warning disable IDE0072 // the kinds whose subject is already a readable name keep it
     public string EdgeTabText => SheetLink?.Kind switch
     {
         DeepLinkKind.Item => Item.Title.Length > 0 ? Item.Title : Labels.EdgeTabItem,
         DeepLinkKind.Workflow => Instance.Title.Length > 0 ? Instance.Title : Labels.EdgeTabWorkflowRun,
+        DeepLinkKind.Recipe => Recipe.Title.Length > 0 ? Recipe.Title : SheetSubject,
         DeepLinkKind.NeedsYou => Labels.EdgeTabNeedsYou,
         DeepLinkKind.Decision => Labels.EdgeTabDecision,
         DeepLinkKind.Job => Labels.EdgeTabJob,
